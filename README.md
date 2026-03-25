@@ -1,66 +1,47 @@
-# Moyva
+# Moyva (technical name)
 
-**Moyva** — це інді-гра на **Unity** з акцентом на **атмосферу**, **low poly-стилістику** та простий, але виразний ігровий досвід.  
-На поточному етапі гра зосереджена на **рибалці** як на першій точці прогресу — **MVP**, після якого проєкт може розвиватися в більш прокачані версії, можливо з елементами **виживання**.
+A Unity game focused on atmosphere and low poly visuals.
 
-## Проєкт
+## Description
 
-Це гра для **ПК** з **малим бюджетом**, тому основний фокус зроблений на:
-- зрозумілому й компактному геймплеї;
-- атмосферному візуальному стилі;
-- ефективній розробці без зайвого масштабу на старті;
-- можливості поступового розширення після MVP.
+The project is a fishing game where fishing serves as the initial and core gameplay iteration (**MVP**).  
+This stage is intended to validate the main gameplay loop and overall game feel.
 
-## Ключова ідея
+After the prototype is complete, the project is planned to evolve into more advanced versions with expanded mechanics, deeper gameplay, and potentially additional systems such as survival elements.
 
-Початковий концепт гри — **рибалка** в стилізованому світі.  
-Це не фінальна точка проєкту, а лише базовий фундамент, на якому в майбутньому можна будувати нові механіки, системи прогресії та геймплейні розширення.
+## Core Idea
 
-## Технічна інформація
+At the current stage, the player interacts with a basic fishing system.  
+This system acts as a foundation for future iterations of the game.
 
-- **Engine:** Unity 6.3 LTS
-- **Версія Unity:** `6000.3.10f1`
-- **Платформа:** PC
-- **Бюджет:** low budget
+The MVP is meant to answer:
+- whether the core gameplay loop works;
+- whether the fishing mechanic is engaging;
+- whether the intended atmosphere is achieved.
 
-## Команда
+## Technical Information
 
-- **Технічна частина:** `Kruty1918`
-- **Дизайн:** `Just_WTF`
+- **Engine:** Unity  
+- **Unity Version:** `6.3 LTS (6000.3.10f1)`  
+- **Platform:** PC  
 
-## Візуальний стиль
+## Visual Direction
 
-Проєкт орієнтований на:
-- **low poly графіку**
-- м’яку атмосферу
-- прості, читабельні форми
-- візуальну цілісність без перевантаження деталями
+- low poly graphics  
+- strong focus on atmosphere  
+- minimalistic shapes  
+- no excessive visual complexity  
 
-## Етапи розвитку
+## Future Development
 
-### MVP
-Перший етап розробки:
-- базова рибалка;
-- основний геймплейний цикл;
-- мінімально необхідний набір механік;
-- перевірка, чи працює концепт як гра.
+After MVP, possible directions include:
+- expanding the fishing system;
+- adding new gameplay mechanics;
+- introducing progression systems;
+- expanding the game world;
+- potentially adding survival elements.
 
-### Подальший розвиток
-Після MVP можливе розширення гри:
-- нові типи рибаління;
-- прогресія та покращення;
-- нові локації;
-- додаткові системи;
-- потенційні елементи виживання.
+## Team
 
-## Мета репозиторію
-
-Цей репозиторій використовується для:
-- збереження та організації коду;
-- роботи над прототипом і MVP;
-- поступового розвитку гри **Moyva**;
-- спільної та структурованої розробки проєкту.
-
----
-
-**Moyva** — це невелика, атмосферна Unity-гра, яка починається з простої ідеї рибалки, але має потенціал вирости у щось більше.
+- **Technical:** Kruty1918  
+- **Design:** Just_WTF
