@@ -6,5 +6,6 @@ namespace Kruty1918.Moyva.Grid.API
     {
         public Vector2Int Position { get; internal set; }
         public bool IsOccupied { get; internal set; }
+        public string OccupantId { get; internal set; }
     }
 }

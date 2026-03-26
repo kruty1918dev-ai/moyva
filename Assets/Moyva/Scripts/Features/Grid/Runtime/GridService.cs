@@ -3,7 +3,10 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Grid
 {
-    public class GridService : IGridService
+    /// <summary>
+    /// Приватна реалізація сервісу сітки.
+    /// </summary>
+    internal sealed class GridService : IGridService
     {
         private readonly TileData[,] _grid;
         public int GridWidth { get; }
@@ -55,12 +58,29 @@ namespace Kruty1918.Moyva.Grid
 
         public bool TryGetTileData(Vector2Int position, out TileData tileData)
         {
-            throw new System.NotImplementedException();
+            if (IsValidPosition(position))
+            {
+                tileData = _grid[position.x, position.y];
+                return true;
+            }
+
+            tileData = default;
+            return false;
         }
 
         public void OccupyTile(Vector2Int position, string occupantId)
         {
-            throw new System.NotImplementedException();
+            if (IsValidPosition(position))
+            {
+                var data = _grid[position.x, position.y];
+                data.IsOccupied = true;
+                data.OccupantId = occupantId;
+                _grid[position.x, position.y] = data;
+            }
+            else
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(position), "Position is out of grid bounds.");
+            }
         }
     }
 }
