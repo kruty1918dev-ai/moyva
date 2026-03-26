@@ -5,6 +5,7 @@
   <Project Path="Zenject-UnitTests-Editor.csproj" />
   <Project Path="Zenject-Editor.csproj" />
   <Project Path="Zenject-IntegrationTests.csproj" />
+  <Project Path="grid.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
 </Solution>
