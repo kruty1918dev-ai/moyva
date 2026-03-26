@@ -1,4 +1,4 @@
-using Kruty1918.Moyva.DTO;
+using Kruty1918.Moyva.Tiles;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 

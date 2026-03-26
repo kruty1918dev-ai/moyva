@@ -1,10 +1,8 @@
 {
-    "name": "Kruty1918.Moyva.Generator",
-    "rootNamespace": "Kruty1918.Moyva.Generator",
+    "name": "Kruty1918.Moyva.Tiles",
+    "rootNamespace": "Kruty1918.Moyva.Tiles",
     "references": [
-        "GUID:c1642f5cae15ed69da041d910650a38e",
-        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
-        "GUID:cb909cbe767e912beb860df019d12fbb"
+        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
