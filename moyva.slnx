@@ -8,5 +8,6 @@
   <Project Path="Kruty1918.Moyva.Grid.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Tiles.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
 </Solution>
