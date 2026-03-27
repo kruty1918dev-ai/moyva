@@ -197,6 +197,7 @@ Transform:
   - {fileID: 51931601}
   - {fileID: 471138271}
   - {fileID: 1002158794}
+  - {fileID: 2084813298}
   m_Father: {fileID: 663835483}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &330585543
@@ -758,9 +759,55 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c1f09faef73347d1aaf365061b67a86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.GridInstaller
+  tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
   gridWidth: 10
   gridHeight: 10
   tileSize: 1
+--- !u!1 &2084813297
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2084813298}
+  - component: {fileID: 2084813299}
+  m_Layer: 0
+  m_Name: UnitsInstaller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2084813298
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2084813297}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 326201343}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2084813299
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2084813297}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 330f1d8186438ebc283ae44440a426e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.Units::Kruty1918.Moyva.Units.Runtime.UnitsInstaller
+  _unitRegistry: {fileID: 11400000, guid: f076d9b7569345691a79c3cf6e0a3eea, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
