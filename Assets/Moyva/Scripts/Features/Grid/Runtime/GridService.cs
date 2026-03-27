@@ -3,7 +3,7 @@ using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
 
-namespace Kruty1918.Moyva.Grid
+namespace Kruty1918.Moyva.Grid.Runtime
 {
     /// <summary>
     /// Приватна реалізація сервісу сітки.
