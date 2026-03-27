@@ -1,6 +1,7 @@
-using Kruty1918.Moyva.Tiles;
+using Kruty1918.Moyva.Visuals;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Generator
 {
@@ -8,11 +9,13 @@ namespace Kruty1918.Moyva.Generator
     {
         private readonly IGridService _gridService;
         private readonly TileView _tileViewPrefab;
+        private readonly DiContainer _container;
 
-        public TileGenerator(TileView tileViewPrefab, IGridService gridService)
+        public TileGenerator(TileView tileViewPrefab, IGridService gridService, DiContainer container)
         {
             _tileViewPrefab = tileViewPrefab;
             _gridService = gridService;
+            _container = container;
         }
 
         public void GenerateTiles()
@@ -32,6 +35,7 @@ namespace Kruty1918.Moyva.Generator
         {
             TileView tileView = Object.Instantiate(_tileViewPrefab);
             tileView.transform.position = new Vector3(position.x, position.y, 0);
+            _container.Inject(tileView);
         }
     }
 }

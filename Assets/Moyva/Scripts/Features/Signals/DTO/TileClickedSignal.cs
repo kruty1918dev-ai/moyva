@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Kruty1918.Moyva.Tiles
+namespace Kruty1918.Moyva.Signals
 {
     public class TileClickedSignal
     {
