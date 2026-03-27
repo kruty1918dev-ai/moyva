@@ -1,29 +1,40 @@
 using Kruty1918.Moyva.Interactions.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Pathfinding.API;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
-using Kruty1918.Moyva.Visuals;
 using System;
-using Kruty1918.Moyva.Signals;
+using System.Collections.Generic;
 
 namespace Kruty1918.Moyva.Interactions.Runtime
 {
-    internal sealed class TileInteractionService : ITileInteractionService, IInitializable
+    internal sealed class TileInteractionService : ITileInteractionService, IInitializable, IDisposable
     {
         private readonly IGridService _gridService;
-        private Vector2Int? _firstSelectedTile;
+        private readonly IPathfinder _pathfinder;
         private readonly SignalBus _signalBus;
+        
+        private Vector2Int? _firstSelectedTile;
 
-        public TileInteractionService(IGridService gridService, SignalBus signalBus)
+        public TileInteractionService(
+            IGridService gridService, 
+            IPathfinder pathfinder, 
+            SignalBus signalBus)
         {
             _gridService = gridService;
+            _pathfinder = pathfinder;
             _signalBus = signalBus;
         }
 
         public void Initialize()
         {
-            Debug.Log("TileInteractionService initialized");
             _signalBus.Subscribe<TileClickedSignal>(OnTileClicked);
+        }
+
+        public void Dispose()
+        {
+            _signalBus.Unsubscribe<TileClickedSignal>(OnTileClicked);
         }
 
         private void OnTileClicked(TileClickedSignal signal)
@@ -33,38 +44,53 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         public void HandleTileClick(Vector2Int position)
         {
-            Debug.Log($"Handling tile click at: {position}");
-            if (!_gridService.TryGetTileData(position, out var tileData)) return;
+            // Перевірка валідності тайла через Grid API
+            if (!_gridService.TryGetTileData(position, out _)) return;
 
             if (_firstSelectedTile == null)
             {
-                // Логіка 1: Окупація тайла та сусідів
-                OccupyTileAndNeighbors(position);
+                // ЛОГІКА 1: Окупація себе та сусідів через IPathfinder
+                ExecuteOccupationWithNeighbors(position);
                 _firstSelectedTile = position;
             }
             else
             {
-                // Логіка 2: Прокладання маршруту A* (заглушка)
-                Debug.Log($"Pathfinding: From {_firstSelectedTile.Value} to {position}");
-                _firstSelectedTile = null; // Скидаємо вибір
+                // ЛОГІКА 2: Побудова маршруту через IPathfinder
+                ExecutePathfinding(_firstSelectedTile.Value, position);
+                _firstSelectedTile = null; 
             }
         }
 
-        private void OccupyTileAndNeighbors(Vector2Int center)
+        private void ExecuteOccupationWithNeighbors(Vector2Int center)
         {
-            // Окупуємо центр, якщо він у межах гріду
-            if (_gridService.TryGetTileData(center, out _))
-                _gridService.OccupyTile(center, "Player");
+            // Окупуємо сам тайл
+            _gridService.OccupyTile(center, "Player");
 
-            // Окупуємо сусідів (простий перебір 3х3 навколо)
-            for (int x = -1; x <= 1; x++)
+            // Окупуємо сусідів, яких нам повернув Pathfinder
+            // Тепер нам не важливо, як Pathfinder їх шукає (4 чи 8 напрямків)
+            foreach (var neighbor in _pathfinder.GetNeighbors(center))
             {
-                for (int y = -1; y <= 1; y++)
+                _gridService.OccupyTile(neighbor, "PlayerNeighbor");
+            }
+            
+            Debug.Log($"Occupied center {center} and its neighbors.");
+        }
+
+        private void ExecutePathfinding(Vector2Int start, Vector2Int end)
+        {
+            List<Vector2Int> path = _pathfinder.FindPath(start, end);
+
+            if (path != null && path.Count > 0)
+            {
+                foreach (var step in path)
                 {
-                    var neighborPos = new Vector2Int(center.x + x, center.y + y);
-                    if (_gridService.TryGetTileData(neighborPos, out _))
-                        _gridService.OccupyTile(neighborPos, "PlayerNeighbor");
+                    _gridService.OccupyTile(step, "PathSegment");
                 }
+                Debug.Log($"Path found: {path.Count} tiles.");
+            }
+            else
+            {
+                Debug.LogWarning("No path found between selected tiles.");
             }
         }
     }

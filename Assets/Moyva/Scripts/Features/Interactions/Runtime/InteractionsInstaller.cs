@@ -9,10 +9,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         public override void InstallBindings()
         {
             Container.BindInterfacesAndSelfTo<TileInteractionService>()
-            .AsSingle()
-            .WithArguments(
-                Container.Resolve<IGridService>(),
-                Container.Resolve<SignalBus>());
+                .AsSingle();
         }
     }
 }
