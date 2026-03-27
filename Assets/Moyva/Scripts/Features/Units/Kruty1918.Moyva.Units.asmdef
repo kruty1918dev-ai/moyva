@@ -1,0 +1,18 @@
+{
+    "name": "Kruty1918.Moyva.Units",
+    "rootNamespace": "Kruty1918.Moyva.Units",
+    "references": [
+        "Zenject",
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.Grid"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
