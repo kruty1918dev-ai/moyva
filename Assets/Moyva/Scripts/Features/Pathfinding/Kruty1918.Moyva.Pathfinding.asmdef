@@ -1,12 +1,9 @@
 {
-    "name": "Kruty1918.Moyva.Interactions.API",
-    "rootNamespace": "Kruty1918.Moyva.Interactions.API",
+    "name": "Kruty1918.Moyva.Pathfinding",
+    "rootNamespace": "Kruty1918.Moyva.Pathfinding",
     "references": [
         "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
-        "GUID:c1642f5cae15ed69da041d910650a38e",
-        "GUID:cb909cbe767e912beb860df019d12fbb",
-        "GUID:dbeb150ae01f08dd59e8e397e8ee8e2a",
-        "GUID:7fed65e55ebc32ab4afb0d9fc76aa385"
+        "GUID:c1642f5cae15ed69da041d910650a38e"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
