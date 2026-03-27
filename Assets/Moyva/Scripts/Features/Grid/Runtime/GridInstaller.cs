@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
         public override void InstallBindings()
         {
+            Container.BindInstance(tileRegistry).AsSingle();
             Container.Bind<IGridService>().To<GridService>().AsSingle()
                 .WithArguments(gridWidth, gridHeight, tileSize);
             Container.Bind<ITileSettingsService>().To<TileSettingsService>().AsSingle();
