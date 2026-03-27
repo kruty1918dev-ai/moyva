@@ -1,8 +1,10 @@
 {
-    "name": "Kruty1918.Moyva.Tiles",
-    "rootNamespace": "Kruty1918.Moyva.Tiles",
+    "name": "Kruty1918.Moyva.Visuals",
+    "rootNamespace": "Kruty1918.Moyva.Visuals",
     "references": [
-        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4"
+        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
+        "GUID:c1642f5cae15ed69da041d910650a38e",
+        "GUID:dbeb150ae01f08dd59e8e397e8ee8e2a"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

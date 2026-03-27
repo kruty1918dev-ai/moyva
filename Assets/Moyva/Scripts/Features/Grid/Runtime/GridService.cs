@@ -1,5 +1,7 @@
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Grid
 {
@@ -13,12 +15,15 @@ namespace Kruty1918.Moyva.Grid
         public int GridHeight { get; }
         public float TileSize { get; }
 
-        public GridService(int gridWidth, int gridHeight, float tileSize)
+        private readonly SignalBus _signalBus;
+
+        public GridService(int gridWidth, int gridHeight, float tileSize, SignalBus signalBus)
         {
             _grid = new TileData[gridWidth, gridHeight];
             GridWidth = gridWidth;
             GridHeight = gridHeight;
             TileSize = tileSize;
+            _signalBus = signalBus;
         }
 
         public TileData GetTileData(Vector2Int position)
@@ -41,14 +46,6 @@ namespace Kruty1918.Moyva.Grid
             if (IsValidPosition(position))
                 return _grid[position.x, position.y].IsOccupied;
             throw new System.ArgumentOutOfRangeException(nameof(position), "Position is out of grid bounds.");
-        }
-
-        public void OccupyTile(Vector2Int position)
-        {
-            if (IsValidPosition(position))
-                _grid[position.x, position.y].IsOccupied = true;
-            else
-                throw new System.ArgumentOutOfRangeException(nameof(position), "Position is out of grid bounds.");
         }
 
         private bool IsValidPosition(Vector2Int position)
@@ -76,6 +73,7 @@ namespace Kruty1918.Moyva.Grid
                 data.IsOccupied = true;
                 data.OccupantId = occupantId;
                 _grid[position.x, position.y] = data;
+                _signalBus.Fire(new OnTileChanged { Position = position });
             }
             else
             {
