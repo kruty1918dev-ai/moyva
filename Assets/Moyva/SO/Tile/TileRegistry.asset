@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d48492a0c16c58cdfb26448607aa340c, type: 3}
+  m_Name: TileRegistry
+  m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.API.TileRegistrySO
+  _definitions:
+  - _id: grass-tile-01
+    _movementCost: 3
+    _visualPrefab: {fileID: 6734315423058351568, guid: 23151ff9b4d8faa368d78bfe81c8e13d, type: 3}
+  - _id: water-tile-01
+    _movementCost: 6
+    _visualPrefab: {fileID: 6734315423058351568, guid: a018c187df1e6f0c8a017a63726129ed, type: 3}

@@ -1,29 +1,30 @@
 using Kruty1918.Moyva.Interactions.API;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Pathfinding.API;
+using Kruty1918.Moyva.Units.API; // Новий API
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
 using System;
-using System.Collections.Generic;
+using System.Threading;
 
 namespace Kruty1918.Moyva.Interactions.Runtime
 {
     internal sealed class TileInteractionService : ITileInteractionService, IInitializable, IDisposable
     {
         private readonly IGridService _gridService;
-        private readonly IPathfinder _pathfinder;
+        private readonly IUnitMovementService _unitMovementService; // Сервіс руху
         private readonly SignalBus _signalBus;
         
-        private Vector2Int? _firstSelectedTile;
+        private string _selectedUnitId;
+        private CancellationTokenSource _moveCts;
 
         public TileInteractionService(
             IGridService gridService, 
-            IPathfinder pathfinder, 
+            IUnitMovementService unitMovementService, 
             SignalBus signalBus)
         {
             _gridService = gridService;
-            _pathfinder = pathfinder;
+            _unitMovementService = unitMovementService;
             _signalBus = signalBus;
         }
 
@@ -35,6 +36,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         public void Dispose()
         {
             _signalBus.Unsubscribe<TileClickedSignal>(OnTileClicked);
+            CancelMovement();
         }
 
         private void OnTileClicked(TileClickedSignal signal)
@@ -42,55 +44,54 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             HandleTileClick(signal.Position);
         }
 
-        public void HandleTileClick(Vector2Int position)
+        public async void HandleTileClick(Vector2Int position)
         {
-            // Перевірка валідності тайла через Grid API
-            if (!_gridService.TryGetTileData(position, out _)) return;
+            if (!_gridService.TryGetTileData(position, out var tileData)) return;
 
-            if (_firstSelectedTile == null)
+            // КРОК 1: Вибір юніта (якщо ніхто не вибраний)
+            if (string.IsNullOrEmpty(_selectedUnitId))
             {
-                // ЛОГІКА 1: Окупація себе та сусідів через IPathfinder
-                ExecuteOccupationWithNeighbors(position);
-                _firstSelectedTile = position;
-            }
-            else
-            {
-                // ЛОГІКА 2: Побудова маршруту через IPathfinder
-                ExecutePathfinding(_firstSelectedTile.Value, position);
-                _firstSelectedTile = null; 
-            }
-        }
-
-        private void ExecuteOccupationWithNeighbors(Vector2Int center)
-        {
-            // Окупуємо сам тайл
-            _gridService.OccupyTile(center, "Player");
-
-            // Окупуємо сусідів, яких нам повернув Pathfinder
-            // Тепер нам не важливо, як Pathfinder їх шукає (4 чи 8 напрямків)
-            foreach (var neighbor in _pathfinder.GetNeighbors(center))
-            {
-                _gridService.OccupyTile(neighbor, "PlayerNeighbor");
-            }
-            
-            Debug.Log($"Occupied center {center} and its neighbors.");
-        }
-
-        private void ExecutePathfinding(Vector2Int start, Vector2Int end)
-        {
-            List<Vector2Int> path = _pathfinder.FindPath(start, end);
-
-            if (path != null && path.Count > 0)
-            {
-                foreach (var step in path)
+                if (tileData.IsOccupied && !string.IsNullOrEmpty(tileData.OccupantId))
                 {
-                    _gridService.OccupyTile(step, "PathSegment");
+                    _selectedUnitId = tileData.OccupantId;
+                    Debug.Log($"[Interaction] Вибрано юніта: {_selectedUnitId}");
+                    // Тут можна кинути сигнал UnitSelectedSignal для підсвічування в UI
                 }
-                Debug.Log($"Path found: {path.Count} tiles.");
+                return;
             }
-            else
+
+            // КРОК 2: Наказ на рух (якщо юніт вже вибраний)
+            string unitToMove = _selectedUnitId;
+            _selectedUnitId = null; // Скидаємо виділення перед початком руху
+
+            Debug.Log($"[Interaction] Наказ для {unitToMove}: рух до {position}");
+
+            // Скасовуємо попередній рух, якщо він ще тривав
+            CancelMovement();
+            _moveCts = new CancellationTokenSource();
+
+            try
             {
-                Debug.LogWarning("No path found between selected tiles.");
+                // Викликаємо асинхронний рух
+                await _unitMovementService.MoveUnitAsync(unitToMove, position, _moveCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.Log($"[Interaction] Рух юніта {unitToMove} перервано.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[Interaction] Помилка під час руху: {e.Message}");
+            }
+        }
+
+        private void CancelMovement()
+        {
+            if (_moveCts != null)
+            {
+                _moveCts.Cancel();
+                _moveCts.Dispose();
+                _moveCts = null;
             }
         }
     }
