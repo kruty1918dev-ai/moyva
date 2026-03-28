@@ -17,7 +17,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly Dictionary<string, float> _unitStamina = new();
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
         private readonly Dictionary<string, string> _unitTypeMapping = new();
-        
+
         // Словник для зберігання посилань на GameObject юнітів
         private readonly Dictionary<string, GameObject> _unitObjects = new();
 
@@ -55,19 +55,30 @@ namespace Kruty1918.Moyva.Units.Runtime
             _unitStamina[signal.UnitId] = startStamina;
             _unitPositions[signal.UnitId] = signal.Position;
             _unitTypeMapping[signal.UnitId] = signal.UnitTypeId;
-            
+
             // Зберігаємо GameObject
             _unitObjects[signal.UnitId] = signal.UnitObject;
 
             _gridService.OccupyTile(signal.Position, signal.UnitId);
 
-            Debug.Log($"[UnitService] Unit {signal.UnitId} registered and cached.");
+            Debug.Log($"[UnitService] Unit {signal.UnitId} registered and cached. Stamina: {startStamina}, Position: {signal.Position}  ");
         }
 
         private void OnUnitMoved(UnitMovedSignal signal)
         {
             if (_unitStamina.ContainsKey(signal.UnitId))
             {
+                if (!CanUnitMove(signal.UnitId, signal.NewPosition))
+                {
+                    // Посилаємо команду на зупинку
+                    _signalBus.Fire(new InterruptMovementSignal
+                    {
+                        UnitId = signal.UnitId,
+                    });
+                    Debug.Log($"[UnitService] Unit {signal.UnitId} cannot move to {signal.NewPosition} due to insufficient stamina.");
+                    return;
+                }
+
                 // Логіка окупації: звільняємо старий, займаємо новий
                 if (_unitPositions.TryGetValue(signal.UnitId, out var oldPos))
                 {
@@ -76,7 +87,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 
                 _unitStamina[signal.UnitId] -= signal.Cost;
                 _unitPositions[signal.UnitId] = signal.NewPosition;
-                
+
+                Debug.Log($"[UnitService] Unit {signal.UnitId} moved to {signal.NewPosition}. Stamina now: {_unitStamina[signal.UnitId]}");
+
                 _gridService.OccupyTile(signal.NewPosition, signal.UnitId);
             }
         }
@@ -101,43 +114,18 @@ namespace Kruty1918.Moyva.Units.Runtime
         }
 
         public float GetStamina(string unitId) => _unitStamina.GetValueOrDefault(unitId, 0);
-        
-        public bool TryGetUnitPosition(string unitId, out Vector2Int position) 
+
+        public bool TryGetUnitPosition(string unitId, out Vector2Int position)
             => _unitPositions.TryGetValue(unitId, out position);
 
-        // Реалізація з вашого інтерфейсу (якщо IUnitService вимагає object)
-        public object GetUnit(string unitId) => GetUnitObject(unitId);
-
-        // --- Оновлення стаміни по ходах ---
-
-        public void ProcessTurnUpdate()
+        private bool CanUnitMove(string unitId, Vector2Int targetPosition)
         {
-            foreach (var unitId in new List<string>(_unitStamina.Keys))
-            {
-                UpdateUnitStamina(unitId);
-            }
-        }
+            if (!_unitStamina.ContainsKey(unitId) || !_unitPositions.ContainsKey(unitId))
+                return false;
 
-        private void UpdateUnitStamina(string unitId)
-        {
-            if (!_unitPositions.TryGetValue(unitId, out var pos)) return;
-            
-            var typeId = _unitTypeMapping[unitId];
-            var config = _registry.Configs.Find(c => c.TypeId == typeId);
-
-            _gridService.TryGetTileData(pos, out var tileData);
-
-            float regenModifier = 1.0f;
-            if (tileData.TileTypeId == "swamp") regenModifier = -0.5f;
-            if (tileData.TileTypeId == "castle") regenModifier = 2.0f;
-
-            float regenAmount = config.StaminaRegenBase * regenModifier;
-            _unitStamina[unitId] += regenAmount;
-
-            if (_unitStamina[unitId] < 0)
-            {
-                Debug.LogWarning($"Unit {unitId} is starving!");
-            }
+            var currentPos = _unitPositions[unitId];
+            var tileCost = _tileSettings.GetTileWeight(_gridService.GetTileData(targetPosition).TileTypeId);
+            return _unitStamina[unitId] >= tileCost;
         }
     }
 }

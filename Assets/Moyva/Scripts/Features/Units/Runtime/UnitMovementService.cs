@@ -1,4 +1,5 @@
-// Features/Units/Runtime/UnitMovementService.cs
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Units.API;
@@ -11,7 +12,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
-    internal sealed class UnitMovementService : IUnitMovementService
+    internal sealed class UnitMovementService : IUnitMovementService, IInitializable, IDisposable
     {
         private readonly IUnitService _unitService;
         private readonly IPathfinder _pathfinder;
@@ -19,6 +20,8 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly ITileSettingsService _tileSettings;
         private readonly IGridService _gridService;
         private readonly SignalBus _signalBus;
+
+        private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 
         public UnitMovementService(
             IUnitService unitService,
@@ -36,48 +39,113 @@ namespace Kruty1918.Moyva.Units.Runtime
             _signalBus = signalBus;
         }
 
-        // Features/Units/Runtime/UnitMovementService.cs
-
-        public async Task MoveUnitAsync(string unitId, Vector2Int targetPosition, CancellationToken token = default)
+        public void Initialize()
         {
-            // ПЕРЕВІРКА: чи не порожній ID
-            if (string.IsNullOrEmpty(unitId))
+            _signalBus.Subscribe<InterruptMovementSignal>(OnInterruptRequested);
+        }
+
+        public void Dispose()
+        {
+            _signalBus.Unsubscribe<InterruptMovementSignal>(OnInterruptRequested);
+            
+            foreach (var cts in _activeMovements.Values)
             {
-                Debug.LogError("[UnitMovement] UnitId is null or empty!");
-                return;
+                cts.Cancel();
+                cts.Dispose();
+            }
+            _activeMovements.Clear();
+        }
+
+        private void OnInterruptRequested(InterruptMovementSignal signal)
+        {
+            if (_activeMovements.TryGetValue(signal.UnitId, out var cts))
+            {
+                cts.Cancel(); 
+            }
+        }
+
+        public async Task MoveUnitAsync(string unitId, Vector2Int targetPosition, CancellationToken externalToken = default)
+        {
+            if (string.IsNullOrEmpty(unitId)) return;
+
+            if (_activeMovements.TryGetValue(unitId, out var oldCts))
+            {
+                oldCts.Cancel();
+                oldCts.Dispose();
             }
 
             if (!_unitService.TryGetUnitPosition(unitId, out var startPosition)) return;
 
             var path = _pathfinder.FindPath(startPosition, targetPosition);
+            if (path == null || path.Count <= 1) return;
 
-            // ПЕРЕВІРКА: чи знайдено шлях
-            if (path == null || path.Count <= 1)
+            // --- ПЕРЕВІРКА СТАМІНИ ПЕРЕД ПОЧАТКОМ ---
+            // Перевіряємо вартість першого кроку (path[0] - це поточна позиція, path[1] - перший крок)
+            if (!CanMakeFirstStep(unitId, path[1]))
             {
-                Debug.LogWarning($"[UnitMovement] Path not found for unit {unitId}");
-                return;
+                Debug.Log($"[UnitMovement] Юніт {unitId} занадто втомлений, щоб почати рух.");
+                return; // Навіть не створюємо CTS і не запускаємо анімацію
             }
+            // ----------------------------------------
 
-            // ПЕРЕВІРКА: чи існує View
             var unitObj = _unitService.GetUnitObject(unitId);
-            if (unitObj == null)
+            if (unitObj == null) return;
+
+            var internalCts = new CancellationTokenSource();
+            _activeMovements[unitId] = internalCts;
+
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(externalToken, internalCts.Token);
+
+            try
             {
-                Debug.LogError($"[UnitMovement] GameObject for unit {unitId} is missing in UnitService!");
-                return;
+                var settings = PathAnimationSettings.Default;
+                settings.OnStepCompleted = (stepPos) => OnStepCompleted(unitId, stepPos);
+
+                await _animationService.MoveAlongPathAsync(unitObj.transform, path, settings, linkedCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.Log($"[UnitMovement] Рух юніта {unitId} було перервано.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[UnitMovement] Помилка: {e.Message}");
+            }
+            finally
+            {
+                if (_activeMovements.TryGetValue(unitId, out var currentCts) && currentCts == internalCts)
+                {
+                    _activeMovements.Remove(unitId);
+                }
+                internalCts.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Перевіряє, чи вистачить стаміни на перший крок маршруту.
+        /// </summary>
+        private bool CanMakeFirstStep(string unitId, Vector2Int firstStepPos)
+        {
+            float currentStamina = _unitService.GetStamina(unitId);
+            
+            if (_gridService.TryGetTileData(firstStepPos, out var tileData))
+            {
+                float cost = _tileSettings.GetTileWeight(tileData.TileTypeId);
+                return currentStamina >= cost;
             }
 
-            var settings = PathAnimationSettings.Default;
-            settings.OnStepCompleted = (stepPos) => OnStepCompleted(unitId, stepPos);
-
-            await _animationService.MoveAlongPathAsync(unitObj.transform, path, settings, token);
+            return false;
         }
+
         private void OnStepCompleted(string unitId, Vector2Int stepPos)
         {
-            // Отримуємо ціну тайла, на який стали
-            _gridService.TryGetTileData(stepPos, out var tileData);
+            if (!_gridService.TryGetTileData(stepPos, out var tileData)) return;
+            
             float stepCost = _tileSettings.GetTileWeight(tileData.TileTypeId);
 
-            // Відправляємо сигнал, щоб UnitService зняв стаміну та оновив окупацію на сітці
+            // Тут ми просто стріляємо сигналом. 
+            // UnitService отримає його, відніме стаміну, і якщо вона стане <= 0, 
+            // він кине InterruptMovementSignal, який ми обробимо в OnInterruptRequested.
             _signalBus.Fire(new UnitMovedSignal
             {
                 UnitId = unitId,
