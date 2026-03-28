@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Generator.API; // Додано для IMapDataGenerator
 using Kruty1918.Moyva.Visuals;
 using UnityEngine;
 using Zenject;
+using System.Collections;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
@@ -39,12 +40,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
         }
 
-        public async Task BuildWorldAsync()
+        public IEnumerator BuildWorldRoutine()
         {
             // 1. Отримуємо матрицю ідентифікаторів з конвеєра (Шум -> Біоми -> Фічі)
-            string[,] virtualMap = await _mapDataGenerator.GenerateMapDataAsync(
+            string[,] virtualMap = null;
+            yield return _mapDataGenerator.GenerateMapDataRoutine(
                 _gridService.GridWidth,
-                _gridService.GridHeight);
+                _gridService.GridHeight,
+                result => virtualMap = result);
 
             if (_tilesRoot == null)
                 _tilesRoot = new GameObject("TilesRoot").transform;

@@ -264,7 +264,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 12
+  orthographic size: 20
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -626,7 +626,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8237c731023c8c1268f52ccaa7bbc048, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.GeneratorInstaller
-  _registry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
+  _generationRules: {fileID: 11400000, guid: e0c22aa5069af828e929cfd46e69b5e5, type: 2}
+  _heightMapSettings: {fileID: 11400000, guid: c3d295a14e0ab800893230f6b49661e2, type: 2}
+  _riverConfig: {fileID: 11400000, guid: 78e042253c1f803fd95ad78bfadd8312, type: 2}
+  _noiseSettings: {fileID: 11400000, guid: 29912cd5071f7de84a54c8b3129843ad, type: 2}
+  _biomesSettings: {fileID: 11400000, guid: 61667c86198a4161b96bd05257abedf0, type: 2}
+  _wfcDataSettings: {fileID: 11400000, guid: fea7d1c6ea24608b2b4e75e082c67e84, type: 2}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -765,8 +770,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.GridInstaller
   tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
-  gridWidth: 10
-  gridHeight: 10
+  gridWidth: 50
+  gridHeight: 80
   tileSize: 1
 --- !u!1 &1537667075
 GameObject:

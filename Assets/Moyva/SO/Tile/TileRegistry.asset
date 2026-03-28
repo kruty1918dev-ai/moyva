@@ -13,9 +13,18 @@ MonoBehaviour:
   m_Name: TileRegistry
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.API.TileRegistrySO
   _definitions:
-  - _id: grass-tile-01
+  - _id: grass
     _movementCost: 3
     _visualPrefab: {fileID: 6734315423058351568, guid: 23151ff9b4d8faa368d78bfe81c8e13d, type: 3}
-  - _id: water-tile-01
-    _movementCost: 6
-    _visualPrefab: {fileID: 6734315423058351568, guid: a018c187df1e6f0c8a017a63726129ed, type: 3}
+  - _id: water
+    _movementCost: 3
+    _visualPrefab: {fileID: 6734315423058351568, guid: 1d32aeffc2c9ab6c8a53853a9910a1f3, type: 3}
+  - _id: grass-water-left
+    _movementCost: 3
+    _visualPrefab: {fileID: 6734315423058351568, guid: fc338b01645acb16ebc9065a412671d4, type: 3}
+  - _id: grass-water-left-down
+    _movementCost: 3
+    _visualPrefab: {fileID: 6734315423058351568, guid: bc41c1c8e724a09d0b5ebf3beee8853c, type: 3}
+  - _id: grass-water-down-and-right
+    _movementCost: 3
+    _visualPrefab: {fileID: 6734315423058351568, guid: fce285d3eb6217888bff8aaf02f588af, type: 3}

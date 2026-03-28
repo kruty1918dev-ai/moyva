@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b1d4726d68227654bacbeeae261a8334
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/MountainDarkTiles_28.asset
+  uploadId: 780940

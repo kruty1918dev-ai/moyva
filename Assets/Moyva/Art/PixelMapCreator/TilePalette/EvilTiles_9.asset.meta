@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 82d5f0ff3e205254680db7f05aea9b76
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/EvilTiles_9.asset
+  uploadId: 780940

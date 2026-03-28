@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a4d02327cb6fed04fb7b27208593b379
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/RoadDarkTiles_36.asset
+  uploadId: 780940

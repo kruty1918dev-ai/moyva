@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+using System.Collections;
 
 namespace Kruty1918.Moyva.Generator.API
 {
@@ -7,6 +7,6 @@ namespace Kruty1918.Moyva.Generator.API
         /// <summary>
         /// Головний метод, який приймає віртуальну карту (матрицю TypeId) і створює відповідні тайли у світі.
         /// </summary>
-        Task BuildWorldAsync();
+        IEnumerator BuildWorldRoutine();
     }
 }
