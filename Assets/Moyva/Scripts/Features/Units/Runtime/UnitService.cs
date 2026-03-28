@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly SignalBus _signalBus;
         private readonly IGridService _gridService;
         private readonly ITileSettingsService _tileSettings;
-        private readonly UnitRegistrySO _registry;
+        private readonly IUnitClassConfig _unitClassConfig;
 
         private readonly Dictionary<string, float> _unitStamina = new();
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
@@ -22,12 +22,12 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly Dictionary<string, GameObject> _unitObjects = new();
 
         public UnitService(SignalBus signalBus, IGridService gridService,
-            ITileSettingsService tileSettings, UnitRegistrySO registry)
+            ITileSettingsService tileSettings, IUnitClassConfig unitClassConfig)
         {
             _signalBus = signalBus;
             _gridService = gridService;
             _tileSettings = tileSettings;
-            _registry = registry;
+            _unitClassConfig = unitClassConfig;
         }
 
         public void Initialize()
@@ -46,11 +46,11 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private void OnUnitCreated(UnitCreatedSignal signal)
         {
-            var config = _registry.Configs.Find(c => c.TypeId == signal.UnitTypeId);
+            var config = _unitClassConfig.GetConfig(signal.UnitTypeId);
             if (config == null) return;
 
             float randomMod = Random.Range(config.StaminaRandomRange.x, config.StaminaRandomRange.y);
-            float startStamina = config.BaseStamina * randomMod;
+            float startStamina = config.BaseStamina + randomMod;
 
             _unitStamina[signal.UnitId] = startStamina;
             _unitPositions[signal.UnitId] = signal.Position;

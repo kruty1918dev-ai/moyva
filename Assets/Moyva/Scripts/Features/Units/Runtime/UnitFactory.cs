@@ -10,23 +10,23 @@ namespace Kruty1918.Moyva.Units.Runtime
     internal sealed class UnitFactory : IUnitFactory
     {
         private readonly DiContainer _container;
-        private readonly UnitRegistrySO _registry;
+        private readonly IUnitClassConfig _unitClassConfig;
         private readonly SignalBus _signalBus;
         private readonly IGridService _gridService;
         
         private readonly Dictionary<string, int> _typeCounters = new();
 
-        public UnitFactory(DiContainer container, UnitRegistrySO registry, SignalBus signalBus, IGridService gridService)
+        public UnitFactory(DiContainer container, IUnitClassConfig unitClassConfig, SignalBus signalBus, IGridService gridService)
         {
             _container = container;
-            _registry = registry;
+            _unitClassConfig = unitClassConfig;
             _signalBus = signalBus;
             _gridService = gridService;
         }
 
         public string CreateUnit(string typeId, Vector2Int gridPosition)
         {
-            var config = _registry.Configs.Find(c => c.TypeId == typeId);
+            var config = _unitClassConfig.GetConfig(typeId);
             if (config == null || config.Prefab == null)
             {
                 Debug.LogError($"[UnitFactory] Cannot find config or prefab for {typeId}");
@@ -46,7 +46,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _typeCounters[typeId]++;
             
             string instanceId = unitObj.GetInstanceID().ToString().Replace("-", "");
-            string finalUnitId = $"{typeId}-{_typeCounters[typeId]:D2}_{instanceId}";
+            string finalUnitId = $"{typeId}_{_typeCounters[typeId]:D2}_{instanceId}";
 
             // // 4. Налаштування View
             // var view = unitObj.GetComponent<UnitView>();
