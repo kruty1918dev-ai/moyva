@@ -29,4 +29,9 @@ namespace Kruty1918.Moyva.Signals
     {
         public string UnitId;
     }
+
+    public struct InterruptMovementSignal
+    {
+        public string UnitId;
+    }
 }

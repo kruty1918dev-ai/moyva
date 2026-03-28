@@ -74,7 +74,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             {
                 // Викликаємо асинхронний рух
                 await _unitMovementService.MoveUnitAsync(unitToMove, position, _moveCts.Token);
-                Debug.Log($"[Interaction] Юніт {unitToMove} успішно прибув.");
             }
             catch (OperationCanceledException)
             {

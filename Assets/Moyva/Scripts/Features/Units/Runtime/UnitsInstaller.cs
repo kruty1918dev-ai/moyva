@@ -20,7 +20,8 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .To<UnitFactory>()
                 .AsSingle();
 
-            Container.Bind<IUnitMovementService>().To<UnitMovementService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<UnitMovementService>()
+                .AsSingle();
         }
     }
 }
