@@ -13,5 +13,6 @@
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
+  <Project Path="Kruty1918.Moyva.Bootstrap.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
 </Solution>
