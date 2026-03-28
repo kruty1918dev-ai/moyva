@@ -1,6 +1,7 @@
 ﻿<Solution>
   <Project Path="Zenject.csproj" />
   <Project Path="Zenject-IntegrationTests-Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Animations.csproj" />
   <Project Path="Zenject-ReflectionBaking-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Interactions.API.csproj" />
   <Project Path="Zenject-UnitTests-Editor.csproj" />
@@ -8,9 +9,11 @@
   <Project Path="Zenject-IntegrationTests.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
+  <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Kruty1918.Moyva.Signals.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
+  <Project Path="Kruty1918.Moyva.Bootstrap.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
 </Solution>

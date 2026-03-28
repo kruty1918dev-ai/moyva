@@ -8,22 +8,23 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
     internal sealed class Pathfinder : IPathfinder
     {
         private readonly IGridService _gridService;
+        private readonly ITileSettingsService _tileSettings; // Додано сервіс налаштувань
 
-        public Pathfinder(IGridService gridService)
+        public Pathfinder(IGridService gridService, ITileSettingsService tileSettings)
         {
             _gridService = gridService;
+            _tileSettings = tileSettings;
         }
 
         public IEnumerable<Vector2Int> GetNeighbors(Vector2Int pos)
         {
             List<Vector2Int> neighbors = new List<Vector2Int>();
 
-            // 8 напрямків (прямі + діагональні)
             for (int x = -1; x <= 1; x++)
             {
                 for (int y = -1; y <= 1; y++)
                 {
-                    if (x == 0 && y == 0) continue; // пропускаємо центр
+                    if (x == 0 && y == 0) continue; 
 
                     Vector2Int next = new Vector2Int(pos.x + x, pos.y + y);
 
@@ -58,17 +59,23 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
 
                 foreach (var neighbor in GetNeighbors(current))
                 {
-                    // // КРИТИЧНО: Ігноруємо окупацію для СТАРТУ (бо ми там стоїмо) 
-                    // // та для ФІНІШУ (якщо хочемо на нього наступити)
-                    // bool isOccupied = _gridService.IsTileOccupied(neighbor);
-                    // if (isOccupied && neighbor != start && neighbor != end)
-                    // {
-                    //     continue;
-                    // }
+                    if (!_gridService.TryGetTileData(neighbor, out var tileData)) continue;
 
-                    // Вартість кроку: 1 для прямих, 1.4 для діагоналей (опціонально)
-                    // Для спрощення Чебишова використовуємо 1 всюди
-                    float stepCost = (current.x != neighbor.x && current.y != neighbor.y) ? 1.4f : 1.0f;
+                    // 1. ПЕРЕВІРКА ОКУПАЦІЇ: Ігноруємо зайняті тайли, щоб обходити перешкоди
+                    // Дозволяємо перевірку для цільового тайла (end) та стартового (start)
+                    if (tileData.IsOccupied && neighbor != start && neighbor != end)
+                    {
+                        continue;
+                    }
+
+                    // 2. ВРАХУВАННЯ ВАГИ (СТАМІНИ)
+                    float tileWeight = _tileSettings.GetTileWeight(tileData.TileTypeId);
+                    
+                    // Вартість кроку = (базова відстань) * (вага тайла)
+                    // Тобто діагональний крок по "болоту" буде коштувати більше, ніж прямий крок по "болоту".
+                    float distanceMultiplier = (current.x != neighbor.x && current.y != neighbor.y) ? 1.414f : 1.0f;
+                    float stepCost = distanceMultiplier * tileWeight;
+
                     float tentativeGScore = GetScore(gScore, current) + stepCost;
 
                     if (tentativeGScore < GetScore(gScore, neighbor))
@@ -85,17 +92,13 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
                 }
             }
 
-            return new List<Vector2Int>();
+            return new List<Vector2Int>(); // Шлях не знайдено
         }
 
-        /// <summary>
-        /// Октальна відстань (найкраща для 8 напрямків)
-        /// </summary>
         private float Heuristic(Vector2Int a, Vector2Int b)
         {
             float dx = Mathf.Abs(a.x - b.x);
             float dy = Mathf.Abs(a.y - b.y);
-            // Формула для 8 напрямків рухів
             return (dx + dy) + (1.414f - 2) * Mathf.Min(dx, dy);
         }
 
