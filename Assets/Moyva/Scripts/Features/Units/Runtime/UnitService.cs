@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
         private readonly Dictionary<string, string> _unitTypeMapping = new();
 
-        public UnitService(SignalBus signalBus, IGridService gridService, 
+        public UnitService(SignalBus signalBus, IGridService gridService,
             ITileSettingsService tileSettings, UnitRegistrySO registry)
         {
             _signalBus = signalBus;
@@ -54,7 +54,11 @@ namespace Kruty1918.Moyva.Units.Runtime
             _unitStamina[signal.UnitId] = startStamina;
             _unitPositions[signal.UnitId] = signal.Position;
             _unitTypeMapping[signal.UnitId] = signal.UnitTypeId;
-            
+
+            // ОКУПАЦІЯ: Повідомляємо GridService
+            // Використовуємо UnitId як ідентифікатор окупанта
+            _gridService.OccupyTile(signal.Position, signal.UnitId);
+
             Debug.Log($"Unit {signal.UnitId} registered with {startStamina} stamina");
         }
 
@@ -89,12 +93,12 @@ namespace Kruty1918.Moyva.Units.Runtime
             var config = _registry.Configs.Find(c => c.TypeId == typeId);
 
             _gridService.TryGetTileData(pos, out var tileData);
-            
+
             // Логіка "Зон комфорту" та погоди (спрощено)
             float regenModifier = 1.0f;
-            
+
             // Приклад: якщо в будівлі — баф, якщо на болоті — дебаф
-            if (tileData.TileTypeId == "swamp") regenModifier = -0.5f; 
+            if (tileData.TileTypeId == "swamp") regenModifier = -0.5f;
             if (tileData.TileTypeId == "castle") regenModifier = 2.0f;
 
             float regenAmount = config.StaminaRegenBase * regenModifier;
