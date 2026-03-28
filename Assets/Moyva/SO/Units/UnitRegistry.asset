@@ -12,4 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 37f2c8a0f216c3f21a4af96fc493d1ef, type: 3}
   m_Name: UnitRegistry
   m_EditorClassIdentifier: Kruty1918.Moyva.Units::Kruty1918.Moyva.Units.Runtime.UnitRegistrySO
-  Configs: []
+  Configs:
+  - TypeId: warrior
+    BaseStamina: 15
+    StaminaRegenBase: 3
+    Prefab: {fileID: 3012185294812511675, guid: 4d504a73108154c2a87c088a007ff633, type: 3}
+    StaminaRandomRange: {x: -1, y: 1}

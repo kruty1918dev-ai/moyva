@@ -80,5 +80,21 @@ namespace Kruty1918.Moyva.Grid.Runtime
                 throw new System.ArgumentOutOfRangeException(nameof(position), "Position is out of grid bounds.");
             }
         }
+
+        public void VacateTile(Vector2Int position)
+        {
+            if (IsValidPosition(position))
+            {
+                var data = _grid[position.x, position.y];
+                data.IsOccupied = false;
+                data.OccupantId = null;
+                _grid[position.x, position.y] = data;
+                _signalBus.Fire(new OnTileChanged { Position = position });
+            }
+            else
+            {
+                throw new System.ArgumentOutOfRangeException(nameof(position), "Position is out of grid bounds.");
+            }
+        }
     }
 }

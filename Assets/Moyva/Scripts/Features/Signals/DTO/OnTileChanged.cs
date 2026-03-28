@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Signals
         public string UnitId;       // "warrior-01_1"
         public string UnitTypeId;   // "warrior" для пошуку в SO
         public UnityEngine.Vector2Int Position;
+        public UnityEngine.GameObject UnitObject;
     }
 
     // Викликається, коли юніт перемістився

@@ -1,12 +1,8 @@
 {
-    "name": "Kruty1918.Moyva.Units",
-    "rootNamespace": "Kruty1918.Moyva.Units",
+    "name": "Kruty1918.Moyva.Animations",
+    "rootNamespace": "Kruty1918.Moyva.Animations",
     "references": [
-        "Zenject",
-        "Kruty1918.Moyva.Signals",
-        "Kruty1918.Moyva.Grid",
-        "Kruty1918.Moyva.Pathfinding",
-        "Kruty1918.Moyva.Animations"
+        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
