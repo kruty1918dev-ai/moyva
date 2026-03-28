@@ -1,6 +1,7 @@
 ﻿<Solution>
   <Project Path="Zenject.csproj" />
   <Project Path="Zenject-IntegrationTests-Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Animations.csproj" />
   <Project Path="Zenject-ReflectionBaking-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Interactions.API.csproj" />
   <Project Path="Zenject-UnitTests-Editor.csproj" />

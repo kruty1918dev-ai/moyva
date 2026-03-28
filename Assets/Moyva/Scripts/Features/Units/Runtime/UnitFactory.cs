@@ -40,6 +40,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             // 2. Спавн через Zenject для підтримки ін'єкцій у сам юніт
             GameObject unitObj = _container.InstantiatePrefab(config.Prefab, worldPos, Quaternion.identity, null);
             
+
             // 3. Генерація унікального ID: warior-01_12345
             if (!_typeCounters.ContainsKey(typeId)) _typeCounters[typeId] = 0;
             _typeCounters[typeId]++;
@@ -56,7 +57,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             { 
                 UnitId = finalUnitId, 
                 UnitTypeId = typeId, 
-                Position = gridPosition 
+                Position = gridPosition ,
+                UnitObject = unitObj // Додаємо посилання на GameObject юніта
             });
 
             return finalUnitId;
