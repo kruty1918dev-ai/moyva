@@ -1,8 +1,9 @@
+using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using Zenject;
 
-namespace Kruty1918.Moyva.Generator
+namespace Kruty1918.Moyva.Generator.Runtime
 {
     public class GeneratorInstaller : MonoInstaller
     {
@@ -10,11 +11,19 @@ namespace Kruty1918.Moyva.Generator
 
         public override void InstallBindings()
         {
-            TileGenerator tileGenerator = new TileGenerator(_registry, Container.Resolve<IGridService>(), Container);
+            IMapInstantiator tileGenerator = new MapVisualInstantiator(
+                _registry, 
+                Container.Resolve<IGridService>(), 
+                Container.Resolve<IMapDataGenerator>(), 
+                Container);
 
-            Container.Bind<TileGenerator>().FromInstance(tileGenerator).AsSingle();
+            Container.Bind<IMapInstantiator>().FromInstance(tileGenerator).AsSingle();
 
-            tileGenerator.GenerateTiles();
+            _ = tileGenerator.BuildWorldAsync().ContinueWith(t =>
+            {
+                if (t.Exception != null)
+                    Debug.LogError(t.Exception);
+            });
         }
     }
 }
