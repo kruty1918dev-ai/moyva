@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 1b2053a17e342694fb7b50429c891aae
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/ObjectsTiles_57.asset
+  uploadId: 780940

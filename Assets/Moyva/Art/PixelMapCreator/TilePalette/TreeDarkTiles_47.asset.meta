@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: cd8ec52b8494fd644b2ed54b60f772bf
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/TreeDarkTiles_47.asset
+  uploadId: 780940

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 704e17c35bd505844b4abf7e58c47a3f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/GroundTiles_151.asset
+  uploadId: 780940

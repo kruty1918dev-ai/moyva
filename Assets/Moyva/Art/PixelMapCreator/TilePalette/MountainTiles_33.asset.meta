@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 26456a96d1a8af1468f34e777a16c598
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/MountainTiles_33.asset
+  uploadId: 780940

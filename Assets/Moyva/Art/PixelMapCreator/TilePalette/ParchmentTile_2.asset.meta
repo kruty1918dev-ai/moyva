@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f056d2df9072ea84f86509d69fb6cd7f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/ParchmentTile_2.asset
+  uploadId: 780940

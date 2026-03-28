@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 446367f7f7a56b54f91e6f3c1b81cd79
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/TreeTiles_96.asset
+  uploadId: 780940

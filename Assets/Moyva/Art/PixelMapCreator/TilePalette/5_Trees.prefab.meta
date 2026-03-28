@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 32b4224293b34574083aa3850bd9100b
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/5_Trees.prefab
+  uploadId: 780940
