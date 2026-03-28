@@ -20,6 +20,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly ITileSettingsService _tileSettings;
         private readonly IGridService _gridService;
         private readonly SignalBus _signalBus;
+        private readonly IUnitClassConfig _unitClassConfig;
 
         private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 
@@ -29,7 +30,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             IMovementAnimationService animationService,
             ITileSettingsService tileSettings,
             IGridService gridService,
-            SignalBus signalBus)
+            SignalBus signalBus,
+            IUnitClassConfig unitClassConfig) // Додаємо залежність від конфігів юнітів, якщо потрібно
         {
             _unitService = unitService;
             _pathfinder = pathfinder;
@@ -37,6 +39,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _tileSettings = tileSettings;
             _gridService = gridService;
             _signalBus = signalBus;
+            _unitClassConfig = unitClassConfig;
         }
 
         public void Initialize()
@@ -47,7 +50,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         public void Dispose()
         {
             _signalBus.Unsubscribe<InterruptMovementSignal>(OnInterruptRequested);
-            
+
             foreach (var cts in _activeMovements.Values)
             {
                 cts.Cancel();
@@ -60,7 +63,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         {
             if (_activeMovements.TryGetValue(signal.UnitId, out var cts))
             {
-                cts.Cancel(); 
+                cts.Cancel();
             }
         }
 
@@ -68,6 +71,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         {
             if (string.IsNullOrEmpty(unitId)) return;
 
+            // Скасування старого руху того самого юніта
             if (_activeMovements.TryGetValue(unitId, out var oldCts))
             {
                 oldCts.Cancel();
@@ -79,15 +83,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             var path = _pathfinder.FindPath(startPosition, targetPosition);
             if (path == null || path.Count <= 1) return;
 
-            // --- ПЕРЕВІРКА СТАМІНИ ПЕРЕД ПОЧАТКОМ ---
-            // Перевіряємо вартість першого кроку (path[0] - це поточна позиція, path[1] - перший крок)
-            if (!CanMakeFirstStep(unitId, path[1]))
-            {
-                Debug.Log($"[UnitMovement] Юніт {unitId} занадто втомлений, щоб почати рух.");
-                return; // Навіть не створюємо CTS і не запускаємо анімацію
-            }
-            // ----------------------------------------
-
             var unitObj = _unitService.GetUnitObject(unitId);
             if (unitObj == null) return;
 
@@ -98,18 +93,27 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             try
             {
-                var settings = PathAnimationSettings.Default;
+                var settings = _unitClassConfig.GetConfig(unitId)?.AnimationSettings ?? PathAnimationSettings.Default;
+
+                // --- НОВА ЛОГІКА ПЕРЕВІРКИ КОЖНОГО КРОКУ ---
+                settings.CanPerformStep = (stepPos) =>
+                {
+                    // Використовуємо твою готову логіку перевірки стаміни
+                    return CanMakeStep(unitId, stepPos);
+                };
+                // -------------------------------------------
+
                 settings.OnStepCompleted = (stepPos) => OnStepCompleted(unitId, stepPos);
 
                 await _animationService.MoveAlongPathAsync(unitObj.transform, path, settings, linkedCts.Token);
             }
             catch (OperationCanceledException)
             {
-                Debug.Log($"[UnitMovement] Рух юніта {unitId} було перервано.");
+                Debug.Log($"[UnitMovement] Рух юніта {unitId} перервано (стаміна або команда).");
             }
             catch (Exception e)
             {
-                Debug.LogError($"[UnitMovement] Помилка: {e.Message}");
+                Debug.LogError($"[UnitMovement] Помилка руху: {e.Message}");
             }
             finally
             {
@@ -122,15 +126,17 @@ namespace Kruty1918.Moyva.Units.Runtime
         }
 
         /// <summary>
-        /// Перевіряє, чи вистачить стаміни на перший крок маршруту.
+        /// Універсальна перевірка: чи може юніт наступити на цей тайл.
         /// </summary>
-        private bool CanMakeFirstStep(string unitId, Vector2Int firstStepPos)
+        private bool CanMakeStep(string unitId, Vector2Int stepPos)
         {
             float currentStamina = _unitService.GetStamina(unitId);
-            
-            if (_gridService.TryGetTileData(firstStepPos, out var tileData))
+
+            if (_gridService.TryGetTileData(stepPos, out var tileData))
             {
+                // Розраховуємо вартість (тут можна додати коефіцієнт діагоналі, якщо треба)
                 float cost = _tileSettings.GetTileWeight(tileData.TileTypeId);
+                Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: поточна стаміна = {currentStamina}, вартість кроку = {cost}");    
                 return currentStamina >= cost;
             }
 
@@ -140,7 +146,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private void OnStepCompleted(string unitId, Vector2Int stepPos)
         {
             if (!_gridService.TryGetTileData(stepPos, out var tileData)) return;
-            
+
             float stepCost = _tileSettings.GetTileWeight(tileData.TileTypeId);
 
             // Тут ми просто стріляємо сигналом. 
