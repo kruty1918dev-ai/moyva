@@ -30,6 +30,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Container.Bind<IBiomeResolver>().To<BiomeResolver>().AsSingle();
             Container.Bind<IMapDataGenerator>().To<MapDataGenerator>().AsSingle();
             Container.Bind<IMapFeatureGenerator>().To<RiverFeatureGenerator>().AsTransient();
+            Container.Bind<IMapFeatureGenerator>().To<WaterPostProcessor>().AsTransient();
 
             Container.BindInterfacesTo<MapVisualInstantiator>().AsSingle();
 

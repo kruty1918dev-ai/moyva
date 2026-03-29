@@ -19,18 +19,42 @@ MonoBehaviour:
   - _id: water
     _movementCost: 3
     _visualPrefab: {fileID: 6734315423058351568, guid: 1d32aeffc2c9ab6c8a53853a9910a1f3, type: 3}
+  - _id: grass-water-right
+    _movementCost: 3
+    _visualPrefab: {fileID: 949442310665241847, guid: af86cdd70cc081cb4a4031ed18df5030, type: 3}
   - _id: grass-water-left
     _movementCost: 3
     _visualPrefab: {fileID: 6734315423058351568, guid: fc338b01645acb16ebc9065a412671d4, type: 3}
-  - _id: grass-water-left-down
+  - _id: grass-water-bottom
+    _movementCost: 3
+    _visualPrefab: {fileID: 4421351208318634180, guid: 7d6f18580dee77bdabb44ef61f2fcde5, type: 3}
+  - _id: grass-water-top
+    _movementCost: 3
+    _visualPrefab: {fileID: 5527439241181368509, guid: a42ac18776144a02682692c885dc449e, type: 3}
+  - _id: grass-water-bottom-right
+    _movementCost: 3
+    _visualPrefab: {fileID: 1532975592067675626, guid: d54e41e45af525706be7e8d28ccbe613, type: 3}
+  - _id: grass-water-bottom-left
+    _movementCost: 3
+    _visualPrefab: {fileID: 250922695360889972, guid: 6a99bd015b0a3d4eb8e9816ceadf650e, type: 3}
+  - _id: grass-water-top-left
     _movementCost: 3
     _visualPrefab: {fileID: 6734315423058351568, guid: bc41c1c8e724a09d0b5ebf3beee8853c, type: 3}
-  - _id: grass-water-down-and-right
+  - _id: grass-water-top-right
+    _movementCost: 3
+    _visualPrefab: {fileID: 262441894832523651, guid: 0871283034445041d8222307af84c533, type: 3}
+  - _id: grass-water-inner-top-left
     _movementCost: 3
     _visualPrefab: {fileID: 6734315423058351568, guid: fce285d3eb6217888bff8aaf02f588af, type: 3}
-  - _id: river-corner-top-right-01
+  - _id: grass-water-inner-top-right
     _movementCost: 3
-    _visualPrefab: {fileID: 6143005824625985739, guid: 9c0784dda9042e8ca88983d71512bd4e, type: 3}
+    _visualPrefab: {fileID: 5056234437187477251, guid: 23a3940263573c5eb8b59360ab687d6c, type: 3}
+  - _id: grass-water-inner-bottom-left
+    _movementCost: 3
+    _visualPrefab: {fileID: 2036493428121953006, guid: a527d13b1e82462179d2bf7aa2968e4d, type: 3}
+  - _id: grass-water-inner-bottom-right
+    _movementCost: 3
+    _visualPrefab: {fileID: 3683612289835400984, guid: 75140b0290369f6968721a14de185afa, type: 3}
   - _id: river-horizontal-01
     _movementCost: 3
     _visualPrefab: {fileID: 310738227199521686, guid: a6767524eb55b7cc096a93177c3c2e18, type: 3}
@@ -67,3 +91,6 @@ MonoBehaviour:
   - _id: river-corner-down-right
     _movementCost: 3
     _visualPrefab: {fileID: 2932410949585971521, guid: 5dbd9220eb528e154a92ec3bac7bbd15, type: 3}
+  - _id: river-corner-top-right-01
+    _movementCost: 3
+    _visualPrefab: {fileID: 6143005824625985739, guid: 9c0784dda9042e8ca88983d71512bd4e, type: 3}

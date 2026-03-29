@@ -12,4 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbeb45396a71009c3b6de9cd2a03e56e, type: 3}
   m_Name: DataBiomesSettings
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.DataBiomesSettings
-  Biomes: []
+  Biomes:
+  - TileID: water
+    BiomeName: waters
+    MinHeight: 0.6
+    MaxHeight: 0.75
+    MinMoisture: 0.4
+    MaxMoisture: 1
+  DefaultTileID: grass
+  MoistureScale: 0

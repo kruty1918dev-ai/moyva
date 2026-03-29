@@ -13,6 +13,14 @@ MonoBehaviour:
   m_Name: WFCDataSettings
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.WFCDataSettings
   TileRules:
+  - TileID: grass-water-right
+    TileCentralID: grass
+    Constraints:
+    - Direction: 6
+      AllowedNeighbors:
+      - water
+    Priority: 2
+    MatchThreshold: 1
   - TileID: grass-water-left
     TileCentralID: grass
     Constraints:
@@ -20,30 +28,196 @@ MonoBehaviour:
       AllowedNeighbors:
       - water
     Priority: 1
-    MatchThreshold: 0.5
-  - TileID: grass-water-left-down
+    MatchThreshold: 1
+  - TileID: grass-water-bottom
+    TileCentralID: grass
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - water
+    Priority: 2
+    MatchThreshold: 1
+  - TileID: grass-water-top
+    TileCentralID: grass
+    Constraints:
+    - Direction: 4
+      AllowedNeighbors:
+      - water
+    Priority: 2
+    MatchThreshold: 1
+  - TileID: grass-water-top-left
+    TileCentralID: grass
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - grass
+    - Direction: 4
+      AllowedNeighbors:
+      - grass
+    - Direction: 6
+      AllowedNeighbors:
+      - grass
+    - Direction: 2
+      AllowedNeighbors:
+      - grass
+    - Direction: 5
+      AllowedNeighbors:
+      - grass
+    - Direction: 3
+      AllowedNeighbors:
+      - water
+    - Direction: 1
+      AllowedNeighbors:
+      - grass
+    - Direction: 7
+      AllowedNeighbors:
+      - grass
+    Priority: 2
+    MatchThreshold: 1
+  - TileID: grass-water-top-right
+    TileCentralID: grass
+    Constraints:
+    - Direction: 5
+      AllowedNeighbors:
+      - water
+    - Direction: 6
+      AllowedNeighbors:
+      - grass
+    - Direction: 4
+      AllowedNeighbors:
+      - grass
+    - Direction: 0
+      AllowedNeighbors:
+      - grass
+    - Direction: 1
+      AllowedNeighbors:
+      - grass
+    - Direction: 2
+      AllowedNeighbors:
+      - grass
+    - Direction: 3
+      AllowedNeighbors:
+      - grass
+    - Direction: 7
+      AllowedNeighbors:
+      - grass
+    Priority: 2
+    MatchThreshold: 1
+  - TileID: grass-water-bottom-left
+    TileCentralID: grass
+    Constraints:
+    - Direction: 1
+      AllowedNeighbors:
+      - water
+    - Direction: 0
+      AllowedNeighbors:
+      - grass
+    - Direction: 6
+      AllowedNeighbors:
+      - grass
+    - Direction: 4
+      AllowedNeighbors:
+      - grass
+    - Direction: 2
+      AllowedNeighbors:
+      - grass
+    Priority: 2
+    MatchThreshold: 1
+  - TileID: grass-water-inner-bottom-right
+    TileCentralID: grass
+    Constraints:
+    - Direction: 7
+      AllowedNeighbors:
+      - water
+    - Direction: 0
+      AllowedNeighbors:
+      - water
+    - Direction: 6
+      AllowedNeighbors:
+      - water
+    - Direction: 3
+      AllowedNeighbors:
+      - grass
+    Priority: 100
+    MatchThreshold: 1
+  - TileID: grass-water-bottom-right
+    TileCentralID: grass
+    Constraints:
+    - Direction: 7
+      AllowedNeighbors:
+      - water
+    - Direction: 4
+      AllowedNeighbors:
+      - grass
+    - Direction: 0
+      AllowedNeighbors:
+      - grass
+    - Direction: 6
+      AllowedNeighbors:
+      - grass
+    - Direction: 2
+      AllowedNeighbors:
+      - grass
+    - Direction: 3
+      AllowedNeighbors:
+      - grass
+    - Direction: 1
+      AllowedNeighbors:
+      - grass
+    - Direction: 5
+      AllowedNeighbors:
+      - grass
+    Priority: 2
+    MatchThreshold: 1
+  - TileID: grass-water-inner-top-left
     TileCentralID: grass
     Constraints:
     - Direction: 3
       AllowedNeighbors:
       - water
+    - Direction: 7
+      AllowedNeighbors:
+      - grass
     - Direction: 2
       AllowedNeighbors:
-      - grass
+      - water
     - Direction: 4
       AllowedNeighbors:
-      - grass
-    Priority: 2
+      - water
+    Priority: 100
     MatchThreshold: 1
-  - TileID: grass-water-down-and-right
+  - TileID: grass-water-inner-top-right
     TileCentralID: grass
     Constraints:
-    - Direction: 2
+    - Direction: 5
+      AllowedNeighbors:
+      - water
+    - Direction: 1
+      AllowedNeighbors:
+      - grass
+    - Direction: 6
       AllowedNeighbors:
       - water
     - Direction: 4
       AllowedNeighbors:
       - water
-    Priority: 2
+    Priority: 100
+    MatchThreshold: 1
+  - TileID: grass-water-inner-bottom-left
+    TileCentralID: grass
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - water
+    - Direction: 2
+      AllowedNeighbors:
+      - water
+    - Direction: 1
+      AllowedNeighbors:
+      - water
+    - Direction: 5
+      AllowedNeighbors:
+      - grass
+    Priority: 100
     MatchThreshold: 1
   PassCount: 1
