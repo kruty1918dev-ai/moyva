@@ -12,5 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d2b111f62ff20112e9186c1904a8c236, type: 3}
   m_Name: GenerationRules
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.GenerationRules
-  GenerateRivers: 0
+  GenerateRivers: 1
   GenerateBiomes: 0
+  ApplyWFC: 1

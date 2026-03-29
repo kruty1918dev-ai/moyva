@@ -9,6 +9,6 @@ namespace Kruty1918.Moyva.Generator.API
         /// <summary>
         /// Головний метод, який запускає весь конвеєр і повертає готову віртуальну карту.
         /// </summary>
-        IEnumerator GenerateMapDataRoutine(int width, int height, Action<string[,]> onComplete);
+        IEnumerator GenerateMapDataRoutine(int width, int height, Action<string[,], string[,]> onComplete);
     }
 }

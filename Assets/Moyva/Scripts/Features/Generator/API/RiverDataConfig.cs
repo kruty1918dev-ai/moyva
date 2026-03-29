@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.API
@@ -5,15 +6,24 @@ namespace Kruty1918.Moyva.Generator.API
     [CreateAssetMenu(menuName = "Moyva/Generator/RiverDataConfig", fileName = "RiverDataConfig")]
     public class RiverDataConfig : ScriptableObject
     {
-        [Header("River Appearance")]
-        public RiverWidthData[] WidthLayers;
-        public int RiversCount = 2;
+        [Header("River Tile Variations")]
+        public string[] VerticalTiles;
+        public string[] HorizontalTiles;
+        public string[] CornerTopRightTiles;
+        public string[] CornerTopLeftTiles;
+        public string[] CornerBottomRightTiles;
+        public string[] CornerBottomLeftTiles;
 
-        [Header("Generation Constraints")]
-        [Tooltip("Річка може початися, якщо висота тайла в цьому діапазоні")]
-        public Vector2 StartHeightRange = new Vector2(0.7f, 1.0f);
-
-        [Tooltip("Річка може закінчитися, якщо висота тайла в цьому діапазоні")]
+        [Header("Pathfinding Weights")]
+        public float MountainWeight = 50f;
+        public float ForestWeight = 10f;
+        public float PlainWeight = 1f;
         public Vector2 EndHeightRange = new Vector2(0.0f, 0.3f);
+        public Vector2 StartHeightRange = new Vector2(0.6f, 1.0f);
+
+        public int RiversCount = 1;
+        
+        [Header("Boundary Settings")]
+        public int MinEdgeDistance = 20;
     }
 }

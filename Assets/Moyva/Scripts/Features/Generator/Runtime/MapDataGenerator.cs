@@ -37,8 +37,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         // Інтерфейс тепер має повертати IEnumerator або використовувати Callbacks
-        public IEnumerator GenerateMapDataRoutine(int width, int height, Action<string[,]> onComplete)
+        public IEnumerator GenerateMapDataRoutine(int width, int height, Action<string[,], string[,]> onComplete)
         {
+            string[,] objectMap = new string[width, height]; // Додано для зберігання об'єктів (наприклад, річок)
             float[,] heightMap = _noiseProvider.GenerateNoiseMap(_noiseSettings, width, height);
             // Даємо Unity "дихнути" після генерації шуму
             yield return null;
@@ -58,7 +59,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 foreach (var featureGen in _featureGenerators)
                 {
                     // Тут ми можемо використовувати UnityEngine.Random!
-                    yield return featureGen.ApplyFeaturesRoutine(virtualMap, heightMap, width, height);
+                    yield return featureGen.ApplyFeaturesRoutine(virtualMap, objectMap, heightMap, width, height);
 
                     // Якщо генерація фічі довга, можна "скидати" кадр всередині циклу
                     yield return null;
@@ -71,7 +72,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 yield return null;
             }
 
-            onComplete?.Invoke(virtualMap);
+            onComplete?.Invoke(virtualMap, objectMap);
         }
     }
 }

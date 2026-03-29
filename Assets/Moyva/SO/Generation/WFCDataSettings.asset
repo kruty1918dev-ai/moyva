@@ -24,9 +24,15 @@ MonoBehaviour:
   - TileID: grass-water-left-down
     TileCentralID: grass
     Constraints:
-    - Direction: 5
+    - Direction: 3
       AllowedNeighbors:
       - water
+    - Direction: 2
+      AllowedNeighbors:
+      - grass
+    - Direction: 4
+      AllowedNeighbors:
+      - grass
     Priority: 2
     MatchThreshold: 1
   - TileID: grass-water-down-and-right

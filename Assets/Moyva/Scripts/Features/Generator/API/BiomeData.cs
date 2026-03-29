@@ -8,13 +8,4 @@ namespace Kruty1918.Moyva.Generator.API
         public string TileID;
         public float HeightThreshold;
     }
-
-    [Serializable]
-    public struct RiverWidthData
-    {
-        public string TileID; // Наприклад "Sand", "Water_Shallow", "Water_Deep"
-        public float Radius;  // Радіус пензля
-
-        public string[] ObstacleTileIDs; // Ідентифікатори тайлів, які річка може прорізати (наприклад, "Grass", "Forest")
-    }
 }

@@ -28,3 +28,42 @@ MonoBehaviour:
   - _id: grass-water-down-and-right
     _movementCost: 3
     _visualPrefab: {fileID: 6734315423058351568, guid: fce285d3eb6217888bff8aaf02f588af, type: 3}
+  - _id: river-corner-top-right-01
+    _movementCost: 3
+    _visualPrefab: {fileID: 6143005824625985739, guid: 9c0784dda9042e8ca88983d71512bd4e, type: 3}
+  - _id: river-horizontal-01
+    _movementCost: 3
+    _visualPrefab: {fileID: 310738227199521686, guid: a6767524eb55b7cc096a93177c3c2e18, type: 3}
+  - _id: river-horizontal-02
+    _movementCost: 3
+    _visualPrefab: {fileID: 7132266047868219472, guid: c1d4b9180f3285052a3fc24bff2471f9, type: 3}
+  - _id: river-corner-top-left
+    _movementCost: 3
+    _visualPrefab: {fileID: 8784756828996590582, guid: 66eb6df974cee3589a612be683a074d8, type: 3}
+  - _id: river-Horizontal-donw-corner-vertiacal
+    _movementCost: 3
+    _visualPrefab: {fileID: 3684343559904353555, guid: 79a111c7b2f23f89f8a56c86d7f87333, type: 3}
+  - _id: river-vertical-01
+    _movementCost: 3
+    _visualPrefab: {fileID: 7945933892825329453, guid: c31b517eb28d4a860a3b346080afd0be, type: 3}
+  - _id: river-vertical-02
+    _movementCost: 3
+    _visualPrefab: {fileID: 2888476278023598349, guid: 490a5a6d498d7bbaa8a42a271fd62fba, type: 3}
+  - _id: river-vertical-03
+    _movementCost: 3
+    _visualPrefab: {fileID: 8524119552358672184, guid: 2482e0fdd845da81f88a6d72970b50e2, type: 3}
+  - _id: river-vertical-04
+    _movementCost: 3
+    _visualPrefab: {fileID: 356821353113382220, guid: 77a52a7130fcaa6b58f4af6f0076f78a, type: 3}
+  - _id: river-horizontal-03
+    _movementCost: 3
+    _visualPrefab: {fileID: 6044803064817680461, guid: b057b09c014b71cccba1e9d19647acfc, type: 3}
+  - _id: river-horizontal-04
+    _movementCost: 3
+    _visualPrefab: {fileID: 1976594955373497027, guid: f38dad052da425659b81d9556898d229, type: 3}
+  - _id: river-corner-down-left
+    _movementCost: 3
+    _visualPrefab: {fileID: 3474852614485008946, guid: 4810e78cde72a4a43851dabd806c6c8b, type: 3}
+  - _id: river-corner-down-right
+    _movementCost: 3
+    _visualPrefab: {fileID: 2932410949585971521, guid: 5dbd9220eb528e154a92ec3bac7bbd15, type: 3}
