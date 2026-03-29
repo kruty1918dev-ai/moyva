@@ -1,7 +1,6 @@
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Kruty1918.Moyva.Grid.API;
-using Kruty1918.Moyva.Generator.API; // Додано для IMapDataGenerator
+using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Visuals;
 using UnityEngine;
 using Zenject;
@@ -17,12 +16,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly DiContainer _container;
 
         private Transform _tilesRoot;
+        private Transform _objectsRoot; // Окремий корінь для об'єктів (річок тощо)
         private readonly Dictionary<string, TileTypeDefinition> _definitionsCache = new();
 
         public MapVisualInstantiator(
             TileRegistrySO tileRegistry,
             IGridService gridService,
-            IMapDataGenerator mapDataGenerator, // Додано в конструктор
+            IMapDataGenerator mapDataGenerator,
             DiContainer container)
         {
             _tileRegistry = tileRegistry;
@@ -33,7 +33,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void Initialize()
         {
-            // Кешуємо дефініції для швидкого пошуку за ID
             foreach (var def in _tileRegistry.Definitions)
             {
                 _definitionsCache[def.Id] = def;
@@ -42,49 +41,66 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public IEnumerator BuildWorldRoutine()
         {
-            // 1. Отримуємо матрицю ідентифікаторів з конвеєра (Шум -> Біоми -> Фічі)
-            string[,] virtualMap = null;
+            string[,] virtualBiomeMap = null;
+            string[,] virtualObjectMap = null;
+
+            // 1. Отримуємо дві карти з генератора через OnComplete
             yield return _mapDataGenerator.GenerateMapDataRoutine(
                 _gridService.GridWidth,
                 _gridService.GridHeight,
-                result => virtualMap = result);
+                (biomes, objects) => 
+                {
+                    virtualBiomeMap = biomes;
+                    virtualObjectMap = objects;
+                });
 
-            if (_tilesRoot == null)
-                _tilesRoot = new GameObject("TilesRoot").transform;
+            if (_tilesRoot == null) _tilesRoot = new GameObject("TilesRoot").transform;
+            if (_objectsRoot == null) _objectsRoot = new GameObject("ObjectsRoot").transform;
 
-            // 2. Створюємо візуальні об'єкти на основі отриманих даних
+            // 2. Проходимо по сітці
             for (int x = 0; x < _gridService.GridWidth; x++)
             {
                 for (int y = 0; y < _gridService.GridHeight; y++)
                 {
                     Vector2Int pos = new Vector2Int(x, y);
-                    string tileId = virtualMap[x, y];
 
-                    CreateTileView(pos, tileId);
+                    // Спавнимо основний тайл біому (трава, пісок тощо)
+                    string biomeId = virtualBiomeMap[x, y];
+                    if (!string.IsNullOrEmpty(biomeId))
+                    {
+                        CreateTileView(pos, biomeId, _tilesRoot, -1); // LayerIndex -1 для фону
+                    }
+
+                    // Спавнимо об'єкт поверх (якщо він є в цій клітинці)
+                    string objectId = virtualObjectMap[x, y];
+                    if (!string.IsNullOrEmpty(objectId))
+                    {
+                        // Об'єкти спавнимо в _objectsRoot з трохи меншим Z, щоб вони були зверху
+                        CreateTileView(pos, objectId, _objectsRoot, 0); 
+                    }
                 }
             }
         }
 
-        private void CreateTileView(Vector2Int position, string tileId)
+        private void CreateTileView(Vector2Int position, string tileId, Transform root, int sortingOrder)
         {
-            // Шукаємо конфігурацію тайла за його ID
             if (!_definitionsCache.TryGetValue(tileId, out var tileType))
             {
-                Debug.LogError($"[TileGenerator] Не вдалося знайти TileTypeDefinition для ID: {tileId}");
+                Debug.LogError($"[MapInstantiator] Не знайдено TileTypeDefinition для ID: {tileId}");
                 return;
             }
 
-            Vector3 worldPos = new Vector3(position.x, position.y, 0);
+            // Використовуємо sortingOrder для Z, щоб річка точно була над травою
+            Vector3 worldPos = new Vector3(position.x, position.y, sortingOrder * 0.1f);
             var tilePrefab = tileType.VisualPrefab;
 
-            // Створюємо інстанс через Zenject (ін'єкція в TileView відбудеться автоматично)
             var instance = _container.InstantiatePrefab(
                 tilePrefab,
                 worldPos,
                 Quaternion.identity,
-                _tilesRoot);
+                root);
 
-            instance.name = $"Tile_{tileId}_{position.x}_{position.y}";
+            instance.name = $"{(sortingOrder < 0 ? "Tile" : "Obj")}_{tileId}_{position.x}_{position.y}";
 
             var tileView = instance.GetComponent<TileView>();
             if (tileView != null)
@@ -92,9 +108,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 tileView.Setup(position);
             }
 
-            // Оновлюємо дані в GridService, щоб логіка (Pathfinding тощо) знала, що тут лежить
+            // Оновлюємо дані в GridService
+            // Якщо це об'єкт (річка), він може перезаписувати властивості прохідності клітинки
             var tileData = _gridService.GetTileData(position);
-            tileData.TileTypeId = tileId;
+            
+            // Логіка: якщо ми спавнимо об'єкт, він стає пріоритетним типом для цієї клітинки в логіці
+            tileData.TileTypeId = tileId; 
             _gridService.SetTileData(position, tileData);
         }
     }

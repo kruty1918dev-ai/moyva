@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Kruty1918.Moyva.Generator.API;
 using UnityEngine;
 
@@ -8,142 +7,80 @@ namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal class RiverFeatureGenerator : IMapFeatureGenerator
     {
-        private readonly RiverDataConfig _riverConfig;
+        private readonly RiverDataConfig _config;
         private readonly IRiverPathfinder _pathfinder;
 
-        public RiverFeatureGenerator(RiverDataConfig riverConfig, IRiverPathfinder pathfinder)
+        public RiverFeatureGenerator(RiverDataConfig config, IRiverPathfinder pathfinder)
         {
-            _riverConfig = riverConfig;
+            _config = config;
             _pathfinder = pathfinder;
         }
 
-        public IEnumerator ApplyFeaturesRoutine(string[,] biomeMap, float[,] heightMap, int width, int height)
+        public IEnumerator ApplyFeaturesRoutine(string[,] biomes, string[,] objects, float[,] heights, int w, int h)
         {
-            var potentialStarts = GetPointsInRange(heightMap, width, height, _riverConfig.StartHeightRange);
-            var potentialEnds = GetPointsInRange(heightMap, width, height, _riverConfig.EndHeightRange);
+            // 1. Шукаємо НАЙВИЩУ точку ТІЛЬКИ на КРАЮ (Старт)
+            Vector2Int start = new(0, 0);
+            float maxEdgeH = -1f;
 
-            if (potentialStarts.Count == 0 || potentialEnds.Count == 0)
+            for (int x = 0; x < w; x++) { CheckEdge(x, 0); CheckEdge(x, h - 1); }
+            for (int y = 1; y < h - 1; y++) { CheckEdge(0, y); CheckEdge(w - 1, y); }
+
+            void CheckEdge(int x, int y)
             {
-                Debug.LogWarning("[RiverGenerator] Не знайдено точок у заданих діапазонах висот.");
-                yield break;
+                if (heights[x, y] > maxEdgeH) { maxEdgeH = heights[x, y]; start = new(x, y); }
             }
 
-            for (int i = 0; i < _riverConfig.RiversCount; i++)
+            // 2. Шукаємо НАЙНИЖЧУ точку на ВСІЙ КАРТІ (Фініш)
+            Vector2Int end = new(0, 0);
+            float minTotalH = 2f;
+            for (int x = 0; x < w; x++)
             {
-                Vector2Int startPoint = potentialStarts[Random.Range(0, potentialStarts.Count)];
-                Vector2Int endPoint = potentialEnds[Random.Range(0, potentialEnds.Count)];
-
-                yield return null;
-
-                List<Vector2Int> riverPath = _pathfinder.FindRiverPath(startPoint, endPoint, heightMap, width, height);
-
-                if (riverPath != null && riverPath.Count > 0)
+                for (int y = 0; y < h; y++)
                 {
-                    ApplyRiverBrush(biomeMap, width, height, riverPath);
-                }
-
-                yield return null;
-            }
-        }
-
-        private void ApplyRiverBrush(string[,] biomeMap, int mapWidth, int mapHeight, List<Vector2Int> path)
-        {
-            // 1. Сортуємо від найбільшого до найменшого для черговості малювання (Берег -> Русло)
-            var sortedLayers = _riverConfig.WidthLayers.OrderByDescending(l => l.Radius).ToList();
-
-            // 2. Створюємо словник пріоритетів: 
-            // Чим менший радіус (вужчий шар), тим вищий пріоритет.
-            // Наприклад: Sand (R=5) -> Priority 0, Water (R=1) -> Priority 2.
-            Dictionary<string, int> riverTilePriority = new Dictionary<string, int>();
-            for (int i = 0; i < sortedLayers.Count; i++)
-            {
-                // Оскільки список відсортований за спаданням радіусу (index 0 - найбільший),
-                // ми просто даємо пріоритет рівний індексу.
-                // Тоді останній (найвужчий) шар матиме найбільший індекс (найвищий пріоритет).
-                riverTilePriority[sortedLayers[i].TileID] = i;
-            }
-
-            // Кешуємо контекст до початку роботи річки
-            Dictionary<Vector2Int, string> originalContext = path.ToDictionary(p => p, p => biomeMap[p.x, p.y]);
-
-            foreach (var layer in sortedLayers)
-            {
-                int radius = Mathf.CeilToInt(layer.Radius);
-                float sqrRadius = layer.Radius * layer.Radius;
-                int currentLayerPriority = riverTilePriority[layer.TileID];
-
-                foreach (var point in path)
-                {
-                    string centerTile = originalContext[point];
-
-                    // Якщо центр шляху — перешкода для цього шару, пропускаємо цей сегмент
-                    if (IsTileInList(centerTile, layer.ObstacleTileIDs)) continue;
-
-                    for (int x = -radius; x <= radius; x++)
-                    {
-                        for (int y = -radius; y <= radius; y++)
-                        {
-                            int tx = point.x + x;
-                            int ty = point.y + y;
-
-                            if (tx < 0 || tx >= mapWidth || ty < 0 || ty >= mapHeight) continue;
-
-                            if (x * x + y * y <= sqrRadius)
-                            {
-                                string tileOnMap = biomeMap[tx, ty];
-
-                                // ЛОГІКА ПРІОРИТЕТІВ:
-                                if (riverTilePriority.TryGetValue(tileOnMap, out int existingPriority))
-                                {
-                                    // Якщо на мапі вже є річковий тайл, і його пріоритет ВИЩИЙ за наш
-                                    // (наприклад, там вже вода (2), а ми хочемо покласти пісок (0)),
-                                    // то ми НЕ перекриваємо його.
-                                    if (existingPriority > currentLayerPriority)
-                                    {
-                                        continue;
-                                    }
-                                }
-                                else
-                                {
-                                    // Якщо це звичайний тайл мапи (трава, камінь), 
-                                    // перевіряємо, чи він не є перешкодою.
-                                    if (IsTileInList(tileOnMap, layer.ObstacleTileIDs))
-                                    {
-                                        continue;
-                                    }
-                                }
-
-                                // Малюємо: або поверх слабшого річкового тайлу, або поверх дозволеного біому
-                                biomeMap[tx, ty] = layer.TileID;
-                            }
-                        }
-                    }
+                    if (heights[x, y] < minTotalH) { minTotalH = heights[x, y]; end = new(x, y); }
                 }
             }
-        }
 
-        private bool IsTileInList(string tileId, string[] list)
-        {
-            if (list == null || string.IsNullOrEmpty(tileId)) return false;
-            for (int i = 0; i < list.Length; i++)
-            {
-                if (list[i] == tileId) return true;
-            }
-            return false;
-        }
+            // 3. Запускаємо шлях
+            var path = _pathfinder.FindRiverPath(start, end, biomes, heights, w, h, _config);
 
-        private List<Vector2Int> GetPointsInRange(float[,] heightMap, int width, int height, Vector2 range)
-        {
-            List<Vector2Int> points = new List<Vector2Int>();
-            for (int x = 0; x < width; x++)
+            if (path != null)
             {
-                for (int y = 0; y < height; y++)
+                for (int i = 0; i < path.Count; i++)
                 {
-                    float h = heightMap[x, y];
-                    if (h >= range.x && h <= range.y) points.Add(new Vector2Int(x, y));
+                    Vector2Int curr = path[i];
+
+                    // Отримуємо назву біому в нижньому регістрі для надійної перевірки
+                    string currentBiome = biomes[curr.x, curr.y].ToLower();
+
+                    // Перевірка: не малюємо річку на воді або на переході трава-вода
+                    if (currentBiome == "water" || currentBiome == "grass-water")
+                        continue;
+
+                    Vector2Int? prev = i > 0 ? path[i - 1] : null;
+                    Vector2Int? next = i < path.Count - 1 ? path[i + 1] : null;
+
+                    objects[curr.x, curr.y] = DetermineTile(prev, curr, next);
                 }
             }
-            return points;
+            yield return null;
+        }
+
+        private string DetermineTile(Vector2Int? p, Vector2Int c, Vector2Int? n)
+        {
+            // d1 - звідки прийшла, d2 - куди йде
+            Vector2Int d1 = p.HasValue ? (p.Value - c) : (c - (n ?? c + Vector2Int.up));
+            Vector2Int d2 = n.HasValue ? (n.Value - c) : (c - (p ?? c + Vector2Int.down));
+
+            if (d1.x == 0 && d2.x == 0) return _config.VerticalTiles[0];
+            if (d1.y == 0 && d2.y == 0) return _config.HorizontalTiles[0];
+
+            if ((d1.y == -1 && d2.x == 1) || (d1.x == 1 && d2.y == -1)) return _config.CornerBottomRightTiles[0];
+            if ((d1.y == -1 && d2.x == -1) || (d1.x == -1 && d2.y == -1)) return _config.CornerBottomLeftTiles[0];
+            if ((d1.y == 1 && d2.x == 1) || (d1.x == 1 && d2.y == 1)) return _config.CornerTopRightTiles[0];
+            if ((d1.y == 1 && d2.x == -1) || (d1.x == -1 && d2.y == 1)) return _config.CornerTopLeftTiles[0];
+
+            return _config.HorizontalTiles[0];
         }
     }
 }

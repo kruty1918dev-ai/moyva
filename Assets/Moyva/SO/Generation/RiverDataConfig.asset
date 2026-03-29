@@ -12,33 +12,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a8bb1ad1b8dbe618b22475d47ed8511, type: 3}
   m_Name: RiverDataConfig
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.RiverDataConfig
-  WidthLayers:
-  - TileID: sand
-    Radius: 1.8
-    ObstacleTileIDs:
-    - sand
-    - coast-water
-    - water
-    - wet-sand
-    - deep-water
-    - stone
-    - dark-stone
-  - TileID: coast-water
-    Radius: 1.2
-    ObstacleTileIDs:
-    - coast-water
-    - water
-    - wet-sand
-    - deep-water
-    - stone
-    - dark-stone
-  - TileID: water
-    Radius: 0.9
-    ObstacleTileIDs:
-    - coast-water
-    - water
-    - wet-sand
-    - deep-water
-  RiversCount: 2
-  StartHeightRange: {x: 0.7, y: 1}
+  VerticalTiles:
+  - river-vertical-01
+  - river-vertical-02
+  - river-vertical-03
+  - river-vertical-04
+  HorizontalTiles:
+  - river-horizontal-01
+  - river-horizontal-02
+  - river-horizontal-03
+  - river-horizontal-04
+  CornerTopRightTiles:
+  - river-corner-top-right-01
+  CornerTopLeftTiles:
+  - river-corner-top-left
+  CornerBottomRightTiles:
+  - river-corner-down-right
+  CornerBottomLeftTiles:
+  - river-corner-down-left
+  MountainWeight: 50
+  ForestWeight: 10
+  PlainWeight: 1
   EndHeightRange: {x: 0, y: 0.3}
+  StartHeightRange: {x: 0.9, y: 1}
+  RiversCount: 2
+  MinEdgeDistance: 20
