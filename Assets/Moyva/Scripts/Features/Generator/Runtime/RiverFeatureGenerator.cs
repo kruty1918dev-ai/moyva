@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq; // Додаємо для сортування
 using Kruty1918.Moyva.Generator.API;
 using UnityEngine;
 
@@ -16,32 +17,76 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _pathfinder = pathfinder;
         }
 
-        public IEnumerator ApplyFeaturesRoutine(string[,] biomes, string[,] objects, float[,] heights, int w, int h)
+       public IEnumerator ApplyFeaturesRoutine(string[,] biomes, string[,] objects, float[,] heights, int w, int h)
+{
+    // 1. Збираємо всі точки на краях мапи
+    List<Vector2Int> edgePoints = new List<Vector2Int>();
+    for (int x = 0; x < w; x++) { edgePoints.Add(new(x, 0)); edgePoints.Add(new(x, h - 1)); }
+    for (int y = 1; y < h - 1; y++) { edgePoints.Add(new(0, y)); edgePoints.Add(new(w - 1, y)); }
+
+    // 2. Сортуємо крайові точки за висотою (від найвищої до найнижчої)
+    var sortedEdges = edgePoints.OrderByDescending(p => heights[p.x, p.y]).ToList();
+
+    // 3. Знаходимо найнижчу точку на всій карті (Фініш)
+    Vector2Int end = new(0, 0);
+    float minTotalH = 2f;
+    for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) {
+            if (heights[x, y] < minTotalH) { minTotalH = heights[x, y]; end = new(x, y); }
+        }
+    }
+
+    List<Vector2Int> chosenStarts = new List<Vector2Int>();
+    int minDistance = 50; // Мінімальна відстань між витоками
+
+    // Генеруємо річки
+    for (int r = 0; r < _config.RiversCount; r++)
+    {
+        Vector2Int start = Vector2Int.zero;
+        bool foundValidStart = false;
+
+        // Шукаємо точку серед відсортованих країв, яка задовольняє дистанцію
+        // Перевіряємо перші 100 найвищих точок (щоб був вибір і не брати низини)
+        int searchPool = Mathf.Min(100, sortedEdges.Count);
+        
+        // Спробуємо знайти точку, яка далеко від інших
+        for (int i = 0; i < searchPool; i++)
         {
-            // 1. Шукаємо НАЙВИЩУ точку ТІЛЬКИ на КРАЮ (Старт)
-            Vector2Int start = new(0, 0);
-            float maxEdgeH = -1f;
+            // Беремо випадкову точку з верхівки списку (щоб не завжди найвищу)
+            int randomIndex = Random.Range(0, searchPool);
+            Vector2Int candidate = sortedEdges[randomIndex];
 
-            for (int x = 0; x < w; x++) { CheckEdge(x, 0); CheckEdge(x, h - 1); }
-            for (int y = 1; y < h - 1; y++) { CheckEdge(0, y); CheckEdge(w - 1, y); }
-
-            void CheckEdge(int x, int y)
+            bool tooClose = false;
+            foreach (var existingStart in chosenStarts)
             {
-                if (heights[x, y] > maxEdgeH) { maxEdgeH = heights[x, y]; start = new(x, y); }
-            }
-
-            // 2. Шукаємо НАЙНИЖЧУ точку на ВСІЙ КАРТІ (Фініш)
-            Vector2Int end = new(0, 0);
-            float minTotalH = 2f;
-            for (int x = 0; x < w; x++)
-            {
-                for (int y = 0; y < h; y++)
+                if (Vector2Int.Distance(candidate, existingStart) < minDistance)
                 {
-                    if (heights[x, y] < minTotalH) { minTotalH = heights[x, y]; end = new(x, y); }
+                    tooClose = true;
+                    break;
                 }
             }
 
-            // 3. Запускаємо шлях
+            if (!tooClose)
+            {
+                start = candidate;
+                foundValidStart = true;
+                break;
+            }
+        }
+
+        // Якщо за 100 спроб не знайшли ідеальну відстань, беремо просто наступну за висотою (фолбек)
+        if (!foundValidStart && sortedEdges.Count > 0)
+        {
+            start = sortedEdges[0];
+            foundValidStart = true;
+        }
+
+        if (foundValidStart)
+        {
+            chosenStarts.Add(start);
+            sortedEdges.Remove(start);
+
+            // 4. Прокладаємо шлях
             var path = _pathfinder.FindRiverPath(start, end, biomes, heights, w, h, _config);
 
             if (path != null)
@@ -49,26 +94,24 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 for (int i = 0; i < path.Count; i++)
                 {
                     Vector2Int curr = path[i];
-
-                    // Отримуємо назву біому в нижньому регістрі для надійної перевірки
                     string currentBiome = biomes[curr.x, curr.y].ToLower();
-
-                    // Перевірка: не малюємо річку на воді або на переході трава-вода
-                    if (currentBiome == "water" || currentBiome == "grass-water")
+                    
+                    if (currentBiome == "water" || currentBiome == "grass-water") 
                         continue;
 
                     Vector2Int? prev = i > 0 ? path[i - 1] : null;
                     Vector2Int? next = i < path.Count - 1 ? path[i + 1] : null;
-
+                    
                     objects[curr.x, curr.y] = DetermineTile(prev, curr, next);
                 }
             }
-            yield return null;
         }
-
+        
+        yield return null; 
+    }
+}
         private string DetermineTile(Vector2Int? p, Vector2Int c, Vector2Int? n)
         {
-            // d1 - звідки прийшла, d2 - куди йде
             Vector2Int d1 = p.HasValue ? (p.Value - c) : (c - (n ?? c + Vector2Int.up));
             Vector2Int d2 = n.HasValue ? (n.Value - c) : (c - (p ?? c + Vector2Int.down));
 

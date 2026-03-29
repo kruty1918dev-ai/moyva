@@ -741,7 +741,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!212 &1452124634
 SpriteRenderer:
   serializedVersion: 2
@@ -861,8 +861,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.GridInstaller
   tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
-  gridWidth: 25
-  gridHeight: 45
+  gridWidth: 50
+  gridHeight: 80
   tileSize: 1
 --- !u!1 &1537667075
 GameObject:
@@ -924,7 +924,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!212 &1696467765
 SpriteRenderer:
   serializedVersion: 2

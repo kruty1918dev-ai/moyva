@@ -50,7 +50,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (_generationRules.GenerateBiomes)
             {
-                yield return _biomeResolver.ResolveBiomesRoutine(heightMap, result => virtualMap = result);
+                yield return _biomeResolver.ResolveBiomesRoutine(heightMap, virtualMap, result =>
+                {
+                    // Тепер virtualMap не перезаписується повністю "пустим" результатом,
+                    // а отримує оновлену версію себе
+                    virtualMap = result;
+                });
+
                 yield return null;
             }
 

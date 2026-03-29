@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: GenerationRules
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.GenerationRules
   GenerateRivers: 1
-  GenerateBiomes: 0
+  GenerateBiomes: 1
   ApplyWFC: 1

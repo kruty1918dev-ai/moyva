@@ -29,19 +29,34 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             int width = biomeMap.GetLength(0);
             int height = biomeMap.GetLength(1);
+            const string WaterID = "water";
 
+            // ПЕРШИЙ КРОК: Заповнюємо контур водою
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    // Якщо це будь-яка крайня клітина
+                    if (x == 0 || x == width - 1 || y == 0 || y == height - 1)
+                    {
+                        biomeMap[x, y] = WaterID;
+                    }
+                }
+            }
+
+            // ДРУГИЙ КРОК: Основний цикл ітерацій WFC
             for (int p = 0; p < _wfcDataSettings.PassCount; p++)
             {
                 string[,] nextIterationMap = (string[,])biomeMap.Clone();
                 bool anyChanges = false;
 
-                for (int x = 0; x < width; x++)
+                // Починаємо з 1 і закінчуємо на length-1, щоб не чіпати вже встановлену воду на краях
+                for (int x = 1; x < width - 1; x++)
                 {
-                    for (int y = 0; y < height; y++)
+                    for (int y = 1; y < height - 1; y++)
                     {
                         string currentTile = biomeMap[x, y];
-                        
-                        // Передаємо currentTile, щоб шукати правила тільки для нього
+
                         string bestMatch = FindBestMatch(x, y, currentTile, biomeMap, width, height);
 
                         if (bestMatch != null && bestMatch != currentTile)
@@ -87,12 +102,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private bool CheckRule(int x, int y, string[,] map, int width, int height, WFCTileRule rule)
         {
-            // Якщо обмежень немає, але ми пройшли перевірку CentralID, 
-            // чи вважати це за успіх? Зазвичай краще повернути true, 
-            // щоб просто замінити тайл на інший без умов.
             if (rule.Constraints == null || rule.Constraints.Count == 0) return true;
 
             int matchedConstraints = 0;
+            const string BoundaryTileID = "water"; // ID тайла, який ми вважаємо "безоднею" за межами
 
             foreach (var constraint in rule.Constraints)
             {
@@ -100,17 +113,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 int nx = x + offset.x;
                 int ny = y + offset.y;
 
+                string neighborTile;
+
+                // ПЕРЕВІРКА МЕЖ
                 if (nx < 0 || nx >= width || ny < 0 || ny >= height)
                 {
-                    // Логіка для кордонів карти:
-                    // Якщо сусіда немає, ми просто не зараховуємо цей констрейнт.
-                    continue;
+                    // Якщо ми за межами, кажемо, що там "water"
+                    neighborTile = BoundaryTileID;
+                }
+                else
+                {
+                    neighborTile = map[nx, ny];
                 }
 
-                string neighborTile = map[nx, ny];
                 bool isAllowed = false;
-
-                // Використовуємо for для швидкості (уникаємо алокацій ітератора)
                 for (int i = 0; i < constraint.AllowedNeighbors.Count; i++)
                 {
                     if (constraint.AllowedNeighbors[i] == neighborTile)
