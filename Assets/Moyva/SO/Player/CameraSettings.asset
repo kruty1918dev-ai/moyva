@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a0e69e5eb0637123bab2515a1998437, type: 3}
   m_Name: CameraSettings
   m_EditorClassIdentifier: Kruty1918.Moyva.Camera::Kruty1918.Moyva.Camera.API.CameraSettingsSO
-  moveSpeed: 5
+  moveSpeed: 10
   smoothTime: 0.3
-  zoomSpeed: 5
-  minZoom: 2
-  maxZoom: 10
+  zoomSpeed: 100
+  minZoom: 10
+  maxZoom: 50
   defaultCameraZ: -10
