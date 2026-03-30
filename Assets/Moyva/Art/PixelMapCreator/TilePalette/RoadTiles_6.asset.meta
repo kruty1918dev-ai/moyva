@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: b60081d59ca532145b2591ebfd984d4f
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/RoadTiles_6.asset
+  uploadId: 780940

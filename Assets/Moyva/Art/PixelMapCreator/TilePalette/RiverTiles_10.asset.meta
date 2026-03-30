@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4b941e92772136649904d527d0c6d4b9
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/RiverTiles_10.asset
+  uploadId: 780940

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 8bea0949321cc654ab471357f7e360af
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/LakeTiles_33.asset
+  uploadId: 780940
