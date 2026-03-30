@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 288e99358b1630b4fbf8365fae0237ae
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 329987
+  packageName: Pixel Map Creator
+  packageVersion: 1.0
+  assetPath: Assets/PixelMapCreator/TilePalette/6_Objects.prefab
+  uploadId: 780940
