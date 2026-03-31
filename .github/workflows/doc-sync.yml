@@ -18,18 +18,13 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-# ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  # ── Job 1: Full structural audit, run AI check, optionally update docs ─────
   check-and-update:
     name: Check & Update Docs
     runs-on: ubuntu-latest
 
-    # Extra guard: skip if this commit was authored by our own bot
-    # (covers edge cases where [skip ci] alone might not be enough)
     if: "!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'"
 
-    # Environment for model API usage (GitHub Models)
     env:
       MODELS_API_BASE: https://api.github.com
       MODEL_ID: gpt-4o
@@ -39,14 +34,12 @@ jobs:
       audit_needed: ${{ steps.audit.outputs.audit_needed }}
 
     steps:
-      # ── 1. Checkout full history so structural audit sees all code ──────────
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 2. Structural doc audit: compare Features/* vs docs/systems/*.md ───
       - name: Structural doc audit
         id: audit
         run: |
@@ -62,7 +55,6 @@ jobs:
             system_name=$(basename "$system_dir")
             SYSTEMS_LIST="$SYSTEMS_LIST $system_name"
 
-            # Expected doc file (lowercase)
             doc_file="$DOCS_DIR/$(echo "$system_name" | tr '[:upper:]' '[:lower:]').md"
 
             if [ ! -f "$doc_file" ]; then
@@ -77,11 +69,9 @@ jobs:
           echo "Systems in code: $SYSTEMS_LIST"
           echo "Missing docs:    $MISSING_DOCS"
 
-          # Always run AI audit (full code scan, not just diff)
           echo "audit_needed=true" >> "$GITHUB_OUTPUT"
           echo "missing_docs=$MISSING_DOCS" >> "$GITHUB_OUTPUT"
 
-      # ── 3. Collect full source code for AI analysis ─────────────────────────
       - name: Collect source code for AI analysis
         if: steps.audit.outputs.audit_needed == 'true'
         env:
@@ -90,7 +80,6 @@ jobs:
           SCRIPTS_DIR="Assets/Moyva/Scripts"
           > /tmp/source_code.txt
 
-          # Collect all C# files from Scripts (excluding Tests)
           find "$SCRIPTS_DIR" \
             -path "$SCRIPTS_DIR/Tests" -prune -o \
             -name "*.cs" -print | sort | while read -r f; do
@@ -99,11 +88,9 @@ jobs:
             printf "\n\n"          >> /tmp/source_code.txt
           done
 
-          # Cap at SOURCE_CODE_CAP_BYTES to stay within context limits
           truncate -s "$SOURCE_CODE_CAP_BYTES" /tmp/source_code.txt || true
           echo "Source code size: $(wc -c < /tmp/source_code.txt) bytes"
 
-          # Collect current docs
           > /tmp/docs_content.txt
           for f in docs/README.md docs/systems/*.md; do
             [ -f "$f" ] || continue
@@ -113,10 +100,8 @@ jobs:
           done
           echo "Docs content size: $(wc -c < /tmp/docs_content.txt) bytes"
 
-          # Write missing docs list
           echo "${{ steps.audit.outputs.missing_docs }}" > /tmp/missing_docs.txt
 
-      # ── 4a. Diagnostic: validate MODELS token and show sizes ───────────────
       - name: Validate MOYVA_TOKEN (GitHub Models) and show sample sizes
         if: steps.audit.outputs.audit_needed == 'true'
         env:
@@ -129,7 +114,6 @@ jobs:
           echo "Models endpoint HTTP status: $http_code"
           head -c 1000 /tmp/resp || true
 
-      # ── 4b. AI: full audit — find missing/outdated docs and write them ───────
       - name: AI — Full documentation audit
         if: steps.audit.outputs.audit_needed == 'true'
         id: ai
@@ -140,22 +124,18 @@ jobs:
           MODEL_ID: ${{ env.MODEL_ID }}
         with:
           script: |
-            const fs   = require('fs');
+            const fs = require('fs');
             const path = require('path');
-            // use existing injected core if present, otherwise require it
-            const gh_core = (typeof globalThis.core !== 'undefined') ? globalThis.core : require('@actions/core');
 
-            // fetch should be available in the github-script runtime; fallback handled by environment
-            const fetchFn = (typeof globalThis.fetch === 'function') ? globalThis.fetch : undefined;
-            if (!fetchFn) {
-              gh_core.setFailed('fetch is not available in this runtime. If using a custom runner, ensure fetch is available.');
-              return;
+            const fetchFn = (typeof globalThis.fetch === 'function') ? globalThis.fetch : fetch;
+            if (typeof fetchFn !== 'function') {
+              throw new Error('fetch is not available in this runtime.');
             }
 
-            const WORKSPACE    = process.env.GITHUB_WORKSPACE || process.cwd();
+            const WORKSPACE = process.env.GITHUB_WORKSPACE || process.cwd();
             const DOCS_ABS_DIR = path.resolve(WORKSPACE, 'docs');
 
-            const sourceCode  = fs.existsSync('/tmp/source_code.txt') ? fs.readFileSync('/tmp/source_code.txt',  'utf8') : '';
+            const sourceCode = fs.existsSync('/tmp/source_code.txt') ? fs.readFileSync('/tmp/source_code.txt', 'utf8') : '';
             const docsContent = fs.existsSync('/tmp/docs_content.txt') ? fs.readFileSync('/tmp/docs_content.txt', 'utf8') : '';
             const missingDocs = fs.existsSync('/tmp/missing_docs.txt') ? fs.readFileSync('/tmp/missing_docs.txt', 'utf8').trim() : '';
 
@@ -182,33 +162,34 @@ jobs:
               '',
               'Правила:',
               '- Якщо документація повністю актуальна → needs_update: false, files: {}',
-              '- Доку��ентуй ТІЛЬКИ системи з Assets/Moyva/Scripts/ (не тести)',
+              '- Документуй ТІЛЬКИ системи з Assets/Moyva/Scripts/ (не тести)',
               '- Назва файлу = назва папки системи у нижньому регістрі (напр. objectsmap → objects-map.md)',
               '- Зберігай українську мову та наявний стиль документації',
-              "- Шлях файлу ОБОВ'ЯЗКОВО має починатися з \"docs/\"",
+              '- Шлях файлу ОБОВ\'ЯЗКОВО має починатися з "docs/"'
             ].join('\n');
 
             const userMessage =
               `=== ВИХІДНИЙ КОД (Assets/Moyva/Scripts/) ===\n${sourceCode}\n\n` +
               `=== ПОТОЧНА ДОКУМЕНТАЦІЯ ===\n${docsContent}`;
 
-            gh_core.info('Calling Models API — full audit mode…');
+            console.log('Calling Models API — full audit mode…');
 
-            // Do a quick check of the token with GET /models (helps debug 401)
             const modelsListRes = await fetchFn(`${process.env.MODELS_API_BASE.replace(/\/$/, '')}/models`, {
               method: 'GET',
-              headers: { 'Authorization': `Bearer ${process.env.MODELS_TOKEN}`, 'Accept': 'application/json' },
+              headers: {
+                'Authorization': `Bearer ${process.env.MODELS_TOKEN}`,
+                'Accept': 'application/json',
+              },
             });
-            gh_core.info(`Models list status: ${modelsListRes.status}`);
+
+            console.log(`Models list status: ${modelsListRes.status}`);
             const modelsListText = await modelsListRes.text();
-            gh_core.info(modelsListText.substring(0, Math.min(1000, modelsListText.length)));
+            console.log(modelsListText.substring(0, Math.min(1000, modelsListText.length)));
 
             if (modelsListRes.status >= 400) {
-              gh_core.setFailed(`Models endpoint returned ${modelsListRes.status}: ${modelsListText}`);
-              return;
+              throw new Error(`Models endpoint returned ${modelsListRes.status}: ${modelsListText}`);
             }
 
-            // POST to the chat completions endpoint for the selected model (adjust path if your org uses a different route)
             const completionUrl = `${process.env.MODELS_API_BASE.replace(/\/$/, '')}/models/${process.env.MODEL_ID}/chat/completions`;
 
             const completionRes = await fetchFn(completionUrl, {
@@ -222,7 +203,7 @@ jobs:
                 model: process.env.MODEL_ID,
                 messages: [
                   { role: 'system', content: systemPrompt },
-                  { role: 'user',   content: userMessage  },
+                  { role: 'user', content: userMessage },
                 ],
                 response_format: { type: 'json_object' },
                 max_tokens: 8192,
@@ -232,66 +213,66 @@ jobs:
 
             if (!completionRes.ok) {
               const errBody = await completionRes.text();
-              gh_core.setFailed(`Models API error ${completionRes.status}:\n${errBody}`);
-              return;
+              throw new Error(`Models API error ${completionRes.status}:\n${errBody}`);
             }
 
             const data = await completionRes.json();
             const rawContent = data.choices?.[0]?.message?.content || '';
-            gh_core.info(`AI response length: ${String(rawContent).length} chars`);
+            console.log(`AI response length: ${String(rawContent).length} chars`);
 
             let result;
             try {
               result = JSON.parse(rawContent);
             } catch (e) {
-              gh_core.setFailed(`Could not parse AI response as JSON:\n${String(rawContent).substring(0, 800)}`);
-              return;
+              throw new Error(`Could not parse AI response as JSON:\n${String(rawContent).substring(0, 800)}`);
             }
 
             const needsUpdate = Boolean(result.needs_update);
-            const reason      = String(result.reason || '');
-            gh_core.info(`needs_update : ${needsUpdate}`);
-            gh_core.info(`reason       : ${reason}`);
+            const reason = String(result.reason || '');
+            console.log(`needs_update : ${needsUpdate}`);
+            console.log(`reason       : ${reason}`);
 
-            gh_core.setOutput('needs_update', String(needsUpdate));
-            gh_core.setOutput('reason',       reason);
+            core.setOutput('needs_update', String(needsUpdate));
+            core.setOutput('reason', reason);
 
-            const filesObj = (
+            const filesObj =
               needsUpdate &&
               result.files !== null &&
               typeof result.files === 'object' &&
               !Array.isArray(result.files)
-            ) ? result.files : {};
+                ? result.files
+                : {};
 
             const fileEntries = Object.entries(filesObj);
             if (needsUpdate && fileEntries.length > 0) {
               let filesWritten = 0;
+
               for (const [filePath, content] of fileEntries) {
                 const absTarget = path.resolve(WORKSPACE, filePath);
-                if (!absTarget.startsWith(DOCS_ABS_DIR + path.sep) &&
-                    absTarget !== DOCS_ABS_DIR) {
-                  gh_core.warning(`SKIPPED — path escapes docs/: ${filePath}`);
+
+                if (!absTarget.startsWith(DOCS_ABS_DIR + path.sep) && absTarget !== DOCS_ABS_DIR) {
+                  console.warn(`SKIPPED — path escapes docs/: ${filePath}`);
                   continue;
                 }
+
                 const dir = path.dirname(absTarget);
                 fs.mkdirSync(dir, { recursive: true });
                 fs.writeFileSync(absTarget, String(content), 'utf8');
-                gh_core.info(`Written: ${filePath}`);
+                console.log(`Written: ${filePath}`);
                 filesWritten++;
               }
-              gh_core.setOutput('docs_updated', filesWritten > 0 ? 'true' : 'false');
+
+              core.setOutput('docs_updated', filesWritten > 0 ? 'true' : 'false');
             } else {
-              gh_core.setOutput('docs_updated', 'false');
+              core.setOutput('docs_updated', 'false');
             }
 
-      # ── 5. Report ────────────────────────────────────────────────────────────
       - name: "✅ Documentation is fully up to date"
         if: steps.ai.outputs.needs_update == 'false'
         run: |
           echo "AI confirmed: all systems are documented and up to date."
           echo "Reason: ${{ steps.ai.outputs.reason }}"
 
-      # ── 6. Commit updated docs ───────────────────────────────────────────────
       - name: Commit updated documentation
         if: steps.ai.outputs.docs_updated == 'true'
         run: |
@@ -306,14 +287,12 @@ jobs:
             echo "Documentation committed and pushed."
           fi
 
-      # ── 7. Upload Pages artifact ─────────────────────────────────────────────
       - name: Upload Pages artifact
         if: steps.ai.outputs.docs_updated == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
 
-  # ── Job 2: Deploy to GitHub Pages (only when docs were updated by AI) ──────
   deploy:
     name: Deploy to GitHub Pages
     needs: check-and-update
