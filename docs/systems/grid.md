@@ -134,18 +134,8 @@ public class GridInstaller : MonoInstaller
 // Отримати дані безпечно
 if (_gridService.TryGetTileData(new Vector2Int(3, 4), out var tile))
 {
-    Debug.Log($"Тайл: {tile.TileTypeId}, зайнятий: {tile.IsOccupied}");
+    Debug.Log($"Тайл: {tile.TileTypeId}");
 }
-```
-
-### Зайняти / звільнити тайл
-
-```csharp
-// Юніт приходить на тайл (2,5)
-_gridService.OccupyTile(new Vector2Int(2, 5), "warrior_01");
-
-// Юніт покидає тайл
-_gridService.VacateTile(new Vector2Int(2, 5));
 ```
 
 ### Отримати вагу тайлу (використовується в патфайндері)

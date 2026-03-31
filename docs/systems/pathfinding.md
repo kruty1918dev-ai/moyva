@@ -67,8 +67,9 @@ namespace Kruty1918.Moyva.Pathfinding.API
 
 | Залежність | Причина |
 |---|---|
-| [`IGridService`](grid.md) | Перевірка меж сітки та стану окупації |
+| [`IGridService`](grid.md) | Перевірка меж сітки (`TryGetTileData`) |
 | [`ITileSettingsService`](grid.md) | Вага тайлу для розрахунку вартості кроку |
+| [`IObjectsMapService`](objects-map.md) | Перевірка окупації тайлів (`IsOccupied`) для обходу перешкод |
 
 ---
 
@@ -144,5 +145,6 @@ private float Heuristic(Vector2Int a, Vector2Int b)
 ## Пов'язані системи
 
 - [Grid](grid.md) — джерело даних сітки
+- [ObjectsMap](objects-map.md) — перевірка окупації тайлів
 - [Units](units.md) — використовує `IPathfinder` у `UnitMovementService`
 - [Animations](animations.md) — отримує готовий шлях для анімації
