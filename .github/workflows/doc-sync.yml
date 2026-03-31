@@ -58,10 +58,10 @@ jobs:
             doc_file="$DOCS_DIR/$(echo "$system_name" | tr '[:upper:]' '[:lower:]').md"
 
             if [ ! -f "$doc_file" ]; then
-              echo "  MISSING DOC: $system_name → $doc_file"
+              echo "  MISSING DOC: $system_name -> $doc_file"
               MISSING_DOCS="$MISSING_DOCS $system_name"
             else
-              echo "  OK: $system_name → $doc_file"
+              echo "  OK: $system_name -> $doc_file"
             fi
           done
 
@@ -117,7 +117,7 @@ jobs:
           echo "Models endpoint HTTP status: $http_code"
           head -c 1000 /tmp/resp || true
 
-      - name: AI — Full documentation audit
+      - name: AI - Full documentation audit
         if: steps.audit.outputs.audit_needed == 'true'
         id: ai
         uses: actions/github-script@v7
@@ -164,46 +164,44 @@ jobs:
               '}',
               '',
               'Правила:',
-              '- Якщо документація повністю актуальна → needs_update: false, files: {}',
+              '- Якщо документація повністю актуальна -> needs_update: false, files: {}',
               '- Документуй ТІЛЬКИ системи з Assets/Moyva/Scripts/ (не тести)',
-              '- Назва файлу = назва папки системи у нижньому регістрі (напр. objectsmap → objects-map.md)',
+              '- Назва файлу = назва папки системи у нижньому регістрі (напр. objectsmap -> objects-map.md)',
               '- Зберігай українську мову та наявний стиль документації',
-              '- Шлях файлу ОБОВ\'ЯЗКОВО має починатися з "docs/"'
+              '- Шлях файлу ОБОВЯЗКОВО має починатися з "docs/"
             ].join('\n');
 
             const userMessage =
-              `=== ВИХІДНИЙ КОД (Assets/Moyva/Scripts/) ===\n${sourceCode}\n\n` +
-              `=== ПОТОЧНА ДОКУМЕНТАЦІЯ ===\n${docsContent}`;
+              '=== ВИХІДНИЙ КОД (Assets/Moyva/Scripts/) ===\n' + sourceCode + '\n\n' +
+              '=== ПОТОЧНА ДОКУМЕНТАЦІЯ ===\n' + docsContent;
 
-            console.log('Calling GitHub Models API…');
+            console.log('Calling GitHub Models API...');
 
             const apiBase = process.env.MODELS_API_BASE.replace(/\/$/, '');
 
-            // Validate token by listing models
-            const modelsListRes = await fetchFn(`${apiBase}/models`, {
+            const modelsListRes = await fetchFn(apiBase + '/models', {
               method: 'GET',
               headers: {
-                'Authorization': `Bearer ${process.env.MODELS_TOKEN}`,
+                'Authorization': 'Bearer ' + process.env.MODELS_TOKEN,
                 'Accept': 'application/json',
               },
             });
 
-            console.log(`Models list status: ${modelsListRes.status}`);
+            console.log('Models list status: ' + modelsListRes.status);
             const modelsListText = await modelsListRes.text();
             console.log(modelsListText.substring(0, Math.min(1000, modelsListText.length)));
 
             if (modelsListRes.status >= 400) {
-              throw new Error(`Models endpoint returned ${modelsListRes.status}: ${modelsListText}`);
+              throw new Error('Models endpoint returned ' + modelsListRes.status + ': ' + modelsListText);
             }
 
-            // Use the correct GitHub Models chat completions endpoint
-            const completionUrl = `${apiBase}/chat/completions`;
+            const completionUrl = apiBase + '/chat/completions';
 
             const completionRes = await fetchFn(completionUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.MODELS_TOKEN}`,
+                'Authorization': 'Bearer ' + process.env.MODELS_TOKEN,
                 'Accept': 'application/json',
               },
               body: JSON.stringify({
@@ -220,24 +218,25 @@ jobs:
 
             if (!completionRes.ok) {
               const errBody = await completionRes.text();
-              throw new Error(`Models API error ${completionRes.status}:\n${errBody}`);
+              throw new Error('Models API error ' + completionRes.status + ':
+' + errBody);
             }
 
             const data = await completionRes.json();
-            const rawContent = data.choices?.[0]?.message?.content || '';
-            console.log(`AI response length: ${String(rawContent).length} chars`);
+            const rawContent = data.choices?.[0]?.message?.content || ''; 
+            console.log('AI response length: ' + String(rawContent).length + ' chars');
 
             let result;
             try {
               result = JSON.parse(rawContent);
             } catch (e) {
-              throw new Error(`Could not parse AI response as JSON:\n${String(rawContent).substring(0, 800)}`);
+              throw new Error('Could not parse AI response as JSON:\n' + String(rawContent).substring(0, 800));
             }
 
             const needsUpdate = Boolean(result.needs_update);
             const reason = String(result.reason || '');
-            console.log(`needs_update : ${needsUpdate}`);
-            console.log(`reason       : ${reason}`);
+            console.log('needs_update : ' + needsUpdate);
+            console.log('reason       : ' + reason);
 
             core.setOutput('needs_update', String(needsUpdate));
             core.setOutput('reason', reason);
@@ -258,14 +257,14 @@ jobs:
                 const absTarget = path.resolve(WORKSPACE, filePath);
 
                 if (!absTarget.startsWith(DOCS_ABS_DIR + path.sep) && absTarget !== DOCS_ABS_DIR) {
-                  console.warn(`SKIPPED — path escapes docs/: ${filePath}`);
+                  console.warn('SKIPPED — path escapes docs/: ' + filePath);
                   continue;
                 }
 
                 const dir = path.dirname(absTarget);
                 fs.mkdirSync(dir, { recursive: true });
                 fs.writeFileSync(absTarget, String(content), 'utf8');
-                console.log(`Written: ${filePath}`);
+                console.log('Written: ' + filePath);
                 filesWritten++;
               }
 
@@ -274,7 +273,7 @@ jobs:
               core.setOutput('docs_updated', 'false');
             }
 
-      - name: "✅ Documentation is fully up to date"
+      - name: Documentation is fully up to date
         if: steps.ai.outputs.needs_update == 'false'
         run: |
           echo "AI confirmed: all systems are documented and up to date."
