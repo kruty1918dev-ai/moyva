@@ -68,7 +68,10 @@ hr{border:none;border-top:1px solid #e2e8f0;margin:1.75rem 0}
     <li class="nav-sys" data-page="systems/pathfinding"><a href="#systems/pathfinding">Pathfinding</a></li>
     <li class="nav-sys" data-page="systems/signals"><a href="#systems/signals">Signals</a></li>
     <li class="nav-sys" data-page="systems/units"><a href="#systems/units">Units</a></li>
+        <li class="nav-sys" data-page="systems/objects-map"><a href="#systems/objects-map">ObjectsMap</a></li>
     <li class="nav-sys" data-page="systems/visuals"><a href="#systems/visuals">Visuals</a></li>
+        <li class="nav-section">Стандарти</li>
+        <li data-page="standarts/tdd"><a href="#standarts/tdd">TDD</a></li>
     </ul>
   </nav>
 </aside>
@@ -84,7 +87,9 @@ hr{border:none;border-top:1px solid #e2e8f0;margin:1.75rem 0}
   <div id="page-systems-pathfinding" class="page"></div>
   <div id="page-systems-signals" class="page"></div>
   <div id="page-systems-units" class="page"></div>
+    <div id="page-systems-objects-map" class="page"></div>
   <div id="page-systems-visuals" class="page"></div>
+    <div id="page-standarts-tdd" class="page"></div>
 </main>
 
 <!-- ===== Markdown content storage ===== -->
@@ -120,8 +125,17 @@ hr{border:none;border-top:1px solid #e2e8f0;margin:1.75rem 0}
 | [**Camera**](#systems/camera) | Рух, зум і фокус камери |
 | [**Signals**](#systems/signals) | Усі сигнали / події SignalBus |
 | [**Generator**](#systems/generator) | Процедурна генерація карти |
+| [**ObjectsMap**](#systems/objects-map) | Єдине джерело правди про зайнятість позицій |
 | [**Visuals**](#systems/visuals) | Візуальне відображення тайлів |
 | [**Bootstrap**](#systems/bootstrap) | Стартова ініціалізація сцени |
+
+---
+
+## Стандарти
+
+| Документ | Опис |
+|---|---|
+| [**TDD**](#standarts/tdd) | Технічний стандарт модульної архітектури (Zenject + asmdef) |
 
 ---
 
@@ -1764,6 +1778,95 @@ TileView.OnMouseDown()
 - [Generator](#systems/generator) — спавнить `TileView` при побудові світу
 </textarea>
 
+<textarea id="md-systems-objects-map" style="display:none">
+# ObjectsMap — Єдина карта об'єктів
+
+← [Назад до README](#home)
+
+---
+
+## Призначення
+
+`ObjectsMapService` є єдиним авторитетним джерелом правди про зайнятість позицій на мапі.
+
+- Зберігає відповідності `position -> occupantId` і `occupantId -> position`.
+- Не залежить від `IGridService` і не дублює його стан.
+- Синхронізується через сигнали створення/руху/видалення юнітів та спавну об'єктів.
+
+---
+
+## Публічний API
+
+| Метод | Призначення |
+|---|---|
+| `IsOccupied(position)` | Перевірити зайнятість позиції |
+| `TryGetOccupant(position, out id)` | Отримати окупанта за позицією |
+| `Register(position, occupantId)` | Зареєструвати об'єкт |
+| `Move(from, to)` | Перемістити об'єкт |
+| `Unregister(position)` | Звільнити позицію |
+| `TryGetPosition(occupantId, out position)` | Знайти позицію за ID |
+
+---
+
+## Сигнали
+
+| Сигнал | Тип | Призначення |
+|---|---|---|
+| `UnitCreatedSignal` | IN | Реєстрація юніта |
+| `UnitMovedSignal` | IN | Оновлення позиції |
+| `UnitDestroyedSignal` | IN | Видалення юніта |
+| `OnMapObjectSpawnedSignal` | IN | Реєстрація статичного об'єкта |
+| `OnObjectsMapChangedSignal` | OUT | Оповіщення про зміну на позиції |
+
+---
+
+## Пов'язані системи
+
+- [Units](#systems/units)
+- [Generator](#systems/generator)
+- [Pathfinding](#systems/pathfinding)
+- [Visuals](#systems/visuals)
+- [Signals](#systems/signals)
+</textarea>
+
+<textarea id="md-standarts-tdd" style="display:none">
+# TDD — Модульна архітектура (Zenject + asmdef)
+
+← [Назад до README](#home)
+
+---
+
+## Мета
+
+TDD фіксує технічний стандарт проєкту: модульність, кордони відповідальності, контроль залежностей і правила реєстрації через DI.
+
+---
+
+## Ключові правила
+
+1. Кожна фіча організована як `API / Runtime / Editor`.
+2. Зовнішній код працює з фічею лише через API-контракти.
+3. Runtime-реалізації не використовуються напряму між фічами.
+4. Залежності збираються через Zenject installer-и.
+5. asmdef-залежності мінімальні, без циклів.
+
+---
+
+## Що перевіряти в PR
+
+1. Нова фіча має правильну структуру папок.
+2. У коді немає прямої залежності на чужий Runtime.
+3. Контракти API задокументовані.
+4. Installer явно реєструє потрібні інтерфейси.
+5. Документація систем синхронізована з реалізацією.
+
+---
+
+## Повний документ
+
+Детальна версія доступна у файлі `docs/standarts/TDD.md`.
+</textarea>
+
 <script>
 // ── Markdown renderer ──────────────────────────────────────────────────────
 const Md = {
@@ -1774,8 +1877,10 @@ const Md = {
     if(!href) return '#';
     if(/^https?:|^mailto:|^#/.test(href)) return href;
     if(/\.\.\/README\.md|^README\.md$/.test(href)) return '#home';
-    var m = href.match(/(?:\.\.\/systems\/|systems\/|\.\.\/|\.\/|^)([a-z]+)\.md(?:#.*)?$/);
-    if(m) return '#systems/'+m[1];
+        var sm = href.match(/(?:\.\.\/standarts\/|standarts\/)([a-z-]+)\.md(?:#.*)?$/i);
+        if(sm) return '#standarts/'+sm[1].toLowerCase();
+        var m = href.match(/(?:\.\.\/systems\/|systems\/|\.\.\/|\.\/|^)([a-z-]+)\.md(?:#.*)?$/i);
+        if(m) return '#systems/'+m[1].toLowerCase();
     return href;
   },
   inline: function(s){
@@ -1871,7 +1976,9 @@ var PAGES = {
   'systems/pathfinding':   {el:'page-systems-pathfinding',  md:'md-systems-pathfinding'},
   'systems/signals':       {el:'page-systems-signals',      md:'md-systems-signals'},
   'systems/units':         {el:'page-systems-units',        md:'md-systems-units'},
-  'systems/visuals':       {el:'page-systems-visuals',      md:'md-systems-visuals'}
+    'systems/objects-map':   {el:'page-systems-objects-map',  md:'md-systems-objects-map'},
+    'systems/visuals':       {el:'page-systems-visuals',      md:'md-systems-visuals'},
+    'standarts/tdd':         {el:'page-standarts-tdd',        md:'md-standarts-tdd'}
 };
 
 // Pre-render all pages on load
