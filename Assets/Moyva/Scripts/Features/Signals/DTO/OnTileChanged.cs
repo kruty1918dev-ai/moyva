@@ -41,4 +41,22 @@ namespace Kruty1918.Moyva.Signals
         public string[,] ObjectMap;
         public float[,] HeightMap;
     }
+
+    /// <summary>
+    /// Надсилається MapVisualInstantiator після спавну статичного обʼєкта карти (гора, річка, ліс…)
+    /// </summary>
+    public struct OnMapObjectSpawnedSignal
+    {
+        public string ObjectId;        // TileTypeId, наприклад "river", "mountain"
+        public Vector2Int Position;
+    }
+
+    /// <summary>
+    /// Надсилається ObjectsMapService після будь-якої зміни карти обʼєктів
+    /// </summary>
+    public struct OnObjectsMapChangedSignal
+    {
+        public Vector2Int Position;
+        public string OccupantId;      // null якщо тайл звільнено
+    }
 }

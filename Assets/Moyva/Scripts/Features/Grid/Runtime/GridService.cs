@@ -35,17 +35,11 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
         public void SetTileData(Vector2Int position, TileData data)
         {
-            if (IsValidPosition(position))
-                _grid[position.x, position.y] = data;
-            else
+            if (!IsValidPosition(position))
                 throw new System.ArgumentOutOfRangeException(nameof(position), "Position is out of grid bounds.");
-        }
 
-        public bool IsTileOccupied(Vector2Int position)
-        {
-            if (IsValidPosition(position))
-                return _grid[position.x, position.y].IsOccupied;
-            throw new System.ArgumentOutOfRangeException(nameof(position), "Position is out of grid bounds.");
+            _grid[position.x, position.y] = data;
+            _signalBus.Fire(new OnTileChanged { Position = position });
         }
 
         private bool IsValidPosition(Vector2Int position)
@@ -63,38 +57,6 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
             tileData = default;
             return false;
-        }
-
-        public void OccupyTile(Vector2Int position, string occupantId)
-        {
-            if (IsValidPosition(position))
-            {
-                var data = _grid[position.x, position.y];
-                data.IsOccupied = true;
-                data.OccupantId = occupantId;
-                _grid[position.x, position.y] = data;
-                _signalBus.Fire(new OnTileChanged { Position = position });
-            }
-            else
-            {
-                throw new System.ArgumentOutOfRangeException(nameof(position), "Position is out of grid bounds.");
-            }
-        }
-
-        public void VacateTile(Vector2Int position)
-        {
-            if (IsValidPosition(position))
-            {
-                var data = _grid[position.x, position.y];
-                data.IsOccupied = false;
-                data.OccupantId = null;
-                _grid[position.x, position.y] = data;
-                _signalBus.Fire(new OnTileChanged { Position = position });
-            }
-            else
-            {
-                throw new System.ArgumentOutOfRangeException(nameof(position), "Position is out of grid bounds.");
-            }
         }
     }
 }
