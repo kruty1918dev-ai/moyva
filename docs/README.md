@@ -101,11 +101,11 @@ Assets/
   → SignalBus.Fire(UnitMovedSignal) (UnitService списує стаміну)
         │
         ▼
-  GridService.OccupyTile / VacateTile
-  → SignalBus.Fire(OnTileChanged)
+  ObjectsMapService.OnUnitMoved()
+  → SignalBus.Fire(OnObjectsMapChangedSignal)
         │
         ▼
-  TileView.OnTileChanged()         (оновлення кольору)
+  TileView.OnObjectsMapChanged()   (оновлення кольору)
 ```
 
 ---
@@ -118,14 +118,20 @@ Bootstrap
 
 Interactions
  ├─► Grid (IGridService)
+ ├─► ObjectsMap (IObjectsMapService)
  ├─► Units (IUnitMovementService)
  └─► Signals (SignalBus)
 
 Units (UnitMovementService)
+ ├─► Units (IUnitService)
  ├─► Pathfinding (IPathfinder)
  ├─► Animations (IMovementAnimationService)
  ├─► Grid (IGridService, ITileSettingsService)
+ ├─► Units (IUnitClassConfig)
  └─► Signals (SignalBus)
+
+ObjectsMap
+ └─► Signals (UnitCreatedSignal, UnitMovedSignal, UnitDestroyedSignal, OnMapObjectSpawnedSignal)
 
 Generator
  ├─► Grid (IGridService, TileRegistrySO)
