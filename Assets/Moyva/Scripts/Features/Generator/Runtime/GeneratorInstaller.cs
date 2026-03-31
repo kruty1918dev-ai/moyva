@@ -33,8 +33,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Container.Bind<IMapFeatureGenerator>().To<WaterPostProcessor>().AsTransient();
 
             Container.BindInterfacesTo<MapVisualInstantiator>().AsSingle();
+        }
 
-            StartCoroutine(Container.Resolve<IMapInstantiator>().BuildWorldRoutine());
+        override public void Start()
+        {
+            base.Start();
+
+            Container.Resolve<IMapInstantiator>().BuildWorld();
         }
     }
 }

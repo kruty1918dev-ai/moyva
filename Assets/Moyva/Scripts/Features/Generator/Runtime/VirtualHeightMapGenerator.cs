@@ -25,9 +25,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         /// <summary>
-        /// Корутина для генерації віртуальної мапи без фризів
+        /// Генерує віртуальну мапу висот, яка є матрицею рядків (TypeId) на основі вхідної матриці висот (float).
         /// </summary>
-        public IEnumerator GenerateVirtualHeightMapRoutine(float[,] heightMap, Action<string[,]> onComplete)
+        public void GenerateVirtualHeightMap(float[,] heightMap, Action<string[,]> onComplete)
         {
             int width = heightMap.GetLength(0);
             int height = heightMap.GetLength(1);
@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (_sortedLayers.Length == 0)
             {
                 onComplete?.Invoke(virtualMap);
-                yield break;
+                return;
             }
 
             for (int x = 0; x < width; x++)
@@ -44,13 +44,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 for (int y = 0; y < height; y++)
                 {
                     virtualMap[x, y] = ResolveTileID(heightMap[x, y]);
-                }
-
-                // Кожні 10-20 рядків даємо Unity відрендерити кадр, щоб не було фризу.
-                // Можна міняти (x % 20), залежно від розміру мапи.
-                if (x % 32 == 0) 
-                {
-                    yield return null;
                 }
             }
 
