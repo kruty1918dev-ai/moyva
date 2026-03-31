@@ -1,6 +1,6 @@
 # Moyva — Документація проекту
 
-> Онлайн-версія документації: [kruty1918dev-ai.github.io/moyva/docs/](https://kruty1918dev-ai.github.io/moyva/#home) 
+> Онлайн-версія документації: [kruty1918dev-ai.github.io/moyva/docs/](https://kruty1918dev-ai.github.io/moyva/docs/#home)
 
 ---
 
@@ -33,8 +33,17 @@
 | **Camera** | [systems/camera.md](systems/camera.md) | Рух, зум і фокус камери |
 | **Signals** | [systems/signals.md](systems/signals.md) | Усі сигнали / події SignalBus |
 | **Generator** | [systems/generator.md](systems/generator.md) | Процедурна генерація карти |
+| **ObjectsMap** | [systems/objects-map.md](systems/objects-map.md) | Єдине джерело правди про зайнятість позицій |
 | **Visuals** | [systems/visuals.md](systems/visuals.md) | Візуальне відображення тайлів |
 | **Bootstrap** | [systems/bootstrap.md](systems/bootstrap.md) | Стартова ініціалізація сцени |
+
+---
+
+## Стандарти
+
+| Документ | Файл | Призначення |
+|---|---|---|
+| **TDD: Modular Architecture** | [standarts/TDD.md](standarts/TDD.md) | Архітектурні правила модульності, DI та asmdef |
 
 ---
 
@@ -74,6 +83,9 @@ Assets/
             │   ├── API/          ← IMapDataGenerator, IBiomeResolver, IWFCService, …
             │   ├── Editor/       ← WFCDataSettingsEditor, WFCRulesEditorWindow
             │   └── Runtime/      ← MapDataGenerator, BiomeResolver, WFCService, …
+                  ├── ObjectsMap/
+                  │   ├── API/          ← IObjectsMapService
+                  │   └── Runtime/      ← ObjectsMapService, ObjectsMapInstaller
             └── Visuals/
                 ├── API/          ← TileView (MonoBehaviour)
                 └── Runtime/      ← VisualInstaller
@@ -142,4 +154,14 @@ Camera
 ```
 
 ---
+
+## Аудит документації (2026-03-31)
+
+Під час аудиту виконано синхронізацію документації з поточною структурою проєкту:
+
+- додано модуль **ObjectsMap** у загальний реєстр систем;
+- оновлено онлайн-посилання на актуальний маршрут `docs/#home`;
+- додано розділ **Стандарти** з TDD-документом;
+- оновлено структуру проєкту в README (додано `Features/ObjectsMap`);
+- перевпорядковано та нормалізовано `standarts/TDD.md` у читабельний markdown-формат.
 

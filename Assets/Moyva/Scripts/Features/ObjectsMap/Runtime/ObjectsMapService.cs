@@ -6,7 +6,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.ObjectsMap.Runtime
 {
-    internal sealed class ObjectsMapService : IObjectsMapService, IInitializable, System.IDisposable
+    public sealed class ObjectsMapService : IObjectsMapService, IInitializable, System.IDisposable
     {
         private readonly Dictionary<Vector2Int, string> _occupants = new();
         private readonly Dictionary<string, Vector2Int> _positions = new();
