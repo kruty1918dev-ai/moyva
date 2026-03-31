@@ -7,7 +7,7 @@ namespace Kruty1918.Moyva.Bootstrap
     {
         public override void InstallBindings()
         {
-            // BindInterfacesTo прив'яже TestUnitSpawner до інтерфейсу IInitializable
+            // BindInterfacesTo прив'яже TestUnitSpawner до інтерфейсу IInitializable 
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
         }
     }
