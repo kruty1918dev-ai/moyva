@@ -6,15 +6,15 @@
 
 ## Призначення
 
-Система **Grid** відповідає за зберігання і керування двовимірною тайловою картою гри. Вона є центральним сховищем стану кожного тайлу: чи зайнятий він, яким юнітом, який тип тайлу (ID для пошуку ваги руху). Майже всі інші системи залежать від неї.
+Система **Grid** відповідає за зберігання і керування двовимірною тайловою картою гри. Зберігає тип кожного тайлу (`TileTypeId`) для пошуку ваги руху. Окупація тайлів (хто де стоїть) — виключна відповідальність [`ObjectsMapService`](objects-map.md).
 
 ---
 
 ## Як працює внутрішньо
 
 1. При ініціалізації `GridService` створює двовимірний масив `TileData[width, height]`.
-2. Кожен `TileData` зберігає: прапор `IsOccupied`, ідентифікатор окупанта `OccupantId` і тип тайлу `TileTypeId`.
-3. Після будь-якої зміни тайлу (`OccupyTile` / `VacateTile` / `SetTileData`) сервіс надсилає сигнал `OnTileChanged` через `SignalBus` — усі підписники (наприклад, `TileView`) негайно оновлюють відображення.
+2. Кожен `TileData` зберігає тип тайлу `TileTypeId` — ID для пошуку ваги руху та візуалу.
+3. Після зміни тайлу (`SetTileData`) сервіс надсилає сигнал `OnTileChanged` через `SignalBus`.
 4. `TileSettingsService` завантажує ваги руху тайлів із `TileRegistrySO` (ScriptableObject) у словник для O(1)-доступу.
 
 ---
@@ -34,17 +34,8 @@ namespace Kruty1918.Moyva.Grid.API
         // Безпечна версія: повертає false замість винятку
         bool TryGetTileData(Vector2Int position, out TileData tileData);
 
-        // Перевіряє, чи зайнятий тайл
-        bool IsTileOccupied(Vector2Int position);
-
-        // Записує довільні дані тайлу (використовується генератором)
+        // Записує дані тайлу і надсилає OnTileChanged
         void SetTileData(Vector2Int position, TileData data);
-
-        // Позначає тайл як зайнятий і надсилає OnTileChanged
-        void OccupyTile(Vector2Int position, string occupantId);
-
-        // Звільняє тайл і надсилає OnTileChanged
-        void VacateTile(Vector2Int position);
 
         int GridWidth  { get; }
         int GridHeight { get; }
@@ -71,8 +62,6 @@ namespace Kruty1918.Moyva.Grid.API
 ```csharp
 public struct TileData
 {
-    public bool   IsOccupied  { get; internal set; }
-    public string OccupantId  { get; internal set; }
     public string TileTypeId  { get; set; }
 }
 ```
@@ -95,9 +84,7 @@ public struct TileData
 |---|---|---|
 | `GetTileData` | `Vector2Int position` | `TileData` |
 | `TryGetTileData` | `Vector2Int position` | `bool` + `out TileData` |
-| `IsTileOccupied` | `Vector2Int position` | `bool` |
-| `OccupyTile` | `Vector2Int position, string occupantId` | `void` (+ сигнал `OnTileChanged`) |
-| `VacateTile` | `Vector2Int position` | `void` (+ сигнал `OnTileChanged`) |
+| `SetTileData` | `Vector2Int position, TileData data` | `void` (+ сигнал `OnTileChanged`) |
 | `GetTileWeight` | `string tileId` | `float` (вага; 0 якщо не знайдено) |
 
 ---
@@ -183,6 +170,6 @@ float tentativeGScore  = GetScore(gScore, current) + stepCost;
 
 - [Signals](signals.md) — `OnTileChanged` сигнал
 - [Pathfinding](pathfinding.md) — використовує `IGridService` та `ITileSettingsService`
-- [Units](units.md) — викликає `OccupyTile` / `VacateTile`
 - [Generator](generator.md) — заповнює `TileData` через `SetTileData`
-- [Visuals](visuals.md) — підписується на `OnTileChanged` для перефарбування
+- [ObjectsMap](objects-map.md) — єдина авторитетна карта окупації тайлів
+- [Visuals](visuals.md) — `TileView` підписується на `OnObjectsMapChangedSignal` для оновлення кольору

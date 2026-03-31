@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Interactions.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Units.API; // Новий API
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
     internal sealed class TileInteractionService : ITileInteractionService, IInitializable, IDisposable
     {
         private readonly IGridService _gridService;
+        private readonly IObjectsMapService _objectsMapService;
         private readonly IUnitMovementService _unitMovementService; // Сервіс руху
         private readonly SignalBus _signalBus;
         
@@ -19,11 +21,13 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private CancellationTokenSource _moveCts;
 
         public TileInteractionService(
-            IGridService gridService, 
+            IGridService gridService,
+            IObjectsMapService objectsMapService,
             IUnitMovementService unitMovementService, 
             SignalBus signalBus)
         {
             _gridService = gridService;
+            _objectsMapService = objectsMapService;
             _unitMovementService = unitMovementService;
             _signalBus = signalBus;
         }
@@ -46,14 +50,14 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         public async void HandleTileClick(Vector2Int position)
         {
-            if (!_gridService.TryGetTileData(position, out var tileData)) return;
+            if (!_gridService.TryGetTileData(position, out _)) return;
 
             // КРОК 1: Вибір юніта (якщо ніхто не вибраний)
             if (string.IsNullOrEmpty(_selectedUnitId))
             {
-                if (tileData.IsOccupied && !string.IsNullOrEmpty(tileData.OccupantId))
+                if (_objectsMapService.TryGetOccupant(position, out var occupantId))
                 {
-                    _selectedUnitId = tileData.OccupantId;
+                    _selectedUnitId = occupantId;
                     Debug.Log($"[Interaction] Вибрано юніта: {_selectedUnitId}");
                     // Тут можна кинути сигнал UnitSelectedSignal для підсвічування в UI
                 }

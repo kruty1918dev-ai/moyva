@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.ObjectsMap.Runtime;
 using Kruty1918.Moyva.Signals;
@@ -16,7 +15,6 @@ namespace Kruty1918.Moyva.Tests.ObjectsMap
     [TestFixture]
     public class ObjectsMapServiceTests : ZenjectUnitTestFixture
     {
-        private FakeGridService _fakeGridService;
         private IObjectsMapService _service;
         private ObjectsMapService _serviceImpl;
         private SignalBus _signalBus;
@@ -32,10 +30,6 @@ namespace Kruty1918.Moyva.Tests.ObjectsMap
             Container.DeclareSignal<UnitDestroyedSignal>();
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<OnObjectsMapChangedSignal>();
-
-            // Реєструємо FakeGridService
-            _fakeGridService = new FakeGridService(10, 10);
-            Container.Bind<IGridService>().FromInstance(_fakeGridService).AsSingle();
 
             // Реєструємо ObjectsMapService
             Container.BindInterfacesAndSelfTo<ObjectsMapService>().AsSingle().NonLazy();
@@ -287,54 +281,6 @@ namespace Kruty1918.Moyva.Tests.ObjectsMap
 
             Assert.IsTrue(_service.TryGetOccupant(pos, out var id));
             Assert.AreEqual("unit_01", id);
-        }
-    }
-
-    // ─── Stub: FakeGridService ────────────────────────────────────────────────
-
-    /// <summary>
-    /// Мінімальний стаб IGridService для тестів.
-    /// </summary>
-    internal sealed class FakeGridService : IGridService
-    {
-        private readonly TileData[,] _grid;
-        public int GridWidth { get; }
-        public int GridHeight { get; }
-        public float TileSize => 1f;
-
-        public FakeGridService(int width, int height)
-        {
-            GridWidth = width;
-            GridHeight = height;
-            _grid = new TileData[width, height];
-        }
-
-        public TileData GetTileData(Vector2Int position) => _grid[position.x, position.y];
-
-        public bool TryGetTileData(Vector2Int position, out TileData tileData)
-        {
-            tileData = _grid[position.x, position.y];
-            return true;
-        }
-
-        public bool IsTileOccupied(Vector2Int position) => _grid[position.x, position.y].IsOccupied;
-
-        public void SetTileData(Vector2Int position, TileData data) => _grid[position.x, position.y] = data;
-
-        public void OccupyTile(Vector2Int position, string occupantId)
-        {
-            var data = _grid[position.x, position.y];
-            data.IsOccupied = true;
-            data.OccupantId = occupantId;
-            _grid[position.x, position.y] = data;
-        }
-
-        public void VacateTile(Vector2Int position)
-        {
-            var data = _grid[position.x, position.y];
-            data.IsOccupied = false;
-            data.OccupantId = null;
-            _grid[position.x, position.y] = data;
         }
     }
 }

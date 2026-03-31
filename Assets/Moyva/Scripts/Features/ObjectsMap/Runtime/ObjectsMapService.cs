@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -12,12 +11,10 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
         private readonly Dictionary<Vector2Int, string> _occupants = new();
         private readonly Dictionary<string, Vector2Int> _positions = new();
         private readonly SignalBus _signalBus;
-        private readonly IGridService _gridService;
 
-        public ObjectsMapService(SignalBus signalBus, IGridService gridService)
+        public ObjectsMapService(SignalBus signalBus)
         {
             _signalBus = signalBus;
-            _gridService = gridService;
         }
 
         public void Initialize()
@@ -118,20 +115,19 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
         {
             _occupants[position] = occupantId;
             _positions[occupantId] = position;
-            _gridService.OccupyTile(position, occupantId);
             _signalBus.Fire(new OnObjectsMapChangedSignal { Position = position, OccupantId = occupantId });
         }
 
         private void MoveInternal(Vector2Int from, Vector2Int to, string occupantId)
         {
+            // Спочатку оновлюємо обидва словники, потім надсилаємо сигнали
             _occupants.Remove(from);
             _positions.Remove(occupantId);
-            _gridService.VacateTile(from);
-            _signalBus.Fire(new OnObjectsMapChangedSignal { Position = from, OccupantId = null });
 
             _occupants[to] = occupantId;
             _positions[occupantId] = to;
-            _gridService.OccupyTile(to, occupantId);
+
+            _signalBus.Fire(new OnObjectsMapChangedSignal { Position = from, OccupantId = null });
             _signalBus.Fire(new OnObjectsMapChangedSignal { Position = to, OccupantId = occupantId });
         }
 
@@ -140,7 +136,6 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
             if (_occupants.TryGetValue(position, out var id))
                 _positions.Remove(id);
             _occupants.Remove(position);
-            _gridService.VacateTile(position);
             _signalBus.Fire(new OnObjectsMapChangedSignal { Position = position, OccupantId = null });
         }
     }
