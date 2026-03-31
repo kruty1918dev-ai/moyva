@@ -1,6 +1,6 @@
 # Moyva — Документація проекту
 
-> Онлайн-версія документації: [kruty1918dev-ai.github.io/moyva/docs/](https://kruty1918dev-ai.github.io/moyva/docs/#home)
+> Онлайн-версія документації: [kruty1918dev-ai.github.io/moyva/docs/](https://kruty1918dev-ai.github.io/moyva/#home) 
 
 ---
 
