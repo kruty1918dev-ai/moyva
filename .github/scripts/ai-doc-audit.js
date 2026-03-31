@@ -88,7 +88,7 @@ module.exports = async ({ core }) => {
         { role: 'user',   content: userMessage  },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 8192,
+      max_tokens: 2048,
       temperature: 0.1,
     }),
   });
