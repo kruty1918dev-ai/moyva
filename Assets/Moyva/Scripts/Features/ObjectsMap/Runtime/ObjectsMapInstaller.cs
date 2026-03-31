@@ -10,6 +10,10 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
             Container.BindInterfacesAndSelfTo<ObjectsMapService>()
                 .AsSingle()
                 .NonLazy();
+
+            // ObjectsMapService повинен ініціалізуватись раніше за TestUnitSpawner,
+            // щоб підписатись на UnitCreatedSignal до створення юнітів.
+            Container.BindExecutionOrder<ObjectsMapService>(-10);
         }
     }
 }

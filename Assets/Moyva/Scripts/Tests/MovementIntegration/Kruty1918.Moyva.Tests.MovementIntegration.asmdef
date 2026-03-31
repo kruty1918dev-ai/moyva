@@ -1,6 +1,6 @@
 {
-    "name": "Kruty1918.Moyva.Tests.ObjectsMap",
-    "rootNamespace": "Kruty1918.Moyva.Tests.ObjectsMap",
+    "name": "Kruty1918.Moyva.Tests.MovementIntegration",
+    "rootNamespace": "Kruty1918.Moyva.Tests.MovementIntegration",
     "references": [
         "Zenject",
         "Zenject-TestFramework",

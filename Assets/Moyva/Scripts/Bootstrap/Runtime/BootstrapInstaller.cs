@@ -9,6 +9,10 @@ namespace Kruty1918.Moyva.Bootstrap
         {
             // BindInterfacesTo прив'яже TestUnitSpawner до інтерфейсу IInitializable 
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
+
+            // TestUnitSpawner має ініціалізуватись ОСТАННІМ — після усіх сервісів,
+            // щоб усі підписки на сигнали (ObjectsMapService, UnitService тощо) були готові.
+            Container.BindExecutionOrder<TestUnitSpawner>(100);
         }
     }
 }

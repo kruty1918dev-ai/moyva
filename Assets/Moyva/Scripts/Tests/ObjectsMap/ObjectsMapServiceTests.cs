@@ -257,30 +257,16 @@ namespace Kruty1918.Moyva.Tests.ObjectsMap
             Assert.IsFalse(_service.IsOccupied(pos));
         }
 
-        // ─── Signal-driven: OnMapObjectSpawned ───────────────────────────────
+        // ─── OnMapObjectSpawned: сервіс НЕ підписаний — map objects не реєструються ──
 
         [Test]
-        public void OnMapObjectSpawned_ShouldRegisterStaticObject()
+        public void OnMapObjectSpawned_ShouldNotRegisterStaticObject()
         {
             var pos = new Vector2Int(5, 5);
             _signalBus.Fire(new OnMapObjectSpawnedSignal { ObjectId = "river", Position = pos });
 
-            Assert.IsTrue(_service.IsOccupied(pos));
-            Assert.IsTrue(_service.TryGetOccupant(pos, out var id));
-            Assert.AreEqual("river", id);
-        }
-
-        [Test]
-        public void OnMapObjectSpawned_ShouldSkip_WhenPositionAlreadyOccupied()
-        {
-            var pos = new Vector2Int(5, 5);
-            _service.Register(pos, "unit_01");
-
-            // Не кидає виняток, але й не перезаписує
-            _signalBus.Fire(new OnMapObjectSpawnedSignal { ObjectId = "river", Position = pos });
-
-            Assert.IsTrue(_service.TryGetOccupant(pos, out var id));
-            Assert.AreEqual("unit_01", id);
+            Assert.IsFalse(_service.IsOccupied(pos));
         }
     }
+
 }

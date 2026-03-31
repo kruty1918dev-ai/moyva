@@ -69,22 +69,40 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         public async Task MoveUnitAsync(string unitId, Vector2Int targetPosition, CancellationToken externalToken = default)
         {
-            if (string.IsNullOrEmpty(unitId)) return;
+            if (string.IsNullOrEmpty(unitId))
+            {
+                Debug.LogWarning("[UnitMovement] MoveUnitAsync: unitId пустий або null. Рух скасовано.");
+                return;
+            }
 
             // Скасування старого руху того самого юніта
             if (_activeMovements.TryGetValue(unitId, out var oldCts))
             {
+                Debug.Log($"[UnitMovement] Скасування попереднього руху для {unitId}.");
                 oldCts.Cancel();
                 oldCts.Dispose();
             }
 
-            if (!_unitService.TryGetUnitPosition(unitId, out var startPosition)) return;
+            if (!_unitService.TryGetUnitPosition(unitId, out var startPosition))
+            {
+                Debug.LogWarning($"[UnitMovement] MoveUnitAsync: позиція юніта '{unitId}' не знайдена в UnitService. Юніт не зареєстрований?");
+                return;
+            }
 
+            Debug.Log($"[UnitMovement] Пошук шляху для '{unitId}': {startPosition} → {targetPosition}");
             var path = _pathfinder.FindPath(startPosition, targetPosition);
-            if (path == null || path.Count <= 1) return;
+            if (path == null || path.Count <= 1)
+            {
+                Debug.LogWarning($"[UnitMovement] MoveUnitAsync: шлях не знайдено або занадто короткий для '{unitId}' ({startPosition} → {targetPosition}). path={path?.Count ?? 0} точок.");
+                return;
+            }
 
             var unitObj = _unitService.GetUnitObject(unitId);
-            if (unitObj == null) return;
+            if (unitObj == null)
+            {
+                Debug.LogWarning($"[UnitMovement] MoveUnitAsync: GameObject для '{unitId}' не знайдено в UnitService. Юніт не зареєстрований або об'єкт знищено?");
+                return;
+            }
 
             var internalCts = new CancellationTokenSource();
             _activeMovements[unitId] = internalCts;
@@ -93,7 +111,12 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             try
             {
-                var settings = _unitClassConfig.GetConfig(unitId)?.AnimationSettings ?? PathAnimationSettings.Default;
+                var config = _unitClassConfig.GetConfig(unitId);
+                if (config == null)
+                {
+                    Debug.LogWarning($"[UnitMovement] Конфігурація для '{unitId}' не знайдена. Використовую PathAnimationSettings.Default.");
+                }
+                var settings = config?.AnimationSettings ?? PathAnimationSettings.Default;
 
                 // --- НОВА ЛОГІКА ПЕРЕВІРКИ КОЖНОГО КРОКУ ---
                 settings.CanPerformStep = (stepPos) =>
@@ -134,12 +157,13 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             if (_gridService.TryGetTileData(stepPos, out var tileData))
             {
-                // Розраховуємо вартість (тут можна додати коефіцієнт діагоналі, якщо треба)
                 float cost = _tileSettings.GetTileWeight(tileData.TileTypeId);
-                Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: поточна стаміна = {currentStamina}, вартість кроку = {cost}");    
-                return currentStamina >= cost;
+                bool canStep = currentStamina >= cost;
+                Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: стаміна={currentStamina}, вартість={cost}, результат={canStep}");
+                return canStep;
             }
 
+            Debug.LogWarning($"[UnitMovement] CanMakeStep: тайл {stepPos} не знайдено в грід-сервісі.");
             return false;
         }
 

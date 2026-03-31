@@ -7,9 +7,9 @@
 ## Призначення
 
 `ObjectsMapService` — єдине авторитетне джерело правди про те, **хто де стоїть** на ігровій сітці.  
-Не розрізняє тип окупанта (юніт, будівля, ресурс) — тільки факт присутності та ідентифікатор.
+Відстежує лише **динамічні об'єкти** (юніти) — факт присутності та ідентифікатор.
 
-Замінює дублювання позицій між `GridService.TileData.OccupantId` та `UnitService._unitPositions`, усуваючи потенційні точки розсинхронізації при масштабуванні (будівлі, туман війни, FOV).
+Статичні об'єкти карти (річки, гори, ліси) **НЕ** реєструються в ObjectsMapService. Їх прохідність визначається виключно через `TileTypeId` → `TileSettingsService.GetTileWeight()` — вага руху (вартість стаміни).
 
 ---
 
@@ -17,8 +17,7 @@
 
 1. Два словники: `position → occupantId` та `occupantId → position` для O(1)-доступу в обох напрямках.
 2. Підписується на `UnitCreatedSignal`, `UnitMovedSignal`, `UnitDestroyedSignal` — автоматично відстежує юніти.
-3. Підписується на `OnMapObjectSpawnedSignal` — реєструє статичні обʼєкти карти (річки, гори тощо).
-4. При кожній зміні надсилає `OnObjectsMapChangedSignal` — підписники (наприклад, `TileView`, `Pathfinder`) реагують самостійно.
+3. При кожній зміні надсилає `OnObjectsMapChangedSignal` — підписники (наприклад, `TileView`, `Pathfinder`) реагують самостійно.
 
 `ObjectsMapService` **не залежить** від `IGridService` — він є повністю незалежною структурою даних.
 
@@ -63,18 +62,9 @@ namespace Kruty1918.Moyva.ObjectsMap.API
 | `UnitCreatedSignal` | IN | Реєструє юніт на стартовій позиції |
 | `UnitMovedSignal` | IN | Переміщує запис у карті |
 | `UnitDestroyedSignal` | IN | Видаляє запис |
-| `OnMapObjectSpawnedSignal` | IN | Реєструє статичний обʼєкт карти (із `MapVisualInstantiator`) |
 | `OnObjectsMapChangedSignal` | OUT | Сповіщає підписників про зміну (позиція + новий ID або null якщо звільнено) |
 
-### `OnMapObjectSpawnedSignal`
-
-```csharp
-public struct OnMapObjectSpawnedSignal
-{
-    public string ObjectId;       // TileTypeId, наприклад "river", "mountain"
-    public Vector2Int Position;
-}
-```
+> **Примітка**: `OnMapObjectSpawnedSignal` існує як DTO, але `ObjectsMapService` НЕ підписується на нього. Статичні обʼєкти карти (річки, гори) впливають на прохідність лише через вагу тайлу (`TileSettingsService.GetTileWeight()`).
 
 ### `OnObjectsMapChangedSignal`
 
