@@ -5,6 +5,6 @@ namespace Kruty1918.Moyva.Generator.API
 {
     public interface IVirtualHeightMapGenerator
     {
-        IEnumerator GenerateVirtualHeightMapRoutine(float[,] heightMap, Action<string[,]> onComplete);
+        void GenerateVirtualHeightMap(float[,] heightMap, Action<string[,]> onComplete);
     }
 }

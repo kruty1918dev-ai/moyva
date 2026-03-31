@@ -4,11 +4,11 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Visuals;
 using UnityEngine;
 using Zenject;
-using System.Collections;
+using Kruty1918.Moyva.Signals;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
-    internal class MapVisualInstantiator : IMapInstantiator, IInitializable
+    internal sealed class MapVisualInstantiator : IMapInstantiator, IInitializable
     {
         private readonly IGridService _gridService;
         private readonly IMapDataGenerator _mapDataGenerator;
@@ -18,17 +18,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private Transform _tilesRoot;
         private Transform _objectsRoot; // Окремий корінь для об'єктів (річок тощо)
         private readonly Dictionary<string, TileTypeDefinition> _definitionsCache = new();
+        private readonly SignalBus _signalBus;
 
         public MapVisualInstantiator(
             TileRegistrySO tileRegistry,
             IGridService gridService,
             IMapDataGenerator mapDataGenerator,
-            DiContainer container)
+            DiContainer container,
+            SignalBus signalBus)
         {
             _tileRegistry = tileRegistry;
             _gridService = gridService;
             _mapDataGenerator = mapDataGenerator;
             _container = container;
+            _signalBus = signalBus; 
         }
 
         public void Initialize()
@@ -39,19 +42,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
         }
 
-        public IEnumerator BuildWorldRoutine()
+        public void BuildWorld()
         {
             string[,] virtualBiomeMap = null;
             string[,] virtualObjectMap = null;
-
+            float[,] finalHeightMap = null;
             // 1. Отримуємо дві карти з генератора через OnComplete
-            yield return _mapDataGenerator.GenerateMapDataRoutine(
+            _mapDataGenerator.GenerateMapData(
                 _gridService.GridWidth,
                 _gridService.GridHeight,
-                (biomes, objects) => 
+                (biomes, objects, heightMap) =>
                 {
                     virtualBiomeMap = biomes;
                     virtualObjectMap = objects;
+                    finalHeightMap = heightMap;
                 });
 
             if (_tilesRoot == null) _tilesRoot = new GameObject("TilesRoot").transform;
@@ -76,10 +80,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     if (!string.IsNullOrEmpty(objectId))
                     {
                         // Об'єкти спавнимо в _objectsRoot з трохи меншим Z, щоб вони були зверху
-                        CreateTileView(pos, objectId, _objectsRoot, 0); 
+                        CreateTileView(pos, objectId, _objectsRoot, 0);
                     }
                 }
             }
+
+            _signalBus.Fire(new OnGenerationCompleteSignal
+            {
+                BiomeMap = virtualBiomeMap,
+                ObjectMap = virtualObjectMap,
+                HeightMap = finalHeightMap
+            }); 
         }
 
         private void CreateTileView(Vector2Int position, string tileId, Transform root, int sortingOrder)
@@ -111,9 +122,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             // Оновлюємо дані в GridService
             // Якщо це об'єкт (річка), він може перезаписувати властивості прохідності клітинки
             var tileData = _gridService.GetTileData(position);
-            
+
             // Логіка: якщо ми спавнимо об'єкт, він стає пріоритетним типом для цієї клітинки в логіці
-            tileData.TileTypeId = tileId; 
+            tileData.TileTypeId = tileId;
             _gridService.SetTileData(position, tileData);
         }
     }

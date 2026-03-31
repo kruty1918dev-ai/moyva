@@ -5,11 +5,11 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
-    internal class WaterPostProcessor : IMapFeatureGenerator
+    internal sealed class WaterPostProcessor : IMapFeatureGenerator
     {
         private readonly string _waterTileId = "water";
 
-        public IEnumerator ApplyFeaturesRoutine(string[,] biomes, string[,] objects, float[,] heights, int w, int h)
+        public void ApplyFeatures(string[,] biomes, string[,] objects, float[,] heights, int w, int h)
         {
             string[,] resultBiomes = (string[,])biomes.Clone();
             bool changed = false;
@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     if (biomes[x, y] == _waterTileId) continue;
 
                     int neighbors = CountWaterNeighbors(biomes, x, y, w, h, 2);
-                    
+
                     // Якщо 4 або більше з 8 сусідів — вода, заповнюємо. 
                     // Це закриває діагональні розриви та "шахівку".
                     if (neighbors >= 5)
@@ -31,7 +31,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         changed = true;
                     }
                 }
-                if (x % 64 == 0) yield return null;
             }
 
             // Оновлюємо основний масив перед другим проходом, якщо треба ще агресивніше
@@ -45,16 +44,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     if (biomes[x, y] == _waterTileId) continue;
 
                     int neighbors = CountWaterNeighbors(biomes, x, y, w, h, 2);
-                    
+
                     // В радіусі 2 всього 24 сусіда. Якщо хоча б половина (12) — вода,
                     // це гарантовано з'єднає два близьких озера.
-                    if (neighbors >= 12) 
+                    if (neighbors >= 12)
                     {
                         resultBiomes[x, y] = _waterTileId;
                         changed = true;
                     }
                 }
-                if (x % 64 == 0) yield return null;
             }
 
             if (changed) CopyArray(resultBiomes, biomes, w, h);

@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<UnitMovedSignal>();
             Container.DeclareSignal<UnitDestroyedSignal>();
             Container.DeclareSignal<InterruptMovementSignal>();
+            Container.DeclareSignal<OnGenerationCompleteSignal>();
         }
     }
 }
