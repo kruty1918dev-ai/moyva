@@ -22,7 +22,6 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreated);
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
-            _signalBus.Subscribe<OnMapObjectSpawnedSignal>(OnMapObjectSpawned);
         }
 
         public void Dispose()
@@ -30,7 +29,6 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
             _signalBus.Unsubscribe<UnitCreatedSignal>(OnUnitCreated);
             _signalBus.Unsubscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.Unsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
-            _signalBus.Unsubscribe<OnMapObjectSpawnedSignal>(OnMapObjectSpawned);
         }
 
         // --- Signal handlers ---
@@ -62,17 +60,6 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
             {
                 UnregisterInternal(pos);
             }
-        }
-
-        private void OnMapObjectSpawned(OnMapObjectSpawnedSignal signal)
-        {
-            if (_occupants.ContainsKey(signal.Position))
-            {
-                // Статичний обʼєкт не може перекрити вже зайняту позицію
-                Debug.LogWarning($"[ObjectsMap] OnMapObjectSpawned: position {signal.Position} already occupied. Skipping '{signal.ObjectId}'.");
-                return;
-            }
-            RegisterInternal(signal.Position, signal.ObjectId);
         }
 
         // --- Public API ---

@@ -1,11 +1,10 @@
 {
-    "name": "Kruty1918.Moyva.Tests.ObjectsMap",
-    "rootNamespace": "Kruty1918.Moyva.Tests.ObjectsMap",
+    "name": "Kruty1918.Moyva.Tests.MovementPlayMode",
+    "rootNamespace": "Kruty1918.Moyva.Tests.MovementPlayMode",
     "references": [
         "Zenject",
         "Zenject-TestFramework",
         "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner",
         "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.ObjectsMap",
         "Kruty1918.Moyva.Grid",
@@ -13,9 +12,7 @@
         "Kruty1918.Moyva.Animations",
         "Kruty1918.Moyva.Units"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,

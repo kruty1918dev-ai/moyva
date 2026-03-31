@@ -50,7 +50,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         public async void HandleTileClick(Vector2Int position)
         {
-            if (!_gridService.TryGetTileData(position, out _)) return;
+            if (!_gridService.TryGetTileData(position, out _))
+            {
+                Debug.LogWarning($"[Interaction] HandleTileClick: тайл на позиції {position} не існує в грід-сервісі.");
+                return;
+            }
 
             // КРОК 1: Вибір юніта (якщо ніхто не вибраний)
             if (string.IsNullOrEmpty(_selectedUnitId))
@@ -58,8 +62,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 if (_objectsMapService.TryGetOccupant(position, out var occupantId))
                 {
                     _selectedUnitId = occupantId;
-                    Debug.Log($"[Interaction] Вибрано юніта: {_selectedUnitId}");
-                    // Тут можна кинути сигнал UnitSelectedSignal для підсвічування в UI
+                    Debug.Log($"[Interaction] Вибрано юніта: {_selectedUnitId} на позиції {position}");
+                }
+                else
+                {
+                    Debug.Log($"[Interaction] Тайл {position} натиснуто, але окупант не знайдений в ObjectsMapService. IsOccupied={_objectsMapService.IsOccupied(position)}");
                 }
                 return;
             }

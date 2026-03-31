@@ -47,7 +47,11 @@ namespace Kruty1918.Moyva.Units.Runtime
         private void OnUnitCreated(UnitCreatedSignal signal)
         {
             var config = _unitClassConfig.GetConfig(signal.UnitTypeId);
-            if (config == null) return;
+            if (config == null)
+            {
+                Debug.LogError($"[UnitService] OnUnitCreated: конфігурація для typeId='{signal.UnitTypeId}' (unitId='{signal.UnitId}') НЕ ЗНАЙДЕНА! Юніт НЕ буде зареєстрований.");
+                return;
+            }
 
             float randomMod = Random.Range(config.StaminaRandomRange.x, config.StaminaRandomRange.y);
             float startStamina = config.BaseStamina + randomMod;
@@ -64,25 +68,28 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private void OnUnitMoved(UnitMovedSignal signal)
         {
-            if (_unitStamina.ContainsKey(signal.UnitId))
+            if (!_unitStamina.ContainsKey(signal.UnitId))
             {
-                if (!CanUnitMove(signal.UnitId, signal.NewPosition))
-                {
-                    // Посилаємо команду на зупинку
-                    _signalBus.Fire(new InterruptMovementSignal
-                    {
-                        UnitId = signal.UnitId,
-                    });
-                    Debug.Log($"[UnitService] Unit {signal.UnitId} cannot move to {signal.NewPosition} due to insufficient stamina.");
-                    return;
-                }
-
-                // Логіка окупації делегована ObjectsMapService — він слухає UnitMovedSignal напряму
-                _unitStamina[signal.UnitId] -= signal.Cost;
-                _unitPositions[signal.UnitId] = signal.NewPosition;
-
-                Debug.Log($"[UnitService] Unit {signal.UnitId} moved to {signal.NewPosition}. Stamina now: {_unitStamina[signal.UnitId]}");
+                Debug.LogWarning($"[UnitService] OnUnitMoved: юніт '{signal.UnitId}' не зареєстрований у _unitStamina. Сигнал ігнорується.");
+                return;
             }
+
+            float staminaBefore = _unitStamina[signal.UnitId];
+
+            if (!CanUnitMove(signal.UnitId, signal.NewPosition))
+            {
+                _signalBus.Fire(new InterruptMovementSignal
+                {
+                    UnitId = signal.UnitId,
+                });
+                Debug.LogWarning($"[UnitService] Unit {signal.UnitId} не може рухатись до {signal.NewPosition}. Стаміна={staminaBefore}, вартість={signal.Cost}. Надіслано InterruptMovementSignal.");
+                return;
+            }
+
+            _unitStamina[signal.UnitId] -= signal.Cost;
+            _unitPositions[signal.UnitId] = signal.NewPosition;
+
+            Debug.Log($"[UnitService] Unit {signal.UnitId} рух до {signal.NewPosition}. Стаміна: {staminaBefore} → {_unitStamina[signal.UnitId]} (витрачено {signal.Cost})");
         }
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)

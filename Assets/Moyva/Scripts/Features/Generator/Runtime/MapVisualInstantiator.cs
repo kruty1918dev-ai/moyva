@@ -81,13 +81,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     {
                         // Об'єкти спавнимо в _objectsRoot з трохи меншим Z, щоб вони були зверху
                         CreateTileView(pos, objectId, _objectsRoot, 0);
-
-                        // Сповіщаємо ObjectsMap про статичний обʼєкт карти
-                        _signalBus.Fire(new OnMapObjectSpawnedSignal
-                        {
-                            ObjectId = objectId,
-                            Position = pos
-                        });
                     }
                 }
             }

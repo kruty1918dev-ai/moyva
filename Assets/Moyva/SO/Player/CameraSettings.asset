@@ -15,6 +15,6 @@ MonoBehaviour:
   moveSpeed: 10
   smoothTime: 0.3
   zoomSpeed: 100
-  minZoom: 10
+  minZoom: 5
   maxZoom: 50
   defaultCameraZ: -10
