@@ -1,4 +1,4 @@
-// ai-doc-audit.js — called by actions/github-script@v7 via `script-path`
+// ai-doc-audit.js — called by actions/github-script@v7 via `script: require(...)`
 // Environment variables expected:
 //   MODELS_TOKEN      — GitHub PAT with models:read
 //   MODELS_API_BASE   — https://models.inference.ai.azure.com

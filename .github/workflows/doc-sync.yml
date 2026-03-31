@@ -126,7 +126,9 @@ jobs:
           MODELS_API_BASE: ${{ env.MODELS_API_BASE }}
           MODEL_ID: ${{ env.MODEL_ID }}
         with:
-          script-path: .github/scripts/ai-doc-audit.js
+          script: |
+            const fn = require(`${process.env.GITHUB_WORKSPACE}/.github/scripts/ai-doc-audit.js`);
+            await fn({ core, github, context });
 
       - name: Documentation is fully up to date
         if: steps.ai.outputs.needs_update == 'false'
