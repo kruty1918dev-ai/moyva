@@ -19,6 +19,10 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Skip deployments triggered by the AI doc-sync bot commit (those carry [skip ci]).
+    # GitHub already suppresses [skip ci] workflows globally, but this guard
+    # makes the intent explicit for manual audits.
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'"
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
