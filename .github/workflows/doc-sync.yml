@@ -75,7 +75,8 @@ jobs:
       - name: Collect source code for AI analysis
         if: steps.audit.outputs.audit_needed == 'true'
         env:
-          SOURCE_CODE_CAP_BYTES: 60000
+          SOURCE_CODE_CAP_BYTES: 15000
+          DOCS_CAP_BYTES: 12000
         run: |
           SCRIPTS_DIR="Assets/Moyva/Scripts"
           > /tmp/source_code.txt
@@ -98,6 +99,7 @@ jobs:
             cat "$f"               >> /tmp/docs_content.txt
             printf "\n\n"          >> /tmp/docs_content.txt
           done
+          truncate -s "$DOCS_CAP_BYTES" /tmp/docs_content.txt || true
           echo "Docs content size: $(wc -c < /tmp/docs_content.txt) bytes"
 
           echo "${{ steps.audit.outputs.missing_docs }}" > /tmp/missing_docs.txt
