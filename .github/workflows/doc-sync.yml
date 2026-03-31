@@ -26,7 +26,7 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'"
 
     env:
-      MODELS_API_BASE: https://api.github.com
+      MODELS_API_BASE: https://models.inference.ai.azure.com
       MODEL_ID: gpt-4o
 
     outputs:
@@ -110,7 +110,10 @@ jobs:
         run: |
           echo "Source code bytes: $(wc -c < /tmp/source_code.txt || echo 'no file')"
           echo "Docs content bytes: $(wc -c < /tmp/docs_content.txt || echo 'no file')"
-          http_code=$(curl -s -o /tmp/resp -w "%{http_code}" -H "Authorization: Bearer $MODELS_TOKEN" -H "Accept: application/json" "$MODELS_API_BASE/models" || true)
+          http_code=$(curl -s -o /tmp/resp -w "%{http_code}" \
+            -H "Authorization: Bearer $MODELS_TOKEN" \
+            -H "Accept: application/json" \
+            "$MODELS_API_BASE/models" || true)
           echo "Models endpoint HTTP status: $http_code"
           head -c 1000 /tmp/resp || true
 
@@ -156,7 +159,7 @@ jobs:
               '  "needs_update": true | false,',
               '  "reason": "стисле пояснення: що відсутнє або застаріле",',
               '  "files": {',
-              '    "docs/systems/system-name.md": "повний Markdown вміст файлу"',
+              '    "docs/systems/system-name.md": "повний Markdown вміст файлу"
               '  }',
               '}',
               '',
@@ -172,9 +175,12 @@ jobs:
               `=== ВИХІДНИЙ КОД (Assets/Moyva/Scripts/) ===\n${sourceCode}\n\n` +
               `=== ПОТОЧНА ДОКУМЕНТАЦІЯ ===\n${docsContent}`;
 
-            console.log('Calling Models API — full audit mode…');
+            console.log('Calling GitHub Models API…');
 
-            const modelsListRes = await fetchFn(`${process.env.MODELS_API_BASE.replace(/\/$/, '')}/models`, {
+            const apiBase = process.env.MODELS_API_BASE.replace(/\/$/, '');
+
+            // Validate token by listing models
+            const modelsListRes = await fetchFn(`${apiBase}/models`, {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${process.env.MODELS_TOKEN}`,
@@ -190,7 +196,8 @@ jobs:
               throw new Error(`Models endpoint returned ${modelsListRes.status}: ${modelsListText}`);
             }
 
-            const completionUrl = `${process.env.MODELS_API_BASE.replace(/\/$/, '')}/models/${process.env.MODEL_ID}/chat/completions`;
+            // Use the correct GitHub Models chat completions endpoint
+            const completionUrl = `${apiBase}/chat/completions`;
 
             const completionRes = await fetchFn(completionUrl, {
               method: 'POST',
