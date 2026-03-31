@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
@@ -8,12 +9,14 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
     internal sealed class Pathfinder : IPathfinder
     {
         private readonly IGridService _gridService;
-        private readonly ITileSettingsService _tileSettings; // Додано сервіс налаштувань
+        private readonly ITileSettingsService _tileSettings;
+        private readonly IObjectsMapService _objectsMapService;
 
-        public Pathfinder(IGridService gridService, ITileSettingsService tileSettings)
+        public Pathfinder(IGridService gridService, ITileSettingsService tileSettings, IObjectsMapService objectsMapService)
         {
             _gridService = gridService;
             _tileSettings = tileSettings;
+            _objectsMapService = objectsMapService;
         }
 
         public IEnumerable<Vector2Int> GetNeighbors(Vector2Int pos)
@@ -63,7 +66,7 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
 
                     // 1. ПЕРЕВІРКА ОКУПАЦІЇ: Ігноруємо зайняті тайли, щоб обходити перешкоди
                     // Дозволяємо перевірку для цільового тайла (end) та стартового (start)
-                    if (tileData.IsOccupied && neighbor != start && neighbor != end)
+                    if (_objectsMapService.IsOccupied(neighbor) && neighbor != start && neighbor != end)
                     {
                         continue;
                     }

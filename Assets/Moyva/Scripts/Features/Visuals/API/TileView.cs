@@ -1,5 +1,4 @@
-using System;
-using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -12,34 +11,21 @@ namespace Kruty1918.Moyva.Visuals
         [SerializeField] private Color _occupiedColor;
 
         [Inject] private SignalBus _signalBus;
-        [Inject] private IGridService _gridService;
+        [Inject] private IObjectsMapService _objectsMapService;
 
         private void Start()
         {
-            _signalBus.Subscribe<OnTileChanged>(OnTileChanged);
+            _signalBus.Subscribe<OnObjectsMapChangedSignal>(OnObjectsMapChanged);
         }
 
-        private void OnTileChanged(OnTileChanged signal)
+        private void OnObjectsMapChanged(OnObjectsMapChangedSignal signal)
         {
-            // Якщо позиція зміни належить цьому TileView
-            // Ми можемо отримати інформацію про те, чи зайнята ця позиція, і оновити візуал відповідно
-            // Для спрощення, припустимо, що ми просто змінюємо колір, якщо позиція зайнята
-            // Якщо з тайл дата видно чи є окупант можна виконувати відповідно дію, якщо його немає відповідно також дія
+            if (!IsMinePosition(signal.Position)) return;
 
-            var tileData = _gridService.GetTileData(signal.Position);
-
-            if (IsMinePosition(signal.Position))
-            {
-                if (tileData.IsOccupied)
-                {
-                    Occupy();
-                }
-                else
-                {
-                    Vacate();
-                }
-
-            }
+            if (signal.OccupantId != null)
+                Occupy();
+            else
+                Vacate();
         }
 
         public void Occupy()

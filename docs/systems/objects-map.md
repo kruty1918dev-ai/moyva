@@ -18,7 +18,9 @@
 1. Два словники: `position → occupantId` та `occupantId → position` для O(1)-доступу в обох напрямках.
 2. Підписується на `UnitCreatedSignal`, `UnitMovedSignal`, `UnitDestroyedSignal` — автоматично відстежує юніти.
 3. Підписується на `OnMapObjectSpawnedSignal` — реєструє статичні обʼєкти карти (річки, гори тощо).
-4. При кожній зміні надсилає `OnObjectsMapChangedSignal` та синхронно оновлює `IGridService` (`OccupyTile` / `VacateTile`) для зворотної сумісності з `TileView`.
+4. При кожній зміні надсилає `OnObjectsMapChangedSignal` — підписники (наприклад, `TileView`, `Pathfinder`) реагують самостійно.
+
+`ObjectsMapService` **не залежить** від `IGridService` — він є повністю незалежною структурою даних.
 
 ---
 
@@ -123,13 +125,13 @@ public class ObjectsMapInstaller : MonoInstaller
 | Залежність | Причина |
 |---|---|
 | [`SignalBus`](signals.md) | Підписка на юніт-сигнали; надсилання `OnObjectsMapChangedSignal` |
-| [`IGridService`](grid.md) | Синхронне оновлення `OccupyTile` / `VacateTile` для зворотної сумісності |
 
 ---
 
 ## Пов'язані системи
 
-- [Grid](grid.md) — `ObjectsMapService` синхронно оновлює `IGridService`
 - [Units](units.md) — `UnitService` більше не веде власний трекінг позицій через `GridService`
 - [Generator](generator.md) — `MapVisualInstantiator` надсилає `OnMapObjectSpawnedSignal` після спавну статичних обʼєктів
+- [Pathfinding](pathfinding.md) — `Pathfinder` використовує `IObjectsMapService.IsOccupied()` для обходу перешкод
+- [Visuals](visuals.md) — `TileView` підписується на `OnObjectsMapChangedSignal` для оновлення кольору
 - [Signals](signals.md) — нові сигнали `OnMapObjectSpawnedSignal`, `OnObjectsMapChangedSignal`
