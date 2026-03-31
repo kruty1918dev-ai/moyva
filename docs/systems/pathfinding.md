@@ -1,6 +1,6 @@
 # Pathfinding — Система пошуку шляху
 
-← [Назад до README](../README.md)
+← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/docs/#systems/pathfinding)
 
 ---
 
