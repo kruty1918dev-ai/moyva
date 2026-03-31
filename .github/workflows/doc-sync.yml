@@ -16,6 +16,7 @@ permissions:
   contents: write
   pages: write
   id-token: write
+  models: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
