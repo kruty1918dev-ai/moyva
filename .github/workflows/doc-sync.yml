@@ -18,7 +18,7 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-# ──────────────────────────────────────��──────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────────────────
 jobs:
   # ── Job 1: Full structural audit, run AI check, optionally update docs ─────
   check-and-update:
@@ -142,12 +142,13 @@ jobs:
           script: |
             const fs   = require('fs');
             const path = require('path');
-            const core = require('@actions/core');
+            // use existing injected core if present, otherwise require it
+            const gh_core = (typeof globalThis.core !== 'undefined') ? globalThis.core : require('@actions/core');
 
             // fetch should be available in the github-script runtime; fallback handled by environment
             const fetchFn = (typeof globalThis.fetch === 'function') ? globalThis.fetch : undefined;
             if (!fetchFn) {
-              core.setFailed('fetch is not available in this runtime. If using a custom runner, ensure fetch is available.');
+              gh_core.setFailed('fetch is not available in this runtime. If using a custom runner, ensure fetch is available.');
               return;
             }
 
@@ -181,7 +182,7 @@ jobs:
               '',
               'Правила:',
               '- Якщо документація повністю актуальна → needs_update: false, files: {}',
-              '- Документуй ТІЛЬКИ системи з Assets/Moyva/Scripts/ (не тести)',
+              '- Доку��ентуй ТІЛЬКИ системи з Assets/Moyva/Scripts/ (не тести)',
               '- Назва файлу = назва папки системи у нижньому регістрі (напр. objectsmap → objects-map.md)',
               '- Зберігай українську мову та наявний стиль документації',
               "- Шлях файлу ОБОВ'ЯЗКОВО має починатися з \"docs/\"",
@@ -191,19 +192,19 @@ jobs:
               `=== ВИХІДНИЙ КОД (Assets/Moyva/Scripts/) ===\n${sourceCode}\n\n` +
               `=== ПОТОЧНА ДОКУМЕНТАЦІЯ ===\n${docsContent}`;
 
-            core.info('Calling Models API — full audit mode…');
+            gh_core.info('Calling Models API — full audit mode…');
 
             // Do a quick check of the token with GET /models (helps debug 401)
             const modelsListRes = await fetchFn(`${process.env.MODELS_API_BASE.replace(/\/$/, '')}/models`, {
               method: 'GET',
               headers: { 'Authorization': `Bearer ${process.env.MODELS_TOKEN}`, 'Accept': 'application/json' },
             });
-            core.info(`Models list status: ${modelsListRes.status}`);
+            gh_core.info(`Models list status: ${modelsListRes.status}`);
             const modelsListText = await modelsListRes.text();
-            core.info(modelsListText.substring(0, Math.min(1000, modelsListText.length)));
+            gh_core.info(modelsListText.substring(0, Math.min(1000, modelsListText.length)));
 
             if (modelsListRes.status >= 400) {
-              core.setFailed(`Models endpoint returned ${modelsListRes.status}: ${modelsListText}`);
+              gh_core.setFailed(`Models endpoint returned ${modelsListRes.status}: ${modelsListText}`);
               return;
             }
 
@@ -231,29 +232,29 @@ jobs:
 
             if (!completionRes.ok) {
               const errBody = await completionRes.text();
-              core.setFailed(`Models API error ${completionRes.status}:\n${errBody}`);
+              gh_core.setFailed(`Models API error ${completionRes.status}:\n${errBody}`);
               return;
             }
 
             const data = await completionRes.json();
             const rawContent = data.choices?.[0]?.message?.content || '';
-            core.info(`AI response length: ${String(rawContent).length} chars`);
+            gh_core.info(`AI response length: ${String(rawContent).length} chars`);
 
             let result;
             try {
               result = JSON.parse(rawContent);
             } catch (e) {
-              core.setFailed(`Could not parse AI response as JSON:\n${String(rawContent).substring(0, 800)}`);
+              gh_core.setFailed(`Could not parse AI response as JSON:\n${String(rawContent).substring(0, 800)}`);
               return;
             }
 
             const needsUpdate = Boolean(result.needs_update);
             const reason      = String(result.reason || '');
-            core.info(`needs_update : ${needsUpdate}`);
-            core.info(`reason       : ${reason}`);
+            gh_core.info(`needs_update : ${needsUpdate}`);
+            gh_core.info(`reason       : ${reason}`);
 
-            core.setOutput('needs_update', String(needsUpdate));
-            core.setOutput('reason',       reason);
+            gh_core.setOutput('needs_update', String(needsUpdate));
+            gh_core.setOutput('reason',       reason);
 
             const filesObj = (
               needsUpdate &&
@@ -269,18 +270,18 @@ jobs:
                 const absTarget = path.resolve(WORKSPACE, filePath);
                 if (!absTarget.startsWith(DOCS_ABS_DIR + path.sep) &&
                     absTarget !== DOCS_ABS_DIR) {
-                  core.warning(`SKIPPED — path escapes docs/: ${filePath}`);
+                  gh_core.warning(`SKIPPED — path escapes docs/: ${filePath}`);
                   continue;
                 }
                 const dir = path.dirname(absTarget);
                 fs.mkdirSync(dir, { recursive: true });
                 fs.writeFileSync(absTarget, String(content), 'utf8');
-                core.info(`Written: ${filePath}`);
+                gh_core.info(`Written: ${filePath}`);
                 filesWritten++;
               }
-              core.setOutput('docs_updated', filesWritten > 0 ? 'true' : 'false');
+              gh_core.setOutput('docs_updated', filesWritten > 0 ? 'true' : 'false');
             } else {
-              core.setOutput('docs_updated', 'false');
+              gh_core.setOutput('docs_updated', 'false');
             }
 
       # ── 5. Report ────────────────────────────────────────────────────────────
