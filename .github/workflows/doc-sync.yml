@@ -1,12 +1,10 @@
 name: AI Doc Sync & Deploy
 
-# Triggers on every push to main.
-# Infinite-loop prevention: GitHub Actions automatically skips ALL workflow
-# runs when the head commit message contains "[skip ci]", so the bot commit
-# we push here will never re-trigger this workflow.
+# Triggers on every push to main and allows manual runs.
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: pages
@@ -16,12 +14,11 @@ permissions:
   contents: write
   pages: write
   id-token: write
-  models: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ──────────────────────────────────────��──────────────────────────────────────
 jobs:
   # ── Job 1: Full structural audit, run AI check, optionally update docs ─────
   check-and-update:
@@ -31,6 +28,11 @@ jobs:
     # Extra guard: skip if this commit was authored by our own bot
     # (covers edge cases where [skip ci] alone might not be enough)
     if: "!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'"
+
+    # Environment for model API usage (GitHub Models)
+    env:
+      MODELS_API_BASE: https://api.github.com
+      MODEL_ID: gpt-4o
 
     outputs:
       docs_updated: ${{ steps.ai.outputs.docs_updated }}
@@ -114,24 +116,47 @@ jobs:
           # Write missing docs list
           echo "${{ steps.audit.outputs.missing_docs }}" > /tmp/missing_docs.txt
 
-      # ── 4. AI: full audit — find missing/outdated docs and write them ───────
+      # ── 4a. Diagnostic: validate MODELS token and show sizes ───────────────
+      - name: Validate MOYVA_TOKEN (GitHub Models) and show sample sizes
+        if: steps.audit.outputs.audit_needed == 'true'
+        env:
+          MODELS_TOKEN: ${{ secrets.MOYVA_TOKEN }}
+          MODELS_API_BASE: ${{ env.MODELS_API_BASE }}
+        run: |
+          echo "Source code bytes: $(wc -c < /tmp/source_code.txt || echo 'no file')"
+          echo "Docs content bytes: $(wc -c < /tmp/docs_content.txt || echo 'no file')"
+          http_code=$(curl -s -o /tmp/resp -w "%{http_code}" -H "Authorization: Bearer $MODELS_TOKEN" -H "Accept: application/json" "$MODELS_API_BASE/models" || true)
+          echo "Models endpoint HTTP status: $http_code"
+          head -c 1000 /tmp/resp || true
+
+      # ── 4b. AI: full audit — find missing/outdated docs and write them ───────
       - name: AI — Full documentation audit
         if: steps.audit.outputs.audit_needed == 'true'
         id: ai
         uses: actions/github-script@v7
         env:
-          MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MODELS_TOKEN: ${{ secrets.MOYVA_TOKEN }}
+          MODELS_API_BASE: ${{ env.MODELS_API_BASE }}
+          MODEL_ID: ${{ env.MODEL_ID }}
         with:
           script: |
             const fs   = require('fs');
             const path = require('path');
+            const core = require('@actions/core');
+
+            // fetch should be available in the github-script runtime; fallback handled by environment
+            const fetchFn = (typeof globalThis.fetch === 'function') ? globalThis.fetch : undefined;
+            if (!fetchFn) {
+              core.setFailed('fetch is not available in this runtime. If using a custom runner, ensure fetch is available.');
+              return;
+            }
 
             const WORKSPACE    = process.env.GITHUB_WORKSPACE || process.cwd();
             const DOCS_ABS_DIR = path.resolve(WORKSPACE, 'docs');
 
-            const sourceCode  = fs.readFileSync('/tmp/source_code.txt',  'utf8');
-            const docsContent = fs.readFileSync('/tmp/docs_content.txt', 'utf8');
-            const missingDocs = fs.readFileSync('/tmp/missing_docs.txt', 'utf8').trim();
+            const sourceCode  = fs.existsSync('/tmp/source_code.txt') ? fs.readFileSync('/tmp/source_code.txt',  'utf8') : '';
+            const docsContent = fs.existsSync('/tmp/docs_content.txt') ? fs.readFileSync('/tmp/docs_content.txt', 'utf8') : '';
+            const missingDocs = fs.existsSync('/tmp/missing_docs.txt') ? fs.readFileSync('/tmp/missing_docs.txt', 'utf8').trim() : '';
 
             const systemPrompt = [
               'Ти — асистент з документації для Unity C# проекту "moyva".',
@@ -166,51 +191,66 @@ jobs:
               `=== ВИХІДНИЙ КОД (Assets/Moyva/Scripts/) ===\n${sourceCode}\n\n` +
               `=== ПОТОЧНА ДОКУМЕНТАЦІЯ ===\n${docsContent}`;
 
-            console.log('Calling GitHub Models API (gpt-4o) — full audit mode…');
+            core.info('Calling Models API — full audit mode…');
 
-            const response = await fetch(
-              'https://models.inference.ai.azure.com/chat/completions',
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${process.env.MODELS_TOKEN}`,
-                },
-                body: JSON.stringify({
-                  model: 'gpt-4o',
-                  messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user',   content: userMessage  },
-                  ],
-                  response_format: { type: 'json_object' },
-                  max_tokens: 8192,
-                  temperature: 0.1,
-                }),
-              }
-            );
+            // Do a quick check of the token with GET /models (helps debug 401)
+            const modelsListRes = await fetchFn(`${process.env.MODELS_API_BASE.replace(/\/$/, '')}/models`, {
+              method: 'GET',
+              headers: { 'Authorization': `Bearer ${process.env.MODELS_TOKEN}`, 'Accept': 'application/json' },
+            });
+            core.info(`Models list status: ${modelsListRes.status}`);
+            const modelsListText = await modelsListRes.text();
+            core.info(modelsListText.substring(0, Math.min(1000, modelsListText.length)));
 
-            if (!response.ok) {
-              const errBody = await response.text();
-              core.setFailed(`GitHub Models API error ${response.status}:\n${errBody}`);
+            if (modelsListRes.status >= 400) {
+              core.setFailed(`Models endpoint returned ${modelsListRes.status}: ${modelsListText}`);
               return;
             }
 
-            const data       = await response.json();
-            const rawContent = data.choices[0].message.content;
-            console.log(`AI response length: ${rawContent.length} chars`);
+            // POST to the chat completions endpoint for the selected model (adjust path if your org uses a different route)
+            const completionUrl = `${process.env.MODELS_API_BASE.replace(/\/$/, '')}/models/${process.env.MODEL_ID}/chat/completions`;
+
+            const completionRes = await fetchFn(completionUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.MODELS_TOKEN}`,
+                'Accept': 'application/json',
+              },
+              body: JSON.stringify({
+                model: process.env.MODEL_ID,
+                messages: [
+                  { role: 'system', content: systemPrompt },
+                  { role: 'user',   content: userMessage  },
+                ],
+                response_format: { type: 'json_object' },
+                max_tokens: 8192,
+                temperature: 0.1,
+              }),
+            });
+
+            if (!completionRes.ok) {
+              const errBody = await completionRes.text();
+              core.setFailed(`Models API error ${completionRes.status}:\n${errBody}`);
+              return;
+            }
+
+            const data = await completionRes.json();
+            const rawContent = data.choices?.[0]?.message?.content || '';
+            core.info(`AI response length: ${String(rawContent).length} chars`);
 
             let result;
             try {
               result = JSON.parse(rawContent);
             } catch (e) {
-              core.setFailed(`Could not parse AI response as JSON:\n${rawContent.substring(0, 800)}`);
+              core.setFailed(`Could not parse AI response as JSON:\n${String(rawContent).substring(0, 800)}`);
               return;
             }
 
             const needsUpdate = Boolean(result.needs_update);
             const reason      = String(result.reason || '');
-            console.log(`needs_update : ${needsUpdate}`);
-            console.log(`reason       : ${reason}`);
+            core.info(`needs_update : ${needsUpdate}`);
+            core.info(`reason       : ${reason}`);
 
             core.setOutput('needs_update', String(needsUpdate));
             core.setOutput('reason',       reason);
@@ -229,13 +269,13 @@ jobs:
                 const absTarget = path.resolve(WORKSPACE, filePath);
                 if (!absTarget.startsWith(DOCS_ABS_DIR + path.sep) &&
                     absTarget !== DOCS_ABS_DIR) {
-                  console.warn(`SKIPPED — path escapes docs/: ${filePath}`);
+                  core.warning(`SKIPPED — path escapes docs/: ${filePath}`);
                   continue;
                 }
                 const dir = path.dirname(absTarget);
                 fs.mkdirSync(dir, { recursive: true });
                 fs.writeFileSync(absTarget, String(content), 'utf8');
-                console.log(`Written: ${filePath}`);
+                core.info(`Written: ${filePath}`);
                 filesWritten++;
               }
               core.setOutput('docs_updated', filesWritten > 0 ? 'true' : 'false');
