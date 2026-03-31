@@ -15,7 +15,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _settings = settings;
         }
 
-        public IEnumerator ResolveBiomesRoutine(float[,] heightMap, string[,] currentMap, Action<string[,]> onComplete)
+        public void ResolveBiomes(float[,] heightMap, string[,] currentMap, Action<string[,]> onComplete)
         {
             int width = heightMap.GetLength(0);
             int height = heightMap.GetLength(1);
@@ -43,8 +43,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         resultBiomes[x, y] = selectedTile;
                     }
                 }
-
-                if (x % 64 == 0) yield return null;
             }
 
             onComplete?.Invoke(resultBiomes);

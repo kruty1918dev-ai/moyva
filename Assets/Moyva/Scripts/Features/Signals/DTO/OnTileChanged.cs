@@ -34,4 +34,11 @@ namespace Kruty1918.Moyva.Signals
     {
         public string UnitId;
     }
+
+    public struct OnGenerationCompleteSignal
+    {
+        public string[,] BiomeMap;
+        public string[,] ObjectMap;
+        public float[,] HeightMap;
+    }
 }

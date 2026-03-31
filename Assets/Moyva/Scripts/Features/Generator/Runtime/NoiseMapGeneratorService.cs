@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
-    internal class NoiseMapGeneratorService : INoiseProvider
+    internal sealed class NoiseMapGeneratorService : INoiseProvider
     {
         public float[,] GenerateNoiseMap(DataNoiseSettings settings, int width, int height)
         {
