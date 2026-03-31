@@ -13,11 +13,11 @@
 ## Як працює внутрішньо
 
 1. Кожен тайл у сцені має прикріплений компонент `TileView` (MonoBehaviour).
-2. При старті `TileView` підписується на `OnTileChanged` через `SignalBus`.
+2. При старті `TileView` підписується на `OnObjectsMapChangedSignal` через `SignalBus`.
 3. Коли надходить сигнал, `TileView` перевіряє: чи стосується зміна **саме цього** тайлу (`IsMinePosition`).
 4. Якщо так — оновлює `SpriteRenderer.color`:
-   - Тайл зайнятий → `_occupiedColor`
-   - Тайл вільний → `Color.white`
+   - `signal.OccupantId != null` (тайл зайнятий) → `_occupiedColor`
+   - `signal.OccupantId == null` (тайл вільний) → `Color.white`
 5. При кліку мишки (`OnMouseDown`) — надсилає `TileClickedSignal` зі своєю позицією.
 
 ---
@@ -67,8 +67,8 @@ namespace Kruty1918.Moyva.Visuals
 
 | Залежність | Причина |
 |---|---|
-| [`SignalBus`](signals.md) | Підписка на `OnTileChanged`, надсилання `TileClickedSignal` |
-| [`IGridService`](grid.md) | Зчитування `TileData` для визначення стану окупації |
+| [`SignalBus`](signals.md) | Підписка на `OnObjectsMapChangedSignal`, надсилання `TileClickedSignal` |
+| [`IObjectsMapService`](objects-map.md) | Ін'єктується через `[Inject]` (доступний для розширення логіки) |
 
 ---
 
@@ -103,10 +103,9 @@ tileView.Setup(gridPosition);
 
 ```csharp
 // Автоматично через SignalBus:
-// GridService.OccupyTile(pos, unitId)
-//   → Fire(OnTileChanged { Position = pos })
-//   → TileView.OnTileChanged(signal)
-//   → Occupy() або Vacate()
+// ObjectsMapService надсилає OnObjectsMapChangedSignal
+//   → TileView.OnObjectsMapChanged(signal)
+//   → Occupy() якщо OccupantId != null, Vacate() якщо null
 ```
 
 ### Клік на тайл (ланцюг)
@@ -120,7 +119,7 @@ tileView.Setup(gridPosition);
 
 ## Пов'язані системи
 
-- [Signals](signals.md) — `OnTileChanged`, `TileClickedSignal`
-- [Grid](grid.md) — `IGridService` для читання стану
+- [Signals](signals.md) — `OnObjectsMapChangedSignal`, `TileClickedSignal`
+- [ObjectsMap](objects-map.md) — надсилає `OnObjectsMapChangedSignal`, яку `TileView` обробляє
 - [Interactions](interactions.md) — отримує `TileClickedSignal` від `TileView`
 - [Generator](generator.md) — спавнить `TileView` при побудові світу

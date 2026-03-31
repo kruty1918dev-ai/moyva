@@ -22,7 +22,7 @@ env:
 
 # ─────────────────────────────────────────────────────────────────────────────
 jobs:
-  # ── Job 1: Detect code changes, run AI check, optionally update docs ───────
+  # ── Job 1: Full structural audit, run AI check, optionally update docs ─────
   check-and-update:
     name: Check & Update Docs
     runs-on: ubuntu-latest
@@ -33,67 +33,74 @@ jobs:
 
     outputs:
       docs_updated: ${{ steps.ai.outputs.docs_updated }}
-      code_changed: ${{ steps.changes.outputs.code_changed }}
+      audit_needed: ${{ steps.audit.outputs.audit_needed }}
 
     steps:
-      # ── 1. Checkout with depth 2 so we can diff HEAD vs HEAD~1 ─────────────
+      # ── 1. Checkout full history so structural audit sees all code ──────────
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── 2. Detect whether any non-docs source files changed ────────────────
-      - name: Detect code changes
-        id: changes
+      # ── 2. Structural doc audit: compare Features/* vs docs/systems/*.md ───
+      - name: Structural doc audit
+        id: audit
         run: |
-          # Handle first commit gracefully (no parent)
-          if git rev-parse HEAD~1 >/dev/null 2>&1; then
-            CHANGED=$(git diff --name-only HEAD~1 HEAD)
-          else
-            CHANGED=$(git show --name-only --pretty=format: HEAD)
-          fi
+          SCRIPTS_DIR="Assets/Moyva/Scripts/Features"
+          DOCS_DIR="docs/systems"
 
-          echo "=== All changed files ==="
-          echo "$CHANGED"
+          echo "=== Systems found in code ==="
+          MISSING_DOCS=""
+          SYSTEMS_LIST=""
+
+          for system_dir in "$SCRIPTS_DIR"/*/; do
+            [ -d "$system_dir" ] || continue
+            system_name=$(basename "$system_dir")
+            SYSTEMS_LIST="$SYSTEMS_LIST $system_name"
+
+            # Expected doc file (lowercase)
+            doc_file="$DOCS_DIR/$(echo "$system_name" | tr '[:upper:]' '[:lower:]').md"
+
+            if [ ! -f "$doc_file" ]; then
+              echo "  MISSING DOC: $system_name → $doc_file"
+              MISSING_DOCS="$MISSING_DOCS $system_name"
+            else
+              echo "  OK: $system_name → $doc_file"
+            fi
+          done
+
           echo ""
+          echo "Systems in code: $SYSTEMS_LIST"
+          echo "Missing docs:    $MISSING_DOCS"
 
-          # Anything outside docs/ and .github/ is considered "code"
-          CODE_CHANGED=$(echo "$CHANGED" | grep -vE '^(docs/|\.github/)' || true)
+          # Always run AI audit (full code scan, not just diff)
+          echo "audit_needed=true" >> "$GITHUB_OUTPUT"
+          echo "missing_docs=$MISSING_DOCS" >> "$GITHUB_OUTPUT"
 
-          if [ -n "$CODE_CHANGED" ]; then
-            echo "code_changed=true" >> "$GITHUB_OUTPUT"
-            echo "Code files changed:"
-            echo "$CODE_CHANGED"
-          else
-            echo "code_changed=false" >> "$GITHUB_OUTPUT"
-            echo "No code files changed."
-          fi
-
-      # ── 3. Short-circuit: nothing to do when there are no code changes ──────
-      - name: "✅ No code changes — documentation is up to date"
-        if: steps.changes.outputs.code_changed == 'false'
+      # ── 3. Collect full source code for AI analysis ─────────────────────────
+      - name: Collect source code for AI analysis
+        if: steps.audit.outputs.audit_needed == 'true'
+        env:
+          SOURCE_CODE_CAP_BYTES: 60000
         run: |
-          echo "No source-code changes detected in this push."
-          echo "Documentation is already current. Exiting pipeline — nothing to do."
+          SCRIPTS_DIR="Assets/Moyva/Scripts"
+          > /tmp/source_code.txt
 
-      # ── 4. Prepare diff and current docs content for the AI ────────────────
-      - name: Prepare content for AI analysis
-        if: steps.changes.outputs.code_changed == 'true'
-        run: |
-          # Cap the diff at 15 000 bytes — keeps the request well within the
-          # ~128 k-token context window of gpt-4o while leaving plenty of room
-          # for the system prompt, current docs, and the model's response.
-          if git rev-parse HEAD~1 >/dev/null 2>&1; then
-            git diff HEAD~1 HEAD -- ':!docs/' ':!.github/' \
-              | head -c 15000 > /tmp/code_diff.txt
-          else
-            git show HEAD -- ':!docs/' ':!.github/' \
-              | head -c 15000 > /tmp/code_diff.txt
-          fi
-          echo "Code diff size: $(wc -c < /tmp/code_diff.txt) bytes"
+          # Collect all C# files from Scripts (excluding Tests)
+          find "$SCRIPTS_DIR" \
+            -path "$SCRIPTS_DIR/Tests" -prune -o \
+            -name "*.cs" -print | sort | while read -r f; do
+            echo "=== FILE: $f ===" >> /tmp/source_code.txt
+            cat "$f"               >> /tmp/source_code.txt
+            printf "\n\n"          >> /tmp/source_code.txt
+          done
 
-          # Collect all Markdown docs into a single file
+          # Cap at SOURCE_CODE_CAP_BYTES to stay within context limits
+          truncate -s "$SOURCE_CODE_CAP_BYTES" /tmp/source_code.txt || true
+          echo "Source code size: $(wc -c < /tmp/source_code.txt) bytes"
+
+          # Collect current docs
           > /tmp/docs_content.txt
           for f in docs/README.md docs/systems/*.md; do
             [ -f "$f" ] || continue
@@ -103,63 +110,62 @@ jobs:
           done
           echo "Docs content size: $(wc -c < /tmp/docs_content.txt) bytes"
 
-      # ── 5. Call GitHub Models (gpt-4o) and conditionally write updated docs ─
-      - name: AI — Analyze and update documentation
-        if: steps.changes.outputs.code_changed == 'true'
+          # Write missing docs list
+          echo "${{ steps.audit.outputs.missing_docs }}" > /tmp/missing_docs.txt
+
+      # ── 4. AI: full audit — find missing/outdated docs and write them ───────
+      - name: AI — Full documentation audit
+        if: steps.audit.outputs.audit_needed == 'true'
         id: ai
         uses: actions/github-script@v7
         env:
-          # Uses the automatically-injected GITHUB_TOKEN, which works with
-          # GitHub Models for repository owners on a Pro / Pro+ / Team / Enterprise plan.
-          # If you receive 401 errors, create a Personal Access Token with the
-          # "model" scope, save it as repository secret GH_MODELS_TOKEN, and
-          # replace the value below with: ${{ secrets.GH_MODELS_TOKEN }}
           MODELS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           script: |
             const fs   = require('fs');
             const path = require('path');
 
-            // Absolute path of the docs directory inside the workspace.
-            // Used for path-traversal protection when writing AI-generated files.
             const WORKSPACE    = process.env.GITHUB_WORKSPACE || process.cwd();
             const DOCS_ABS_DIR = path.resolve(WORKSPACE, 'docs');
 
-            const codeDiff    = fs.readFileSync('/tmp/code_diff.txt',   'utf8');
-            const docsContent = fs.readFileSync('/tmp/docs_content.txt','utf8');
+            const sourceCode  = fs.readFileSync('/tmp/source_code.txt',  'utf8');
+            const docsContent = fs.readFileSync('/tmp/docs_content.txt', 'utf8');
+            const missingDocs = fs.readFileSync('/tmp/missing_docs.txt', 'utf8').trim();
 
-            // ── System prompt (Ukrainian, matches project language) ──────────
             const systemPrompt = [
               'Ти — асистент з документації для Unity C# проекту "moyva".',
               'Документація зберігається у docs/systems/*.md і docs/README.md — написана українською мовою у форматі Markdown.',
+              'Джерело правди — код у папці Assets/Moyva/Scripts/ (Bootstrap/ і Features/).',
               '',
-              'Твоє завдання:',
-              '1. Проаналізувати diff змін у коді (git diff).',
-              '2. Перевірити, чи наявна документація точно відображає ці зміни.',
-              '3. Якщо документація актуальна — повернути needs_update: false.',
-              '4. Якщо документація потребує оновлення — повернути needs_update: true і надати оновлені файли.',
+              'Твоє завдання — ПОВНИЙ АУДИТ документації:',
+              '1. Проаналізуй ВЕСЬ наданий вихідний код.',
+              '2. Для кожної системи/фічі перевір чи існує документація і чи вона актуальна.',
+              '3. Якщо системи немає в документації — створи новий .md файл.',
+              '4. Якщо документація застаріла або неповна — онови її.',
+              '5. Системи без документації (вже виявлені): ' + (missingDocs || 'немає (але перевір самостійно)'),
               '',
               'ВІДПОВІДАЙ ВИКЛЮЧНО валідним JSON такого формату:',
               '{',
               '  "needs_update": true | false,',
-              '  "reason": "стисле пояснення рішення",',
+              '  "reason": "стисле пояснення: що відсутнє або застаріле",',
               '  "files": {',
-              '    "docs/systems/filename.md": "повний оновлений Markdown вміст файлу"',
+              '    "docs/systems/system-name.md": "повний Markdown вміст файлу"',
               '  }',
               '}',
               '',
               'Правила:',
-              '- Якщо оновлення не потрібне → needs_update: false, files: {}',
-              '- Оновлюй лише файли, що безпосередньо стосуються змін у коді',
-              '- Зберігай українську мову та наявний стиль/структуру документації',
+              '- Якщо документація повністю актуальна → needs_update: false, files: {}',
+              '- Документуй ТІЛЬКИ системи з Assets/Moyva/Scripts/ (не тести)',
+              '- Назва файлу = назва папки системи у нижньому регістрі (напр. objectsmap → objects-map.md)',
+              '- Зберігай українську мову та наявний стиль документації',
               "- Шлях файлу ОБОВ'ЯЗКОВО має починатися з \"docs/\"",
             ].join('\n');
 
             const userMessage =
-              `=== GIT DIFF (зміни в коді) ===\n${codeDiff}\n\n` +
+              `=== ВИХІДНИЙ КОД (Assets/Moyva/Scripts/) ===\n${sourceCode}\n\n` +
               `=== ПОТОЧНА ДОКУМЕНТАЦІЯ ===\n${docsContent}`;
 
-            console.log('Calling GitHub Models API (gpt-4o)…');
+            console.log('Calling GitHub Models API (gpt-4o) — full audit mode…');
 
             const response = await fetch(
               'https://models.inference.ai.azure.com/chat/completions',
@@ -176,7 +182,6 @@ jobs:
                     { role: 'user',   content: userMessage  },
                   ],
                   response_format: { type: 'json_object' },
-                  // 8 192 tokens provides ample space for multi-file doc updates
                   max_tokens: 8192,
                   temperature: 0.1,
                 }),
@@ -185,9 +190,7 @@ jobs:
 
             if (!response.ok) {
               const errBody = await response.text();
-              core.setFailed(
-                `GitHub Models API error ${response.status} ${response.statusText}:\n${errBody}`
-              );
+              core.setFailed(`GitHub Models API error ${response.status}:\n${errBody}`);
               return;
             }
 
@@ -199,10 +202,7 @@ jobs:
             try {
               result = JSON.parse(rawContent);
             } catch (e) {
-              // Log first 800 chars to give enough context without flooding logs
-              core.setFailed(
-                `Could not parse AI response as JSON:\n${rawContent.substring(0, 800)}`
-              );
+              core.setFailed(`Could not parse AI response as JSON:\n${rawContent.substring(0, 800)}`);
               return;
             }
 
@@ -214,7 +214,6 @@ jobs:
             core.setOutput('needs_update', String(needsUpdate));
             core.setOutput('reason',       reason);
 
-            // Validate that files is a plain object when an update is needed
             const filesObj = (
               needsUpdate &&
               result.files !== null &&
@@ -226,11 +225,10 @@ jobs:
             if (needsUpdate && fileEntries.length > 0) {
               let filesWritten = 0;
               for (const [filePath, content] of fileEntries) {
-                // Resolve to an absolute path and verify it stays inside docs/
                 const absTarget = path.resolve(WORKSPACE, filePath);
                 if (!absTarget.startsWith(DOCS_ABS_DIR + path.sep) &&
                     absTarget !== DOCS_ABS_DIR) {
-                  console.warn(`SKIPPED — path escapes docs/ directory: ${filePath}`);
+                  console.warn(`SKIPPED — path escapes docs/: ${filePath}`);
                   continue;
                 }
                 const dir = path.dirname(absTarget);
@@ -244,17 +242,14 @@ jobs:
               core.setOutput('docs_updated', 'false');
             }
 
-      # ── 6. Report: docs were already up to date ─────────────────────────────
-      - name: "✅ Documentation is already up to date — no deployment needed"
-        if: >
-          steps.changes.outputs.code_changed == 'true' &&
-          steps.ai.outputs.needs_update == 'false'
+      # ── 5. Report ────────────────────────────────────────────────────────────
+      - name: "✅ Documentation is fully up to date"
+        if: steps.ai.outputs.needs_update == 'false'
         run: |
-          echo "AI confirmed: documentation already reflects all code changes."
+          echo "AI confirmed: all systems are documented and up to date."
           echo "Reason: ${{ steps.ai.outputs.reason }}"
-          echo "No deployment triggered."
 
-      # ── 7. Commit the AI-generated doc updates with [skip ci] ───────────────
+      # ── 6. Commit updated docs ───────────────────────────────────────────────
       - name: Commit updated documentation
         if: steps.ai.outputs.docs_updated == 'true'
         run: |
@@ -269,7 +264,7 @@ jobs:
             echo "Documentation committed and pushed."
           fi
 
-      # ── 8. Upload the (now-updated) docs as a Pages artifact ────────────────
+      # ── 7. Upload Pages artifact ─────────────────────────────────────────────
       - name: Upload Pages artifact
         if: steps.ai.outputs.docs_updated == 'true'
         uses: actions/upload-pages-artifact@v3

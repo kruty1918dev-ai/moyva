@@ -125,7 +125,7 @@ var settings = config.AnimationSettings; // PathAnimationSettings з UnitClassCo
 
 // Делегат: перед кожним кроком перевіряємо, чи тайл не зайнятий
 settings.CanPerformStep = nextPos =>
-    !_gridService.IsTileOccupied(nextPos) || nextPos == targetPosition;
+    !_objectsMapService.IsOccupied(nextPos) || nextPos == targetPosition;
 
 // Делегат: після кожного кроку надсилаємо сигнал для списання стаміни
 settings.OnStepCompleted = nextPos =>
