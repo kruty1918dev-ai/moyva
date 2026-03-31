@@ -101,10 +101,11 @@ public interface IUnitClassConfig
 
 | Поле | Тип | Опис |
 |---|---|---|
-| `TypeId` | `string` | Ідентифікатор класу (`"warrior"`) |
+| `TypeId` | `string` | Ідентифікатор класу (без підкреслень; рекомендується дефіс або camelCase, наприклад `"warrior-01"` або `"Warrior01"`) |
 | `Prefab` | `GameObject` | Ігровий префаб юніта |
 | `BaseStamina` | `float` | Базова стаміна при старті |
-| `StaminaRandomRange` | `Vector2` | Діапазон рандомного модифікатора стаміни |
+| `StaminaRegenBase` | `float` | Базова швидкість регенерації стаміни |
+| `StaminaRandomRange` | `Vector2` | Двосторонній рандомний модифікатор стаміни, який додається до `BaseStamina` (наприклад, `(-5, 5)` → `BaseStamina ± 5`) |
 | `AnimationSettings` | `PathAnimationSettings` | Налаштування анімації руху |
 
 ---
@@ -145,18 +146,19 @@ public class UnitsInstaller : MonoInstaller
     {
         Container.BindInstance(_unitRegistry).AsSingle();
 
-        Container.Bind<IUnitClassConfig>()
-            .To<UnitClassConfigService>()
-            .AsSingle();
-
         Container.BindInterfacesAndSelfTo<UnitService>()
-            .AsSingle();
+            .AsSingle()
+            .NonLazy();
 
         Container.Bind<IUnitFactory>()
             .To<UnitFactory>()
             .AsSingle();
 
         Container.BindInterfacesAndSelfTo<UnitMovementService>()
+            .AsSingle();
+
+        Container.Bind<IUnitClassConfig>()
+            .To<UnitClassConfigService>()
             .AsSingle();
     }
 }
