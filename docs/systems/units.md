@@ -125,7 +125,7 @@ public interface IUnitClassConfig
 
 | Залежність | Причина |
 |---|---|
-| [`IGridService`](grid.md) | Зайняти / звільнити тайли |
+| [`IGridService`](grid.md) | Отримання даних тайлу (тип тайлу) для перевірки вартості кроку |
 | [`ITileSettingsService`](grid.md) | Вага тайлу для перевірки стаміни |
 | [`IPathfinder`](pathfinding.md) | Пошук шляху перед рухом |
 | [`IMovementAnimationService`](animations.md) | Плавна анімація кроку |
@@ -203,7 +203,8 @@ if (_unitService.TryGetUnitPosition("warrior_01_123456", out var pos))
 
 ## Пов'язані системи
 
-- [Grid](grid.md) — зберігає окупацію тайлів
+- [Grid](grid.md) — надає дані про вагу тайлів для перевірки стаміни
+- [ObjectsMap](objects-map.md) — відстежує позиції юнітів на карті
 - [Pathfinding](pathfinding.md) — будує маршрут
 - [Animations](animations.md) — виконує плавний рух
 - [Interactions](interactions.md) — ініціює команду руху
