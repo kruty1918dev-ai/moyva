@@ -59,8 +59,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             // Зберігаємо GameObject
             _unitObjects[signal.UnitId] = signal.UnitObject;
 
-            _gridService.OccupyTile(signal.Position, signal.UnitId);
-
             Debug.Log($"[UnitService] Unit {signal.UnitId} registered and cached. Stamina: {startStamina}, Position: {signal.Position}  ");
         }
 
@@ -79,18 +77,11 @@ namespace Kruty1918.Moyva.Units.Runtime
                     return;
                 }
 
-                // Логіка окупації: звільняємо старий, займаємо новий
-                if (_unitPositions.TryGetValue(signal.UnitId, out var oldPos))
-                {
-                    _gridService.VacateTile(oldPos);
-                }
-
+                // Логіка окупації делегована ObjectsMapService — він слухає UnitMovedSignal напряму
                 _unitStamina[signal.UnitId] -= signal.Cost;
                 _unitPositions[signal.UnitId] = signal.NewPosition;
 
                 Debug.Log($"[UnitService] Unit {signal.UnitId} moved to {signal.NewPosition}. Stamina now: {_unitStamina[signal.UnitId]}");
-
-                _gridService.OccupyTile(signal.NewPosition, signal.UnitId);
             }
         }
 
