@@ -1,6 +1,6 @@
 # Camera — Система керування камерою
 
-← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/docs/#systems/camera)
+← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/camera)
 
 ---
 

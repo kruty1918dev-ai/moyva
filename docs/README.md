@@ -1,6 +1,6 @@
 # Moyva — Документація проекту
 
-> Онлайн-версія документації: [kruty1918dev-ai.github.io/moyva/docs/](https://kruty1918dev-ai.github.io/moyva/docs/#home)
+> Онлайн-версія документації: [kruty1918dev-ai.github.io/moyva/](https://kruty1918dev-ai.github.io/moyva/#home)
 
 ---
 
@@ -36,6 +36,7 @@
 | **ObjectsMap** | [systems/objects-map.md](systems/objects-map.md) | Єдине джерело правди про зайнятість позицій |
 | **Visuals** | [systems/visuals.md](systems/visuals.md) | Візуальне відображення тайлів |
 | **Bootstrap** | [systems/bootstrap.md](systems/bootstrap.md) | Стартова ініціалізація сцени |
+| **Порядок ініціалізації** | [systems/initialization-order.md](systems/initialization-order.md) | Послідовність запуску вузлів ядра Zenject |
 
 ---
 
