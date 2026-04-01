@@ -35,6 +35,7 @@
 | **Generator** | [systems/generator.md](systems/generator.md) | Процедурна генерація карти |
 | **ObjectsMap** | [systems/objects-map.md](systems/objects-map.md) | Єдине джерело правди про зайнятість позицій |
 | **Visuals** | [systems/visuals.md](systems/visuals.md) | Візуальне відображення тайлів |
+| **Buildings** | [systems/buildings.md](systems/buildings.md) | Меню будівництва, розміщення, підтвердження, Undo/Redo, стіни |
 | **Bootstrap** | [systems/bootstrap.md](systems/bootstrap.md) | Стартова ініціалізація сцени |
 | **Порядок ініціалізації** | [systems/initialization-order.md](systems/initialization-order.md) | Послідовність запуску вузлів ядра Zenject |
 
@@ -87,9 +88,14 @@ Assets/
                   ├── ObjectsMap/
                   │   ├── API/          ← IObjectsMapService
                   │   └── Runtime/      ← ObjectsMapService, ObjectsMapInstaller
-            └── Visuals/
-                ├── API/          ← TileView (MonoBehaviour)
-                └── Runtime/      ← VisualInstaller
+            ├── Visuals/
+            │   ├── API/          ← TileView (MonoBehaviour)
+            │   └── Runtime/      ← VisualInstaller
+            └── Buildings/
+                ├── API/          ← IBuildingConfig, IBuildingPlacementService, BuildingCategory, BuildingPlacedEntry
+                └── Runtime/      ← BuildingConfig, BuildingRegistrySO, BuildingPlacementService,
+                                     BuildingPreviewView, WallPlacementController, WallCircleHandler,
+                                     BuildingInputHandler, BuildingsInstaller
 ```
 
 ---

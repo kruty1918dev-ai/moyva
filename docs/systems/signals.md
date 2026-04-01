@@ -125,6 +125,37 @@ public struct OnObjectsMapChangedSignal
 
 ---
 
+### `BuildingPlacedSignal`
+
+Надсилається: `BuildingPlacementService` (після підтвердження — `Confirm()`)  
+Отримується: `ObjectsMapService`, UI та інші підписники
+
+```csharp
+public struct BuildingPlacedSignal
+{
+    public string     BuildingId;  // "barracks-01"
+    public string     InstanceId;  // унікальний ID екземпляру
+    public Vector2Int Position;
+}
+```
+
+---
+
+### `BuildingCancelledSignal`
+
+Надсилається: `BuildingPlacementService` (при `Cancel()` або `Undo()`)  
+Отримується: UI та системи відображення
+
+```csharp
+public struct BuildingCancelledSignal
+{
+    public string     InstanceId;  // ID скасованого екземпляру
+    public Vector2Int Position;
+}
+```
+
+---
+
 ## Реєстрація в Zenject (`SignalBusInstaller`)
 
 ```csharp
@@ -141,6 +172,8 @@ public class SignalBusInstaller : MonoInstaller
         Container.DeclareSignal<InterruptMovementSignal>();
         Container.DeclareSignal<OnMapObjectSpawnedSignal>();
         Container.DeclareSignal<OnObjectsMapChangedSignal>();
+        Container.DeclareSignal<BuildingPlacedSignal>();
+        Container.DeclareSignal<BuildingCancelledSignal>();
     }
 }
 ```
@@ -208,6 +241,8 @@ UnitMovementService.OnInterruptRequested()
 | `InterruptMovementSignal` | `struct` | `UnitService` | `UnitMovementService` |
 | `OnMapObjectSpawnedSignal` | `struct` | `MapVisualInstantiator` | `ObjectsMapService` |
 | `OnObjectsMapChangedSignal` | `struct` | `ObjectsMapService` | `TileView` |
+| `BuildingPlacedSignal` | `struct` | `BuildingPlacementService` | ObjectsMapService, UI |
+| `BuildingCancelledSignal` | `struct` | `BuildingPlacementService` | UI |
 
 ---
 
@@ -219,3 +254,4 @@ UnitMovementService.OnInterruptRequested()
 - [Visuals](visuals.md) — отримує `OnObjectsMapChangedSignal`, надсилає `TileClickedSignal`
 - [ObjectsMap](objects-map.md) — надсилає `OnObjectsMapChangedSignal`, отримує юніт-сигнали та `OnMapObjectSpawnedSignal`
 - [Generator](generator.md) — надсилає `OnMapObjectSpawnedSignal`
+- [Buildings](buildings.md) — надсилає `BuildingPlacedSignal`, `BuildingCancelledSignal`
