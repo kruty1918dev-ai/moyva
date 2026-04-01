@@ -35,6 +35,7 @@
 | **Generator** | [systems/generator.md](systems/generator.md) | Процедурна генерація карти |
 | **ObjectsMap** | [systems/objects-map.md](systems/objects-map.md) | Єдине джерело правди про зайнятість позицій |
 | **Visuals** | [systems/visuals.md](systems/visuals.md) | Візуальне відображення тайлів |
+| **Construction** | [systems/construction.md](systems/construction.md) | Меню будівництва, pending-розміщення, undo/redo, механіка стін |
 | **Bootstrap** | [systems/bootstrap.md](systems/bootstrap.md) | Стартова ініціалізація сцени |
 | **Порядок ініціалізації** | [systems/initialization-order.md](systems/initialization-order.md) | Послідовність запуску вузлів ядра Zenject |
 
@@ -87,6 +88,9 @@ Assets/
                   ├── ObjectsMap/
                   │   ├── API/          ← IObjectsMapService
                   │   └── Runtime/      ← ObjectsMapService, ObjectsMapInstaller
+            ├── Construction/
+            │   ├── API/          ← IBuildingConstructionService, IWallConnectionService, BuildingConfig…
+            │   └── Runtime/      ← BuildingConstructionService, WallConnectionService, BuildingRegistrySO, ConstructionInstaller
             └── Visuals/
                 ├── API/          ← TileView (MonoBehaviour)
                 └── Runtime/      ← VisualInstaller
@@ -152,6 +156,11 @@ Generator
 
 Camera
  └─► Input System (InputActionAsset)
+
+Construction
+ ├─► Grid (IGridService)
+ ├─► ObjectsMap (IObjectsMapService)
+ └─► Signals (SignalBus)
 ```
 
 ---
