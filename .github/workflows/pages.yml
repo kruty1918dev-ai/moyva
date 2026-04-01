@@ -66,7 +66,7 @@ jobs:
                           m = re.match(r'^#\s+(.+)', line)
                           if m:
                               raw = m.group(1).strip()
-                              raw = re.sub(r'\*+|__|~~', '', raw)
+                              raw = re.sub(r'\*+|__|~~|`', '', raw)
                               raw = re.sub(r'\[([^\]]+)\]\([^)]*\)', r'\1', raw)
                               title = raw
                               break

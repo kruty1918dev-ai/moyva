@@ -106,8 +106,12 @@ var Md = {
     if(/^README\.md$/i.test(clean)) return '#home';
     var route = routeFromPath(clean);
     if(PAGES[route]) return '#' + route;
-    if(PAGES['systems/' + route]) return '#systems/' + route;
-    if(PAGES['standarts/' + route]) return '#standarts/' + route;
+    var keys = Object.keys(PAGES);
+    for(var ki=0; ki<keys.length; ki++){
+      if(keys[ki].split('/').pop() === route.split('/').pop() && keys[ki].endsWith(route)){
+        return '#' + keys[ki];
+      }
+    }
     return href;
   },
   inline: function(s){
@@ -221,13 +225,6 @@ function buildSite(manifest) {
     ul.appendChild(headerLi);
 
     var routes = sections[sec].sort();
-
-    var subDirParents = {};
-    routes.forEach(function(r) {
-      routes.forEach(function(o) {
-        if (o !== r && o.startsWith(r + '/')) subDirParents[r] = true;
-      });
-    });
 
     routes.forEach(function(route) {
       var depth = route.split('/').length - 1;
