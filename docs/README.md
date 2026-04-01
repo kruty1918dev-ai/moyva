@@ -39,6 +39,7 @@
 | **Порядок ініціалізації** | [systems/initialization-order.md](systems/initialization-order.md) | Послідовність запуску вузлів ядра Zenject |
 | **GameMode** | [systems/game-mode.md](systems/game-mode.md) | Управління ігровими режимами (Normal / Construction) |
 | **Construction** | [systems/construction.md](systems/construction.md) | Система будівництва: preview, Undo/Redo, стіни |
+| **Visibility** | [systems/visibility.md](systems/visibility.md) | Туман війни: лічильникова сітка видимості |
 
 ---
 
@@ -103,6 +104,9 @@ Assets/
                 └── Runtime/      ← ConstructionService, WallPlacementService,
                                      ConstructionInputService, ScreenToGridConverter,
                                      BuildingRegistrySO, ConstructionInstaller
+            Visibility/
+                ├── API/          ← IVisibilityService
+                └── Runtime/      ← VisibilityService, VisibilityInstaller
 ```
 
 ---
@@ -175,6 +179,11 @@ Construction
  ├─► Signals (BuildingPlacedSignal, BuildingCancelledSignal,
  │            BuildingPreviewChangedSignal, ShowWallHandlesSignal)
  └─► Signals (GameModeChangedSignal) ← активується в режимі Construction
+
+Visibility
+ ├─► Grid (IGridService)
+ ├─► Units (IUnitClassConfig, UnitClassConfig.VisionRadius)
+ └─► Signals (UnitCreatedSignal, UnitMovedSignal, UnitDestroyedSignal, OnVisibilityChangedSignal)
 ```
 
 ---

@@ -16,5 +16,11 @@ namespace Kruty1918.Moyva.Units.Runtime
         public GameObject Prefab;
         public Vector2 StaminaRandomRange = new Vector2(-5, 5); // +/- 5 випадкових одиниць до базової стаміни
         public PathAnimationSettings AnimationSettings = PathAnimationSettings.Default;
+
+        /// <summary>
+        /// Радіус зору юніта в тайлах (Чебишевська відстань).
+        /// Визначає розмір квадрата видимості навколо юніта.
+        /// </summary>
+        public int VisionRadius = 3;
     }
 }

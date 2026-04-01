@@ -24,6 +24,9 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<BuildingCancelledSignal>();
             Container.DeclareSignal<BuildingPreviewChangedSignal>();
             Container.DeclareSignal<ShowWallHandlesSignal>();
+
+            // Visibility
+            Container.DeclareSignal<OnVisibilityChangedSignal>();
         }
     }
 }

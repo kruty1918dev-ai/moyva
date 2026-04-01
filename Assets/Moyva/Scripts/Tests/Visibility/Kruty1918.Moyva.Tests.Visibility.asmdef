@@ -1,0 +1,29 @@
+{
+    "name": "Kruty1918.Moyva.Tests.Visibility",
+    "rootNamespace": "Kruty1918.Moyva.Tests.Visibility",
+    "references": [
+        "Zenject",
+        "Zenject-TestFramework",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.Grid",
+        "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.Visibility"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
