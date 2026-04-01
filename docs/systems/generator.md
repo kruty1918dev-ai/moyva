@@ -209,7 +209,7 @@ public class GenerationRules : ScriptableObject
 
 | Залежність | Причина |
 |---|---|
-| [`IGridService`](grid.md) | `MapVisualInstantiator` встановлює `TileData` в сітці |
+| [`IGridService`](grid.md) | `MapVisualInstantiator` встановлює тип тайлу в сітці |
 | `TileRegistrySO` | Пошук `VisualPrefab` за `TileTypeId` |
 | [`SignalBus`](signals.md) | `OnMapObjectSpawnedSignal` |
 | `DataNoiseSettings`, `HeightMapSettings`, `DataBiomesSettings`, `WFCDataSettings`, `GenerationRules`, `RiverDataConfig` | Конфіги генерації |
@@ -298,6 +298,6 @@ Debug.Log($"Висота центру: {noise[50, 50]}");
 
 ## Пов'язані системи
 
-- [Grid](grid.md) — `MapVisualInstantiator` заповнює `TileData`
+- [Grid](grid.md) — `MapVisualInstantiator` заповнює сітку типами тайлів
 - [Visuals](visuals.md) — спавнить `TileView` для кожного тайлу
 - [Signals](signals.md) — `OnMapObjectSpawnedSignal`

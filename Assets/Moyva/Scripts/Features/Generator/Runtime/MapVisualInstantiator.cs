@@ -122,11 +122,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             // Оновлюємо дані в GridService
             // Якщо це об'єкт (річка), він може перезаписувати властивості прохідності клітинки
-            var tileData = _gridService.GetTileData(position);
-
             // Логіка: якщо ми спавнимо об'єкт, він стає пріоритетним типом для цієї клітинки в логіці
-            tileData.TileTypeId = tileId;
-            _gridService.SetTileData(position, tileData);
+            _gridService.SetTileData(position, tileId);
         }
     }
 }
