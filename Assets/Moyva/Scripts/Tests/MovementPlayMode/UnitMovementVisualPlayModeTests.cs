@@ -133,7 +133,6 @@ namespace Kruty1918.Moyva.Tests.MovementPlayMode
         {
             _container = new DiContainer();
             Zenject.SignalBusInstaller.Install(_container);
-            _container.DeclareSignal<OnTileChanged>();
             _container.DeclareSignal<UnitCreatedSignal>();
             _container.DeclareSignal<UnitMovedSignal>();
             _container.DeclareSignal<UnitDestroyedSignal>();
@@ -300,7 +299,6 @@ namespace Kruty1918.Moyva.Tests.MovementPlayMode
             {
                 GridWidth = width;
                 GridHeight = height;
-                TileSize = 1f;
 
                 _grid = new TileData[width, height];
                 for (var x = 0; x < width; x++)
@@ -314,7 +312,6 @@ namespace Kruty1918.Moyva.Tests.MovementPlayMode
 
             public int GridWidth { get; }
             public int GridHeight { get; }
-            public float TileSize { get; }
 
             public TileData GetTileData(Vector2Int position)
             {

@@ -14,8 +14,7 @@
 
 1. При ініціалізації `GridService` створює двовимірний масив `TileData[width, height]`.
 2. Кожен `TileData` зберігає тип тайлу `TileTypeId` — ID для пошуку ваги руху та візуалу.
-3. Після зміни тайлу (`SetTileData`) сервіс надсилає сигнал `OnTileChanged` через `SignalBus`.
-4. `TileSettingsService` завантажує ваги руху тайлів із `TileRegistrySO` (ScriptableObject) у словник для O(1)-доступу.
+3. `TileSettingsService` завантажує ваги руху тайлів із `TileRegistrySO` (ScriptableObject) у словник для O(1)-доступу.
 
 ---
 
@@ -34,12 +33,11 @@ namespace Kruty1918.Moyva.Grid.API
         // Безпечна версія: повертає false замість винятку
         bool TryGetTileData(Vector2Int position, out TileData tileData);
 
-        // Записує дані тайлу і надсилає OnTileChanged
+        // Записує дані тайлу
         void SetTileData(Vector2Int position, TileData data);
 
         int GridWidth  { get; }
         int GridHeight { get; }
-        float TileSize { get; }
     }
 }
 ```
@@ -84,7 +82,7 @@ public struct TileData
 |---|---|---|
 | `GetTileData` | `Vector2Int position` | `TileData` |
 | `TryGetTileData` | `Vector2Int position` | `bool` + `out TileData` |
-| `SetTileData` | `Vector2Int position, TileData data` | `void` (+ сигнал `OnTileChanged`) |
+| `SetTileData` | `Vector2Int position, TileData data` | `void` |
 | `GetTileWeight` | `string tileId` | `float` (вага; 0 якщо не знайдено) |
 
 ---
@@ -93,7 +91,6 @@ public struct TileData
 
 | Залежність | Причина |
 |---|---|
-| [`SignalBus`](signals.md) | Надсилання `OnTileChanged` після зміни тайлу |
 | `TileRegistrySO` (SO) | Метадані типів тайлів (вага, префаб) |
 
 ---
@@ -106,7 +103,6 @@ public class GridInstaller : MonoInstaller
     [SerializeField] private TileRegistrySO tileRegistry;
     [SerializeField] private int   gridWidth  = 10;
     [SerializeField] private int   gridHeight = 10;
-    [SerializeField] private float tileSize   = 1f;
 
     public override void InstallBindings()
     {
@@ -115,7 +111,7 @@ public class GridInstaller : MonoInstaller
         Container.Bind<IGridService>()
             .To<GridService>()
             .AsSingle()
-            .WithArguments(gridWidth, gridHeight, tileSize);
+            .WithArguments(gridWidth, gridHeight);
 
         Container.Bind<ITileSettingsService>()
             .To<TileSettingsService>()
@@ -158,7 +154,6 @@ float tentativeGScore  = GetScore(gScore, current) + stepCost;
 
 ## Пов'язані системи
 
-- [Signals](signals.md) — `OnTileChanged` сигнал
 - [Pathfinding](pathfinding.md) — використовує `IGridService` та `ITileSettingsService`
 - [Generator](generator.md) — заповнює `TileData` через `SetTileData`
 - [ObjectsMap](objects-map.md) — єдина авторитетна карта окупації тайлів

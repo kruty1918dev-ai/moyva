@@ -9,12 +9,10 @@ namespace Kruty1918.Moyva.Signals
         {
             Zenject.SignalBusInstaller.Install(Container);
             Container.DeclareSignal<TileClickedSignal>();
-            Container.DeclareSignal<OnTileChanged>();
             Container.DeclareSignal<UnitCreatedSignal>();
             Container.DeclareSignal<UnitMovedSignal>();
             Container.DeclareSignal<UnitDestroyedSignal>();
             Container.DeclareSignal<InterruptMovementSignal>();
-            Container.DeclareSignal<OnGenerationCompleteSignal>();
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<OnObjectsMapChangedSignal>();
         }

@@ -2,11 +2,6 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Signals
 {
-    public struct OnTileChanged
-    {
-       public Vector2Int Position { get; set; }
-    }
-
     // Викликається, коли фабрика створила юніта
     public struct UnitCreatedSignal
     {
@@ -33,13 +28,6 @@ namespace Kruty1918.Moyva.Signals
     public struct InterruptMovementSignal
     {
         public string UnitId;
-    }
-
-    public struct OnGenerationCompleteSignal
-    {
-        public string[,] BiomeMap;
-        public string[,] ObjectMap;
-        public float[,] HeightMap;
     }
 
     /// <summary>
