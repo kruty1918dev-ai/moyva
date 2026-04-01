@@ -48,7 +48,6 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
             base.Setup();
 
             Zenject.SignalBusInstaller.Install(Container);
-            Container.DeclareSignal<OnTileChanged>();
             Container.DeclareSignal<UnitCreatedSignal>();
             Container.DeclareSignal<UnitMovedSignal>();
             Container.DeclareSignal<UnitDestroyedSignal>();
@@ -299,7 +298,6 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
             {
                 GridWidth = width;
                 GridHeight = height;
-                TileSize = 1f;
 
                 _grid = new TileData[width, height];
                 for (var x = 0; x < width; x++)
@@ -345,7 +343,6 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
 
             public int GridWidth { get; }
             public int GridHeight { get; }
-            public float TileSize { get; }
 
             private bool IsInside(Vector2Int position)
             {

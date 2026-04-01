@@ -77,7 +77,6 @@ IMapInstantiator (MapVisualInstantiator)
 
 ### Побудова світу (`MapVisualInstantiator`)
 
-- Підписується на `OnGenerationCompleteSignal`.
 - `BuildWorld()` викликає `IMapDataGenerator.GenerateMapData`, а по callback'у — ітерує по карті і спавнить `GameObject` із `TileRegistrySO` для кожного тайлу.
 
 ---
@@ -212,7 +211,7 @@ public class GenerationRules : ScriptableObject
 |---|---|
 | [`IGridService`](grid.md) | `MapVisualInstantiator` встановлює `TileData` в сітці |
 | `TileRegistrySO` | Пошук `VisualPrefab` за `TileTypeId` |
-| [`SignalBus`](signals.md) | `OnGenerationCompleteSignal` |
+| [`SignalBus`](signals.md) | `OnMapObjectSpawnedSignal` |
 | `DataNoiseSettings`, `HeightMapSettings`, `DataBiomesSettings`, `WFCDataSettings`, `GenerationRules`, `RiverDataConfig` | Конфіги генерації |
 
 ---
@@ -301,4 +300,4 @@ Debug.Log($"Висота центру: {noise[50, 50]}");
 
 - [Grid](grid.md) — `MapVisualInstantiator` заповнює `TileData`
 - [Visuals](visuals.md) — спавнить `TileView` для кожного тайлу
-- [Signals](signals.md) — `OnGenerationCompleteSignal`
+- [Signals](signals.md) — `OnMapObjectSpawnedSignal`

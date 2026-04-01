@@ -16,7 +16,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private readonly Dictionary<string, float> _unitStamina = new();
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
-        private readonly Dictionary<string, string> _unitTypeMapping = new();
 
         // Словник для зберігання посилань на GameObject юнітів
         private readonly Dictionary<string, GameObject> _unitObjects = new();
@@ -58,7 +57,6 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             _unitStamina[signal.UnitId] = startStamina;
             _unitPositions[signal.UnitId] = signal.Position;
-            _unitTypeMapping[signal.UnitId] = signal.UnitTypeId;
 
             // Зберігаємо GameObject
             _unitObjects[signal.UnitId] = signal.UnitObject;
@@ -96,7 +94,6 @@ namespace Kruty1918.Moyva.Units.Runtime
         {
             _unitStamina.Remove(signal.UnitId);
             _unitPositions.Remove(signal.UnitId);
-            _unitTypeMapping.Remove(signal.UnitId);
             _unitObjects.Remove(signal.UnitId); // Видаляємо посилання
         }
 

@@ -9,6 +9,5 @@ namespace Kruty1918.Moyva.Grid.API
         public void SetTileData(Vector2Int position, TileData data);
         public int GridWidth { get; }
         public int GridHeight { get; }
-        public float TileSize { get; }
     }
 }

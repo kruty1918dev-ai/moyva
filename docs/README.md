@@ -77,7 +77,7 @@ Assets/
             │   ├── API/          ← ICameraMovement, ICameraZoom, ICameraFocused, CameraSettingsSO
             │   └── Runtime/      ← CameraMovement, CameraZoom, CameraFocused, CameraPlayerController, CameraInstaller
             ├── Signals/
-            │   ├── DTO/          ← OnTileChanged, TileClickedSignal (+ інші сигнали)
+            │   ├── DTO/          ← TileClickedSignal (+ інші сигнали)
             │   └── Runtime/      ← SignalBusInstaller
             ├── Generator/
             │   ├── API/          ← IMapDataGenerator, IBiomeResolver, IWFCService, …

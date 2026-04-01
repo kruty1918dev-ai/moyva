@@ -34,20 +34,6 @@ public class TileClickedSignal
 
 ---
 
-### `OnTileChanged`
-
-Надсилається: `GridService.SetTileData()`  
-Отримується: `TileView`
-
-```csharp
-public struct OnTileChanged
-{
-    public Vector2Int Position; // Позиція зміненого тайлу
-}
-```
-
----
-
 ### `UnitCreatedSignal`
 
 Надсилається: `UnitFactory.CreateUnit()`  
@@ -109,22 +95,6 @@ public struct InterruptMovementSignal
 
 ---
 
-### `OnGenerationCompleteSignal`
-
-Надсилається: (зарезервовано для генератора карти)  
-Отримується: (підписники UI, камера тощо)
-
-```csharp
-public struct OnGenerationCompleteSignal
-{
-    public string[,] BiomeMap;  // Матриця ID біомів
-    public string[,] ObjectMap; // Матриця ID об'єктів (річки тощо)
-    public float[,]  HeightMap; // Матриця висот [0.0 - 1.0]
-}
-```
-
----
-
 ### `OnMapObjectSpawnedSignal`
 
 Надсилається: `MapVisualInstantiator` (після спавну статичного об'єкта карти)  
@@ -165,12 +135,10 @@ public class SignalBusInstaller : MonoInstaller
         Zenject.SignalBusInstaller.Install(Container); // Базова установка Zenject SignalBus
 
         Container.DeclareSignal<TileClickedSignal>();
-        Container.DeclareSignal<OnTileChanged>();
         Container.DeclareSignal<UnitCreatedSignal>();
         Container.DeclareSignal<UnitMovedSignal>();
         Container.DeclareSignal<UnitDestroyedSignal>();
         Container.DeclareSignal<InterruptMovementSignal>();
-        Container.DeclareSignal<OnGenerationCompleteSignal>();
         Container.DeclareSignal<OnMapObjectSpawnedSignal>();
         Container.DeclareSignal<OnObjectsMapChangedSignal>();
     }
@@ -234,12 +202,10 @@ UnitMovementService.OnInterruptRequested()
 | Сигнал | Тип | Надсилає | Отримує |
 |---|---|---|---|
 | `TileClickedSignal` | `class` | `TileView` | `TileInteractionService` |
-| `OnTileChanged` | `struct` | `GridService` | `TileView` |
 | `UnitCreatedSignal` | `struct` | `UnitFactory` | `UnitService`, `ObjectsMapService` |
 | `UnitMovedSignal` | `struct` | `UnitMovementService` | `UnitService`, `ObjectsMapService` |
 | `UnitDestroyedSignal` | `struct` | — (зарезервовано) | `UnitService`, `ObjectsMapService` |
 | `InterruptMovementSignal` | `struct` | `UnitService` | `UnitMovementService` |
-| `OnGenerationCompleteSignal` | `struct` | — (зарезервовано) | — |
 | `OnMapObjectSpawnedSignal` | `struct` | `MapVisualInstantiator` | `ObjectsMapService` |
 | `OnObjectsMapChangedSignal` | `struct` | `ObjectsMapService` | `TileView` |
 
@@ -247,9 +213,9 @@ UnitMovementService.OnInterruptRequested()
 
 ## Пов'язані системи
 
-- [Grid](grid.md) — надсилає `OnTileChanged`
+- [Grid](grid.md) — зберігання стану тайлів
 - [Units](units.md) — надсилає / отримує більшість сигналів
 - [Interactions](interactions.md) — отримує `TileClickedSignal`
 - [Visuals](visuals.md) — отримує `OnObjectsMapChangedSignal`, надсилає `TileClickedSignal`
 - [ObjectsMap](objects-map.md) — надсилає `OnObjectsMapChangedSignal`, отримує юніт-сигнали та `OnMapObjectSpawnedSignal`
-- [Generator](generator.md) — надсилає `OnMapObjectSpawnedSignal`, `OnGenerationCompleteSignal` (заплановано)
+- [Generator](generator.md) — надсилає `OnMapObjectSpawnedSignal`

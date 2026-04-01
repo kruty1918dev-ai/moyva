@@ -104,7 +104,6 @@ public interface IUnitClassConfig
 | `TypeId` | `string` | Ідентифікатор класу (без підкреслень; рекомендується дефіс або camelCase, наприклад `"warrior-01"` або `"Warrior01"`) |
 | `Prefab` | `GameObject` | Ігровий префаб юніта |
 | `BaseStamina` | `float` | Базова стаміна при старті |
-| `StaminaRegenBase` | `float` | Базова швидкість регенерації стаміни |
 | `StaminaRandomRange` | `Vector2` | Двосторонній рандомний модифікатор стаміни, який додається до `BaseStamina` (наприклад, `(-5, 5)` → `BaseStamina ± 5`) |
 | `AnimationSettings` | `PathAnimationSettings` | Налаштування анімації руху |
 
