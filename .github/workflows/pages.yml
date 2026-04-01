@@ -20,7 +20,44 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required documentation files
+        run: |
+          REQUIRED_FILES=(
+            "docs/README.md"
+            "docs/index.html"
+            "docs/standarts/TDD.md"
+            "docs/systems/signals.md"
+            "docs/systems/interactions.md"
+            "docs/systems/objects-map.md"
+            "docs/systems/visuals.md"
+            "docs/systems/game-mode.md"
+            "docs/systems/construction.md"
+            "docs/systems/construction-service.md"
+            "docs/systems/construction-registry.md"
+            "docs/systems/wall-placement.md"
+            "docs/systems/screen-to-grid.md"
+          )
+          MISSING=0
+          for f in "${REQUIRED_FILES[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "MISSING: $f"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          if [ "$MISSING" -gt 0 ]; then
+            echo "Validation failed: $MISSING required documentation file(s) are missing."
+            exit 1
+          fi
+          echo "All required documentation files are present."
+
   deploy:
+    needs: validate
     runs-on: ubuntu-latest
     # Skip deployments triggered by the AI doc-sync bot commit (those carry [skip ci]).
     # GitHub already suppresses [skip ci] workflows globally, but this guard
