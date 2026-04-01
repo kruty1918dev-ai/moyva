@@ -37,6 +37,8 @@
 | **Visuals** | [systems/visuals.md](systems/visuals.md) | Візуальне відображення тайлів |
 | **Bootstrap** | [systems/bootstrap.md](systems/bootstrap.md) | Стартова ініціалізація сцени |
 | **Порядок ініціалізації** | [systems/initialization-order.md](systems/initialization-order.md) | Послідовність запуску вузлів ядра Zenject |
+| **GameMode** | [systems/game-mode.md](systems/game-mode.md) | Управління ігровими режимами (Normal / Construction) |
+| **Construction** | [systems/construction.md](systems/construction.md) | Система будівництва: preview, Undo/Redo, стіни |
 
 ---
 
@@ -78,18 +80,29 @@ Assets/
             │   ├── API/          ← ICameraMovement, ICameraZoom, ICameraFocused, CameraSettingsSO
             │   └── Runtime/      ← CameraMovement, CameraZoom, CameraFocused, CameraPlayerController, CameraInstaller
             ├── Signals/
-            │   ├── DTO/          ← TileClickedSignal (+ інші сигнали)
+            │   ├── DTO/          ← TileClickedSignal, OnTileChanged, OnConstructionSignals, OnGameModeSignals
             │   └── Runtime/      ← SignalBusInstaller
             ├── Generator/
             │   ├── API/          ← IMapDataGenerator, IBiomeResolver, IWFCService, …
             │   ├── Editor/       ← WFCDataSettingsEditor, WFCRulesEditorWindow
             │   └── Runtime/      ← MapDataGenerator, BiomeResolver, WFCService, …
-                  ├── ObjectsMap/
-                  │   ├── API/          ← IObjectsMapService
-                  │   └── Runtime/      ← ObjectsMapService, ObjectsMapInstaller
-            └── Visuals/
-                ├── API/          ← TileView (MonoBehaviour)
-                └── Runtime/      ← VisualInstaller
+            ├── ObjectsMap/
+            │   ├── API/          ← IObjectsMapService
+            │   └── Runtime/      ← ObjectsMapService, ObjectsMapInstaller
+            ├── Visuals/
+            │   ├── API/          ← TileView (MonoBehaviour)
+            │   └── Runtime/      ← VisualInstaller
+            ├── GameMode/
+            │   ├── API/          ← IGameModeService, GameModeType
+            │   └── Runtime/      ← GameModeService, GameModeInstaller
+            └── Construction/
+                ├── API/          ← IConstructionService, IWallPlacementService,
+                │                    IConstructionInputService, IScreenToGridConverter,
+                │                    BuildingCategory, BuildingPlacementState,
+                │                    BuildingPreviewState, BuildingDefinition
+                └── Runtime/      ← ConstructionService, WallPlacementService,
+                                     ConstructionInputService, ScreenToGridConverter,
+                                     BuildingRegistrySO, ConstructionInstaller
 ```
 
 ---
@@ -133,7 +146,8 @@ Interactions
  ├─► Grid (IGridService)
  ├─► ObjectsMap (IObjectsMapService)
  ├─► Units (IUnitMovementService)
- └─► Signals (SignalBus)
+ ├─► Signals (SignalBus)
+ └─► Signals (GameModeChangedSignal) ← вимикається в режимі Construction
 
 Units (UnitMovementService)
  ├─► Units (IUnitService)
@@ -152,6 +166,15 @@ Generator
 
 Camera
  └─► Input System (InputActionAsset)
+
+GameMode
+ └─► Signals (GameModeChangedSignal)
+
+Construction
+ ├─► ObjectsMap (IObjectsMapService)
+ ├─► Signals (BuildingPlacedSignal, BuildingCancelledSignal,
+ │            BuildingPreviewChangedSignal, ShowWallHandlesSignal)
+ └─► Signals (GameModeChangedSignal) ← активується в режимі Construction
 ```
 
 ---

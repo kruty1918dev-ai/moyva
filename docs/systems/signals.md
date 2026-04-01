@@ -125,6 +125,79 @@ public struct OnObjectsMapChangedSignal
 
 ---
 
+### `GameModeChangedSignal`
+
+Надсилається: `GameModeService.SetMode()`
+Отримується: `TileInteractionService`, `ConstructionService`
+
+```csharp
+public struct GameModeChangedSignal
+{
+    public GameModeType NewMode; // Normal або Construction
+}
+```
+
+---
+
+### `BuildingPlacedSignal`
+
+Надсилається: `ConstructionService.Confirm()`
+Отримується: підписники (спавнер об'єктів, UI)
+
+```csharp
+public struct BuildingPlacedSignal
+{
+    public string BuildingId;
+    public Vector2Int Position;
+}
+```
+
+---
+
+### `BuildingCancelledSignal`
+
+Надсилається: `ConstructionService.Cancel()`
+Отримується: UI (закриває сесію будівництва)
+
+```csharp
+public struct BuildingCancelledSignal { }
+```
+
+---
+
+### `BuildingPreviewChangedSignal`
+
+Надсилається: `ConstructionService.TryPreviewAt()`
+Отримується: `TileView` (змінює стан відображення тайлу)
+
+```csharp
+public struct BuildingPreviewChangedSignal
+{
+    public Vector2Int Position;
+    public BuildingPreviewState PreviewState;
+    // None = підсвітку знято
+    // Valid = тайл вільний, preview активний
+    // Blocked = тайл зайнятий, підсвічується червоним
+}
+```
+
+---
+
+### `ShowWallHandlesSignal`
+
+Надсилається: `WallPlacementService.ShowWallHandles()` / `EndDrag()`
+Отримується: UI-компонент ручок стін
+
+```csharp
+public struct ShowWallHandlesSignal
+{
+    public Vector2Int Center;
+    public bool Hide; // true — приховати ручки
+}
+```
+
+---
+
 ## Реєстрація в Zenject (`SignalBusInstaller`)
 
 ```csharp
@@ -141,6 +214,15 @@ public class SignalBusInstaller : MonoInstaller
         Container.DeclareSignal<InterruptMovementSignal>();
         Container.DeclareSignal<OnMapObjectSpawnedSignal>();
         Container.DeclareSignal<OnObjectsMapChangedSignal>();
+
+        // GameMode
+        Container.DeclareSignal<GameModeChangedSignal>();
+
+        // Construction
+        Container.DeclareSignal<BuildingPlacedSignal>();
+        Container.DeclareSignal<BuildingCancelledSignal>();
+        Container.DeclareSignal<BuildingPreviewChangedSignal>();
+        Container.DeclareSignal<ShowWallHandlesSignal>();
     }
 }
 ```
@@ -208,6 +290,11 @@ UnitMovementService.OnInterruptRequested()
 | `InterruptMovementSignal` | `struct` | `UnitService` | `UnitMovementService` |
 | `OnMapObjectSpawnedSignal` | `struct` | `MapVisualInstantiator` | `ObjectsMapService` |
 | `OnObjectsMapChangedSignal` | `struct` | `ObjectsMapService` | `TileView` |
+| `GameModeChangedSignal` | `struct` | `GameModeService` | `TileInteractionService`, `ConstructionService` |
+| `BuildingPlacedSignal` | `struct` | `ConstructionService` | підписники (спавнер) |
+| `BuildingCancelledSignal` | `struct` | `ConstructionService` | UI |
+| `BuildingPreviewChangedSignal` | `struct` | `ConstructionService` | `TileView` |
+| `ShowWallHandlesSignal` | `struct` | `WallPlacementService` | UI стін |
 
 ---
 
@@ -215,7 +302,9 @@ UnitMovementService.OnInterruptRequested()
 
 - [Grid](grid.md) — зберігання стану тайлів
 - [Units](units.md) — надсилає / отримує більшість сигналів
-- [Interactions](interactions.md) — отримує `TileClickedSignal`
-- [Visuals](visuals.md) — отримує `OnObjectsMapChangedSignal`, надсилає `TileClickedSignal`
+- [Interactions](interactions.md) — отримує `TileClickedSignal`, `GameModeChangedSignal`
+- [Visuals](visuals.md) — отримує `OnObjectsMapChangedSignal`, `BuildingPreviewChangedSignal`; надсилає `TileClickedSignal`
 - [ObjectsMap](objects-map.md) — надсилає `OnObjectsMapChangedSignal`, отримує юніт-сигнали та `OnMapObjectSpawnedSignal`
 - [Generator](generator.md) — надсилає `OnMapObjectSpawnedSignal`
+- [GameMode](game-mode.md) — надсилає `GameModeChangedSignal`
+- [Construction](construction.md) — надсилає `BuildingPlacedSignal`, `BuildingCancelledSignal`, `BuildingPreviewChangedSignal`, `ShowWallHandlesSignal`
