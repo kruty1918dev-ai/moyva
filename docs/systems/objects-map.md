@@ -1,6 +1,6 @@
 # ObjectsMap — Єдина карта обʼєктів
 
-← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/docs/#systems/objects-map)
+← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/objects-map)
 
 ---
 

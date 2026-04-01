@@ -1,6 +1,6 @@
 # Grid — Система тайлової сітки
 
-← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/docs/#systems/grid)
+← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/grid)
 
 ---
 

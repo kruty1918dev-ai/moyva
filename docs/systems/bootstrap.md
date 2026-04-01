@@ -1,6 +1,6 @@
 # Bootstrap — Система ініціалізації сцени
 
-← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/docs/#systems/bootstrap)
+← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/bootstrap)
 
 ---
 
