@@ -19,8 +19,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Container.BindInterfacesAndSelfTo<ConstructionService>()
                 .AsSingle();
 
-            Container.Bind<IWallPlacementService>()
-                .To<WallPlacementService>()
+            Container.BindInterfacesAndSelfTo<WallPlacementService>()
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<ConstructionInputService>()
