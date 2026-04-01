@@ -155,9 +155,9 @@ namespace Kruty1918.Moyva.Units.Runtime
         {
             float currentStamina = _unitService.GetStamina(unitId);
 
-            if (_gridService.TryGetTileData(stepPos, out var tileData))
+            if (_gridService.TryGetTileData(stepPos, out var tileTypeId))
             {
-                float cost = _tileSettings.GetTileWeight(tileData.TileTypeId);
+                float cost = _tileSettings.GetTileWeight(tileTypeId);
                 bool canStep = currentStamina >= cost;
                 Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: стаміна={currentStamina}, вартість={cost}, результат={canStep}");
                 return canStep;
@@ -169,9 +169,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private void OnStepCompleted(string unitId, Vector2Int stepPos)
         {
-            if (!_gridService.TryGetTileData(stepPos, out var tileData)) return;
+            if (!_gridService.TryGetTileData(stepPos, out var tileTypeId)) return;
 
-            float stepCost = _tileSettings.GetTileWeight(tileData.TileTypeId);
+            float stepCost = _tileSettings.GetTileWeight(tileTypeId);
 
             // Тут ми просто стріляємо сигналом. 
             // UnitService отримає його, відніме стаміну, і якщо вона стане <= 0, 

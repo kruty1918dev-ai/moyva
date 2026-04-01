@@ -130,7 +130,7 @@ settings.CanPerformStep = nextPos =>
 // Делегат: після кожного кроку надсилаємо сигнал для списання стаміни
 settings.OnStepCompleted = nextPos =>
 {
-    float cost = _tileSettings.GetTileWeight(_gridService.GetTileData(nextPos).TileTypeId);
+    float cost = _tileSettings.GetTileWeight(_gridService.GetTileData(nextPos));
     _signalBus.Fire(new UnitMovedSignal
     {
         UnitId      = unitId,

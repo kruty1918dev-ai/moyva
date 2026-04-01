@@ -62,7 +62,7 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
 
                 foreach (var neighbor in GetNeighbors(current))
                 {
-                    if (!_gridService.TryGetTileData(neighbor, out var tileData)) continue;
+                    if (!_gridService.TryGetTileData(neighbor, out var tileTypeId)) continue;
 
                     // 1. ПЕРЕВІРКА ОКУПАЦІЇ: Ігноруємо зайняті тайли, щоб обходити перешкоди
                     // Дозволяємо перевірку для цільового тайла (end) та стартового (start)
@@ -72,7 +72,7 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
                     }
 
                     // 2. ВРАХУВАННЯ ВАГИ (СТАМІНИ)
-                    float tileWeight = _tileSettings.GetTileWeight(tileData.TileTypeId);
+                    float tileWeight = _tileSettings.GetTileWeight(tileTypeId);
                     
                     // Вартість кроку = (базова відстань) * (вага тайла)
                     // Тобто діагональний крок по "болоту" буде коштувати більше, ніж прямий крок по "болоту".
