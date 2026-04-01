@@ -119,7 +119,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return false;
 
             var currentPos = _unitPositions[unitId];
-            var tileCost = _tileSettings.GetTileWeight(_gridService.GetTileData(targetPosition).TileTypeId);
+            var tileCost = _tileSettings.GetTileWeight(_gridService.GetTileData(targetPosition));
             return _unitStamina[unitId] >= tileCost;
         }
     }

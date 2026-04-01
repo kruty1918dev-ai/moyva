@@ -60,7 +60,7 @@ Assets/
         │       └── TestUnitSpawner.cs
         └── Features/
             ├── Grid/
-            │   ├── API/          ← IGridService, TileData, TileRegistrySO, ITileSettingsService
+            │   ├── API/          ← IGridService, TileRegistrySO, ITileSettingsService
             │   └── Runtime/      ← GridService, TileSettingsService, GridInstaller
             ├── Units/
             │   ├── API/          ← IUnitService, IUnitFactory, IUnitMovementService, IUnitClassConfig
