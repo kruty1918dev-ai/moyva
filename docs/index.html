@@ -59,75 +59,59 @@ hr{border:none;border-top:1px solid #e2e8f0;margin:1.75rem 0}
   <div class="sb-search">
     <input type="search" id="search-input" placeholder="🔍 Пошук по документації..." autocomplete="off">
   </div>
-  <nav id="nav">
-    <ul>
-    <li data-page="home"><a href="#home">Головна</a></li>
-    <li class="nav-section">Системи</li>
-    <li class="nav-sys" data-page="systems/animations"><a href="#systems/animations">Animations</a></li>
-    <li class="nav-sys" data-page="systems/bootstrap"><a href="#systems/bootstrap">Bootstrap</a></li>
-    <li class="nav-sys" data-page="systems/camera"><a href="#systems/camera">Camera</a></li>
-    <li class="nav-sys" data-page="systems/generator"><a href="#systems/generator">Generator</a></li>
-    <li class="nav-sys" data-page="systems/grid"><a href="#systems/grid">Grid</a></li>
-    <li class="nav-sys" data-page="systems/interactions"><a href="#systems/interactions">Interactions</a></li>
-    <li class="nav-sys" data-page="systems/pathfinding"><a href="#systems/pathfinding">Pathfinding</a></li>
-    <li class="nav-sys" data-page="systems/signals"><a href="#systems/signals">Signals</a></li>
-    <li class="nav-sys" data-page="systems/units"><a href="#systems/units">Units</a></li>
-        <li class="nav-sys" data-page="systems/objects-map"><a href="#systems/objects-map">ObjectsMap</a></li>
-    <li class="nav-sys" data-page="systems/visuals"><a href="#systems/visuals">Visuals</a></li>
-    <hr class="nav-divider">
-    <li class="nav-section">GameMode</li>
-    <li class="nav-sys" data-page="systems/game-mode"><a href="#systems/game-mode">GameMode</a></li>
-    <hr class="nav-divider">
-    <li class="nav-section">Construction</li>
-    <li class="nav-sys" data-page="systems/construction"><a href="#systems/construction">Construction (огляд)</a></li>
-    <li class="nav-subsys" data-page="systems/construction-service"><a href="#systems/construction-service">↳ ConstructionService</a></li>
-    <li class="nav-subsys" data-page="systems/construction-registry"><a href="#systems/construction-registry">↳ BuildingRegistry</a></li>
-    <li class="nav-subsys" data-page="systems/wall-placement"><a href="#systems/wall-placement">↳ WallPlacement</a></li>
-    <li class="nav-subsys" data-page="systems/screen-to-grid"><a href="#systems/screen-to-grid">↳ ScreenToGrid</a></li>
-    <hr class="nav-divider">
-        <li class="nav-section">Стандарти</li>
-        <li data-page="standarts/tdd"><a href="#standarts/tdd">TDD</a></li>
-    </ul>
-  </nav>
+  <nav id="nav"></nav>
 </aside>
 
-<main id="main">
-  <div id="page-home" class="page"></div>
-  <div id="page-systems-animations" class="page"></div>
-  <div id="page-systems-bootstrap" class="page"></div>
-  <div id="page-systems-camera" class="page"></div>
-  <div id="page-systems-generator" class="page"></div>
-  <div id="page-systems-grid" class="page"></div>
-  <div id="page-systems-interactions" class="page"></div>
-  <div id="page-systems-pathfinding" class="page"></div>
-  <div id="page-systems-signals" class="page"></div>
-  <div id="page-systems-units" class="page"></div>
-    <div id="page-systems-objects-map" class="page"></div>
-  <div id="page-systems-visuals" class="page"></div>
-  <div id="page-systems-game-mode" class="page"></div>
-  <div id="page-systems-construction" class="page"></div>
-  <div id="page-systems-construction-service" class="page"></div>
-  <div id="page-systems-construction-registry" class="page"></div>
-  <div id="page-systems-wall-placement" class="page"></div>
-  <div id="page-systems-screen-to-grid" class="page"></div>
-  <div id="page-systems-initialization-order" class="page"></div>
-    <div id="page-standarts-tdd" class="page"></div>
-</main>
+<main id="main"></main>
 
 <script>
+// ── Helpers ────────────────────────────────────────────────────────────────
+var PAGES = {};
+
+var SECTION_LABELS = {
+  'systems': 'Системи',
+  'standarts': 'Стандарти'
+};
+
+function routeFromPath(path) {
+  if (/^README\.md$/i.test(path)) return 'home';
+  var r = path.replace(/\.md$/i, '');
+  if (/\/README$/i.test(r)) r = r.replace(/\/README$/i, '');
+  return r.toLowerCase();
+}
+
+function elIdFromRoute(route) {
+  return 'page-' + route.replace(/\//g, '-');
+}
+
+function navLabel(route, title) {
+  var parts = route.split('/');
+  if (parts.length >= 3) {
+    var segs = title.split(/\s*[—:]\s*/);
+    if (segs.length > 1) return segs.slice(1).join(' — ');
+  }
+  return title.split(/\s*[—:]\s*/)[0];
+}
+
 // ── Markdown renderer ──────────────────────────────────────────────────────
-const Md = {
+var Md = {
   esc: function(s){
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   },
   fixLink: function(href){
     if(!href) return '#';
     if(/^https?:|^mailto:|^#/.test(href)) return href;
-    if(/\.\.\/README\.md|^README\.md$/.test(href)) return '#home';
-        var sm = href.match(/(?:\.\.\/standarts\/|standarts\/)([a-z-]+)\.md(?:#.*)?$/i);
-        if(sm) return '#standarts/'+sm[1].toLowerCase();
-        var m = href.match(/(?:\.\.\/systems\/|systems\/|\.\.\/|\.\/|^)([a-z-]+)\.md(?:#.*)?$/i);
-        if(m) return '#systems/'+m[1].toLowerCase();
+    if(!/\.md/i.test(href)) return href;
+    var clean = href.replace(/#.*$/, '').replace(/^(\.\.\/)+|^\.\//, '');
+    if(/^README\.md$/i.test(clean)) return '#home';
+    var route = routeFromPath(clean);
+    if(PAGES[route]) return '#' + route;
+    var keys = Object.keys(PAGES);
+    for(var ki=0; ki<keys.length; ki++){
+      if(keys[ki].split('/').pop() === route.split('/').pop() && keys[ki].endsWith(route)){
+        return '#' + keys[ki];
+      }
+    }
     return href;
   },
   inline: function(s){
@@ -160,9 +144,7 @@ const Md = {
     var lines=text.split('\n'), out=[], i=0;
     while(i<lines.length){
       var l=lines[i];
-      // code placeholder
       if(/^\x02\d+\x03$/.test(l)){ out.push(l); i++; continue; }
-      // heading
       var hm=l.match(/^(#{1,4}) (.+)/);
       if(hm){
         var lv=hm[1].length, raw=hm[2].trim();
@@ -170,38 +152,31 @@ const Md = {
         out.push('<h'+lv+' id="'+id+'">'+self.inline(raw)+'</h'+lv+'>');
         i++; continue;
       }
-      // hr
       if(/^-{3,}\s*$/.test(l)){ out.push('<hr>'); i++; continue; }
-      // blockquote
       if(l.startsWith('> ')){
         var bq=[];
         while(i<lines.length && lines[i].startsWith('> ')){ bq.push(lines[i].slice(2)); i++; }
         out.push('<blockquote>'+self.inline(bq.join(' '))+'</blockquote>');
         continue;
       }
-      // table
       if(l.startsWith('|') && i+1<lines.length && /^\|[\s:\-|]+\|/.test(lines[i+1])){
         var rows=[];
         while(i<lines.length && lines[i].startsWith('|')){ rows.push(lines[i]); i++; }
         out.push(self.table(rows)); continue;
       }
-      // ul
       if(/^[ \t]*[-*+] /.test(l)){
         var items=[];
         while(i<lines.length && /^[ \t]*[-*+] /.test(lines[i])){ items.push(lines[i].replace(/^[ \t]*[-*+] /,'')); i++; }
         out.push('<ul>'+items.map(function(it){ return '<li>'+self.inline(it)+'</li>'; }).join('')+'</ul>');
         continue;
       }
-      // ol
       if(/^\d+\. /.test(l)){
         var oit=[];
         while(i<lines.length && /^\d+\. /.test(lines[i])){ oit.push(lines[i].replace(/^\d+\. /,'')); i++; }
         out.push('<ol>'+oit.map(function(it){ return '<li>'+self.inline(it)+'</li>'; }).join('')+'</ol>');
         continue;
       }
-      // empty
       if(!l.trim()){ i++; continue; }
-      // paragraph
       out.push('<p>'+self.inline(l)+'</p>');
       i++;
     }
@@ -211,95 +186,137 @@ const Md = {
   }
 };
 
-// ── Page registry ──────────────────────────────────────────────────────────
-var PAGES = {
-  'home':                  {el:'page-home',                  file:'README.md'},
-  'systems/animations':    {el:'page-systems-animations',    file:'systems/animations.md'},
-  'systems/bootstrap':     {el:'page-systems-bootstrap',     file:'systems/bootstrap.md'},
-  'systems/camera':        {el:'page-systems-camera',        file:'systems/camera.md'},
-  'systems/generator':     {el:'page-systems-generator',     file:'systems/generator.md'},
-  'systems/grid':          {el:'page-systems-grid',          file:'systems/grid.md'},
-  'systems/interactions':  {el:'page-systems-interactions',  file:'systems/interactions.md'},
-  'systems/pathfinding':   {el:'page-systems-pathfinding',   file:'systems/pathfinding.md'},
-  'systems/signals':       {el:'page-systems-signals',       file:'systems/signals.md'},
-  'systems/units':         {el:'page-systems-units',         file:'systems/units.md'},
-  'systems/objects-map':          {el:'page-systems-objects-map',          file:'systems/objects-map.md'},
-  'systems/visuals':              {el:'page-systems-visuals',              file:'systems/visuals.md'},
-  'systems/initialization-order': {el:'page-systems-initialization-order', file:'systems/initialization-order.md'},
-  'systems/game-mode':            {el:'page-systems-game-mode',            file:'systems/game-mode.md'},
-  'systems/construction':         {el:'page-systems-construction',         file:'systems/construction.md'},
-  'systems/construction-service': {el:'page-systems-construction-service', file:'systems/construction-service.md'},
-  'systems/construction-registry':{el:'page-systems-construction-registry',file:'systems/construction-registry.md'},
-  'systems/wall-placement':       {el:'page-systems-wall-placement',       file:'systems/wall-placement.md'},
-  'systems/screen-to-grid':       {el:'page-systems-screen-to-grid',       file:'systems/screen-to-grid.md'},
-  'standarts/tdd':                {el:'page-standarts-tdd',                file:'standarts/TDD.md'}
-};
+// ── Build site from manifest ───────────────────────────────────────────────
+function buildSite(manifest) {
+  var mainEl = document.getElementById('main');
+  var navEl  = document.getElementById('nav');
 
-// ── Page loader (fetch .md files on demand, cache after first load) ─────────
-function loadPage(key, cb){
-  var p=PAGES[key];
-  var el=document.getElementById(p.el);
-  if(p.loaded){ cb && cb(); return; }
-  el.innerHTML='<p style="color:#8b949e;font-style:italic">Завантаження…</p>';
+  manifest.forEach(function(item) {
+    var route = routeFromPath(item.path);
+    var elId  = elIdFromRoute(route);
+    PAGES[route] = { el: elId, file: item.path, loaded: false, title: item.title };
+    var div = document.createElement('div');
+    div.id = elId;
+    div.className = 'page';
+    mainEl.appendChild(div);
+  });
+
+  var ul = document.createElement('ul');
+
+  if (PAGES['home']) {
+    var homeLi = document.createElement('li');
+    homeLi.dataset.page = 'home';
+    homeLi.innerHTML = '<a href="#home">Головна</a>';
+    ul.appendChild(homeLi);
+  }
+
+  var sections = {};
+  Object.keys(PAGES).forEach(function(route) {
+    if (route === 'home') return;
+    var sec = route.split('/')[0];
+    if (!sections[sec]) sections[sec] = [];
+    sections[sec].push(route);
+  });
+
+  Object.keys(sections).sort().forEach(function(sec) {
+    var headerLi = document.createElement('li');
+    headerLi.className = 'nav-section';
+    headerLi.textContent = SECTION_LABELS[sec] || sec.charAt(0).toUpperCase() + sec.slice(1);
+    ul.appendChild(headerLi);
+
+    var routes = sections[sec].sort();
+
+    routes.forEach(function(route) {
+      var depth = route.split('/').length - 1;
+      var isSubItem = depth >= 2;
+
+      var li = document.createElement('li');
+      li.dataset.page = route;
+      li.className = isSubItem ? 'nav-subsys' : 'nav-sys';
+
+      var label = navLabel(route, PAGES[route].title);
+      if (isSubItem) label = '↳ ' + label;
+      li.innerHTML = '<a href="#' + route + '">' + Md.esc(label) + '</a>';
+      ul.appendChild(li);
+    });
+
+    var hr = document.createElement('hr');
+    hr.className = 'nav-divider';
+    ul.appendChild(hr);
+  });
+
+  navEl.appendChild(ul);
+}
+
+// ── Page loader (fetch .md on demand, cache after first load) ──────────────
+function loadPage(key, cb) {
+  var p = PAGES[key];
+  if (!p) { cb && cb(); return; }
+  var el = document.getElementById(p.el);
+  if (p.loaded) { cb && cb(); return; }
+  el.innerHTML = '<p style="color:#8b949e;font-style:italic">Завантаження…</p>';
   fetch(p.file)
-    .then(function(r){ return r.ok ? r.text() : Promise.reject('HTTP '+r.status); })
-    .then(function(text){
-      el.innerHTML=Md.render(text);
-      p.loaded=true;
+    .then(function(r) { return r.ok ? r.text() : Promise.reject('HTTP ' + r.status); })
+    .then(function(text) {
+      el.innerHTML = Md.render(text);
+      p.loaded = true;
       cb && cb();
     })
-    .catch(function(err){
-      el.innerHTML='<p style="color:#e05050">Не вдалося завантажити документ: '+err+'</p>';
+    .catch(function(err) {
+      el.innerHTML = '<p style="color:#e05050">Не вдалося завантажити документ: ' + err + '</p>';
     });
 }
 
-// Pre-load all pages in background so search works across all content
-function preloadAll(){
-  Object.keys(PAGES).forEach(function(key){ loadPage(key); });
+function preloadAll() {
+  Object.keys(PAGES).forEach(function(key) { loadPage(key); });
 }
 
 // ── Router ─────────────────────────────────────────────────────────────────
-function navigate(hash){
-  hash=hash||'home';
-  if(hash.startsWith('#')) hash=hash.slice(1);
-  if(!PAGES[hash]) hash='home';
-  // Show page (load on first visit)
-  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
-  var el=document.getElementById(PAGES[hash].el);
-  el.classList.add('active');
+function navigate(hash) {
+  hash = hash || 'home';
+  if (hash.startsWith('#')) hash = hash.slice(1);
+  if (!PAGES[hash]) hash = 'home';
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  var el = document.getElementById(PAGES[hash].el);
+  if (el) el.classList.add('active');
   loadPage(hash);
-  // Update nav
-  document.querySelectorAll('nav a').forEach(function(a){
-    var h=a.getAttribute('href');
-    a.classList.toggle('active', h==='#'+hash);
+  document.querySelectorAll('nav a').forEach(function(a) {
+    var h = a.getAttribute('href');
+    a.classList.toggle('active', h === '#' + hash);
   });
-  // Scroll to top
-  document.getElementById('main').scrollTop=0;
-  window.scrollTo(0,0);
+  document.getElementById('main').scrollTop = 0;
+  window.scrollTo(0, 0);
 }
 
-window.addEventListener('hashchange', function(){ navigate(location.hash.slice(1)); });
-window.addEventListener('load', function(){
-  navigate(location.hash.slice(1)||'home');
-  preloadAll();
-});
+window.addEventListener('hashchange', function() { navigate(location.hash.slice(1)); });
 
-// ── Search ─────────────────────────────────────────────────────────────────
-document.getElementById('search-input').addEventListener('input', function(){
-  var q=this.value.toLowerCase().trim();
-  var items=document.querySelectorAll('#nav li[data-page]');
-  var first=null;
-  items.forEach(function(li){
-    var key=li.dataset.page;
-    var el=document.getElementById(PAGES[key]?PAGES[key].el:'');
-    var text=el?el.textContent.toLowerCase():'';
-    var label=li.querySelector('a').textContent.toLowerCase();
-    var match=!q||label.includes(q)||text.includes(q);
-    li.style.display=match?'':'none';
-    if(match&&!first&&q) first=key;
+// ── Init: fetch manifest, build site, start router ─────────────────────────
+fetch('pages.json')
+  .then(function(r) { return r.ok ? r.json() : Promise.reject('HTTP ' + r.status); })
+  .then(function(manifest) {
+    buildSite(manifest);
+    navigate(location.hash.slice(1) || 'home');
+    preloadAll();
+    document.getElementById('search-input').addEventListener('input', function() {
+      var q = this.value.toLowerCase().trim();
+      var items = document.querySelectorAll('#nav li[data-page]');
+      var first = null;
+      items.forEach(function(li) {
+        var key = li.dataset.page;
+        var el = document.getElementById(PAGES[key] ? PAGES[key].el : '');
+        var text = el ? el.textContent.toLowerCase() : '';
+        var label = li.querySelector('a').textContent.toLowerCase();
+        var match = !q || label.includes(q) || text.includes(q);
+        li.style.display = match ? '' : 'none';
+        if (match && !first && q) first = key;
+      });
+      if (first) navigate(first);
+    });
+  })
+  .catch(function(err) {
+    document.getElementById('main').innerHTML =
+      '<p style="color:#e05050;padding:40px">Не вдалося завантажити маніфест документації: ' + err + '</p>';
   });
-  if(first) navigate(first);
-});
 </script>
 </body>
 </html>
