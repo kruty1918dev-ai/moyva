@@ -39,6 +39,7 @@
 | **Порядок ініціалізації** | [systems/initialization-order.md](systems/initialization-order.md) | Послідовність запуску вузлів ядра Zenject |
 | **GameMode** | [systems/game-mode.md](systems/game-mode.md) | Управління ігровими режимами (Normal / Construction) |
 | **Construction** | [systems/construction.md](systems/construction.md) | Система будівництва: preview, Undo/Redo, стіни |
+| **FogOfWar** | [systems/fog-of-war/README.md](systems/fog-of-war/README.md) | Туман війни: сітка видимості, шейдер, FOV |
 
 ---
 
