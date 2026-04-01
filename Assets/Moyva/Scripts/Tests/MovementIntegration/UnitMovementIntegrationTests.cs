@@ -249,7 +249,7 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
             var expensiveTiles = new[] { new Vector2Int(3, 5), new Vector2Int(4, 5), new Vector2Int(5, 5), new Vector2Int(6, 5) };
             foreach (var tile in expensiveTiles)
             {
-                _gridService.SetTileData(tile, new TileData { TileTypeId = SwampTile });
+                _gridService.SetTileData(tile, SwampTile);
             }
         }
 
@@ -292,24 +292,24 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
 
         private sealed class TestGridService : IGridService
         {
-            private readonly TileData[,] _grid;
+            private readonly string[,] _grid;
 
             public TestGridService(int width, int height, string defaultTileType)
             {
                 GridWidth = width;
                 GridHeight = height;
 
-                _grid = new TileData[width, height];
+                _grid = new string[width, height];
                 for (var x = 0; x < width; x++)
                 {
                     for (var y = 0; y < height; y++)
                     {
-                        _grid[x, y] = new TileData { TileTypeId = defaultTileType };
+                        _grid[x, y] = defaultTileType;
                     }
                 }
             }
 
-            public TileData GetTileData(Vector2Int position)
+            public string GetTileData(Vector2Int position)
             {
                 if (!IsInside(position))
                 {
@@ -319,26 +319,26 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
                 return _grid[position.x, position.y];
             }
 
-            public bool TryGetTileData(Vector2Int position, out TileData tileData)
+            public bool TryGetTileData(Vector2Int position, out string tileTypeId)
             {
                 if (IsInside(position))
                 {
-                    tileData = _grid[position.x, position.y];
+                    tileTypeId = _grid[position.x, position.y];
                     return true;
                 }
 
-                tileData = default;
+                tileTypeId = default;
                 return false;
             }
 
-            public void SetTileData(Vector2Int position, TileData data)
+            public void SetTileData(Vector2Int position, string tileTypeId)
             {
                 if (!IsInside(position))
                 {
                     throw new System.ArgumentOutOfRangeException(nameof(position));
                 }
 
-                _grid[position.x, position.y] = data;
+                _grid[position.x, position.y] = tileTypeId;
             }
 
             public int GridWidth { get; }
