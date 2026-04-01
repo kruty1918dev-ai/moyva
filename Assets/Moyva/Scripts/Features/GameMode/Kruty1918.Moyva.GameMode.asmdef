@@ -1,0 +1,17 @@
+{
+    "name": "Kruty1918.Moyva.GameMode",
+    "rootNamespace": "Kruty1918.Moyva.GameMode",
+    "references": [
+        "Zenject",
+        "Kruty1918.Moyva.Signals"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

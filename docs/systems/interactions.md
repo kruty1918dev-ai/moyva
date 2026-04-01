@@ -130,5 +130,6 @@ _interactionService.HandleTileClick(new Vector2Int(3, 7));
 - [Grid](grid.md) — перевіряє валідність позиції тайлу
 - [ObjectsMap](objects-map.md) — визначає окупанта при виборі юніта
 - [Units](units.md) — отримує команду руху
-- [Signals](signals.md) — `TileClickedSignal`
+- [Signals](signals.md) — `TileClickedSignal`, `GameModeChangedSignal`
 - [Visuals](visuals.md) — `TileView` ініціює `TileClickedSignal` через `OnMouseDown`
+- [GameMode](game-mode.md) — `TileInteractionService` вимикається в режимі `Construction`

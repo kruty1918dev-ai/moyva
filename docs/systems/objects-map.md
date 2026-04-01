@@ -135,3 +135,4 @@ public class ObjectsMapInstaller : MonoInstaller
 - [Pathfinding](pathfinding.md) — `Pathfinder` використовує `IObjectsMapService.IsOccupied()` для обходу перешкод
 - [Visuals](visuals.md) — `TileView` підписується на `OnObjectsMapChangedSignal` для оновлення кольору
 - [Signals](signals.md) — нові сигнали `OnMapObjectSpawnedSignal`, `OnObjectsMapChangedSignal`
+- [Construction](construction.md) — `ConstructionService.Confirm()` викликає `Register()` для підтверджених будівель

@@ -119,7 +119,8 @@ tileView.Setup(gridPosition);
 
 ## Пов'язані системи
 
-- [Signals](signals.md) — `OnObjectsMapChangedSignal`, `TileClickedSignal`
+- [Signals](signals.md) — `OnObjectsMapChangedSignal`, `TileClickedSignal`, `BuildingPreviewChangedSignal`
 - [ObjectsMap](objects-map.md) — надсилає `OnObjectsMapChangedSignal`, яку `TileView` обробляє
 - [Interactions](interactions.md) — отримує `TileClickedSignal` від `TileView`
 - [Generator](generator.md) — спавнить `TileView` при побудові світу
+- [Construction](construction.md) — `TileView` підписується на `BuildingPreviewChangedSignal` і змінює спрайт (None / Valid / Blocked)
