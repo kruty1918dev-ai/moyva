@@ -20,48 +20,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Validate required documentation files
-        run: |
-          REQUIRED_FILES=(
-            "docs/README.md"
-            "docs/index.html"
-            "docs/standarts/TDD.md"
-            "docs/systems/signals.md"
-            "docs/systems/interactions.md"
-            "docs/systems/objects-map.md"
-            "docs/systems/visuals.md"
-            "docs/systems/game-mode.md"
-            "docs/systems/construction.md"
-            "docs/systems/construction-service.md"
-            "docs/systems/construction-registry.md"
-            "docs/systems/wall-placement.md"
-            "docs/systems/screen-to-grid.md"
-          )
-          MISSING=0
-          for f in "${REQUIRED_FILES[@]}"; do
-            if [ ! -f "$f" ]; then
-              echo "MISSING: $f"
-              MISSING=$((MISSING + 1))
-            fi
-          done
-          if [ "$MISSING" -gt 0 ]; then
-            echo "Validation failed: $MISSING required documentation file(s) are missing."
-            exit 1
-          fi
-          echo "All required documentation files are present."
-
   deploy:
-    needs: validate
     runs-on: ubuntu-latest
-    # Skip deployments triggered by the AI doc-sync bot commit (those carry [skip ci]).
-    # GitHub already suppresses [skip ci] workflows globally, but this guard
-    # makes the intent explicit for manual audits.
     if: "!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'"
     environment:
       name: github-pages
@@ -69,6 +29,61 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate core documentation files
+        run: |
+          MISSING=0
+          for f in docs/README.md docs/index.html; do
+            if [ ! -f "$f" ]; then
+              echo "MISSING: $f"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          if [ "$MISSING" -gt 0 ]; then
+            echo "Validation failed: $MISSING required file(s) are missing."
+            exit 1
+          fi
+          echo "Core documentation files are present."
+
+      - name: Generate pages manifest
+        run: |
+          python3 << 'PYEOF'
+          import os, json, re
+
+          DOCS = 'docs'
+          pages = []
+
+          for root, dirs, files in os.walk(DOCS):
+              dirs.sort()
+              for f in sorted(files):
+                  if not f.lower().endswith('.md'):
+                      continue
+                  full = os.path.join(root, f)
+                  rel = os.path.relpath(full, DOCS).replace(os.sep, '/')
+                  title = None
+                  with open(full, encoding='utf-8') as fh:
+                      for line in fh:
+                          m = re.match(r'^#\s+(.+)', line)
+                          if m:
+                              raw = m.group(1).strip()
+                              raw = re.sub(r'\*+|__|~~', '', raw)
+                              raw = re.sub(r'\[([^\]]+)\]\([^)]*\)', r'\1', raw)
+                              title = raw
+                              break
+                  if not title:
+                      name = os.path.splitext(f)[0]
+                      if name.lower() == 'readme':
+                          parent = os.path.basename(root)
+                          title = parent if parent != DOCS else 'Home'
+                      else:
+                          title = name.replace('-', ' ').title()
+                  pages.append({'path': rel, 'title': title})
+
+          out_path = os.path.join(DOCS, 'pages.json')
+          with open(out_path, 'w', encoding='utf-8') as out:
+              json.dump(pages, out, ensure_ascii=False, indent=2)
+          print(f'Generated pages.json with {len(pages)} entries')
+          PYEOF
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
