@@ -47,4 +47,9 @@ namespace Kruty1918.Moyva.Signals
         public Vector2Int Position;
         public string OccupantId;      // null якщо тайл звільнено
     }
+
+    public struct FogStateChangedSignal
+    {
+        public int ChangedTilesCount;
+    }
 }
