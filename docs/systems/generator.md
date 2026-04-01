@@ -1,6 +1,6 @@
 # Generator — Система процедурної генерації карти
 
-← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/docs/#systems/generator)
+← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/generator)
 
 ---
 
