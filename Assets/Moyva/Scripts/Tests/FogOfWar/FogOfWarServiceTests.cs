@@ -265,8 +265,8 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         public void SignalBus_UnitMovedSignal_UpdatesPosition()
         {
             InitMap();
-            var start = new Vector2Int(2, 2);
-            var end   = new Vector2Int(7, 7);
+            var start = new Vector2Int(1, 1);
+            var end   = new Vector2Int(8, 8);
 
             _signalBus.Fire(new UnitCreatedSignal
             {

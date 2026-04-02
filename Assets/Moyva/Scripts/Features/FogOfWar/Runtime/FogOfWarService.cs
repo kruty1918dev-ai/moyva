@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Signals;
@@ -34,6 +35,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         // unitId → vision range (stored at registration)
         private readonly Dictionary<string, int> _unitVisionRange
             = new Dictionary<string, int>();
+
+        // unitId -> pending registration data received before Initialize(width,height)
+        private readonly Dictionary<string, (Vector2Int Position, int VisionRange)> _pendingUnits
+            = new Dictionary<string, (Vector2Int Position, int VisionRange)>();
 
         private HashSet<Vector2Int> _lastDirtyTiles = new HashSet<Vector2Int>();
 
@@ -88,12 +93,29 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             var snapshot = _saveProvider?.LoadExploredData();
             if (snapshot != null)
                 LoadFromSnapshot(snapshot);
+
+            // Process units that were spawned/moved before map initialization
+            if (_pendingUnits.Count > 0)
+            {
+                foreach (var kvp in _pendingUnits)
+                    RegisterUnit(kvp.Key, kvp.Value.Position, kvp.Value.VisionRange);
+
+                _pendingUnits.Clear();
+            }
+
+            // Ensure texture reflects current state after all pending units processed
+            _textureUpdater?.RebuildFullTexture(this);
         }
 
         public void RegisterUnit(string unitId, Vector2Int position, int visionRange)
         {
-            if (!_initialized) { Debug.LogWarning("[FogOfWar] RegisterUnit called before Initialize(width,height)."); return; }
+            if (!_initialized)
+            {
+                _pendingUnits[unitId] = (position, visionRange);
+                return;
+            }
 
+            visionRange = ClampVisionRange(visionRange);
             _unitVisionRange[unitId] = visionRange;
 
             var tiles = _resolver.ComputeVisibleTiles(position, visionRange, _width, _height);
@@ -111,11 +133,23 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         public void UpdateUnitPosition(string unitId, Vector2Int newPosition)
         {
-            if (!_initialized) { Debug.LogWarning("[FogOfWar] UpdateUnitPosition called before Initialize(width,height)."); return; }
+            if (!_initialized)
+            {
+                int pendingRange = _unitVisionRange.TryGetValue(unitId, out int storedRange)
+                    ? storedRange
+                    : _defaultVisionRange;
+
+                _pendingUnits[unitId] = (newPosition, pendingRange);
+                return;
+            }
 
             if (!_unitVisibleTiles.TryGetValue(unitId, out var oldTiles))
             {
-                Debug.LogWarning($"[FogOfWar] UpdateUnitPosition: unknown unitId '{unitId}'. Ignoring.");
+                int fallbackRange = _unitVisionRange.TryGetValue(unitId, out int storedRange)
+                    ? storedRange
+                    : _defaultVisionRange;
+
+                RegisterUnit(unitId, newPosition, fallbackRange);
                 return;
             }
 
@@ -210,7 +244,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         // ─── Signal handlers ──────────────────────────────────────────────────
 
         private void OnUnitCreated(UnitCreatedSignal signal)
-            => RegisterUnit(signal.UnitId, signal.Position, _defaultVisionRange);
+            => RegisterUnit(signal.UnitId, signal.Position, ClampVisionRange(_defaultVisionRange));
 
         private void OnUnitMoved(UnitMovedSignal signal)
             => UpdateUnitPosition(signal.UnitId, signal.NewPosition);
@@ -219,6 +253,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             => UnregisterUnit(signal.UnitId);
 
         // ─── Helpers ──────────────────────────────────────────────────────────
+
+        private int ClampVisionRange(int range)
+        {
+            int min = _settings != null ? _settings.MinVisionRange : 1;
+            int max = _settings != null ? _settings.MaxVisionRange : 12;
+            return Mathf.Clamp(range, min, max);
+        }
 
         private bool IsInBounds(Vector2Int pos)
             => pos.x >= 0 && pos.x < _width && pos.y >= 0 && pos.y < _height;
