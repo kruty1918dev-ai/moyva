@@ -8,13 +8,17 @@
   <Project Path="Zenject-Editor.csproj" />
   <Project Path="Zenject-IntegrationTests.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.csproj" />
+  <Project Path="Kruty1918.Moyva.Construction.csproj" />
+  <Project Path="Kruty1918.Moyva.FogOfWar.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Signals.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
   <Project Path="Kruty1918.Moyva.Camera.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
+  <Project Path="Kruty1918.Moyva.GameMode.csproj" />
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementPlayMode.csproj" />

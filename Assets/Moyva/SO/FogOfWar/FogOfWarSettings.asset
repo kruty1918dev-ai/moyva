@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c901b822f5d445c099af4a87c12aef57, type: 3}
+  m_Name: FogOfWarSettings
+  m_EditorClassIdentifier: Kruty1918.Moyva.FogOfWar::Kruty1918.Moyva.FogOfWar.API.FogOfWarSettings
+  DefaultVisionRange: 3
+  UnexploredFogColor: {r: 0, g: 0, b: 0, a: 1}
+  ExploredFogColor: {r: 0, g: 0, b: 0, a: 0.5686275}
+  NoiseScaleUnexplored: 11.14
+  NoiseSpeedUnexplored: 0.32
+  NoiseStrengthUnexplored: 0.16
+  NoiseScaleExplored: 2.97
+  NoiseSpeedExplored: 0.02
+  NoiseStrengthExplored: 0.15
+  WarpStrength: 1
+  EdgeBleedRadius: 1
+  EdgeBleedStrength: 0.527
+  TransitionSoftness: 0.5
+  TextureFilter: 1
