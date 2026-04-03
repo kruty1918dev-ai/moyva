@@ -1,6 +1,6 @@
 # BuildingRegistry — Реєстр будівель
 
-← [Назад до Construction](construction.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/construction-registry)
+← [Назад до Construction](../construction.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/construction-registry)
 
 ---
 
@@ -118,5 +118,5 @@ Container.BindInstance(buildingRegistry).AsSingle();
 
 ## Пов'язані системи
 
-- [Construction (огляд)](construction.md)
-- [construction-service.md](construction-service.md)
+- [Construction (огляд)](../construction.md)
+- [service.md](service.md)

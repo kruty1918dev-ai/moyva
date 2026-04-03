@@ -1,6 +1,6 @@
 # ScreenToGrid — Конвертація координат
 
-← [Назад до Construction](construction.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/screen-to-grid)
+← [Назад до Construction](../construction.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/screen-to-grid)
 
 ---
 
@@ -106,6 +106,6 @@ Container.Bind<Camera>()
 
 ## Пов'язані системи
 
-- [Construction (огляд)](construction.md)
+- [Construction (огляд)](../construction.md)
 - [wall-placement.md](wall-placement.md)
-- [construction-service.md](construction-service.md)
+- [service.md](service.md)

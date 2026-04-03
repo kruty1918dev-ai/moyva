@@ -40,7 +40,7 @@
 | **GameMode** | [systems/game-mode.md](systems/game-mode.md) | Управління ігровими режимами (Normal / Construction) |
 | **Construction** | [systems/construction.md](systems/construction.md) | Система будівництва: preview, Undo/Redo, стіни |
 | **FogOfWar** | [systems/fog-of-war/README.md](systems/fog-of-war/README.md) | Туман війни: сітка видимості, шейдер, FOV |
-| **SaveSystem** | [systems/save-system.md](systems/save-system.md) | Збереження/завантаження стану гри у бінарний .mvs формат |
+| **SaveSystem** | [systems/save-system.md](systems/save-system.md) | Збереження/завантаження стану гри у бінарний .mvs формат; ConfigService для глобального конфігу |
 
 ---
 
@@ -97,7 +97,7 @@ Assets/
             ├── GameMode/
             │   ├── API/          ← IGameModeService, GameModeType
             │   └── Runtime/      ← GameModeService, GameModeInstaller
-            └── Construction/
+            ├── Construction/
                 ├── API/          ← IConstructionService, IWallPlacementService,
                 │                    IConstructionInputService, IScreenToGridConverter,
                 │                    BuildingCategory, BuildingPlacementState,
@@ -106,9 +106,10 @@ Assets/
                                      ConstructionInputService, ScreenToGridConverter,
                                      BuildingRegistrySO, ConstructionInstaller
             └── SaveSystem/
-                ├── API/          ← ISaveService, ISaveModule, ISaveContext, SaveSlotInfo
-                └── Runtime/      ← SaveService, SaveContext, SaveFileCodec, Crc32,
-                                     SaveSystemInstaller
+                ├── API/          ← ISaveService, IConfigService, ISaveModule,
+                │                    ISaveContext, SaveSlotInfo
+                └── Runtime/      ← SaveService, ConfigService, SaveContext,
+                                     SaveFileCodec, Crc32, SaveSystemInstaller
 ```
 
 ---
@@ -194,4 +195,18 @@ Construction
 - додано розділ **Стандарти** з TDD-документом;
 - оновлено структуру проєкту в README (додано `Features/ObjectsMap`);
 - перевпорядковано та нормалізовано `standarts/TDD.md` у читабельний markdown-формат.
+
+## Аудит документації (2026-04-03)
+
+Структуризація та очищення документації:
+
+- видалено дублікат `systems/SaveSystem.md` (старий чернетковий файл);
+- додано розділ **ConfigService** до `systems/save-system.md` (IConfigService, config.mvs);
+- оновлено структуру проєкту в README (додано `IConfigService`, `ConfigService`);
+- підсторінки системи **Construction** перенесено до підпапки `systems/construction/` (за аналогією з `fog-of-war/`):
+  - `construction-service.md` → `construction/service.md`
+  - `construction-registry.md` → `construction/registry.md`
+  - `wall-placement.md` → `construction/wall-placement.md`
+  - `screen-to-grid.md` → `construction/screen-to-grid.md`
+- оновлено всі перехресні посилання у файлах системи Construction.
 
