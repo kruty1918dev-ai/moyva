@@ -95,10 +95,10 @@ IConstructionService.Confirm()
 
 | Документ | Опис |
 |---|---|
-| [construction-service.md](construction-service.md) | Детальний опис `IConstructionService` та алгоритмів |
-| [construction-registry.md](construction-registry.md) | `BuildingRegistrySO` та `BuildingDefinition` |
-| [wall-placement.md](wall-placement.md) | `IWallPlacementService`, Bresenham, 8 ручок |
-| [screen-to-grid.md](screen-to-grid.md) | `IScreenToGridConverter`, конвертація координат |
+| [construction/service.md](construction/service.md) | Детальний опис `IConstructionService` та алгоритмів |
+| [construction/registry.md](construction/registry.md) | `BuildingRegistrySO` та `BuildingDefinition` |
+| [construction/wall-placement.md](construction/wall-placement.md) | `IWallPlacementService`, Bresenham, 8 ручок |
+| [construction/screen-to-grid.md](construction/screen-to-grid.md) | `IScreenToGridConverter`, конвертація координат |
 
 ---
 

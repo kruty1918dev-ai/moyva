@@ -1,6 +1,6 @@
 # ConstructionService — Сервіс будівництва
 
-← [Назад до Construction](construction.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/construction-service)
+← [Назад до Construction](../construction.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/construction-service)
 
 ---
 
@@ -187,18 +187,18 @@ public struct BuildingPreviewChangedSignal
 
 | Залежність | Причина |
 |---|---|
-| [`IObjectsMapService`](objects-map.md) | Перевірка `IsOccupied`, `Register()` при Confirm |
-| [`IGameModeService`](game-mode.md) | Підписка на `GameModeChangedSignal` для активації |
-| [`SignalBus`](signals.md) | Надсилання будівельних сигналів |
+| [`IObjectsMapService`](../objects-map.md) | Перевірка `IsOccupied`, `Register()` при Confirm |
+| [`IGameModeService`](../game-mode.md) | Підписка на `GameModeChangedSignal` для активації |
+| [`SignalBus`](../signals.md) | Надсилання будівельних сигналів |
 | `BuildingRegistrySO` | Пошук `BuildingDefinition` за ID |
 
 ---
 
 ## Пов'язані системи
 
-- [Construction (огляд)](construction.md)
-- [construction-registry.md](construction-registry.md)
+- [Construction (огляд)](../construction.md)
+- [registry.md](registry.md)
 - [wall-placement.md](wall-placement.md)
 - [screen-to-grid.md](screen-to-grid.md)
-- [Signals](signals.md)
-- [ObjectsMap](objects-map.md)
+- [Signals](../signals.md)
+- [ObjectsMap](../objects-map.md)

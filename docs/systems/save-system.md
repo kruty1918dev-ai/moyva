@@ -212,6 +212,70 @@ public sealed class SaveSystemInstaller : MonoInstaller
 
 ---
 
+---
+
+## ConfigService — глобальний конфіг
+
+**ConfigService** — другий сервіс SaveSystem. Зберігає один файл `config.mvs` (не слоти) і призначений для **налаштувань, локалізації, модів** та іншого глобального конфігу.
+
+### Відмінності від SaveService
+
+| | `SaveService` | `ConfigService` |
+|---|---|---|
+| Файлів | до 100 (slot00–slot99.mvs) | 1 (`config.mvs`) |
+| Сигнали | `SaveRequestedSignal`, `LoadRequestedSignal` | немає — виклик явний |
+| API | `Save(int slot)`, `Load(int slot)` | `SaveConfig(modules)`, `LoadConfig(modules)` |
+| Призначення | ігровий прогрес, стан сесії | налаштування, локалізація, mod-конфіг |
+
+### `IConfigService`
+
+```csharp
+public interface IConfigService : IInitializable, IDisposable
+{
+    /// <summary>Зберегти конфіг з модулями. Виконується атомарно.</summary>
+    void SaveConfig(List<ISaveModule> modules);
+
+    /// <summary>Завантажити конфіг у модулі.</summary>
+    void LoadConfig(List<ISaveModule> modules);
+
+    /// <summary>Перевірити, чи існує config.mvs.</summary>
+    bool HasConfig();
+
+    /// <summary>Видалити config.mvs.</summary>
+    void DeleteConfig();
+
+    /// <summary>Отримати інформацію про config файл (розмір, дата).</summary>
+    SaveSlotInfo GetConfigInfo();
+}
+```
+
+### Файл конфігу
+
+Зберігається у `Application.persistentDataPath/saves/config.mvs`.
+
+| Файл | Призначення |
+|---|---|
+| `config.mvs` | Основний файл конфігу |
+| `config.mvs.bak` | Резервна копія |
+| `config.mvs.tmp` | Тимчасовий файл під час атомарного запису |
+
+Формат ідентичний слотам: `MVSA` magic, version, blocks, global CRC32.
+
+### Як використовувати
+
+```csharp
+// Збереження налаштувань
+[Inject] private IConfigService _configService;
+
+var modules = new List<ISaveModule> { audioModule, graphicsModule };
+_configService.SaveConfig(modules);
+
+// Завантаження
+_configService.LoadConfig(modules);
+```
+
+---
+
 ## Пов'язані документи
 
 - [Signals](../signals.md) — усі сигнали проекту
