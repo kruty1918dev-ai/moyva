@@ -282,3 +282,53 @@ _configService.LoadConfig(modules);
 - [Порядок ініціалізації](../initialization-order.md) — місце SaveSystem у порядку запуску
 - [FogOfWar → Save stub](../fog-of-war/save-system-stub.md) — поточний заглушковий стан FogOfWar
 - [TDD Standard](../../standarts/TDD.md) — архітектурні правила модульності
+
+---
+
+## Нові підсистеми (Bootstrap + Units)
+
+Після розширення SaveSystem з'явились додаткові підсистеми, які працюють разом із `SaveService`:
+
+### 1) UnitsSaveModule
+
+Призначення:
+- серіалізація списку юнітів у save-блок
+- відновлення юнітів при `Load`
+- підтримка двох форматів юніт-блоку: старий (без stamina) і новий (зі stamina)
+
+Що зберігається на 1 юніт:
+- `typeId` (наприклад, `warrior`)
+- `position` (`x`, `y`)
+- `stamina` (для нового формату)
+
+Особливість сумісності:
+- loader спочатку пробує новий формат
+- якщо структура не сходиться, автоматично робить fallback на legacy-формат
+- це запобігає сценаріям `EndOfStreamException` і "космічної" stamina при читанні старого файлу новим кодом
+
+### 2) GameExitSaver
+
+Призначення:
+- автоматично викликати `Save(0)` при `Application.quitting`
+
+Перевага:
+- дизайнеру не потрібно вручну натискати save під час швидких перевірок сцени
+
+### 3) TestUnitSpawner + завантаження зі слота
+
+Поточна логіка bootstrap:
+- якщо `slot00.mvs` існує: виконується `Load(0)`
+- якщо сейву немає: спавняться тестові юніти
+
+Це дає "resume" поведінку в editor-потоку тестування.
+
+---
+
+## SaveSystem Designer Tool (Editor)
+
+Додано окреме editor-вікно для дизайнерів:
+- меню: `Moyva/Save System/Designer Tool`
+- функції: читання файлів, перегляд блоків, редагування payload, видалення блоків, видалення файлів/слотів, робота з backup
+
+Детальний посібник (по кожному полю та кнопці):
+- [Save System Designer Tool Guide](save-system-designer-tool.md)

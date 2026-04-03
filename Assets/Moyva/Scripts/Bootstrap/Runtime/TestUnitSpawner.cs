@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
 using Zenject;
@@ -8,18 +9,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class TestUnitSpawner : IInitializable
     {
         private readonly IUnitFactory _unitFactory;
+        private readonly ISaveService _saveService;
 
-        public TestUnitSpawner(IUnitFactory unitFactory)
+        public TestUnitSpawner(IUnitFactory unitFactory, ISaveService saveService)
         {
             _unitFactory = unitFactory;
+            _saveService = saveService;
         }
 
         public void Initialize()
         {
-            Debug.Log("[Bootstrap] Початок тестового спавну юнітів...");
-
-            // Спавнимо кілька юнітів у різних точках для тесту
-            SpawnSampleUnits();
+            if (_saveService.HasSave(0))
+            {
+                Debug.Log("[Bootstrap] Знайдено збереження (слот 0) — завантажуємо юнітів з сейву.");
+                _saveService.Load(0);
+            }
+            else
+            {
+                Debug.Log("[Bootstrap] Збереження не знайдено — стартуємо тестовий спавн юнітів.");
+                SpawnSampleUnits();
+            }
         }
 
         private void SpawnSampleUnits()

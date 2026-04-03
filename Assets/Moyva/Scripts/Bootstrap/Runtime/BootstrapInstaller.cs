@@ -1,5 +1,6 @@
 using Zenject;
 using Kruty1918.Moyva.Bootstrap.Runtime;
+using Kruty1918.Moyva.SaveSystem;
 
 namespace Kruty1918.Moyva.Bootstrap
 {
@@ -7,7 +8,19 @@ namespace Kruty1918.Moyva.Bootstrap
     {
         public override void InstallBindings()
         {
-            // BindInterfacesTo прив'яже TestUnitSpawner до інтерфейсу IInitializable 
+            // Модуль збереження юнітів — реєструється як ISaveModule, автоматично
+            // потрапляє в List<ISaveModule> при ініціалізації SaveService.
+            Container.Bind<ISaveModule>()
+                .To<UnitsSaveModule>()
+                .AsSingle();
+
+            // Автозбереження при виході з програми.
+            Container.BindInterfacesTo<GameExitSaver>()
+                .AsSingle()
+                .NonLazy();
+
+            // TestUnitSpawner: перевіряє наявність сейву —
+            // якщо є сейв, завантажує юнітів; інакше спавнить тестові.
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
 
             // TestUnitSpawner має ініціалізуватись ОСТАННІМ — після усіх сервісів,
