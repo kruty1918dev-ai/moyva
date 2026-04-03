@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         [SerializeField] private DataNoiseSettings _noiseSettings;
         [SerializeField] private DataBiomesSettings _biomesSettings;
         [SerializeField] private WFCDataSettings _wfcDataSettings;
+        [SerializeField] private MapObjectRegistrySO _mapObjectRegistry;
 
         public override void InstallBindings()
         {
@@ -23,6 +24,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Container.BindInstance(_biomesSettings).AsSingle();
             Container.BindInstance(_generationRules).AsSingle();
             Container.BindInstance(_heightMapSettings).AsSingle();
+            Container.BindInstance(_mapObjectRegistry).AsSingle();
             Container.Bind<IVirtualHeightMapGenerator>().To<VirtualHeightMapGenerator>().AsSingle();
 
             Container.Bind<IWFCService>().To<WFCService>().AsSingle();
@@ -32,6 +34,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Container.Bind<IMapDataGenerator>().To<MapDataGenerator>().AsSingle();
             Container.Bind<IMapFeatureGenerator>().To<RiverFeatureGenerator>().AsTransient();
             Container.Bind<IMapFeatureGenerator>().To<WaterPostProcessor>().AsTransient();
+            Container.Bind<IMapObjectRegistryService>().To<MapObjectRegistryService>().AsSingle();
+            Container.Bind<IMapLayerRegistry>().To<MapLayerRegistry>().AsSingle();
 
             Container.BindInterfacesAndSelfTo<MapVisualInstantiator>().AsSingle();
             Container.Bind<ISaveModule>().To<GeneratedWorldSaveModule>().AsSingle();

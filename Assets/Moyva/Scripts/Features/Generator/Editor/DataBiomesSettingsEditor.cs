@@ -7,42 +7,37 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Editor
 {
-    [CustomEditor(typeof(WFCDataSettings))]
-    public class WFCDataSettingsEditor : UnityEditor.Editor
+    [CustomEditor(typeof(DataBiomesSettings))]
+    public class DataBiomesSettingsEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
+            DrawValidationWarnings((DataBiomesSettings)target);
             base.OnInspectorGUI();
-
-            WFCDataSettings settings = (WFCDataSettings)target;
-
-            DrawTileIdValidation(settings);
-
-            if (GUILayout.Button("Open WFC Rules Editor"))
-            {
-                WFCRulesEditorWindow.OpenWindow(settings);
-            }
         }
 
-        private static void DrawTileIdValidation(WFCDataSettings settings)
+        private static void DrawValidationWarnings(DataBiomesSettings settings)
         {
-            if (settings.TileRules == null || settings.TileRules.Count == 0) return;
-
             var knownIds = LoadKnownTileIds();
             if (knownIds.Count == 0) return;
 
             var unknownIds = new HashSet<string>();
-            foreach (var rule in settings.TileRules)
+
+            if (!string.IsNullOrEmpty(settings.DefaultTileID) && !knownIds.Contains(settings.DefaultTileID))
+                unknownIds.Add(settings.DefaultTileID);
+
+            if (settings.Biomes != null)
             {
-                if (!string.IsNullOrEmpty(rule.TileID) && !knownIds.Contains(rule.TileID))
-                    unknownIds.Add(rule.TileID);
-                if (!string.IsNullOrEmpty(rule.TileCentralID) && !knownIds.Contains(rule.TileCentralID))
-                    unknownIds.Add(rule.TileCentralID);
+                foreach (var biome in settings.Biomes)
+                {
+                    if (!string.IsNullOrEmpty(biome.TileID) && !knownIds.Contains(biome.TileID))
+                        unknownIds.Add(biome.TileID);
+                }
             }
 
             if (unknownIds.Count > 0)
             {
-                var sb = new StringBuilder("Невідомі Tile ID у WFC правилах:\n");
+                var sb = new StringBuilder("Невідомі Tile ID у BiomesSettings:\n");
                 foreach (var id in unknownIds)
                     sb.AppendLine($"  • {id}");
                 EditorGUILayout.HelpBox(sb.ToString().TrimEnd(), MessageType.Warning);
