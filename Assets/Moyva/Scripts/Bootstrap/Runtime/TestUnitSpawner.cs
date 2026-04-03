@@ -1,4 +1,6 @@
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.Generator.Runtime;
+using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
 using Zenject;
@@ -6,29 +8,56 @@ using Zenject;
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
     // IInitializable означає, що Zenject викличе цей метод відразу після завантаження сцени
-    internal sealed class TestUnitSpawner : IInitializable
+    internal sealed class TestUnitSpawner : IInitializable, System.IDisposable
     {
         private readonly IUnitFactory _unitFactory;
         private readonly ISaveService _saveService;
+        private readonly ISaveInspectorService _saveInspectorService;
+        private readonly SignalBus _signalBus;
+        private bool _shouldSpawnSamples;
 
-        public TestUnitSpawner(IUnitFactory unitFactory, ISaveService saveService)
+        public TestUnitSpawner(
+            IUnitFactory unitFactory,
+            ISaveService saveService,
+            ISaveInspectorService saveInspectorService,
+            SignalBus signalBus)
         {
             _unitFactory = unitFactory;
             _saveService = saveService;
+            _saveInspectorService = saveInspectorService;
+            _signalBus = signalBus;
         }
 
         public void Initialize()
         {
-            if (_saveService.HasSave(0))
+            _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
+
+            bool hasSavedWorld = _saveService.HasSave(0) &&
+                _saveInspectorService.HasBlock(0, "Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule");
+            if (hasSavedWorld)
             {
-                Debug.Log("[Bootstrap] Знайдено збереження (слот 0) — завантажуємо юнітів з сейву.");
+                Debug.Log("[Bootstrap] Знайдено збереження зі збереженими даними генератора — запускаємо завантаження слота 0.");
                 _saveService.Load(0);
             }
             else
             {
-                Debug.Log("[Bootstrap] Збереження не знайдено — стартуємо тестовий спавн юнітів.");
-                SpawnSampleUnits();
+                Debug.Log("[Bootstrap] Валідного save-блоку генератора немає — буде створена нова гра після побудови світу.");
+                _shouldSpawnSamples = true;
             }
+        }
+
+        public void Dispose()
+        {
+            _signalBus.Unsubscribe<WorldBuiltSignal>(OnWorldBuilt);
+        }
+
+        private void OnWorldBuilt(WorldBuiltSignal _)
+        {
+            if (!_shouldSpawnSamples)
+                return;
+
+            _shouldSpawnSamples = false;
+            SpawnSampleUnits();
         }
 
         private void SpawnSampleUnits()
