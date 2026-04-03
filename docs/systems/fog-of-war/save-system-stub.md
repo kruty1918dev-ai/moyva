@@ -4,6 +4,12 @@
 
 ---
 
+> **Статус (2026):** SaveSystem реалізований і доступний у `Features/SaveSystem/`.
+> `FogSaveDataStub` залишається заглушкою, що чекає на інтеграцію з `ISaveModule`.
+> Деталі інтеграції: [docs/systems/save-system.md](../save-system.md).
+
+---
+
 ## Чому stub?
 
 Система збереження Moyva ще не реалізована. `FogSaveDataStub` є placeholder, що:

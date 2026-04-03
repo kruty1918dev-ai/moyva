@@ -1,0 +1,17 @@
+{
+    "name": "Kruty1918.Moyva.SaveSystem",
+    "rootNamespace": "Kruty1918.Moyva.SaveSystem",
+    "references": [
+        "Zenject",
+        "Kruty1918.Moyva.Signals"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -27,6 +27,11 @@ namespace Kruty1918.Moyva.Signals
 
             // FogOfWar
             Container.DeclareSignal<FogStateChangedSignal>();
+
+            // SaveSystem
+            Container.DeclareSignal<SaveRequestedSignal>();
+            Container.DeclareSignal<LoadRequestedSignal>();
+            Container.DeclareSignal<SaveCompletedSignal>();
         }
     }
 }
