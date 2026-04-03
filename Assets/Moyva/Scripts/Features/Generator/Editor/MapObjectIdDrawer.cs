@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (property.propertyType != SerializedPropertyType.String)
             {
                 EditorGUI.PropertyField(position, property, label);
+                EditorGUILayout.HelpBox($"[MapObjectId] can only be applied to string fields. Field: {property.name}", MessageType.Warning);
                 return;
             }
 
@@ -64,6 +65,7 @@ namespace Kruty1918.Moyva.Generator.Editor
 
         private static string[] GetObjectIds()
         {
+            // Uses the first found MapObjectRegistrySO. Projects are expected to have a single registry asset.
             string[] guids = AssetDatabase.FindAssets("t:MapObjectRegistrySO");
             if (guids.Length == 0) return System.Array.Empty<string>();
 

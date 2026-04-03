@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Grid.Editor
             if (property.propertyType != SerializedPropertyType.String)
             {
                 EditorGUI.PropertyField(position, property, label);
+                EditorGUILayout.HelpBox($"[TileId] can only be applied to string fields. Field: {property.name}", MessageType.Warning);
                 return;
             }
 
@@ -64,6 +65,7 @@ namespace Kruty1918.Moyva.Grid.Editor
 
         private static string[] GetTileIds()
         {
+            // Uses the first found TileRegistrySO, matching the convention in WFCRulesEditorWindow.
             string[] guids = AssetDatabase.FindAssets("t:TileRegistrySO");
             if (guids.Length == 0) return System.Array.Empty<string>();
 

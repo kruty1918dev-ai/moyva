@@ -133,7 +133,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             if (!_objectRegistry.TryGetDefinition(objectId, out var objectDef))
             {
-                Debug.LogError($"[MapInstantiator] Не знайдено MapObjectDefinition для ID: {objectId}");
+                Debug.LogError($"[MapVisualInstantiator] Не знайдено MapObjectDefinition для ID: {objectId}");
                 return;
             }
 
