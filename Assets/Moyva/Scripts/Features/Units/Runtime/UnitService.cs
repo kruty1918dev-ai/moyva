@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private readonly Dictionary<string, float> _unitStamina = new();
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
+        private readonly Dictionary<string, string> _unitTypeIds = new();
 
         // Словник для зберігання посилань на GameObject юнітів
         private readonly Dictionary<string, GameObject> _unitObjects = new();
@@ -57,6 +58,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             _unitStamina[signal.UnitId] = startStamina;
             _unitPositions[signal.UnitId] = signal.Position;
+            _unitTypeIds[signal.UnitId] = signal.UnitTypeId;
 
             // Зберігаємо GameObject
             _unitObjects[signal.UnitId] = signal.UnitObject;
@@ -94,6 +96,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         {
             _unitStamina.Remove(signal.UnitId);
             _unitPositions.Remove(signal.UnitId);
+            _unitTypeIds.Remove(signal.UnitId);
             _unitObjects.Remove(signal.UnitId); // Видаляємо посилання
         }
 
@@ -110,8 +113,22 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         public float GetStamina(string unitId) => _unitStamina.GetValueOrDefault(unitId, 0);
 
+        public void SetStamina(string unitId, float stamina)
+        {
+            if (string.IsNullOrEmpty(unitId) || !_unitStamina.ContainsKey(unitId))
+                return;
+
+            _unitStamina[unitId] = Mathf.Max(0f, stamina);
+        }
+
         public bool TryGetUnitPosition(string unitId, out Vector2Int position)
             => _unitPositions.TryGetValue(unitId, out position);
+
+        public IReadOnlyCollection<string> GetAllUnitIds()
+            => _unitPositions.Keys;
+
+        public string GetUnitTypeId(string unitId)
+            => _unitTypeIds.TryGetValue(unitId, out var typeId) ? typeId : null;
 
         private bool CanUnitMove(string unitId, Vector2Int targetPosition)
         {
