@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.API
@@ -7,7 +8,7 @@ namespace Kruty1918.Moyva.Generator.API
     {
         public BiomeData[] Biomes;
 
-        public string DefaultTileID = "grass"; // Фолбек, якщо нічого не підійшло
+        [TileId] public string DefaultTileID = "grass"; // Фолбек, якщо нічого не підійшло
         public float MoistureScale = 1.0f; // Масштаб для генерації вологості
     }
 }

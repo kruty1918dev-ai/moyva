@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.API
@@ -22,9 +23,9 @@ namespace Kruty1918.Moyva.Generator.API
     public struct WFCTileRule
     {
         [Tooltip("ID тайла (результат), який ми хочемо отримати")]
-        public string TileID;
+        [TileId] public string TileID;
         [Tooltip("Центральний тайл, для якого застосовується це правило ")]
-        public string TileCentralID;
+        [TileId] public string TileCentralID;
 
         [Tooltip("Обмеження: щоб цей TileID з'явився, ці сусіди ПОВИННІ бути навколо")]
         public List<DirectionalConstraint> Constraints;

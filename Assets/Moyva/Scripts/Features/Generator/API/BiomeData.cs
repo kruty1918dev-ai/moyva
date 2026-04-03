@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.API
@@ -6,7 +7,7 @@ namespace Kruty1918.Moyva.Generator.API
     [Serializable]
     public struct BiomeData
     {
-        public string TileID;
+        [TileId] public string TileID;
         public string BiomeName; // Для зручності (напр. "Deep Lake", "Forest")
         
         [Header("Height Range (0.0 - 1.0)")]
