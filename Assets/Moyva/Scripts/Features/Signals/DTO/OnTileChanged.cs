@@ -52,4 +52,8 @@ namespace Kruty1918.Moyva.Signals
     {
         public int ChangedTilesCount;
     }
+
+    public struct WorldBuiltSignal
+    {
+    }
 }

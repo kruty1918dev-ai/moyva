@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<InterruptMovementSignal>();
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<OnObjectsMapChangedSignal>();
+            Container.DeclareSignal<WorldBuiltSignal>();
 
             // GameMode
             Container.DeclareSignal<GameModeChangedSignal>();

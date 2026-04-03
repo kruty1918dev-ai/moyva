@@ -1,6 +1,8 @@
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
@@ -9,7 +11,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     /// Зберігає: typeId + позиція + стаміна для кожного активного юніта.
     /// При завантаженні recreates юнітів через IUnitFactory.
     /// </summary>
-    internal sealed class UnitsSaveModule : ISaveModule
+    internal sealed class UnitsSaveModule : ISaveModule, IInitializable, System.IDisposable
     {
         private readonly struct UnitRecord
         {
@@ -29,11 +31,25 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private readonly IUnitService _unitService;
         private readonly IUnitFactory _unitFactory;
+        private readonly SignalBus _signalBus;
+        private readonly System.Collections.Generic.List<UnitRecord> _pendingRecords = new();
+        private bool _worldBuilt;
 
-        public UnitsSaveModule(IUnitService unitService, IUnitFactory unitFactory)
+        public UnitsSaveModule(IUnitService unitService, IUnitFactory unitFactory, SignalBus signalBus)
         {
             _unitService = unitService;
             _unitFactory = unitFactory;
+            _signalBus = signalBus;
+        }
+
+        public void Initialize()
+        {
+            _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
+        }
+
+        public void Dispose()
+        {
+            _signalBus.Unsubscribe<WorldBuiltSignal>(OnWorldBuilt);
         }
 
         public void OnSave(ISaveContext context)
@@ -76,6 +92,31 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 Debug.Log("[UnitsSave] Завантаження виконано у legacy-режимі (без стаміни в сейві).");
             }
 
+            if (!_worldBuilt)
+            {
+                _pendingRecords.Clear();
+                _pendingRecords.AddRange(records);
+                Debug.Log($"[UnitsSave] Світ ще не побудований. Відкладено завантаження {records.Count} юнітів до WorldBuiltSignal.");
+                return;
+            }
+
+            SpawnRecords(records);
+        }
+
+        private void OnWorldBuilt(WorldBuiltSignal _)
+        {
+            _worldBuilt = true;
+
+            if (_pendingRecords.Count == 0)
+                return;
+
+            var records = new System.Collections.Generic.List<UnitRecord>(_pendingRecords);
+            _pendingRecords.Clear();
+            SpawnRecords(records);
+        }
+
+        private void SpawnRecords(System.Collections.Generic.List<UnitRecord> records)
+        {
             for (int i = 0; i < records.Count; i++)
             {
                 var record = records[i];

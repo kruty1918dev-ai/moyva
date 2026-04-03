@@ -25,6 +25,10 @@ namespace Kruty1918.Moyva.SaveSystem
                 .AsSingle()
                 .NonLazy();
 
+            Container.Bind<ISaveInspectorService>()
+                .To<SaveInspectorService>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<ConfigService>()
                 .AsSingle()
                 .NonLazy();

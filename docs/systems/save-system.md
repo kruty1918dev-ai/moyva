@@ -30,11 +30,13 @@ Assets/Moyva/Scripts/Features/SaveSystem/
   Kruty1918.Moyva.SaveSystem.asmdef          ← збірка (refs: Zenject, Kruty1918.Moyva.Signals)
   API/
     ISaveService.cs      ← публічний контракт системи (Save/Load/HasSave/Delete/GetSlotInfo)
+        ISaveInspectorService.cs ← read-only перевірка наявності конкретного save-блоку в слоті
     ISaveModule.cs       ← контракт для участі у save/load циклі (OnSave/OnLoad)
     ISaveContext.cs      ← контекст запису/читання (BinaryWriter / BinaryReader)
     SaveSlotInfo.cs      ← метадані слоту (exists, size, timestamp)
   Runtime/
     SaveService.cs          ← internal sealed, реалізує ISaveService + IInitializable + IDisposable
+        SaveInspectorService.cs ← internal sealed, перевіряє чи є block конкретного модуля в слоті
     SaveContext.cs          ← internal sealed, реалізує ISaveContext
     SaveFileCodec.cs        ← internal static, кодування/декодування .mvs формату
     Crc32.cs                ← internal static, CRC-32 (IEEE 802.3 polynomial)
@@ -77,6 +79,7 @@ Assets/Moyva/Scripts/Features/SaveSystem/
 | `SaveRequestedSignal` | `int Slot` | Будь-який компонент (UI, hotkey) | `SaveService` |
 | `LoadRequestedSignal` | `int Slot` | Будь-який компонент | `SaveService` |
 | `SaveCompletedSignal` | `int Slot`, `bool Success`, `string ErrorMessage` | `SaveService` | UI, аналітика |
+| `WorldBuiltSignal` | немає | `MapVisualInstantiator` | bootstrap / відкладені loaders |
 
 ---
 
@@ -283,6 +286,10 @@ _configService.LoadConfig(modules);
 - [FogOfWar → Save stub](../fog-of-war/save-system-stub.md) — поточний заглушковий стан FogOfWar
 - [TDD Standard](../../standarts/TDD.md) — архітектурні правила модульності
 
+## Дерево документації SaveSystem
+
+- [SaveSystem Designer Tool Guide](save-system-designer-tool.md)
+
 ---
 
 ## Нові підсистеми (Bootstrap + Units)
@@ -317,10 +324,35 @@ _configService.LoadConfig(modules);
 ### 3) TestUnitSpawner + завантаження зі слота
 
 Поточна логіка bootstrap:
-- якщо `slot00.mvs` існує: виконується `Load(0)`
-- якщо сейву немає: спавняться тестові юніти
+- bootstrap спочатку перевіряє, чи є у слоті block генератора карти
+- якщо block генератора є: виконується `Load(0)`
+- якщо save є, але block генератора відсутній: це вважається новою грою
+- якщо сейву немає: теж нова гра
+
+Важлива деталь по порядку:
+- `UnitsSaveModule` більше не спавнить юнітів одразу під час раннього `Load`
+- юніти буферизуються і відновлюються тільки після `WorldBuiltSignal`
+- це захищає статичні об'єкти карти від пропуску через ранні колізії в `ObjectsMap`
 
 Це дає "resume" поведінку в editor-потоку тестування.
+
+### 4) GeneratedWorldSaveModule
+
+Призначення:
+- збереження повного результату генерації карти в один save-блок
+- відновлення цієї карти без повторної процедурної генерації
+
+Що зберігається:
+1. `width`
+2. `height`
+3. `biomeMap[x,y]`
+4. `objectMap[x,y]`
+5. `heightMap[x,y]`
+
+Що це означає для дизайнера:
+- у слоті зберігається не лише юніт або fog, а вся конкретна розкладка світу
+- той самий `objectId` на тих самих координатах відновлюється 1:1
+- якщо block генератора відсутній, SaveSystem не намагається вважати слот повноцінним continuation-save
 
 ---
 
@@ -328,7 +360,7 @@ _configService.LoadConfig(modules);
 
 Додано окреме editor-вікно для дизайнерів:
 - меню: `Moyva/Save System/Designer Tool`
-- функції: читання файлів, перегляд блоків, редагування payload, видалення блоків, видалення файлів/слотів, робота з backup
+- функції: читання файлів, перегляд блоків, редагування payload, видалення блоків, видалення файлів/слотів, робота з backup, відкриття директорії файлу, показ розміру файлу, розумний перегляд блока генератора
 
 Детальний посібник (по кожному полю та кнопці):
 - [Save System Designer Tool Guide](save-system-designer-tool.md)
