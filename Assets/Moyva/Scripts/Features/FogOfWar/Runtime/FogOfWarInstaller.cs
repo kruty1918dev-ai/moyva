@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Zenject;
 
@@ -20,6 +21,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Container.BindInterfacesAndSelfTo<FogOfWarService>()
                 .AsSingle()
                 .NonLazy();
+
+            Container.Bind<ISaveModule>()
+                .To<FogOfWarSaveModule>()
+                .AsSingle();
 
             Container.BindExecutionOrder<FogOfWarService>(-5);
         }

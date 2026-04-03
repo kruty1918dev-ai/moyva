@@ -332,3 +332,27 @@ _configService.LoadConfig(modules);
 
 Детальний посібник (по кожному полю та кнопці):
 - [Save System Designer Tool Guide](save-system-designer-tool.md)
+
+---
+
+## Інтеграція Fog of War
+
+Тумн війни тепер інтегрований у SaveSystem через окремий `ISaveModule`:
+
+- `FogOfWarSaveModule` (runtime, FogOfWar)
+- зберігає `bool[,] exploredTiles` у власний save-блок
+- завантажує explored state назад у `FogOfWarService`
+
+Що саме записується в payload:
+1. `width` (int)
+2. `height` (int)
+3. `width * height` булевих значень `explored[x,y]`
+
+Підключення:
+- у `FogOfWarInstaller` доданий binding:
+    `Container.Bind<ISaveModule>().To<FogOfWarSaveModule>().AsSingle();`
+
+Важливий edge case:
+- якщо `Load` викликано до `FogOfWarService.Initialize(width,height)`,
+    snapshot зберігається у pending-буфері та застосовується після ініціалізації карти.
+    Це захищає від втрати даних при ранньому завантаженні в bootstrap-потоці.

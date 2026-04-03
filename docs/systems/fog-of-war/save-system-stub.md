@@ -1,27 +1,38 @@
-# Fog of War — Stub системи збереження
+# Fog of War — інтеграція з SaveSystem
 
 ← [README](README.md)
 
 ---
 
-> **Статус (2026):** SaveSystem реалізований і доступний у `Features/SaveSystem/`.
-> `FogSaveDataStub` залишається заглушкою, що чекає на інтеграцію з `ISaveModule`.
-> Деталі інтеграції: [docs/systems/save-system.md](../save-system.md).
+> **Статус (2026):** інтеграція виконана.
+> Fog of War зберігається через `FogOfWarSaveModule` (`ISaveModule`) у `.mvs` блок SaveSystem.
+> Деталі системи: [docs/systems/save-system.md](../save-system.md).
 
 ---
 
-## Чому stub?
+## Що реалізовано
 
-Система збереження Moyva ще не реалізована. `FogSaveDataStub` є placeholder, що:
+Fog of War зберігає explored state карти в окремому блоці SaveSystem:
 
-- При `LoadExploredData()` повертає `null` → нова гра починається з чистою картою
-- При `SaveExploredData()` лише логує у Console і нічого не зберігає
+- `FogOfWarSaveModule.OnSave(...)`
+    - читає `bool[,]` snapshot через `IFogOfWarService.GetExploredSnapshot()`
+    - записує `width`, `height`, усі клітинки `explored`
 
-Це не впливає на ігровий процес — `FogOfWarService` коректно обробляє `null` від `LoadExploredData()`.
+- `FogOfWarSaveModule.OnLoad(...)`
+    - читає `width`, `height`, масив explored
+    - викликає `IFogOfWarService.LoadFromSnapshot(...)`
+
+Binding в installer:
+
+```csharp
+Container.Bind<ISaveModule>()
+        .To<FogOfWarSaveModule>()
+        .AsSingle();
+```
 
 ---
 
-## Що буде зберігатися (у майбутньому)
+## Що зберігається
 
 `bool[,] _exploredTiles` — масив розміром `mapWidth × mapHeight`. Кожен елемент `true` означає, що цей тайл колись бачили.
 
@@ -37,43 +48,13 @@
 
 ---
 
-## Як підключити реальну реалізацію
+## Важливий сценарій ініціалізації
 
-1. Створіть клас, що реалізує `IFogSaveDataProvider`:
+У проекті можливий ранній `Load` (до ініціалізації карти FogOfWar).
 
-```csharp
-using Kruty1918.Moyva.FogOfWar.API;
+Щоб дані не губились, `FogOfWarService` має pending snapshot буфер:
 
-namespace Kruty1918.Moyva.FogOfWar.Runtime
-{
-    public class JsonFogSaveDataProvider : IFogSaveDataProvider
-    {
-        private const string SaveKey = "fog_explored";
+1. `LoadFromSnapshot(...)` до `Initialize(width,height)` → дані кладуться у pending
+2. Під час `Initialize(width,height)` pending snapshot застосовується автоматично
 
-        public bool[,] LoadExploredData()
-        {
-            // Завантажити з PlayerPrefs / файлу / Cloud
-            // Десеріалізувати з JSON/binary
-            return null; // якщо нова гра
-        }
-
-        public void SaveExploredData(bool[,] explored)
-        {
-            // Серіалізувати і зберегти
-        }
-    }
-}
-```
-
-2. У `FogOfWarInstaller` замініть:
-
-```csharp
-// Було:
-Container.Bind<IFogSaveDataProvider>().To<FogSaveDataStub>().AsSingle();
-
-// Стало:
-Container.Bind<IFogSaveDataProvider>().To<JsonFogSaveDataProvider>().AsSingle();
-```
-
-3. Після завантаження гри виклик `LoadExploredData()` відбувається автоматично в `FogOfWarService.Initialize(w,h)`.
-4. Для збереження при виході з гри — підписайтесь на відповідний Application lifecycle event і викличте `_saveProvider.SaveExploredData(_fogService.GetExploredSnapshot())`.
+Це дозволяє коректно відновлювати fog state навіть у bootstrap-порядку, де save може завантажитись раніше за map/fog runtime init.
