@@ -27,6 +27,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private int[,]  _visibilityCounters;
         private bool[,] _exploredTiles;
+        private bool[,] _pendingExploredSnapshot;
 
         // unitId → list of visible tiles when unit was last registered/moved
         private readonly Dictionary<string, IReadOnlyList<Vector2Int>> _unitVisibleTiles
@@ -89,10 +90,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             _initialized = true;
 
-            // Try to restore explored state from save
-            var snapshot = _saveProvider?.LoadExploredData();
+            // Restore explored state from pending snapshot first (if load happened before map init).
+            var snapshot = _pendingExploredSnapshot ?? _saveProvider?.LoadExploredData();
             if (snapshot != null)
                 LoadFromSnapshot(snapshot);
+            _pendingExploredSnapshot = null;
 
             // Process units that were spawned/moved before map initialization
             if (_pendingUnits.Count > 0)
@@ -228,6 +230,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             if (explored == null) return;
 
+            if (!_initialized)
+            {
+                _pendingExploredSnapshot = CloneSnapshot(explored);
+                return;
+            }
+
             int w = explored.GetLength(0);
             int h = explored.GetLength(1);
             int copyW = Mathf.Min(w, _width);
@@ -263,6 +271,19 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private bool IsInBounds(Vector2Int pos)
             => pos.x >= 0 && pos.x < _width && pos.y >= 0 && pos.y < _height;
+
+        private static bool[,] CloneSnapshot(bool[,] source)
+        {
+            int w = source.GetLength(0);
+            int h = source.GetLength(1);
+            var copy = new bool[w, h];
+
+            for (int x = 0; x < w; x++)
+                for (int y = 0; y < h; y++)
+                    copy[x, y] = source[x, y];
+
+            return copy;
+        }
 
         private void FlushTexture()
         {

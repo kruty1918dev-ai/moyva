@@ -4,7 +4,8 @@
     "references": [
         "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.Grid",
-        "Zenject"
+        "Zenject",
+        "GUID:aa310a9f8edd56c1af65521810fee4f8"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
