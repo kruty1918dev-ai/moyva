@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IGridService _gridService;
         private readonly IMapDataGenerator _mapDataGenerator;
         private readonly TileRegistrySO _tileRegistry;
+        private readonly IMapObjectRegistryService _objectRegistry;
         private readonly DiContainer _container;
 
         private Transform _tilesRoot;
@@ -22,12 +23,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public MapVisualInstantiator(
             TileRegistrySO tileRegistry,
+            IMapObjectRegistryService objectRegistry,
             IGridService gridService,
             IMapDataGenerator mapDataGenerator,
             DiContainer container,
             SignalBus signalBus)
         {
             _tileRegistry = tileRegistry;
+            _objectRegistry = objectRegistry;
             _gridService = gridService;
             _mapDataGenerator = mapDataGenerator;
             _container = container;
@@ -80,7 +83,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     if (!string.IsNullOrEmpty(objectId))
                     {
                         // Об'єкти спавнимо в _objectsRoot з трохи меншим Z, щоб вони були зверху
-                        CreateTileView(pos, objectId, _objectsRoot, 0);
+                        CreateObjectView(pos, objectId, _objectsRoot, 0);
 
                         // Сповіщаємо ObjectsMap про статичний обʼєкт карти
                         _signalBus.Fire(new OnMapObjectSpawnedSignal
@@ -124,6 +127,31 @@ namespace Kruty1918.Moyva.Generator.Runtime
             // Якщо це об'єкт (річка), він може перезаписувати властивості прохідності клітинки
             // Логіка: якщо ми спавнимо об'єкт, він стає пріоритетним типом для цієї клітинки в логіці
             _gridService.SetTileData(position, tileId);
+        }
+
+        private void CreateObjectView(Vector2Int position, string objectId, Transform root, int sortingOrder)
+        {
+            if (!_objectRegistry.TryGetDefinition(objectId, out var objectDef))
+            {
+                Debug.LogError($"[MapInstantiator] Не знайдено MapObjectDefinition для ID: {objectId}");
+                return;
+            }
+
+            Vector3 worldPos = new Vector3(position.x, position.y, sortingOrder * 0.1f);
+
+            var instance = _container.InstantiatePrefab(
+                objectDef.VisualPrefab,
+                worldPos,
+                Quaternion.identity,
+                root);
+
+            instance.name = $"Obj_{objectId}_{position.x}_{position.y}";
+
+            var tileView = instance.GetComponent<TileView>();
+            if (tileView != null)
+            {
+                tileView.Setup(position);
+            }
         }
     }
 }

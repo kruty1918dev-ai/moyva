@@ -7,42 +7,34 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Editor
 {
-    [CustomEditor(typeof(WFCDataSettings))]
-    public class WFCDataSettingsEditor : UnityEditor.Editor
+    [CustomEditor(typeof(HeightMapSettings))]
+    public class HeightMapSettingsEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
+            DrawValidationWarnings((HeightMapSettings)target);
             base.OnInspectorGUI();
-
-            WFCDataSettings settings = (WFCDataSettings)target;
-
-            DrawTileIdValidation(settings);
-
-            if (GUILayout.Button("Open WFC Rules Editor"))
-            {
-                WFCRulesEditorWindow.OpenWindow(settings);
-            }
         }
 
-        private static void DrawTileIdValidation(WFCDataSettings settings)
+        private static void DrawValidationWarnings(HeightMapSettings settings)
         {
-            if (settings.TileRules == null || settings.TileRules.Count == 0) return;
-
             var knownIds = LoadKnownTileIds();
             if (knownIds.Count == 0) return;
 
             var unknownIds = new HashSet<string>();
-            foreach (var rule in settings.TileRules)
+
+            if (settings.HeightLayers != null)
             {
-                if (!string.IsNullOrEmpty(rule.TileID) && !knownIds.Contains(rule.TileID))
-                    unknownIds.Add(rule.TileID);
-                if (!string.IsNullOrEmpty(rule.TileCentralID) && !knownIds.Contains(rule.TileCentralID))
-                    unknownIds.Add(rule.TileCentralID);
+                foreach (var layer in settings.HeightLayers)
+                {
+                    if (!string.IsNullOrEmpty(layer.TileID) && !knownIds.Contains(layer.TileID))
+                        unknownIds.Add(layer.TileID);
+                }
             }
 
             if (unknownIds.Count > 0)
             {
-                var sb = new StringBuilder("Невідомі Tile ID у WFC правилах:\n");
+                var sb = new StringBuilder("Невідомі Tile ID у HeightMapSettings:\n");
                 foreach (var id in unknownIds)
                     sb.AppendLine($"  • {id}");
                 EditorGUILayout.HelpBox(sb.ToString().TrimEnd(), MessageType.Warning);

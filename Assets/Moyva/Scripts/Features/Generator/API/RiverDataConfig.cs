@@ -7,12 +7,12 @@ namespace Kruty1918.Moyva.Generator.API
     public class RiverDataConfig : ScriptableObject
     {
         [Header("River Tile Variations")]
-        public string[] VerticalTiles;
-        public string[] HorizontalTiles;
-        public string[] CornerTopRightTiles;
-        public string[] CornerTopLeftTiles;
-        public string[] CornerBottomRightTiles;
-        public string[] CornerBottomLeftTiles;
+        [MapObjectId] public string[] VerticalTiles;
+        [MapObjectId] public string[] HorizontalTiles;
+        [MapObjectId] public string[] CornerTopRightTiles;
+        [MapObjectId] public string[] CornerTopLeftTiles;
+        [MapObjectId] public string[] CornerBottomRightTiles;
+        [MapObjectId] public string[] CornerBottomLeftTiles;
 
         [Header("Pathfinding Weights")]
         public float MountainWeight = 50f;

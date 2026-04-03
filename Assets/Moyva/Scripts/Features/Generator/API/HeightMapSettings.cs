@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.API
@@ -11,7 +12,7 @@ namespace Kruty1918.Moyva.Generator.API
     [System.Serializable]
     public class HeightLayer
     {
-        public string TileID; // Ідентифікатор тайла, який відповідає цьому діапазону висот
+        [TileId] public string TileID; // Ідентифікатор тайла, який відповідає цьому діапазону висот
         public float MinHeight;
         public float MaxHeight;
     }
