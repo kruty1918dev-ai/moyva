@@ -40,6 +40,7 @@
 | **GameMode** | [systems/game-mode.md](systems/game-mode.md) | Управління ігровими режимами (Normal / Construction) |
 | **Construction** | [systems/construction.md](systems/construction.md) | Система будівництва: preview, Undo/Redo, стіни |
 | **FogOfWar** | [systems/fog-of-war/README.md](systems/fog-of-war/README.md) | Туман війни: сітка видимості, шейдер, FOV |
+| **SaveSystem** | [systems/save-system.md](systems/save-system.md) | Збереження/завантаження стану гри у бінарний .mvs формат |
 
 ---
 
@@ -104,6 +105,10 @@ Assets/
                 └── Runtime/      ← ConstructionService, WallPlacementService,
                                      ConstructionInputService, ScreenToGridConverter,
                                      BuildingRegistrySO, ConstructionInstaller
+            └── SaveSystem/
+                ├── API/          ← ISaveService, ISaveModule, ISaveContext, SaveSlotInfo
+                └── Runtime/      ← SaveService, SaveContext, SaveFileCodec, Crc32,
+                                     SaveSystemInstaller
 ```
 
 ---

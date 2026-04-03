@@ -67,7 +67,25 @@ public override void InstallBindings()
 
 ---
 
-### Крок 4 — `ObjectsMapInstaller` (з явним `ExecutionOrder`)
+### Крок 4 — `SaveSystemInstaller` (з явним `ExecutionOrder`)
+
+`SaveService` підписується на `SaveRequestedSignal` / `LoadRequestedSignal` у власному `Initialize()`. Він повинен бути готовим до прийому сигналів раніше за будь-який сервіс, що може їх стріляти.
+
+```csharp
+// SaveSystemInstaller.cs
+public override void InstallBindings()
+{
+    Container.BindInterfacesAndSelfTo<SaveService>()
+        .AsSingle()
+        .NonLazy();
+
+    Container.BindExecutionOrder<SaveService>(-8); // -8 = ініціалізується раніше за 0
+}
+```
+
+---
+
+### Крок 5 — `ObjectsMapInstaller` (з явним `ExecutionOrder`)
 
 `ObjectsMapService` підписується на `UnitCreatedSignal`, `UnitMovedSignal`, `UnitDestroyedSignal`, `OnMapObjectSpawnedSignal`. Він **обов'язково** має завершити `Initialize()` до того, як `TestUnitSpawner` почне стріляти `UnitCreatedSignal`.
 
@@ -85,7 +103,7 @@ public override void InstallBindings()
 
 ---
 
-### Крок 5 — `BootstrapInstaller` (останній)
+### Крок 6 — `BootstrapInstaller` (останній)
 
 `TestUnitSpawner` є точкою входу, що запускає ланцюжок подій. Він повинен виконатись **після** `ObjectsMapService`.
 
@@ -109,16 +127,18 @@ public override void InstallBindings()
 SceneContext (Zenject)
 │
 ├── InstallBindings() усіх MonoInstaller-ів (порядок зі Scene Context)
-│   ├── SignalBusInstaller   → DeclareSignal × 7
+│   ├── SignalBusInstaller   → DeclareSignal × 10 (включно з Save-сигналами)
 │   ├── GridInstaller        → Bind GridService, TileSettingsService
 │   ├── PathfinderInstaller  → Bind Pathfinder
 │   ├── AnimationsInstaller  → Bind MovementAnimationService
 │   ├── UnitsInstaller       → Bind UnitService, UnitFactory, UnitMovementService
+│   ├── SaveSystemInstaller  → Bind SaveService  [ExecutionOrder = -8]
 │   ├── ObjectsMapInstaller  → Bind ObjectsMapService  [ExecutionOrder = -10]
 │   └── BootstrapInstaller   → Bind TestUnitSpawner    [ExecutionOrder = 100]
 │
 └── Initialize() у порядку ExecutionOrder (менше = раніше)
     ├── ObjectsMapService.Initialize()  [-10] → Subscribe(UnitCreatedSignal, ...)
+    ├── SaveService.Initialize()         [-8] → Subscribe(SaveRequestedSignal, ...)
     ├── (інші IInitializable за замовчуванням) [0]
     └── TestUnitSpawner.Initialize()    [100] → IUnitFactory.CreateUnit(...)
                                                  → Fire(UnitCreatedSignal)
