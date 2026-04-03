@@ -1,136 +1,117 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.SaveSystem
 {
-    internal sealed class SaveService : ISaveService, IInitializable, IDisposable
+    /// <summary>
+    /// Сервіс для збереження глобального конфігу (config.mvs).
+    /// Використовує той самий формат .mvs та модульну архітектуру як SaveService,
+    /// але працює з одним файлом замість слотів.
+    /// </summary>
+    internal sealed class ConfigService : IConfigService
     {
-        private const int MaxSlots     = 99;
         private const int MaxBlockBytes = 10 * 1024 * 1024; // 10 MB per block
-
-        private readonly List<ISaveModule> _modules;
-        private readonly SignalBus         _signalBus;
-
-        public SaveService(List<ISaveModule> modules, SignalBus signalBus)
-        {
-            _modules   = modules ?? new List<ISaveModule>();
-            _signalBus = signalBus;
-        }
 
         // ─── IInitializable / IDisposable ──────────────────────────────────
 
         public void Initialize()
         {
-            _signalBus.Subscribe<SaveRequestedSignal>(OnSaveRequested);
-            _signalBus.Subscribe<LoadRequestedSignal>(OnLoadRequested);
+            // Конфіг не потребує signal subscriptions на відміну від SaveService
         }
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<SaveRequestedSignal>(OnSaveRequested);
-            _signalBus.Unsubscribe<LoadRequestedSignal>(OnLoadRequested);
+            // Нічого з очищення
         }
 
-        private void OnSaveRequested(SaveRequestedSignal signal) => Save(signal.Slot);
-        private void OnLoadRequested(LoadRequestedSignal signal) => Load(signal.Slot);
+        // ─── IConfigService ────────────────────────────────────────────────
 
-        // ─── ISaveService ──────────────────────────────────────────────────
-
-        public void Save(int slot = 0)
+        public void SaveConfig(List<ISaveModule> modules)
         {
-            if (!ValidateSlot(slot))
+            if (modules == null || modules.Count == 0)
             {
-                FireCompleted(slot, false, $"Invalid slot {slot}");
+                Debug.LogWarning("[SaveSystem] SaveConfig: no modules provided.");
                 return;
             }
 
             if (!EnsureDirectoryExists(out string dirError))
             {
                 Debug.LogError($"[SaveSystem] Directory error: {dirError}");
-                FireCompleted(slot, false, dirError);
                 return;
             }
 
-            var    blocks = CollectBlocks();
-            byte[] data   = SaveFileCodec.Encode(blocks);
+            var blocks = CollectBlocks(modules);
+            byte[] data = SaveFileCodec.Encode(blocks);
 
             if (!VerifyAssembledBuffer(data))
             {
-                FireCompleted(slot, false, "Buffer verification failed");
+                Debug.LogError("[SaveSystem] Config buffer verification failed");
                 return;
             }
 
-            if (AtomicWrite(slot, data))
-                FireCompleted(slot, true, null);
-            else
-                FireCompleted(slot, false, "Write failed");
+            AtomicWrite(data);
         }
 
-        public void Load(int slot = 0)
+        public void LoadConfig(List<ISaveModule> modules)
         {
-            if (!ValidateSlot(slot))
-                return;
-
-            string path = GetPath(slot);
-
-            if (!File.Exists(path))
+            if (modules == null || modules.Count == 0)
             {
-                Debug.LogError($"[SaveSystem] Save file not found: '{path}'");
-                TryLoadBackup(slot);
+                Debug.LogWarning("[SaveSystem] LoadConfig: no modules provided.");
                 return;
             }
 
+            if (!HasConfig())
+            {
+                Debug.LogWarning("[SaveSystem] Config file not found.");
+                return;
+            }
+
+            string path = GetConfigPath();
             byte[] bytes;
-            try   { bytes = File.ReadAllBytes(path); }
+
+            try
+            {
+                bytes = File.ReadAllBytes(path);
+            }
             catch (Exception e)
             {
-                Debug.LogError($"[SaveSystem] Cannot read file: {e.Message}");
-                TryLoadBackup(slot);
+                Debug.LogError($"[SaveSystem] Cannot read config file: {e.Message}");
                 return;
             }
 
-            ExecuteLoad(bytes, slot);
+            ExecuteLoad(bytes, modules);
         }
 
-        public bool HasSave(int slot = 0)
-            => ValidateSlot(slot) && File.Exists(GetPath(slot));
+        public bool HasConfig()
+            => File.Exists(GetConfigPath());
 
-        public void Delete(int slot = 0)
+        public void DeleteConfig()
+            => TryDelete(GetConfigPath());
+
+        public SaveSlotInfo GetConfigInfo()
         {
-            if (!ValidateSlot(slot)) return;
-            TryDelete(GetPath(slot));
-            TryDelete(GetPath(slot) + ".bak");
-            TryDelete(GetPath(slot) + ".tmp");
-        }
-
-        public SaveSlotInfo GetSlotInfo(int slot = 0)
-        {
-            if (!ValidateSlot(slot))
-                return new SaveSlotInfo(slot, false, 0, DateTime.MinValue);
-
-            string path = GetPath(slot);
+            string path = GetConfigPath();
             if (!File.Exists(path))
-                return new SaveSlotInfo(slot, false, 0, DateTime.MinValue);
+                return new SaveSlotInfo(0, false, 0, DateTime.MinValue);
 
             var fi = new FileInfo(path);
-            return new SaveSlotInfo(slot, true, fi.Length, fi.LastWriteTimeUtc);
+            return new SaveSlotInfo(0, true, fi.Length, fi.LastWriteTimeUtc);
         }
 
-        // ─── Internal — write pipeline ────────────────────────────────────
+        // ─── Internal ──────────────────────────────────────────────────────
 
-        private List<(uint blockId, byte[] payload)> CollectBlocks()
+        private List<(uint blockId, byte[] payload)> CollectBlocks(List<ISaveModule> modules)
         {
-            var blocks = new List<(uint, byte[])>(_modules.Count);
+            var blocks = new List<(uint, byte[])>(modules.Count);
 
-            foreach (var module in _modules)
+            foreach (var module in modules)
             {
                 if (module == null)
                 {
-                    Debug.LogError("[SaveSystem] Null ISaveModule instance — skipped.");
+                    Debug.LogWarning("[SaveSystem] Null ISaveModule instance — skipped.");
                     continue;
                 }
 
@@ -194,21 +175,19 @@ namespace Kruty1918.Moyva.SaveSystem
             return true;
         }
 
-        private bool AtomicWrite(int slot, byte[] data)
+        private static bool AtomicWrite(byte[] data)
         {
-            string final  = GetPath(slot);
-            string tmp    = final + ".tmp";
+            string final = GetConfigPath();
+            string tmp = final + ".tmp";
             string backup = final + ".bak";
 
-            // Write to .tmp
-            try   { File.WriteAllBytes(tmp, data); }
+            try { File.WriteAllBytes(tmp, data); }
             catch (Exception e)
             {
                 Debug.LogError($"[SaveSystem] Write to .tmp failed: {e.Message}");
                 return false;
             }
 
-            // Verify .tmp
             try
             {
                 using var fs = File.OpenRead(tmp);
@@ -229,17 +208,15 @@ namespace Kruty1918.Moyva.SaveSystem
                 return false;
             }
 
-            // Backup existing save
             if (File.Exists(final))
             {
-                try   { File.Copy(final, backup, overwrite: true); }
+                try { File.Copy(final, backup, overwrite: true); }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"[SaveSystem] Backup failed: {e.Message}");
+                    Debug.LogWarning($"[SaveSystem] Config backup failed: {e.Message}");
                 }
             }
 
-            // Atomic move: .tmp → final
             try
             {
                 if (File.Exists(final))
@@ -249,31 +226,24 @@ namespace Kruty1918.Moyva.SaveSystem
             }
             catch (Exception e)
             {
-                Debug.LogError($"[SaveSystem] Atomic rename failed: {e.Message}");
-                TryRestoreBackup(backup, final);
+                Debug.LogError($"[SaveSystem] Config rename failed: {e.Message}");
                 return false;
             }
         }
 
-        // ─── Internal — load pipeline ────────────────────────────────────
-
-        private void ExecuteLoad(byte[] bytes, int slot)
+        private static void ExecuteLoad(byte[] bytes, List<ISaveModule> modules)
         {
             var result = SaveFileCodec.TryDecode(
                 bytes, out _, out var decodedBlocks, out string error);
 
             if (result != SaveFileCodec.DecodeError.None)
             {
-                Debug.LogWarning($"[SaveSystem] Decode failed for slot {slot}: {error}");
-                if (result == SaveFileCodec.DecodeError.CrcMismatch ||
-                    result == SaveFileCodec.DecodeError.BadMagic)
-                    TryLoadBackup(slot);
+                Debug.LogWarning($"[SaveSystem] Config decode failed: {error}");
                 return;
             }
 
-            // Build blockId → module lookup
             var map = new Dictionary<uint, ISaveModule>();
-            foreach (var module in _modules)
+            foreach (var module in modules)
             {
                 if (module == null) continue;
                 uint id = SaveFileCodec.ComputeBlockId(module.GetType());
@@ -285,8 +255,7 @@ namespace Kruty1918.Moyva.SaveSystem
                 if (!map.TryGetValue(blockId, out var module))
                 {
                     Debug.LogWarning(
-                        $"[SaveSystem] Unknown blockId={blockId:X8} ({payload.Length}b). " +
-                        $"Module removed or newer save format. Skipped.");
+                        $"[SaveSystem] Unknown blockId={blockId:X8} ({payload.Length}b). Skipped.");
                     continue;
                 }
 
@@ -299,8 +268,7 @@ namespace Kruty1918.Moyva.SaveSystem
                     long unread = ms.Length - ms.Position;
                     if (unread > 0)
                         Debug.LogWarning(
-                            $"[SaveSystem] '{module.GetType().FullName}' left {unread}b unread. " +
-                            $"Data version mismatch?");
+                            $"[SaveSystem] '{module.GetType().FullName}' left {unread}b unread.");
                 }
                 catch (Exception e)
                 {
@@ -309,36 +277,6 @@ namespace Kruty1918.Moyva.SaveSystem
                         $"{e.GetType().Name} — {e.Message}");
                 }
             }
-        }
-
-        private void TryLoadBackup(int slot)
-        {
-            string backup = GetPath(slot) + ".bak";
-            if (!File.Exists(backup))
-            {
-                Debug.LogWarning($"[SaveSystem] No .bak available for slot {slot}. Load failed.");
-                return;
-            }
-
-            Debug.LogWarning($"[SaveSystem] Falling back to .bak for slot {slot}.");
-            byte[] bytes;
-            try   { bytes = File.ReadAllBytes(backup); }
-            catch (Exception e)
-            {
-                Debug.LogError($"[SaveSystem] Backup unreadable: {e.Message}");
-                return;
-            }
-
-            ExecuteLoad(bytes, slot);
-        }
-
-        // ─── Helpers ──────────────────────────────────────────────────────
-
-        private static bool ValidateSlot(int slot)
-        {
-            if (slot >= 0 && slot <= MaxSlots) return true;
-            Debug.LogWarning($"[SaveSystem] Invalid slot={slot}. Must be 0\u2013{MaxSlots}.");
-            return false;
         }
 
         private static bool EnsureDirectoryExists(out string error)
@@ -361,37 +299,17 @@ namespace Kruty1918.Moyva.SaveSystem
         private static string GetDirectory()
             => Path.Combine(Application.persistentDataPath, "saves");
 
-        internal static string GetPath(int slot)
+        private static string GetConfigPath()
             => Path.Combine(
                 Path.Combine(Application.persistentDataPath, "saves"),
-                $"slot{slot:D2}.mvs");
-
-        private void FireCompleted(int slot, bool success, string errorMessage)
-        {
-            _signalBus.Fire(new SaveCompletedSignal
-            {
-                Slot         = slot,
-                Success      = success,
-                ErrorMessage = errorMessage
-            });
-        }
+                "config.mvs");
 
         private static void TryDelete(string path)
         {
-            try   { if (File.Exists(path)) File.Delete(path); }
+            try { if (File.Exists(path)) File.Delete(path); }
             catch (Exception e)
             {
                 Debug.LogWarning($"[SaveSystem] Delete failed '{path}': {e.Message}");
-            }
-        }
-
-        private static void TryRestoreBackup(string backup, string final)
-        {
-            if (!File.Exists(backup)) return;
-            try   { File.Copy(backup, final, overwrite: true); }
-            catch (Exception e)
-            {
-                Debug.LogError($"[SaveSystem] Backup restore failed: {e.Message}");
             }
         }
     }

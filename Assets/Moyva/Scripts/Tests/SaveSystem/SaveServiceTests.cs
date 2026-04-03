@@ -166,6 +166,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
                 bytes[i] ^= 0xFF;
             File.WriteAllBytes(path, bytes);
 
+            // SaveService logs warnings when CRC fails and no backup exists
             Assert.DoesNotThrow(() => _service.Load(TestSlot));
         }
 
