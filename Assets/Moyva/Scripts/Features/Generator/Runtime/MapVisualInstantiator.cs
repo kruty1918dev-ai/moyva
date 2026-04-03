@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Visuals;
 using UnityEngine;
 using Zenject;
@@ -14,6 +15,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IMapDataGenerator _mapDataGenerator;
         private readonly TileRegistrySO _tileRegistry;
         private readonly IMapObjectRegistryService _objectRegistry;
+        private readonly IUnitClassConfig _unitClassConfig;
+        private readonly IUnitFactory _unitFactory;
         private readonly DiContainer _container;
 
         private Transform _tilesRoot;
@@ -24,6 +27,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public MapVisualInstantiator(
             TileRegistrySO tileRegistry,
             IMapObjectRegistryService objectRegistry,
+            [InjectOptional] IUnitClassConfig unitClassConfig,
+            [InjectOptional] IUnitFactory unitFactory,
             IGridService gridService,
             IMapDataGenerator mapDataGenerator,
             DiContainer container,
@@ -31,6 +36,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             _tileRegistry = tileRegistry;
             _objectRegistry = objectRegistry;
+            _unitClassConfig = unitClassConfig;
+            _unitFactory = unitFactory;
             _gridService = gridService;
             _mapDataGenerator = mapDataGenerator;
             _container = container;
@@ -82,15 +89,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     string objectId = virtualObjectMap[x, y];
                     if (!string.IsNullOrEmpty(objectId))
                     {
-                        // Об'єкти спавнимо в _objectsRoot з трохи меншим Z, щоб вони були зверху
-                        CreateObjectView(pos, objectId, _objectsRoot, 0);
-
-                        // Сповіщаємо ObjectsMap про статичний обʼєкт карти
-                        _signalBus.Fire(new OnMapObjectSpawnedSignal
-                        {
-                            ObjectId = objectId,
-                            Position = pos
-                        });
+                        CreateObjectLayerEntity(pos, objectId);
                     }
                 }
             }
@@ -127,6 +126,35 @@ namespace Kruty1918.Moyva.Generator.Runtime
             // Якщо це об'єкт (річка), він може перезаписувати властивості прохідності клітинки
             // Логіка: якщо ми спавнимо об'єкт, він стає пріоритетним типом для цієї клітинки в логіці
             _gridService.SetTileData(position, tileId);
+        }
+
+        private void CreateObjectLayerEntity(Vector2Int position, string layerEntityId)
+        {
+            if (_objectRegistry.TryGetDefinition(layerEntityId, out _))
+            {
+                CreateObjectView(position, layerEntityId, _objectsRoot, 0);
+
+                _signalBus.Fire(new OnMapObjectSpawnedSignal
+                {
+                    ObjectId = layerEntityId,
+                    Position = position
+                });
+                return;
+            }
+
+            if (_unitClassConfig?.GetConfig(layerEntityId) != null)
+            {
+                if (_unitFactory == null)
+                {
+                    Debug.LogError($"[MapVisualInstantiator] Для unit ID '{layerEntityId}' не знайдено IUnitFactory.");
+                    return;
+                }
+
+                _unitFactory.CreateUnit(layerEntityId, position);
+                return;
+            }
+
+            Debug.LogError($"[MapVisualInstantiator] Object layer ID '{layerEntityId}' не знайдено ні в MapObjectRegistry, ні в UnitRegistry.");
         }
 
         private void CreateObjectView(Vector2Int position, string objectId, Transform root, int sortingOrder)
