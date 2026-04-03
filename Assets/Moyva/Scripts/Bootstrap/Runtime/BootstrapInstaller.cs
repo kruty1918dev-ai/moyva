@@ -10,8 +10,7 @@ namespace Kruty1918.Moyva.Bootstrap
         {
             // Модуль збереження юнітів — реєструється як ISaveModule, автоматично
             // потрапляє в List<ISaveModule> при ініціалізації SaveService.
-            Container.Bind<ISaveModule>()
-                .To<UnitsSaveModule>()
+            Container.BindInterfacesAndSelfTo<UnitsSaveModule>()
                 .AsSingle();
 
             // Автозбереження при виході з програми.

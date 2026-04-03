@@ -31,6 +31,10 @@ IWFCService
 
 IMapInstantiator (MapVisualInstantiator)
   └─► BuildWorld()                → спавн GameObject'ів по biomeMap
+
+SaveSystem integration
+    ├─► GeneratedWorldSaveModule    → зберігає biomeMap/objectMap/heightMap у слот
+    └─► відновлює pending world data перед BuildWorld()
 ```
 
 ---
@@ -47,6 +51,7 @@ IMapInstantiator (MapVisualInstantiator)
 | `IMapFeatureGenerator` / `WaterPostProcessor` | Постобробка водних зон |
 | `IWFCService` / `WFCService` | Wave Function Collapse — полірування переходів |
 | `IMapInstantiator` / `MapVisualInstantiator` | Побудова GameObject'ів в Unity |
+| `GeneratedWorldSaveModule` | Збереження/завантаження результату генерації у SaveSystem |
 | `IRiverPathfinder` / `RiverPathfinder` | A\* патфайндинг по градієнту висот для річок |
 
 ---
@@ -78,6 +83,8 @@ IMapInstantiator (MapVisualInstantiator)
 ### Побудова світу (`MapVisualInstantiator`)
 
 - `BuildWorld()` викликає `IMapDataGenerator.GenerateMapData`, а по callback'у — ітерує по карті і спавнить `GameObject` із `TileRegistrySO` для кожного тайлу.
+- Якщо до цього був завантажений save-блок генератора, `BuildWorld()` не генерує нову карту, а використовує pending saved data.
+- Після побудови світу надсилається `WorldBuiltSignal`.
 
 ---
 
@@ -133,7 +140,7 @@ public interface IWFCService
 ```csharp
 public interface IMapInstantiator
 {
-    // Запускає генерацію і будує GameObject-и в сцені
+    // Будує світ: або з pending saved world data, або через нову генерацію
     void BuildWorld();
 }
 ```
@@ -212,6 +219,7 @@ public class GenerationRules : ScriptableObject
 | [`IGridService`](grid.md) | `MapVisualInstantiator` встановлює тип тайлу в сітці |
 | `TileRegistrySO` | Пошук `VisualPrefab` за `TileTypeId` |
 | [`SignalBus`](signals.md) | `OnMapObjectSpawnedSignal` |
+| [SaveSystem](save-system.md) | `GeneratedWorldSaveModule` зберігає результат генерації в слот |
 | `DataNoiseSettings`, `HeightMapSettings`, `DataBiomesSettings`, `WFCDataSettings`, `GenerationRules`, `RiverDataConfig` | Конфіги генерації |
 
 ---
@@ -248,7 +256,8 @@ public class GeneratorInstaller : MonoInstaller
         Container.Bind<IMapFeatureGenerator>().To<RiverFeatureGenerator>().AsTransient();
         Container.Bind<IMapFeatureGenerator>().To<WaterPostProcessor>().AsTransient();
 
-        Container.BindInterfacesTo<MapVisualInstantiator>().AsSingle();
+        Container.BindInterfacesAndSelfTo<MapVisualInstantiator>().AsSingle();
+        Container.Bind<ISaveModule>().To<GeneratedWorldSaveModule>().AsSingle();
     }
 
     public override void Start()
@@ -301,3 +310,4 @@ Debug.Log($"Висота центру: {noise[50, 50]}");
 - [Grid](grid.md) — `MapVisualInstantiator` заповнює сітку типами тайлів
 - [Visuals](visuals.md) — спавнить `TileView` для кожного тайлу
 - [Signals](signals.md) — `OnMapObjectSpawnedSignal`
+- [SaveSystem](save-system.md) — слот зберігає конкретну розкладку біомів, об'єктів і висот

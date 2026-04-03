@@ -30,6 +30,7 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
         {
             public string Path;
             public ushort Version;
+            public long FileSizeBytes;
             public List<ParsedBlock> Blocks = new List<ParsedBlock>();
             public bool GlobalCrcOk;
             public uint StoredGlobalCrc;
@@ -47,6 +48,7 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
 
         private string _payloadUtf8Editor = string.Empty;
         private string _payloadHexEditor = string.Empty;
+        private Vector2 _knownBlockScroll;
 
         [MenuItem("Moyva/Save System/Designer Tool")]
         public static void OpenWindow()
@@ -87,6 +89,7 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
             DrawLoadedFileInfo();
             DrawBlocksList();
             DrawBlockEditor();
+            DrawKnownBlockInspector();
 
             EditorGUILayout.EndScrollView();
         }
@@ -127,6 +130,9 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
             if (GUILayout.Button("Відкрити .bak", GUILayout.Height(28)))
                 LoadSelectedBackup();
 
+            if (GUILayout.Button("Відкрити директорію", GUILayout.Height(28)))
+                RevealSelectedPath();
+
             if (GUILayout.Button("Видалити слот (файл + .bak + .tmp)", GUILayout.Height(28)))
                 DeleteSlotArtifacts();
 
@@ -148,6 +154,7 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
 
             EditorGUILayout.LabelField("Шлях", _currentFile.Path);
             EditorGUILayout.LabelField("Версія", _currentFile.Version.ToString());
+            EditorGUILayout.LabelField("Розмір файлу", FormatFileSize(_currentFile.FileSizeBytes));
             EditorGUILayout.LabelField("Кількість блоків", _currentFile.Blocks.Count.ToString());
             EditorGUILayout.LabelField(
                 "Global CRC",
@@ -280,6 +287,49 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
                 "Після змін натисни 'Зберегти поточний файл'. CRC перераховується автоматично.",
                 MessageType.None);
 
+            EditorGUILayout.EndVertical();
+        }
+
+        private void DrawKnownBlockInspector()
+        {
+            if (_currentFile == null || _selectedBlockIndex < 0 || _selectedBlockIndex >= _currentFile.Blocks.Count)
+                return;
+
+            ParsedBlock block = _currentFile.Blocks[_selectedBlockIndex];
+            if (block.BlockId != ComputeBlockId("Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule"))
+                return;
+
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("5) Розумний перегляд блока генератора", EditorStyles.boldLabel);
+
+            if (!TryParseGeneratedWorldBlock(block.Payload, out var generatedWorld, out var error))
+            {
+                EditorGUILayout.HelpBox($"Не вдалося розібрати блок генератора: {error}", MessageType.Warning);
+                EditorGUILayout.EndVertical();
+                return;
+            }
+
+            EditorGUILayout.LabelField("Розмір карти", $"{generatedWorld.Width} x {generatedWorld.Height}");
+            EditorGUILayout.LabelField("Унікальні біоми", string.Join(", ", generatedWorld.UniqueBiomeIds));
+            EditorGUILayout.LabelField("Кількість статичних об'єктів", generatedWorld.ObjectEntries.Count.ToString());
+
+            EditorGUILayout.Space(4);
+            EditorGUILayout.LabelField("Статичні об'єкти карти", EditorStyles.boldLabel);
+            _knownBlockScroll = EditorGUILayout.BeginScrollView(_knownBlockScroll, GUILayout.MinHeight(140));
+            if (generatedWorld.ObjectEntries.Count == 0)
+            {
+                EditorGUILayout.LabelField("Об'єктів немає.");
+            }
+            else
+            {
+                foreach (var entry in generatedWorld.ObjectEntries)
+                    EditorGUILayout.LabelField($"{entry.ObjectId} @ ({entry.Position.x}, {entry.Position.y})");
+            }
+            EditorGUILayout.EndScrollView();
+
+            EditorGUILayout.Space(4);
+            EditorGUILayout.LabelField("Приклад даних висоти", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("(0,0)", generatedWorld.HeightMap[0, 0].ToString("F3"));
             EditorGUILayout.EndVertical();
         }
 
@@ -509,6 +559,7 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
             var result = new ParsedFile
             {
                 Path = path,
+                FileSizeBytes = data.LongLength,
                 GlobalCrcOk = storedGlobalCrc == actualGlobalCrc,
                 StoredGlobalCrc = storedGlobalCrc,
                 ActualGlobalCrc = actualGlobalCrc,
@@ -648,6 +699,34 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
             }
         }
 
+        private void RevealSelectedPath()
+        {
+            string path = _currentFile?.Path;
+            if (string.IsNullOrEmpty(path))
+                path = GetSelectedPath();
+
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            string target = File.Exists(path) ? path : Path.GetDirectoryName(path);
+            if (string.IsNullOrEmpty(target) || !Directory.Exists(target) && !File.Exists(target))
+            {
+                EditorUtility.DisplayDialog("Директорію не знайдено", path, "OK");
+                return;
+            }
+
+            EditorUtility.RevealInFinder(target);
+        }
+
+        private static string FormatFileSize(long bytes)
+        {
+            if (bytes < 1024)
+                return $"{bytes} B";
+            if (bytes < 1024 * 1024)
+                return $"{bytes / 1024f:F2} KB";
+            return $"{bytes / (1024f * 1024f):F2} MB";
+        }
+
         private static string BytesToHex(byte[] data)
         {
             if (data == null || data.Length == 0)
@@ -706,6 +785,88 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
         private static uint ComputeCrc32(byte[] data)
         {
             return ComputeCrc32(data, 0, data.Length);
+        }
+
+        private static uint ComputeBlockId(string fullTypeName)
+        {
+            uint hash = 2166136261u;
+            foreach (char c in fullTypeName)
+            {
+                hash ^= c;
+                hash *= 16777619u;
+            }
+            return hash;
+        }
+
+        private sealed class GeneratedWorldPreview
+        {
+            public int Width;
+            public int Height;
+            public float[,] HeightMap;
+            public List<string> UniqueBiomeIds = new List<string>();
+            public List<(string ObjectId, Vector2Int Position)> ObjectEntries = new List<(string, Vector2Int)>();
+        }
+
+        private static bool TryParseGeneratedWorldBlock(byte[] payload, out GeneratedWorldPreview preview, out string error)
+        {
+            preview = null;
+            error = null;
+
+            try
+            {
+                using var stream = new MemoryStream(payload);
+                using var reader = new BinaryReader(stream);
+
+                int width = reader.ReadInt32();
+                int height = reader.ReadInt32();
+                if (width <= 0 || height <= 0)
+                {
+                    error = "Некоректний розмір карти.";
+                    return false;
+                }
+
+                var biomeMap = new string[width, height];
+                var objectMap = new string[width, height];
+                var heightMap = new float[width, height];
+                var uniqueBiomeIds = new HashSet<string>();
+                var objectEntries = new List<(string ObjectId, Vector2Int Position)>();
+
+                for (int x = 0; x < width; x++)
+                    for (int y = 0; y < height; y++)
+                    {
+                        biomeMap[x, y] = reader.ReadString();
+                        if (!string.IsNullOrEmpty(biomeMap[x, y]))
+                            uniqueBiomeIds.Add(biomeMap[x, y]);
+                    }
+
+                for (int x = 0; x < width; x++)
+                    for (int y = 0; y < height; y++)
+                    {
+                        objectMap[x, y] = reader.ReadString();
+                        if (!string.IsNullOrEmpty(objectMap[x, y]))
+                            objectEntries.Add((objectMap[x, y], new Vector2Int(x, y)));
+                    }
+
+                for (int x = 0; x < width; x++)
+                    for (int y = 0; y < height; y++)
+                        heightMap[x, y] = reader.ReadSingle();
+
+                preview = new GeneratedWorldPreview
+                {
+                    Width = width,
+                    Height = height,
+                    HeightMap = heightMap,
+                    UniqueBiomeIds = new List<string>(uniqueBiomeIds),
+                    ObjectEntries = objectEntries,
+                };
+
+                return true;
+            }
+            catch (Exception exception)
+            {
+                error = exception.Message;
+                return false;
+            }
         }
 
         private static uint ComputeCrc32(byte[] data, int offset, int length)

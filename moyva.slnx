@@ -8,11 +8,13 @@
   <Project Path="Zenject-Editor.csproj" />
   <Project Path="Zenject-IntegrationTests.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.csproj" />
+  <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
   <Project Path="Kruty1918.Moyva.FogOfWar.csproj" />
+  <Project Path="Kruty1918.Moyva.Generator.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />

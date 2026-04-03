@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Zenject;
 
@@ -36,7 +37,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Container.Bind<IMapObjectRegistryService>().To<MapObjectRegistryService>().AsSingle();
             Container.Bind<IMapLayerRegistry>().To<MapLayerRegistry>().AsSingle();
 
-            Container.BindInterfacesTo<MapVisualInstantiator>().AsSingle();
+            Container.BindInterfacesAndSelfTo<MapVisualInstantiator>().AsSingle();
+            Container.Bind<ISaveModule>().To<GeneratedWorldSaveModule>().AsSingle();
         }
 
         override public void Start()

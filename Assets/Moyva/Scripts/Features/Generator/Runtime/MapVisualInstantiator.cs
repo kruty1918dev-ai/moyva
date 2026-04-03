@@ -23,6 +23,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private Transform _objectsRoot; // Окремий корінь для об'єктів (річок тощо)
         private readonly Dictionary<string, TileTypeDefinition> _definitionsCache = new();
         private readonly SignalBus _signalBus;
+        private GeneratedWorldData _currentWorldData;
+        private GeneratedWorldData _pendingWorldData;
 
         public MapVisualInstantiator(
             TileRegistrySO tileRegistry,
@@ -54,10 +56,34 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void BuildWorld()
         {
+            GeneratedWorldData worldData = _pendingWorldData;
+            _pendingWorldData = null;
+
+            if (worldData == null)
+            {
+                worldData = GenerateNewWorldData();
+            }
+
+            BuildWorldFromData(worldData);
+        }
+
+        internal void SetPendingWorldData(GeneratedWorldData data)
+        {
+            _pendingWorldData = data?.Clone();
+        }
+
+        internal bool TryGetCurrentWorldData(out GeneratedWorldData data)
+        {
+            data = _currentWorldData?.Clone();
+            return data != null;
+        }
+
+        private GeneratedWorldData GenerateNewWorldData()
+        {
             string[,] virtualBiomeMap = null;
             string[,] virtualObjectMap = null;
             float[,] finalHeightMap = null;
-            // 1. Отримуємо дві карти з генератора через OnComplete
+
             _mapDataGenerator.GenerateMapData(
                 _gridService.GridWidth,
                 _gridService.GridHeight,
@@ -68,25 +94,33 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     finalHeightMap = heightMap;
                 });
 
-            if (_tilesRoot == null) _tilesRoot = new GameObject("TilesRoot").transform;
-            if (_objectsRoot == null) _objectsRoot = new GameObject("ObjectsRoot").transform;
-
-            // 2. Проходимо по сітці
-            for (int x = 0; x < _gridService.GridWidth; x++)
+            return new GeneratedWorldData
             {
-                for (int y = 0; y < _gridService.GridHeight; y++)
+                Width = _gridService.GridWidth,
+                Height = _gridService.GridHeight,
+                BiomeMap = virtualBiomeMap,
+                ObjectMap = virtualObjectMap,
+                HeightMap = finalHeightMap,
+            };
+        }
+
+        private void BuildWorldFromData(GeneratedWorldData worldData)
+        {
+            EnsureRoots();
+            ClearRoot(_tilesRoot);
+            ClearRoot(_objectsRoot);
+
+            for (int x = 0; x < worldData.Width; x++)
+            {
+                for (int y = 0; y < worldData.Height; y++)
                 {
                     Vector2Int pos = new Vector2Int(x, y);
 
-                    // Спавнимо основний тайл біому (трава, пісок тощо)
-                    string biomeId = virtualBiomeMap[x, y];
+                    string biomeId = worldData.BiomeMap[x, y];
                     if (!string.IsNullOrEmpty(biomeId))
-                    {
-                        CreateTileView(pos, biomeId, _tilesRoot, -1); // LayerIndex -1 для фону
-                    }
+                        CreateTileView(pos, biomeId, _tilesRoot, -1);
 
-                    // Спавнимо об'єкт поверх (якщо він є в цій клітинці)
-                    string objectId = virtualObjectMap[x, y];
+                    string objectId = worldData.ObjectMap[x, y];
                     if (!string.IsNullOrEmpty(objectId))
                     {
                         CreateObjectLayerEntity(pos, objectId);
@@ -94,6 +128,26 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 }
             }
 
+            _currentWorldData = worldData.Clone();
+            _signalBus.Fire(new WorldBuiltSignal());
+        }
+
+        private void EnsureRoots()
+        {
+            if (_tilesRoot == null) _tilesRoot = new GameObject("TilesRoot").transform;
+            if (_objectsRoot == null) _objectsRoot = new GameObject("ObjectsRoot").transform;
+        }
+
+        private static void ClearRoot(Transform root)
+        {
+            if (root == null)
+                return;
+
+            for (int i = root.childCount - 1; i >= 0; i--)
+            {
+                var child = root.GetChild(i).gameObject;
+                Object.Destroy(child);
+            }
         }
 
         private void CreateTileView(Vector2Int position, string tileId, Transform root, int sortingOrder)
