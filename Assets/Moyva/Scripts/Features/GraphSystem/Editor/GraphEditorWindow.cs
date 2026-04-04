@@ -1,3 +1,4 @@
+using System.Threading;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.GraphSystem.Runtime;
 using UnityEditor;
@@ -11,6 +12,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
     {
         private GeneratorGraphView _graphView;
         private Label _statusLabel;
+        private ProgressBar _progressBar;
 
         // Survives domain reload / play mode transition
         [SerializeField] private string _graphAssetGuid;
@@ -120,6 +122,28 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             toolbar.Add(new ToolbarButton(() => ValidateGraph())
                 { text = "Validate" });
 
+            toolbar.Add(new ToolbarButton(() => RunGraph())
+                { text = "▶ Run" });
+
+            toolbar.Add(new ToolbarSpacer());
+
+            toolbar.Add(new ToolbarButton(() => _graphView?.AutoLayout())
+                { text = "Auto-Layout" });
+
+            toolbar.Add(new ToolbarButton(() => _graphView?.GroupSelection())
+                { text = "Group" });
+
+            toolbar.Add(new ToolbarButton(() => _graphView?.AddStickyNote())
+                { text = "Note" });
+
+            // Minimap toggle
+            var minimapToggle = new ToolbarToggle { text = "Minimap", value = true };
+            minimapToggle.RegisterValueChangedCallback(evt =>
+                _graphView?.SetMinimapVisible(evt.newValue));
+            toolbar.Add(minimapToggle);
+
+            toolbar.Add(new ToolbarSpacer { flex = true });
+
             toolbar.Add(new ToolbarButton(() => SaveGraph())
                 { text = "Save" });
 
@@ -128,7 +152,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void ConstructStatusBar()
         {
-            _statusLabel = new Label("No graph loaded")
+            var statusContainer = new VisualElement
             {
                 style =
                 {
@@ -138,12 +162,36 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     right = 0,
                     height = 20,
                     backgroundColor = new Color(0.15f, 0.15f, 0.15f),
-                    color = Color.white,
-                    unityTextAlign = TextAnchor.MiddleLeft,
-                    paddingLeft = 8
+                    flexDirection = FlexDirection.Row,
+                    alignItems = Align.Center
                 }
             };
-            rootVisualElement.Add(_statusLabel);
+
+            _statusLabel = new Label("No graph loaded")
+            {
+                style =
+                {
+                    color = Color.white,
+                    unityTextAlign = TextAnchor.MiddleLeft,
+                    paddingLeft = 8,
+                    flexGrow = 1
+                }
+            };
+            statusContainer.Add(_statusLabel);
+
+            _progressBar = new ProgressBar
+            {
+                style =
+                {
+                    width = 150,
+                    height = 14,
+                    marginRight = 8
+                }
+            };
+            _progressBar.visible = false;
+            statusContainer.Add(_progressBar);
+
+            rootVisualElement.Add(statusContainer);
         }
 
         public void LoadGraph(GraphAsset asset)
@@ -215,6 +263,112 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             EditorUtility.SetDirty(_graphAsset);
             AssetDatabase.SaveAssets();
             _statusLabel.text = $"Saved: {_graphAsset.name}";
+        }
+
+        private void RunGraph()
+        {
+            if (_graphAsset == null)
+            {
+                EditorUtility.DisplayDialog("Run Graph",
+                    "No graph loaded.", "OK");
+                return;
+            }
+
+            // Validate first
+            var validator = new GraphValidator();
+            var errors = validator.Validate(_graphAsset);
+            if (errors.Count > 0)
+            {
+                _statusLabel.text = $"✗ Cannot run: {errors.Count} validation error(s).";
+                Debug.LogWarning($"[GraphRunner] Validation failed with {errors.Count} error(s).");
+                return;
+            }
+
+            _progressBar.visible = true;
+            _progressBar.value = 0;
+            _statusLabel.text = "Running graph...";
+
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var context = new NodeContext(
+                seed: UnityEngine.Random.Range(0, int.MaxValue),
+                cancellation: CancellationToken.None);
+            context.MapSize = new Vector2Int(64, 64);
+
+            var runner = new GraphRunner();
+            var result = runner.Execute(_graphAsset, context);
+
+            sw.Stop();
+            _progressBar.visible = false;
+
+            if (result.Success)
+            {
+                var sb = new System.Text.StringBuilder();
+                sb.Append($"✓ Run completed in {sw.ElapsedMilliseconds}ms");
+                sb.Append($" | {result.Logs.Count} nodes executed");
+
+                float totalMs = 0;
+                foreach (var log in result.Logs)
+                    totalMs += log.DurationMs;
+
+                sb.Append($" | Total node time: {totalMs:F1}ms");
+                _statusLabel.text = sb.ToString();
+
+                // Log per-node timing
+                Debug.Log($"[GraphRunner] Execution completed in {sw.ElapsedMilliseconds}ms:");
+                foreach (var log in result.Logs)
+                {
+                    string icon = log.Status == NodeStatus.Warning ? "⚠" : "✓";
+                    string msg = string.IsNullOrEmpty(log.Message) ? "" : $" — {log.Message}";
+                    Debug.Log($"  {icon} [{log.DurationMs:F1}ms] {log.NodeTitle}{msg}");
+                }
+
+                // Highlight node execution times in the graph view
+                HighlightExecutionResults(result);
+            }
+            else
+            {
+                _statusLabel.text = $"✗ Run failed at node {result.ErrorNodeId}: {result.ErrorMessage}";
+                Debug.LogError($"[GraphRunner] Execution failed: {result.ErrorMessage}");
+            }
+        }
+
+        private void HighlightExecutionResults(GraphExecutionResult result)
+        {
+            if (_graphView == null) return;
+
+            foreach (var log in result.Logs)
+            {
+                foreach (var element in _graphView.graphElements)
+                {
+                    if (element is GeneratorNodeView nodeView
+                        && nodeView.NodeData.NodeId == log.NodeId)
+                    {
+                        Color borderColor;
+                        if (log.Status == NodeStatus.Error)
+                            borderColor = new Color(1f, 0.2f, 0.2f);
+                        else if (log.Status == NodeStatus.Warning)
+                            borderColor = new Color(1f, 0.8f, 0.2f);
+                        else if (log.DurationMs > 100)
+                            borderColor = new Color(1f, 0.6f, 0.2f); // slow node
+                        else
+                            borderColor = new Color(0.2f, 0.9f, 0.3f); // success
+
+                        nodeView.style.borderBottomColor = borderColor;
+                        nodeView.style.borderTopColor = borderColor;
+                        nodeView.style.borderLeftColor = borderColor;
+                        nodeView.style.borderRightColor = borderColor;
+                        nodeView.style.borderBottomWidth = 2;
+                        nodeView.style.borderTopWidth = 2;
+                        nodeView.style.borderLeftWidth = 2;
+                        nodeView.style.borderRightWidth = 2;
+
+                        // Add timing badge
+                        nodeView.tooltip = $"{log.NodeTitle}: {log.DurationMs:F1}ms"
+                            + (string.IsNullOrEmpty(log.Message) ? "" : $"\n{log.Message}");
+                        break;
+                    }
+                }
+            }
         }
     }
 }

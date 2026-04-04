@@ -27,7 +27,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 PortIndex = index,
                 PortValueType = def.ValueType,
                 portName = def.Name,
-                portColor = GetColorForType(def.ValueType)
+                portColor = GetColorForType(def.ValueType),
+                tooltip = $"{def.Name} ({GetTypeName(def.ValueType)})"
             };
             port.m_EdgeConnector = new EdgeConnector<Edge>(listener);
             VisualElementExtensions.AddManipulator(port, port.m_EdgeConnector);
@@ -90,6 +91,18 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return new Color(0.8f, 0.4f, 0.8f);   // Purple
 
             return new Color(0.8f, 0.8f, 0.8f);        // Default
+        }
+
+        private static string GetTypeName(Type type)
+        {
+            if (type == typeof(float[,])) return "HeightMap";
+            if (type == typeof(string[,])) return "TileMap";
+            if (type == typeof(bool[,])) return "Mask";
+            if (type == typeof(int[,])) return "IntMap";
+            if (type == typeof(int)) return "int";
+            if (type == typeof(float)) return "float";
+            if (type == typeof(Vector2Int)) return "Vector2Int";
+            return type.Name;
         }
     }
 }
