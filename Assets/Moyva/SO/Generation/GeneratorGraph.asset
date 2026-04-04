@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-9055592834848844893
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f66dde274d8e00f4b8ce49454575e10a, type: 3}
+  m_Name: OutputNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.OutputNode
+  _nodeId: 59aa5c51-8556-4a00-9c3b-13a159824419
+  _editorPosition: {x: 414, y: 306}
+--- !u!114 &-1405816773337223776
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9b103a4741edc237b84b1c8805282c3, type: 3}
+  m_Name: HeightToTileNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.HeightToTileNode
+  _nodeId: 08688aae-1f5a-400f-981a-65c57874c786
+  _editorPosition: {x: 327, y: 178}
+  _heightMapSettings: {fileID: 0}
+--- !u!114 &-491450750803602393
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a469f76d749735ec7b56f769028c321d, type: 3}
+  m_Name: HeightSourceNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.HeightSourceNode
+  _nodeId: c17ff991-4786-4344-9199-800ddc1f89b0
+  _editorPosition: {x: 110, y: 178}
+  _noiseSettings: {fileID: 0}
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59d9b38b2856cd4799fefcce5c732135, type: 3}
+  m_Name: GeneratorGraph
+  m_EditorClassIdentifier: Kruty1918.Moyva.GraphSystem::Kruty1918.Moyva.GraphSystem.API.GraphAsset
+  _nodes:
+  - {fileID: -491450750803602393}
+  - {fileID: -1405816773337223776}
+  - {fileID: -9055592834848844893}
+  _connections: []
+  _version: 1

@@ -13,16 +13,7 @@ MonoBehaviour:
   m_Name: FogOfWarSettings
   m_EditorClassIdentifier: Kruty1918.Moyva.FogOfWar::Kruty1918.Moyva.FogOfWar.API.FogOfWarSettings
   DefaultVisionRange: 3
-  UnexploredFogColor: {r: 0, g: 0, b: 0, a: 1}
-  ExploredFogColor: {r: 0, g: 0, b: 0, a: 0.5686275}
-  NoiseScaleUnexplored: 11.14
-  NoiseSpeedUnexplored: 0.32
-  NoiseStrengthUnexplored: 0.16
-  NoiseScaleExplored: 2.97
-  NoiseSpeedExplored: 0.02
-  NoiseStrengthExplored: 0.15
-  WarpStrength: 1
-  EdgeBleedRadius: 1
-  EdgeBleedStrength: 0.527
-  TransitionSoftness: 0.5
-  TextureFilter: 1
+  MinVisionRange: 1
+  MaxVisionRange: 12
+  UnexploredColor: {r: 0, g: 0, b: 0, a: 0}
+  ExploredColor: {r: 0, g: 0, b: 0, a: 0}

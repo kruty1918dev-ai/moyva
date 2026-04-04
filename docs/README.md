@@ -32,7 +32,8 @@
 | **Animations** | [systems/animations.md](systems/animations.md) | Плавна анімація руху |
 | **Camera** | [systems/camera.md](systems/camera.md) | Рух, зум і фокус камери |
 | **Signals** | [systems/signals.md](systems/signals.md) | Усі сигнали / події SignalBus |
-| **Generator** | [systems/generator.md](systems/generator.md) | Процедурна генерація карти |
+| **Generator** | [systems/generator.md](systems/generator.md) | Процедурна генерація карти (pipeline) |
+| **Graph System** | [systems/graph-system/README.md](systems/graph-system/README.md) | Візуальний нодовий генератор карт (нова система) |
 | **ObjectsMap** | [systems/objects-map.md](systems/objects-map.md) | Єдине джерело правди про зайнятість позицій |
 | **Visuals** | [systems/visuals.md](systems/visuals.md) | Візуальне відображення тайлів |
 | **Bootstrap** | [systems/bootstrap.md](systems/bootstrap.md) | Стартова ініціалізація сцени |
