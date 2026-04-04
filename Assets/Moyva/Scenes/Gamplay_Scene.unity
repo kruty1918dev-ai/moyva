@@ -686,6 +686,9 @@ MonoBehaviour:
   _noiseSettings: {fileID: 11400000, guid: 29912cd5071f7de84a54c8b3129843ad, type: 2}
   _biomesSettings: {fileID: 11400000, guid: 61667c86198a4161b96bd05257abedf0, type: 2}
   _wfcDataSettings: {fileID: 11400000, guid: fea7d1c6ea24608b2b4e75e082c67e84, type: 2}
+  _mapObjectRegistry: {fileID: 0}
+  _useGraphGenerator: 1
+  _graphAsset: {fileID: 11400000, guid: e728959edc09a5fea829221821058070, type: 2}
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
