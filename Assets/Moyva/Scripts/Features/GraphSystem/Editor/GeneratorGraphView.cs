@@ -375,6 +375,172 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         #endregion
 
+        #region Export / Import
+
+        public void ExportNodesToFile()
+        {
+            if (_graphAsset == null) return;
+
+            var selectedNodes = selection.OfType<GeneratorNodeView>().ToList();
+            var nodesToExport = selectedNodes.Count > 0
+                ? selectedNodes.Select(v => v.NodeData)
+                : _graphAsset.Nodes.Where(n => n != null);
+
+            var nodeIdSet = new HashSet<string>(
+                nodesToExport.Select(n => n.NodeId));
+
+            var preset = new GraphPreset();
+            foreach (var node in nodesToExport)
+            {
+                preset.nodes.Add(new NodePresetEntry
+                {
+                    nodeTypeAssemblyQualifiedName = node.GetType().AssemblyQualifiedName,
+                    originalNodeId = node.NodeId,
+                    position = node.EditorPosition,
+                    jsonData = EditorJsonUtility.ToJson(node)
+                });
+            }
+
+            foreach (var conn in _graphAsset.Connections)
+            {
+                if (nodeIdSet.Contains(conn.SourceNodeId) && nodeIdSet.Contains(conn.TargetNodeId))
+                {
+                    preset.connections.Add(new ConnectionEntry
+                    {
+                        sourceNodeId = conn.SourceNodeId,
+                        sourcePortIndex = conn.SourcePortIndex,
+                        targetNodeId = conn.TargetNodeId,
+                        targetPortIndex = conn.TargetPortIndex
+                    });
+                }
+            }
+
+            var path = GraphPresetIO.ShowExportPanel(_graphAsset.name);
+            if (string.IsNullOrEmpty(path)) return;
+
+            try
+            {
+                GraphPresetIO.WriteToFile(preset, path);
+                Debug.Log($"[GraphPreset] Exported {preset.nodes.Count} node(s) and " +
+                          $"{preset.connections.Count} connection(s) to {path}");
+            }
+            catch (Exception ex)
+            {
+                EditorUtility.DisplayDialog("Export Failed", ex.Message, "OK");
+            }
+        }
+
+        public void ImportNodesFromFile()
+        {
+            if (_graphAsset == null || _isReadOnly) return;
+
+            var path = GraphPresetIO.ShowImportPanel();
+            if (string.IsNullOrEmpty(path)) return;
+
+            GraphPreset preset;
+            try
+            {
+                preset = GraphPresetIO.ReadFromFile(path);
+            }
+            catch (Exception ex)
+            {
+                EditorUtility.DisplayDialog("Import Failed", ex.Message, "OK");
+                return;
+            }
+
+            var idMap = new Dictionary<string, string>();
+            var newViews = new Dictionary<string, GeneratorNodeView>();
+
+            // Place imported nodes to the right of the existing graph content
+            float maxX = 100f;
+            foreach (var element in graphElements)
+            {
+                if (element is GeneratorNodeView nv)
+                {
+                    float right = nv.GetPosition().xMax;
+                    if (right > maxX) maxX = right;
+                }
+            }
+            Vector2 importOffset = new Vector2(maxX + 100f, 0f);
+
+            Undo.RecordObject(_graphAsset, "Import Graph Preset");
+
+            int created = 0;
+            int skipped = 0;
+
+            foreach (var entry in preset.nodes)
+            {
+                var nodeType = Type.GetType(entry.nodeTypeAssemblyQualifiedName);
+                if (nodeType == null)
+                {
+                    Debug.LogWarning($"[GraphPreset] Type not found, skipping: {entry.nodeTypeAssemblyQualifiedName}");
+                    skipped++;
+                    continue;
+                }
+
+                var node = _graphAsset.AddNode(nodeType);
+                if (node == null) { skipped++; continue; }
+
+                // Assign fresh identity before restoring data so FromJsonOverwrite cannot
+                // clobber the new ID (NodeId setter writes to the backing field)
+                string newId = Guid.NewGuid().ToString();
+                idMap[entry.originalNodeId] = newId;
+                node.NodeId = newId;
+                node.EditorPosition = entry.position + importOffset;
+
+                // Restore serialized field values (overwrites position / id, so re-apply below)
+                EditorJsonUtility.FromJsonOverwrite(entry.jsonData, node);
+                node.NodeId = newId;
+                node.EditorPosition = entry.position + importOffset;
+
+                var view = new GeneratorNodeView(node);
+                AddElement(view);
+                newViews[newId] = view;
+                created++;
+            }
+
+            int imported = 0;
+            foreach (var connEntry in preset.connections)
+            {
+                if (!idMap.TryGetValue(connEntry.sourceNodeId, out var newSource)) continue;
+                if (!idMap.TryGetValue(connEntry.targetNodeId, out var newTarget)) continue;
+
+                _graphAsset.AddConnection(
+                    newSource, connEntry.sourcePortIndex,
+                    newTarget, connEntry.targetPortIndex);
+
+                if (!newViews.TryGetValue(newSource, out var sourceView)) continue;
+                if (!newViews.TryGetValue(newTarget, out var targetView)) continue;
+
+                var outputPort = sourceView.GetOutputPort(connEntry.sourcePortIndex);
+                var inputPort = targetView.GetInputPort(connEntry.targetPortIndex);
+                if (outputPort == null || inputPort == null)
+                {
+                    Debug.LogWarning($"[GraphPreset] Could not find port(s) for connection " +
+                                     $"{newSource}:{connEntry.sourcePortIndex} → {newTarget}:{connEntry.targetPortIndex}. " +
+                                     "Connection skipped.");
+                    continue;
+                }
+
+                AddElement(outputPort.ConnectTo(inputPort));
+                imported++;
+            }
+
+            EditorUtility.SetDirty(_graphAsset);
+
+            Debug.Log($"[GraphPreset] Imported {created} node(s) and {imported} connection(s)" +
+                      (skipped > 0 ? $"; skipped {skipped} unknown type(s)." : "."));
+
+            if (skipped > 0)
+                EditorUtility.DisplayDialog("Import Warning",
+                    $"Imported {created} node(s) and {imported} connection(s).\n\n" +
+                    $"Skipped {skipped} node(s) — their types were not found in this project.\n" +
+                    "Check the Console for details.",
+                    "OK");
+        }
+
+        #endregion
+
         #region Auto-Layout
 
         public void AutoLayout()
