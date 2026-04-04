@@ -10,11 +10,10 @@
   <Project Path="Kruty1918.Moyva.Grid.csproj" />
   <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.csproj" />
+  <Project Path="Kruty1918.Moyva.GraphSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.SaveSystem.csproj" />
-  <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
   <Project Path="Kruty1918.Moyva.FogOfWar.csproj" />
-  <Project Path="Kruty1918.Moyva.Generator.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />
@@ -28,6 +27,7 @@
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementPlayMode.csproj" />
   <Project Path="Kruty1918.Moyva.Bootstrap.csproj" />
+  <Project Path="Kruty1918.Moyva.GraphSystem.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementIntegration.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.ObjectsMap.csproj" />
 </Solution>

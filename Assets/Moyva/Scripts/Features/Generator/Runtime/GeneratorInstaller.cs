@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Zenject;
@@ -16,6 +17,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
         [SerializeField] private WFCDataSettings _wfcDataSettings;
         [SerializeField] private MapObjectRegistrySO _mapObjectRegistry;
 
+        [Header("Graph-Based Generator")]
+        [SerializeField] private bool _useGraphGenerator;
+        [SerializeField] private GraphAsset _graphAsset;
+
         public override void InstallBindings()
         {
             Container.BindInstance(_wfcDataSettings).AsSingle();
@@ -31,7 +36,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Container.Bind<IRiverPathfinder>().To<RiverPathfinder>().AsSingle();
             Container.Bind<INoiseProvider>().To<NoiseMapGeneratorService>().AsSingle();
             Container.Bind<IBiomeResolver>().To<BiomeResolver>().AsSingle();
-            Container.Bind<IMapDataGenerator>().To<MapDataGenerator>().AsSingle();
+
+            if (_useGraphGenerator && _graphAsset != null)
+            {
+                Container.BindInstance(_graphAsset).AsSingle();
+                Container.Bind<IMapDataGenerator>()
+                    .To<GraphBasedMapDataGenerator>().AsSingle();
+            }
+            else
+            {
+                Container.Bind<IMapDataGenerator>()
+                    .To<MapDataGenerator>().AsSingle();
+            }
+
             Container.Bind<IMapFeatureGenerator>().To<RiverFeatureGenerator>().AsTransient();
             Container.Bind<IMapFeatureGenerator>().To<WaterPostProcessor>().AsTransient();
             Container.Bind<IMapObjectRegistryService>().To<MapObjectRegistryService>().AsSingle();
