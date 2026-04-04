@@ -2,7 +2,7 @@
 
 ← [Утиліти](../nodes-utility.md) · [Graph System](../README.md)
 
-**Категорія:** Logic · **Файл:** `ConditionalSwitchNode.cs`
+**Категорія:** Utility · **Файл:** `ConditionalSwitchNode.cs`
 
 **Мультиплексор** — обирає між двома картами висот попіксельно за булевою маскою.
 

@@ -2,7 +2,7 @@
 
 ← [Генератори](../nodes-generators.md) · [Graph System](../README.md)
 
-**Категорія:** Converters · **Файл:** `HeightToTileNode.cs`
+**Категорія:** Generators · **Файл:** `HeightToTileNode.cs`
 
 Конвертує числову карту висот (`float[,]`) в текстову карту тайлів (`string[,]`), присвоюючи кожному діапазону висот свій ID тайлу.
 

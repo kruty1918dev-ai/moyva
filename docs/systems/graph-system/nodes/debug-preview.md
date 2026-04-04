@@ -2,7 +2,7 @@
 
 ← [Утиліти](../nodes-utility.md) · [Graph System](../README.md)
 
-**Категорія:** Debug · **Файл:** `DebugPreviewNode.cs`
+**Категорія:** Utility · **Файл:** `DebugPreviewNode.cs`
 
 **Pass-through** нод для дебагу — пропускає дані наскрізь, логуючи статистику в Console. Приймає три типи даних одночасно.
 
