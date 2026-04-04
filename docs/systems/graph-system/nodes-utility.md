@@ -6,6 +6,19 @@
 
 Допоміжні ноди, що виконують трансформації, маскування, масштабування та фінальний збір результатів.
 
+## Ноди цієї категорії
+
+| Нод | Файл | Що робить |
+|---|---|---|
+| [Map Scale](nodes/map-scale.md) | `MapScaleNode.cs` | Масштабування карти висот |
+| [Mask](nodes/mask.md) | `MaskNode.cs` | Булева маска з порогом висоти |
+| [Border Frame](nodes/border-frame.md) | `BorderFrameNode.cs` | Рамка по краях карти |
+| [Overlay](nodes/overlay.md) | `OverlayNode.cs` | Накладання карти тайлів по масці |
+| [Tile Replace](nodes/tile-replace.md) | `TileReplaceNode.cs` | Пошук і заміна тайлів |
+| [Conditional Switch](nodes/conditional-switch.md) | `ConditionalSwitchNode.cs` | Мультиплексор за маскою |
+| [Output](nodes/output.md) | `OutputNode.cs` | Фінальний вузол графа |
+| [Debug Preview](nodes/debug-preview.md) | `DebugPreviewNode.cs` | Pass-through з логуванням статистики |
+
 ---
 
 ## Map Scale

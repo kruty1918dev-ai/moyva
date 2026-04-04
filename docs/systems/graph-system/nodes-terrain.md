@@ -6,6 +6,13 @@
 
 Ноди терейну **формують ландшафтні елементи** великого масштабу — береги, автоматичні переходи між різними типами тайлів.
 
+## Ноди цієї категорії
+
+| Нод | Файл | Що робить |
+|---|---|---|
+| [Sea / Coastline](nodes/sea-coastline.md) | `SeaCoastlineNode.cs` | Морська берегова лінія з трьома зонами |
+| [AutoTile Transitions](nodes/autotile-transitions.md) | `AutoTileTransitionNode.cs` | Автоматичні переходи між тайлами |
+
 ---
 
 ## Sea / Coastline

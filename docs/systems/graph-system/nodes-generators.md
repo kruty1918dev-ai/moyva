@@ -6,6 +6,16 @@
 
 Ноди цієї категорії **створюють нові дані** — вони є "джерелами" у вашому графі. Зазвичай не мають input-портів (або мають мінімум) і генерують карти висот, біомів чи регіонів.
 
+## Ноди цієї категорії
+
+| Нод | Файл | Що робить |
+|---|---|---|
+| [Height Source](nodes/height-source.md) | `HeightSourceNode.cs` | Perlin noise карта висот |
+| [Biome Resolver](nodes/biome-resolver.md) | `BiomeResolverNode.cs` | Призначає біоми за висотою та вологістю |
+| [Fertility Map](nodes/fertility-map.md) | `FertilityMapNode.cs` | Карта родючості ґрунту |
+| [Voronoi Regions](nodes/voronoi-regions.md) | `VoronoiRegionsNode.cs` | Діаграма Вороного для регіонів/провінцій |
+| [Height To Tile](nodes/height-to-tile.md) | `HeightToTileNode.cs` | Конвертує висоти в ID тайлів |
+
 ---
 
 ## Height Source

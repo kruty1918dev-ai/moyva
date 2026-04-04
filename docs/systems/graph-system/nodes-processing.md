@@ -8,6 +8,16 @@
 
 Типова ланка: `HeightSource → Smooth → Terrace → Erosion → HeightToTile`
 
+## Ноди цієї категорії
+
+| Нод | Файл | Що робить |
+|---|---|---|
+| [Noise Combiner](nodes/noise-combiner.md) | `NoiseCombinerNode.cs` | Комбінує дві HeightMap в одну |
+| [Smooth](nodes/smooth.md) | `SmoothNode.cs` | Box blur згладжування |
+| [Terrace](nodes/terrace.md) | `TerraceNode.cs` | Терасовий ефект (дискретні рівні висоти) |
+| [Erosion](nodes/erosion.md) | `ErosionNode.cs` | Симуляція термальної ерозії |
+| [Cellular Automata](nodes/cellular-automata.md) | `CellularAutomataNode.cs` | Клітинний автомат для печер/островів |
+
 ---
 
 ## Noise Combiner
