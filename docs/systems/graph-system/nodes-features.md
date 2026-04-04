@@ -6,6 +6,20 @@
 
 Ноди особливостей **додають ігрові елементи** на карту: озера, річки, ліси, гори, села, дороги. Вони працюють поверх базового ландшафту — приймають TileMap/HeightMap і розміщують нові об'єкти та модифікують тайли.
 
+## Ноди цієї категорії
+
+| Нод | Файл | Що робить |
+|---|---|---|
+| [Lake Generation](nodes/lake-generation.md) | `LakeGenerationNode.cs` | Озера через flood-fill |
+| [River Generator](nodes/river-generator.md) | `RiverNode.cs` | Річки через A* pathfinding |
+| [Water Smooth](nodes/water-smooth.md) | `WaterSmoothNode.cs` | Згладжування водних переходів |
+| [Forest Cluster](nodes/forest-cluster.md) | `ForestClusterNode.cs` | Ліси кластерами через Perlin noise |
+| [Mountain Scatter](nodes/mountain-scatter.md) | `MountainScatterNode.cs` | Гірські об'єкти за шарами висоти |
+| [Multi-Layer Scatter](nodes/multi-layer-scatter.md) | `MultiLayerScatterNode.cs` | Багатошаровий розкид об'єктів |
+| [Random Scatter](nodes/random-scatter.md) | `RandomScatterNode.cs` | Рівномірний випадковий розкид |
+| [POI Placement](nodes/poi-placement.md) | `POIPlacementNode.cs` | Розміщення ключових точок (села, замки) |
+| [Road / Path](nodes/road-path.md) | `RoadPathNode.cs` | Дороги між POI через A* + MST |
+
 ---
 
 ## Lake Generation
