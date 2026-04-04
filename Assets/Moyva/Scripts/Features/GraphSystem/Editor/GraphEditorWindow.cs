@@ -142,6 +142,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 _graphView?.SetMinimapVisible(evt.newValue));
             toolbar.Add(minimapToggle);
 
+            toolbar.Add(new ToolbarButton(() => _graphView?.ExportNodesToFile())
+                { text = "Export" });
+
+            toolbar.Add(new ToolbarButton(() => _graphView?.ImportNodesFromFile())
+                { text = "Import" });
+
             toolbar.Add(new ToolbarSpacer { flex = true });
 
             toolbar.Add(new ToolbarButton(() => SaveGraph())
