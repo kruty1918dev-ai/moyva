@@ -12,22 +12,27 @@
 
 **Категорія:** Utility · **Файл:** `MapScaleNode.cs`
 
-Масштабує будь-яку карту до іншого розміру за допомогою **білінійної інтерполяції** або **Nearest Neighbor**.
+Масштабує карту висот до іншого розміру за допомогою **білінійної інтерполяції** або **Nearest Neighbor**.
 
 ### Порти
 
 | Напрямок | Назва | Тип | Опис |
 |---|---|---|---|
-| **Input** 🟢 | HeightMap | `float[,]` | Вхідна карта |
-| **Input** ⚪ | TargetWidth | `int` | Бажана ширина |
-| **Input** ⚪ | TargetHeight | `int` | Бажана висота |
-| **Output** 🟢 | ScaledMap | `float[,]` | Масштабована карта |
+| **Input** 🟢 | HeightMap | `float[,]` | Вхідна карта висот |
+| **Output** 🟢 | Scaled | `float[,]` | Масштабована карта |
 
 ### Параметри
 
-| Параметр | Тип | За замовч. | Опис |
-|---|---|---|---|
-| **Interpolation** | `enum` | Bilinear | Bilinear (плавне) або NearestNeighbor (різке) |
+| Параметр | Тип | Діапазон | За замовч. | Опис |
+|---|---|---|---|---|
+| **Scale Factor** | `float` | 0.1–4.0 | 2.0 | Множник розміру (2.0 = збільшити вдвічі) |
+| **Interpolation** | `enum` | — | Bilinear | `Bilinear` (плавне) або `NearestNeighbour` (різке) |
+
+### Як працює
+
+Новий розмір обчислюється як `originalSize × scaleFactor`. Для кожного пікселя результату:
+- **Bilinear** — інтерполює 4 найближчі пікселі з вхідної карти (плавний результат)
+- **NearestNeighbour** — бере найближчий піксель (зберігає різкі межі)
 
 ### Коли використовувати
 
@@ -88,40 +93,47 @@ HeightMap:                    Mask (GreaterThan, 0.5):
 
 **Категорія:** Utility · **Файл:** `BorderFrameNode.cs`
 
-Створює **маску рамки** по краях карти — true в центрі, false по периметру.
+Додає **рамку по краях** до існуючої булевої маски. Всі клітинки в зоні рамки стають `true`, незалежно від початкового стану. Внутрішні клітинки зберігають значення з вхідної маски.
 
 ### Порти
 
 | Напрямок | Назва | Тип | Опис |
 |---|---|---|---|
-| **Input** ⚪ | MapWidth | `int` | Ширина карти |
-| **Input** ⚪ | MapHeight | `int` | Висота карти |
-| **Output** 🟡 | FrameMask | `bool[,]` | Маска: true = всередині, false = край |
+| **Input** 🟡 | Source | `bool[,]` | Вхідна булева маска |
+| **Output** 🟡 | Mask | `bool[,]` | Маска з доданою рамкою (true = рамка або source true) |
 
 ### Параметри
 
-| Параметр | Тип | За замовч. | Опис |
-|---|---|---|---|
-| **Thickness** | `int` | 2 | Товщина рамки в тайлах |
+| Параметр | Тип | Діапазон | За замовч. | Опис |
+|---|---|---|---|---|
+| **Thickness** | `int` | 1–20 | 2 | Товщина рамки в тайлах |
 
-### Візуалізація (Thickness = 2)
+### Як працює
+
+```csharp
+result[x, y] = isBorder || source[x, y]
+```
+
+де `isBorder = true` якщо клітинка знаходиться ближче за `thickness` до будь-якого краю карти.
+
+### Візуалізація (Thickness = 2, Source = all false)
 
 ```
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 1 1 1 1 0 0
-0 0 1 1 1 1 0 0    0 = false (рамка)
-0 0 1 1 1 1 0 0    1 = true  (внутрішня зона)
-0 0 1 1 1 1 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
+1 1 1 1 1 1 1 1
+1 1 1 1 1 1 1 1
+1 1 0 0 0 0 1 1
+1 1 0 0 0 0 1 1    1 = true  (рамка)
+1 1 0 0 0 0 1 1    0 = false (внутрішня зона)
+1 1 0 0 0 0 1 1
+1 1 1 1 1 1 1 1
+1 1 1 1 1 1 1 1
 ```
 
 ### Ігрове застосування
 
-- Рамка з водою навколо карти (**острів**)
+- Рамка з водою навколо карти (**острів**) — подайте результат як маску для `Overlay`
 - Рамка з горами (**закрита долина**)
-- Обмеження зони генерації — комбінуйте з `Overlay`
+- Обмеження зони генерації — комбінуйте з `Overlay` або `CellularAutomata`
 
 ---
 
@@ -161,14 +173,15 @@ grass grass   water water    true  true          water water
 
 **Категорія:** Utility · **Файл:** `TileReplaceNode.cs`
 
-Простий **пошук і заміна** — замінює всі входження одного тайлу на інший.
+Простий **пошук і заміна** — замінює всі входження одного тайлу на інший. Опціонально обмежує заміну маскою.
 
 ### Порти
 
 | Напрямок | Назва | Тип | Опис |
 |---|---|---|---|
 | **Input** 🔵 | TileMap | `string[,]` | Карта тайлів |
-| **Output** 🔵 | TileMap | `string[,]` | Карта з замінами |
+| **Input** 🟡 | Mask | `bool[,]` | (Опціонально) Маска — заміна відбувається тільки де `true` |
+| **Output** 🔵 | Result | `string[,]` | Карта з замінами |
 
 ### Параметри
 
@@ -176,6 +189,15 @@ grass grass   water water    true  true          water water
 |---|---|---|
 | **Find Tile** | `string` | ID тайлу для пошуку |
 | **Replace Tile** | `string` | Новий ID |
+
+### Як працює
+
+```csharp
+// Для кожної клітинки:
+if (mask != null && !mask[x, y]) continue;   // пропустити якщо маска = false
+if (tileMap[x, y] == findTile)
+    result[x, y] = replaceTile;
+```
 
 ### Приклад
 
@@ -192,29 +214,33 @@ Find: "grass"  →  Replace: "meadow"
 
 **Категорія:** Logic · **Файл:** `ConditionalSwitchNode.cs`
 
-**Мультиплексор** — обирає між двома картами тайлів попіксельно за маскою.
+**Мультиплексор** — обирає між двома картами висот попіксельно за булевою маскою.
 
 ### Порти
 
 | Напрямок | Назва | Тип | Опис |
 |---|---|---|---|
-| **Input** 🔵 | TrueMap | `string[,]` | Карта для true-зон |
-| **Input** 🔵 | FalseMap | `string[,]` | Карта для false-зон |
+| **Input** 🟢 | A | `float[,]` | Карта для true-зон |
+| **Input** 🟢 | B | `float[,]` | Карта для false-зон |
 | **Input** 🟡 | Condition | `bool[,]` | Маска вибору |
-| **Output** 🔵 | ResultMap | `string[,]` | Результат |
+| **Output** 🟢 | Result | `float[,]` | Результат |
 
 ### Формула
 
 ```
-result[x,y] = condition[x,y] ? trueMap[x,y] : falseMap[x,y]
+result[x,y] = condition[x,y] ? A[x,y] : B[x,y]
 ```
 
-### Приклад: Два біоми за висотою
+### Приклад: Два рельєфи за висотою
 
 ```
-HeightSource → Mask(>0.5) → ConditionalSwitch
-                                ├── TrueMap  ← "mountain" (HeightToTile з гірськими налаштуваннями)
-                                └── FalseMap ← "plains"   (HeightToTile з рівнинними налаштуваннями)
+HeightSource₁ → A ───┐
+                      ├──► ConditionalSwitch ──► далі
+HeightSource₂ → B ───┤
+                      │
+Mask(>0.5)  → Cond ───┘
+
+Результат: де висота > 0.5 — використовує карту A, інакше карту B
 ```
 
 ---
@@ -245,7 +271,7 @@ HeightSource → Mask(>0.5) → ConditionalSwitch
 
 **Категорія:** Debug · **Файл:** `DebugPreviewNode.cs`
 
-**Pass-through** нод для дебагу — пропускає дані наскрізь, логуючи статистику в Console.
+**Pass-through** нод для дебагу — пропускає дані наскрізь, логуючи статистику в Console. Приймає три типи даних одночасно.
 
 ### Порти
 
@@ -253,25 +279,37 @@ HeightSource → Mask(>0.5) → ConditionalSwitch
 |---|---|---|---|
 | **Input** 🟢 | HeightMap | `float[,]` | (опціонально) Карта висот для аналізу |
 | **Input** 🔵 | TileMap | `string[,]` | (опціонально) Карта тайлів для аналізу |
-| **Output** 🟢 | HeightMap | `float[,]` | Прохідне (те ж саме, що на вході) |
-| **Output** 🔵 | TileMap | `string[,]` | Прохідне |
+| **Input** 🟡 | Mask | `bool[,]` | (опціонально) Булева маска для аналізу |
+| **Output** 🟢 | HeightMap Pass | `float[,]` | Прохідне (те ж саме, що на вході) |
+| **Output** 🔵 | TileMap Pass | `string[,]` | Прохідне |
+| **Output** 🟡 | Mask Pass | `bool[,]` | Прохідне |
 
 ### Параметри
 
 | Параметр | Тип | За замовч. | Опис |
 |---|---|---|---|
 | **Label** | `string` | `"Debug"` | Позначка для логу |
+| **Log To Console** | `bool` | `true` | Чи виводити логи в Console |
 
 ### Що логує
 
 Для HeightMap:
 ```
-[DebugPreview: "After Erosion"] HeightMap 64x64 | Min: 0.02 | Max: 0.95 | Avg: 0.47
+[Debug] HeightMap [64x64] min=0.023 max=0.951 avg=0.472
 ```
 
 Для TileMap:
 ```
-[DebugPreview: "Final Tiles"] TileMap 64x64 | Unique tiles: 12 | Top: grass(450), water(320), mountain(120)
+[Debug] TileMap [64x64] unique tiles: 12
+  grass: 450
+  water: 320
+  mountain: 120
+  ...
+```
+
+Для Mask:
+```
+[Debug] Mask [64x64] true=2048 false=2048 (50.0%)
 ```
 
 ### Коли використовувати

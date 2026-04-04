@@ -19,33 +19,40 @@
 | Напрямок | Назва | Тип | Опис |
 |---|---|---|---|
 | **Input** 🟢 | HeightMap | `float[,]` | Карта висот |
-| **Input** 🟡 | BarrierMask | `bool[,]` | Маска перешкод (true = стіна/вода/гора) |
+| **Input** 🟡 | WaterMask | `bool[,]` | (Опціонально) Маска водних клітинок |
 | **Output** 🟢 | DefenseScore | `float[,]` | Оцінка оборонного значення (0.0–1.0) |
-| **Output** 🟡 | ChokepointMask | `bool[,]` | true де виявлено вузький прохід |
+| **Output** 🟡 | ChokepointMask | `bool[,]` | `true` де виявлено вузький прохід |
+| **Output** 🟠 | PassageWidth | `int[,]` | Ширина проходу в тайлах для кожної клітинки |
 
 ### Параметри
 
-| Параметр | Тип | За замовч. | Опис |
-|---|---|---|---|
-| **Min Passage Width** | `int` | 2 | Мінімальна ширина проходу для визначення чокпоінта |
-| **Max Passage Width** | `int` | 6 | Максимальна ширина (ширше = не чокпоінт) |
-| **Search Directions** | `int` | 4 | Кількість напрямків перевірки (4 або 8) |
+| Параметр | Тип | Діапазон | За замовч. | Опис |
+|---|---|---|---|---|
+| **Passage Min Width** | `int` | 1–10 | 2 | Мінімальна ширина для визначення чокпоінта |
+| **Passage Max Width** | `int` | 1–10 | 5 | Максимальна ширина (ширше = не чокпоінт) |
+| **Impassable Min Height** | `float` | 0.0–1.0 | 0.7 | Мінімальна висота, що вважається непрохідною |
+| **Water Is Impassable** | `bool` | — | `true` | Чи вважати воду перешкодою |
+| **Height Advantage Weight** | `float` | 0.0–1.0 | 0.6 | Вага висотної переваги в defense score |
+| **Narrowness Weight** | `float` | 0.0–1.0 | 0.4 | Вага вузькості проходу в defense score |
 
 ### Алгоритм
 
 ```
-Для кожної вільної клітинки (де barrierMask = false):
+1. Побудувати маску перешкод:
+   impassable[x,y] = height >= impassableMinHeight
+                   || (waterIsImpassable && waterMask[x,y])
 
-1. BFS Distance Transform — відстань до найближчої перешкоди
-   distToBarrier[x,y] = мін. відстань до будь-якої клітинки де barrier = true
+2. BFS Distance Transform — обчислити відстань кожної клітинки до найближчої перешкоди
+   passageWidth[x,y] = min distance to impassable cell
 
-2. Для кожного напрямку (N-S, E-W, і діагональні):
-   - Знайти відстань до перешкоди з обох боків
-   - passageWidth = leftDist + rightDist
-
-3. Якщо minPassageWidth ≤ passageWidth ≤ maxPassageWidth:
+3. Для кожної прохідної клітинки:
+   - Якщо passageWidth в діапазоні [minWidth, maxWidth]
+   - І є перешкоди з двох протилежних боків (N-S або E-W)
    → Це чокпоінт!
-   → defenseScore = 1.0 - (passageWidth - minPassageWidth) / (maxPassageWidth - minPassageWidth)
+
+4. Defense Score = narrowness * narrownessWeight + heightAdvantage * heightAdvantageWeight
+   де narrowness = 1.0 - (width - minWidth) / (maxWidth - minWidth + 1)
+      heightAdvantage = max(neighborHeight) - centerHeight + 0.3
 ```
 
 ### Візуалізація

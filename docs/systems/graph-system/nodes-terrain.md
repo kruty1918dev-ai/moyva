@@ -12,66 +12,63 @@
 
 **Категорія:** Terrain · **Файл:** `SeaCoastlineNode.cs`
 
-Генерує **морську берегову лінію** з трьома зонами: глибоке море, мілководдя та пляж. Берег може бути з будь-якого боку карти.
+Генерує **морську берегову лінію** з трьома зонами: глибоке море, мілководдя та пляж. Берег може бути з будь-якого боку карти, включаючи кутові та острівний режим.
 
 ### Порти
 
 | Напрямок | Назва | Тип | Опис |
 |---|---|---|---|
-| **Input** 🟢 | HeightMap | `float[,]` | Карта висот (для noise-модуляції берега) |
-| **Input** 🔵 | TileMap | `string[,]` | Базова карта тайлів (буде модифікована) |
-| **Output** 🔵 | TileMap | `string[,]` | Карта з морем та береговою лінією |
-| **Output** 🟡 | WaterMask | `bool[,]` | Маска водних тайлів (true = вода) |
+| **Input** 🟢 | HeightMap | `float[,]` | Карта висот |
+| **Input** 🔵 | BiomeMap | `string[,]` | Базова карта біомів (буде модифікована) |
+| **Output** 🔵 | BiomeMap | `string[,]` | Карта з морем та береговою лінією |
+| **Output** 🟢 | HeightMap | `float[,]` | Модифікована карта висот (в морській зоні = 0, на пляжі = плавний перехід) |
+| **Output** 🟡 | SeaMask | `bool[,]` | Маска морських тайлів (true = глибоке або мілке море) |
 
 ### Параметри
 
 | Параметр | Тип | За замовч. | Опис |
 |---|---|---|---|
-| **Coast Side** | `enum` | South | Бік карти: North, South, East, West |
-| **Base Depth** | `int` | 8 | Глибина зони моря в тайлах |
-| **Coast Width** | `int` | 3 | Ширина прибережної зони в тайлах |
-| **Beach Width** | `int` | 2 | Ширина пляжної зони в тайлах |
-| **Noise Influence** | `float` | 0.3 | Вплив HeightMap на форму берега (0 = рівний, 1 = дуже нерівний) |
-| **Deep Sea Tile** | `string` | `"water_deep"` | ID тайлу глибокого моря |
-| **Shallow Tile** | `string` | `"water_shallow"` | ID мілководдя |
-| **Beach Tile** | `string` | `"sand"` | ID пляжного тайлу |
+| **Coast Side** | `CoastSide` | South | Бік берега: `South`, `North`, `East`, `West`, `SouthEast`, `SouthWest`, `Island` |
+| **Sea Level** | `float` | 0.25 | Базовий рівень моря (0.0–0.5) |
+| **Coast Width** | `int` | 8 | Загальна ширина прибережної зони в тайлах (0–30) |
+| **Sea Tile** | `string` | `"sea"` | ID тайлу глибокого моря |
+| **Coast Tile** | `string` | `"coast"` | ID тайлу мілководдя |
+| **Beach Tile** | `string` | `"beach"` | ID пляжного тайлу |
+| **Coast Noise** | `DataNoiseSettings` | — | (Опціонально) Шум для нерівної берегової лінії |
+| **Noise Influence** | `float` | 5.0 | Вплив шуму на форму берега (0–15) |
 
-### Зони берега
+### Три зони берега
+
+Прибережна зона ділиться на 3 частини за пропорціями відстані до краю карти:
 
 ```
-Coast Side: South
+Coast Side: South, coastWidth: 8
 
  ┌────────────────────────────────────┐
- │ grass  grass  grass  grass  grass │  ← Суша (не змінюється)
- │ grass  grass  grass  grass  grass │
+ │ (суша)  — не змінюється           │  ← dist > 8
  ├─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┤
- │ sand   sand   sand   sand   sand  │  ← Beach (beachWidth: 2)
- │ sand   sand   sand   sand   sand  │
+ │ beach   beach   beach   beach    │  ← 60%–100% від coastWidth → beach
  ├─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┤
- │ w_shal w_shal w_shal w_shal w_sh │  ← Shallow (coastWidth: 3)
- │ w_shal w_shal w_shal w_shal w_sh │
- │ w_shal w_shal w_shal w_shal w_sh │
+ │ coast   coast   coast   coast    │  ← 30%–60% → coast (мілководдя)
  ├─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┤
- │ w_deep w_deep w_deep w_deep w_de │  ← Deep sea (baseDepth: 8)
- │ w_deep w_deep w_deep w_deep w_de │
- │ ...                               │
+ │ sea     sea     sea     sea      │  ← 0%–30% → sea (глибоке)
  └────────────────────────────────────┘
 ```
 
-### Noise Influence
+### Coast Side: Island
 
-З HeightMap = 0 (рівний берег):
+Режим `Island` обчислює відстань до **найближчого** краю карти, створюючи водну рамку з усіх боків.
+
+### Coast Noise
+
+З Coast Noise лінія берега "дихає" з ландшафтом:
 ```
-════════════════════
+Без шуму:   ════════════════════
+З шумом:    ══╗  ╔═══╗  ╔══════
+              ╚══╝   ╚══╝
 ```
 
-З HeightMap модуляцією 0.3:
-```
-══╗  ╔═══╗  ╔══════
-  ╚══╝   ╚══╝        ← лінія берега "дихає" з ландшафтом
-```
-
-> **WaterMask** — використовуйте як вхід для `FertilityMap`, `ForestCluster` та інших нодів, що враховують водні зони.
+> **SeaMask** — використовуйте як вхід для `FertilityMap`, `ForestCluster` та інших нодів, що враховують водні зони.
 
 ---
 
