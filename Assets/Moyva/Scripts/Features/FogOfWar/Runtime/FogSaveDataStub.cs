@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    public class FogSaveDataStub : IFogSaveDataProvider
+    internal sealed class FogSaveDataStub : IFogSaveDataProvider
     {
         public bool[,] LoadExploredData()
         {

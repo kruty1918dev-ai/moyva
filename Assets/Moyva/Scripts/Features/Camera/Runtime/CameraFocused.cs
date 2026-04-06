@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
-    public class CameraFocused : ICameraFocused
+    internal sealed class CameraFocused : ICameraFocused
     {
         private readonly ICameraMovement _cameraMovement;
         private readonly ICameraZoom _cameraZoom;

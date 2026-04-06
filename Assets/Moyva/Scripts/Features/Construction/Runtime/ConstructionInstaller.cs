@@ -11,6 +11,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public override void InstallBindings()
         {
             Container.BindInstance(buildingRegistry).AsSingle();
+            Container.Bind<IBuildingRegistry>().FromInstance(buildingRegistry).AsSingle();
 
             Container.Bind<IScreenToGridConverter>()
                 .To<ScreenToGridConverter>()

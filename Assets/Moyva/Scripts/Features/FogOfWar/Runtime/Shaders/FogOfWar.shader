@@ -12,7 +12,7 @@ Shader "Moyva/FogOfWar"
         Tags
         {
             "RenderType"     = "Transparent"
-            "Queue"          = "Transparent+100"
+            "Queue"          = "Overlay"
             "RenderPipeline" = "UniversalPipeline"
         }
 
@@ -23,6 +23,7 @@ Shader "Moyva/FogOfWar"
 
             Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off
+            ZTest Always
             Cull Off
 
             HLSLPROGRAM

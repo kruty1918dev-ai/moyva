@@ -4,7 +4,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
 {
-    public class CameraMovement : ICameraMovement, IInitializable, ILateTickable
+    internal sealed class CameraMovement : ICameraMovement, IInitializable, ILateTickable
     {
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;

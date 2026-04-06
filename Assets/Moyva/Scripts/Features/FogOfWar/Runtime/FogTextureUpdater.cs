@@ -8,7 +8,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// Lightweight fog texture: 1 pixel = 1 tile, R8 format.
     /// No blur, no noise — raw grid values go straight to the GPU.
     /// </summary>
-    public class FogTextureUpdater : IFogTextureUpdater
+    internal sealed class FogTextureUpdater : IFogTextureUpdater
     {
         private Texture2D _fogTexture;
         private byte[]    _buffer;

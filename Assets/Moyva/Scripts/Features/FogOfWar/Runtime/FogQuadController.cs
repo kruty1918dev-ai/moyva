@@ -8,6 +8,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     [RequireComponent(typeof(MeshRenderer))]
     public class FogQuadController : MonoBehaviour
     {
+        private const int FogOverlaySortingOrder = short.MaxValue;
+        private const int FogOverlayRenderQueue = 4000; // Overlay queue
+
         [SerializeField] private FogOfWarSettings _settings;
 
         [Inject] private IFogOfWarService   _fogService;
@@ -26,6 +29,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             var mr = GetComponent<MeshRenderer>();
             _mat = mr.material;
+            ApplyOverlayRenderPriority(mr);
 
             _textureUpdater.Initialize(w, h, _mat);
             _fogService.Initialize(w, h);
@@ -38,6 +42,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             _mat.SetColor("_UnexploredColor", _settings.UnexploredColor);
             _mat.SetColor("_ExploredColor",   _settings.ExploredColor);
+        }
+
+        private void ApplyOverlayRenderPriority(Renderer renderer)
+        {
+            renderer.sortingOrder = FogOverlaySortingOrder;
+
+            if (_mat != null)
+                _mat.renderQueue = FogOverlayRenderQueue;
         }
     }
 }

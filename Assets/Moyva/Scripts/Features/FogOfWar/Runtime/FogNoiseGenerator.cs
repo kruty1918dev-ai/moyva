@@ -4,7 +4,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// Deterministic CPU Perlin noise generator with seed support.
     /// Returns float[,] values in [0, 1].
     /// </summary>
-    public class FogNoiseGenerator
+    internal sealed class FogNoiseGenerator
     {
         private readonly int _seed;
 

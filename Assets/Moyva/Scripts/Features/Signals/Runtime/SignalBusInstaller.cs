@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<UnitDestroyedSignal>();
             Container.DeclareSignal<InterruptMovementSignal>();
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
-            Container.DeclareSignal<OnObjectsMapChangedSignal>();
+            Container.DeclareSignal<OnObjectsMapChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<WorldBuiltSignal>();
 
             // GameMode
@@ -32,7 +32,7 @@ namespace Kruty1918.Moyva.Signals
             // SaveSystem
             Container.DeclareSignal<SaveRequestedSignal>();
             Container.DeclareSignal<LoadRequestedSignal>();
-            Container.DeclareSignal<SaveCompletedSignal>();
+            Container.DeclareSignal<SaveCompletedSignal>().OptionalSubscriber();
         }
     }
 }
