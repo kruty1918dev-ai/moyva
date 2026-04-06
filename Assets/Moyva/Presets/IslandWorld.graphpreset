@@ -1,0 +1,329 @@
+{
+    "preset": {
+        "version": 2,
+        "nodes": [
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.HeightSourceNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0001",
+                "position": {
+                    "x": -400.0,
+                    "y": 150.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"HeightSourceNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightSourceNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd0001\",\"_editorPosition\":{\"x\":-400.0,\"y\":150.0},\"_noiseSettings\":{\"fileID\":11400000,\"guid\":\"29912cd5071f7de84a54c8b3129843ad\",\"type\":2}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0002",
+                "position": {
+                    "x": -150.0,
+                    "y": 150.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"SmoothNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd0002\",\"_editorPosition\":{\"x\":-150.0,\"y\":150.0},\"_radius\":1,\"_iterations\":3}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0003",
+                "position": {
+                    "x": 100.0,
+                    "y": 150.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ErosionNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd0003\",\"_editorPosition\":{\"x\":100.0,\"y\":150.0},\"_erosionRate\":0.015,\"_iterations\":15,\"_talusAngle\":0.035}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.HeightToTileNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0004",
+                "position": {
+                    "x": 350.0,
+                    "y": -30.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"HeightToTileNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightToTileNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd0004\",\"_editorPosition\":{\"x\":350.0,\"y\":-30.0},\"_heightMapSettings\":{\"fileID\":11400000,\"guid\":\"c3d295a14e0ab800893230f6b49661e2\",\"type\":2}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.SeaCoastlineNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "position": {
+                    "x": 600.0,
+                    "y": 80.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"SeaCoastlineNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SeaCoastlineNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd0005\",\"_editorPosition\":{\"x\":600.0,\"y\":80.0},\"_coastSide\":6,\"_seaLevel\":0.2,\"_coastWidth\":6,\"_seaTile\":\"sea\",\"_coastTile\":\"coast\",\"_beachTile\":\"beach\",\"_coastNoise\":{\"fileID\":11400000,\"guid\":\"aabb0011223344556677889900110003\",\"type\":2},\"_noiseInfluence\":4.0}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.LakeGenerationNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0006",
+                "position": {
+                    "x": 900.0,
+                    "y": 80.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"LakeGenerationNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.LakeGenerationNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd0006\",\"_editorPosition\":{\"x\":900.0,\"y\":80.0},\"_waterLevel\":0.28,\"_minLakeSize\":3,\"_deepWaterTile\":\"water_deep\",\"_shallowWaterTile\":\"water_shallow\",\"_shallowDepth\":0.04,\"_shoreTile\":\"shore\"}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.RiverNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000c",
+                "position": {
+                    "x": 1200.0,
+                    "y": 400.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"RiverNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RiverNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd000c\",\"_editorPosition\":{\"x\":1200.0,\"y\":400.0},\"_riverConfig\":{\"fileID\":11400000,\"guid\":\"aabb0011223344556677889900110001\",\"type\":2}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.ForestClusterNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0007",
+                "position": {
+                    "x": 1200.0,
+                    "y": -30.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ForestClusterNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ForestClusterNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd0007\",\"_editorPosition\":{\"x\":1200.0,\"y\":-30.0},\"_densityNoise\":{\"fileID\":11400000,\"guid\":\"29912cd5071f7de84a54c8b3129843ad\",\"type\":2},\"_densityThreshold\":0.35,\"_minHeight\":0.25,\"_maxHeight\":0.65,\"_treeObjects\":[\"tree_oak\",\"tree_pine\",\"tree_birch\",\"tree_willow\",\"bush\"],\"_denseForestTile\":\"forest_dense\",\"_sparseForestTile\":\"forest_sparse\",\"_denseThreshold\":0.55,\"_seed\":42}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.MountainScatterNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0008",
+                "position": {
+                    "x": 1500.0,
+                    "y": -30.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"MountainScatterNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.MountainScatterNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd0008\",\"_editorPosition\":{\"x\":1500.0,\"y\":-30.0},\"_layers\":[{\"MinHeight\":0.72,\"MaxHeight\":1.0,\"ObjectId\":\"mountain_large\",\"Density\":0.55},{\"MinHeight\":0.6,\"MaxHeight\":0.72,\"ObjectId\":\"mountain_small\",\"Density\":0.3},{\"MinHeight\":0.48,\"MaxHeight\":0.6,\"ObjectId\":\"rock\",\"Density\":0.18},{\"MinHeight\":0.38,\"MaxHeight\":0.48,\"ObjectId\":\"boulder\",\"Density\":0.08}],\"_seed\":42,\"_avoidExistingObjects\":true}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.MergeObjectMapNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000d",
+                "position": {
+                    "x": 1800.0,
+                    "y": 200.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"MergeObjectMapNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.MergeObjectMapNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd000d\",\"_editorPosition\":{\"x\":1800.0,\"y\":200.0}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectAutoTileNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000e",
+                "position": {
+                    "x": 2100.0,
+                    "y": 200.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ObjectAutoTileNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectAutoTileNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd000e\",\"_editorPosition\":{\"x\":2100.0,\"y\":200.0},\"_rules\":{\"fileID\":11400000,\"guid\":\"aabb0011223344556677889900110002\",\"type\":2}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.POIPlacementNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0009",
+                "position": {
+                    "x": 2100.0,
+                    "y": 400.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"POIPlacementNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.POIPlacementNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd0009\",\"_editorPosition\":{\"x\":2100.0,\"y\":400.0},\"_rules\":[{\"Type\":0,\"ObjectId\":\"castle\",\"Count\":1,\"MinHeight\":0.45,\"MaxHeight\":0.65,\"NearWater\":false,\"MinDistanceFromOthers\":5,\"PreferFlat\":true},{\"Type\":1,\"ObjectId\":\"village\",\"Count\":3,\"MinHeight\":0.28,\"MaxHeight\":0.55,\"NearWater\":true,\"MinDistanceFromOthers\":4,\"PreferFlat\":true}],\"_seed\":42}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.RoadPathNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000a",
+                "position": {
+                    "x": 2400.0,
+                    "y": 80.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"RoadPathNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RoadPathNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd000a\",\"_editorPosition\":{\"x\":2400.0,\"y\":80.0},\"_roadTile\":\"road\",\"_hillPenalty\":5.0,\"_waterPenalty\":30.0,\"_waterTiles\":[\"water_deep\",\"water_shallow\",\"sea\",\"shore\"],\"_connectAllPOIs\":true,\"_roadWidth\":1}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.OutputNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000b",
+                "position": {
+                    "x": 2700.0,
+                    "y": 150.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"OutputNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.OutputNode\",\"_nodeId\":\"f0e1d2c3-b4a5-4687-8901-aabbccdd000b\",\"_editorPosition\":{\"x\":2700.0,\"y\":150.0}}}"
+            }
+        ],
+        "connections": [
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0001",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0002",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0002",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0003",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0003",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0004",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0003",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0004",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0006",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0006",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0007",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0006",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0007",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0008",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0007",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0008",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0006",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000c",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000c",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0008",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000d",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000c",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000d",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000d",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000e",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0009",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0006",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0009",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000e",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0009",
+                "targetPortIndex": 2
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000a",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0007",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000a",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0009",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000a",
+                "targetPortIndex": 2
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0006",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000a",
+                "targetPortIndex": 3
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000a",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000b",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000e",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000b",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0005",
+                "sourcePortIndex": 1,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000b",
+                "targetPortIndex": 2
+            },
+            {
+                "sourceNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd0009",
+                "sourcePortIndex": 0,
+                "targetNodeId": "f0e1d2c3-b4a5-4687-8901-aabbccdd000b",
+                "targetPortIndex": 3
+            }
+        ],
+        "scriptableObjects": [
+            {
+                "originalGuid": "29912cd5071f7de84a54c8b3129843ad",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.API.DataNoiseSettings, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "DataNoiseSettings",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"DataNoiseSettings\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.DataNoiseSettings\",\"Scale\":40.0,\"Octaves\":4,\"Persistance\":0.4200000166893005,\"Lacunarity\":2.1500000953674318,\"Seed\":191,\"Offset\":{\"x\":0.0,\"y\":0.0}}}"
+            },
+            {
+                "originalGuid": "c3d295a14e0ab800893230f6b49661e2",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.API.HeightMapSettings, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "HeightMapSettings",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"HeightMapSettings\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.HeightMapSettings\",\"HeightLayers\":[{\"TileID\":\"water\",\"MinHeight\":0.0,\"MaxHeight\":0.18000000715255738},{\"TileID\":\"sand\",\"MinHeight\":0.18000000715255738,\"MaxHeight\":0.23000000417232514},{\"TileID\":\"grass\",\"MinHeight\":0.23000000417232514,\"MaxHeight\":0.6499999761581421},{\"TileID\":\"highland\",\"MinHeight\":0.6499999761581421,\"MaxHeight\":1.0}]}}"
+            },
+            {
+                "originalGuid": "aabb0011223344556677889900110001",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.API.RiverDataConfig, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "RiverDataConfig",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"RiverDataConfig\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.RiverDataConfig\",\"BaseObjectId\":\"river\",\"MountainWeight\":50.0,\"ForestWeight\":10.0,\"PlainWeight\":1.0,\"EndHeightRange\":{\"x\":0.0,\"y\":0.25},\"StartHeightRange\":{\"x\":0.550000011920929,\"y\":1.0},\"RiversCount\":3,\"MinEdgeDistance\":15}}"
+            },
+            {
+                "originalGuid": "aabb0011223344556677889900110002",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.API.ObjectConnectionRulesSO, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "ObjectConnectionRules",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ObjectConnectionRules\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.ObjectConnectionRulesSO\",\"Groups\":[{\"BaseObjectId\":\"river\",\"FallbackId\":\"river\",\"Variants\":[{\"NeighborMask\":5,\"VariantId\":\"river_vertical\"},{\"NeighborMask\":10,\"VariantId\":\"river_horizontal\"},{\"NeighborMask\":3,\"VariantId\":\"river_corner_ne\"},{\"NeighborMask\":6,\"VariantId\":\"river_corner_se\"},{\"NeighborMask\":12,\"VariantId\":\"river_corner_sw\"},{\"NeighborMask\":9,\"VariantId\":\"river_corner_nw\"},{\"NeighborMask\":7,\"VariantId\":\"river_t_east\"},{\"NeighborMask\":11,\"VariantId\":\"river_t_north\"},{\"NeighborMask\":13,\"VariantId\":\"river_t_west\"},{\"NeighborMask\":14,\"VariantId\":\"river_t_south\"},{\"NeighborMask\":15,\"VariantId\":\"river_cross\"},{\"NeighborMask\":1,\"VariantId\":\"river_end_n\"},{\"NeighborMask\":2,\"VariantId\":\"river_end_e\"},{\"NeighborMask\":4,\"VariantId\":\"river_end_s\"},{\"NeighborMask\":8,\"VariantId\":\"river_end_w\"}]}]}}"
+            },
+            {
+                "originalGuid": "aabb0011223344556677889900110003",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.API.DataNoiseSettings, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "CoastNoiseSettings",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"CoastNoiseSettings\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.DataNoiseSettings\",\"Scale\":28.0,\"Octaves\":4,\"Persistance\":0.5,\"Lacunarity\":2.299999952316284,\"Seed\":307,\"Offset\":{\"x\":0.0,\"y\":0.0}}}"
+            }
+        ]
+    }
+}

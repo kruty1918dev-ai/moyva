@@ -13,84 +13,327 @@ MonoBehaviour:
   m_Name: TileRegistry
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.API.TileRegistrySO
   _definitions:
-  - _id: grass
-    _movementCost: 3
-    _visualPrefab: {fileID: 6734315423058351568, guid: 23151ff9b4d8faa368d78bfe81c8e13d, type: 3}
   - _id: water
-    _movementCost: 3
-    _visualPrefab: {fileID: 6734315423058351568, guid: 1d32aeffc2c9ab6c8a53853a9910a1f3, type: 3}
-  - _id: grass-water-right
-    _movementCost: 3
-    _visualPrefab: {fileID: 949442310665241847, guid: af86cdd70cc081cb4a4031ed18df5030, type: 3}
-  - _id: grass-water-left
-    _movementCost: 3
-    _visualPrefab: {fileID: 6734315423058351568, guid: fc338b01645acb16ebc9065a412671d4, type: 3}
+    _movementCost: 1
+    _visualPrefab: {fileID: 1384669653051272897, guid: 1d32aeffc2c9ab6c8a53853a9910a1f3, type: 3}
+  - _id: grass
+    _movementCost: 1
+    _visualPrefab: {fileID: 8617330532228340915, guid: 23151ff9b4d8faa368d78bfe81c8e13d, type: 3}
+  - _id: forest-sparse
+    _movementCost: 1
+    _visualPrefab: {fileID: 6097099620203038976, guid: fcee0ae92d400f04a9c13b628e41465f, type: 3}
+  - _id: forest-dense
+    _movementCost: 1
+    _visualPrefab: {fileID: 2574010424079311619, guid: d38490c7e15db92efbcd9e52a5042f41, type: 3}
+  - _id: forest
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-ALL
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-E
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-EW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-N
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-NE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-NEW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-NS
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-NSE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-NSW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-S
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-SE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-SEW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-cliff-W
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-NE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-NE-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-NE-SE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-NE-SE-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-NE-SE-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-NE-SE-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-NE-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-NE-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-SE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-SE-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-SE-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-SE-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: forest-corner-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-ALL
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-E
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-EW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-N
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-NE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-NEW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-NS
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-NSE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-NSW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-S
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-SE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-SEW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-cliff-W
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-NE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-NE-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-NE-SE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-NE-SE-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-NE-SE-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-NE-SE-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-NE-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-NE-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-SE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-SE-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-SE-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-SE-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: grass-corner-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-ALL
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-E
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-EW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-N
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-NE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-NEW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-NS
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-NSE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-NSW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-S
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-SE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-SEW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-cliff-W
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-NE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-NE-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-NE-SE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-NE-SE-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-NE-SE-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-NE-SE-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-NE-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-NE-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-SE
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-SE-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-SE-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-SE-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-SW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
+  - _id: water-corner-SW-NW
+    _movementCost: 1
+    _visualPrefab: {fileID: 0}
   - _id: grass-water-bottom
-    _movementCost: 3
-    _visualPrefab: {fileID: 4421351208318634180, guid: 7d6f18580dee77bdabb44ef61f2fcde5, type: 3}
-  - _id: grass-water-top
-    _movementCost: 3
-    _visualPrefab: {fileID: 5527439241181368509, guid: a42ac18776144a02682692c885dc449e, type: 3}
-  - _id: grass-water-bottom-right
-    _movementCost: 3
-    _visualPrefab: {fileID: 1532975592067675626, guid: d54e41e45af525706be7e8d28ccbe613, type: 3}
+    _movementCost: 1
+    _visualPrefab: {fileID: 4507156183373196975, guid: 6f59c631e02571a03ae67af233d62202, type: 3}
   - _id: grass-water-bottom-left
-    _movementCost: 3
-    _visualPrefab: {fileID: 250922695360889972, guid: 6a99bd015b0a3d4eb8e9816ceadf650e, type: 3}
-  - _id: grass-water-top-left
-    _movementCost: 3
-    _visualPrefab: {fileID: 6734315423058351568, guid: bc41c1c8e724a09d0b5ebf3beee8853c, type: 3}
-  - _id: grass-water-top-right
-    _movementCost: 3
-    _visualPrefab: {fileID: 262441894832523651, guid: 0871283034445041d8222307af84c533, type: 3}
-  - _id: grass-water-inner-top-left
-    _movementCost: 3
-    _visualPrefab: {fileID: 6734315423058351568, guid: fce285d3eb6217888bff8aaf02f588af, type: 3}
-  - _id: grass-water-inner-top-right
-    _movementCost: 3
-    _visualPrefab: {fileID: 5056234437187477251, guid: 23a3940263573c5eb8b59360ab687d6c, type: 3}
+    _movementCost: 1
+    _visualPrefab: {fileID: 4118278881326325887, guid: 8d4f4dfa0deb129ebaea3613335aa32b, type: 3}
+  - _id: grass-water-bottom-right
+    _movementCost: 1
+    _visualPrefab: {fileID: 1088226738644388410, guid: 0c3d9e0bbdadd461c8ae3de3e1a7d1cf, type: 3}
   - _id: grass-water-inner-bottom-left
-    _movementCost: 3
-    _visualPrefab: {fileID: 2036493428121953006, guid: a527d13b1e82462179d2bf7aa2968e4d, type: 3}
+    _movementCost: 1
+    _visualPrefab: {fileID: 12383918317676145, guid: d8f3f3ac65b8891008f17d5688ed7878, type: 3}
   - _id: grass-water-inner-bottom-right
-    _movementCost: 3
-    _visualPrefab: {fileID: 3683612289835400984, guid: 75140b0290369f6968721a14de185afa, type: 3}
-  - _id: river-horizontal-01
-    _movementCost: 3
-    _visualPrefab: {fileID: 310738227199521686, guid: a6767524eb55b7cc096a93177c3c2e18, type: 3}
-  - _id: river-horizontal-02
-    _movementCost: 3
-    _visualPrefab: {fileID: 7132266047868219472, guid: c1d4b9180f3285052a3fc24bff2471f9, type: 3}
-  - _id: river-corner-top-left
-    _movementCost: 3
-    _visualPrefab: {fileID: 8784756828996590582, guid: 66eb6df974cee3589a612be683a074d8, type: 3}
-  - _id: river-Horizontal-donw-corner-vertiacal
-    _movementCost: 3
-    _visualPrefab: {fileID: 3684343559904353555, guid: 79a111c7b2f23f89f8a56c86d7f87333, type: 3}
-  - _id: river-vertical-01
-    _movementCost: 3
-    _visualPrefab: {fileID: 7945933892825329453, guid: c31b517eb28d4a860a3b346080afd0be, type: 3}
-  - _id: river-vertical-02
-    _movementCost: 3
-    _visualPrefab: {fileID: 2888476278023598349, guid: 490a5a6d498d7bbaa8a42a271fd62fba, type: 3}
-  - _id: river-vertical-03
-    _movementCost: 3
-    _visualPrefab: {fileID: 8524119552358672184, guid: 2482e0fdd845da81f88a6d72970b50e2, type: 3}
-  - _id: river-vertical-04
-    _movementCost: 3
-    _visualPrefab: {fileID: 356821353113382220, guid: 77a52a7130fcaa6b58f4af6f0076f78a, type: 3}
-  - _id: river-horizontal-03
-    _movementCost: 3
-    _visualPrefab: {fileID: 6044803064817680461, guid: b057b09c014b71cccba1e9d19647acfc, type: 3}
-  - _id: river-horizontal-04
-    _movementCost: 3
-    _visualPrefab: {fileID: 1976594955373497027, guid: f38dad052da425659b81d9556898d229, type: 3}
-  - _id: river-corner-down-left
-    _movementCost: 3
-    _visualPrefab: {fileID: 3474852614485008946, guid: 4810e78cde72a4a43851dabd806c6c8b, type: 3}
-  - _id: river-corner-down-right
-    _movementCost: 3
-    _visualPrefab: {fileID: 2932410949585971521, guid: 5dbd9220eb528e154a92ec3bac7bbd15, type: 3}
-  - _id: river-corner-top-right-01
-    _movementCost: 3
-    _visualPrefab: {fileID: 6143005824625985739, guid: 9c0784dda9042e8ca88983d71512bd4e, type: 3}
+    _movementCost: 1
+    _visualPrefab: {fileID: 750921921374714942, guid: a2e58d97d5d1063ffba0c0fe4aded2bf, type: 3}
+  - _id: grass-water-inner-top-left
+    _movementCost: 1
+    _visualPrefab: {fileID: 5795701900814297913, guid: b9e767a463b238c71807c1a06a0dfc4e, type: 3}
+  - _id: grass-water-inner-top-right
+    _movementCost: 1
+    _visualPrefab: {fileID: 5594803209599506771, guid: f05b5caa11839ff4a9f6e0776c3badee, type: 3}
+  - _id: grass-water-left
+    _movementCost: 1
+    _visualPrefab: {fileID: 626852646936548880, guid: 9e594f2e954cd0edb8c1313ba388be48, type: 3}
+  - _id: grass-water-right
+    _movementCost: 1
+    _visualPrefab: {fileID: 4716023911369345600, guid: fdde62bf58268d6e9bb268c629fc5247, type: 3}
+  - _id: grass-water-top
+    _movementCost: 1
+    _visualPrefab: {fileID: 679031211546158689, guid: c9dfacfd7bc7c9139974e2e8ccc44d52, type: 3}
+  - _id: grass-water-top-left
+    _movementCost: 1
+    _visualPrefab: {fileID: 7848171554230679321, guid: 5fbb082eab636847b892903182d1c49a, type: 3}
+  - _id: grass-water-top-right
+    _movementCost: 1
+    _visualPrefab: {fileID: 6188331041766642613, guid: a8de0c37e1ba085ba8ccb6800c57d5fc, type: 3}
+  - _id: grass-water-top-left-bottom
+    _movementCost: 1
+    _visualPrefab: {fileID: 7178652274115188246, guid: 6cc76dfa68722c1bb83b40c46eef3c11, type: 3}

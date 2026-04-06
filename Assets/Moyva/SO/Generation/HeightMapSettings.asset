@@ -15,7 +15,7 @@ MonoBehaviour:
   HeightLayers:
   - TileID: water
     MinHeight: 0
-    MaxHeight: 0.2
+    MaxHeight: 0.1
   - TileID: grass
-    MinHeight: 0.2
+    MinHeight: 0.1
     MaxHeight: 1
