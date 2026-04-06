@@ -1,5 +1,4 @@
 using Kruty1918.Moyva.SaveSystem;
-using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
@@ -31,6 +30,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public void Initialize()
         {
             _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
+
+            if (!SavePlayModeOptions.AutoLoadEnabled)
+            {
+                Debug.Log("[Bootstrap] Auto Load вимкнено — стартуємо як нову гру.");
+                _shouldSpawnSamples = true;
+                return;
+            }
 
             bool hasSavedWorld = _saveService.HasSave(0) &&
                 _saveInspectorService.HasBlock(0, "Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule");

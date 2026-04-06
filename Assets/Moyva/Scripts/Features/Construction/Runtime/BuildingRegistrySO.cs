@@ -1,10 +1,11 @@
+using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     [CreateAssetMenu(menuName = "Moyva/Construction/BuildingRegistry")]
-    public class BuildingRegistrySO : ScriptableObject
-    {
+    public class BuildingRegistrySO : ScriptableObject, IBuildingRegistry
+    { 
         public API.BuildingDefinition[] Buildings;
 
         /// <summary>Знайти будівлю за її ID. Повертає null якщо не знайдено.</summary>

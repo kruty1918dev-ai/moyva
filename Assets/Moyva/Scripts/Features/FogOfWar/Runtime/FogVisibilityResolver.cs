@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// Based on https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
     /// Falls back to simple circle vision if gridService is null.
     /// </summary>
-    public class FogVisibilityResolver : IFogVisibilityResolver
+    internal sealed class FogVisibilityResolver : IFogVisibilityResolver
     {
         private readonly IGridService _gridService;
 

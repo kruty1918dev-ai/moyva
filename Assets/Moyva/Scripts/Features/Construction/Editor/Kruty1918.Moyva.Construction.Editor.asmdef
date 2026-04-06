@@ -1,0 +1,18 @@
+{
+    "name": "Kruty1918.Moyva.Construction.Editor",
+    "rootNamespace": "Kruty1918.Moyva.Construction.Editor",
+    "references": [
+        "Kruty1918.Moyva.Construction"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

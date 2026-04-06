@@ -24,6 +24,12 @@ namespace Kruty1918.Moyva.Units.Runtime
         {
             if (string.IsNullOrEmpty(typeId)) return null;
 
+            // Fast path for exact type IDs (e.g. "warrior").
+            if (_configByTypeId.TryGetValue(typeId, out var exactConfig))
+            {
+                return exactConfig;
+            }
+
             // 1. "Розумне" очищення: беремо все ДО першого символу '_'
             string baseTypeId = typeId;
             int underscoreIndex = typeId.IndexOf('_');
@@ -39,7 +45,6 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return config;
             }
 
-            Debug.LogError($"[UnitClassConfigService] Конфігурація для '{baseTypeId}' (оригінал: '{typeId}') не знайдена!");
             return null;
         }
     }

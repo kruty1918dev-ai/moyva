@@ -8,6 +8,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
     {
         public override void InstallBindings()
         {
+            Container.BindInterfacesAndSelfTo<TileClickInputService>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<TileInteractionService>()
                 .AsSingle();
         }

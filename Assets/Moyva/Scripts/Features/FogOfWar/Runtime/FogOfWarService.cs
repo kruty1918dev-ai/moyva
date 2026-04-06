@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// Maintains a counter grid (int[,]) and explored flags (bool[,]).
     /// Subscribes to unit signals via Zenject SignalBus.
     /// </summary>
-    public class FogOfWarService : IFogOfWarService, IInitializable, IDisposable
+    internal sealed class FogOfWarService : IFogOfWarService, IInitializable, IDisposable
     {
         private readonly IFogVisibilityResolver _resolver;
         private readonly IFogTextureUpdater     _textureUpdater;
