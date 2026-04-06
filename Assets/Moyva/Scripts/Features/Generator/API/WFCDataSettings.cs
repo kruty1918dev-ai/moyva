@@ -47,5 +47,31 @@ namespace Kruty1918.Moyva.Generator.API
         [Header("Polishing Settings")]
         [Tooltip("Скільки ітерацій полірування пройти")]
         public int PassCount = 1;
+
+        [Header("Near Water Band")]
+        [Tooltip("Перед WFC примусово замінює сушу біля води на вибраний Tile ID. Корисно для стабільного берегового краю (наприклад grass біля water).")]
+        public bool ForceTileNearWaterBand = false;
+
+        [Tooltip("Tile ID, який буде поставлено у смузі біля води.")]
+        [TileId] public string NearWaterTileId = "grass";
+
+        [Tooltip("Радіус смуги біля води в клітинках.")]
+        [Range(1, 6)]
+        public int NearWaterRadius = 1;
+
+        [Tooltip("Якщо увімкнено, радіус смуги рахується з діагоналями (квадратна/8-напрямна околиця).")]
+        public bool IncludeDiagonalsForNearWater = true;
+
+        [Tooltip("Список ID, які вважаються водою для побудови прибережної смуги.")]
+        [TileId] public string[] WaterLikeTileIds =
+        {
+            "water",
+            "sea",
+            "coast",
+            "water-shallow",
+            "water-deep",
+            "lake",
+            "river"
+        };
     }
 }

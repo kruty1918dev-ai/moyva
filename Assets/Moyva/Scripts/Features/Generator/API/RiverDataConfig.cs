@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.API
@@ -6,24 +5,20 @@ namespace Kruty1918.Moyva.Generator.API
     [CreateAssetMenu(menuName = "Moyva/Generator/RiverDataConfig", fileName = "RiverDataConfig")]
     public class RiverDataConfig : ScriptableObject
     {
-        [Header("River Tile Variations")]
-        [MapObjectId] public string[] VerticalTiles;
-        [MapObjectId] public string[] HorizontalTiles;
-        [MapObjectId] public string[] CornerTopRightTiles;
-        [MapObjectId] public string[] CornerTopLeftTiles;
-        [MapObjectId] public string[] CornerBottomRightTiles;
-        [MapObjectId] public string[] CornerBottomLeftTiles;
+        [Tooltip("ID об'єкта, яким буде промальовано русло річки в ObjectMap.")]
+        [MapObjectId] public string BaseObjectId = "river";
 
-        [Header("Pathfinding Weights")]
-        public float MountainWeight = 50f;
-        public float ForestWeight = 10f;
-        public float PlainWeight = 1f;
-        public Vector2 EndHeightRange = new Vector2(0.0f, 0.3f);
-        public Vector2 StartHeightRange = new Vector2(0.6f, 1.0f);
+        [Tooltip("Скільки річок генератор спробує побудувати на карті.")]
+        [Min(1)] public int RiversCount = 1;
 
-        public int RiversCount = 1;
-        
-        [Header("Boundary Settings")]
-        public int MinEdgeDistance = 20;
+        [Header("Path Diversity")]
+        [Tooltip("Штраф за проходження клітинкою, яку вже використовувала інша річка. Більше значення = рідше прямі перетини.")]
+        [Range(0f, 500f)] public float UsedCellPenalty = 120f;
+
+        [Tooltip("Додатковий штраф за близькість до вже прокладених русел у вказаному радіусі.")]
+        [Range(0f, 200f)] public float NearRiverPenalty = 35f;
+
+        [Tooltip("Радіус для штрафу близькості до існуючих річок.")]
+        [Range(0, 4)] public int NearRiverRadius = 1;
     }
 }

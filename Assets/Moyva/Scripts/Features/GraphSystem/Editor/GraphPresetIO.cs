@@ -52,8 +52,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (wrapper.preset == null)
                 throw new InvalidDataException("File does not contain a valid GraphPreset.");
 
-            if (wrapper.preset.version > 1)
-                Debug.LogWarning($"[GraphPresetIO] Preset version {wrapper.preset.version} is newer than supported (1). " +
+            if (wrapper.preset.version > 2)
+                Debug.LogWarning($"[GraphPresetIO] Preset version {wrapper.preset.version} is newer than supported (2). " +
                                  "Some data may not load correctly.");
 
             return wrapper.preset;

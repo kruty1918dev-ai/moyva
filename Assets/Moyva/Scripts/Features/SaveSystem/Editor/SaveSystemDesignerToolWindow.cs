@@ -65,6 +65,8 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
                 "Інструмент для дизайнерів: перегляд/редагування .mvs файлів, блоків, слотів і config.",
                 MessageType.Info);
 
+            DrawPlayModeSaveOptions();
+
             DrawFileSelector();
 
             EditorGUILayout.Space(8);
@@ -92,6 +94,42 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
             DrawKnownBlockInspector();
 
             EditorGUILayout.EndScrollView();
+        }
+
+        private static void DrawPlayModeSaveOptions()
+        {
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Play Mode Save Behavior", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Вимкни Auto Load + Auto Save, щоб кожен запуск Play Mode починався як нова гра.",
+                MessageType.None);
+
+            bool autoLoad = SavePlayModeOptions.AutoLoadEnabled;
+            bool autoSave = SavePlayModeOptions.AutoSaveEnabled;
+
+            bool nextAutoLoad = EditorGUILayout.ToggleLeft("Auto Load (bootstrap)", autoLoad);
+            bool nextAutoSave = EditorGUILayout.ToggleLeft("Auto Save on Exit", autoSave);
+
+            if (nextAutoLoad != autoLoad)
+                SavePlayModeOptions.AutoLoadEnabled = nextAutoLoad;
+            if (nextAutoSave != autoSave)
+                SavePlayModeOptions.AutoSaveEnabled = nextAutoSave;
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Режим: Нова гра в кожному Play"))
+            {
+                SavePlayModeOptions.AutoLoadEnabled = false;
+                SavePlayModeOptions.AutoSaveEnabled = false;
+            }
+
+            if (GUILayout.Button("Режим: Стандартний (load/save)"))
+            {
+                SavePlayModeOptions.AutoLoadEnabled = true;
+                SavePlayModeOptions.AutoSaveEnabled = true;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.EndVertical();
         }
 
         private void DrawFileSelector()
@@ -805,6 +843,7 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
             public float[,] HeightMap;
             public List<string> UniqueBiomeIds = new List<string>();
             public List<(string ObjectId, Vector2Int Position)> ObjectEntries = new List<(string, Vector2Int)>();
+            public List<(string BuildingId, Vector2Int Position)> BuildingEntries = new List<(string, Vector2Int)>();
         }
 
         private static bool TryParseGeneratedWorldBlock(byte[] payload, out GeneratedWorldPreview preview, out string error)
@@ -851,6 +890,18 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
                     for (int y = 0; y < height; y++)
                         heightMap[x, y] = reader.ReadSingle();
 
+                var buildingEntries = new List<(string BuildingId, Vector2Int Position)>();
+                if (stream.Position < stream.Length)
+                {
+                    for (int x = 0; x < width; x++)
+                        for (int y = 0; y < height; y++)
+                        {
+                            string buildingId = reader.ReadString();
+                            if (!string.IsNullOrEmpty(buildingId))
+                                buildingEntries.Add((buildingId, new Vector2Int(x, y)));
+                        }
+                }
+
                 preview = new GeneratedWorldPreview
                 {
                     Width = width,
@@ -858,6 +909,7 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
                     HeightMap = heightMap,
                     UniqueBiomeIds = new List<string>(uniqueBiomeIds),
                     ObjectEntries = objectEntries,
+                    BuildingEntries = buildingEntries,
                 };
 
                 return true;

@@ -1,6 +1,7 @@
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.GraphSystem.Runtime;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Zenject;
@@ -40,6 +41,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (_useGraphGenerator && _graphAsset != null)
             {
                 Container.BindInstance(_graphAsset).AsSingle();
+                Container.Bind<IGraphRunner>().To<GraphRunner>().AsSingle();
                 Container.Bind<IMapDataGenerator>()
                     .To<GraphBasedMapDataGenerator>().AsSingle();
             }
@@ -58,11 +60,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Container.Bind<ISaveModule>().To<GeneratedWorldSaveModule>().AsSingle();
         }
 
-        override public void Start()
+        public override void Start()
         {
             base.Start();
 
-            Container.Resolve<IMapInstantiator>().BuildWorld();
+            try
+            {
+                Debug.Log("[GeneratorInstaller] Старт побудови світу...");
+                Container.Resolve<IMapInstantiator>().BuildWorld();
+                Debug.Log("[GeneratorInstaller] Побудову світу завершено.");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[GeneratorInstaller] BuildWorld впав: {ex}");
+                throw;
+            }
         }
     }
 }

@@ -11,6 +11,15 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 {
     public sealed class GeneratorGraphView : GraphView
     {
+        private const string NodeClipboardPrefix = "MOYVA_NODE_V1:";
+
+        [Serializable]
+        private sealed class ClipboardNodePayload
+        {
+            public string nodeType;
+            public string jsonData;
+        }
+
         private GraphAsset _graphAsset;
         private readonly GraphEditorWindow _window;
         private NodeSearchProvider _searchProvider;
@@ -58,6 +67,112 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         }
 
         public void SetMinimapVisible(bool visible) => _miniMap.visible = visible;
+
+        public bool CopyNodeAsText(GeneratorNodeView nodeView)
+        {
+            if (nodeView == null || nodeView.NodeData == null)
+                return false;
+
+            var payload = new ClipboardNodePayload
+            {
+                nodeType = nodeView.NodeData.GetType().AssemblyQualifiedName,
+                jsonData = EditorJsonUtility.ToJson(nodeView.NodeData)
+            };
+
+            string json = JsonUtility.ToJson(payload);
+            EditorGUIUtility.systemCopyBuffer = NodeClipboardPrefix + json;
+            return true;
+        }
+
+        public bool PasteNodeFromText(Vector2 graphPosition, out string error)
+        {
+            error = null;
+
+            if (_isReadOnly)
+            {
+                error = "Граф у режимі тільки для читання.";
+                return false;
+            }
+
+            if (_graphAsset == null)
+            {
+                error = "GraphAsset не призначено.";
+                return false;
+            }
+
+            string raw = EditorGUIUtility.systemCopyBuffer;
+            if (string.IsNullOrWhiteSpace(raw) || !raw.StartsWith(NodeClipboardPrefix, StringComparison.Ordinal))
+            {
+                error = "У буфері немає валідного тексту ноди Moyva.";
+                return false;
+            }
+
+            string payloadJson = raw.Substring(NodeClipboardPrefix.Length);
+            ClipboardNodePayload payload;
+            try
+            {
+                payload = JsonUtility.FromJson<ClipboardNodePayload>(payloadJson);
+            }
+            catch (Exception ex)
+            {
+                error = $"Помилка читання тексту ноди: {ex.Message}";
+                return false;
+            }
+
+            if (payload == null || string.IsNullOrWhiteSpace(payload.nodeType))
+            {
+                error = "Текст ноди пошкоджений або неповний.";
+                return false;
+            }
+
+            Type nodeType = Type.GetType(payload.nodeType);
+            if (nodeType == null)
+            {
+                error = $"Тип ноди не знайдено: {payload.nodeType}";
+                return false;
+            }
+
+            Undo.RecordObject(_graphAsset, "Paste Node From Text");
+
+            var node = _graphAsset.AddNode(nodeType);
+            if (node == null)
+            {
+                error = "Не вдалося створити ноду цього типу.";
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(payload.jsonData))
+                EditorJsonUtility.FromJsonOverwrite(payload.jsonData, node);
+
+            node.NodeId = Guid.NewGuid().ToString();
+            node.EditorPosition = graphPosition;
+
+            var view = new GeneratorNodeView(node);
+            AddElement(view);
+
+            ClearSelection();
+            AddToSelection(view);
+
+            EditorUtility.SetDirty(_graphAsset);
+            return true;
+        }
+
+        public override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            base.BuildContextualMenu(evt);
+
+            evt.menu.AppendSeparator();
+            evt.menu.AppendAction("Вставити ноду з тексту", _ =>
+            {
+                Vector2 graphPos = this.ChangeCoordinatesTo(contentViewContainer, evt.localMousePosition);
+                if (!PasteNodeFromText(graphPos, out var error) && !string.IsNullOrEmpty(error))
+                {
+                    EditorUtility.DisplayDialog("Вставка ноди", error, "OK");
+                }
+            }, _ => _isReadOnly
+                ? DropdownMenuAction.Status.Disabled
+                : DropdownMenuAction.Status.Normal);
+        }
 
         public override List<Port> GetCompatiblePorts(Port startPort, NodeAdapter nodeAdapter)
         {
@@ -390,6 +505,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 nodesToExport.Select(n => n.NodeId));
 
             var preset = new GraphPreset();
+
+            // Collect referenced ScriptableObjects from all nodes
+            var collectedSOs = new Dictionary<string, ScriptableObject>(); // guid → SO
+
             foreach (var node in nodesToExport)
             {
                 preset.nodes.Add(new NodePresetEntry
@@ -398,6 +517,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     originalNodeId = node.NodeId,
                     position = node.EditorPosition,
                     jsonData = EditorJsonUtility.ToJson(node)
+                });
+
+                CollectSOReferences(node, collectedSOs);
+            }
+
+            foreach (var kvp in collectedSOs)
+            {
+                preset.scriptableObjects.Add(new ScriptableObjectEntry
+                {
+                    originalGuid = kvp.Key,
+                    typeAssemblyQualifiedName = kvp.Value.GetType().AssemblyQualifiedName,
+                    assetName = kvp.Value.name,
+                    jsonData = EditorJsonUtility.ToJson(kvp.Value)
                 });
             }
 
@@ -421,8 +553,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             try
             {
                 GraphPresetIO.WriteToFile(preset, path);
-                Debug.Log($"[GraphPreset] Exported {preset.nodes.Count} node(s) and " +
-                          $"{preset.connections.Count} connection(s) to {path}");
+                Debug.Log($"[GraphPreset] Exported {preset.nodes.Count} node(s), " +
+                          $"{preset.connections.Count} connection(s), " +
+                          $"{preset.scriptableObjects.Count} SO asset(s) to {path}");
             }
             catch (Exception ex)
             {
@@ -448,22 +581,71 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
             }
 
-            var idMap = new Dictionary<string, string>();
-            var newViews = new Dictionary<string, GeneratorNodeView>();
+            // Перший вибір: режим імпорту
+            int modeChoice = EditorUtility.DisplayDialogComplex(
+                "Import Preset",
+                "Оберіть режим імпорту:\n\n" +
+                "• «Замінити» — очистити граф, створити все наново\n" +
+                "• «Модифікувати» — оновити існуючі вузли, додати відсутні",
+                "Замінити",
+                "Скасувати",
+                "Модифікувати");
 
-            // Place imported nodes to the right of the existing graph content
-            float maxX = 100f;
-            foreach (var element in graphElements)
+            if (modeChoice == 1) return; // Cancel
+
+            if (modeChoice == 2)
             {
-                if (element is GeneratorNodeView nv)
-                {
-                    float right = nv.GetPosition().xMax;
-                    if (right > maxX) maxX = right;
-                }
+                MergePresetIntoGraph(preset);
+                return;
             }
-            Vector2 importOffset = new Vector2(maxX + 100f, 0f);
+
+            // --- Оригінальний «Замінити» потік ---
+            bool hasEmbeddedSOs = preset.scriptableObjects != null && preset.scriptableObjects.Count > 0;
+            bool createFromPreset = false;
+
+            if (hasEmbeddedSOs)
+            {
+                int choice = EditorUtility.DisplayDialogComplex(
+                    "Import Preset — SO",
+                    $"Цей пресет містить {preset.scriptableObjects.Count} вбудованих налаштувань " +
+                    "(ScriptableObject): шум, висоти, біоми тощо.\n\n" +
+                    "• «Створити нові» — створити нові SO-ассети з даних пресету\n" +
+                    "• «Використати існуючі» — прив'язати до наявних ассетів проєкту",
+                    "Створити нові",
+                    "Скасувати",
+                    "Використати існуючі");
+
+                if (choice == 1) return;
+                createFromPreset = choice == 0;
+            }
+            else
+            {
+                if (!EditorUtility.DisplayDialog("Import Preset",
+                        "Поточний граф буде очищений і замінений на імпортований пресет.\n\n" +
+                        "SO-посилання будуть прив'язані до існуючих ассетів проєкту.",
+                        "Імпортувати", "Скасувати"))
+                    return;
+            }
 
             Undo.RecordObject(_graphAsset, "Import Graph Preset");
+
+            // --- Clear existing graph (view + asset) ---
+            graphViewChanged -= OnGraphViewChanged;
+            DeleteElements(graphElements.ToList());
+            _graphAsset.ClearAll();
+            graphViewChanged += OnGraphViewChanged;
+
+            // --- Build SO lookup: originalGuid → loaded/created SO ---
+            var soMap = new Dictionary<string, ScriptableObject>();
+            int soCreated = 0;
+
+            if (hasEmbeddedSOs && createFromPreset)
+            {
+                soCreated = CreateSOsFromPreset(preset.scriptableObjects, soMap);
+            }
+
+            var idMap = new Dictionary<string, string>();
+            var newViews = new Dictionary<string, GeneratorNodeView>();
 
             int created = 0;
             int skipped = 0;
@@ -481,17 +663,21 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var node = _graphAsset.AddNode(nodeType);
                 if (node == null) { skipped++; continue; }
 
-                // Assign fresh identity before restoring data so FromJsonOverwrite cannot
-                // clobber the new ID (NodeId setter writes to the backing field)
                 string newId = Guid.NewGuid().ToString();
                 idMap[entry.originalNodeId] = newId;
                 node.NodeId = newId;
-                node.EditorPosition = entry.position + importOffset;
+                node.EditorPosition = entry.position;
 
-                // Restore serialized field values (overwrites position / id, so re-apply below)
+                // Restore serialized field values
                 EditorJsonUtility.FromJsonOverwrite(entry.jsonData, node);
                 node.NodeId = newId;
-                node.EditorPosition = entry.position + importOffset;
+                node.EditorPosition = entry.position;
+
+                // Assign SO references: either from newly created or from existing project assets
+                if (createFromPreset)
+                    AssignSOsFromMap(node, soMap);
+                else
+                    ResolveExistingSOReferences(node);
 
                 var view = new GeneratorNodeView(node);
                 AddElement(view);
@@ -526,18 +712,276 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 imported++;
             }
 
+            AssetDatabase.SaveAssets();
             EditorUtility.SetDirty(_graphAsset);
 
-            Debug.Log($"[GraphPreset] Imported {created} node(s) and {imported} connection(s)" +
-                      (skipped > 0 ? $"; skipped {skipped} unknown type(s)." : "."));
+            var msg = $"Імпортовано {created} вузл(ів), {imported} з'єднань";
+            if (soCreated > 0) msg += $", створено {soCreated} SO-ассет(ів)";
+            if (skipped > 0) msg += $"\nПропущено {skipped} вузл(ів) — типи не знайдені";
+            Debug.Log($"[GraphPreset] {msg}.");
 
             if (skipped > 0)
-                EditorUtility.DisplayDialog("Import Warning",
-                    $"Imported {created} node(s) and {imported} connection(s).\n\n" +
-                    $"Skipped {skipped} node(s) — their types were not found in this project.\n" +
-                    "Check the Console for details.",
-                    "OK");
+                EditorUtility.DisplayDialog("Попередження імпорту", msg, "OK");
         }
+
+        /// <summary>
+        /// Merge preset into existing graph: match nodes by type, update data, add missing, rebuild connections.
+        /// </summary>
+        private void MergePresetIntoGraph(GraphPreset preset)
+        {
+            Undo.RecordObject(_graphAsset, "Merge Graph Preset");
+
+            // Build a pool of existing nodes grouped by type (for 1:1 matching)
+            var existingByType = new Dictionary<string, List<NodeBase>>();
+            foreach (var node in _graphAsset.Nodes)
+            {
+                if (node == null) continue;
+                string typeName = node.GetType().AssemblyQualifiedName;
+                if (!existingByType.TryGetValue(typeName, out var list))
+                {
+                    list = new List<NodeBase>();
+                    existingByType[typeName] = list;
+                }
+                list.Add(node);
+            }
+
+            // Map: preset originalNodeId → actual nodeId in graph
+            var idMap = new Dictionary<string, string>();
+            var allViews = new Dictionary<string, GeneratorNodeView>();
+
+            int updated = 0, added = 0, skipped = 0;
+
+            foreach (var entry in preset.nodes)
+            {
+                var nodeType = Type.GetType(entry.nodeTypeAssemblyQualifiedName);
+                if (nodeType == null)
+                {
+                    Debug.LogWarning($"[GraphPreset Merge] Type not found: {entry.nodeTypeAssemblyQualifiedName}");
+                    skipped++;
+                    continue;
+                }
+
+                string typeName = entry.nodeTypeAssemblyQualifiedName;
+                NodeBase matched = null;
+
+                // Try to match an existing node of the same type
+                if (existingByType.TryGetValue(typeName, out var candidates) && candidates.Count > 0)
+                {
+                    matched = candidates[0];
+                    candidates.RemoveAt(0);
+                }
+
+                if (matched != null)
+                {
+                    // Update existing node — restore field values, keep NodeId
+                    string keepId = matched.NodeId;
+                    EditorJsonUtility.FromJsonOverwrite(entry.jsonData, matched);
+                    matched.NodeId = keepId;
+                    matched.EditorPosition = entry.position;
+                    ResolveExistingSOReferences(matched);
+
+                    idMap[entry.originalNodeId] = keepId;
+                    updated++;
+                }
+                else
+                {
+                    // Add new node
+                    var node = _graphAsset.AddNode(nodeType);
+                    if (node == null) { skipped++; continue; }
+
+                    string newId = Guid.NewGuid().ToString();
+                    node.NodeId = newId;
+                    node.EditorPosition = entry.position;
+
+                    EditorJsonUtility.FromJsonOverwrite(entry.jsonData, node);
+                    node.NodeId = newId;
+                    node.EditorPosition = entry.position;
+                    ResolveExistingSOReferences(node);
+
+                    idMap[entry.originalNodeId] = newId;
+                    added++;
+                }
+            }
+
+            // Rebuild connections: remove old, add from preset
+            graphViewChanged -= OnGraphViewChanged;
+
+            // Remove all existing edge views
+            var existingEdges = edges.ToList();
+            DeleteElements(existingEdges);
+
+            // Clear asset connections
+            var oldConnections = new List<Connection>(_graphAsset.Connections);
+            foreach (var c in oldConnections)
+                _graphAsset.RemoveConnection(c);
+
+            // Rebuild node views
+            var existingNodeViews = nodes.ToList();
+            DeleteElements(existingNodeViews);
+
+            foreach (var node in _graphAsset.Nodes)
+            {
+                if (node == null) continue;
+                var view = new GeneratorNodeView(node);
+                AddElement(view);
+                allViews[node.NodeId] = view;
+            }
+
+            // Restore connections from preset
+            int imported = 0;
+            foreach (var connEntry in preset.connections)
+            {
+                if (!idMap.TryGetValue(connEntry.sourceNodeId, out var srcId)) continue;
+                if (!idMap.TryGetValue(connEntry.targetNodeId, out var tgtId)) continue;
+
+                _graphAsset.AddConnection(srcId, connEntry.sourcePortIndex,
+                    tgtId, connEntry.targetPortIndex);
+
+                if (!allViews.TryGetValue(srcId, out var srcView)) continue;
+                if (!allViews.TryGetValue(tgtId, out var tgtView)) continue;
+
+                var outPort = srcView.GetOutputPort(connEntry.sourcePortIndex);
+                var inPort = tgtView.GetInputPort(connEntry.targetPortIndex);
+                if (outPort != null && inPort != null)
+                {
+                    AddElement(outPort.ConnectTo(inPort));
+                    imported++;
+                }
+            }
+
+            graphViewChanged += OnGraphViewChanged;
+
+            AssetDatabase.SaveAssets();
+            EditorUtility.SetDirty(_graphAsset);
+
+            var msg = $"Модифіковано: оновлено {updated}, додано {added} вузл(ів), {imported} з'єднань";
+            if (skipped > 0) msg += $"\nПропущено {skipped}";
+            Debug.Log($"[GraphPreset Merge] {msg}");
+
+            if (skipped > 0)
+                EditorUtility.DisplayDialog("Попередження", msg, "OK");
+        }
+
+        #region SO Helpers
+
+        private static readonly System.Reflection.BindingFlags SOFieldFlags =
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.NonPublic |
+            System.Reflection.BindingFlags.Public;
+
+        /// <summary>Collect all ScriptableObject references from a node into the dictionary (keyed by asset GUID).</summary>
+        private static void CollectSOReferences(NodeBase node, Dictionary<string, ScriptableObject> collected)
+        {
+            foreach (var field in node.GetType().GetFields(SOFieldFlags))
+            {
+                if (!IsSerializedSOField(field)) continue;
+
+                var so = field.GetValue(node) as ScriptableObject;
+                if (so == null) continue;
+
+                var assetPath = AssetDatabase.GetAssetPath(so);
+                if (string.IsNullOrEmpty(assetPath)) continue;
+
+                var guid = AssetDatabase.AssetPathToGUID(assetPath);
+                if (!string.IsNullOrEmpty(guid))
+                    collected.TryAdd(guid, so);
+            }
+        }
+
+        /// <summary>Create new SO assets from embedded preset data. Returns number created.</summary>
+        private static int CreateSOsFromPreset(List<ScriptableObjectEntry> entries,
+            Dictionary<string, ScriptableObject> soMap)
+        {
+            const string soFolder = "Assets/Moyva/SO/Generation";
+            if (!AssetDatabase.IsValidFolder(soFolder))
+                AssetDatabase.CreateFolder("Assets/Moyva/SO", "Generation");
+
+            int count = 0;
+            foreach (var entry in entries)
+            {
+                var soType = Type.GetType(entry.typeAssemblyQualifiedName);
+                if (soType == null)
+                {
+                    Debug.LogWarning($"[GraphPreset] SO type not found: {entry.typeAssemblyQualifiedName}");
+                    continue;
+                }
+
+                var newSO = ScriptableObject.CreateInstance(soType);
+                newSO.name = entry.assetName;
+
+                // Restore all field values from embedded JSON
+                EditorJsonUtility.FromJsonOverwrite(entry.jsonData, newSO);
+                newSO.name = entry.assetName;
+
+                var assetPath = AssetDatabase.GenerateUniqueAssetPath(
+                    $"{soFolder}/{entry.assetName}.asset");
+                AssetDatabase.CreateAsset(newSO, assetPath);
+
+                soMap[entry.originalGuid] = newSO;
+                count++;
+                Debug.Log($"[GraphPreset] Created SO from preset: {assetPath} (type: {soType.Name})");
+            }
+
+            return count;
+        }
+
+        /// <summary>Assign SO fields on a node using the guid→SO map (for "create new" mode).</summary>
+        private static void AssignSOsFromMap(NodeBase node, Dictionary<string, ScriptableObject> soMap)
+        {
+            foreach (var field in node.GetType().GetFields(SOFieldFlags))
+            {
+                if (!IsSerializedSOField(field)) continue;
+
+                var currentValue = field.GetValue(node) as ScriptableObject;
+                if (currentValue != null) continue;
+
+                // The JSON had a GUID reference that didn't resolve — find it in soMap by type
+                foreach (var kvp in soMap)
+                {
+                    if (field.FieldType.IsInstanceOfType(kvp.Value))
+                    {
+                        field.SetValue(node, kvp.Value);
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>Resolve null SO fields by finding existing assets of matching type in the project.</summary>
+        private static void ResolveExistingSOReferences(NodeBase node)
+        {
+            var nodeType = node.GetType();
+
+            foreach (var field in nodeType.GetFields(SOFieldFlags))
+            {
+                if (!IsSerializedSOField(field)) continue;
+
+                var currentValue = field.GetValue(node) as ScriptableObject;
+                if (currentValue != null) continue;
+
+                var guids = AssetDatabase.FindAssets($"t:{field.FieldType.Name}");
+                if (guids.Length > 0)
+                {
+                    var assetPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                    var existing = AssetDatabase.LoadAssetAtPath(assetPath, field.FieldType);
+                    if (existing != null)
+                    {
+                        field.SetValue(node, existing);
+                        Debug.Log($"[GraphPreset] Resolved {nodeType.Name}.{field.Name} → {assetPath}");
+                    }
+                }
+            }
+        }
+
+        private static bool IsSerializedSOField(System.Reflection.FieldInfo field)
+        {
+            if (!field.IsDefined(typeof(SerializeField), true) && !field.IsPublic)
+                return false;
+            return typeof(ScriptableObject).IsAssignableFrom(field.FieldType) &&
+                   field.FieldType != typeof(ScriptableObject);
+        }
+
+        #endregion
 
         #endregion
 

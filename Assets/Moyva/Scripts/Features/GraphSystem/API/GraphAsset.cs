@@ -68,6 +68,22 @@ namespace Kruty1918.Moyva.GraphSystem.API
             DestroyImmediate(node, true);
             UnityEditor.EditorUtility.SetDirty(this);
         }
+
+        public void ClearAll()
+        {
+            _connections.Clear();
+            for (int i = _nodes.Count - 1; i >= 0; i--)
+            {
+                var node = _nodes[i];
+                if (node != null)
+                {
+                    UnityEditor.AssetDatabase.RemoveObjectFromAsset(node);
+                    DestroyImmediate(node, true);
+                }
+            }
+            _nodes.Clear();
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
 #endif
     }
 }

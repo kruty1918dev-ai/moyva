@@ -1,76 +1,18 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.GraphSystem.Runtime
 {
-    public sealed class GraphExecutionResult
-    {
-        public bool Success { get; }
-        public string ErrorMessage { get; }
-        public string ErrorNodeId { get; }
-        public IReadOnlyList<NodeExecutionLog> Logs => _logs;
-
-        private readonly Dictionary<string, object[]> _nodeOutputs;
-        private readonly List<NodeExecutionLog> _logs;
-
-        internal GraphExecutionResult(Dictionary<string, object[]> nodeOutputs,
-            List<NodeExecutionLog> logs)
-        {
-            _nodeOutputs = nodeOutputs;
-            _logs = logs;
-            Success = true;
-        }
-
-        internal GraphExecutionResult(string errorNodeId, string errorMessage,
-            List<NodeExecutionLog> logs)
-        {
-            _nodeOutputs = new Dictionary<string, object[]>();
-            _logs = logs;
-            Success = false;
-            ErrorNodeId = errorNodeId;
-            ErrorMessage = errorMessage;
-        }
-
-        public object[] GetOutputs(string nodeId) =>
-            _nodeOutputs.TryGetValue(nodeId, out var outputs) ? outputs : null;
-
-        public T GetOutput<T>(string nodeId, int portIndex = 0)
-        {
-            var outputs = GetOutputs(nodeId);
-            if (outputs == null || portIndex >= outputs.Length) return default;
-            return (T)outputs[portIndex];
-        }
-    }
-
-    public sealed class NodeExecutionLog
-    {
-        public string NodeId { get; }
-        public string NodeTitle { get; }
-        public NodeStatus Status { get; }
-        public string Message { get; }
-        public float DurationMs { get; }
-
-        public NodeExecutionLog(string nodeId, string nodeTitle,
-            NodeStatus status, string message, float durationMs)
-        {
-            NodeId = nodeId;
-            NodeTitle = nodeTitle;
-            Status = status;
-            Message = message;
-            DurationMs = durationMs;
-        }
-    }
-
-    public sealed class GraphRunner
+    public sealed class GraphRunner : IGraphRunner
     {
         public GraphExecutionResult Execute(GraphAsset graph, NodeContext context)
         {
             var logs = new List<NodeExecutionLog>();
             var cache = new Dictionary<string, object[]>();
+            var connectionsByTarget = BuildConnectionsByTarget(graph);
 
             List<NodeBase> sorted;
             try
@@ -86,7 +28,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             {
                 context.Cancellation.ThrowIfCancellationRequested();
 
-                var inputs = GatherInputs(node, graph, cache);
+                var inputs = GatherInputs(node, cache, connectionsByTarget);
                 var sw = System.Diagnostics.Stopwatch.StartNew();
 
                 NodeOutput output;
@@ -124,6 +66,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
         {
             var logs = new List<NodeExecutionLog>();
             var cache = new Dictionary<string, object[]>();
+            var connectionsByTarget = BuildConnectionsByTarget(graph);
 
             List<NodeBase> sorted;
             try
@@ -141,7 +84,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 var node = sorted[i];
                 context.Progress?.Report((float)i / sorted.Count);
 
-                var inputs = GatherInputs(node, graph, cache);
+                var inputs = GatherInputs(node, cache, connectionsByTarget);
                 var sw = System.Diagnostics.Stopwatch.StartNew();
 
                 NodeOutput output;
@@ -174,17 +117,19 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             return new GraphExecutionResult(cache, logs);
         }
 
-        private object[] GatherInputs(NodeBase node, GraphAsset graph,
-            Dictionary<string, object[]> cache)
+        private object[] GatherInputs(NodeBase node,
+            Dictionary<string, object[]> cache,
+            Dictionary<string, List<Connection>> connectionsByTarget)
         {
             var portDefs = node.Inputs;
             var inputs = new object[portDefs.Length];
 
-            var connections = graph.Connections;
-            for (int c = 0; c < connections.Count; c++)
+            if (!connectionsByTarget.TryGetValue(node.NodeId, out var incoming))
+                return inputs;
+
+            for (int c = 0; c < incoming.Count; c++)
             {
-                var conn = connections[c];
-                if (conn.TargetNodeId != node.NodeId) continue;
+                var conn = incoming[c];
 
                 if (cache.TryGetValue(conn.SourceNodeId, out var sourceOutputs)
                     && conn.SourcePortIndex < sourceOutputs.Length)
@@ -195,6 +140,26 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             }
 
             return inputs;
+        }
+
+        private static Dictionary<string, List<Connection>> BuildConnectionsByTarget(GraphAsset graph)
+        {
+            var index = new Dictionary<string, List<Connection>>();
+            var connections = graph.Connections;
+
+            for (int i = 0; i < connections.Count; i++)
+            {
+                var connection = connections[i];
+                if (!index.TryGetValue(connection.TargetNodeId, out var list))
+                {
+                    list = new List<Connection>();
+                    index[connection.TargetNodeId] = list;
+                }
+
+                list.Add(connection);
+            }
+
+            return index;
         }
 
         /// <summary>

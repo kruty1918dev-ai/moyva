@@ -21,6 +21,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             title = nodeData.Title;
             viewDataKey = nodeData.NodeId;
 
+            var nodeInfo = Attribute.GetCustomAttribute(nodeData.GetType(), typeof(NodeInfoAttribute)) as NodeInfoAttribute;
+            tooltip = nodeInfo?.Description ?? string.Empty;
+
             // Style
             AddToClassList("generator-node");
 
@@ -99,5 +102,32 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         public GeneratorPort GetOutputPort(int index) =>
             index >= 0 && index < _outputPorts.Count ? _outputPorts[index] : null;
+
+        public override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        {
+            base.BuildContextualMenu(evt);
+
+            evt.menu.AppendSeparator();
+
+            evt.menu.AppendAction("Копіювати ноду як текст", _ =>
+            {
+                var graphView = GetFirstAncestorOfType<GeneratorGraphView>();
+                if (graphView != null && graphView.CopyNodeAsText(this))
+                    Debug.Log($"[Graph] Нода '{title}' скопійована як текст у буфер обміну.");
+            });
+
+            evt.menu.AppendAction("Вставити ноду з тексту", _ =>
+            {
+                var graphView = GetFirstAncestorOfType<GeneratorGraphView>();
+                if (graphView == null) return;
+
+                var rect = GetPosition();
+                var pastePos = new Vector2(rect.x + 40f, rect.y + 40f);
+                if (!graphView.PasteNodeFromText(pastePos, out var error) && !string.IsNullOrEmpty(error))
+                {
+                    EditorUtility.DisplayDialog("Вставка ноди", error, "OK");
+                }
+            });
+        }
     }
 }

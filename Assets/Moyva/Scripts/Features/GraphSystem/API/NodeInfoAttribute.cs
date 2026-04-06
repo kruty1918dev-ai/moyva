@@ -7,11 +7,13 @@ namespace Kruty1918.Moyva.GraphSystem.API
     {
         public string Title { get; }
         public string Category { get; }
+        public string Description { get; }
 
-        public NodeInfoAttribute(string title, string category = "General")
+        public NodeInfoAttribute(string title, string category = "General", string description = null)
         {
             Title = title;
             Category = category;
+            Description = description;
         }
     }
 }
