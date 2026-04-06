@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b1a67d7444faefae99ceea857003e74, type: 3}
+  m_Name: ObjectConnectionRules
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.ObjectConnectionRulesSO
+  Groups:
+  - BaseObjectId: river
+    FallbackId: river
+    Variants:
+    - NeighborMask: 5
+      VariantId: river-vertical
+    - NeighborMask: 10
+      VariantId: river-horizontal
+    - NeighborMask: 3
+      VariantId: river-corner-ne
+    - NeighborMask: 6
+      VariantId: river-corner-se
+    - NeighborMask: 12
+      VariantId: river-corner-sw
+    - NeighborMask: 9
+      VariantId: river-corner-nw
+    - NeighborMask: 7
+      VariantId: river-t-east
+    - NeighborMask: 11
+      VariantId: river-t-north
+    - NeighborMask: 13
+      VariantId: river-t-west
+    - NeighborMask: 14
+      VariantId: river-t-south
+    - NeighborMask: 15
+      VariantId: river-cross

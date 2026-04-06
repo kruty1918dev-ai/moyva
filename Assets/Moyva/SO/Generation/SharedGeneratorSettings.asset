@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06fbbced0185792c1b29f6e4f9d69872, type: 3}
+  m_Name: SharedGeneratorSettings
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.SharedGeneratorSettingsSO
+  _waterLikeTileIds:
+  - water
+  _riverBaseObjectId: river
+  _separator: 45
+  _matchBaseTypes: 1

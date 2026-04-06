@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-9055592834848844893
+--- !u!114 &-8602289470833621846
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f66dde274d8e00f4b8ce49454575e10a, type: 3}
   m_Name: OutputNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.OutputNode
-  _nodeId: 59aa5c51-8556-4a00-9c3b-13a159824419
-  _editorPosition: {x: 414, y: 306}
---- !u!114 &-1405816773337223776
+  _nodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
+  _editorPosition: {x: 2744, y: 108}
+--- !u!114 &-8338458835910421542
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -23,13 +23,63 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f9b103a4741edc237b84b1c8805282c3, type: 3}
-  m_Name: HeightToTileNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.HeightToTileNode
-  _nodeId: 08688aae-1f5a-400f-981a-65c57874c786
-  _editorPosition: {x: 327, y: 178}
-  _heightMapSettings: {fileID: 0}
---- !u!114 &-491450750803602393
+  m_Script: {fileID: 11500000, guid: e1eba1b01631655af8c4070c80af81e9, type: 3}
+  m_Name: ObjectAutoTileNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectAutoTileNode
+  _nodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
+  _editorPosition: {x: 2668, y: 403}
+  _rules: {fileID: 11400000, guid: 383706c016f2e3cd9953b8a5fd2bdfd7, type: 2}
+  _excludeObjectPrefixes:
+  - river-outlet
+  _separator: 45
+--- !u!114 &-7084966060804210501
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81f161bbad48b18679208f7da46d66cd, type: 3}
+  m_Name: MergeObjectMapNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.MergeObjectMapNode
+  _nodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
+  _editorPosition: {x: 1838, y: 350}
+--- !u!114 &-6657117628486784735
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffa4aef3b4be320b4bff096ea4b7c5b8, type: 3}
+  m_Name: RiverToWaterOutletNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.RiverToWaterOutletNode
+  _nodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
+  _editorPosition: {x: 2548, y: 400}
+  _riverBaseObjectId: river
+  _matchBaseRiverType: 1
+  _objectSeparator: 45
+  _waterLikeTileIds: []
+  _matchBaseWaterType: 1
+  _maxSearchDistance: 96
+  _allowDiagonalPath: 0
+  _overwriteObjectsOnPath: 0
+  _pathRiverObjectId: river
+  _defaultOutletObjectId: river-outlet
+  _directionalOutletRules:
+  - Direction: 0
+    OutletObjectId: river-outlet-n
+  - Direction: 1
+    OutletObjectId: river-outlet-e
+  - Direction: 2
+    OutletObjectId: river-outlet-s
+  - Direction: 3
+    OutletObjectId: river-outlet-w
+--- !u!114 &-4353351513909256736
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -41,9 +91,129 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a469f76d749735ec7b56f769028c321d, type: 3}
   m_Name: HeightSourceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.HeightSourceNode
-  _nodeId: c17ff991-4786-4344-9199-800ddc1f89b0
-  _editorPosition: {x: 110, y: 178}
-  _noiseSettings: {fileID: 0}
+  _nodeId: 9e153028-994c-43bd-ab66-200e639bc754
+  _editorPosition: {x: -400, y: 151}
+  _noiseSettings: {fileID: 11400000, guid: 3dc2da72d9b24f1e0a3b993cb9f44a13, type: 2}
+--- !u!114 &-3964688717336489773
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 363daa2e2947cf2dd98450cc0d555bf3, type: 3}
+  m_Name: SharedSettingsNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.SharedSettingsNode
+  _nodeId: 98b48c8b-ade4-45c6-8b23-0009c6855cf5
+  _editorPosition: {x: -400, y: -50}
+  _settings: {fileID: 11400000, guid: de6891e3535a0753ba37103d6e8bc936, type: 2}
+--- !u!114 &-3083299416676339975
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a2ecd74600d05bbdba68d8d24fd482d, type: 3}
+  m_Name: MaskNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.MaskNode
+  _nodeId: 031ba7c8-f341-41a4-858d-af68db64bb33
+  _editorPosition: {x: 900, y: 400}
+  _comparison: 2
+  _threshold: 0.3
+  _upperThreshold: 0.7
+--- !u!114 &-2093333369695154509
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fcf9c3147b45905e925b2dea6ebf2e0, type: 3}
+  m_Name: ObjectTileExclusionNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectTileExclusionNode
+  _nodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
+  _editorPosition: {x: 2351, y: 224}
+  _rules:
+  - TargetTileId: water
+    OnlyIfNearWater: 0
+    ExclusionMode: 1
+    ForbiddenObjectIds: []
+  - TargetTileId: grass
+    OnlyIfNearWater: 1
+    ExclusionMode: 2
+    ForbiddenObjectIds:
+    - river
+    - river-outlet
+    - river-outlet-n
+    - river-outlet-e
+    - river-outlet-s
+    - river-outlet-w
+  _matchBaseTileType: 1
+  _matchBaseObjectType: 1
+  _tileSeparator: 45
+  _waterLikeTileIds: []
+  _waterNeighborRadius: 1
+  _includeDiagonalWaterNeighbors: 1
+--- !u!114 &-1777979022269502339
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffa4aef3b4be320b4bff096ea4b7c5b8, type: 3}
+  m_Name: RiverToWaterOutletNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.RiverToWaterOutletNode
+  _nodeId: 17725292-307c-4a4a-96b0-3249ee01a899
+  _editorPosition: {x: 1586, y: 401}
+  _riverBaseObjectId: river
+  _matchBaseRiverType: 1
+  _objectSeparator: 45
+  _waterLikeTileIds: []
+  _matchBaseWaterType: 1
+  _maxSearchDistance: 96
+  _allowDiagonalPath: 0
+  _overwriteObjectsOnPath: 1
+  _pathRiverObjectId: river
+  _defaultOutletObjectId: 
+  _directionalOutletRules: []
+--- !u!114 &-637788932830468543
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1bbf19b4e070494dbc234fb174a7db7, type: 3}
+  m_Name: ForestClusterNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ForestClusterNode
+  _nodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+  _editorPosition: {x: 1200, y: 100}
+  _densityNoise: {fileID: 11400000, guid: 3dc2da72d9b24f1e0a3b993cb9f44a13, type: 2}
+  _densityThreshold: 0.4
+  _minHeight: 0.23
+  _maxHeight: 0.8
+  _treeObjects:
+  - tree-oak
+  - tree-pine
+  - bush
+  _denseForestTile: forest-dense
+  _sparseForestTile: forest-sparse
+  _denseThreshold: 0.6
+  _seed: 42
+  _minForestNeighborsForTree: 2
+  _treeDensityExponent: 1.2
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -57,8 +227,271 @@ MonoBehaviour:
   m_Name: GeneratorGraph
   m_EditorClassIdentifier: Kruty1918.Moyva.GraphSystem::Kruty1918.Moyva.GraphSystem.API.GraphAsset
   _nodes:
-  - {fileID: -491450750803602393}
-  - {fileID: -1405816773337223776}
-  - {fileID: -9055592834848844893}
-  _connections: []
+  - {fileID: -4353351513909256736}
+  - {fileID: 7416864558252163659}
+  - {fileID: -8602289470833621846}
+  - {fileID: 6196857447019223289}
+  - {fileID: 9153540141703597084}
+  - {fileID: 1588712245531615232}
+  - {fileID: 2150266364944049067}
+  - {fileID: 5711163357783835068}
+  - {fileID: -3083299416676339975}
+  - {fileID: -637788932830468543}
+  - {fileID: -7084966060804210501}
+  - {fileID: 990565413746460129}
+  - {fileID: 9041462927370201531}
+  - {fileID: -2093333369695154509}
+  - {fileID: -1777979022269502339}
+  - {fileID: -6657117628486784735}
+  - {fileID: -8338458835910421542}
+  - {fileID: -3964688717336489773}
+  _connections:
+  - _sourceNodeId: 9e153028-994c-43bd-ab66-200e639bc754
+    _sourcePortIndex: 0
+    _targetNodeId: 1c667af2-fa83-4a75-9106-844fdfe3c0c3
+    _targetPortIndex: 0
+  - _sourceNodeId: 1c667af2-fa83-4a75-9106-844fdfe3c0c3
+    _sourcePortIndex: 0
+    _targetNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _targetPortIndex: 0
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: c6167af5-c3f0-44c0-bfc5-8694dc3b63ae
+    _targetPortIndex: 0
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: 142239be-0529-4bbe-b745-44e82de7a5c7
+    _targetPortIndex: 0
+  - _sourceNodeId: c6167af5-c3f0-44c0-bfc5-8694dc3b63ae
+    _sourcePortIndex: 0
+    _targetNodeId: 142239be-0529-4bbe-b745-44e82de7a5c7
+    _targetPortIndex: 1
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
+    _targetPortIndex: 0
+  - _sourceNodeId: 142239be-0529-4bbe-b745-44e82de7a5c7
+    _sourcePortIndex: 0
+    _targetNodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
+    _targetPortIndex: 1
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: 031ba7c8-f341-41a4-858d-af68db64bb33
+    _targetPortIndex: 0
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _targetPortIndex: 0
+  - _sourceNodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
+    _sourcePortIndex: 0
+    _targetNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _targetPortIndex: 1
+  - _sourceNodeId: 031ba7c8-f341-41a4-858d-af68db64bb33
+    _sourcePortIndex: 0
+    _targetNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _targetPortIndex: 2
+  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _sourcePortIndex: 0
+    _targetNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
+    _targetPortIndex: 0
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
+    _targetPortIndex: 1
+  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _sourcePortIndex: 1
+    _targetNodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
+    _targetPortIndex: 0
+  - _sourceNodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
+    _sourcePortIndex: 0
+    _targetNodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
+    _targetPortIndex: 0
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
+    _targetPortIndex: 2
+  - _sourceNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
+    _sourcePortIndex: 0
+    _targetNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
+    _targetPortIndex: 0
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
+    _targetPortIndex: 1
+  - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
+    _sourcePortIndex: 0
+    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
+    _targetPortIndex: 0
+  - _sourceNodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
+    _sourcePortIndex: 0
+    _targetNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
+    _targetPortIndex: 1
+  - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
+    _sourcePortIndex: 0
+    _targetNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
+    _targetPortIndex: 0
+  - _sourceNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
+    _sourcePortIndex: 0
+    _targetNodeId: 17725292-307c-4a4a-96b0-3249ee01a899
+    _targetPortIndex: 0
+  - _sourceNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
+    _sourcePortIndex: 1
+    _targetNodeId: 17725292-307c-4a4a-96b0-3249ee01a899
+    _targetPortIndex: 1
+  - _sourceNodeId: 17725292-307c-4a4a-96b0-3249ee01a899
+    _sourcePortIndex: 0
+    _targetNodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
+    _targetPortIndex: 1
+  - _sourceNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
+    _sourcePortIndex: 0
+    _targetNodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
+    _targetPortIndex: 1
+  - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
+    _sourcePortIndex: 0
+    _targetNodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
+    _targetPortIndex: 0
+  - _sourceNodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
+    _sourcePortIndex: 0
+    _targetNodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
+    _targetPortIndex: 0
+  - _sourceNodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
+    _sourcePortIndex: 0
+    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
+    _targetPortIndex: 1
   _version: 1
+--- !u!114 &990565413746460129
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1eba1b01631655af8c4070c80af81e9, type: 3}
+  m_Name: ObjectAutoTileNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectAutoTileNode
+  _nodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
+  _editorPosition: {x: 2062, y: 363}
+  _rules: {fileID: 11400000, guid: 383706c016f2e3cd9953b8a5fd2bdfd7, type: 2}
+  _excludeObjectPrefixes:
+  - river-outlet
+  _separator: 45
+--- !u!114 &1588712245531615232
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1fd2e06fead249bab92989df5c8e5e08, type: 3}
+  m_Name: RiverNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.RiverNode
+  _nodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
+  _editorPosition: {x: 1500, y: 250}
+  _baseObjectId: river
+  _riversCount: 3
+  _usedCellPenalty: 120
+  _nearRiverPenalty: 35
+  _nearRiverRadius: 1
+--- !u!114 &2150266364944049067
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46f67ce08e63239eea7b7d30347e9bf7, type: 3}
+  m_Name: ErosionNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ErosionNode
+  _nodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+  _editorPosition: {x: 100, y: 150}
+  _erosionRate: 0.02
+  _iterations: 20
+  _talusAngle: 0.03
+--- !u!114 &5711163357783835068
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d0c2c35e1ab2c2f3bb025a759ae64b4, type: 3}
+  m_Name: BiomeResolverNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.BiomeResolverNode
+  _nodeId: 142239be-0529-4bbe-b745-44e82de7a5c7
+  _editorPosition: {x: 601, y: 50}
+  _biomesSettings: {fileID: 11400000, guid: 61667c86198a4161b96bd05257abedf0, type: 2}
+--- !u!114 &6196857447019223289
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9b103a4741edc237b84b1c8805282c3, type: 3}
+  m_Name: HeightToTileNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.HeightToTileNode
+  _nodeId: c6167af5-c3f0-44c0-bfc5-8694dc3b63ae
+  _editorPosition: {x: 350, y: 0}
+  _heightMapSettings: {fileID: 11400000, guid: d9ae4edf61a2041109744a6c8a7ab13e, type: 2}
+--- !u!114 &7416864558252163659
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 889d4cbf6fe180ead968533c394389c0, type: 3}
+  m_Name: SmoothNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.SmoothNode
+  _nodeId: 1c667af2-fa83-4a75-9106-844fdfe3c0c3
+  _editorPosition: {x: -150, y: 151}
+  _radius: 2
+  _iterations: 4
+--- !u!114 &9041462927370201531
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e2523f701ac02af79efd1c8c58149aa, type: 3}
+  m_Name: ConstraintPolishNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ConstraintPolishNode
+  _nodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
+  _editorPosition: {x: 1897, y: 57}
+  _wfcSettings: {fileID: 11400000, guid: fea7d1c6ea24608b2b4e75e082c67e84, type: 2}
+--- !u!114 &9153540141703597084
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 198f32f3a568c0ba4b97c2888be4a386, type: 3}
+  m_Name: LakeGenerationNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.LakeGenerationNode
+  _nodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
+  _editorPosition: {x: 900, y: 100}
+  _waterLevel: 0.3
+  _minLakeSize: 4
+  _onlyGenerateOnLand: 1
+  _deepWaterTile: water
+  _shallowWaterTile: water
+  _shallowDepth: 0.05
+  _shoreTile: 

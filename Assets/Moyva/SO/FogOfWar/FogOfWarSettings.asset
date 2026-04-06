@@ -15,5 +15,5 @@ MonoBehaviour:
   DefaultVisionRange: 3
   MinVisionRange: 1
   MaxVisionRange: 12
-  UnexploredColor: {r: 0, g: 0, b: 0, a: 0}
-  ExploredColor: {r: 0, g: 0, b: 0, a: 0}
+  UnexploredColor: {r: 0, g: 0, b: 0, a: 1}
+  ExploredColor: {r: 0, g: 0, b: 0, a: 0.4627451}

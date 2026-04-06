@@ -19,7 +19,8 @@ MonoBehaviour:
     - Direction: 6
       AllowedNeighbors:
       - water
-    Priority: 2
+      - grass-water-top-left-bottom
+    Priority: 5
     MatchThreshold: 1
   - TileID: grass-water-left
     TileCentralID: grass
@@ -27,7 +28,8 @@ MonoBehaviour:
     - Direction: 2
       AllowedNeighbors:
       - water
-    Priority: 1
+      - grass-water-top-left-bottom
+    Priority: 5
     MatchThreshold: 1
   - TileID: grass-water-bottom
     TileCentralID: grass
@@ -35,7 +37,8 @@ MonoBehaviour:
     - Direction: 0
       AllowedNeighbors:
       - water
-    Priority: 2
+      - grass-water-top-left-bottom
+    Priority: 5
     MatchThreshold: 1
   - TileID: grass-water-top
     TileCentralID: grass
@@ -43,7 +46,8 @@ MonoBehaviour:
     - Direction: 4
       AllowedNeighbors:
       - water
-    Priority: 2
+      - grass-water-top-left-bottom
+    Priority: 5
     MatchThreshold: 1
   - TileID: grass-water-top-left
     TileCentralID: grass
@@ -51,24 +55,12 @@ MonoBehaviour:
     - Direction: 0
       AllowedNeighbors:
       - grass
-    - Direction: 4
-      AllowedNeighbors:
-      - grass
     - Direction: 6
-      AllowedNeighbors:
-      - grass
-    - Direction: 2
-      AllowedNeighbors:
-      - grass
-    - Direction: 5
       AllowedNeighbors:
       - grass
     - Direction: 3
       AllowedNeighbors:
       - water
-    - Direction: 1
-      AllowedNeighbors:
-      - grass
     - Direction: 7
       AllowedNeighbors:
       - grass
@@ -80,12 +72,6 @@ MonoBehaviour:
     - Direction: 5
       AllowedNeighbors:
       - water
-    - Direction: 6
-      AllowedNeighbors:
-      - grass
-    - Direction: 4
-      AllowedNeighbors:
-      - grass
     - Direction: 0
       AllowedNeighbors:
       - grass
@@ -93,12 +79,6 @@ MonoBehaviour:
       AllowedNeighbors:
       - grass
     - Direction: 2
-      AllowedNeighbors:
-      - grass
-    - Direction: 3
-      AllowedNeighbors:
-      - grass
-    - Direction: 7
       AllowedNeighbors:
       - grass
     Priority: 2
@@ -109,16 +89,13 @@ MonoBehaviour:
     - Direction: 1
       AllowedNeighbors:
       - water
-    - Direction: 0
-      AllowedNeighbors:
-      - grass
     - Direction: 6
       AllowedNeighbors:
       - grass
     - Direction: 4
       AllowedNeighbors:
       - grass
-    - Direction: 2
+    - Direction: 5
       AllowedNeighbors:
       - grass
     Priority: 2
@@ -129,6 +106,7 @@ MonoBehaviour:
     - Direction: 7
       AllowedNeighbors:
       - water
+      - grass-water-top-left-bottom
     - Direction: 0
       AllowedNeighbors:
       - water
@@ -149,22 +127,10 @@ MonoBehaviour:
     - Direction: 4
       AllowedNeighbors:
       - grass
-    - Direction: 0
-      AllowedNeighbors:
-      - grass
-    - Direction: 6
-      AllowedNeighbors:
-      - grass
     - Direction: 2
       AllowedNeighbors:
       - grass
     - Direction: 3
-      AllowedNeighbors:
-      - grass
-    - Direction: 1
-      AllowedNeighbors:
-      - grass
-    - Direction: 5
       AllowedNeighbors:
       - grass
     Priority: 2
@@ -175,6 +141,7 @@ MonoBehaviour:
     - Direction: 3
       AllowedNeighbors:
       - water
+      - grass-water-top-left-bottom
     - Direction: 7
       AllowedNeighbors:
       - grass
@@ -192,6 +159,7 @@ MonoBehaviour:
     - Direction: 5
       AllowedNeighbors:
       - water
+      - grass-water-top-left-bottom
     - Direction: 1
       AllowedNeighbors:
       - grass
@@ -215,9 +183,45 @@ MonoBehaviour:
     - Direction: 1
       AllowedNeighbors:
       - water
+      - grass-water-top-left-bottom
     - Direction: 5
       AllowedNeighbors:
       - grass
     Priority: 100
     MatchThreshold: 1
-  PassCount: 1
+  - TileID: grass-water-top-left-bottom
+    TileCentralID: grass
+    Constraints:
+    - Direction: 6
+      AllowedNeighbors:
+      - grass
+    - Direction: 0
+      AllowedNeighbors:
+      - water
+    - Direction: 2
+      AllowedNeighbors:
+      - water
+    - Direction: 1
+      AllowedNeighbors:
+      - water
+    - Direction: 3
+      AllowedNeighbors:
+      - water
+    - Direction: 4
+      AllowedNeighbors:
+      - water
+    Priority: 110
+    MatchThreshold: 1
+  PassCount: 5
+  ForceTileNearWaterBand: 1
+  NearWaterTileId: grass
+  NearWaterRadius: 2
+  IncludeDiagonalsForNearWater: 1
+  WaterLikeTileIds:
+  - water
+  - sea
+  - coast
+  - water-shallow
+  - water-deep
+  - lake
+  - river
