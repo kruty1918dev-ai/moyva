@@ -22,6 +22,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             WriteStringMap(context, data.BiomeMap, data.Width, data.Height);
             WriteStringMap(context, data.ObjectMap, data.Width, data.Height);
             WriteFloatMap(context, data.HeightMap, data.Width, data.Height);
+            WriteStringMap(context, data.BuildingMap, data.Width, data.Height);
         }
 
         public void OnLoad(ISaveContext context)
@@ -39,6 +40,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BiomeMap = ReadStringMap(context, width, height),
                 ObjectMap = ReadStringMap(context, width, height),
                 HeightMap = ReadFloatMap(context, width, height),
+                BuildingMap = ReadStringMap(context, width, height),
             };
 
             _mapVisualInstantiator.SetPendingWorldData(data);

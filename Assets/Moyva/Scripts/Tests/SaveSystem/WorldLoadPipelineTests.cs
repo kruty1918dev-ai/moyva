@@ -48,14 +48,15 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
         {
             public bool WasGenerateCalled;
 
-            public void GenerateMapData(int width, int height, System.Action<string[,], string[,], float[,]> onComplete)
+            public void GenerateMapData(int width, int height, System.Action<string[,], string[,], float[,], string[,]> onComplete)
             {
                 WasGenerateCalled = true;
 
                 var biomes = new string[width, height];
                 var objects = new string[width, height];
                 var heights = new float[width, height];
-                onComplete?.Invoke(biomes, objects, heights);
+                var buildings = new string[width, height];
+                onComplete?.Invoke(biomes, objects, heights, buildings);
             }
         }
 
@@ -155,7 +156,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             var container = new DiContainer();
             container.Inject(tileRegistry);
 
-            var instantiator = new MapVisualInstantiator(tileRegistry, null, null, null, grid, dataGenerator, container, _signalBus);
+            var instantiator = new MapVisualInstantiator(tileRegistry, null, null, null, null, grid, dataGenerator, container, _signalBus);
             instantiator.Initialize();
 
             var sourceWorld = new GeneratedWorldData
@@ -185,7 +186,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             var freshGrid = new FakeGridService(2, 2);
             var freshGenerator = new FakeMapDataGenerator();
             var freshContainer = new DiContainer();
-            var freshInstantiator = new MapVisualInstantiator(tileRegistry, null, null, null, freshGrid, freshGenerator, freshContainer, _signalBus);
+            var freshInstantiator = new MapVisualInstantiator(tileRegistry, null, null, null, null, freshGrid, freshGenerator, freshContainer, _signalBus);
             freshInstantiator.Initialize();
 
             var loadWorldModule = new GeneratedWorldSaveModule(freshInstantiator);

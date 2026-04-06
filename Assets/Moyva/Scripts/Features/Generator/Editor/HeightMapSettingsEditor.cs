@@ -41,7 +41,21 @@ namespace Kruty1918.Moyva.Generator.Editor
             }
         }
 
+        private static HashSet<string> _cachedKnownIds;
+        private static double _knownIdsTime;
+
         private static HashSet<string> LoadKnownTileIds()
+        {
+            double now = EditorApplication.timeSinceStartup;
+            if (_cachedKnownIds != null && now - _knownIdsTime < 2.0)
+                return _cachedKnownIds;
+
+            _cachedKnownIds = LoadKnownTileIdsInternal();
+            _knownIdsTime = now;
+            return _cachedKnownIds;
+        }
+
+        private static HashSet<string> LoadKnownTileIdsInternal()
         {
             var result = new HashSet<string>();
             string[] guids = AssetDatabase.FindAssets("t:TileRegistrySO");

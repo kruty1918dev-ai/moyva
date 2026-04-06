@@ -37,9 +37,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         // Інтерфейс тепер має повертати IEnumerator або використовувати Callbacks
-        public void GenerateMapData(int width, int height, Action<string[,], string[,], float[,]> onComplete)
+        public void GenerateMapData(int width, int height, Action<string[,], string[,], float[,], string[,]> onComplete)
         {
-            string[,] objectMap = new string[width, height]; // Додано для зберігання об'єктів (наприклад, річок)
+            var previousRandomState = UnityEngine.Random.state;
+            UnityEngine.Random.InitState(_noiseSettings.Seed);
+
+            try
+            {
+            string[,] objectMap = new string[width, height];
+            string[,] buildingMap = new string[width, height];
             float[,] heightMap = _noiseProvider.GenerateNoiseMap(_noiseSettings, width, height);
             
             string[,] virtualMap = null;
@@ -59,7 +65,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 foreach (var featureGen in _featureGenerators)
                 {
-                    // Тут ми можемо використовувати UnityEngine.Random!
+                    // Runtime feature generators may use UnityEngine.Random;
+                    // seeding above keeps runs deterministic.
                     featureGen.ApplyFeatures(virtualMap, objectMap, heightMap, width, height);
 
                 }
@@ -70,7 +77,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 _wfcService.Apply(virtualMap, heightMap);
             }
 
-            onComplete?.Invoke(virtualMap, objectMap, heightMap);
+            onComplete?.Invoke(virtualMap, objectMap, heightMap, buildingMap);
+            }
+            finally
+            {
+                UnityEngine.Random.state = previousRandomState;
+            }
         }
     }
 }

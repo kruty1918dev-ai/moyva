@@ -11,11 +11,4 @@ namespace Kruty1918.Moyva.Generator.API
         public string Id => _id;
         public GameObject VisualPrefab => _visualPrefab;
     }
-
-    [CreateAssetMenu(fileName = "MapObjectRegistry", menuName = "Moyva/Generator/MapObjectRegistry")]
-    public class MapObjectRegistrySO : ScriptableObject
-    {
-        [SerializeField] private MapObjectDefinition[] _definitions;
-        public MapObjectDefinition[] Definitions => _definitions;
-    }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Units.API;
@@ -11,16 +12,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal sealed class MapVisualInstantiator : IMapInstantiator, IInitializable
     {
+        private const int ObjectLayerSortingOrder = 10;
+
         private readonly IGridService _gridService;
         private readonly IMapDataGenerator _mapDataGenerator;
         private readonly TileRegistrySO _tileRegistry;
         private readonly IMapObjectRegistryService _objectRegistry;
         private readonly IUnitClassConfig _unitClassConfig;
         private readonly IUnitFactory _unitFactory;
+        private readonly IBuildingRegistry _buildingRegistry;
         private readonly DiContainer _container;
 
         private Transform _tilesRoot;
-        private Transform _objectsRoot; // Окремий корінь для об'єктів (річок тощо)
+        private Transform _objectsRoot;
+        private Transform _buildingsRoot;
         private readonly Dictionary<string, TileTypeDefinition> _definitionsCache = new();
         private readonly SignalBus _signalBus;
         private GeneratedWorldData _currentWorldData;
@@ -31,6 +36,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IMapObjectRegistryService objectRegistry,
             [InjectOptional] IUnitClassConfig unitClassConfig,
             [InjectOptional] IUnitFactory unitFactory,
+            [InjectOptional] IBuildingRegistry buildingRegistry,
             IGridService gridService,
             IMapDataGenerator mapDataGenerator,
             DiContainer container,
@@ -40,6 +46,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _objectRegistry = objectRegistry;
             _unitClassConfig = unitClassConfig;
             _unitFactory = unitFactory;
+            _buildingRegistry = buildingRegistry;
             _gridService = gridService;
             _mapDataGenerator = mapDataGenerator;
             _container = container;
@@ -83,15 +90,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
             string[,] virtualBiomeMap = null;
             string[,] virtualObjectMap = null;
             float[,] finalHeightMap = null;
+            string[,] virtualBuildingMap = null;
 
             _mapDataGenerator.GenerateMapData(
                 _gridService.GridWidth,
                 _gridService.GridHeight,
-                (biomes, objects, heightMap) =>
+                (biomes, objects, heightMap, buildings) =>
                 {
                     virtualBiomeMap = biomes;
                     virtualObjectMap = objects;
                     finalHeightMap = heightMap;
+                    virtualBuildingMap = buildings;
                 });
 
             return new GeneratedWorldData
@@ -101,6 +110,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BiomeMap = virtualBiomeMap,
                 ObjectMap = virtualObjectMap,
                 HeightMap = finalHeightMap,
+                BuildingMap = virtualBuildingMap,
             };
         }
 
@@ -109,6 +119,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             EnsureRoots();
             ClearRoot(_tilesRoot);
             ClearRoot(_objectsRoot);
+            ClearRoot(_buildingsRoot);
 
             for (int x = 0; x < worldData.Width; x++)
             {
@@ -125,6 +136,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     {
                         CreateObjectLayerEntity(pos, objectId);
                     }
+
+                    if (worldData.BuildingMap != null)
+                    {
+                        string buildingId = worldData.BuildingMap[x, y];
+                        if (!string.IsNullOrEmpty(buildingId))
+                        {
+                            CreateBuildingView(pos, buildingId);
+                        }
+                    }
                 }
             }
 
@@ -136,6 +156,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             if (_tilesRoot == null) _tilesRoot = new GameObject("TilesRoot").transform;
             if (_objectsRoot == null) _objectsRoot = new GameObject("ObjectsRoot").transform;
+            if (_buildingsRoot == null) _buildingsRoot = new GameObject("BuildingsRoot").transform;
         }
 
         private static void ClearRoot(Transform root)
@@ -219,12 +240,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
+            if (objectDef.VisualPrefab == null)
+            {
+                Debug.LogWarning($"[MapVisualInstantiator] Object '{objectId}' не має префабу. Позиція: {position}. Об'єкт пропущено.");
+                return;
+            }
+
             Vector3 worldPos = new Vector3(position.x, position.y, sortingOrder * 0.1f);
+            Quaternion prefabRotation = objectDef.VisualPrefab.transform.rotation;
 
             var instance = _container.InstantiatePrefab(
                 objectDef.VisualPrefab,
                 worldPos,
-                Quaternion.identity,
+                prefabRotation,
                 root);
 
             instance.name = $"Obj_{objectId}_{position.x}_{position.y}";
@@ -233,6 +261,60 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (tileView != null)
             {
                 tileView.Setup(position);
+            }
+
+            ApplySortingOrder(instance, ObjectLayerSortingOrder);
+        }
+
+        private void CreateBuildingView(Vector2Int position, string buildingId)
+        {
+            if (_buildingRegistry == null)
+            {
+                return;
+            }
+
+            var def = _buildingRegistry.GetById(buildingId);
+            if (def == null)
+            {
+                Debug.LogError($"[MapVisualInstantiator] Не знайдено BuildingDefinition для ID: {buildingId}");
+                return;
+            }
+
+            if (def.Prefab == null)
+            {
+                Debug.LogWarning($"[MapVisualInstantiator] Building '{buildingId}' не має префабу.");
+                return;
+            }
+
+            Vector3 worldPos = new Vector3(position.x, position.y, 0.1f);
+
+            var instance = _container.InstantiatePrefab(
+                def.Prefab,
+                worldPos,
+                def.Prefab.transform.rotation,
+                _buildingsRoot);
+
+            instance.name = $"Building_{buildingId}_{position.x}_{position.y}";
+
+            var tileView = instance.GetComponent<TileView>();
+            if (tileView != null)
+            {
+                tileView.Setup(position);
+            }
+        }
+
+        private static void ApplySortingOrder(GameObject rootObject, int sortingOrder)
+        {
+            var sortingGroups = rootObject.GetComponentsInChildren<UnityEngine.Rendering.SortingGroup>(true);
+            foreach (var sortingGroup in sortingGroups)
+            {
+                sortingGroup.sortingOrder = sortingOrder;
+            }
+
+            var spriteRenderers = rootObject.GetComponentsInChildren<SpriteRenderer>(true);
+            foreach (var spriteRenderer in spriteRenderers)
+            {
+                spriteRenderer.sortingOrder = sortingOrder;
             }
         }
     }

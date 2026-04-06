@@ -25,6 +25,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             serializedObject.Update();
 
+            if (target is NodeBase node)
+            {
+                var info = System.Attribute.GetCustomAttribute(node.GetType(), typeof(NodeInfoAttribute)) as NodeInfoAttribute;
+                if (info != null && !string.IsNullOrWhiteSpace(info.Description))
+                {
+                    EditorGUILayout.HelpBox(info.Description, MessageType.Info);
+                    EditorGUILayout.Space(4);
+                }
+            }
+
             var property = serializedObject.GetIterator();
             property.NextVisible(true); // skip m_Script
 

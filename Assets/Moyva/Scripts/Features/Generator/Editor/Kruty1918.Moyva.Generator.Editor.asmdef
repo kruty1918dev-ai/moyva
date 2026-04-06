@@ -1,0 +1,20 @@
+{
+    "name": "Kruty1918.Moyva.Generator.Editor",
+    "rootNamespace": "Kruty1918.Moyva.Generator.Editor",
+    "references": [
+        "Kruty1918.Moyva.Generator",
+        "Kruty1918.Moyva.GraphSystem",
+        "Kruty1918.Moyva.Grid"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

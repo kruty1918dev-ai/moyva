@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Kruty1918.Moyva.Generator.API;
 using UnityEngine;
 
@@ -7,6 +8,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     internal sealed class WFCService : IWFCService
     {
         private readonly WFCDataSettings _wfcDataSettings;
+        private readonly WFCTileRule[] _rulesByPriority;
 
         private static readonly Vector2Int[] Offsets = new Vector2Int[]
         {
@@ -23,6 +25,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public WFCService(WFCDataSettings wFCDataSettings)
         {
             _wfcDataSettings = wFCDataSettings;
+            _rulesByPriority = _wfcDataSettings?.TileRules == null
+                ? System.Array.Empty<WFCTileRule>()
+                : _wfcDataSettings.TileRules
+                    .OrderByDescending(r => r.Priority)
+                    .ThenBy(r => r.TileID)
+                    .ToArray();
         }
 
         public void Apply(string[,] biomeMap, float[,] heightMap)
@@ -36,7 +44,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 for (int y = 0; y < height; y++)
                 {
-                    // Якщо це будь-яка крайня клітина
                     if (x == 0 || x == width - 1 || y == 0 || y == height - 1)
                     {
                         biomeMap[x, y] = WaterID;
@@ -44,60 +51,193 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 }
             }
 
-            // ДРУГИЙ КРОК: Основний цикл ітерацій WFC
-            for (int p = 0; p < _wfcDataSettings.PassCount; p++)
+            // ПІДГОТОВКА: за потреби робимо гарантовану смугу тайлу біля води
+            ApplyNearWaterBand(biomeMap, width, height);
+
+            // ДРУГИЙ КРОК: Побудова індексу позицій за типом тайлу
+            var tilePositions = BuildPositionIndex(biomeMap, width, height);
+
+            // ТРЕТІЙ КРОК: Ітерація за пріоритетом правил
+            for (int pass = 0; pass < _wfcDataSettings.PassCount; pass++)
             {
-                string[,] nextIterationMap = (string[,])biomeMap.Clone();
                 bool anyChanges = false;
 
-                // Починаємо з 1 і закінчуємо на length-1, щоб не чіпати вже встановлену воду на краях
-                for (int x = 1; x < width - 1; x++)
+                foreach (var rule in _rulesByPriority)
                 {
-                    for (int y = 1; y < height - 1; y++)
-                    {
-                        string currentTile = biomeMap[x, y];
+                    // Якщо результат == центр — нічого не зміниться
+                    if (rule.TileID == rule.TileCentralID)
+                        continue;
 
-                        string bestMatch = FindBestMatch(x, y, currentTile, biomeMap, width, height);
-
-                        if (bestMatch != null && bestMatch != currentTile)
-                        {
-                            nextIterationMap[x, y] = bestMatch;
-                            anyChanges = true;
-                        }
-                    }
+                    if (ApplyRuleUntilStable(rule, biomeMap, width, height, tilePositions))
+                        anyChanges = true;
                 }
-
-                // Перенос змін з буфера в основну мапу
-                for (int x = 0; x < width; x++)
-                    for (int y = 0; y < height; y++)
-                        biomeMap[x, y] = nextIterationMap[x, y];
 
                 if (!anyChanges) break;
             }
         }
 
-        private string FindBestMatch(int x, int y, string currentTile, string[,] map, int width, int height)
+        private void ApplyNearWaterBand(string[,] biomeMap, int width, int height)
         {
-            string bestCandidate = null;
-            int maxPriority = -1;
+            if (_wfcDataSettings == null || !_wfcDataSettings.ForceTileNearWaterBand)
+                return;
 
-            foreach (var rule in _wfcDataSettings.TileRules)
+            if (string.IsNullOrWhiteSpace(_wfcDataSettings.NearWaterTileId))
+                return;
+
+            int radius = Mathf.Max(1, _wfcDataSettings.NearWaterRadius);
+            bool includeDiagonals = _wfcDataSettings.IncludeDiagonalsForNearWater;
+            var waterLikeIds = BuildWaterLikeIdSet(_wfcDataSettings.WaterLikeTileIds);
+
+            var toReplace = new List<Vector2Int>();
+            for (int x = 1; x < width - 1; x++)
             {
-                // КЛЮЧОВА ЗМІНА: 
-                // Правило розглядається тільки якщо TileCentralID збігається з тим, що зараз на мапі
-                if (rule.TileCentralID != currentTile) continue;
-
-                if (CheckRule(x, y, map, width, height, rule))
+                for (int y = 1; y < height - 1; y++)
                 {
-                    if (rule.Priority > maxPriority)
-                    {
-                        maxPriority = rule.Priority;
-                        bestCandidate = rule.TileID;
-                    }
+                    string current = biomeMap[x, y];
+                    if (IsWaterLike(current, waterLikeIds))
+                        continue;
+
+                    if (HasWaterLikeNeighbor(biomeMap, x, y, width, height, radius, includeDiagonals, waterLikeIds))
+                        toReplace.Add(new Vector2Int(x, y));
                 }
             }
 
-            return bestCandidate;
+            foreach (var p in toReplace)
+                biomeMap[p.x, p.y] = _wfcDataSettings.NearWaterTileId;
+        }
+
+        private static HashSet<string> BuildWaterLikeIdSet(string[] ids)
+        {
+            var set = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            if (ids != null)
+            {
+                foreach (var id in ids)
+                {
+                    if (!string.IsNullOrWhiteSpace(id))
+                        set.Add(id.Trim());
+                }
+            }
+
+            if (set.Count == 0)
+                set.Add("water");
+
+            return set;
+        }
+
+        private static bool IsWaterLike(string tileId, HashSet<string> waterLikeIds)
+        {
+            if (string.IsNullOrWhiteSpace(tileId))
+                return false;
+
+            string normalized = tileId.Trim();
+            if (waterLikeIds.Contains(normalized))
+                return true;
+
+            string lowered = normalized.ToLowerInvariant();
+            return lowered.Contains("water")
+                || lowered.Contains("sea")
+                || lowered.Contains("lake")
+                || lowered.Contains("river");
+        }
+
+        private static bool HasWaterLikeNeighbor(
+            string[,] biomeMap,
+            int x,
+            int y,
+            int width,
+            int height,
+            int radius,
+            bool includeDiagonals,
+            HashSet<string> waterLikeIds)
+        {
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                for (int dy = -radius; dy <= radius; dy++)
+                {
+                    if (dx == 0 && dy == 0)
+                        continue;
+
+                    if (!includeDiagonals && Mathf.Abs(dx) + Mathf.Abs(dy) > radius)
+                        continue;
+
+                    int nx = x + dx;
+                    int ny = y + dy;
+                    if (nx < 0 || nx >= width || ny < 0 || ny >= height)
+                        continue;
+
+                    if (IsWaterLike(biomeMap[nx, ny], waterLikeIds))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool ApplyRuleUntilStable(
+            WFCTileRule rule,
+            string[,] biomeMap,
+            int width,
+            int height,
+            Dictionary<string, HashSet<Vector2Int>> tilePositions)
+        {
+            bool changedAny = false;
+
+            while (true)
+            {
+                if (!tilePositions.TryGetValue(rule.TileCentralID, out var positions) || positions.Count == 0)
+                    return changedAny;
+
+                var snapshot = new List<Vector2Int>(positions);
+                var changes = new List<Vector2Int>();
+
+                foreach (var pos in snapshot)
+                {
+                    if (CheckRule(pos.x, pos.y, biomeMap, width, height, rule))
+                        changes.Add(pos);
+                }
+
+                if (changes.Count == 0)
+                    return changedAny;
+
+                foreach (var pos in changes)
+                {
+                    string oldTile = biomeMap[pos.x, pos.y];
+                    biomeMap[pos.x, pos.y] = rule.TileID;
+
+                    if (tilePositions.TryGetValue(oldTile, out var oldSet))
+                        oldSet.Remove(pos);
+
+                    if (!tilePositions.TryGetValue(rule.TileID, out var newSet))
+                    {
+                        newSet = new HashSet<Vector2Int>();
+                        tilePositions[rule.TileID] = newSet;
+                    }
+
+                    newSet.Add(pos);
+                }
+
+                changedAny = true;
+            }
+        }
+
+        private Dictionary<string, HashSet<Vector2Int>> BuildPositionIndex(
+            string[,] map, int width, int height)
+        {
+            var index = new Dictionary<string, HashSet<Vector2Int>>();
+            for (int x = 1; x < width - 1; x++)
+            {
+                for (int y = 1; y < height - 1; y++)
+                {
+                    string id = map[x, y];
+                    if (!index.TryGetValue(id, out var set))
+                    {
+                        set = new HashSet<Vector2Int>();
+                        index[id] = set;
+                    }
+                    set.Add(new Vector2Int(x, y));
+                }
+            }
+            return index;
         }
 
         private bool CheckRule(int x, int y, string[,] map, int width, int height, WFCTileRule rule)

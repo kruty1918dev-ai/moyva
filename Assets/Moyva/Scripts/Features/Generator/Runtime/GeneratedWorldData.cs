@@ -7,6 +7,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public string[,] BiomeMap;
         public string[,] ObjectMap;
         public float[,] HeightMap;
+        public string[,] BuildingMap;
 
         public GeneratedWorldData Clone()
         {
@@ -17,6 +18,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BiomeMap = CloneStringMap(BiomeMap),
                 ObjectMap = CloneStringMap(ObjectMap),
                 HeightMap = CloneFloatMap(HeightMap),
+                BuildingMap = CloneStringMap(BuildingMap),
             };
         }
 
