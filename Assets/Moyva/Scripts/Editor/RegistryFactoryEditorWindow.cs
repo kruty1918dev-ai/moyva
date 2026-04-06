@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Units.Runtime;
 using UnityEditor;
 using UnityEngine;
@@ -34,12 +35,11 @@ namespace Kruty1918.Moyva.Editor
 
         private Vector2 _scroll;
 
-        [MenuItem("Moyva/Tools/Registry Factory")]
+        [MenuItem("Moyva/Tools/Registry Factory (Legacy)")]
         private static void Open()
         {
-            var window = GetWindow<RegistryFactoryEditorWindow>("Registry Factory");
-            window.minSize = new Vector2(520f, 560f);
-            window.Show();
+            // Нова версія: відкривається Registry Hub
+            RegistryHubWindow.Open();
         }
 
         private void OnEnable()
