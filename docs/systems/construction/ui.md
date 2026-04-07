@@ -63,9 +63,9 @@ ConstructionUI (GameObject)
 │
 └── StatusPanel (UI Panel)
     ├── [ConstructionStatusUI]
-    ├── StateLabel     (Text)
-    ├── BuildingLabel  (Text)
-    └── PreviewLabel   (Text)
+    ├── StateLabel     (TextMeshProUGUI)
+    ├── BuildingLabel  (TextMeshProUGUI)
+    └── PreviewLabel   (TextMeshProUGUI)
 ```
 
 ### Крок 2 — ConstructionUIController
@@ -84,9 +84,9 @@ ConstructionUI (GameObject)
    - `buttonPrefab`  → prefab кнопки будівлі (має містити `BuildingButtonUI`)
 
 **Як створити prefab кнопки будівлі:**
-1. GameObject → UI → Button
+1. GameObject → UI → Button - TextMeshPro
 2. Додай компонент `BuildingButtonUI`
-3. Підключи `label` → дочірній Text компонент
+3. Підключи `label` → дочірній `TextMeshProUGUI` компонент
 4. Збережи як prefab
 
 ### Крок 4 — ConstructionActionBarUI
@@ -111,9 +111,9 @@ ConstructionUI (GameObject)
 
 1. Додай компонент `ConstructionStatusUI` до панелі статусу.
 2. Перетягни в Inspector (всі необов'язкові):
-   - `placementStateLabel`   → Text для стану (`Idle` / `Placing` / `Confirmed`)
-   - `selectedBuildingLabel` → Text для назви вибраної будівлі
-   - `previewStateLabel`     → Text для стану preview (`✓ Valid` / `✗ Blocked` / `--`)
+   - `placementStateLabel`   → `TextMeshProUGUI` для стану (`Idle` / `Placing` / `Confirmed`)
+   - `selectedBuildingLabel` → `TextMeshProUGUI` для назви вибраної будівлі
+   - `previewStateLabel`     → `TextMeshProUGUI` для стану preview (`✓ Valid` / `✗ Blocked` / `--`)
 
 ### Крок 6 — Zenject Installer
 

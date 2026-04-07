@@ -1,6 +1,6 @@
 using Kruty1918.Moyva.Signals;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.Construction.UI
 {
@@ -10,8 +10,7 @@ namespace Kruty1918.Moyva.Construction.UI
     ///
     /// HOW TO WIRE IN UNITY:
     /// 1. Add this component to a status panel GameObject.
-    /// 2. Drag <c>Text</c> (or <c>TextMeshProUGUI</c> — swap the field type) labels
-    ///    into the three fields.
+    /// 2. Drag <c>TextMeshProUGUI</c> labels into the three fields.
     /// 3. Assign the panel to <see cref="ConstructionUIController.statusDisplay"/>.
     ///    The controller calls <see cref="UpdateState"/> automatically.
     ///
@@ -24,13 +23,13 @@ namespace Kruty1918.Moyva.Construction.UI
     {
         [Header("Status Labels (drag in Inspector)")]
         [Tooltip("Shows the current placement state (Idle / Placing / Confirmed).")]
-        [SerializeField] private Text placementStateLabel;
+        [SerializeField] private TextMeshProUGUI placementStateLabel;
 
         [Tooltip("Shows the currently selected building ID, or '--' when none.")]
-        [SerializeField] private Text selectedBuildingLabel;
+        [SerializeField] private TextMeshProUGUI selectedBuildingLabel;
 
         [Tooltip("Shows the current preview state (Valid / Blocked / --)." )]
-        [SerializeField] private Text previewStateLabel;
+        [SerializeField] private TextMeshProUGUI previewStateLabel;
 
         /// <summary>
         /// Update all status labels from the given UI state snapshot.
