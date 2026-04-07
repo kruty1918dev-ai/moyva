@@ -5,6 +5,7 @@
         "Zenject",
         "Kruty1918.Moyva.Construction",
         "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.GameMode",
         "Unity.TextMeshPro"
     ],
     "includePlatforms": [],

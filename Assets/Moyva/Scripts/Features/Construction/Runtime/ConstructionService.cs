@@ -16,9 +16,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private string _selectedBuildingId;
         private readonly Stack<(Vector2Int position, string buildingId)> _pendingPlacements = new();
         private readonly Stack<(Vector2Int position, string buildingId)> _redoStack = new();
+        // Позиції будівель, підтверджених гравцем під час гри (знесення дозволено лише для них)
+        private readonly Dictionary<Vector2Int, string> _playerPlacedBuildings = new();
         private bool _isActive;
 
         public BuildingPlacementState State { get; private set; } = BuildingPlacementState.Idle;
+        public bool IsDemolishMode { get; private set; }
 
         [Inject]
         public ConstructionService(IObjectsMapService objectsMapService, SignalBus signalBus)
@@ -42,6 +45,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _isActive = signal.NewMode == GameModeType.Construction;
             if (!_isActive && State != BuildingPlacementState.Idle)
                 Cancel();
+            if (!_isActive)
+                IsDemolishMode = false;
         }
 
         public void SelectBuilding(string buildingId)
@@ -90,6 +95,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             foreach (var (pos, id) in confirmed)
             {
                 _objectsMapService.Register(pos, id);
+                _playerPlacedBuildings[pos] = id;
                 _signalBus.Fire(new BuildingPlacedSignal { BuildingId = id, Position = pos });
             }
 
@@ -139,6 +145,34 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             var (pos, _) = _redoStack.Pop();
             TryPreviewAt(pos);
+        }
+
+        public void ToggleDemolishMode()
+        {
+            if (!_isActive)
+            {
+                Debug.LogWarning("[Construction] ToggleDemolishMode called outside Construction mode.");
+                return;
+            }
+
+            IsDemolishMode = !IsDemolishMode;
+        }
+
+        public bool TryDemolishAt(Vector2Int position)
+        {
+            if (!_isActive || !IsDemolishMode)
+                return false;
+
+            if (!_playerPlacedBuildings.TryGetValue(position, out var buildingId))
+            {
+                Debug.LogWarning($"[Construction] TryDemolishAt({position}): будівля не була розміщена гравцем.");
+                return false;
+            }
+
+            _objectsMapService.Unregister(position);
+            _playerPlacedBuildings.Remove(position);
+            _signalBus.Fire(new BuildingDemolishedSignal { BuildingId = buildingId, Position = position });
+            return true;
         }
     }
 }

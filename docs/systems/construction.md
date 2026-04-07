@@ -40,13 +40,14 @@ Construction/
 │   ├── BuildingRegistrySO.cs          ← ScriptableObject: каталог будівель
 │   └── ConstructionInstaller.cs       ← Zenject інсталер (runtime)
 └── UI/
-    ├── ConstructionUIController.cs    ← адаптер UI ↔ IConstructionService
-    ├── BuildingSelectionPanelUI.cs    ← список будівель для вибору
-    ├── BuildingButtonUI.cs            ← кнопка окремої будівлі
-    ├── ConstructionActionBarUI.cs     ← Confirm / Cancel / Undo / Redo
+    ├── ConstructionUIController.cs    ← адаптер UI ↔ IConstructionService ↔ IGameModeService
+    ├── BuildingSelectionPanelUI.cs    ← список будівель з фільтром за категорією
+    ├── BuildingCategoryTabsUI.cs      ← вкладки категорій будівель
+    ├── BuildingButtonUI.cs            ← кнопка окремої будівлі (іконка + виділення)
+    ├── ConstructionActionBarUI.cs     ← Confirm / Cancel / Undo / Redo / Знести
     ├── ConstructionStatusUI.cs        ← відображення стану preview/сесії
     ├── ConstructionUIInstaller.cs     ← Zenject інсталер (UI)
-    ├── BuildingListItemData.cs        ← UI DTO для елементу списку
+    ├── BuildingListItemData.cs        ← UI DTO для елементу списку (з Sprite Icon)
     └── ConstructionUIState.cs         ← snapshot поточного UI-стану
 ```
 
@@ -97,6 +98,7 @@ IConstructionService.Confirm()
 | `BuildingPlacedSignal` | `struct` | `ConstructionService.Confirm()` | ObjectsMap, Spawner |
 | `BuildingCancelledSignal` | `struct` | `ConstructionService.Cancel()` | UI |
 | `BuildingPreviewChangedSignal` | `struct` | `ConstructionService.TryPreviewAt()` | `TileView` |
+| `BuildingDemolishedSignal` | `struct` | `ConstructionService.TryDemolishAt()` | Spawner, UI |
 | `ShowWallHandlesSignal` | `struct` | `WallPlacementService.ShowWallHandles()` | UI стін |
 
 ---

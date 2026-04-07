@@ -5,42 +5,52 @@ using UnityEngine;
 namespace Kruty1918.Moyva.Construction.UI
 {
     /// <summary>
-    /// Immutable snapshot of the current construction UI state.
-    /// Passed to sub-UI components so they can update their display.
+    /// Незмінний (immutable) знімок поточного стану UI будівництва.
+    /// Передається підкомпонентам UI щоб вони могли оновити відображення.
     /// </summary>
     public sealed class ConstructionUIState
     {
-        /// <summary>Current placement session state (Idle / Placing / Confirmed).</summary>
+        /// <summary>Поточний стан сесії розміщення (Idle / Placing / Confirmed).</summary>
         public BuildingPlacementState PlacementState { get; }
 
-        /// <summary>ID of the building the player currently has selected, or null.</summary>
+        /// <summary>ID будівлі, вибраної гравцем, або null.</summary>
         public string SelectedBuildingId { get; }
 
-        /// <summary>Preview state on the last hovered tile (None / Valid / Blocked).</summary>
+        /// <summary>Стан preview на останньому тайлі (None / Valid / Blocked).</summary>
         public BuildingPreviewState LastPreviewState { get; }
 
-        /// <summary>Grid position of the last preview tile.</summary>
+        /// <summary>Позиція останнього preview-тайлу.</summary>
         public Vector2Int LastPreviewPosition { get; }
 
-        /// <summary>True when a build session is active (building selected, awaiting tile).</summary>
+        /// <summary>Чи активний режим знесення.</summary>
+        public bool IsDemolishMode { get; }
+
+        /// <summary>Чи активний режим будівництва (будь-яка дія доступна).</summary>
+        public bool IsConstructionModeActive { get; }
+
+        /// <summary>True коли активна сесія розміщення (будівля вибрана, очікуємо тайл).</summary>
         public bool IsPlacing => PlacementState == BuildingPlacementState.Placing;
 
-        /// <summary>True when a building has been selected.</summary>
+        /// <summary>True коли будівля вибрана.</summary>
         public bool HasSelection => !string.IsNullOrEmpty(SelectedBuildingId);
 
         public ConstructionUIState(
             BuildingPlacementState placementState,
             string selectedBuildingId,
             BuildingPreviewState lastPreviewState,
-            Vector2Int lastPreviewPosition)
+            Vector2Int lastPreviewPosition,
+            bool isDemolishMode = false,
+            bool isConstructionModeActive = false)
         {
             PlacementState = placementState;
             SelectedBuildingId = selectedBuildingId;
             LastPreviewState = lastPreviewState;
             LastPreviewPosition = lastPreviewPosition;
+            IsDemolishMode = isDemolishMode;
+            IsConstructionModeActive = isConstructionModeActive;
         }
 
-        /// <summary>Default idle state with no selection.</summary>
+        /// <summary>Стан за замовчуванням — Idle, без вибору.</summary>
         public static ConstructionUIState Default =>
             new ConstructionUIState(BuildingPlacementState.Idle, null, BuildingPreviewState.None, Vector2Int.zero);
     }

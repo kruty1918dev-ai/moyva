@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -8,142 +9,201 @@ using Zenject;
 namespace Kruty1918.Moyva.Construction.UI
 {
     /// <summary>
-    /// Main adapter/presenter between Unity UI and <see cref="IConstructionService"/>.
-    /// Add this MonoBehaviour to a scene GameObject and wire sub-panels via the Inspector.
+    /// Головний адаптер між UI та <see cref="IConstructionService"/> / <see cref="IGameModeService"/>.
+    /// Додай цей MonoBehaviour до GameObject у сцені та підключи підпанелі через Inspector.
     ///
-    /// HOW TO WIRE IN UNITY:
-    /// 1. Add this component to a UI panel GameObject.
-    /// 2. Drag <see cref="BuildingSelectionPanelUI"/>, <see cref="ConstructionActionBarUI"/>,
-    ///    and <see cref="ConstructionStatusUI"/> into the corresponding fields.
-    /// 3. Add <see cref="ConstructionUIInstaller"/> to the SceneContext and assign this component.
-    /// 4. Optionally wire buttons directly to the public action methods via the Inspector
-    ///    (OnConfirmClicked, OnCancelClicked, OnUndoClicked, OnRedoClicked, OnBuildingSelected).
+    /// ФУНКЦІОНАЛЬНІСТЬ:
+    /// — Перемикання між звичайним та будівельним режимом (ховає/показує gameplayUIRoot).
+    /// — Вибір будівлі → виділення іконки у меню → preview на тайлі.
+    /// — Підтвердження, скасування, Undo/Redo.
+    /// — Режим знесення (тільки будівлі, поставлені гравцем).
+    ///
+    /// ЯК ПІДКЛЮЧИТИ В UNITY:
+    /// 1. Додай компонент до UI GameObject (корінь UI будівництва).
+    /// 2. Перетягни <see cref="BuildingSelectionPanelUI"/>, <see cref="ConstructionActionBarUI"/>,
+    ///    <see cref="ConstructionStatusUI"/> у відповідні поля.
+    /// 3. Призначи <b>gameplayUIRoot</b> — кореневий GameObject основного UI (ховається в режимі будівництва).
+    /// 4. Призначи <b>constructionUIRoot</b> — кореневий GameObject UI будівництва (або залиш null — використається gameObject).
+    /// 5. Додай <see cref="ConstructionUIInstaller"/> до SceneContext.
     /// </summary>
     public class ConstructionUIController : MonoBehaviour, IInitializable, IDisposable
     {
-        [Header("Sub-panels (drag in Inspector)")]
-        [Tooltip("Panel that lists all available buildings for selection.")]
+        [Header("Підпанелі (перетягни в Inspector)")]
+        [Tooltip("Панель вибору будівель.")]
         [SerializeField] private BuildingSelectionPanelUI selectionPanel;
 
-        [Tooltip("Panel with Confirm / Cancel / Undo / Redo buttons.")]
+        [Tooltip("Панель кнопок Confirm / Cancel / Undo / Redo / Знести.")]
         [SerializeField] private ConstructionActionBarUI actionBar;
 
-        [Tooltip("Panel that shows the current placement/preview status.")]
+        [Tooltip("Панель статусу розміщення/preview.")]
         [SerializeField] private ConstructionStatusUI statusDisplay;
 
-        // --- Injected by Zenject ---
+        [Header("Перемикання режиму (перетягни в Inspector)")]
+        [Tooltip("Кореневий GameObject звичайного (ігрового) UI. Ховається в режимі будівництва.")]
+        [SerializeField] private GameObject gameplayUIRoot;
+
+        [Tooltip("Кореневий GameObject UI будівництва. Якщо null — використовується gameObject цього компонента.")]
+        [SerializeField] private GameObject constructionUIRoot;
+
+        // --- Інжектується Zenject ---
         private IConstructionService _constructionService;
         private IBuildingRegistry _buildingRegistry;
+        private IGameModeService _gameModeService;
         private SignalBus _signalBus;
 
-        // --- Internal state ---
+        // --- Внутрішній стан ---
         private string _selectedBuildingId;
         private BuildingPreviewState _lastPreviewState;
         private Vector2Int _lastPreviewPosition;
+        private bool _isConstructionModeActive;
 
-        /// <summary>Zenject injection point. Do not call manually.</summary>
+        /// <summary>Точка ін'єкції Zenject. Не викликати вручну.</summary>
         [Inject]
         public void Construct(
             IConstructionService constructionService,
             IBuildingRegistry buildingRegistry,
+            IGameModeService gameModeService,
             SignalBus signalBus)
         {
             _constructionService = constructionService;
             _buildingRegistry = buildingRegistry;
+            _gameModeService = gameModeService;
             _signalBus = signalBus;
         }
 
-        /// <summary>Called by Zenject after injection. Subscribes to signals and populates UI.</summary>
+        /// <summary>Викликається Zenject після ін'єкції. Підписується на сигнали та заповнює UI.</summary>
         public void Initialize()
         {
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.Subscribe<BuildingCancelledSignal>(OnBuildingCancelled);
             _signalBus.Subscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
+            _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
 
             if (selectionPanel != null)
                 selectionPanel.OnBuildingClicked += OnBuildingSelected;
+            else
+                Debug.LogWarning("[ConstructionUIController] Поле 'selectionPanel' не призначено. Меню будівель не відображатиметься.", this);
 
             if (actionBar != null)
             {
-                actionBar.OnConfirmClicked += OnConfirmClicked;
-                actionBar.OnCancelClicked += OnCancelClicked;
-                actionBar.OnUndoClicked += OnUndoClicked;
-                actionBar.OnRedoClicked += OnRedoClicked;
+                actionBar.OnConfirmClicked  += OnConfirmClicked;
+                actionBar.OnCancelClicked   += OnCancelClicked;
+                actionBar.OnUndoClicked     += OnUndoClicked;
+                actionBar.OnRedoClicked     += OnRedoClicked;
+                actionBar.OnDemolishToggled += OnDemolishToggled;
             }
+            else
+            {
+                Debug.LogWarning("[ConstructionUIController] Поле 'actionBar' не призначено. Кнопки дій не будуть підключені.", this);
+            }
+
+            if (gameplayUIRoot == null)
+                Debug.LogWarning("[ConstructionUIController] Поле 'gameplayUIRoot' не призначено. Перемикання режимів не ховатиме основний UI.", this);
+
+            // Ховаємо UI будівництва при старті
+            SetConstructionUIVisible(false);
 
             PopulateBuildingList();
             RefreshUI();
         }
 
-        /// <summary>Called by Zenject on destroy. Unsubscribes from signals.</summary>
+        /// <summary>Викликається Zenject при знищенні. Відписується від сигналів.</summary>
         public void Dispose()
         {
             _signalBus.Unsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.Unsubscribe<BuildingCancelledSignal>(OnBuildingCancelled);
             _signalBus.Unsubscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
+            _signalBus.Unsubscribe<GameModeChangedSignal>(OnGameModeChanged);
 
             if (selectionPanel != null)
                 selectionPanel.OnBuildingClicked -= OnBuildingSelected;
 
             if (actionBar != null)
             {
-                actionBar.OnConfirmClicked -= OnConfirmClicked;
-                actionBar.OnCancelClicked -= OnCancelClicked;
-                actionBar.OnUndoClicked -= OnUndoClicked;
-                actionBar.OnRedoClicked -= OnRedoClicked;
+                actionBar.OnConfirmClicked  -= OnConfirmClicked;
+                actionBar.OnCancelClicked   -= OnCancelClicked;
+                actionBar.OnUndoClicked     -= OnUndoClicked;
+                actionBar.OnRedoClicked     -= OnRedoClicked;
+                actionBar.OnDemolishToggled -= OnDemolishToggled;
             }
         }
 
         // -----------------------------------------------------------------------
-        // Public action methods — wire to Button.onClick via Inspector or code
+        // Публічні методи дій — підключи до Button.onClick через Inspector або код
         // -----------------------------------------------------------------------
 
         /// <summary>
-        /// Confirm all pending placements.
-        /// Wire: Confirm button → OnClick → this method.
+        /// Увійти в режим будівництва. Підключи до кнопки «Будівництво» основного UI.
+        /// Ховає gameplayUIRoot, показує UI будівництва, перемикає GameMode → Construction.
+        /// </summary>
+        public void EnterConstructionMode()
+        {
+            _gameModeService?.SetMode(GameModeType.Construction);
+        }
+
+        /// <summary>
+        /// Підтвердити всі pending-розміщення.
+        /// Підключи: Confirm button → OnClick → цей метод.
         /// </summary>
         public void OnConfirmClicked() => _constructionService.Confirm();
 
         /// <summary>
-        /// Cancel the current build session.
-        /// Wire: Cancel button → OnClick → this method.
+        /// Скасувати поточну сесію будівництва (повертає в Normal режим).
+        /// Підключи: Cancel button → OnClick → цей метод.
         /// </summary>
-        public void OnCancelClicked() => _constructionService.Cancel();
+        public void OnCancelClicked()
+        {
+            _constructionService.Cancel();
+            _gameModeService?.SetMode(GameModeType.Normal);
+        }
 
         /// <summary>
-        /// Undo the last placement.
-        /// Wire: Undo button → OnClick → this method.
+        /// Відмінити останнє розміщення.
+        /// Підключи: Undo button → OnClick → цей метод.
         /// </summary>
         public void OnUndoClicked() => _constructionService.UndoLast();
 
         /// <summary>
-        /// Redo the last undone placement.
-        /// Wire: Redo button → OnClick → this method.
+        /// Повернути скасоване розміщення.
+        /// Підключи: Redo button → OnClick → цей метод.
         /// </summary>
         public void OnRedoClicked() => _constructionService.RedoLast();
 
         /// <summary>
-        /// Select a building for placement.
-        /// Called automatically by <see cref="BuildingSelectionPanelUI"/>.
-        /// Can also be called directly with a building ID string.
+        /// Перемикач режиму знесення.
+        /// Підключи: Demolish button → OnClick → цей метод.
+        /// </summary>
+        public void OnDemolishToggled() => _constructionService.ToggleDemolishMode();
+
+        /// <summary>
+        /// Вибрати будівлю для розміщення.
+        /// Викликається автоматично через <see cref="BuildingSelectionPanelUI"/>.
         /// </summary>
         public void OnBuildingSelected(string buildingId)
         {
             _selectedBuildingId = buildingId;
             _constructionService.SelectBuilding(buildingId);
+
+            if (selectionPanel != null)
+                selectionPanel.SetSelectedBuilding(buildingId);
+
             RefreshUI();
         }
 
         /// <summary>
-        /// Forward a tile selection to the construction service.
-        /// Call this when the player clicks a tile on the map.
-        /// Example: tileClickHandler calls uiController.OnTileSelected(gridPos).
+        /// Передає вибір тайлу до сервісу будівництва.
+        /// Викликай у TileClickHandler або InputHandler коли гравець клікає по карті.
         /// </summary>
-        public void OnTileSelected(Vector2Int position) =>
-            _constructionService.TryPreviewAt(position);
+        public void OnTileSelected(Vector2Int position)
+        {
+            if (_constructionService.IsDemolishMode)
+                _constructionService.TryDemolishAt(position);
+            else
+                _constructionService.TryPreviewAt(position);
+        }
 
         // -----------------------------------------------------------------------
-        // Signal handlers
+        // Обробники сигналів
         // -----------------------------------------------------------------------
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
@@ -155,6 +215,8 @@ namespace Kruty1918.Moyva.Construction.UI
         {
             _selectedBuildingId = null;
             _lastPreviewState = BuildingPreviewState.None;
+            if (selectionPanel != null)
+                selectionPanel.ClearSelection();
             RefreshUI();
         }
 
@@ -165,9 +227,27 @@ namespace Kruty1918.Moyva.Construction.UI
             RefreshUI();
         }
 
+        private void OnGameModeChanged(GameModeChangedSignal signal)
+        {
+            _isConstructionModeActive = signal.NewMode == GameModeType.Construction;
+            SetConstructionUIVisible(_isConstructionModeActive);
+            RefreshUI();
+        }
+
         // -----------------------------------------------------------------------
-        // Internal helpers
+        // Допоміжні методи
         // -----------------------------------------------------------------------
+
+        private void SetConstructionUIVisible(bool visible)
+        {
+            // Якщо constructionUIRoot не задано — не ховаємо gameObject контролера
+            // (він має залишатись активним для обробки сигналів).
+            if (constructionUIRoot != null)
+                constructionUIRoot.SetActive(visible);
+
+            if (gameplayUIRoot != null)
+                gameplayUIRoot.SetActive(!visible);
+        }
 
         private void PopulateBuildingList()
         {
@@ -177,7 +257,7 @@ namespace Kruty1918.Moyva.Construction.UI
             var buildings = _buildingRegistry.GetAll();
             var items = new List<BuildingListItemData>(buildings.Length);
             foreach (var b in buildings)
-                items.Add(new BuildingListItemData(b.Id, b.DisplayName, b.Category));
+                items.Add(new BuildingListItemData(b.Id, b.DisplayName, b.Category, b.Icon));
 
             selectionPanel.Populate(items);
         }
@@ -188,7 +268,9 @@ namespace Kruty1918.Moyva.Construction.UI
                 _constructionService.State,
                 _selectedBuildingId,
                 _lastPreviewState,
-                _lastPreviewPosition);
+                _lastPreviewPosition,
+                _constructionService.IsDemolishMode,
+                _isConstructionModeActive);
 
             if (actionBar != null)
                 actionBar.SetState(state);

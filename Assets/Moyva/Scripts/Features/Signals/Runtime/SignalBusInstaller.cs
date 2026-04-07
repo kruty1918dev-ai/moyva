@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<BuildingPlacedSignal>();
             Container.DeclareSignal<BuildingCancelledSignal>();
             Container.DeclareSignal<BuildingPreviewChangedSignal>();
+            Container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
             Container.DeclareSignal<ShowWallHandlesSignal>();
 
             // FogOfWar

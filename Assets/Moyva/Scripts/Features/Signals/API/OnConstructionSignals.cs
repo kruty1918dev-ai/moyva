@@ -40,6 +40,16 @@ namespace Kruty1918.Moyva.Signals
     }
 
     /// <summary>
+    /// Надсилається ConstructionService.TryDemolishAt() при успішному знесенні будівлі гравцем.
+    /// Отримується: спавнер об'єктів (видалення візуалу), UI.
+    /// </summary>
+    public struct BuildingDemolishedSignal
+    {
+        public string BuildingId;
+        public Vector2Int Position;
+    }
+
+    /// <summary>
     /// Надсилається WallPlacementService.ShowWallHandles() / EndDrag().
     /// Отримується: UI-компонент ручок стін.
     /// </summary>

@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Construction.API;
+using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.UI
 {
@@ -17,11 +18,15 @@ namespace Kruty1918.Moyva.Construction.UI
         /// <summary>Category the building belongs to.</summary>
         public BuildingCategory Category { get; }
 
-        public BuildingListItemData(string id, string displayName, BuildingCategory category)
+        /// <summary>Icon sprite shown on the building button. May be null.</summary>
+        public Sprite Icon { get; }
+
+        public BuildingListItemData(string id, string displayName, BuildingCategory category, Sprite icon = null)
         {
             Id = id;
             DisplayName = displayName;
             Category = category;
+            Icon = icon;
         }
     }
 }

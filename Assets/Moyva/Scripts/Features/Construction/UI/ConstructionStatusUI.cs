@@ -5,35 +5,44 @@ using UnityEngine;
 namespace Kruty1918.Moyva.Construction.UI
 {
     /// <summary>
-    /// UI scaffold for displaying the current construction status (placement state,
-    /// selected building, and preview result).
+    /// Відображає поточний стан будівництва: режим розміщення, вибрана будівля, стан preview.
     ///
-    /// HOW TO WIRE IN UNITY:
-    /// 1. Add this component to a status panel GameObject.
-    /// 2. Drag <c>TextMeshProUGUI</c> labels into the three fields.
-    /// 3. Assign the panel to <see cref="ConstructionUIController.statusDisplay"/>.
-    ///    The controller calls <see cref="UpdateState"/> automatically.
+    /// ЯК ПІДКЛЮЧИТИ В UNITY:
+    /// 1. Додай компонент до панелі статусу.
+    /// 2. Перетягни TextMeshProUGUI лейбли у поля в Inspector (всі необов'язкові).
+    /// 3. Призначи панель у поле <see cref="ConstructionUIController.statusDisplay"/>.
+    ///    Контролер викликає <see cref="UpdateState"/> автоматично.
     ///
-    /// Label values:
-    ///   placementStateLabel  → "Idle" | "Placing" | "Confirmed"
-    ///   selectedBuildingLabel→ building DisplayName, or "--" when nothing selected
-    ///   previewStateLabel    → "✓ Valid" | "✗ Blocked" | "--"
+    /// Значення лейблів:
+    ///   placementStateLabel   → "Idle" | "Placing" | "Confirmed"
+    ///   selectedBuildingLabel → назва вибраної будівлі, або "--"
+    ///   previewStateLabel     → "✓ Дійсно" | "✗ Заблоковано" | "--"
     /// </summary>
     public class ConstructionStatusUI : MonoBehaviour
     {
-        [Header("Status Labels (drag in Inspector)")]
-        [Tooltip("Shows the current placement state (Idle / Placing / Confirmed).")]
+        [Header("Лейбли статусу (перетягни в Inspector)")]
+        [Tooltip("Показує поточний стан розміщення (Idle / Placing / Confirmed).")]
         [SerializeField] private TextMeshProUGUI placementStateLabel;
 
-        [Tooltip("Shows the currently selected building ID, or '--' when none.")]
+        [Tooltip("Показує назву вибраної будівлі або '--' якщо нічого не вибрано.")]
         [SerializeField] private TextMeshProUGUI selectedBuildingLabel;
 
-        [Tooltip("Shows the current preview state (Valid / Blocked / --)." )]
+        [Tooltip("Показує стан preview (✓ Дійсно / ✗ Заблоковано / --).")]
         [SerializeField] private TextMeshProUGUI previewStateLabel;
 
+        private void Awake()
+        {
+            if (placementStateLabel == null)
+                Debug.LogWarning($"[ConstructionStatusUI] Поле 'placementStateLabel' не призначено на '{name}'.", this);
+            if (selectedBuildingLabel == null)
+                Debug.LogWarning($"[ConstructionStatusUI] Поле 'selectedBuildingLabel' не призначено на '{name}'.", this);
+            if (previewStateLabel == null)
+                Debug.LogWarning($"[ConstructionStatusUI] Поле 'previewStateLabel' не призначено на '{name}'.", this);
+        }
+
         /// <summary>
-        /// Update all status labels from the given UI state snapshot.
-        /// Called automatically by <see cref="ConstructionUIController"/>.
+        /// Оновлює всі лейбли на основі переданого знімку UI-стану.
+        /// Викликається автоматично через <see cref="ConstructionUIController"/>.
         /// </summary>
         public void UpdateState(ConstructionUIState state)
         {
@@ -48,10 +57,10 @@ namespace Kruty1918.Moyva.Construction.UI
                 switch (state.LastPreviewState)
                 {
                     case BuildingPreviewState.Valid:
-                        previewStateLabel.text = "\u2713 Valid";
+                        previewStateLabel.text = "\u2713 Дійсно";
                         break;
                     case BuildingPreviewState.Blocked:
-                        previewStateLabel.text = "\u2717 Blocked";
+                        previewStateLabel.text = "\u2717 Заблоковано";
                         break;
                     default:
                         previewStateLabel.text = "--";

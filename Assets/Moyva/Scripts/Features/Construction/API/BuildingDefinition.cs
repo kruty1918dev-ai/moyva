@@ -8,6 +8,7 @@ namespace Kruty1918.Moyva.Construction.API
         public string Id;               // Унікальний ідентифікатор, наприклад "barracks"
         public string DisplayName;      // Назва для UI, наприклад "Казарма"
         public BuildingCategory Category;
+        public Sprite Icon;             // Іконка будівлі для меню будівництва
         public GameObject Prefab;       // Prefab будівлі (stub: null поки арт не готовий)
     }
 }

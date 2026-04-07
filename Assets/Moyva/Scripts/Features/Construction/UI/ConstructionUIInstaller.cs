@@ -4,33 +4,33 @@ using Zenject;
 namespace Kruty1918.Moyva.Construction.UI
 {
     /// <summary>
-    /// Zenject installer for the Construction UI module.
-    /// Registers <see cref="ConstructionUIController"/> so it receives injection
-    /// and participates in the IInitializable / IDisposable lifecycle.
+    /// Zenject-інсталер для модуля Construction UI.
+    /// Реєструє <see cref="ConstructionUIController"/> для отримання ін'єкцій
+    /// та участі у lifecycle IInitializable / IDisposable.
     ///
-    /// HOW TO ADD TO THE SCENE:
-    /// 1. Add this component to the same GameObject as your SceneContext
-    ///    (or to any GameObject referenced by the SceneContext's Installers list).
-    /// 2. Drag the <see cref="ConstructionUIController"/> from the scene into
-    ///    the <b>uiController</b> field.
-    /// 3. Add this installer to the SceneContext's <b>Mono Installers</b> list.
+    /// ЯК ДОДАТИ ДО СЦЕНИ:
+    /// 1. Додай компонент до того ж GameObject, що й SceneContext
+    ///    (або до будь-якого GameObject зі списку Installers).
+    /// 2. Перетягни <see cref="ConstructionUIController"/> зі сцени у поле <b>uiController</b>.
+    /// 3. Додай цей інсталер до списку <b>Mono Installers</b> у SceneContext.
     ///
-    /// Dependencies resolved automatically from the scene container:
-    ///   - <c>IConstructionService</c>  (provided by ConstructionInstaller)
-    ///   - <c>IBuildingRegistry</c>     (provided by ConstructionInstaller)
-    ///   - <c>SignalBus</c>             (provided by the SceneContext signal declarations)
+    /// Залежності, що вирішуються автоматично з контейнера:
+    ///   - <c>IConstructionService</c>  (надається ConstructionInstaller)
+    ///   - <c>IBuildingRegistry</c>     (надається ConstructionInstaller)
+    ///   - <c>IGameModeService</c>      (надається GameModeInstaller)
+    ///   - <c>SignalBus</c>             (надається SignalBusInstaller)
     /// </summary>
     public class ConstructionUIInstaller : MonoInstaller
     {
-        [Tooltip("The ConstructionUIController component from the scene.")]
+        [Tooltip("Компонент ConstructionUIController зі сцени.")]
         [SerializeField] private ConstructionUIController uiController;
 
         public override void InstallBindings()
         {
             if (uiController == null)
             {
-                Debug.LogWarning("[ConstructionUIInstaller] uiController is not assigned. " +
-                                 "Drag ConstructionUIController into the field on this installer.");
+                Debug.LogWarning("[ConstructionUIInstaller] Поле 'uiController' не призначено. " +
+                                 "Перетягни ConstructionUIController у поле цього інсталера.");
                 return;
             }
 

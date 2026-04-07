@@ -5,56 +5,67 @@ using UnityEngine.UI;
 namespace Kruty1918.Moyva.Construction.UI
 {
     /// <summary>
-    /// UI scaffold for the construction action bar (Confirm / Cancel / Undo / Redo).
-    /// Drives button interactability based on the current <see cref="ConstructionUIState"/>
-    /// and exposes events that <see cref="ConstructionUIController"/> subscribes to.
+    /// Панель кнопок дій будівництва: Підтвердити / Скасувати / Відмінити / Повторити / Знести.
+    /// Керує станом interactable кнопок на основі <see cref="ConstructionUIState"/>
+    /// та надає події, на які підписується <see cref="ConstructionUIController"/>.
     ///
-    /// HOW TO WIRE IN UNITY:
-    /// 1. Add this component to your action bar panel.
-    /// 2. Drag the four <c>Button</c> references into the fields.
-    /// 3. Add the panel to the scene and assign it to <see cref="ConstructionUIController.actionBar"/>.
-    ///    The controller wires the events automatically.
+    /// ЯК ПІДКЛЮЧИТИ В UNITY:
+    /// 1. Додай компонент до панелі дій.
+    /// 2. Перетягни кнопки у відповідні поля в Inspector.
+    /// 3. Призначи панель у поле <see cref="ConstructionUIController.actionBar"/>.
+    ///    Контролер підключає події автоматично.
     ///
-    /// ALTERNATIVE (no sub-panel):
-    /// Wire Button.OnClick directly to the public methods on <see cref="ConstructionUIController"/>:
-    ///   Confirm → ConstructionUIController.OnConfirmClicked()
-    ///   Cancel  → ConstructionUIController.OnCancelClicked()
-    ///   Undo    → ConstructionUIController.OnUndoClicked()
-    ///   Redo    → ConstructionUIController.OnRedoClicked()
+    /// АЛЬТЕРНАТИВА: підключи кнопки напряму до методів <see cref="ConstructionUIController"/> через Button → OnClick.
     /// </summary>
     public class ConstructionActionBarUI : MonoBehaviour
     {
-        [Header("Action Buttons (drag in Inspector)")]
-        [Tooltip("Calls IConstructionService.Confirm().")]
+        [Header("Кнопки дій (перетягни в Inspector)")]
+        [Tooltip("Виклик IConstructionService.Confirm().")]
         [SerializeField] private Button confirmButton;
 
-        [Tooltip("Calls IConstructionService.Cancel().")]
+        [Tooltip("Виклик IConstructionService.Cancel().")]
         [SerializeField] private Button cancelButton;
 
-        [Tooltip("Calls IConstructionService.UndoLast().")]
+        [Tooltip("Виклик IConstructionService.UndoLast().")]
         [SerializeField] private Button undoButton;
 
-        [Tooltip("Calls IConstructionService.RedoLast().")]
+        [Tooltip("Виклик IConstructionService.RedoLast().")]
         [SerializeField] private Button redoButton;
 
-        /// <summary>Fired when the Confirm button is clicked.</summary>
+        [Tooltip("Перемикач режиму знесення (IConstructionService.ToggleDemolishMode()). Необов'язковий.")]
+        [SerializeField] private Button demolishButton;
+
+        /// <summary>Спрацьовує при натисканні кнопки «Підтвердити».</summary>
         public Action OnConfirmClicked;
 
-        /// <summary>Fired when the Cancel button is clicked.</summary>
+        /// <summary>Спрацьовує при натисканні кнопки «Скасувати».</summary>
         public Action OnCancelClicked;
 
-        /// <summary>Fired when the Undo button is clicked.</summary>
+        /// <summary>Спрацьовує при натисканні кнопки «Відмінити».</summary>
         public Action OnUndoClicked;
 
-        /// <summary>Fired when the Redo button is clicked.</summary>
+        /// <summary>Спрацьовує при натисканні кнопки «Повторити».</summary>
         public Action OnRedoClicked;
+
+        /// <summary>Спрацьовує при натисканні кнопки «Знести» (перемикає IsDemolishMode).</summary>
+        public Action OnDemolishToggled;
 
         private void Awake()
         {
+            if (confirmButton == null)
+                Debug.LogWarning($"[ConstructionActionBarUI] Поле 'confirmButton' не призначено на '{name}'.", this);
+            if (cancelButton == null)
+                Debug.LogWarning($"[ConstructionActionBarUI] Поле 'cancelButton' не призначено на '{name}'.", this);
+            if (undoButton == null)
+                Debug.LogWarning($"[ConstructionActionBarUI] Поле 'undoButton' не призначено на '{name}'.", this);
+            if (redoButton == null)
+                Debug.LogWarning($"[ConstructionActionBarUI] Поле 'redoButton' не призначено на '{name}'.", this);
+
             if (confirmButton != null) confirmButton.onClick.AddListener(HandleConfirm);
             if (cancelButton  != null) cancelButton.onClick.AddListener(HandleCancel);
             if (undoButton    != null) undoButton.onClick.AddListener(HandleUndo);
             if (redoButton    != null) redoButton.onClick.AddListener(HandleRedo);
+            if (demolishButton != null) demolishButton.onClick.AddListener(HandleDemolish);
         }
 
         private void OnDestroy()
@@ -63,25 +74,32 @@ namespace Kruty1918.Moyva.Construction.UI
             if (cancelButton  != null) cancelButton.onClick.RemoveListener(HandleCancel);
             if (undoButton    != null) undoButton.onClick.RemoveListener(HandleUndo);
             if (redoButton    != null) redoButton.onClick.RemoveListener(HandleRedo);
+            if (demolishButton != null) demolishButton.onClick.RemoveListener(HandleDemolish);
         }
 
-        private void HandleConfirm() => OnConfirmClicked?.Invoke();
-        private void HandleCancel()  => OnCancelClicked?.Invoke();
-        private void HandleUndo()    => OnUndoClicked?.Invoke();
-        private void HandleRedo()    => OnRedoClicked?.Invoke();
+        private void HandleConfirm()  => OnConfirmClicked?.Invoke();
+        private void HandleCancel()   => OnCancelClicked?.Invoke();
+        private void HandleUndo()     => OnUndoClicked?.Invoke();
+        private void HandleRedo()     => OnRedoClicked?.Invoke();
+        private void HandleDemolish() => OnDemolishToggled?.Invoke();
 
         /// <summary>
-        /// Update button interactability based on the current construction state.
-        /// Called automatically by <see cref="ConstructionUIController"/>.
+        /// Оновлює стан interactable кнопок відповідно до поточного UI-стану.
+        /// Викликається автоматично через <see cref="ConstructionUIController"/>.
         /// </summary>
         public void SetState(ConstructionUIState state)
         {
-            bool isPlacing = state.IsPlacing;
+            bool isPlacing    = state.IsPlacing;
+            bool isDemolish   = state.IsDemolishMode;
 
-            if (confirmButton != null) confirmButton.interactable = isPlacing;
-            if (cancelButton  != null) cancelButton.interactable  = isPlacing;
-            if (undoButton    != null) undoButton.interactable    = isPlacing;
-            if (redoButton    != null) redoButton.interactable    = isPlacing;
+            if (confirmButton  != null) confirmButton.interactable  = isPlacing && !isDemolish;
+            if (cancelButton   != null) cancelButton.interactable   = isPlacing || isDemolish;
+            if (undoButton     != null) undoButton.interactable     = isPlacing && !isDemolish;
+            if (redoButton     != null) redoButton.interactable     = isPlacing && !isDemolish;
+
+            // Кнопка знесення активна завжди в режимі будівництва (для перемикання)
+            if (demolishButton != null)
+                demolishButton.interactable = state.IsConstructionModeActive;
         }
     }
 }
