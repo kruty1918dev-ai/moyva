@@ -8,6 +8,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
     { 
         public API.BuildingDefinition[] Buildings;
 
+        /// <summary>Отримати всі будівлі реєстру.</summary>
+        public API.BuildingDefinition[] GetAll() => Buildings ?? System.Array.Empty<API.BuildingDefinition>();
+
         /// <summary>Знайти будівлю за її ID. Повертає null якщо не знайдено.</summary>
         public API.BuildingDefinition GetById(string id) =>
             System.Array.Find(Buildings, b => b.Id == id);

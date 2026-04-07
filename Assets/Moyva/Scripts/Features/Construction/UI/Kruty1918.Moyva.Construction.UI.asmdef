@@ -1,0 +1,18 @@
+{
+    "name": "Kruty1918.Moyva.Construction.UI",
+    "rootNamespace": "Kruty1918.Moyva.Construction.UI",
+    "references": [
+        "Zenject",
+        "Kruty1918.Moyva.Construction",
+        "Kruty1918.Moyva.Signals"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

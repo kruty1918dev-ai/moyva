@@ -27,17 +27,27 @@ Construction/
 │   ├── IWallPlacementService.cs       ← контракт розміщення стін
 │   ├── IConstructionInputService.cs   ← заглушка: Ctrl+Z/Y та кнопки
 │   ├── IScreenToGridConverter.cs      ← конвертація координат (world → grid)
+│   ├── IBuildingRegistry.cs           ← контракт реєстру будівель
 │   ├── BuildingCategory.cs            ← enum: Military, Civilian, Industrial
 │   ├── BuildingPlacementState.cs      ← enum: Idle, Placing, Confirmed
 │   ├── BuildingPreviewState.cs        ← enum: None, Valid, Blocked
 │   └── BuildingDefinition.cs          ← DTO: id, назва, префаб, категорія
-└── Runtime/
-    ├── ConstructionService.cs         ← логіка pending-черги, Undo/Redo
-    ├── WallPlacementService.cs        ← Bresenham + 8 ручок для стін
-    ├── ConstructionInputService.cs    ← stub: Ctrl+Z/Y / кнопки відміни
-    ├── ScreenToGridConverter.cs       ← Camera.ScreenToWorldPoint → grid
-    ├── BuildingRegistrySO.cs          ← ScriptableObject: каталог будівель
-    └── ConstructionInstaller.cs       ← Zenject інсталер
+├── Runtime/
+│   ├── ConstructionService.cs         ← логіка pending-черги, Undo/Redo
+│   ├── WallPlacementService.cs        ← Bresenham + 8 ручок для стін
+│   ├── ConstructionInputService.cs    ← stub: Ctrl+Z/Y / кнопки відміни
+│   ├── ScreenToGridConverter.cs       ← Camera.ScreenToWorldPoint → grid
+│   ├── BuildingRegistrySO.cs          ← ScriptableObject: каталог будівель
+│   └── ConstructionInstaller.cs       ← Zenject інсталер (runtime)
+└── UI/
+    ├── ConstructionUIController.cs    ← адаптер UI ↔ IConstructionService
+    ├── BuildingSelectionPanelUI.cs    ← список будівель для вибору
+    ├── BuildingButtonUI.cs            ← кнопка окремої будівлі
+    ├── ConstructionActionBarUI.cs     ← Confirm / Cancel / Undo / Redo
+    ├── ConstructionStatusUI.cs        ← відображення стану preview/сесії
+    ├── ConstructionUIInstaller.cs     ← Zenject інсталер (UI)
+    ├── BuildingListItemData.cs        ← UI DTO для елементу списку
+    └── ConstructionUIState.cs         ← snapshot поточного UI-стану
 ```
 
 ---
@@ -99,6 +109,7 @@ IConstructionService.Confirm()
 | [construction/registry.md](construction/registry.md) | `BuildingRegistrySO` та `BuildingDefinition` |
 | [construction/wall-placement.md](construction/wall-placement.md) | `IWallPlacementService`, Bresenham, 8 ручок |
 | [construction/screen-to-grid.md](construction/screen-to-grid.md) | `IScreenToGridConverter`, конвертація координат |
+| [construction/ui.md](construction/ui.md) | UI scaffold: підключення кнопок, панелей та сигналів до `IConstructionService` |
 
 ---
 
