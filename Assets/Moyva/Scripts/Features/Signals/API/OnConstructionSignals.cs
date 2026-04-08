@@ -36,7 +36,18 @@ namespace Kruty1918.Moyva.Signals
     public struct BuildingPreviewChangedSignal
     {
         public Vector2Int Position;
+        public string BuildingId;
         public BuildingPreviewState PreviewState;
+    }
+
+    /// <summary>
+    /// Надсилається ConstructionService.TryDemolishAt() при успішному знесенні будівлі гравцем.
+    /// Отримується: спавнер об'єктів (видалення візуалу), UI.
+    /// </summary>
+    public struct BuildingDemolishedSignal
+    {
+        public string BuildingId;
+        public Vector2Int Position;
     }
 
     /// <summary>

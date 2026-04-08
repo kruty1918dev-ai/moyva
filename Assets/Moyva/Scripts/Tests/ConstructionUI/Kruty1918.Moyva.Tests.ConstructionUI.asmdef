@@ -1,0 +1,22 @@
+{
+    "name": "Kruty1918.Moyva.Tests.ConstructionUI",
+    "rootNamespace": "Kruty1918.Moyva.Tests.ConstructionUI",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.Construction",
+        "Kruty1918.Moyva.Construction.UI"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

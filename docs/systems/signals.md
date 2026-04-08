@@ -18,11 +18,60 @@
 
 ---
 
+## Реєстрація сигналів
+
+`SignalBusInstaller` декларує всі сигнали проєкту при запуску SceneContext.
+Деякі сигнали позначені `.OptionalSubscriber()` — відсутність підписника не викликає помилку.
+
+```csharp
+public class SignalBusInstaller : MonoInstaller
+{
+    public override void InstallBindings()
+    {
+        Zenject.SignalBusInstaller.Install(Container);
+
+        // Ядро
+        Container.DeclareSignal<TileClickedSignal>();
+        Container.DeclareSignal<UnitCreatedSignal>();
+        Container.DeclareSignal<UnitMovedSignal>();
+        Container.DeclareSignal<UnitDestroyedSignal>();
+        Container.DeclareSignal<InterruptMovementSignal>();
+        Container.DeclareSignal<OnMapObjectSpawnedSignal>();
+        Container.DeclareSignal<OnObjectsMapChangedSignal>().OptionalSubscriber();
+        Container.DeclareSignal<WorldBuiltSignal>();
+        Container.DeclareSignal<WorldGeneratedDataSignal>().OptionalSubscriber();
+
+        // GameMode
+        Container.DeclareSignal<GameModeChangedSignal>();
+        Container.DeclareSignal<GameModeChangeRequestedSignal>();
+
+        // Construction
+        Container.DeclareSignal<BuildingPlacedSignal>();
+        Container.DeclareSignal<BuildingCancelledSignal>();
+        Container.DeclareSignal<BuildingPreviewChangedSignal>();
+        Container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
+        Container.DeclareSignal<ShowWallHandlesSignal>();
+
+        // FogOfWar
+        Container.DeclareSignal<FogStateChangedSignal>();
+
+        // SaveSystem
+        Container.DeclareSignal<SaveRequestedSignal>();
+        Container.DeclareSignal<LoadRequestedSignal>();
+        Container.DeclareSignal<SaveCompletedSignal>().OptionalSubscriber();
+    }
+}
+```
+
+---
+
 ## Усі сигнали проекту
 
-### `TileClickedSignal`
+### Ядро: взаємодія та карта
 
-Надсилається: `TileView.OnMouseDown()`  
+#### `TileClickedSignal`
+
+Надсилається: `TileView.OnMouseDown()`
 Отримується: `TileInteractionService`
 
 ```csharp
@@ -34,15 +83,15 @@ public class TileClickedSignal
 
 ---
 
-### `UnitCreatedSignal`
+#### `UnitCreatedSignal`
 
-Надсилається: `UnitFactory.CreateUnit()`  
-Отримується: `UnitService`
+Надсилається: `UnitFactory.CreateUnit()`
+Отримується: `UnitService`, `FogOfWarService`
 
 ```csharp
 public struct UnitCreatedSignal
 {
-    public string     UnitId;      // Унікальний ID нового юніта ("warrior_01_123456")
+    public string     UnitId;      // Унікальний ID нового юніта ("warrior-01_1")
     public string     UnitTypeId;  // Клас юніта ("warrior")
     public Vector2Int Position;    // Стартова позиція на сітці
     public GameObject UnitObject;  // Посилання на spawned GameObject
@@ -51,10 +100,10 @@ public struct UnitCreatedSignal
 
 ---
 
-### `UnitMovedSignal`
+#### `UnitMovedSignal`
 
-Надсилається: `UnitMovementService` (через `OnStepCompleted` анімації)  
-Отримується: `UnitService`
+Надсилається: `UnitMovementService` (через `OnStepCompleted` анімації)
+Отримується: `UnitService`, `FogOfWarService`
 
 ```csharp
 public struct UnitMovedSignal
@@ -67,10 +116,10 @@ public struct UnitMovedSignal
 
 ---
 
-### `UnitDestroyedSignal`
+#### `UnitDestroyedSignal`
 
-Надсилається: (зарезервовано для системи смерті)  
-Отримується: `UnitService`
+Надсилається: (зарезервовано для системи смерті)
+Отримується: `UnitService`, `FogOfWarService`
 
 ```csharp
 public struct UnitDestroyedSignal
@@ -81,9 +130,9 @@ public struct UnitDestroyedSignal
 
 ---
 
-### `InterruptMovementSignal`
+#### `InterruptMovementSignal`
 
-Надсилається: `UnitService` (коли стаміна вичерпана)  
+Надсилається: `UnitService` (коли стаміна вичерпана)
 Отримується: `UnitMovementService`
 
 ```csharp
@@ -95,9 +144,9 @@ public struct InterruptMovementSignal
 
 ---
 
-### `OnMapObjectSpawnedSignal`
+#### `OnMapObjectSpawnedSignal`
 
-Надсилається: `MapVisualInstantiator` (після спавну статичного об'єкта карти)  
+Надсилається: `MapVisualInstantiator` (після спавну статичного об'єкта карти)
 Отримується: `ObjectsMapService`
 
 ```csharp
@@ -110,10 +159,11 @@ public struct OnMapObjectSpawnedSignal
 
 ---
 
-### `OnObjectsMapChangedSignal`
+#### `OnObjectsMapChangedSignal`
 
-Надсилається: `ObjectsMapService` (після будь-якої зміни карти об'єктів)  
+Надсилається: `ObjectsMapService` (після будь-якої зміни карти об'єктів)
 Отримується: `TileView` та інші підписники
+Декларація: `.OptionalSubscriber()`
 
 ```csharp
 public struct OnObjectsMapChangedSignal
@@ -125,10 +175,42 @@ public struct OnObjectsMapChangedSignal
 
 ---
 
-### `GameModeChangedSignal`
+#### `WorldBuiltSignal`
+
+Надсилається: `MapVisualInstantiator` (після завершення побудови світу)
+Отримується: системи пост-генерації (FogOfWar, Bootstrap тощо)
+
+```csharp
+public struct WorldBuiltSignal { }
+```
+
+---
+
+#### `WorldGeneratedDataSignal`
+
+Надсилається: генератор карти (після генерації даних)
+Отримується: підписники відображення карти
+Декларація: `.OptionalSubscriber()`
+
+```csharp
+public struct WorldGeneratedDataSignal
+{
+    public int Width;
+    public int Height;
+    public string[,] TileMap;
+    public string[,] ObjectMap;
+    public float[,] HeightMap;
+}
+```
+
+---
+
+### GameMode: режими гри
+
+#### `GameModeChangedSignal`
 
 Надсилається: `GameModeService.SetMode()`
-Отримується: `TileInteractionService`, `ConstructionService`
+Отримується: `TileInteractionService`, `ConstructionService`, `GameModePanelController`, `GameModeUIController`, `ConstructionUIController`
 
 ```csharp
 public struct GameModeChangedSignal
@@ -139,10 +221,26 @@ public struct GameModeChangedSignal
 
 ---
 
-### `BuildingPlacedSignal`
+#### `GameModeChangeRequestedSignal`
+
+Надсилається: UI-контролери (`ConstructionUIController`, `GameModeUIController`)
+Отримується: `GameModeChangeRequestRouter` → делегує до `IGameModeService.SetMode()`
+
+```csharp
+public struct GameModeChangeRequestedSignal
+{
+    public GameModeType RequestedMode;
+}
+```
+
+---
+
+### Construction: будівництво
+
+#### `BuildingPlacedSignal`
 
 Надсилається: `ConstructionService.Confirm()`
-Отримується: підписники (спавнер об'єктів, UI)
+Отримується: `ConstructionVisualService`, `ConstructionUIController`
 
 ```csharp
 public struct BuildingPlacedSignal
@@ -154,10 +252,10 @@ public struct BuildingPlacedSignal
 
 ---
 
-### `BuildingCancelledSignal`
+#### `BuildingCancelledSignal`
 
 Надсилається: `ConstructionService.Cancel()`
-Отримується: UI (закриває сесію будівництва)
+Отримується: `ConstructionVisualService`, `ConstructionUIController`
 
 ```csharp
 public struct BuildingCancelledSignal { }
@@ -165,15 +263,16 @@ public struct BuildingCancelledSignal { }
 
 ---
 
-### `BuildingPreviewChangedSignal`
+#### `BuildingPreviewChangedSignal`
 
 Надсилається: `ConstructionService.TryPreviewAt()`
-Отримується: `TileView` (змінює стан відображення тайлу)
+Отримується: `ConstructionVisualService`, `ConstructionUIController`
 
 ```csharp
 public struct BuildingPreviewChangedSignal
 {
     public Vector2Int Position;
+    public string BuildingId;
     public BuildingPreviewState PreviewState;
     // None = підсвітку знято
     // Valid = тайл вільний, preview активний
@@ -183,7 +282,23 @@ public struct BuildingPreviewChangedSignal
 
 ---
 
-### `ShowWallHandlesSignal`
+#### `BuildingDemolishedSignal`
+
+Надсилається: `ConstructionService.TryDemolishAt()`
+Отримується: `ConstructionVisualService`
+Декларація: `.OptionalSubscriber()`
+
+```csharp
+public struct BuildingDemolishedSignal
+{
+    public string BuildingId;
+    public Vector2Int Position;
+}
+```
+
+---
+
+#### `ShowWallHandlesSignal`
 
 Надсилається: `WallPlacementService.ShowWallHandles()` / `EndDrag()`
 Отримується: UI-компонент ручок стін
@@ -193,6 +308,69 @@ public struct ShowWallHandlesSignal
 {
     public Vector2Int Center;
     public bool Hide; // true — приховати ручки
+}
+```
+
+---
+
+### FogOfWar: туман війни
+
+#### `FogStateChangedSignal`
+
+Надсилається: `FogOfWarService` (після оновлення стану видимості)
+Отримується: підписники оновлення тумана
+
+```csharp
+public struct FogStateChangedSignal
+{
+    public int ChangedTilesCount;
+}
+```
+
+---
+
+### SaveSystem: збереження
+
+#### `SaveRequestedSignal`
+
+Надсилається: UI або гарячі клавіші (запит на збереження)
+Отримується: `SaveService`
+
+```csharp
+public struct SaveRequestedSignal
+{
+    public int Slot;
+}
+```
+
+---
+
+#### `LoadRequestedSignal`
+
+Надсилається: UI або гарячі клавіші (запит на завантаження)
+Отримується: `SaveService`
+
+```csharp
+public struct LoadRequestedSignal
+{
+    public int Slot;
+}
+```
+
+---
+
+#### `SaveCompletedSignal`
+
+Надсилається: `SaveService` (після завершення операції збереження)
+Отримується: UI-підписники
+Декларація: `.OptionalSubscriber()`
+
+```csharp
+public struct SaveCompletedSignal
+{
+    public int    Slot;
+    public bool   Success;
+    public string ErrorMessage;
 }
 ```
 

@@ -16,4 +16,13 @@ namespace Kruty1918.Moyva.Signals
     {
         public GameModeType NewMode;
     }
+
+    /// <summary>
+    /// Запит на зміну режиму гри від UI/інших модулів.
+    /// Обробляється в GameMode модулі окремим сервісом-маршрутизатором.
+    /// </summary>
+    public struct GameModeChangeRequestedSignal
+    {
+        public GameModeType RequestedMode;
+    }
 }
