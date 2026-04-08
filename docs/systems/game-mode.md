@@ -29,9 +29,10 @@
    - інакше → `CurrentMode = newMode` і `SignalBus.Fire(GameModeChangedSignal { NewMode })`.
 3. `TileInteractionService` підписується на `GameModeChangedSignal` і вимикає обробку кліків у режимі `Construction`.
 4. `ConstructionService` підписується на той самий сигнал і активується лише в режимі `Construction`.
+5. `GameModePanelController` підписується на `GameModeChangedSignal` і показує/приховує всі зареєстровані `IGameModePanel`.
 
 ```
-UI/GameManager викликає IGameModeService.SetMode(Construction)
+UI викликає IGameModeService.SetMode(Construction)
     │
     ▼
 GameModeService: CurrentMode ← Construction
@@ -39,8 +40,12 @@ GameModeService: CurrentMode ← Construction
     ▼
 SignalBus.Fire(GameModeChangedSignal { NewMode = Construction })
     │
-    ├─► TileInteractionService.OnGameModeChanged() → _isActive = false
-    └─► ConstructionService.OnGameModeChanged()    → _isActive = true
+    ├─► TileInteractionService.OnGameModeChanged()  → _isActive = false
+    ├─► ConstructionService.OnGameModeChanged()     → _isActive = true
+    └─► GameModePanelController.OnGameModeChanged()
+            │
+            ├─► panel.TargetMode == Construction → panel.Show()
+            └─► panel.TargetMode != Construction → panel.Hide()
 ```
 
 ---
@@ -79,6 +84,38 @@ namespace Kruty1918.Moyva.GameMode.API
 }
 ```
 
+### `IGameModePanel`
+
+Контракт для UI-панелей, видимість яких залежить від активного режиму гри.
+`GameModePanelController` автоматично показує/приховує всі зареєстровані реалізації.
+
+```csharp
+namespace Kruty1918.Moyva.GameMode.API
+{
+    public interface IGameModePanel
+    {
+        /// <summary>Режим гри, при якому ця панель має бути видима.</summary>
+        GameModeType TargetMode { get; }
+
+        void Show();
+        void Hide();
+    }
+}
+```
+
+**Як додати нову UI-панель для свого режиму:**
+
+1. Реалізуйте `IGameModePanel` у своєму MonoBehaviour або plain-класі.
+2. Вкажіть `TargetMode`.
+3. Зареєструйте в інсталері фічі:
+
+```csharp
+Container.BindInterfacesTo<MyFeaturePanel>().AsSingle();
+```
+
+Більше нічого не потрібно — `GameModePanelController` отримає панель через Zenject
+і керуватиме нею автоматично.
+
 ---
 
 ## Сигнали
@@ -86,7 +123,7 @@ namespace Kruty1918.Moyva.GameMode.API
 ### `GameModeChangedSignal`
 
 Надсилається: `GameModeService.SetMode()`
-Отримується: `TileInteractionService`, `ConstructionService`
+Отримується: `TileInteractionService`, `ConstructionService`, `GameModePanelController`
 
 ```csharp
 public struct GameModeChangedSignal
@@ -106,6 +143,9 @@ internal sealed class GameModeInstaller : MonoInstaller
     {
         Container.Bind<IGameModeService>()
             .To<GameModeService>()
+            .AsSingle();
+
+        Container.BindInterfacesAndSelfTo<GameModePanelController>()
             .AsSingle();
     }
 }

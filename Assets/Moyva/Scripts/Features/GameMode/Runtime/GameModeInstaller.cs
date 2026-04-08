@@ -11,6 +11,9 @@ namespace Kruty1918.Moyva.GameMode.Runtime
             Container.Bind<IGameModeService>()
                 .To<GameModeService>()
                 .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<GameModePanelController>()
+                .AsSingle();
         }
     }
 }
