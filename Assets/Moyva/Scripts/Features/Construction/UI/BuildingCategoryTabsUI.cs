@@ -34,6 +34,22 @@ namespace Kruty1918.Moyva.Construction.UI
         [Tooltip("Колір неактивної вкладки.")]
         [SerializeField] private Color inactiveColor = Color.white;
 
+        [Tooltip("Єдиний розмір кнопки вкладки класу будівель.")]
+        [SerializeField] private Vector2 categoryButtonSize = new Vector2(180f, 64f);
+
+        [Header("Анімація натиску (DOTween)")]
+        [Tooltip("Множник масштабу для анімації натиску вкладки.")]
+        [SerializeField] private float pressScaleMultiplier = 1.06f;
+
+        [Tooltip("Тривалість анімації натиску вкладки у секундах.")]
+        [SerializeField] private float pressDuration = 0.14f;
+
+        [Tooltip("Інтенсивність поштовху (кількість коливань).")]
+        [SerializeField] private int pressVibrato = 7;
+
+        [Tooltip("Пружність анімації натиску (0..1).")]
+        [SerializeField] private float pressElasticity = 0.75f;
+
         /// <summary>
         /// Спрацьовує при виборі категорії. null означає «показати всі».
         /// </summary>
@@ -63,13 +79,8 @@ namespace Kruty1918.Moyva.Construction.UI
             if (tabContainer == null || tabButtonPrefab == null)
                 return;
 
-            // Збираємо унікальні категорії
-            var seen = new HashSet<BuildingCategory>();
-            foreach (var item in buildings)
-            {
-                if (seen.Add(item.Category))
-                    _categories.Add(item.Category);
-            }
+            // Вимога: щоразу на ініціалізації читаємо enum категорій заново.
+            _categories.AddRange((BuildingCategory[])Enum.GetValues(typeof(BuildingCategory)));
 
             // Кнопка «Всі»
             CreateTabButton("Всі", -1);
@@ -90,11 +101,25 @@ namespace Kruty1918.Moyva.Construction.UI
             var btn = go.GetComponent<Button>();
             var lbl = go.GetComponentInChildren<TextMeshProUGUI>();
 
+            if (btn == null && lbl != null)
+            {
+                btn = go.AddComponent<Button>();
+                Debug.LogWarning($"[Construction UI] На вкладці '{labelText}' не було Button. Компонент додано автоматично.", this);
+            }
+
+            EnsureLayoutElement(go.transform as RectTransform);
+
             if (lbl != null) lbl.text = labelText;
 
             int capturedIndex = index;
             if (btn != null)
-                btn.onClick.AddListener(() => OnTabClicked(capturedIndex));
+            {
+                btn.onClick.AddListener(() =>
+                {
+                    ConstructionButtonPressAnimator.AnimatePress(btn.transform, pressScaleMultiplier, pressDuration, pressVibrato, pressElasticity);
+                    OnTabClicked(capturedIndex);
+                });
+            }
 
             _tabs.Add(go);
             _tabButtons.Add(btn);
@@ -128,6 +153,23 @@ namespace Kruty1918.Moyva.Construction.UI
             _tabButtons.Clear();
             _categories.Clear();
             _activeIndex = -1;
+        }
+
+        private void EnsureLayoutElement(RectTransform rectTransform)
+        {
+            if (rectTransform == null)
+                return;
+
+            var layoutElement = rectTransform.GetComponent<LayoutElement>();
+            if (layoutElement == null)
+                layoutElement = rectTransform.gameObject.AddComponent<LayoutElement>();
+
+            layoutElement.minWidth = categoryButtonSize.x;
+            layoutElement.preferredWidth = categoryButtonSize.x;
+            layoutElement.minHeight = categoryButtonSize.y;
+            layoutElement.preferredHeight = categoryButtonSize.y;
+            layoutElement.flexibleWidth = 0f;
+            layoutElement.flexibleHeight = 0f;
         }
 
         private void OnDestroy() => ClearTabs();

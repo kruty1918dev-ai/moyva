@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.Construction.UI
 {
@@ -29,6 +30,10 @@ namespace Kruty1918.Moyva.Construction.UI
         [Tooltip("Панель вкладок категорій. Необов'язкова.")]
         [SerializeField] private BuildingCategoryTabsUI categoryTabs;
 
+        [Header("Відображення кнопок")]
+        [Tooltip("Єдиний розмір кнопок будівель у меню.")]
+        [SerializeField] private Vector2 buttonSize = new Vector2(160f, 160f);
+
         /// <summary>
         /// Спрацьовує при натисканні кнопки будівлі.
         /// Аргумент — унікальний ідентифікатор будівлі (BuildingDefinition.Id).
@@ -37,6 +42,7 @@ namespace Kruty1918.Moyva.Construction.UI
 
         private readonly List<GameObject> _spawnedButtons = new List<GameObject>();
         private readonly List<BuildingButtonUI> _buttonComponents = new List<BuildingButtonUI>();
+        private readonly Dictionary<string, BuildingButtonUI> _buttonsById = new Dictionary<string, BuildingButtonUI>();
         private readonly List<BuildingListItemData> _allItems = new List<BuildingListItemData>();
 
         private BuildingButtonUI _selectedButton;
@@ -75,6 +81,7 @@ namespace Kruty1918.Moyva.Construction.UI
             if (categoryTabs != null)
                 categoryTabs.Initialize(_allItems);
 
+            BuildCachedButtons();
             ApplyFilter();
         }
 
@@ -99,16 +106,13 @@ namespace Kruty1918.Moyva.Construction.UI
 
             _selectedButton = null;
 
-            foreach (var btn in _buttonComponents)
-            {
-                if (!btn.gameObject.activeSelf) continue;
+            if (string.IsNullOrWhiteSpace(buildingId))
+                return;
 
-                if (btn.GetBuildingId() == buildingId)
-                {
-                    _selectedButton = btn;
-                    btn.SetSelected(true);
-                    break;
-                }
+            if (_buttonsById.TryGetValue(buildingId, out var selected))
+            {
+                _selectedButton = selected;
+                _selectedButton.SetSelected(true);
             }
         }
 
@@ -132,6 +136,7 @@ namespace Kruty1918.Moyva.Construction.UI
             }
             _spawnedButtons.Clear();
             _buttonComponents.Clear();
+            _buttonsById.Clear();
             _selectedButton = null;
         }
 
@@ -142,23 +147,76 @@ namespace Kruty1918.Moyva.Construction.UI
             if (itemContainer == null || buttonPrefab == null)
                 return;
 
-            ClearItems();
+            foreach (var btn in _buttonComponents)
+            {
+                var buildingId = btn.GetBuildingId();
+                if (!_buttonsById.TryGetValue(buildingId, out var button))
+                    continue;
+
+                var item = FindItemById(buildingId);
+                bool visible = item != null && (!_activeCategory.HasValue || item.Category == _activeCategory.Value);
+                button.gameObject.SetActive(visible);
+
+                if (!visible && button == _selectedButton)
+                {
+                    button.SetSelected(false);
+                    _selectedButton = null;
+                }
+            }
+        }
+
+        private void BuildCachedButtons()
+        {
+            if (itemContainer == null || buttonPrefab == null)
+                return;
 
             foreach (var item in _allItems)
             {
-                if (_activeCategory.HasValue && item.Category != _activeCategory.Value)
-                    continue;
-
                 var go = Instantiate(buttonPrefab, itemContainer);
+                EnsureLayoutElement(go.transform as RectTransform);
+
                 var btn = go.GetComponent<BuildingButtonUI>();
                 if (btn != null)
                 {
                     btn.Setup(item, HandleBuildingClicked);
                     _buttonComponents.Add(btn);
+                    _buttonsById[item.Id] = btn;
+                }
+                else
+                {
+                    Debug.LogWarning($"[Construction UI] На префабі '{buttonPrefab.name}' відсутній BuildingButtonUI. Запис '{item.Id}' не буде керованим.", this);
                 }
 
                 _spawnedButtons.Add(go);
             }
+        }
+
+        private void EnsureLayoutElement(RectTransform rectTransform)
+        {
+            if (rectTransform == null)
+                return;
+
+            var layoutElement = rectTransform.GetComponent<LayoutElement>();
+            if (layoutElement == null)
+                layoutElement = rectTransform.gameObject.AddComponent<LayoutElement>();
+
+            layoutElement.minWidth = buttonSize.x;
+            layoutElement.preferredWidth = buttonSize.x;
+            layoutElement.minHeight = buttonSize.y;
+            layoutElement.preferredHeight = buttonSize.y;
+            layoutElement.flexibleWidth = 0f;
+            layoutElement.flexibleHeight = 0f;
+        }
+
+        private BuildingListItemData FindItemById(string id)
+        {
+            for (int i = 0; i < _allItems.Count; i++)
+            {
+                if (_allItems[i].Id == id)
+                    return _allItems[i];
+            }
+
+            return null;
         }
 
         private void HandleBuildingClicked(string buildingId)

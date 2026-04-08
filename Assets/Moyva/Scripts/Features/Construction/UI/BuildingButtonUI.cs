@@ -31,6 +31,19 @@ namespace Kruty1918.Moyva.Construction.UI
         [Tooltip("Масштаб кнопки у вибраному стані (щоб виділялась в меню).")]
         [SerializeField] private Vector3 selectedScale = new Vector3(1.15f, 1.15f, 1f);
 
+        [Header("Анімація натиску (DOTween)")]
+        [Tooltip("Множник масштабу для анімації натиску кнопки.")]
+        [SerializeField] private float pressScaleMultiplier = 1.08f;
+
+        [Tooltip("Тривалість анімації натиску у секундах.")]
+        [SerializeField] private float pressDuration = 0.16f;
+
+        [Tooltip("Інтенсивність поштовху (кількість коливань).")]
+        [SerializeField] private int pressVibrato = 8;
+
+        [Tooltip("Пружність анімації натиску (0..1).")]
+        [SerializeField] private float pressElasticity = 0.8f;
+
         private string _buildingId;
         private Action<string> _onClick;
         private Vector3 _defaultScale;
@@ -76,7 +89,11 @@ namespace Kruty1918.Moyva.Construction.UI
             transform.localScale = selected ? selectedScale : _defaultScale;
         }
 
-        private void HandleClick() => _onClick?.Invoke(_buildingId);
+        private void HandleClick()
+        {
+            ConstructionButtonPressAnimator.AnimatePress(transform, pressScaleMultiplier, pressDuration, pressVibrato, pressElasticity);
+            _onClick?.Invoke(_buildingId);
+        }
 
         /// <summary>Повертає ID будівлі, прив'язаний до цієї кнопки.</summary>
         public string GetBuildingId() => _buildingId;

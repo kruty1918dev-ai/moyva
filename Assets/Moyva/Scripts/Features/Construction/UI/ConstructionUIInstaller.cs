@@ -17,7 +17,6 @@ namespace Kruty1918.Moyva.Construction.UI
     /// Залежності, що вирішуються автоматично з контейнера:
     ///   - <c>IConstructionService</c>  (надається ConstructionInstaller)
     ///   - <c>IBuildingRegistry</c>     (надається ConstructionInstaller)
-    ///   - <c>IGameModeService</c>      (надається GameModeInstaller)
     ///   - <c>SignalBus</c>             (надається SignalBusInstaller)
     /// </summary>
     public class ConstructionUIInstaller : MonoInstaller
@@ -36,7 +35,8 @@ namespace Kruty1918.Moyva.Construction.UI
 
             Container.BindInterfacesAndSelfTo<ConstructionUIController>()
                 .FromComponentOn(uiController.gameObject)
-                .AsSingle();
+                .AsSingle()
+                .NonLazy(); // Ініціалізується одразу, ОСТАННІМ
         }
     }
 }

@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.Construction.UI
     /// Значення лейблів:
     ///   placementStateLabel   → "Idle" | "Placing" | "Confirmed"
     ///   selectedBuildingLabel → назва вибраної будівлі, або "--"
-    ///   previewStateLabel     → "✓ Дійсно" | "✗ Заблоковано" | "--"
+    ///   previewStateLabel     → "OK Дійсно" | "X Заблоковано" | "--"
     /// </summary>
     public class ConstructionStatusUI : MonoBehaviour
     {
@@ -57,10 +57,10 @@ namespace Kruty1918.Moyva.Construction.UI
                 switch (state.LastPreviewState)
                 {
                     case BuildingPreviewState.Valid:
-                        previewStateLabel.text = "\u2713 Дійсно";
+                        previewStateLabel.text = "OK Дійсно";
                         break;
                     case BuildingPreviewState.Blocked:
-                        previewStateLabel.text = "\u2717 Заблоковано";
+                        previewStateLabel.text = "X Заблоковано";
                         break;
                     default:
                         previewStateLabel.text = "--";

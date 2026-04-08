@@ -5,7 +5,6 @@
         "Zenject",
         "Kruty1918.Moyva.Construction",
         "Kruty1918.Moyva.Signals",
-        "Kruty1918.Moyva.GameMode",
         "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
@@ -15,6 +14,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.demigiant.dotween",
+            "expression": "1.0.0",
+            "define": "DOTWEEN_ENABLED"
+        }
+    ],
     "noEngineReferences": false
 }

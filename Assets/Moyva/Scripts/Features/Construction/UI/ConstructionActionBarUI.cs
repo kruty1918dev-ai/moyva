@@ -35,6 +35,19 @@ namespace Kruty1918.Moyva.Construction.UI
         [Tooltip("Перемикач режиму знесення (IConstructionService.ToggleDemolishMode()). Необов'язковий.")]
         [SerializeField] private Button demolishButton;
 
+        [Header("Анімація натиску (DOTween)")]
+        [Tooltip("Множник масштабу для анімації натиску кнопок дій.")]
+        [SerializeField] private float pressScaleMultiplier = 1.07f;
+
+        [Tooltip("Тривалість анімації натиску у секундах.")]
+        [SerializeField] private float pressDuration = 0.12f;
+
+        [Tooltip("Інтенсивність поштовху (кількість коливань).")]
+        [SerializeField] private int pressVibrato = 7;
+
+        [Tooltip("Пружність анімації натиску (0..1).")]
+        [SerializeField] private float pressElasticity = 0.75f;
+
         /// <summary>Спрацьовує при натисканні кнопки «Підтвердити».</summary>
         public Action OnConfirmClicked;
 
@@ -77,11 +90,43 @@ namespace Kruty1918.Moyva.Construction.UI
             if (demolishButton != null) demolishButton.onClick.RemoveListener(HandleDemolish);
         }
 
-        private void HandleConfirm()  => OnConfirmClicked?.Invoke();
-        private void HandleCancel()   => OnCancelClicked?.Invoke();
-        private void HandleUndo()     => OnUndoClicked?.Invoke();
-        private void HandleRedo()     => OnRedoClicked?.Invoke();
-        private void HandleDemolish() => OnDemolishToggled?.Invoke();
+        private void HandleConfirm()
+        {
+            AnimateButton(confirmButton);
+            OnConfirmClicked?.Invoke();
+        }
+
+        private void HandleCancel()
+        {
+            AnimateButton(cancelButton);
+            OnCancelClicked?.Invoke();
+        }
+
+        private void HandleUndo()
+        {
+            AnimateButton(undoButton);
+            OnUndoClicked?.Invoke();
+        }
+
+        private void HandleRedo()
+        {
+            AnimateButton(redoButton);
+            OnRedoClicked?.Invoke();
+        }
+
+        private void HandleDemolish()
+        {
+            AnimateButton(demolishButton);
+            OnDemolishToggled?.Invoke();
+        }
+
+        private void AnimateButton(Button button)
+        {
+            if (button == null)
+                return;
+
+            ConstructionButtonPressAnimator.AnimatePress(button.transform, pressScaleMultiplier, pressDuration, pressVibrato, pressElasticity);
+        }
 
         /// <summary>
         /// Оновлює стан interactable кнопок відповідно до поточного UI-стану.

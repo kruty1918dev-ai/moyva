@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -9,22 +8,25 @@ using Zenject;
 namespace Kruty1918.Moyva.Construction.UI
 {
     /// <summary>
-    /// Головний адаптер між UI та <see cref="IConstructionService"/> / <see cref="IGameModeService"/>.
-    /// Додай цей MonoBehaviour до GameObject у сцені та підключи підпанелі через Inspector.
+    /// Адаптер між Construction UI панелями та <see cref="IConstructionService"/>.
+    /// Керує ТІЛЬКИ своїми панелями (показ/сховання), реагуючи на сигнали та дії гравця.
+    /// Перемикання режимів гри керує окремо — через GameMode систему.
     ///
     /// ФУНКЦІОНАЛЬНІСТЬ:
-    /// — Перемикання між звичайним та будівельним режимом (ховає/показує gameplayUIRoot).
+    /// — Показання/сховання Construction UI панелей при зміні режиму гри.
     /// — Вибір будівлі → виділення іконки у меню → preview на тайлі.
-    /// — Підтвердження, скасування, Undo/Redo.
+    /// — Підтвердження, скасування, Undo/Redo (тільки будівництво).
     /// — Режим знесення (тільки будівлі, поставлені гравцем).
     ///
     /// ЯК ПІДКЛЮЧИТИ В UNITY:
-    /// 1. Додай компонент до UI GameObject (корінь UI будівництва).
+    /// 1. Додай компонент до GameObject U корені Construction UI (або якому-то його дочірньому елементу).
     /// 2. Перетягни <see cref="BuildingSelectionPanelUI"/>, <see cref="ConstructionActionBarUI"/>,
     ///    <see cref="ConstructionStatusUI"/> у відповідні поля.
-    /// 3. Призначи <b>gameplayUIRoot</b> — кореневий GameObject основного UI (ховається в режимі будівництва).
-    /// 4. Призначи <b>constructionUIRoot</b> — кореневий GameObject UI будівництва (або залиш null — використається gameObject).
-    /// 5. Додай <see cref="ConstructionUIInstaller"/> до SceneContext.
+    /// 3. Призначи <b>constructionUIRoot</b> — кореневий GameObject UI будівництва (якщо null — використається gameObject).
+    /// 4. Додай <see cref="ConstructionUIInstaller"/> до SceneContext.
+    ///
+    /// ПРИМІТКА: Управління ігровим режимом (входу/виходу з режиму будівництва) повинно бути
+    /// пов'язано з кнопками на ігровому UI (не тут!). Див. GameModeChangeRequestRouter.
     /// </summary>
     public class ConstructionUIController : MonoBehaviour, IInitializable, IDisposable
     {
@@ -38,17 +40,13 @@ namespace Kruty1918.Moyva.Construction.UI
         [Tooltip("Панель статусу розміщення/preview.")]
         [SerializeField] private ConstructionStatusUI statusDisplay;
 
-        [Header("Перемикання режиму (перетягни в Inspector)")]
-        [Tooltip("Кореневий GameObject звичайного (ігрового) UI. Ховається в режимі будівництва.")]
-        [SerializeField] private GameObject gameplayUIRoot;
-
+        [Header("Construction UI (перетягни в Inspector)")]
         [Tooltip("Кореневий GameObject UI будівництва. Якщо null — використовується gameObject цього компонента.")]
         [SerializeField] private GameObject constructionUIRoot;
 
         // --- Інжектується Zenject ---
         private IConstructionService _constructionService;
         private IBuildingRegistry _buildingRegistry;
-        private IGameModeService _gameModeService;
         private SignalBus _signalBus;
 
         // --- Внутрішній стан ---
@@ -56,24 +54,29 @@ namespace Kruty1918.Moyva.Construction.UI
         private BuildingPreviewState _lastPreviewState;
         private Vector2Int _lastPreviewPosition;
         private bool _isConstructionModeActive;
+        private readonly BuildingMenuFactory _menuFactory = new BuildingMenuFactory();
 
         /// <summary>Точка ін'єкції Zenject. Не викликати вручну.</summary>
         [Inject]
         public void Construct(
             IConstructionService constructionService,
             IBuildingRegistry buildingRegistry,
-            IGameModeService gameModeService,
             SignalBus signalBus)
         {
             _constructionService = constructionService;
             _buildingRegistry = buildingRegistry;
-            _gameModeService = gameModeService;
             _signalBus = signalBus;
         }
 
         /// <summary>Викликається Zenject після ін'єкції. Підписується на сигнали та заповнює UI.</summary>
         public void Initialize()
         {
+            if (_signalBus == null || _constructionService == null || _buildingRegistry == null)
+            {
+                Debug.LogError("[ConstructionUIController] Zenject не інʼєктував усі залежності. Перевір SceneContext installers для Construction та Signals.", this);
+                return;
+            }
+
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.Subscribe<BuildingCancelledSignal>(OnBuildingCancelled);
             _signalBus.Subscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
@@ -97,8 +100,7 @@ namespace Kruty1918.Moyva.Construction.UI
                 Debug.LogWarning("[ConstructionUIController] Поле 'actionBar' не призначено. Кнопки дій не будуть підключені.", this);
             }
 
-            if (gameplayUIRoot == null)
-                Debug.LogWarning("[ConstructionUIController] Поле 'gameplayUIRoot' не призначено. Перемикання режимів не ховатиме основний UI.", this);
+
 
             // Ховаємо UI будівництва при старті
             SetConstructionUIVisible(false);
@@ -110,10 +112,13 @@ namespace Kruty1918.Moyva.Construction.UI
         /// <summary>Викликається Zenject при знищенні. Відписується від сигналів.</summary>
         public void Dispose()
         {
-            _signalBus.Unsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
-            _signalBus.Unsubscribe<BuildingCancelledSignal>(OnBuildingCancelled);
-            _signalBus.Unsubscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
-            _signalBus.Unsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+            if (_signalBus != null)
+            {
+                _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+                _signalBus.TryUnsubscribe<BuildingCancelledSignal>(OnBuildingCancelled);
+                _signalBus.TryUnsubscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
+                _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+            }
 
             if (selectionPanel != null)
                 selectionPanel.OnBuildingClicked -= OnBuildingSelected;
@@ -133,12 +138,14 @@ namespace Kruty1918.Moyva.Construction.UI
         // -----------------------------------------------------------------------
 
         /// <summary>
-        /// Увійти в режим будівництва. Підключи до кнопки «Будівництво» основного UI.
-        /// Ховає gameplayUIRoot, показує UI будівництва, перемикає GameMode → Construction.
-        /// </summary>
+        /// Запросити вхід в режим будівництва.</summary>
+        /// <remarks>
+        /// Підключи до кнопки «Будівництво» основного UI.
+        /// Це надсилає запит GameModeChangeRequestRouter, який вирішує чи дозволити.
+        /// </remarks>
         public void EnterConstructionMode()
         {
-            _gameModeService?.SetMode(GameModeType.Construction);
+            RequestEnterConstructionMode();
         }
 
         /// <summary>
@@ -148,13 +155,14 @@ namespace Kruty1918.Moyva.Construction.UI
         public void OnConfirmClicked() => _constructionService.Confirm();
 
         /// <summary>
-        /// Скасувати поточну сесію будівництва (повертає в Normal режим).
+        /// Скасувати поточну сесію будівництва.</summary>
+        /// <remarks>
         /// Підключи: Cancel button → OnClick → цей метод.
-        /// </summary>
+        /// Це ТІЛЬКИ скасовує будівництво. Вихід з режиму (якщо потрібен) керується окремо.
+        /// </remarks>
         public void OnCancelClicked()
         {
             _constructionService.Cancel();
-            _gameModeService?.SetMode(GameModeType.Normal);
         }
 
         /// <summary>
@@ -244,9 +252,11 @@ namespace Kruty1918.Moyva.Construction.UI
             // (він має залишатись активним для обробки сигналів).
             if (constructionUIRoot != null)
                 constructionUIRoot.SetActive(visible);
+        }
 
-            if (gameplayUIRoot != null)
-                gameplayUIRoot.SetActive(!visible);
+        private void RequestEnterConstructionMode()
+        {
+            _signalBus.Fire(new GameModeChangeRequestedSignal { RequestedMode = GameModeType.Construction });
         }
 
         private void PopulateBuildingList()
@@ -255,9 +265,9 @@ namespace Kruty1918.Moyva.Construction.UI
                 return;
 
             var buildings = _buildingRegistry.GetAll();
-            var items = new List<BuildingListItemData>(buildings.Length);
-            foreach (var b in buildings)
-                items.Add(new BuildingListItemData(b.Id, b.DisplayName, b.Category, b.Icon));
+            var items = _menuFactory.BuildMenuItems(buildings, this);
+
+            Debug.Log($"[Construction UI] Ініціалізовано меню будівель. Знайдено елементів: {items.Count}.", this);
 
             selectionPanel.Populate(items);
         }

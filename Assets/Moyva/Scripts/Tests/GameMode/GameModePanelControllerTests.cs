@@ -1,6 +1,6 @@
 using System.Collections.Generic;
+using System.Reflection;
 using Kruty1918.Moyva.GameMode.API;
-using Kruty1918.Moyva.GameMode.Runtime;
 using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
 using Zenject;
@@ -18,7 +18,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
         private SignalBus _signalBus;
         private FakePanel _normalPanel;
         private FakePanel _constructionPanel;
-        private GameModePanelController _controller;
+        private object _controllerInstance;
 
         public override void Setup()
         {
@@ -33,16 +33,22 @@ namespace Kruty1918.Moyva.Tests.GameMode
             Container.Bind<IGameModePanel>().FromInstance(_normalPanel);
             Container.Bind<IGameModePanel>().FromInstance(_constructionPanel);
 
-            Container.BindInterfacesAndSelfTo<GameModePanelController>().AsSingle().NonLazy();
+            var controllerType = typeof(IGameModeService).Assembly
+                .GetType("Kruty1918.Moyva.GameMode.Runtime.GameModePanelController");
+            Assert.NotNull(controllerType, "Не знайдено тип GameModePanelController у збірці GameMode.");
 
             _signalBus = Container.Resolve<SignalBus>();
-            _controller = Container.Resolve<GameModePanelController>();
-            _controller.Initialize();
+            _controllerInstance = System.Activator.CreateInstance(controllerType,
+                new List<IGameModePanel> { _normalPanel, _constructionPanel }, _signalBus);
+            Assert.NotNull(_controllerInstance);
+
+            InvokeLifecycle(_controllerInstance, "Initialize");
         }
 
         public override void Teardown()
         {
-            _controller.Dispose();
+            if (_controllerInstance != null)
+                InvokeLifecycle(_controllerInstance, "Dispose");
             base.Teardown();
         }
 
@@ -86,17 +92,15 @@ namespace Kruty1918.Moyva.Tests.GameMode
         public void MultiplePanelsForSameMode_AllShown()
         {
             var extraConstruction = new FakePanel(GameModeType.Construction);
-            Container.Bind<IGameModePanel>().FromInstance(extraConstruction);
+            var controllerType = typeof(IGameModeService).Assembly
+                .GetType("Kruty1918.Moyva.GameMode.Runtime.GameModePanelController");
+            Assert.NotNull(controllerType);
 
-            // Manually build a controller with all three panels
-            var allPanels = new List<IGameModePanel>
-            {
-                _normalPanel,
-                _constructionPanel,
-                extraConstruction
-            };
-            var ctrl = new GameModePanelController(allPanels, _signalBus);
-            ctrl.Initialize();
+            var allPanels = new List<IGameModePanel> { _normalPanel, _constructionPanel, extraConstruction };
+            var ctrl = System.Activator.CreateInstance(controllerType, allPanels, _signalBus);
+            Assert.NotNull(ctrl);
+
+            InvokeLifecycle(ctrl, "Initialize");
 
             _signalBus.Fire(new GameModeChangedSignal { NewMode = GameModeType.Construction });
 
@@ -104,7 +108,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
             Assert.IsTrue(extraConstruction.IsVisible);
             Assert.IsFalse(_normalPanel.IsVisible);
 
-            ctrl.Dispose();
+            InvokeLifecycle(ctrl, "Dispose");
         }
 
         // ─── No panels registered ─────────────────────────────────────────────
@@ -112,14 +116,27 @@ namespace Kruty1918.Moyva.Tests.GameMode
         [Test]
         public void NoPanels_SignalFired_NoException()
         {
-            var emptyController = new GameModePanelController(
+            var controllerType = typeof(IGameModeService).Assembly
+                .GetType("Kruty1918.Moyva.GameMode.Runtime.GameModePanelController");
+            Assert.NotNull(controllerType);
+
+            var emptyController = System.Activator.CreateInstance(controllerType,
                 new List<IGameModePanel>(), _signalBus);
-            emptyController.Initialize();
+            Assert.NotNull(emptyController);
+
+            InvokeLifecycle(emptyController, "Initialize");
 
             Assert.DoesNotThrow(() =>
                 _signalBus.Fire(new GameModeChangedSignal { NewMode = GameModeType.Construction }));
 
-            emptyController.Dispose();
+            InvokeLifecycle(emptyController, "Dispose");
+        }
+
+        private static void InvokeLifecycle(object instance, string methodName)
+        {
+            var method = instance.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.NotNull(method, $"Метод '{methodName}' не знайдено у {instance.GetType().FullName}.");
+            method.Invoke(instance, null);
         }
 
         // ─── Fake panel ───────────────────────────────────────────────────────
