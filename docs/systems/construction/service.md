@@ -8,6 +8,10 @@
 
 `ConstructionService` реалізує `IConstructionService` — головний сервіс системи будівництва. Він зберігає чергу `pending`-розміщень, виконує перевірку зайнятості тайлів, підтримує Undo/Redo стек і координує весь цикл від вибору будівлі до підтвердження.
 
+Реалізація `ConstructionService` має рівень доступу `internal` у runtime-збірці.
+Для тестової збірки `Kruty1918.Moyva.Tests.Construction` доступ відкривається через
+`InternalsVisibleTo` в `Runtime/AssemblyInfo.cs`, щоб зберегти інкапсуляцію для інших модулів.
+
 ---
 
 ## Публічний API

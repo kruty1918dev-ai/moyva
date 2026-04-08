@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     internal sealed class MapVisualInstantiator : IMapInstantiator, IInitializable
     {
         private const int ObjectLayerSortingOrder = 10;
+        private const int BuildingLayerMinSortingOrder = 5;
 
         private readonly IGridService _gridService;
         private readonly IMapDataGenerator _mapDataGenerator;
@@ -150,6 +151,46 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             _currentWorldData = worldData.Clone();
             _signalBus.Fire(new WorldBuiltSignal());
+            _signalBus.Fire(new WorldGeneratedDataSignal
+            {
+                Width = _currentWorldData.Width,
+                Height = _currentWorldData.Height,
+                TileMap = CloneStringMap(_currentWorldData.BiomeMap),
+                ObjectMap = CloneStringMap(_currentWorldData.ObjectMap),
+                HeightMap = CloneFloatMap(_currentWorldData.HeightMap),
+            });
+        }
+
+        private static string[,] CloneStringMap(string[,] source)
+        {
+            if (source == null)
+                return null;
+
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            var clone = new string[width, height];
+
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                    clone[x, y] = source[x, y];
+
+            return clone;
+        }
+
+        private static float[,] CloneFloatMap(float[,] source)
+        {
+            if (source == null)
+                return null;
+
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            var clone = new float[width, height];
+
+            for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                    clone[x, y] = source[x, y];
+
+            return clone;
         }
 
         private void EnsureRoots()
@@ -300,6 +341,25 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (tileView != null)
             {
                 tileView.Setup(position);
+            }
+
+            EnsureBuildingSortingOrder(instance, BuildingLayerMinSortingOrder);
+        }
+
+        private static void EnsureBuildingSortingOrder(GameObject rootObject, int minOrder)
+        {
+            var spriteRenderers = rootObject.GetComponentsInChildren<SpriteRenderer>(true);
+            foreach (var sr in spriteRenderers)
+            {
+                if (sr.sortingOrder < minOrder)
+                    sr.sortingOrder = minOrder;
+            }
+
+            var sortingGroups = rootObject.GetComponentsInChildren<UnityEngine.Rendering.SortingGroup>(true);
+            foreach (var sg in sortingGroups)
+            {
+                if (sg.sortingOrder < minOrder)
+                    sg.sortingOrder = minOrder;
             }
         }
 

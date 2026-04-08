@@ -4,7 +4,11 @@
     "references": [
         "Zenject",
         "Kruty1918.Moyva.Signals",
-        "Kruty1918.Moyva.ObjectsMap"
+        "Kruty1918.Moyva.ObjectsMap",
+        "Kruty1918.Moyva.Grid",
+        "Kruty1918.Moyva.SaveSystem",
+        "Kruty1918.Moyva.FogOfWar",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

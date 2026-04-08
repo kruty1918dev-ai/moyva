@@ -56,4 +56,16 @@ namespace Kruty1918.Moyva.Signals
     public struct WorldBuiltSignal
     {
     }
+
+    /// <summary>
+    /// Надсилається після завершення побудови світу і містить згенеровані мапи.
+    /// </summary>
+    public struct WorldGeneratedDataSignal
+    {
+        public int Width;
+        public int Height;
+        public string[,] TileMap;
+        public string[,] ObjectMap;
+        public float[,] HeightMap;
+    }
 }

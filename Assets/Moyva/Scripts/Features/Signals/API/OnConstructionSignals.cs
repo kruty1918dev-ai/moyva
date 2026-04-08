@@ -36,6 +36,7 @@ namespace Kruty1918.Moyva.Signals
     public struct BuildingPreviewChangedSignal
     {
         public Vector2Int Position;
+        public string BuildingId;
         public BuildingPreviewState PreviewState;
     }
 

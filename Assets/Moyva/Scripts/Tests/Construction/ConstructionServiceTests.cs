@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.ObjectsMap.Runtime;
 using Kruty1918.Moyva.Signals;
@@ -18,7 +17,8 @@ namespace Kruty1918.Moyva.Tests.Construction
     public class ConstructionServiceTests : ZenjectUnitTestFixture
     {
         private IConstructionService _service;
-        private ConstructionService _serviceImpl;
+        private IInitializable _serviceInitializable;
+        private System.IDisposable _serviceDisposable;
         private SignalBus _signalBus;
         private IObjectsMapService _objectsMap;
 
@@ -43,15 +43,26 @@ namespace Kruty1918.Moyva.Tests.Construction
             Container.DeclareSignal<OnObjectsMapChangedSignal>().OptionalSubscriber();
 
             Container.BindInterfacesAndSelfTo<ObjectsMapService>().AsSingle().NonLazy();
-            Container.BindInterfacesAndSelfTo<ConstructionService>().AsSingle().NonLazy();
+
+            var constructionServiceType = typeof(IConstructionService).Assembly
+                .GetType("Kruty1918.Moyva.Construction.Runtime.ConstructionService");
+            Assert.NotNull(constructionServiceType, "Не знайдено тип ConstructionService у збірці Construction.");
+
+            Container.Bind(typeof(IConstructionService), typeof(IInitializable), typeof(System.IDisposable))
+                .To(constructionServiceType)
+                .AsSingle()
+                .NonLazy();
 
             _signalBus   = Container.Resolve<SignalBus>();
             _objectsMap  = Container.Resolve<IObjectsMapService>();
             _service     = Container.Resolve<IConstructionService>();
-            _serviceImpl = Container.Resolve<ConstructionService>();
+            _serviceInitializable = _service as IInitializable;
+            _serviceDisposable = _service as System.IDisposable;
+            Assert.NotNull(_serviceInitializable, "IConstructionService має реалізовувати IInitializable.");
+            Assert.NotNull(_serviceDisposable, "IConstructionService має реалізовувати IDisposable.");
 
             Container.Resolve<ObjectsMapService>().Initialize();
-            _serviceImpl.Initialize();
+            _serviceInitializable.Initialize();
 
             // Переходимо в режим будівництва, щоб сервіс став активним
             _signalBus.Fire(new GameModeChangedSignal { NewMode = GameModeType.Construction });
@@ -59,7 +70,7 @@ namespace Kruty1918.Moyva.Tests.Construction
 
         public override void Teardown()
         {
-            _serviceImpl.Dispose();
+            _serviceDisposable.Dispose();
             Container.Resolve<ObjectsMapService>().Dispose();
             base.Teardown();
         }
@@ -93,6 +104,27 @@ namespace Kruty1918.Moyva.Tests.Construction
             _service.ToggleDemolishMode();
             _signalBus.Fire(new GameModeChangedSignal { NewMode = GameModeType.Normal });
             Assert.IsFalse(_service.IsDemolishMode);
+        }
+
+        [Test]
+        public void ModeChangeToNormal_ShouldCancelPendingPlacements()
+        {
+            var cancelledSignals = new List<BuildingCancelledSignal>();
+            var previewSignals = new List<BuildingPreviewChangedSignal>();
+            var pos = new Vector2Int(7, 7);
+
+            _signalBus.Subscribe<BuildingCancelledSignal>(s => cancelledSignals.Add(s));
+            _signalBus.Subscribe<BuildingPreviewChangedSignal>(s => previewSignals.Add(s));
+
+            _service.SelectBuilding("barracks");
+            _service.TryPreviewAt(pos);
+
+            _signalBus.Fire(new GameModeChangedSignal { NewMode = GameModeType.Normal });
+
+            Assert.AreEqual(BuildingPlacementState.Idle, _service.State);
+            Assert.AreEqual(1, cancelledSignals.Count);
+            Assert.IsTrue(previewSignals.Exists(s => s.Position == pos && s.PreviewState == BuildingPreviewState.None));
+            Assert.IsFalse(_service.TryPreviewAt(new Vector2Int(8, 8)));
         }
 
         // ─── TryDemolishAt ───────────────────────────────────────────────────

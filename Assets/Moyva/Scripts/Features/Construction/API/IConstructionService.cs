@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
@@ -53,5 +54,18 @@ namespace Kruty1918.Moyva.Construction.API
         /// Будівлі, що існували до початку гри або розміщені не гравцем — не знищуються.
         /// </summary>
         bool TryDemolishAt(Vector2Int position);
+
+        /// <summary>
+        /// Повертає словник усіх будівель, підтверджених гравцем у цій сесії.
+        /// Ключ — позиція тайлу, значення — buildingId.
+        /// </summary>
+        IReadOnlyDictionary<Vector2Int, string> GetPlayerPlacedBuildings();
+
+        /// <summary>
+        /// Відновлює будівлю з saved data: реєструє в ObjectsMap, додає до
+        /// playerPlacedBuildings і стріляє BuildingPlacedSignal для візуалів.
+        /// Не потребує активного режиму будівництва.
+        /// </summary>
+        void RestoreFromSave(Vector2Int position, string buildingId);
     }
 }
