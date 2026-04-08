@@ -16,14 +16,17 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<OnObjectsMapChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<WorldBuiltSignal>();
+            Container.DeclareSignal<WorldGeneratedDataSignal>().OptionalSubscriber();
 
             // GameMode
             Container.DeclareSignal<GameModeChangedSignal>();
+            Container.DeclareSignal<GameModeChangeRequestedSignal>();
 
             // Construction
             Container.DeclareSignal<BuildingPlacedSignal>();
             Container.DeclareSignal<BuildingCancelledSignal>();
             Container.DeclareSignal<BuildingPreviewChangedSignal>();
+            Container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
             Container.DeclareSignal<ShowWallHandlesSignal>();
 
             // FogOfWar

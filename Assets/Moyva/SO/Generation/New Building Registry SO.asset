@@ -12,4 +12,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d33d42cb1af10d56bade04a61d284d66, type: 3}
   m_Name: New Building Registry SO
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.Runtime.BuildingRegistrySO
-  Buildings: []
+  Buildings:
+  - Id: castle-01
+    DisplayName: Castle
+    Category: 0
+    Icon: {fileID: 0}
+    Prefab: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
+  - Id: bridge-wood-01
+    DisplayName: Wood Bridge
+    Category: 0
+    Icon: {fileID: 0}
+    Prefab: {fileID: 8030073889366943068, guid: f9fff611f2465687b966cf0e0cfdda74, type: 3}
+  - Id: windmill-01
+    DisplayName: Windmill
+    Category: 2
+    Icon: {fileID: 0}
+    Prefab: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
+  - Id: house-01
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}

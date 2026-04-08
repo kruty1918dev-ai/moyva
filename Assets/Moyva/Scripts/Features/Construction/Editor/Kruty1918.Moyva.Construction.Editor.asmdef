@@ -2,7 +2,8 @@
     "name": "Kruty1918.Moyva.Construction.Editor",
     "rootNamespace": "Kruty1918.Moyva.Construction.Editor",
     "references": [
-        "Kruty1918.Moyva.Construction"
+        "Kruty1918.Moyva.Construction",
+        "Kruty1918.Moyva.Construction.UI"
     ],
     "includePlatforms": [
         "Editor"

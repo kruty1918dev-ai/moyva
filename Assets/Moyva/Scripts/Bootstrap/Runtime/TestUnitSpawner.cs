@@ -54,7 +54,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<WorldBuiltSignal>(OnWorldBuilt);
+            _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
         }
 
         private void OnWorldBuilt(WorldBuiltSignal _)
