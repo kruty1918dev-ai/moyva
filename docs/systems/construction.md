@@ -23,7 +23,7 @@
 ```
 Construction/
 ├── API/
-│   ├── IConstructionService.cs        ← головний контракт
+│   ├── IConstructionService.cs        ← головний контракт (preview, confirm, undo, demolish, save)
 │   ├── IWallPlacementService.cs       ← контракт розміщення стін
 │   ├── IConstructionInputService.cs   ← заглушка: Ctrl+Z/Y та кнопки
 │   ├── IScreenToGridConverter.cs      ← конвертація координат (world → grid)
@@ -33,20 +33,28 @@ Construction/
 │   ├── BuildingPreviewState.cs        ← enum: None, Valid, Blocked
 │   └── BuildingDefinition.cs          ← DTO: id, назва, префаб, категорія
 ├── Runtime/
-│   ├── ConstructionService.cs         ← логіка pending-черги, Undo/Redo
+│   ├── AssemblyInfo.cs                ← InternalsVisibleTo для тестів
+│   ├── ConstructionService.cs         ← логіка pending-черги, Undo/Redo, spacing, fog
+│   ├── ConstructionVisualService.cs   ← ghost preview, blocked flash, placed visuals
+│   ├── ConstructionSaveModule.cs      ← ISaveModule: серіалізація гравцевих будівель
+│   ├── ConstructionInputService.cs    ← tick-based Ctrl+Z/Y / кнопки відміни
 │   ├── WallPlacementService.cs        ← Bresenham + 8 ручок для стін
-│   ├── ConstructionInputService.cs    ← stub: Ctrl+Z/Y / кнопки відміни
 │   ├── ScreenToGridConverter.cs       ← Camera.ScreenToWorldPoint → grid
+│   ├── MapVisualInstantiator.cs       ← спавн об'єктів карти (будівлі на тайлах)
 │   ├── BuildingRegistrySO.cs          ← ScriptableObject: каталог будівель
 │   └── ConstructionInstaller.cs       ← Zenject інсталер (runtime)
+├── Editor/
+│   └── ConstructionUISetupWindow.cs   ← Editor-вікно автоматичного створення UI ієрархії
 └── UI/
-    ├── ConstructionUIController.cs    ← адаптер UI ↔ IConstructionService ↔ IGameModeService
+    ├── ConstructionUIController.cs    ← адаптер UI ↔ IConstructionService ↔ GameMode
     ├── BuildingSelectionPanelUI.cs    ← список будівель з фільтром за категорією
     ├── BuildingCategoryTabsUI.cs      ← вкладки категорій будівель
     ├── BuildingButtonUI.cs            ← кнопка окремої будівлі (іконка + виділення)
     ├── ConstructionActionBarUI.cs     ← Confirm / Cancel / Undo / Redo / Знести
     ├── ConstructionStatusUI.cs        ← відображення стану preview/сесії
     ├── ConstructionUIInstaller.cs     ← Zenject інсталер (UI)
+    ├── BuildingMenuFactory.cs         ← формування меню з реєстру (enum → MenuItems)
+    ├── ConstructionButtonPressAnimator.cs ← DOTween анімації натиску (опціонально)
     ├── BuildingListItemData.cs        ← UI DTO для елементу списку (з Sprite Icon)
     └── ConstructionUIState.cs         ← snapshot поточного UI-стану
 ```
@@ -119,9 +127,12 @@ IConstructionService.Confirm()
 
 | Залежність | Причина |
 |---|---|
-| [`IObjectsMapService`](objects-map.md) | Перевірка `IsOccupied`, підтвердження `Register()` |
+| [`IObjectsMapService`](objects-map.md) | Перевірка `IsOccupied`, підтвердження `Register()` / `Unregister()` |
 | [`IGameModeService`](game-mode.md) | Активація / деактивація через `GameModeChangedSignal` |
 | [`SignalBus`](signals.md) | Надсилання будівельних сигналів |
+| [`IFogOfWarService`](fog-of-war/README.md) | Перевірка видимості тайлу (Unexplored = блокувати) — `[InjectOptional]` |
+| [`ISaveModule`](save-system.md) | `ConstructionSaveModule` — збереження/завантаження гравцевих будівель |
+| `IBuildingRegistry` | Пошук `BuildingDefinition` за ID, спавн префабів |
 
 ---
 
@@ -132,3 +143,5 @@ IConstructionService.Confirm()
 - [Signals](signals.md) — будівельні сигнали
 - [Visuals](visuals.md) — `TileView` реагує на `BuildingPreviewChangedSignal`
 - [Interactions](interactions.md) — вимикається під час будівництва
+- [FogOfWar](fog-of-war/README.md) — заборона будівництва на непрозорих тайлах
+- [SaveSystem](save-system.md) — серіалізація будівель через `ConstructionSaveModule`

@@ -96,16 +96,28 @@ Assets/
             │   ├── API/          ← TileView (MonoBehaviour)
             │   └── Runtime/      ← VisualInstaller
             ├── GameMode/
-            │   ├── API/          ← IGameModeService, GameModeType
-            │   └── Runtime/      ← GameModeService, GameModeInstaller
+            │   ├── API/          ← IGameModeService, IGameModePanel, GameModeType
+            │   └── Runtime/      ← GameModeService, GameModeChangeRequestRouter,
+            │                        GameModePanelController, GameModeUIController,
+            │                        GameModeInstaller
             ├── Construction/
                 ├── API/          ← IConstructionService, IWallPlacementService,
                 │                    IConstructionInputService, IScreenToGridConverter,
-                │                    BuildingCategory, BuildingPlacementState,
-                │                    BuildingPreviewState, BuildingDefinition
-                └── Runtime/      ← ConstructionService, WallPlacementService,
-                                     ConstructionInputService, ScreenToGridConverter,
-                                     BuildingRegistrySO, ConstructionInstaller
+                │                    IBuildingRegistry, BuildingCategory,
+                │                    BuildingPlacementState, BuildingPreviewState,
+                │                    BuildingDefinition
+                ├── Runtime/      ← ConstructionService, ConstructionVisualService,
+                │                    ConstructionSaveModule, ConstructionInputService,
+                │                    WallPlacementService, ScreenToGridConverter,
+                │                    MapVisualInstantiator, BuildingRegistrySO,
+                │                    ConstructionInstaller, AssemblyInfo
+                ├── Editor/       ← ConstructionUISetupWindow
+                └── UI/           ← ConstructionUIController, BuildingSelectionPanelUI,
+                                     BuildingCategoryTabsUI, BuildingButtonUI,
+                                     ConstructionActionBarUI, ConstructionStatusUI,
+                                     ConstructionUIInstaller, BuildingMenuFactory,
+                                     ConstructionButtonPressAnimator,
+                                     BuildingListItemData, ConstructionUIState
             └── SaveSystem/
                 ├── API/          ← ISaveService, IConfigService, ISaveModule,
                 │                    ISaveContext, SaveSlotInfo
@@ -181,8 +193,11 @@ GameMode
 Construction
  ├─► ObjectsMap (IObjectsMapService)
  ├─► Signals (BuildingPlacedSignal, BuildingCancelledSignal,
- │            BuildingPreviewChangedSignal, ShowWallHandlesSignal)
- └─► Signals (GameModeChangedSignal) ← активується в режимі Construction
+ │            BuildingPreviewChangedSignal, BuildingDemolishedSignal,
+ │            ShowWallHandlesSignal)
+ ├─► Signals (GameModeChangedSignal) ← активується в режимі Construction
+ ├─► FogOfWar (IFogOfWarService) ← блокує будівництво на непрозорих тайлах
+ └─► SaveSystem (ISaveModule) ← ConstructionSaveModule для серіалізації будівель
 ```
 
 ---
@@ -210,4 +225,15 @@ Construction
   - `wall-placement.md` → `construction/wall-placement.md`
   - `screen-to-grid.md` → `construction/screen-to-grid.md`
 - оновлено всі перехресні посилання у файлах системи Construction.
+
+## Аудит документації (2026-04-08)
+
+Повний аудит усіх систем проєкту:
+
+- **Signals**: додано 11 відсутніх сигналів (`GameModeChangeRequestedSignal`, `BuildingDemolishedSignal`, `FogStateChangedSignal`, `WorldBuiltSignal`, `WorldGeneratedDataSignal`, `SaveRequestedSignal`, `LoadRequestedSignal`, `SaveCompletedSignal`); оновлено отримувачів сигналів; додано код `SignalBusInstaller`.
+- **GameMode**: додано документацію для `GameModeChangeRequestRouter`, `GameModeUIController`; оновлено `GameModeInstaller` (ExecutionOrder, FindObjectOfType); додано `GameModeChangeRequestedSignal`.
+- **Construction/service.md**: додано `IsDemolishMode`, `ToggleDemolishMode()`, `TryDemolishAt()`, `GetPlayerPlacedBuildings()`, `RestoreFromSave()`; додано алгоритми `IsBlockedBySpacing` (Chebyshev) і `IsBlockedByFog`; документація `ConstructionSaveModule` і `ConstructionVisualService`; оновлено залежності (FogOfWar, SaveSystem, minSpacing).
+- **Construction.md**: оновлено архітектуру (додано `AssemblyInfo.cs`, `ConstructionVisualService.cs`, `ConstructionSaveModule.cs`, `MapVisualInstantiator.cs`, `BuildingMenuFactory.cs`, `ConstructionButtonPressAnimator.cs`, `Editor/`); оновлено залежності.
+- **README.md**: оновлено структуру проєкту (GameMode: IGameModePanel, Router, UIController, PanelController; Construction: Editor/, UI/, нові runtime файли); оновлено залежності Construction (FogOfWar, SaveSystem).
+- Створено `pages.json` — маніфест сторінок для index.html (всі 43 документи).
 

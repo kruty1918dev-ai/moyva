@@ -118,12 +118,76 @@ Container.BindInterfacesTo<MyFeaturePanel>().AsSingle();
 
 ---
 
+## Компоненти
+
+### `GameModeChangeRequestRouter`
+
+Посередник між UI-підсистемами та `IGameModeService`.
+UI-контролери не викликають `SetMode()` напряму — вони надсилають `GameModeChangeRequestedSignal`,
+а роутер вирішує, чи дозволити зміну.
+
+Цей паттерн дозволяє у майбутньому додати валідацію переходів (наприклад, заборона виходу з будівництва під час анімації).
+
+```csharp
+public sealed class GameModeChangeRequestRouter : IInitializable, IDisposable
+{
+    [Inject]
+    public GameModeChangeRequestRouter(SignalBus signalBus, IGameModeService gameModeService) { ... }
+
+    // Підписується на GameModeChangeRequestedSignal → делегує до SetMode()
+}
+```
+
+**Потік запиту:**
+
+```
+UI натискає кнопку «Будівництво»
+    │
+    ▼
+SignalBus.Fire(GameModeChangeRequestedSignal { RequestedMode = Construction })
+    │
+    ▼
+GameModeChangeRequestRouter.OnModeChangeRequested()
+    │
+    ▼
+IGameModeService.SetMode(Construction)
+    │
+    ▼
+SignalBus.Fire(GameModeChangedSignal { NewMode = Construction })
+```
+
+---
+
+### `GameModeUIController`
+
+MonoBehaviour, який керує кнопками входу/виходу з режиму будівництва.
+Інжектується Zenject через `QueueForInject` + `FromInstance`.
+
+```csharp
+public class GameModeUIController : MonoBehaviour, IInitializable, IDisposable
+{
+    [SerializeField] private GameObject enterConstructionButton;
+    [SerializeField] private GameObject exitConstructionButton;
+
+    // Кнопка Enter → Fire(GameModeChangeRequestedSignal { Construction })
+    // Кнопка Exit → Fire(GameModeChangeRequestedSignal { Normal })
+    // Підписується на GameModeChangedSignal → ховає/показує кнопки
+}
+```
+
+**Як підключити в Unity:**
+1. Додай `GameModeUIController` до GameObject з кнопками режимів.
+2. Перетягни `enterConstructionButton` та `exitConstructionButton` у Inspector.
+3. `GameModeInstaller` знайде контролер через `FindObjectOfType` і зареєструє автоматично.
+
+---
+
 ## Сигнали
 
 ### `GameModeChangedSignal`
 
 Надсилається: `GameModeService.SetMode()`
-Отримується: `TileInteractionService`, `ConstructionService`, `GameModePanelController`
+Отримується: `TileInteractionService`, `ConstructionService`, `GameModePanelController`, `GameModeUIController`, `ConstructionUIController`
 
 ```csharp
 public struct GameModeChangedSignal
@@ -132,21 +196,54 @@ public struct GameModeChangedSignal
 }
 ```
 
+### `GameModeChangeRequestedSignal`
+
+Надсилається: `ConstructionUIController.EnterConstructionMode()`, `GameModeUIController`
+Отримується: `GameModeChangeRequestRouter`
+
+```csharp
+public struct GameModeChangeRequestedSignal
+{
+    public GameModeType RequestedMode;
+}
+```
+
 ---
 
 ## Реєстрація в Zenject (`GameModeInstaller`)
 
 ```csharp
-internal sealed class GameModeInstaller : MonoInstaller
+public sealed class GameModeInstaller : MonoInstaller
 {
     public override void InstallBindings()
     {
         Container.Bind<IGameModeService>()
             .To<GameModeService>()
-            .AsSingle();
+            .AsSingle()
+            .NonLazy();
 
         Container.BindInterfacesAndSelfTo<GameModePanelController>()
-            .AsSingle();
+            .AsSingle()
+            .NonLazy();
+
+        Container.BindInterfacesAndSelfTo<GameModeChangeRequestRouter>()
+            .AsSingle()
+            .NonLazy();
+
+        // GameModeUIController — знаходиться на сцені через FindObjectOfType
+        var gameModeUiController = Object.FindObjectOfType<GameModeUIController>(true);
+        if (gameModeUiController != null)
+        {
+            Container.QueueForInject(gameModeUiController);
+            Container.BindInterfacesAndSelfTo<GameModeUIController>()
+                .FromInstance(gameModeUiController)
+                .AsSingle()
+                .NonLazy();
+        }
+
+        Container.BindExecutionOrder<GameModeChangeRequestRouter>(-10);
+        Container.BindExecutionOrder<GameModePanelController>(-10);
+        Container.BindExecutionOrder<GameModeUIController>(-5);
     }
 }
 ```
@@ -159,12 +256,13 @@ internal sealed class GameModeInstaller : MonoInstaller
 
 | Залежність | Причина |
 |---|---|
-| [`SignalBus`](signals.md) | Надсилання `GameModeChangedSignal` при зміні режиму |
+| [`SignalBus`](signals.md) | Надсилання `GameModeChangedSignal` і `GameModeChangeRequestedSignal` |
 
 ---
 
 ## Пов'язані системи
 
-- [Signals](signals.md) — `GameModeChangedSignal`
+- [Signals](signals.md) — `GameModeChangedSignal`, `GameModeChangeRequestedSignal`
 - [Interactions](interactions.md) — вимикається в режимі `Construction`
 - [Construction](construction.md) — активується в режимі `Construction`
+- [Construction UI](construction/ui.md) — надсилає `GameModeChangeRequestedSignal` для входу в будівництво
