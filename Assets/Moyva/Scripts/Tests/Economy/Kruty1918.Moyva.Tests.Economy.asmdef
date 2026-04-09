@@ -1,0 +1,21 @@
+{
+    "name": "Kruty1918.Moyva.Tests.Economy",
+    "rootNamespace": "Kruty1918.Moyva.Tests.Economy",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Kruty1918.Moyva.Economy",
+        "Kruty1918.Moyva.Economy.Editor"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
