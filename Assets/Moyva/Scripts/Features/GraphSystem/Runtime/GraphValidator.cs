@@ -1,9 +1,13 @@
-using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.GraphSystem.Runtime
 {
+    /// <summary>
+    /// Валідатор структури графа генерації.
+    /// Перевіряє: null-вузли, наявність циклів, коректність з'єднань (порти, типи),
+    /// та наявність непідключених обов'язкових входів.
+    /// </summary>
     public sealed class GraphValidator
     {
         public List<ValidationError> Validate(GraphAsset graph)
@@ -31,45 +35,8 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
 
         private void ValidateCycles(GraphAsset graph, List<ValidationError> errors)
         {
-            var nodeIds = new HashSet<string>();
-            var inDegree = new Dictionary<string, int>();
-            var adjacency = new Dictionary<string, List<string>>();
-
-            foreach (var node in graph.Nodes)
-            {
-                if (node == null) continue;
-                nodeIds.Add(node.NodeId);
-                inDegree[node.NodeId] = 0;
-                adjacency[node.NodeId] = new List<string>();
-            }
-
-            foreach (var conn in graph.Connections)
-            {
-                if (!nodeIds.Contains(conn.SourceNodeId)
-                    || !nodeIds.Contains(conn.TargetNodeId))
-                    continue;
-
-                adjacency[conn.SourceNodeId].Add(conn.TargetNodeId);
-                inDegree[conn.TargetNodeId]++;
-            }
-
-            var queue = new Queue<string>();
-            foreach (var kvp in inDegree)
-                if (kvp.Value == 0) queue.Enqueue(kvp.Key);
-
-            int visited = 0;
-            while (queue.Count > 0)
-            {
-                var current = queue.Dequeue();
-                visited++;
-                foreach (var neighbor in adjacency[current])
-                {
-                    inDegree[neighbor]--;
-                    if (inDegree[neighbor] == 0) queue.Enqueue(neighbor);
-                }
-            }
-
-            if (visited != nodeIds.Count)
+            var sorted = TopologicalSorter.Sort(graph);
+            if (sorted == null)
                 errors.Add(new ValidationError(null,
                     "Graph contains one or more cycles.",
                     ValidationSeverity.Error));
