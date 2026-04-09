@@ -24,6 +24,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IGridService _gridService;
         private readonly SignalBus _signalBus;
         private bool _isActive;
+        private bool _isDraggingPendingPlacement;
+        private Vector2Int _draggedPlacementPosition;
 
         [Inject]
         public ConstructionInputService(
@@ -54,7 +56,43 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
 
             var mouse = Mouse.current;
-            if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+            if (mouse == null)
+                return;
+
+            if (_isDraggingPendingPlacement && mouse.leftButton.wasReleasedThisFrame)
+            {
+                if (VerboseLogs)
+                    Debug.Log($"[ConstructionInput] Drag ended at {_draggedPlacementPosition}.");
+
+                _isDraggingPendingPlacement = false;
+            }
+
+            if (_isDraggingPendingPlacement && mouse.leftButton.isPressed)
+            {
+                if (IsClickOnInteractiveUI())
+                    return;
+
+                Vector2 dragScreenPos = mouse.position.ReadValue();
+                Vector2Int dragTilePos = _screenToGrid.ScreenToGrid(dragScreenPos);
+                if (!_gridService.TryGetTileData(dragTilePos, out _))
+                    return;
+
+                if (dragTilePos != _draggedPlacementPosition)
+                {
+                    bool moved = _constructionService.TryMovePendingPlacement(_draggedPlacementPosition, dragTilePos);
+                    if (moved)
+                    {
+                        if (VerboseLogs)
+                            Debug.Log($"[ConstructionInput] Drag moved preview: {_draggedPlacementPosition} -> {dragTilePos}");
+
+                        _draggedPlacementPosition = dragTilePos;
+                    }
+                }
+
+                return;
+            }
+
+            if (!mouse.leftButton.wasPressedThisFrame)
                 return;
 
             // Пропускаємо кліки на інтерактивних UI елементах (Button, Toggle тощо),
@@ -93,9 +131,26 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_constructionService.State == BuildingPlacementState.Placing)
             {
+                if (_constructionService.HasPendingPlacementAt(tilePos))
+                {
+                    _isDraggingPendingPlacement = true;
+                    _draggedPlacementPosition = tilePos;
+
+                    if (VerboseLogs)
+                        Debug.Log($"[ConstructionInput] Drag started for preview at {tilePos}");
+
+                    return;
+                }
+
                 bool result = _constructionService.TryPreviewAt(tilePos);
                 if (VerboseLogs)
                     Debug.Log($"[ConstructionInput] TryPreviewAt({tilePos}) => {result}");
+
+                if (result)
+                {
+                    _isDraggingPendingPlacement = true;
+                    _draggedPlacementPosition = tilePos;
+                }
             }
             else if (VerboseLogs)
             {
@@ -132,6 +187,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private void OnGameModeChanged(GameModeChangedSignal signal)
         {
             _isActive = signal.NewMode == GameModeType.Construction;
+            if (!_isActive)
+                _isDraggingPendingPlacement = false;
+
             if (VerboseLogs)
                 Debug.Log($"[ConstructionInput] Active changed -> {_isActive}");
         }
