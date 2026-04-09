@@ -300,7 +300,7 @@ public struct BuildingDemolishedSignal
 | Залежність | Причина |
 |---|---|
 | [`IObjectsMapService`](../objects-map.md) | Перевірка `IsOccupied`, `Register()` / `Unregister()` |
-| [`SignalBus`](../signals.md) | Надсилання будівельних сигналів |
+| [`SignalBus`](../signals/README.md) | Надсилання будівельних сигналів |
 | [`IFogOfWarService`](../fog-of-war/README.md) | Перевірка видимості тайлу (`[InjectOptional]`) |
 | `IBuildingRegistry` | Пошук `BuildingDefinition` за ID (для ConstructionVisualService) |
 | `minSpacing` (int) | Мінімальна відстань між будівлями (`[Inject(Id = "minSpacing")]`) |
@@ -314,7 +314,7 @@ public struct BuildingDemolishedSignal
 - [wall-placement.md](wall-placement.md)
 - [screen-to-grid.md](screen-to-grid.md)
 - [ui.md](ui.md) — Construction UI Controller
-- [Signals](../signals.md)
+- [Signals](../signals/README.md)
 - [ObjectsMap](../objects-map.md)
 - [FogOfWar](../fog-of-war/README.md)
-- [SaveSystem](../save-system.md)
+- [SaveSystem](../save-system/README.md)

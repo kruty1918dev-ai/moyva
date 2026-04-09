@@ -72,7 +72,7 @@ namespace Kruty1918.Moyva.Interactions.API
 | [`IGridService`](grid.md) | Перевірка валідності позиції тайлу (`TryGetTileData`) |
 | [`IObjectsMapService`](objects-map.md) | Визначення окупанта тайлу при виборі юніта (`TryGetOccupant`) |
 | [`IUnitMovementService`](units.md) | Надсилання команди руху |
-| [`SignalBus`](signals.md) | Підписка на `TileClickedSignal` |
+| [`SignalBus`](signals/README.md) | Підписка на `TileClickedSignal` |
 
 ---
 
@@ -130,6 +130,6 @@ _interactionService.HandleTileClick(new Vector2Int(3, 7));
 - [Grid](grid.md) — перевіряє валідність позиції тайлу
 - [ObjectsMap](objects-map.md) — визначає окупанта при виборі юніта
 - [Units](units.md) — отримує команду руху
-- [Signals](signals.md) — `TileClickedSignal`, `GameModeChangedSignal`
+- [Signals](signals/README.md) — `TileClickedSignal`, `GameModeChangedSignal`
 - [Visuals](visuals.md) — `TileView` ініціює `TileClickedSignal` через `OnMouseDown`
 - [GameMode](game-mode.md) — `TileInteractionService` вимикається в режимі `Construction`

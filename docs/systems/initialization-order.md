@@ -227,6 +227,6 @@ Container.DeclareSignal<GameStateChangedSignal>();
 ## Пов'язані системи
 
 - [Bootstrap](bootstrap.md) — `BootstrapInstaller`, `TestUnitSpawner`
-- [Signals](signals.md) — усі сигнали, що стріляються при ініціалізації
+- [Signals](signals/README.md) — усі сигнали, що стріляються при ініціалізації
 - [ObjectsMap](objects-map.md) — підписка на сигнали юнітів
 - [Units](units.md) — `UnitService`, `IUnitFactory`

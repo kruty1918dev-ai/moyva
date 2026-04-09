@@ -67,7 +67,7 @@ namespace Kruty1918.Moyva.Visuals
 
 | Залежність | Причина |
 |---|---|
-| [`SignalBus`](signals.md) | Підписка на `OnObjectsMapChangedSignal`, надсилання `TileClickedSignal` |
+| [`SignalBus`](signals/README.md) | Підписка на `OnObjectsMapChangedSignal`, надсилання `TileClickedSignal` |
 | [`IObjectsMapService`](objects-map.md) | Ін'єктується через `[Inject]` (доступний для розширення логіки) |
 
 ---
@@ -119,7 +119,7 @@ tileView.Setup(gridPosition);
 
 ## Пов'язані системи
 
-- [Signals](signals.md) — `OnObjectsMapChangedSignal`, `TileClickedSignal`, `BuildingPreviewChangedSignal`
+- [Signals](signals/README.md) — `OnObjectsMapChangedSignal`, `TileClickedSignal`, `BuildingPreviewChangedSignal`
 - [ObjectsMap](objects-map.md) — надсилає `OnObjectsMapChangedSignal`, яку `TileView` обробляє
 - [Interactions](interactions.md) — отримує `TileClickedSignal` від `TileView`
 - [Generator](generator.md) — спавнить `TileView` при побудові світу

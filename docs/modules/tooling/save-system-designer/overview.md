@@ -18,6 +18,6 @@
 <details>
 <summary>Legacy посилання</summary>
 
-- [../../../systems/save-system-designer-tool.md](../../../systems/save-system-designer-tool.md)
+- [../../../systems/save-system/designer-tool.md](../../../systems/save-system/designer-tool.md)
 
 </details>

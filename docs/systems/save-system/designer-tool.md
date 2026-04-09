@@ -1,6 +1,6 @@
 # Save System Designer Tool Guide
 
-← [Назад до SaveSystem](save-system.md)
+← [Назад до SaveSystem](README.md)
 
 ---
 
@@ -319,7 +319,7 @@
 
 ## Пов'язані документи
 
-- [SaveSystem](save-system.md)
-- [Units](units.md)
-- [Signals](signals.md)
-- [Initialization Order](initialization-order.md)
+- [SaveSystem](README.md)
+- [Units](../units.md)
+- [Signals](../signals/README.md)
+- [Initialization Order](../initialization-order.md)

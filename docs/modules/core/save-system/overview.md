@@ -18,6 +18,6 @@
 <details>
 <summary>Legacy посилання</summary>
 
-- [../../../systems/save-system.md](../../../systems/save-system.md)
+- [../../../systems/save-system/README.md](../../../systems/save-system/README.md)
 
 </details>

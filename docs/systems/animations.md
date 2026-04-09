@@ -161,5 +161,5 @@ cts.Cancel();
 ## Пов'язані системи
 
 - [Units](units.md) — `UnitMovementService` викликає анімацію
-- [Signals](signals.md) — `UnitMovedSignal` надсилається з `OnStepCompleted`
+- [Signals](signals/README.md) — `UnitMovedSignal` надсилається з `OnStepCompleted`
 - [Pathfinding](pathfinding.md) — будує шлях, який передається до анімації

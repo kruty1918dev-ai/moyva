@@ -220,8 +220,8 @@ public class GenerationRules : ScriptableObject
 |---|---|
 | [`IGridService`](grid.md) | `MapVisualInstantiator` встановлює тип тайлу в сітці |
 | `TileRegistrySO` | Пошук `VisualPrefab` за `TileTypeId` |
-| [`SignalBus`](signals.md) | `OnMapObjectSpawnedSignal` |
-| [SaveSystem](save-system.md) | `GeneratedWorldSaveModule` зберігає результат генерації в слот |
+| [`SignalBus`](signals/README.md) | `OnMapObjectSpawnedSignal` |
+| [SaveSystem](save-system/README.md) | `GeneratedWorldSaveModule` зберігає результат генерації в слот |
 | `DataNoiseSettings`, `HeightMapSettings`, `DataBiomesSettings`, `WFCDataSettings`, `GenerationRules`, `RiverDataConfig` | Конфіги генерації |
 
 ---
@@ -311,5 +311,5 @@ Debug.Log($"Висота центру: {noise[50, 50]}");
 
 - [Grid](grid.md) — `MapVisualInstantiator` заповнює сітку типами тайлів
 - [Visuals](visuals.md) — спавнить `TileView` для кожного тайлу
-- [Signals](signals.md) — `OnMapObjectSpawnedSignal`
-- [SaveSystem](save-system.md) — слот зберігає конкретну розкладку біомів, об'єктів і висот
+- [Signals](signals/README.md) — `OnMapObjectSpawnedSignal`
+- [SaveSystem](save-system/README.md) — слот зберігає конкретну розкладку біомів, об'єктів і висот

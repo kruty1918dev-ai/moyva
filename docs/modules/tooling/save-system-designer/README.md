@@ -25,6 +25,6 @@
 <summary>Залежності</summary>
 
 - Пов'язані модулі: див. [../README.md](../README.md)
-- Legacy reference: [../../../systems/save-system-designer-tool.md](../../../systems/save-system-designer-tool.md)
+- Legacy reference: [../../../systems/save-system/designer-tool.md](../../../systems/save-system/designer-tool.md)
 
 </details>

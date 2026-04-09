@@ -192,5 +192,5 @@ _cameraZoom.ForceZoomCamera(2f);
 
 ## Пов'язані системи
 
-- [Signals](signals.md) — може підписуватись на `UnitCreatedSignal` для автофокусу (розширення)
+- [Signals](signals/README.md) — може підписуватись на `UnitCreatedSignal` для автофокусу (розширення)
 - [Units](units.md) — `ICameraFocused.Focus` використовує `IUnitService.GetUnitObject`
