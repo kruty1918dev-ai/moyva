@@ -8,19 +8,21 @@
 
 ### 1. **Package Dependencies** (`Packages/manifest.json`)
 
-#### ❌ Видалено 3D модулі:
-- `com.unity.ai.navigation` - 3D навігація (не потрібна для tile-based гру)
+#### ❌ Видалено з прямих залежностей `Packages/manifest.json` 3D модулі:
+- `com.unity.ai.navigation` - 3D навігація (не потрібна для tile-based гри)
 - `com.unity.multiplayer.center` - не потрібна
 - `com.unity.timeline` - видалено для зменшення overhead
 - `com.unity.modules.ai` - 3D AI/pathfinding
 - `com.unity.modules.cloth` - 3D симуляція тканин
-- `com.unity.modules.terrain` - 3D терен
+- `com.unity.modules.terrain` - 3D терен; видалено з прямих залежностей, але може залишатися у `Packages/packages-lock.json` як transitive/built-in dependency через URP
 - `com.unity.modules.terrainphysics` - 3D земля фізика
-- `com.unity.modules.physics` - 3D фізика (Box/Sphere colliders)
+- `com.unity.modules.physics` - 3D фізика (Box/Sphere colliders); видалено з прямих залежностей, але може залишатися у `Packages/packages-lock.json` як transitive/built-in dependency через URP
 - `com.unity.modules.vehicles` - 3D транспорт
-- `com.unity.modules.vr` - VR поддержка
-- `com.unity.modules.xr` - XR поддержка
+- `com.unity.modules.vr` - VR підтримка
+- `com.unity.modules.xr` - XR підтримка
 - `com.unity.modules.wind` - 3D вітер система
+
+> Примітка: цей список описує саме прямі залежності в `Packages/manifest.json`. Частина Unity-модулів може залишатися в `Packages/packages-lock.json` як непрямі або built-in залежності через `com.unity.render-pipelines.core` / URP.
 
 #### ✅ Залишено для 2D:
 - `com.unity.render-pipelines.universal` (URP) - основа рендеру
@@ -39,7 +41,6 @@
 | `pixelLightCount` | 2 | 0 | 2D спрайти не використовують динамічні тіні |
 | `shadows` | 2 (Hard) | 0 (None) | Спрайти не отримують тіней |
 | `antiAliasing` | 0 | 2-4 | Для pixel-perfect вигляду |
-| `softParticles` | Enabled | Disabled | Не потрібна для 2D |
 | `terrainQualityOverrides` | Enabled | Disabled | Немає терену |
 | `lodBias` | 1-2 | 1-2 | Збережено для оптимізації |
 | `enableLODCrossFade` | Enabled | Disabled | LOD не потрібен для 2D |
@@ -102,7 +103,7 @@
 ### 📈 Продуктивність
 - **Менше памʼяті**: Видалено 12+ 3D модулів
 - **Менше батареї**: Відсутні тіні, LOD, терен, VR
-- **Швидший бінд**: Менше прав на завантаження
+- **Швидша збірка**: Менше залежностей для завантаження
 
 ### 🎨 Рендеринг
 - **Просте отримання**: Спрайти + URP = швидко
