@@ -211,6 +211,25 @@ namespace Kruty1918.Moyva.Tests.ObjectsMap
             Assert.AreEqual("warrior_01", id);
         }
 
+        [Test]
+        public void OnUnitCreated_ShouldSkip_WhenPositionAlreadyOccupied()
+        {
+            var pos = new Vector2Int(1, 1);
+            _service.Register(pos, "unit_01");
+
+            _signalBus.Fire(new UnitCreatedSignal
+            {
+                UnitId = "warrior_02",
+                UnitTypeId = "warrior",
+                Position = pos,
+                UnitObject = null
+            });
+
+            Assert.IsTrue(_service.TryGetOccupant(pos, out var id));
+            Assert.AreEqual("unit_01", id);
+            Assert.IsFalse(_service.TryGetPosition("warrior_02", out _));
+        }
+
         // ─── Signal-driven: OnUnitMoved ───────────────────────────────────────
 
         [Test]
@@ -236,6 +255,41 @@ namespace Kruty1918.Moyva.Tests.ObjectsMap
 
             Assert.IsFalse(_service.IsOccupied(startPos));
             Assert.IsTrue(_service.IsOccupied(endPos));
+        }
+
+        [Test]
+        public void OnUnitMoved_ShouldSkip_WhenDestinationOccupied()
+        {
+            var startPos = new Vector2Int(1, 1);
+            var endPos = new Vector2Int(2, 1);
+
+            _signalBus.Fire(new UnitCreatedSignal
+            {
+                UnitId = "warrior_01",
+                UnitTypeId = "warrior",
+                Position = startPos,
+                UnitObject = null
+            });
+
+            _signalBus.Fire(new UnitCreatedSignal
+            {
+                UnitId = "warrior_02",
+                UnitTypeId = "warrior",
+                Position = endPos,
+                UnitObject = null
+            });
+
+            _signalBus.Fire(new UnitMovedSignal
+            {
+                UnitId = "warrior_01",
+                NewPosition = endPos,
+                Cost = 1f
+            });
+
+            Assert.IsTrue(_service.TryGetOccupant(startPos, out var startOccupant));
+            Assert.AreEqual("warrior_01", startOccupant);
+            Assert.IsTrue(_service.TryGetOccupant(endPos, out var endOccupant));
+            Assert.AreEqual("warrior_02", endOccupant);
         }
 
         // ─── Signal-driven: OnUnitDestroyed ──────────────────────────────────
