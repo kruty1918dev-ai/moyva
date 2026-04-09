@@ -86,7 +86,8 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
                 _signalBus,
                 _gridService,
                 _tileSettingsService,
-                _unitClassConfig);
+                _unitClassConfig,
+                _objectsMapService);
             _unitServiceInstance = _unitService;
 
             _pathfinder = CreateInternal<IPathfinder>(
@@ -108,6 +109,7 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
                 _animationService,
                 _tileSettingsService,
                 _gridService,
+                _objectsMapService,
                 _signalBus,
                 _unitClassConfig);
             _unitMovementInstance = _unitMovementService;
@@ -242,6 +244,51 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
             var finalWorldPos = unitObject.transform.position;
             Assert.AreEqual(target.x, Mathf.RoundToInt(finalWorldPos.x));
             Assert.AreEqual(target.y, Mathf.RoundToInt(finalWorldPos.y));
+        }
+
+        [Test]
+        public async Task MoveUnitAsync_ShouldNotMoveIntoOccupiedTargetTile()
+        {
+            var start = new Vector2Int(2, 2);
+            var blockedTarget = new Vector2Int(4, 2);
+
+            _signalBus.Fire(new UnitCreatedSignal
+            {
+                UnitId = UnitId,
+                UnitTypeId = UnitTypeId,
+                Position = start,
+                UnitObject = CreateVisibleUnitObject(UnitId)
+            });
+
+            _signalBus.Fire(new UnitCreatedSignal
+            {
+                UnitId = "warrior_blocker",
+                UnitTypeId = UnitTypeId,
+                Position = blockedTarget,
+                UnitObject = CreateVisibleUnitObject("warrior_blocker")
+            });
+
+            var computedPath = _pathfinder.FindPath(start, blockedTarget);
+            Assert.IsEmpty(computedPath, "Pathfinder must not build a path into an occupied target tile.");
+
+            var movedSteps = new List<Vector2Int>();
+            _signalBus.Subscribe<UnitMovedSignal>(signal =>
+            {
+                if (signal.UnitId == UnitId)
+                {
+                    movedSteps.Add(signal.NewPosition);
+                }
+            });
+
+            await _unitMovementService.MoveUnitAsync(UnitId, blockedTarget, CancellationToken.None);
+
+            Assert.IsEmpty(movedSteps, "Blocked target must prevent any movement steps.");
+            Assert.IsTrue(_unitService.TryGetUnitPosition(UnitId, out var finalPosition));
+            Assert.AreEqual(start, finalPosition);
+            Assert.IsTrue(_objectsMapService.TryGetOccupant(start, out var startOccupant));
+            Assert.AreEqual(UnitId, startOccupant);
+            Assert.IsTrue(_objectsMapService.TryGetOccupant(blockedTarget, out var endOccupant));
+            Assert.AreEqual("warrior_blocker", endOccupant);
         }
 
         private void MarkExpensiveCorridor()

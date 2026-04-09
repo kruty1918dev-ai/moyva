@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.Animations.API;
+using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
@@ -19,6 +20,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IMovementAnimationService _animationService;
         private readonly ITileSettingsService _tileSettings;
         private readonly IGridService _gridService;
+        private readonly IObjectsMapService _objectsMapService;
         private readonly SignalBus _signalBus;
         private readonly IUnitClassConfig _unitClassConfig;
 
@@ -30,6 +32,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             IMovementAnimationService animationService,
             ITileSettingsService tileSettings,
             IGridService gridService,
+            IObjectsMapService objectsMapService,
             SignalBus signalBus,
             IUnitClassConfig unitClassConfig) // Додаємо залежність від конфігів юнітів, якщо потрібно
         {
@@ -38,6 +41,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _animationService = animationService;
             _tileSettings = tileSettings;
             _gridService = gridService;
+            _objectsMapService = objectsMapService;
             _signalBus = signalBus;
             _unitClassConfig = unitClassConfig;
         }
@@ -89,6 +93,14 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return;
             }
 
+            if (_objectsMapService.IsOccupied(targetPosition)
+                && _objectsMapService.TryGetOccupant(targetPosition, out var targetOccupantId)
+                && targetOccupantId != unitId)
+            {
+                Debug.LogWarning($"[UnitMovement] MoveUnitAsync: цільовий тайл {targetPosition} вже зайнятий '{targetOccupantId}'. Рух для '{unitId}' скасовано.");
+                return;
+            }
+
             Debug.Log($"[UnitMovement] Пошук шляху для '{unitId}': {startPosition} → {targetPosition}");
             var path = _pathfinder.FindPath(startPosition, targetPosition);
             if (path == null || path.Count <= 1)
@@ -111,10 +123,11 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             try
             {
-                var config = _unitClassConfig.GetConfig(unitId);
+                var unitTypeId = _unitService.GetUnitTypeId(unitId);
+                var config = string.IsNullOrEmpty(unitTypeId) ? null : _unitClassConfig.GetConfig(unitTypeId);
                 if (config == null)
                 {
-                    Debug.LogWarning($"[UnitMovement] Конфігурація для '{unitId}' не знайдена. Використовую PathAnimationSettings.Default.");
+                    Debug.LogWarning($"[UnitMovement] Конфігурація для unitId='{unitId}' (typeId='{unitTypeId}') не знайдена. Використовую PathAnimationSettings.Default.");
                 }
                 var settings = config?.AnimationSettings ?? PathAnimationSettings.Default;
 
@@ -153,6 +166,14 @@ namespace Kruty1918.Moyva.Units.Runtime
         /// </summary>
         private bool CanMakeStep(string unitId, Vector2Int stepPos)
         {
+            if (_objectsMapService.IsOccupied(stepPos)
+                && _objectsMapService.TryGetOccupant(stepPos, out var occupantId)
+                && occupantId != unitId)
+            {
+                Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: тайл зайнятий '{occupantId}'.");
+                return false;
+            }
+
             float currentStamina = _unitService.GetStamina(unitId);
 
             if (_gridService.TryGetTileData(stepPos, out var tileTypeId))

@@ -171,7 +171,8 @@ namespace Kruty1918.Moyva.Tests.MovementPlayMode
                 _signalBus,
                 _gridService,
                 _tileSettingsService,
-                _unitClassConfig);
+                _unitClassConfig,
+                _objectsMapService);
             _unitServiceInstance = _unitService;
             _unitServiceDisposable = _unitService as System.IDisposable;
 
@@ -194,6 +195,7 @@ namespace Kruty1918.Moyva.Tests.MovementPlayMode
                 _animationService,
                 _tileSettingsService,
                 _gridService,
+                _objectsMapService,
                 _signalBus,
                 _unitClassConfig);
             _unitMovementInstance = _unitMovementService;
