@@ -27,11 +27,26 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
 
         private FogVisibilityResolver _resolver;
+        private HeightAwareVisionService _heightVisionService;
+        private FogOfWarSettings _settings;
 
         [SetUp]
         public void SetUp()
         {
-            _resolver = new FogVisibilityResolver(new StubGridService());
+            _settings = ScriptableObject.CreateInstance<FogOfWarSettings>();
+            _settings.MaxVisionRange = 8;
+            _settings.ElevationStep = 0.25f;
+            _settings.MaxObserverHeightBonus = 4;
+            _settings.MaxDownhillVisionBonus = 2;
+            _settings.MaxUphillVisionPenalty = 4;
+            _heightVisionService = new HeightAwareVisionService(_settings);
+            _resolver = new FogVisibilityResolver(new StubGridService(), _heightVisionService, _settings);
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Object.DestroyImmediate(_settings);
         }
 
         // ─── 1. AlwaysIncludesOrigin ──────────────────────────────────────────
@@ -47,12 +62,12 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         // ─── 2. RangeZero_ReturnsOnlyOrigin ──────────────────────────────────
 
         [Test]
-        public void ComputeVisibleTiles_RangeZero_ReturnsOnlyOrigin()
+        public void ComputeVisibleTiles_RangeZero_ClampsToMinimumRadiusOne()
         {
             var origin = new Vector2Int(5, 5);
             var result = _resolver.ComputeVisibleTiles(origin, 0, MapW, MapH);
-            Assert.AreEqual(1, result.Count);
-            Assert.AreEqual(origin, result[0]);
+            Assert.AreEqual(9, result.Count);
+            Assert.Contains(origin, new List<Vector2Int>(result));
         }
 
         // ─── 3. Range1_ReturnsAtLeastOriginAndNeighbours ─────────────────────
@@ -63,8 +78,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             var origin = new Vector2Int(5, 5);
             var result = _resolver.ComputeVisibleTiles(origin, 1, MapW, MapH);
 
-            // Should contain origin and at least some adjacent tiles
-            Assert.GreaterOrEqual(result.Count, 2);
+            Assert.AreEqual(9, result.Count);
             Assert.Contains(origin, new List<Vector2Int>(result));
         }
 
@@ -111,7 +125,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         [Test]
         public void NullGridService_FallbackToCircle_DoesNotThrow()
         {
-            var fallbackResolver = new FogVisibilityResolver(null);
+            var fallbackResolver = new FogVisibilityResolver(null, _heightVisionService, _settings);
             Assert.DoesNotThrow(() =>
             {
                 var result = fallbackResolver.ComputeVisibleTiles(
@@ -119,6 +133,31 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
                 Assert.IsNotNull(result);
                 Assert.GreaterOrEqual(result.Count, 1);
             });
+        }
+
+        [Test]
+        public void ComputeVisibleTiles_HighGround_ExtendsVisionBeyondBaseRange()
+        {
+            var heightMap = new float[MapW, MapH];
+            heightMap[5, 5] = 0.75f;
+            _resolver.SetHeightMap(heightMap);
+
+            var result = _resolver.ComputeVisibleTiles(new Vector2Int(5, 5), 1, MapW, MapH);
+
+            Assert.Contains(new Vector2Int(7, 5), new List<Vector2Int>(result));
+        }
+
+        [Test]
+        public void ComputeVisibleTiles_LowGround_CannotSeeTallTile()
+        {
+            var heightMap = new float[MapW, MapH];
+            heightMap[5, 5] = 0.05f;
+            heightMap[6, 5] = 1f;
+            _resolver.SetHeightMap(heightMap);
+
+            var result = _resolver.ComputeVisibleTiles(new Vector2Int(5, 5), 1, MapW, MapH);
+
+            Assert.IsFalse(new List<Vector2Int>(result).Contains(new Vector2Int(6, 5)));
         }
     }
 }

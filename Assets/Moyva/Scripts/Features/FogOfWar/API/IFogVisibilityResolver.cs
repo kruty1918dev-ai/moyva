@@ -5,6 +5,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
 {
     public interface IFogVisibilityResolver
     {
+        void SetHeightMap(float[,] heightMap);
+
         IReadOnlyList<Vector2Int> ComputeVisibleTiles(
             Vector2Int origin, int visionRange, int mapWidth, int mapHeight);
     }
