@@ -11,6 +11,7 @@
   { "path": "systems/construction/registry.md", "title": "Системи — Construction: BuildingRegistrySO" },
   { "path": "systems/construction/screen-to-grid.md", "title": "Системи — Construction: ScreenToGridConverter" },
   { "path": "systems/construction/wall-placement.md", "title": "Системи — Construction: Wall Placement" },
+  { "path": "systems/construction/walls-setup-guide.md", "title": "Системи — Construction: Гайд налаштування стін і воріт" },
   { "path": "systems/fog-of-war/README.md", "title": "Системи — FogOfWar: Туман війни" },
   { "path": "systems/fog-of-war/architecture.md", "title": "Системи — FogOfWar: Архітектура" },
   { "path": "systems/fog-of-war/initialization-order.md", "title": "Системи — FogOfWar: Порядок ініціалізації" },
