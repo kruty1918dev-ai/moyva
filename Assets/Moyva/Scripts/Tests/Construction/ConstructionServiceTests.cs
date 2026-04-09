@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.ObjectsMap.Runtime;
 using Kruty1918.Moyva.Signals;
@@ -16,11 +17,33 @@ namespace Kruty1918.Moyva.Tests.Construction
     [TestFixture]
     public class ConstructionServiceTests : ZenjectUnitTestFixture
     {
+        private sealed class FakeFogOfWarService : IFogOfWarService
+        {
+            private readonly Dictionary<Vector2Int, FogStateType> _states = new();
+
+            public void SetState(Vector2Int position, FogStateType state)
+            {
+                _states[position] = state;
+            }
+
+            public void Initialize(int width, int height) { }
+            public void RegisterUnit(string unitId, Vector2Int position, int visionRange) { }
+            public void UpdateUnitPosition(string unitId, Vector2Int newPosition) { }
+            public void UnregisterUnit(string unitId) { }
+            public FogStateType GetFogState(Vector2Int position) => _states.TryGetValue(position, out var state) ? state : FogStateType.Visible;
+            public bool IsVisible(Vector2Int position) => GetFogState(position) == FogStateType.Visible;
+            public bool IsExplored(Vector2Int position) => GetFogState(position) != FogStateType.Unexplored;
+            public bool[,] GetExploredSnapshot() => new bool[0, 0];
+            public void LoadFromSnapshot(bool[,] explored) { }
+            public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles() => System.Array.Empty<Vector2Int>();
+        }
+
         private IConstructionService _service;
         private IInitializable _serviceInitializable;
         private System.IDisposable _serviceDisposable;
         private SignalBus _signalBus;
         private IObjectsMapService _objectsMap;
+        private FakeFogOfWarService _fogOfWarService;
 
         public override void Setup()
         {
@@ -43,6 +66,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             Container.DeclareSignal<OnObjectsMapChangedSignal>().OptionalSubscriber();
 
             Container.BindInterfacesAndSelfTo<ObjectsMapService>().AsSingle().NonLazy();
+            Container.Bind<IFogOfWarService>().To<FakeFogOfWarService>().AsSingle();
 
             var constructionServiceType = typeof(IConstructionService).Assembly
                 .GetType("Kruty1918.Moyva.Construction.Runtime.ConstructionService");
@@ -55,11 +79,13 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             _signalBus   = Container.Resolve<SignalBus>();
             _objectsMap  = Container.Resolve<IObjectsMapService>();
+            _fogOfWarService = Container.Resolve<IFogOfWarService>() as FakeFogOfWarService;
             _service     = Container.Resolve<IConstructionService>();
             _serviceInitializable = _service as IInitializable;
             _serviceDisposable = _service as System.IDisposable;
             Assert.NotNull(_serviceInitializable, "IConstructionService має реалізовувати IInitializable.");
             Assert.NotNull(_serviceDisposable, "IConstructionService має реалізовувати IDisposable.");
+            Assert.NotNull(_fogOfWarService, "FakeFogOfWarService має бути зарезолвлений для construction tests.");
 
             Container.Resolve<ObjectsMapService>().Initialize();
             _serviceInitializable.Initialize();
@@ -107,6 +133,21 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
+        public void SelectBuilding_ShouldDisableDemolishMode_AndAllowPreview()
+        {
+            var pos = new Vector2Int(9, 9);
+
+            _service.ToggleDemolishMode();
+            Assert.IsTrue(_service.IsDemolishMode);
+
+            _service.SelectBuilding("barracks");
+
+            Assert.IsFalse(_service.IsDemolishMode);
+            Assert.AreEqual(BuildingPlacementState.Placing, _service.State);
+            Assert.IsTrue(_service.TryPreviewAt(pos));
+        }
+
+        [Test]
         public void ModeChangeToNormal_ShouldCancelPendingPlacements()
         {
             var cancelledSignals = new List<BuildingCancelledSignal>();
@@ -125,6 +166,101 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.AreEqual(1, cancelledSignals.Count);
             Assert.IsTrue(previewSignals.Exists(s => s.Position == pos && s.PreviewState == BuildingPreviewState.None));
             Assert.IsFalse(_service.TryPreviewAt(new Vector2Int(8, 8)));
+        }
+
+        [Test]
+        public void RedoLast_ShouldRestoreAllUndoneBuildings_OneByOne()
+        {
+            var positions = new[]
+            {
+                new Vector2Int(1, 1),
+                new Vector2Int(2, 1),
+                new Vector2Int(3, 1),
+                new Vector2Int(4, 1),
+            };
+
+            foreach (var position in positions)
+                PreviewBuilding("barracks", position);
+
+            for (int i = 0; i < positions.Length; i++)
+                _service.UndoLast();
+
+            foreach (var position in positions)
+                Assert.IsFalse(_service.HasPendingPlacementAt(position));
+
+            foreach (var position in positions)
+            {
+                _service.RedoLast();
+                Assert.IsTrue(_service.HasPendingPlacementAt(position));
+            }
+        }
+
+        [Test]
+        public void Cancel_ShouldKeepRedoHistory_ForCurrentConstructionSession()
+        {
+            var positions = new[]
+            {
+                new Vector2Int(10, 1),
+                new Vector2Int(11, 1),
+                new Vector2Int(12, 1),
+                new Vector2Int(13, 1),
+            };
+
+            foreach (var position in positions)
+                PreviewBuilding("tower", position);
+
+            _service.Cancel();
+
+            foreach (var position in positions)
+                Assert.IsFalse(_service.HasPendingPlacementAt(position));
+
+            foreach (var position in positions)
+            {
+                _service.RedoLast();
+                Assert.IsTrue(_service.HasPendingPlacementAt(position));
+            }
+        }
+
+        [Test]
+        public void ModeChangeToNormal_ShouldClearRedoHistory()
+        {
+            var position = new Vector2Int(14, 2);
+
+            PreviewBuilding("market", position);
+            _service.Cancel();
+            _signalBus.Fire(new GameModeChangedSignal { NewMode = GameModeType.Normal });
+            _signalBus.Fire(new GameModeChangedSignal { NewMode = GameModeType.Construction });
+
+            _service.RedoLast();
+
+            Assert.IsFalse(_service.HasPendingPlacementAt(position));
+        }
+
+        [Test]
+        public void TryPreviewAt_ShouldAllowOnlyVisibleFogTiles()
+        {
+            var exploredPosition = new Vector2Int(15, 2);
+            var visiblePosition = new Vector2Int(16, 2);
+
+            _fogOfWarService.SetState(exploredPosition, FogStateType.Explored);
+            _fogOfWarService.SetState(visiblePosition, FogStateType.Visible);
+            _service.SelectBuilding("barracks");
+
+            Assert.IsFalse(_service.TryPreviewAt(exploredPosition));
+            Assert.IsTrue(_service.TryPreviewAt(visiblePosition));
+        }
+
+        [Test]
+        public void TryMovePendingPlacement_ShouldMoveUnconfirmedBuilding()
+        {
+            var start = new Vector2Int(17, 3);
+            var end = new Vector2Int(18, 3);
+
+            PreviewBuilding("wall", start);
+
+            Assert.IsTrue(_service.TryMovePendingPlacement(start, end));
+            Assert.IsFalse(_service.HasPendingPlacementAt(start));
+            Assert.IsTrue(_service.HasPendingPlacementAt(end));
         }
 
         // ─── TryDemolishAt ───────────────────────────────────────────────────
@@ -209,6 +345,12 @@ namespace Kruty1918.Moyva.Tests.Construction
             _service.SelectBuilding(buildingId);
             _service.TryPreviewAt(pos);
             _service.Confirm();
+        }
+
+        private void PreviewBuilding(string buildingId, Vector2Int pos)
+        {
+            _service.SelectBuilding(buildingId);
+            Assert.IsTrue(_service.TryPreviewAt(pos));
         }
     }
 }
