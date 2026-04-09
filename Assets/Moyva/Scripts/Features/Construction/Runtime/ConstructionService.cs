@@ -30,6 +30,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly SignalBus _signalBus;
         private readonly int _minSpacing;
         private readonly IFogOfWarService _fogOfWarService; // може бути null якщо туман не підключений
+        private readonly IWallPlacementService _wallPlacementService;
 
         private string _selectedBuildingId;
         private readonly List<PendingPlacement> _pendingPlacements = new();
@@ -47,12 +48,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IObjectsMapService objectsMapService,
             SignalBus signalBus,
             [Inject(Id = "minSpacing")] int minSpacing,
-            [InjectOptional] IFogOfWarService fogOfWarService)
+            [InjectOptional] IFogOfWarService fogOfWarService,
+            [InjectOptional] IWallPlacementService wallPlacementService)
         {
             _objectsMapService = objectsMapService;
             _signalBus = signalBus;
             _minSpacing = minSpacing;
             _fogOfWarService = fogOfWarService;
+            _wallPlacementService = wallPlacementService;
         }
 
         public void Initialize()
@@ -101,6 +104,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 Debug.Log($"[Construction] SelectBuilding -> id='{_selectedBuildingId}', state={State}");
         }
 
+        public string GetSelectedBuildingId()
+        {
+            return _selectedBuildingId;
+        }
+
         public bool TryPreviewAt(Vector2Int position)
         {
             if (State != BuildingPlacementState.Placing)
@@ -110,7 +118,33 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            if (!CanPlaceAt(position, null, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
+            if (_pendingPositions.Contains(position))
+            {
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = position,
+                    BuildingId = _selectedBuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+                return false;
+            }
+
+            bool selectedIsGate = _wallPlacementService != null && _wallPlacementService.IsGate(_selectedBuildingId);
+            bool gateReplacementAllowed = selectedIsGate
+                && _wallPlacementService.CanReplaceWallWithGate(position, _selectedBuildingId, out _);
+
+            if (selectedIsGate && !gateReplacementAllowed)
+            {
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = position,
+                    BuildingId = _selectedBuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+                return false;
+            }
+
+            if (!gateReplacementAllowed && !CanPlaceAt(position, null, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
@@ -154,7 +188,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return true;
 
             var placement = _pendingPlacements[index];
-            if (!CanPlaceAt(toPosition, fromPosition, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
+            bool movingGate = _wallPlacementService != null && _wallPlacementService.IsGate(placement.BuildingId);
+            bool gateReplacementAllowed = movingGate
+                && _wallPlacementService.CanReplaceWallWithGate(toPosition, placement.BuildingId, out _);
+
+            if (movingGate && !gateReplacementAllowed)
+            {
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = toPosition,
+                    BuildingId = placement.BuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+                return false;
+            }
+
+            if (!gateReplacementAllowed && !CanPlaceAt(toPosition, fromPosition, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
@@ -205,6 +254,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 var pos = placement.Position;
                 var id = placement.BuildingId;
+
+                if (_objectsMapService.IsOccupied(pos))
+                {
+                    bool replaced = _wallPlacementService != null
+                        && _wallPlacementService.IsGate(id)
+                        && _wallPlacementService.CanReplaceWallWithGate(pos, id, out _);
+
+                    if (!replaced)
+                    {
+                        Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: tile occupied.");
+                        continue;
+                    }
+
+                    _objectsMapService.Unregister(pos);
+                }
+
                 _objectsMapService.Register(pos, id);
                 _playerPlacedBuildings[pos] = id;
                 _signalBus.Fire(new BuildingPlacedSignal { BuildingId = id, Position = pos });
@@ -273,7 +338,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            if (!CanPlaceAt(placement.Position, null, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
+            bool isGate = _wallPlacementService != null && _wallPlacementService.IsGate(placement.BuildingId);
+            bool gateReplacementAllowed = isGate
+                && _wallPlacementService.CanReplaceWallWithGate(placement.Position, placement.BuildingId, out _);
+
+            if (isGate && !gateReplacementAllowed)
+            {
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = placement.Position,
+                    BuildingId = placement.BuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+                return;
+            }
+
+            if (!gateReplacementAllowed && !CanPlaceAt(placement.Position, null, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {

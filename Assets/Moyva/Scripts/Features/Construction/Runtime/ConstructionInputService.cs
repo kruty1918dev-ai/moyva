@@ -1,6 +1,7 @@
 using System;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -20,21 +21,30 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const bool VerboseLogs = true;
 
         private readonly IConstructionService _constructionService;
+        private readonly IWallPlacementService _wallPlacementService;
+        private readonly IObjectsMapService _objectsMapService;
         private readonly IScreenToGridConverter _screenToGrid;
         private readonly IGridService _gridService;
         private readonly SignalBus _signalBus;
         private bool _isActive;
         private bool _isDraggingPendingPlacement;
         private Vector2Int _draggedPlacementPosition;
+        private bool _isDraggingWallPath;
+        private Vector2Int _wallDragStartPosition;
+        private Vector2Int _lastWallDragTile;
 
         [Inject]
         public ConstructionInputService(
             IConstructionService constructionService,
+            IWallPlacementService wallPlacementService,
+            IObjectsMapService objectsMapService,
             IScreenToGridConverter screenToGrid,
             IGridService gridService,
             SignalBus signalBus)
         {
             _constructionService = constructionService;
+            _wallPlacementService = wallPlacementService;
+            _objectsMapService = objectsMapService;
             _screenToGrid = screenToGrid;
             _gridService = gridService;
             _signalBus = signalBus;
@@ -59,12 +69,46 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (mouse == null)
                 return;
 
-            if (_isDraggingPendingPlacement && mouse.leftButton.wasReleasedThisFrame)
+            if (mouse.leftButton.wasReleasedThisFrame)
             {
-                if (VerboseLogs)
-                    Debug.Log($"[ConstructionInput] Drag ended at {_draggedPlacementPosition}.");
+                if (_isDraggingPendingPlacement)
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[ConstructionInput] Drag ended at {_draggedPlacementPosition}.");
 
-                _isDraggingPendingPlacement = false;
+                    _isDraggingPendingPlacement = false;
+                }
+
+                if (_isDraggingWallPath)
+                {
+                    _isDraggingWallPath = false;
+                    _wallPlacementService.EndDrag();
+
+                    if (VerboseLogs)
+                        Debug.Log($"[ConstructionInput] Wall drag ended at {_lastWallDragTile}.");
+                }
+            }
+
+            if (_isDraggingWallPath && mouse.leftButton.isPressed)
+            {
+                if (IsClickOnInteractiveUI())
+                    return;
+
+                Vector2 dragScreenPos = mouse.position.ReadValue();
+                Vector2Int dragTilePos = _screenToGrid.ScreenToGrid(dragScreenPos);
+                if (!_gridService.TryGetTileData(dragTilePos, out _))
+                    return;
+
+                if (dragTilePos != _lastWallDragTile)
+                {
+                    var path = _wallPlacementService.BuildPath(_wallDragStartPosition, dragTilePos);
+                    for (int i = 0; i < path.Count; i++)
+                        _constructionService.TryPreviewAt(path[i]);
+
+                    _lastWallDragTile = dragTilePos;
+                }
+
+                return;
             }
 
             if (_isDraggingPendingPlacement && mouse.leftButton.isPressed)
@@ -131,6 +175,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_constructionService.State == BuildingPlacementState.Placing)
             {
+                string selectedBuildingId = _constructionService.GetSelectedBuildingId();
+                bool wallMode = !string.IsNullOrWhiteSpace(selectedBuildingId) && _wallPlacementService.IsWall(selectedBuildingId);
+
+                if (wallMode && _objectsMapService.TryGetOccupant(tilePos, out var occupantId) && _wallPlacementService.IsWallOrGate(occupantId))
+                {
+                    _wallPlacementService.ShowWallHandles(tilePos);
+                    _isDraggingWallPath = true;
+                    _wallDragStartPosition = tilePos;
+                    _lastWallDragTile = tilePos;
+
+                    if (VerboseLogs)
+                        Debug.Log($"[ConstructionInput] Wall drag started from existing segment at {tilePos}");
+
+                    return;
+                }
+
                 if (_constructionService.HasPendingPlacementAt(tilePos))
                 {
                     _isDraggingPendingPlacement = true;
@@ -188,7 +248,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _isActive = signal.NewMode == GameModeType.Construction;
             if (!_isActive)
+            {
                 _isDraggingPendingPlacement = false;
+                _isDraggingWallPath = false;
+                _wallPlacementService.EndDrag();
+            }
 
             if (VerboseLogs)
                 Debug.Log($"[ConstructionInput] Active changed -> {_isActive}");

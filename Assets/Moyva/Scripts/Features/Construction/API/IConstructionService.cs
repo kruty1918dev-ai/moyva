@@ -16,6 +16,9 @@ namespace Kruty1918.Moyva.Construction.API
         /// </summary>
         void SelectBuilding(string buildingId);
 
+        /// <summary>Поточний вибраний buildingId або null якщо нічого не вибрано.</summary>
+        string GetSelectedBuildingId();
+
         /// <summary>
         /// Спробувати розмістити preview будівлі на тайлі.
         /// Надсилає BuildingPreviewChangedSignal з актуальним BuildingPreviewState.

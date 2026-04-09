@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -16,6 +17,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private readonly SignalBus _signalBus;
         private readonly IBuildingRegistry _buildingRegistry;
+        private readonly IObjectsMapService _objectsMapService;
+        private readonly IWallPlacementService _wallPlacementService;
         private readonly DiContainer _container;
 
         private readonly Dictionary<Vector2Int, GameObject> _previewByPosition = new();
@@ -34,10 +37,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private Transform _placedRoot;
 
         [Inject]
-        public ConstructionVisualService(SignalBus signalBus, IBuildingRegistry buildingRegistry, DiContainer container)
+        public ConstructionVisualService(
+            SignalBus signalBus,
+            IBuildingRegistry buildingRegistry,
+            IObjectsMapService objectsMapService,
+            IWallPlacementService wallPlacementService,
+            DiContainer container)
         {
             _signalBus = signalBus;
             _buildingRegistry = buildingRegistry;
+            _objectsMapService = objectsMapService;
+            _wallPlacementService = wallPlacementService;
             _container = container;
         }
 
@@ -180,6 +190,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             RemovePreview(signal.Position);
 
+            if (_wallPlacementService.TryResolvePlacedVisual(signal.Position, signal.BuildingId, out _, out _))
+            {
+                RefreshWallNeighborhood(signal.Position);
+
+                if (VerboseLogs)
+                    Debug.Log($"[ConstructionVisual] Spawned/updated wall collection element '{signal.BuildingId}' at {signal.Position}");
+
+                return;
+            }
+
             var def = _buildingRegistry.GetById(signal.BuildingId);
             if (def == null || def.Prefab == null)
             {
@@ -208,11 +228,46 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 if (VerboseLogs)
                     Debug.Log($"[ConstructionVisual] Removed building visual '{signal.BuildingId}' at {signal.Position}");
+            }
+            else if (VerboseLogs)
+            {
+                Debug.LogWarning($"[ConstructionVisual] Demolish signal received for {signal.Position}, but no placed visual was tracked.");
+            }
+
+            if (_wallPlacementService.IsWallOrGate(signal.BuildingId))
+                RefreshWallNeighborhood(signal.Position);
+        }
+
+        private void RefreshWallNeighborhood(Vector2Int center)
+        {
+            RefreshWallVisualAt(center);
+            RefreshWallVisualAt(center + Vector2Int.up);
+            RefreshWallVisualAt(center + Vector2Int.right);
+            RefreshWallVisualAt(center + Vector2Int.down);
+            RefreshWallVisualAt(center + Vector2Int.left);
+        }
+
+        private void RefreshWallVisualAt(Vector2Int position)
+        {
+            if (!_objectsMapService.TryGetOccupant(position, out var occupantId))
+            {
+                if (_placedByPosition.TryGetValue(position, out var existing) && existing != null)
+                {
+                    UnityEngine.Object.Destroy(existing);
+                    _placedByPosition.Remove(position);
+                }
                 return;
             }
 
-            if (VerboseLogs)
-                Debug.LogWarning($"[ConstructionVisual] Demolish signal received for {signal.Position}, but no placed visual was tracked.");
+            if (!_wallPlacementService.TryResolvePlacedVisual(position, occupantId, out var prefab, out var rotation))
+                return;
+
+            if (_placedByPosition.TryGetValue(position, out var current) && current != null)
+                UnityEngine.Object.Destroy(current);
+
+            var instance = CreateInstance(prefab, position, _placedRoot, $"Building_{occupantId}_{position.x}_{position.y}", rotation);
+            ApplySolidStyle(instance);
+            _placedByPosition[position] = instance;
         }
 
         private void EnsureRoots()
@@ -230,10 +285,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return new GameObject(rootName).transform;
         }
 
-        private GameObject CreateInstance(GameObject prefab, Vector2Int tile, Transform parent, string objectName)
+        private GameObject CreateInstance(GameObject prefab, Vector2Int tile, Transform parent, string objectName, Quaternion? forcedRotation = null)
         {
             Vector3 worldPos = new Vector3(tile.x, tile.y, 0.1f);
-            var instance = _container.InstantiatePrefab(prefab, worldPos, prefab.transform.rotation, parent);
+            Quaternion rotation = forcedRotation ?? prefab.transform.rotation;
+            var instance = _container.InstantiatePrefab(prefab, worldPos, rotation, parent);
             instance.name = objectName;
             EnsureBuildingSortingOrder(instance, BuildingLayerMinSortingOrder);
             DisableColliders(instance);
