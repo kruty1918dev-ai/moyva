@@ -1,5 +1,9 @@
 namespace Kruty1918.Moyva.Generator.Runtime
 {
+    /// <summary>
+    /// Контейнер згенерованих даних світу: карти біомів, об'єктів, висот та будівель.
+    /// Підтримує глибоке клонування для безпечної передачі між підсистемами.
+    /// </summary>
     internal sealed class GeneratedWorldData
     {
         public int Width;
@@ -15,43 +19,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 Width = Width,
                 Height = Height,
-                BiomeMap = CloneStringMap(BiomeMap),
-                ObjectMap = CloneStringMap(ObjectMap),
-                HeightMap = CloneFloatMap(HeightMap),
-                BuildingMap = CloneStringMap(BuildingMap),
+                BiomeMap = MapArrayUtils.CloneStringMap(BiomeMap),
+                ObjectMap = MapArrayUtils.CloneStringMap(ObjectMap),
+                HeightMap = MapArrayUtils.CloneFloatMap(HeightMap),
+                BuildingMap = MapArrayUtils.CloneStringMap(BuildingMap),
             };
-        }
-
-        private static string[,] CloneStringMap(string[,] source)
-        {
-            if (source == null)
-                return null;
-
-            int width = source.GetLength(0);
-            int height = source.GetLength(1);
-            var clone = new string[width, height];
-
-            for (int x = 0; x < width; x++)
-                for (int y = 0; y < height; y++)
-                    clone[x, y] = source[x, y];
-
-            return clone;
-        }
-
-        private static float[,] CloneFloatMap(float[,] source)
-        {
-            if (source == null)
-                return null;
-
-            int width = source.GetLength(0);
-            int height = source.GetLength(1);
-            var clone = new float[width, height];
-
-            for (int x = 0; x < width; x++)
-                for (int y = 0; y < height; y++)
-                    clone[x, y] = source[x, y];
-
-            return clone;
         }
     }
 }

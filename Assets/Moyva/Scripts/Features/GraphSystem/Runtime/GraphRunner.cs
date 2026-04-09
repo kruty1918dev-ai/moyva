@@ -6,6 +6,11 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.GraphSystem.Runtime
 {
+    /// <summary>
+    /// Виконавець графа генерації: обходить вузли у топологічному порядку,
+    /// передає входи/виходи між вузлами через кеш та підтримує як
+    /// синхронний, так і асинхронний режими виконання.
+    /// </summary>
     public sealed class GraphRunner : IGraphRunner
     {
         public GraphExecutionResult Execute(GraphAsset graph, NodeContext context)
@@ -14,15 +19,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             var cache = new Dictionary<string, object[]>();
             var connectionsByTarget = BuildConnectionsByTarget(graph);
 
-            List<NodeBase> sorted;
-            try
-            {
-                sorted = TopologicalSort(graph);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return new GraphExecutionResult(null, ex.Message, logs);
-            }
+            var sorted = TopologicalSorter.Sort(graph);
+            if (sorted == null)
+                return new GraphExecutionResult(null,
+                    "Graph contains cycles — topological sort is impossible.", logs);
 
             foreach (var node in sorted)
             {
@@ -68,15 +68,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             var cache = new Dictionary<string, object[]>();
             var connectionsByTarget = BuildConnectionsByTarget(graph);
 
-            List<NodeBase> sorted;
-            try
-            {
-                sorted = TopologicalSort(graph);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return new GraphExecutionResult(null, ex.Message, logs);
-            }
+            var sorted = TopologicalSorter.Sort(graph);
+            if (sorted == null)
+                return new GraphExecutionResult(null,
+                    "Graph contains cycles — topological sort is impossible.", logs);
 
             for (int i = 0; i < sorted.Count; i++)
             {
@@ -160,59 +155,6 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             }
 
             return index;
-        }
-
-        /// <summary>
-        /// Kahn's algorithm for topological sort with cycle detection.
-        /// </summary>
-        private List<NodeBase> TopologicalSort(GraphAsset graph)
-        {
-            var nodeMap = new Dictionary<string, NodeBase>();
-            var inDegree = new Dictionary<string, int>();
-            var adjacency = new Dictionary<string, List<string>>();
-
-            foreach (var node in graph.Nodes)
-            {
-                if (node == null) continue;
-                nodeMap[node.NodeId] = node;
-                inDegree[node.NodeId] = 0;
-                adjacency[node.NodeId] = new List<string>();
-            }
-
-            foreach (var conn in graph.Connections)
-            {
-                if (!nodeMap.ContainsKey(conn.SourceNodeId)
-                    || !nodeMap.ContainsKey(conn.TargetNodeId))
-                    continue;
-
-                adjacency[conn.SourceNodeId].Add(conn.TargetNodeId);
-                inDegree[conn.TargetNodeId]++;
-            }
-
-            var queue = new Queue<string>();
-            foreach (var kvp in inDegree)
-                if (kvp.Value == 0)
-                    queue.Enqueue(kvp.Key);
-
-            var sorted = new List<NodeBase>();
-            while (queue.Count > 0)
-            {
-                var current = queue.Dequeue();
-                sorted.Add(nodeMap[current]);
-
-                foreach (var neighbor in adjacency[current])
-                {
-                    inDegree[neighbor]--;
-                    if (inDegree[neighbor] == 0)
-                        queue.Enqueue(neighbor);
-                }
-            }
-
-            if (sorted.Count != nodeMap.Count)
-                throw new InvalidOperationException(
-                    "Graph contains cycles — topological sort is impossible.");
-
-            return sorted;
         }
     }
 }
