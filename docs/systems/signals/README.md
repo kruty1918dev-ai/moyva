@@ -1,6 +1,6 @@
 # Signals — Система сигналів (SignalBus)
 
-← [Назад до README](../README.md) · [Переглянути на сайті →](https://kruty1918dev-ai.github.io/moyva/#systems/signals)
+← [Назад до README](../../README.md)
 
 ---
 
@@ -65,345 +65,54 @@ public class SignalBusInstaller : MonoInstaller
 
 ---
 
-## Усі сигнали проекту
-
-### Ядро: взаємодія та карта
-
-#### `TileClickedSignal`
-
-Надсилається: `TileView.OnMouseDown()`
-Отримується: `TileInteractionService`
-
-```csharp
-public class TileClickedSignal
-{
-    public Vector2Int Position; // Координати тайлу, на який клікнули
-}
-```
-
----
-
-#### `UnitCreatedSignal`
-
-Надсилається: `UnitFactory.CreateUnit()`
-Отримується: `UnitService`, `FogOfWarService`
-
-```csharp
-public struct UnitCreatedSignal
-{
-    public string     UnitId;      // Унікальний ID нового юніта ("warrior-01_1")
-    public string     UnitTypeId;  // Клас юніта ("warrior")
-    public Vector2Int Position;    // Стартова позиція на сітці
-    public GameObject UnitObject;  // Посилання на spawned GameObject
-}
-```
-
----
-
-#### `UnitMovedSignal`
-
-Надсилається: `UnitMovementService` (через `OnStepCompleted` анімації)
-Отримується: `UnitService`, `FogOfWarService`
-
-```csharp
-public struct UnitMovedSignal
-{
-    public string     UnitId;       // ID юніта, що рухався
-    public Vector2Int NewPosition;  // Нова позиція на сітці
-    public float      Cost;         // Списана стаміна (вага тайлу)
-}
-```
-
----
-
-#### `UnitDestroyedSignal`
-
-Надсилається: (зарезервовано для системи смерті)
-Отримується: `UnitService`, `FogOfWarService`
-
-```csharp
-public struct UnitDestroyedSignal
-{
-    public string UnitId; // ID знищеного юніта
-}
-```
-
----
-
-#### `InterruptMovementSignal`
-
-Надсилається: `UnitService` (коли стаміна вичерпана)
-Отримується: `UnitMovementService`
-
-```csharp
-public struct InterruptMovementSignal
-{
-    public string UnitId; // ID юніта, рух якого треба перервати
-}
-```
-
----
-
-#### `OnMapObjectSpawnedSignal`
-
-Надсилається: `MapVisualInstantiator` (після спавну статичного об'єкта карти)
-Отримується: `ObjectsMapService`
-
-```csharp
-public struct OnMapObjectSpawnedSignal
-{
-    public string ObjectId;        // TileTypeId, наприклад "river", "mountain"
-    public Vector2Int Position;
-}
-```
-
----
-
-#### `OnObjectsMapChangedSignal`
-
-Надсилається: `ObjectsMapService` (після будь-якої зміни карти об'єктів)
-Отримується: `TileView` та інші підписники
-Декларація: `.OptionalSubscriber()`
-
-```csharp
-public struct OnObjectsMapChangedSignal
-{
-    public Vector2Int Position;
-    public string OccupantId;      // null якщо тайл звільнено
-}
-```
-
----
-
-#### `WorldBuiltSignal`
-
-Надсилається: `MapVisualInstantiator` (після завершення побудови світу)
-Отримується: системи пост-генерації (FogOfWar, Bootstrap тощо)
-
-```csharp
-public struct WorldBuiltSignal { }
-```
-
----
-
-#### `WorldGeneratedDataSignal`
-
-Надсилається: генератор карти (після генерації даних)
-Отримується: підписники відображення карти
-Декларація: `.OptionalSubscriber()`
-
-```csharp
-public struct WorldGeneratedDataSignal
-{
-    public int Width;
-    public int Height;
-    public string[,] TileMap;
-    public string[,] ObjectMap;
-    public float[,] HeightMap;
-}
-```
-
----
-
-### GameMode: режими гри
-
-#### `GameModeChangedSignal`
-
-Надсилається: `GameModeService.SetMode()`
-Отримується: `TileInteractionService`, `ConstructionService`, `GameModePanelController`, `GameModeUIController`, `ConstructionUIController`
-
-```csharp
-public struct GameModeChangedSignal
-{
-    public GameModeType NewMode; // Normal або Construction
-}
-```
-
----
-
-#### `GameModeChangeRequestedSignal`
-
-Надсилається: UI-контролери (`ConstructionUIController`, `GameModeUIController`)
-Отримується: `GameModeChangeRequestRouter` → делегує до `IGameModeService.SetMode()`
-
-```csharp
-public struct GameModeChangeRequestedSignal
-{
-    public GameModeType RequestedMode;
-}
-```
-
----
-
-### Construction: будівництво
-
-#### `BuildingPlacedSignal`
-
-Надсилається: `ConstructionService.Confirm()`
-Отримується: `ConstructionVisualService`, `ConstructionUIController`
-
-```csharp
-public struct BuildingPlacedSignal
-{
-    public string BuildingId;
-    public Vector2Int Position;
-}
-```
-
----
-
-#### `BuildingCancelledSignal`
-
-Надсилається: `ConstructionService.Cancel()`
-Отримується: `ConstructionVisualService`, `ConstructionUIController`
-
-```csharp
-public struct BuildingCancelledSignal { }
-```
-
----
-
-#### `BuildingPreviewChangedSignal`
-
-Надсилається: `ConstructionService.TryPreviewAt()`
-Отримується: `ConstructionVisualService`, `ConstructionUIController`
-
-```csharp
-public struct BuildingPreviewChangedSignal
-{
-    public Vector2Int Position;
-    public string BuildingId;
-    public BuildingPreviewState PreviewState;
-    // None = підсвітку знято
-    // Valid = тайл вільний, preview активний
-    // Blocked = тайл зайнятий, підсвічується червоним
-}
-```
-
----
-
-#### `BuildingDemolishedSignal`
-
-Надсилається: `ConstructionService.TryDemolishAt()`
-Отримується: `ConstructionVisualService`
-Декларація: `.OptionalSubscriber()`
-
-```csharp
-public struct BuildingDemolishedSignal
-{
-    public string BuildingId;
-    public Vector2Int Position;
-}
-```
-
----
-
-#### `ShowWallHandlesSignal`
-
-Надсилається: `WallPlacementService.ShowWallHandles()` / `EndDrag()`
-Отримується: UI-компонент ручок стін
-
-```csharp
-public struct ShowWallHandlesSignal
-{
-    public Vector2Int Center;
-    public bool Hide; // true — приховати ручки
-}
-```
-
----
-
-### FogOfWar: туман війни
-
-#### `FogStateChangedSignal`
-
-Надсилається: `FogOfWarService` (після оновлення стану видимості)
-Отримується: підписники оновлення тумана
-
-```csharp
-public struct FogStateChangedSignal
-{
-    public int ChangedTilesCount;
-}
-```
-
----
-
-### SaveSystem: збереження
-
-#### `SaveRequestedSignal`
-
-Надсилається: UI або гарячі клавіші (запит на збереження)
-Отримується: `SaveService`
-
-```csharp
-public struct SaveRequestedSignal
-{
-    public int Slot;
-}
-```
-
----
-
-#### `LoadRequestedSignal`
-
-Надсилається: UI або гарячі клавіші (запит на завантаження)
-Отримується: `SaveService`
-
-```csharp
-public struct LoadRequestedSignal
-{
-    public int Slot;
-}
-```
-
----
-
-#### `SaveCompletedSignal`
-
-Надсилається: `SaveService` (після завершення операції збереження)
-Отримується: UI-підписники
-Декларація: `.OptionalSubscriber()`
-
-```csharp
-public struct SaveCompletedSignal
-{
-    public int    Slot;
-    public bool   Success;
-    public string ErrorMessage;
-}
-```
-
----
-
-## Реєстрація в Zenject (`SignalBusInstaller`)
-
-```csharp
-public class SignalBusInstaller : MonoInstaller
-{
-    public override void InstallBindings()
-    {
-        Zenject.SignalBusInstaller.Install(Container); // Базова установка Zenject SignalBus
-
-        Container.DeclareSignal<TileClickedSignal>();
-        Container.DeclareSignal<UnitCreatedSignal>();
-        Container.DeclareSignal<UnitMovedSignal>();
-        Container.DeclareSignal<UnitDestroyedSignal>();
-        Container.DeclareSignal<InterruptMovementSignal>();
-        Container.DeclareSignal<OnMapObjectSpawnedSignal>();
-        Container.DeclareSignal<OnObjectsMapChangedSignal>();
-
-        // GameMode
-        Container.DeclareSignal<GameModeChangedSignal>();
-
-        // Construction
-        Container.DeclareSignal<BuildingPlacedSignal>();
-        Container.DeclareSignal<BuildingCancelledSignal>();
-        Container.DeclareSignal<BuildingPreviewChangedSignal>();
-        Container.DeclareSignal<ShowWallHandlesSignal>();
-    }
-}
-```
+## Усі сигнали проекту (20)
+
+Кожен сигнал має окрему сторінку з повним описом: поля, хто надсилає, хто отримує, реєстрація, пов'язані сигнали.
+
+### Ядро: взаємодія та карта (9)
+
+| Сигнал | Опис | Деталі |
+|---|---|---|
+| `TileClickedSignal` | Клік по тайлу на карті | [→ tile-clicked](tile-clicked.md) |
+| `UnitCreatedSignal` | Фабрика створила юніта | [→ unit-created](unit-created.md) |
+| `UnitMovedSignal` | Юніт перемістився на нову позицію | [→ unit-moved](unit-moved.md) |
+| `UnitDestroyedSignal` | Юніт знищений (зарезервовано) | [→ unit-destroyed](unit-destroyed.md) |
+| `InterruptMovementSignal` | Переривання руху юніта (стаміна) | [→ interrupt-movement](interrupt-movement.md) |
+| `OnMapObjectSpawnedSignal` | Спавн статичного об'єкта карти | [→ map-object-spawned](map-object-spawned.md) |
+| `OnObjectsMapChangedSignal` | Зміна карти об'єктів | [→ objects-map-changed](objects-map-changed.md) |
+| `WorldBuiltSignal` | Завершення побудови світу | [→ world-built](world-built.md) |
+| `WorldGeneratedDataSignal` | Дані генерації карти | [→ world-generated-data](world-generated-data.md) |
+
+### GameMode: режими гри (2)
+
+| Сигнал | Опис | Деталі |
+|---|---|---|
+| `GameModeChangedSignal` | Зміна ігрового режиму | [→ game-mode-changed](game-mode-changed.md) |
+| `GameModeChangeRequestedSignal` | Запит на зміну режиму | [→ game-mode-change-requested](game-mode-change-requested.md) |
+
+### Construction: будівництво (5)
+
+| Сигнал | Опис | Деталі |
+|---|---|---|
+| `BuildingPlacedSignal` | Підтвердження розміщення будівлі | [→ building-placed](building-placed.md) |
+| `BuildingCancelledSignal` | Скасування сесії будівництва | [→ building-cancelled](building-cancelled.md) |
+| `BuildingPreviewChangedSignal` | Зміна стану preview будівлі | [→ building-preview-changed](building-preview-changed.md) |
+| `BuildingDemolishedSignal` | Успішне знесення будівлі | [→ building-demolished](building-demolished.md) |
+| `ShowWallHandlesSignal` | Показ/приховування ручок стін | [→ show-wall-handles](show-wall-handles.md) |
+
+### FogOfWar: туман війни (1)
+
+| Сигнал | Опис | Деталі |
+|---|---|---|
+| `FogStateChangedSignal` | Зміна стану видимості тумана | [→ fog-state-changed](fog-state-changed.md) |
+
+### SaveSystem: збереження (3)
+
+| Сигнал | Опис | Деталі |
+|---|---|---|
+| `SaveRequestedSignal` | Запит на збереження у слот | [→ save-requested](save-requested.md) |
+| `LoadRequestedSignal` | Запит на завантаження зі слоту | [→ load-requested](load-requested.md) |
+| `SaveCompletedSignal` | Результат операції збереження | [→ save-completed](save-completed.md) |
 
 ---
 
@@ -457,32 +166,41 @@ UnitMovementService.OnInterruptRequested()
 
 ---
 
-## Таблиця сигналів
+## Зведена таблиця сигналів
 
 | Сигнал | Тип | Надсилає | Отримує |
 |---|---|---|---|
 | `TileClickedSignal` | `class` | `TileView` | `TileInteractionService` |
-| `UnitCreatedSignal` | `struct` | `UnitFactory` | `UnitService`, `ObjectsMapService` |
-| `UnitMovedSignal` | `struct` | `UnitMovementService` | `UnitService`, `ObjectsMapService` |
-| `UnitDestroyedSignal` | `struct` | — (зарезервовано) | `UnitService`, `ObjectsMapService` |
+| `UnitCreatedSignal` | `struct` | `UnitFactory` | `UnitService`, `FogOfWarService` |
+| `UnitMovedSignal` | `struct` | `UnitMovementService` | `UnitService`, `FogOfWarService` |
+| `UnitDestroyedSignal` | `struct` | — (зарезервовано) | `UnitService`, `FogOfWarService` |
 | `InterruptMovementSignal` | `struct` | `UnitService` | `UnitMovementService` |
 | `OnMapObjectSpawnedSignal` | `struct` | `MapVisualInstantiator` | `ObjectsMapService` |
 | `OnObjectsMapChangedSignal` | `struct` | `ObjectsMapService` | `TileView` |
+| `WorldBuiltSignal` | `struct` | `MapVisualInstantiator` | FogOfWar, Bootstrap |
+| `WorldGeneratedDataSignal` | `struct` | Генератор карти | Підписники карти |
 | `GameModeChangedSignal` | `struct` | `GameModeService` | `TileInteractionService`, `ConstructionService` |
-| `BuildingPlacedSignal` | `struct` | `ConstructionService` | підписники (спавнер) |
-| `BuildingCancelledSignal` | `struct` | `ConstructionService` | UI |
-| `BuildingPreviewChangedSignal` | `struct` | `ConstructionService` | `TileView` |
+| `GameModeChangeRequestedSignal` | `struct` | UI-контролери | `GameModeChangeRequestRouter` |
+| `BuildingPlacedSignal` | `struct` | `ConstructionService` | `ConstructionVisualService`, UI |
+| `BuildingCancelledSignal` | `struct` | `ConstructionService` | `ConstructionVisualService`, UI |
+| `BuildingPreviewChangedSignal` | `struct` | `ConstructionService` | `ConstructionVisualService`, UI |
+| `BuildingDemolishedSignal` | `struct` | `ConstructionService` | `ConstructionVisualService` |
 | `ShowWallHandlesSignal` | `struct` | `WallPlacementService` | UI стін |
+| `FogStateChangedSignal` | `struct` | `FogOfWarService` | Підписники тумана |
+| `SaveRequestedSignal` | `struct` | UI / hotkeys | `SaveService` |
+| `LoadRequestedSignal` | `struct` | UI / hotkeys | `SaveService` |
+| `SaveCompletedSignal` | `struct` | `SaveService` | UI-підписники |
 
 ---
 
 ## Пов'язані системи
 
-- [Grid](grid.md) — зберігання стану тайлів
-- [Units](units.md) — надсилає / отримує більшість сигналів
-- [Interactions](interactions.md) — отримує `TileClickedSignal`, `GameModeChangedSignal`
-- [Visuals](visuals.md) — отримує `OnObjectsMapChangedSignal`, `BuildingPreviewChangedSignal`; надсилає `TileClickedSignal`
-- [ObjectsMap](objects-map.md) — надсилає `OnObjectsMapChangedSignal`, отримує юніт-сигнали та `OnMapObjectSpawnedSignal`
-- [Generator](generator.md) — надсилає `OnMapObjectSpawnedSignal`
-- [GameMode](game-mode.md) — надсилає `GameModeChangedSignal`
-- [Construction](construction.md) — надсилає `BuildingPlacedSignal`, `BuildingCancelledSignal`, `BuildingPreviewChangedSignal`, `ShowWallHandlesSignal`
+- [Grid](../grid.md) — зберігання стану тайлів
+- [Units](../units.md) — надсилає / отримує більшість сигналів
+- [Interactions](../interactions.md) — отримує `TileClickedSignal`, `GameModeChangedSignal`
+- [Visuals](../visuals.md) — отримує `OnObjectsMapChangedSignal`, `BuildingPreviewChangedSignal`; надсилає `TileClickedSignal`
+- [ObjectsMap](../objects-map.md) — надсилає `OnObjectsMapChangedSignal`, отримує юніт-сигнали та `OnMapObjectSpawnedSignal`
+- [Generator](../generator.md) — надсилає `OnMapObjectSpawnedSignal`
+- [GameMode](../game-mode.md) — надсилає `GameModeChangedSignal`
+- [Construction](../construction.md) — надсилає `BuildingPlacedSignal`, `BuildingCancelledSignal`, `BuildingPreviewChangedSignal`, `ShowWallHandlesSignal`
+- [SaveSystem](../save-system/README.md) — `SaveRequestedSignal`, `LoadRequestedSignal`, `SaveCompletedSignal`
