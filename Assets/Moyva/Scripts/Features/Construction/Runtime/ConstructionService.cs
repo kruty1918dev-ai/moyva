@@ -273,6 +273,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
+            if (!CanPlaceAt(placement.Position, null, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
+            {
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = placement.Position,
+                    BuildingId = placement.BuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] RedoLast blocked at {placement.Position}. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, remainingRedo={_redoPlacements.Count}");
+                return;
+            }
+
             State = BuildingPlacementState.Placing;
             _selectedBuildingId = placement.BuildingId;
 
@@ -365,8 +379,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         /// <summary>
-        /// Повертає true якщо тайл повністю у тумані (Unexplored).
-        /// Explored (раніше бачений) та Visible (зараз видно) дозволяють будівництво.
+        /// Повертає true якщо тайл НЕ видимий (тобто FogState != Visible).
+        /// Для будівництва дозволяється тільки Visible.
         /// Якщо FogOfWar не підключений — завжди false (дозволено).
         /// </summary>
         private bool IsBlockedByFog(Vector2Int position)
