@@ -8,7 +8,8 @@
         "UnityEditor.TestRunner",
         "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.Construction",
-        "Kruty1918.Moyva.ObjectsMap"
+        "Kruty1918.Moyva.ObjectsMap",
+        "Kruty1918.Moyva.FogOfWar"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],

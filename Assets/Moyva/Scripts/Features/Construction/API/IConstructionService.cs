@@ -24,6 +24,17 @@ namespace Kruty1918.Moyva.Construction.API
         bool TryPreviewAt(Vector2Int position);
 
         /// <summary>
+        /// Повертає true, якщо на тайлі є непідтверджене preview-розміщення в поточній сесії.
+        /// </summary>
+        bool HasPendingPlacementAt(Vector2Int position);
+
+        /// <summary>
+        /// Перемістити непідтверджену будівлю з одного тайлу на інший.
+        /// Повертає true при успіху, false якщо нова позиція заблокована або preview не знайдено.
+        /// </summary>
+        bool TryMovePendingPlacement(Vector2Int fromPosition, Vector2Int toPosition);
+
+        /// <summary>
         /// Підтвердити всі pending-розміщення.
         /// Реєструє кожне в ObjectsMapService, надсилає BuildingPlacedSignal.
         /// Після Confirm дія незворотна.
