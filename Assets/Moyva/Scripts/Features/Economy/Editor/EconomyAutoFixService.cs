@@ -1,0 +1,160 @@
+using System;
+using Kruty1918.Moyva.Economy.API;
+using UnityEditor;
+
+namespace Kruty1918.Moyva.Economy.Editor
+{
+    public sealed class EconomyAutoFixService
+    {
+        public int FixCommonIssues(EconomyDatabaseSO database)
+        {
+            if (database == null)
+                return 0;
+
+            var fixes = 0;
+
+            for (var i = 0; i < database.Resources.Count; i++)
+            {
+                var resource = database.Resources[i];
+                if (resource == null)
+                    continue;
+
+                fixes += TrimString(resource, "_id");
+                fixes += TrimString(resource, "_displayName");
+            }
+
+            for (var i = 0; i < database.Settlements.Count; i++)
+            {
+                var settlement = database.Settlements[i];
+                if (settlement == null)
+                    continue;
+
+                fixes += TrimString(settlement, "_settlementId");
+                fixes += TrimString(settlement, "_centerBuildingId");
+                fixes += ClampMinInt(settlement, "_buildRadius", 1);
+            }
+
+            for (var i = 0; i < database.WarehousePolicies.Count; i++)
+            {
+                var warehouse = database.WarehousePolicies[i];
+                if (warehouse == null)
+                    continue;
+
+                var so = new SerializedObject(warehouse);
+                var entries = so.FindProperty("_entries");
+                if (entries == null)
+                    continue;
+
+                var changed = false;
+                for (var entryIndex = 0; entryIndex < entries.arraySize; entryIndex++)
+                {
+                    var entry = entries.GetArrayElementAtIndex(entryIndex);
+                    if (entry == null)
+                        continue;
+
+                    changed |= TrimSerializedString(entry.FindPropertyRelative("_resourceId"));
+
+                    var priorityProp = entry.FindPropertyRelative("_priority");
+                    if (priorityProp != null && priorityProp.intValue <= 0)
+                    {
+                        priorityProp.intValue = 1;
+                        changed = true;
+                    }
+                }
+
+                if (!changed)
+                    continue;
+
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(warehouse);
+                fixes++;
+            }
+
+            for (var i = 0; i < database.ProductionProfiles.Count; i++)
+            {
+                var profile = database.ProductionProfiles[i];
+                if (profile == null)
+                    continue;
+
+                fixes += TrimString(profile, "_buildingId");
+                fixes += TrimString(profile, "_recipeId");
+                fixes += ClampMinFloat(profile, "_cycleDurationSeconds", 1f);
+                fixes += ClampMinInt(profile, "_outputAmountPerCycle", 1);
+            }
+
+            for (var i = 0; i < database.CaravanTemplates.Count; i++)
+            {
+                var caravan = database.CaravanTemplates[i];
+                if (caravan == null)
+                    continue;
+
+                fixes += TrimString(caravan, "_templateId");
+                fixes += ClampMinInt(caravan, "_capacity", 1);
+                fixes += ClampMinInt(caravan, "_defaultPriority", 1);
+            }
+
+            for (var i = 0; i < database.AiRuleProfiles.Count; i++)
+            {
+                var profile = database.AiRuleProfiles[i];
+                if (profile == null)
+                    continue;
+
+                fixes += TrimString(profile, "_profileId");
+            }
+
+            return fixes;
+        }
+
+        private static int TrimString(UnityEngine.Object target, string propertyName)
+        {
+            var so = new SerializedObject(target);
+            var prop = so.FindProperty(propertyName);
+            if (!TrimSerializedString(prop))
+                return 0;
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(target);
+            return 1;
+        }
+
+        private static int ClampMinInt(UnityEngine.Object target, string propertyName, int minValue)
+        {
+            var so = new SerializedObject(target);
+            var prop = so.FindProperty(propertyName);
+            if (prop == null || prop.propertyType != SerializedPropertyType.Integer || prop.intValue >= minValue)
+                return 0;
+
+            prop.intValue = minValue;
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(target);
+            return 1;
+        }
+
+        private static int ClampMinFloat(UnityEngine.Object target, string propertyName, float minValue)
+        {
+            var so = new SerializedObject(target);
+            var prop = so.FindProperty(propertyName);
+            if (prop == null || prop.propertyType != SerializedPropertyType.Float || prop.floatValue >= minValue)
+                return 0;
+
+            prop.floatValue = minValue;
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(target);
+            return 1;
+        }
+
+        private static bool TrimSerializedString(SerializedProperty prop)
+        {
+            if (prop == null || prop.propertyType != SerializedPropertyType.String)
+                return false;
+
+            var current = prop.stringValue ?? string.Empty;
+            var trimmed = current.Trim();
+            if (string.Equals(current, trimmed, StringComparison.Ordinal))
+                return false;
+
+            prop.stringValue = trimmed;
+            return true;
+        }
+    }
+}
