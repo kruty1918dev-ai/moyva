@@ -28,6 +28,19 @@ nav a.active{color:#7c9ef8;background:#1c2128;border-left-color:#7c9ef8}
 .nav-subsys a:hover{color:#c9d1d9;background:#1c2128}
 .nav-subsys a.active{color:#7c9ef8;background:#1c2128;border-left-color:#7c9ef8}
 
+/* ── Collapsible groups ───────────────────────────────────────── */
+.nav-group{list-style:none}
+.nav-group-toggle{display:flex;align-items:center;padding:5px 14px;color:#8b949e;cursor:pointer;font-size:.83rem;transition:color .1s,background .1s;border-left:2px solid transparent;user-select:none}
+.nav-group-toggle:hover{color:#e6edf3;background:#1c2128}
+.nav-group-toggle a{color:inherit;text-decoration:none;flex:1}
+.nav-group-toggle a:hover{color:#e6edf3}
+.nav-group-toggle a.active{color:#7c9ef8}
+.nav-group-toggle .arrow{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;font-size:.55rem;transition:transform .2s;color:#484f58;flex-shrink:0;margin-right:4px}
+.nav-group-toggle.open .arrow{transform:rotate(90deg)}
+.nav-group-toggle .group-label{color:#8b949e;flex:1}
+.nav-group-children{display:none;list-style:none;padding:0;margin:0}
+.nav-group-children.open{display:block}
+
 /* ── Mobile hamburger ─────────────────────────────────────────── */
 #menu-toggle{display:none;position:fixed;top:12px;left:12px;z-index:30;background:#13141f;border:1px solid #30363d;border-radius:8px;padding:8px 10px;cursor:pointer;color:#c9d1d9;font-size:1.2rem;line-height:1}
 #sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:15}
@@ -105,7 +118,8 @@ var PAGES = {};
 
 var SECTION_LABELS = {
   'systems': 'Системи',
-  'standarts': 'Стандарти'
+  'standarts': 'Стандарти',
+  'modules': 'Модулі'
 };
 
 function routeFromPath(path) {
@@ -260,20 +274,7 @@ function buildSite(manifest) {
     ul.appendChild(headerLi);
 
     var routes = sections[sec].sort();
-
-    routes.forEach(function(route) {
-      var depth = route.split('/').length - 1;
-      var isSubItem = depth >= 2;
-
-      var li = document.createElement('li');
-      li.dataset.page = route;
-      li.className = isSubItem ? 'nav-subsys' : 'nav-sys';
-
-      var label = navLabel(route, PAGES[route].title);
-      if (isSubItem) label = '↳ ' + label;
-      li.innerHTML = '<a href="#' + route + '">' + Md.esc(label) + '</a>';
-      ul.appendChild(li);
-    });
+    buildNavTree(ul, routes, 1);
 
     var hr = document.createElement('hr');
     hr.className = 'nav-divider';
@@ -281,6 +282,123 @@ function buildSite(manifest) {
   });
 
   navEl.appendChild(ul);
+}
+
+// ── Recursive tree builder for collapsible nav ────────────────────────────
+// segmentIndex: the path segment depth used for grouping (0-based)
+function buildNavTree(parentEl, routes, segmentIndex) {
+  var groups = {};
+  var groupOrder = [];
+
+  routes.forEach(function(route) {
+    var parts = route.split('/');
+    var key = parts[segmentIndex];
+    if (!key) return;
+    if (!groups[key]) {
+      groups[key] = { self: null, children: [] };
+      groupOrder.push(key);
+    }
+    if (parts.length === segmentIndex + 1) {
+      groups[key].self = route;
+    } else {
+      groups[key].children.push(route);
+    }
+  });
+
+  var basePad = 14 + segmentIndex * 10; // indentation increases with depth
+
+  groupOrder.forEach(function(key) {
+    var group = groups[key];
+
+    if (group.children.length === 0) {
+      // Standalone leaf item
+      if (!group.self || !PAGES[group.self]) return;
+      var li = document.createElement('li');
+      li.dataset.page = group.self;
+      li.className = segmentIndex <= 1 ? 'nav-sys' : 'nav-subsys';
+      var label = navLabel(group.self, PAGES[group.self].title);
+      if (segmentIndex > 1) label = '↳ ' + label;
+      var a = document.createElement('a');
+      a.href = '#' + group.self;
+      a.textContent = label;
+      a.style.paddingLeft = basePad + 'px';
+      li.appendChild(a);
+      parentEl.appendChild(li);
+    } else {
+      // Collapsible group with children
+      var groupLi = document.createElement('li');
+      groupLi.className = 'nav-group';
+      if (group.self) groupLi.dataset.page = group.self;
+
+      var toggle = document.createElement('div');
+      toggle.className = 'nav-group-toggle';
+      toggle.style.paddingLeft = basePad + 'px';
+
+      var groupLabel;
+      if (group.self && PAGES[group.self]) {
+        groupLabel = navLabel(group.self, PAGES[group.self].title);
+      } else {
+        groupLabel = key.replace(/-/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+      }
+
+      var arrow = document.createElement('span');
+      arrow.className = 'arrow';
+      arrow.textContent = '▶';
+      toggle.appendChild(arrow);
+
+      if (group.self) {
+        var a = document.createElement('a');
+        a.href = '#' + group.self;
+        a.textContent = groupLabel;
+        toggle.appendChild(a);
+      } else {
+        var span = document.createElement('span');
+        span.className = 'group-label';
+        span.textContent = groupLabel;
+        toggle.appendChild(span);
+      }
+
+      groupLi.appendChild(toggle);
+
+      var childrenUl = document.createElement('ul');
+      childrenUl.className = 'nav-group-children';
+      buildNavTree(childrenUl, group.children, segmentIndex + 1);
+      groupLi.appendChild(childrenUl);
+      parentEl.appendChild(groupLi);
+
+      // Toggle click on arrow expands/collapses
+      (function(tgl, ch) {
+        tgl.addEventListener('click', function(e) {
+          if (e.target.tagName === 'A') return; // let link navigate
+          e.preventDefault();
+          e.stopPropagation();
+          tgl.classList.toggle('open');
+          ch.classList.toggle('open');
+        });
+      })(toggle, childrenUl);
+    }
+  });
+}
+
+// ── Expand parent groups when navigating to a nested page ─────────────────
+function expandParents(route) {
+  // Find all nav-group elements and expand those containing the active route
+  var items = document.querySelectorAll('#nav li[data-page]');
+  items.forEach(function(li) {
+    if (li.dataset.page !== route) return;
+    // Walk up to expand all ancestor groups
+    var el = li.parentElement;
+    while (el && el.id !== 'nav') {
+      if (el.classList && el.classList.contains('nav-group-children')) {
+        el.classList.add('open');
+        var prev = el.previousElementSibling;
+        if (prev && prev.classList.contains('nav-group-toggle')) {
+          prev.classList.add('open');
+        }
+      }
+      el = el.parentElement;
+    }
+  });
 }
 
 // ── Page loader (fetch .md on demand, cache after first load) ──────────────
@@ -319,6 +437,7 @@ function navigate(hash) {
     var h = a.getAttribute('href');
     a.classList.toggle('active', h === '#' + hash);
   });
+  expandParents(hash);
   document.getElementById('main').scrollTop = 0;
   window.scrollTo(0, 0);
 }
@@ -336,14 +455,26 @@ fetch('pages.json')
       var q = this.value.toLowerCase().trim();
       var items = document.querySelectorAll('#nav li[data-page]');
       var first = null;
+
+      // Collapse all groups first when searching
+      if (q) {
+        document.querySelectorAll('.nav-group-children').forEach(function(ch) { ch.classList.remove('open'); });
+        document.querySelectorAll('.nav-group-toggle').forEach(function(tgl) { tgl.classList.remove('open'); });
+      }
+
       items.forEach(function(li) {
         var key = li.dataset.page;
         var el = document.getElementById(PAGES[key] ? PAGES[key].el : '');
         var text = el ? el.textContent.toLowerCase() : '';
-        var label = li.querySelector('a').textContent.toLowerCase();
+        var aEl = li.querySelector('a');
+        var label = aEl ? aEl.textContent.toLowerCase() : '';
         var match = !q || label.includes(q) || text.includes(q);
         li.style.display = match ? '' : 'none';
-        if (match && !first && q) first = key;
+        if (match && q) {
+          // Expand parent groups for matching items
+          expandParents(key);
+          if (!first) first = key;
+        }
       });
       if (first) navigate(first);
     });

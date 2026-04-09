@@ -1,5 +1,21 @@
 [
   {
+    "path": "README.md",
+    "title": "Moyva - Документація проєкту"
+  },
+  {
+    "path": "modules/README.md",
+    "title": "Модульна документація Moyva"
+  },
+  {
+    "path": "modules/core/README.md",
+    "title": "Core Modules"
+  },
+  {
+    "path": "modules/core/bootstrap/README.md",
+    "title": "Bootstrap"
+  },
+  {
     "path": "modules/core/bootstrap/api-contracts.md",
     "title": "Bootstrap - API Contracts"
   },
@@ -28,12 +44,12 @@
     "title": "Bootstrap - Overview"
   },
   {
-    "path": "modules/core/bootstrap/README.md",
-    "title": "Bootstrap"
-  },
-  {
     "path": "modules/core/bootstrap/workflow.md",
     "title": "Bootstrap - Workflow"
+  },
+  {
+    "path": "modules/core/initialization-order/README.md",
+    "title": "Initialization Order"
   },
   {
     "path": "modules/core/initialization-order/api-contracts.md",
@@ -64,16 +80,12 @@
     "title": "Initialization Order - Overview"
   },
   {
-    "path": "modules/core/initialization-order/README.md",
-    "title": "Initialization Order"
-  },
-  {
     "path": "modules/core/initialization-order/workflow.md",
     "title": "Initialization Order - Workflow"
   },
   {
-    "path": "modules/core/README.md",
-    "title": "Core Modules"
+    "path": "modules/core/save-system/README.md",
+    "title": "Save System"
   },
   {
     "path": "modules/core/save-system/api-contracts.md",
@@ -104,12 +116,12 @@
     "title": "Save System - Overview"
   },
   {
-    "path": "modules/core/save-system/README.md",
-    "title": "Save System"
-  },
-  {
     "path": "modules/core/save-system/workflow.md",
     "title": "Save System - Workflow"
+  },
+  {
+    "path": "modules/core/signals/README.md",
+    "title": "Signals"
   },
   {
     "path": "modules/core/signals/api-contracts.md",
@@ -140,12 +152,16 @@
     "title": "Signals - Overview"
   },
   {
-    "path": "modules/core/signals/README.md",
-    "title": "Signals"
-  },
-  {
     "path": "modules/core/signals/workflow.md",
     "title": "Signals - Workflow"
+  },
+  {
+    "path": "modules/gameplay/README.md",
+    "title": "Gameplay Modules"
+  },
+  {
+    "path": "modules/gameplay/construction/README.md",
+    "title": "Construction"
   },
   {
     "path": "modules/gameplay/construction/api-contracts.md",
@@ -176,12 +192,12 @@
     "title": "Construction - Overview"
   },
   {
-    "path": "modules/gameplay/construction/README.md",
-    "title": "Construction"
-  },
-  {
     "path": "modules/gameplay/construction/workflow.md",
     "title": "Construction - Workflow"
+  },
+  {
+    "path": "modules/gameplay/game-mode/README.md",
+    "title": "Game Mode"
   },
   {
     "path": "modules/gameplay/game-mode/api-contracts.md",
@@ -212,12 +228,12 @@
     "title": "Game Mode - Overview"
   },
   {
-    "path": "modules/gameplay/game-mode/README.md",
-    "title": "Game Mode"
-  },
-  {
     "path": "modules/gameplay/game-mode/workflow.md",
     "title": "Game Mode - Workflow"
+  },
+  {
+    "path": "modules/gameplay/interactions/README.md",
+    "title": "Interactions"
   },
   {
     "path": "modules/gameplay/interactions/api-contracts.md",
@@ -248,12 +264,12 @@
     "title": "Interactions - Overview"
   },
   {
-    "path": "modules/gameplay/interactions/README.md",
-    "title": "Interactions"
-  },
-  {
     "path": "modules/gameplay/interactions/workflow.md",
     "title": "Interactions - Workflow"
+  },
+  {
+    "path": "modules/gameplay/object-picker/README.md",
+    "title": "Object Picker"
   },
   {
     "path": "modules/gameplay/object-picker/api-contracts.md",
@@ -284,12 +300,12 @@
     "title": "Object Picker - Overview"
   },
   {
-    "path": "modules/gameplay/object-picker/README.md",
-    "title": "Object Picker"
-  },
-  {
     "path": "modules/gameplay/object-picker/workflow.md",
     "title": "Object Picker - Workflow"
+  },
+  {
+    "path": "modules/gameplay/pathfinding/README.md",
+    "title": "Pathfinding"
   },
   {
     "path": "modules/gameplay/pathfinding/api-contracts.md",
@@ -320,16 +336,12 @@
     "title": "Pathfinding - Overview"
   },
   {
-    "path": "modules/gameplay/pathfinding/README.md",
-    "title": "Pathfinding"
-  },
-  {
     "path": "modules/gameplay/pathfinding/workflow.md",
     "title": "Pathfinding - Workflow"
   },
   {
-    "path": "modules/gameplay/README.md",
-    "title": "Gameplay Modules"
+    "path": "modules/gameplay/resolver/README.md",
+    "title": "Resolver"
   },
   {
     "path": "modules/gameplay/resolver/api-contracts.md",
@@ -360,12 +372,12 @@
     "title": "Resolver - Overview"
   },
   {
-    "path": "modules/gameplay/resolver/README.md",
-    "title": "Resolver"
-  },
-  {
     "path": "modules/gameplay/resolver/workflow.md",
     "title": "Resolver - Workflow"
+  },
+  {
+    "path": "modules/gameplay/units/README.md",
+    "title": "Units"
   },
   {
     "path": "modules/gameplay/units/api-contracts.md",
@@ -396,12 +408,12 @@
     "title": "Units - Overview"
   },
   {
-    "path": "modules/gameplay/units/README.md",
-    "title": "Units"
-  },
-  {
     "path": "modules/gameplay/units/workflow.md",
     "title": "Units - Workflow"
+  },
+  {
+    "path": "modules/gameplay/wall-system/README.md",
+    "title": "Wall System"
   },
   {
     "path": "modules/gameplay/wall-system/api-contracts.md",
@@ -432,12 +444,16 @@
     "title": "Wall System - Overview"
   },
   {
-    "path": "modules/gameplay/wall-system/README.md",
-    "title": "Wall System"
-  },
-  {
     "path": "modules/gameplay/wall-system/workflow.md",
     "title": "Wall System - Workflow"
+  },
+  {
+    "path": "modules/generation/README.md",
+    "title": "Generation Modules"
+  },
+  {
+    "path": "modules/generation/auto-tile-naming/README.md",
+    "title": "Auto Tile Naming"
   },
   {
     "path": "modules/generation/auto-tile-naming/api-contracts.md",
@@ -468,12 +484,12 @@
     "title": "Auto Tile Naming - Overview"
   },
   {
-    "path": "modules/generation/auto-tile-naming/README.md",
-    "title": "Auto Tile Naming"
-  },
-  {
     "path": "modules/generation/auto-tile-naming/workflow.md",
     "title": "Auto Tile Naming - Workflow"
+  },
+  {
+    "path": "modules/generation/generator/README.md",
+    "title": "Generator Pipeline"
   },
   {
     "path": "modules/generation/generator/api-contracts.md",
@@ -504,12 +520,12 @@
     "title": "Generator Pipeline - Overview"
   },
   {
-    "path": "modules/generation/generator/README.md",
-    "title": "Generator Pipeline"
-  },
-  {
     "path": "modules/generation/generator/workflow.md",
     "title": "Generator Pipeline - Workflow"
+  },
+  {
+    "path": "modules/generation/graph-system/README.md",
+    "title": "Graph System"
   },
   {
     "path": "modules/generation/graph-system/api-contracts.md",
@@ -540,24 +556,16 @@
     "title": "Graph System - Overview"
   },
   {
-    "path": "modules/generation/graph-system/README.md",
-    "title": "Graph System"
-  },
-  {
     "path": "modules/generation/graph-system/workflow.md",
     "title": "Graph System - Workflow"
   },
   {
-    "path": "modules/generation/README.md",
-    "title": "Generation Modules"
-  },
-  {
-    "path": "modules/README.md",
-    "title": "Модульна документація Moyva"
-  },
-  {
     "path": "modules/tooling/README.md",
     "title": "Tooling Modules"
+  },
+  {
+    "path": "modules/tooling/registries/README.md",
+    "title": "Registries"
   },
   {
     "path": "modules/tooling/registries/api-contracts.md",
@@ -588,12 +596,12 @@
     "title": "Registries - Overview"
   },
   {
-    "path": "modules/tooling/registries/README.md",
-    "title": "Registries"
-  },
-  {
     "path": "modules/tooling/registries/workflow.md",
     "title": "Registries - Workflow"
+  },
+  {
+    "path": "modules/tooling/registry-hub/README.md",
+    "title": "Registry Hub"
   },
   {
     "path": "modules/tooling/registry-hub/api-contracts.md",
@@ -624,12 +632,12 @@
     "title": "Registry Hub - Overview"
   },
   {
-    "path": "modules/tooling/registry-hub/README.md",
-    "title": "Registry Hub"
-  },
-  {
     "path": "modules/tooling/registry-hub/workflow.md",
     "title": "Registry Hub - Workflow"
+  },
+  {
+    "path": "modules/tooling/resolver-editor/README.md",
+    "title": "Resolver Editor"
   },
   {
     "path": "modules/tooling/resolver-editor/api-contracts.md",
@@ -660,12 +668,12 @@
     "title": "Resolver Editor - Overview"
   },
   {
-    "path": "modules/tooling/resolver-editor/README.md",
-    "title": "Resolver Editor"
-  },
-  {
     "path": "modules/tooling/resolver-editor/workflow.md",
     "title": "Resolver Editor - Workflow"
+  },
+  {
+    "path": "modules/tooling/save-system-designer/README.md",
+    "title": "Save System Designer"
   },
   {
     "path": "modules/tooling/save-system-designer/api-contracts.md",
@@ -696,12 +704,16 @@
     "title": "Save System Designer - Overview"
   },
   {
-    "path": "modules/tooling/save-system-designer/README.md",
-    "title": "Save System Designer"
-  },
-  {
     "path": "modules/tooling/save-system-designer/workflow.md",
     "title": "Save System Designer - Workflow"
+  },
+  {
+    "path": "modules/world/README.md",
+    "title": "World Modules"
+  },
+  {
+    "path": "modules/world/camera/README.md",
+    "title": "Camera"
   },
   {
     "path": "modules/world/camera/api-contracts.md",
@@ -732,12 +744,12 @@
     "title": "Camera - Overview"
   },
   {
-    "path": "modules/world/camera/README.md",
-    "title": "Camera"
-  },
-  {
     "path": "modules/world/camera/workflow.md",
     "title": "Camera - Workflow"
+  },
+  {
+    "path": "modules/world/fog-of-war/README.md",
+    "title": "Fog Of War"
   },
   {
     "path": "modules/world/fog-of-war/api-contracts.md",
@@ -768,12 +780,12 @@
     "title": "Fog Of War - Overview"
   },
   {
-    "path": "modules/world/fog-of-war/README.md",
-    "title": "Fog Of War"
-  },
-  {
     "path": "modules/world/fog-of-war/workflow.md",
     "title": "Fog Of War - Workflow"
+  },
+  {
+    "path": "modules/world/grid/README.md",
+    "title": "Grid"
   },
   {
     "path": "modules/world/grid/api-contracts.md",
@@ -804,12 +816,12 @@
     "title": "Grid - Overview"
   },
   {
-    "path": "modules/world/grid/README.md",
-    "title": "Grid"
-  },
-  {
     "path": "modules/world/grid/workflow.md",
     "title": "Grid - Workflow"
+  },
+  {
+    "path": "modules/world/objects-map/README.md",
+    "title": "Objects Map"
   },
   {
     "path": "modules/world/objects-map/api-contracts.md",
@@ -840,16 +852,12 @@
     "title": "Objects Map - Overview"
   },
   {
-    "path": "modules/world/objects-map/README.md",
-    "title": "Objects Map"
-  },
-  {
     "path": "modules/world/objects-map/workflow.md",
     "title": "Objects Map - Workflow"
   },
   {
-    "path": "modules/world/README.md",
-    "title": "World Modules"
+    "path": "modules/world/visuals/README.md",
+    "title": "Visuals"
   },
   {
     "path": "modules/world/visuals/api-contracts.md",
@@ -880,16 +888,8 @@
     "title": "Visuals - Overview"
   },
   {
-    "path": "modules/world/visuals/README.md",
-    "title": "Visuals"
-  },
-  {
     "path": "modules/world/visuals/workflow.md",
     "title": "Visuals - Workflow"
-  },
-  {
-    "path": "README.md",
-    "title": "Moyva - Документація проєкту"
   },
   {
     "path": "standarts/TDD.md",
@@ -914,6 +914,42 @@
   {
     "path": "systems/construction.md",
     "title": "Construction — Система будівництва"
+  },
+  {
+    "path": "systems/game-mode.md",
+    "title": "GameMode — Система ігрових режимів"
+  },
+  {
+    "path": "systems/generator.md",
+    "title": "Generator — Система процедурної генерації карти (Pipeline)"
+  },
+  {
+    "path": "systems/grid.md",
+    "title": "Grid — Система тайлової сітки"
+  },
+  {
+    "path": "systems/initialization-order.md",
+    "title": "Порядок ініціалізації ядра (Zenject)"
+  },
+  {
+    "path": "systems/interactions.md",
+    "title": "Interactions — Система взаємодії з тайлами"
+  },
+  {
+    "path": "systems/objects-map.md",
+    "title": "ObjectsMap — Єдина карта обʼєктів"
+  },
+  {
+    "path": "systems/pathfinding.md",
+    "title": "Pathfinding — Система пошуку шляху"
+  },
+  {
+    "path": "systems/units.md",
+    "title": "Units — Система юнітів"
+  },
+  {
+    "path": "systems/visuals.md",
+    "title": "Visuals — Система візуалізації тайлів"
   },
   {
     "path": "systems/construction/registry.md",
@@ -944,16 +980,16 @@
     "title": "Стіни та ворота — Покроковий гайд налаштування"
   },
   {
+    "path": "systems/fog-of-war/README.md",
+    "title": "Fog of War — Огляд системи"
+  },
+  {
     "path": "systems/fog-of-war/architecture.md",
     "title": "Fog of War — Архітектура"
   },
   {
     "path": "systems/fog-of-war/initialization-order.md",
     "title": "Fog of War — Порядок ініціалізації"
-  },
-  {
-    "path": "systems/fog-of-war/README.md",
-    "title": "Fog of War — Огляд системи"
   },
   {
     "path": "systems/fog-of-war/save-system-stub.md",
@@ -992,12 +1028,8 @@
     "title": "Fog of War — Vision Tuner Guide"
   },
   {
-    "path": "systems/game-mode.md",
-    "title": "GameMode — Система ігрових режимів"
-  },
-  {
-    "path": "systems/generator.md",
-    "title": "Generator — Система процедурної генерації карти (Pipeline)"
+    "path": "systems/graph-system/README.md",
+    "title": "Graph System — Нодовий генератор карт"
   },
   {
     "path": "systems/graph-system/api-reference.md",
@@ -1034,6 +1066,10 @@
   {
     "path": "systems/graph-system/nodes-wfc.md",
     "title": "Довідник нодів: Wave Function Collapse (WFC)"
+  },
+  {
+    "path": "systems/graph-system/quickstart.md",
+    "title": "Швидкий старт — Перший граф за 5 хвилин"
   },
   {
     "path": "systems/graph-system/nodes/autotile-transitions.md",
@@ -1164,51 +1200,95 @@
     "title": "WFC Generator"
   },
   {
-    "path": "systems/graph-system/quickstart.md",
-    "title": "Швидкий старт — Перший граф за 5 хвилин"
-  },
-  {
-    "path": "systems/graph-system/README.md",
-    "title": "Graph System — Нодовий генератор карт"
-  },
-  {
-    "path": "systems/grid.md",
-    "title": "Grid — Система тайлової сітки"
-  },
-  {
-    "path": "systems/initialization-order.md",
-    "title": "Порядок ініціалізації ядра (Zenject)"
-  },
-  {
-    "path": "systems/interactions.md",
-    "title": "Interactions — Система взаємодії з тайлами"
-  },
-  {
-    "path": "systems/objects-map.md",
-    "title": "ObjectsMap — Єдина карта обʼєктів"
-  },
-  {
-    "path": "systems/pathfinding.md",
-    "title": "Pathfinding — Система пошуку шляху"
-  },
-  {
-    "path": "systems/save-system-designer-tool.md",
-    "title": "Save System Designer Tool Guide"
-  },
-  {
-    "path": "systems/save-system.md",
+    "path": "systems/save-system/README.md",
     "title": "SaveSystem — Система збереження"
   },
   {
-    "path": "systems/signals.md",
+    "path": "systems/save-system/designer-tool.md",
+    "title": "Save System Designer Tool Guide"
+  },
+  {
+    "path": "systems/signals/README.md",
     "title": "Signals — Система сигналів (SignalBus)"
   },
   {
-    "path": "systems/units.md",
-    "title": "Units — Система юнітів"
+    "path": "systems/signals/building-cancelled.md",
+    "title": "BuildingCancelledSignal"
   },
   {
-    "path": "systems/visuals.md",
-    "title": "Visuals — Система візуалізації тайлів"
+    "path": "systems/signals/building-demolished.md",
+    "title": "BuildingDemolishedSignal"
+  },
+  {
+    "path": "systems/signals/building-placed.md",
+    "title": "BuildingPlacedSignal"
+  },
+  {
+    "path": "systems/signals/building-preview-changed.md",
+    "title": "BuildingPreviewChangedSignal"
+  },
+  {
+    "path": "systems/signals/fog-state-changed.md",
+    "title": "FogStateChangedSignal"
+  },
+  {
+    "path": "systems/signals/game-mode-change-requested.md",
+    "title": "GameModeChangeRequestedSignal"
+  },
+  {
+    "path": "systems/signals/game-mode-changed.md",
+    "title": "GameModeChangedSignal"
+  },
+  {
+    "path": "systems/signals/interrupt-movement.md",
+    "title": "InterruptMovementSignal"
+  },
+  {
+    "path": "systems/signals/load-requested.md",
+    "title": "LoadRequestedSignal"
+  },
+  {
+    "path": "systems/signals/map-object-spawned.md",
+    "title": "OnMapObjectSpawnedSignal"
+  },
+  {
+    "path": "systems/signals/objects-map-changed.md",
+    "title": "OnObjectsMapChangedSignal"
+  },
+  {
+    "path": "systems/signals/save-completed.md",
+    "title": "SaveCompletedSignal"
+  },
+  {
+    "path": "systems/signals/save-requested.md",
+    "title": "SaveRequestedSignal"
+  },
+  {
+    "path": "systems/signals/show-wall-handles.md",
+    "title": "ShowWallHandlesSignal"
+  },
+  {
+    "path": "systems/signals/tile-clicked.md",
+    "title": "TileClickedSignal"
+  },
+  {
+    "path": "systems/signals/unit-created.md",
+    "title": "UnitCreatedSignal"
+  },
+  {
+    "path": "systems/signals/unit-destroyed.md",
+    "title": "UnitDestroyedSignal"
+  },
+  {
+    "path": "systems/signals/unit-moved.md",
+    "title": "UnitMovedSignal"
+  },
+  {
+    "path": "systems/signals/world-built.md",
+    "title": "WorldBuiltSignal"
+  },
+  {
+    "path": "systems/signals/world-generated-data.md",
+    "title": "WorldGeneratedDataSignal"
   }
 ]

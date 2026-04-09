@@ -25,6 +25,6 @@
 <summary>Залежності</summary>
 
 - Пов'язані модулі: див. [../README.md](../README.md)
-- Legacy reference: [../../../systems/signals.md](../../../systems/signals.md)
+- Legacy reference: [../../../systems/signals/README.md](../../../systems/signals/README.md)
 
 </details>

@@ -256,13 +256,13 @@ public sealed class GameModeInstaller : MonoInstaller
 
 | Залежність | Причина |
 |---|---|
-| [`SignalBus`](signals.md) | Надсилання `GameModeChangedSignal` і `GameModeChangeRequestedSignal` |
+| [`SignalBus`](signals/README.md) | Надсилання `GameModeChangedSignal` і `GameModeChangeRequestedSignal` |
 
 ---
 
 ## Пов'язані системи
 
-- [Signals](signals.md) — `GameModeChangedSignal`, `GameModeChangeRequestedSignal`
+- [Signals](signals/README.md) — `GameModeChangedSignal`, `GameModeChangeRequestedSignal`
 - [Interactions](interactions.md) — вимикається в режимі `Construction`
 - [Construction](construction.md) — активується в режимі `Construction`
 - [Construction UI](construction/ui.md) — надсилає `GameModeChangeRequestedSignal` для входу в будівництво

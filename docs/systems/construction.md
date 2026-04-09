@@ -130,9 +130,9 @@ IConstructionService.Confirm()
 |---|---|
 | [`IObjectsMapService`](objects-map.md) | Перевірка `IsOccupied`, підтвердження `Register()` / `Unregister()` |
 | [`IGameModeService`](game-mode.md) | Активація / деактивація через `GameModeChangedSignal` |
-| [`SignalBus`](signals.md) | Надсилання будівельних сигналів |
+| [`SignalBus`](signals/README.md) | Надсилання будівельних сигналів |
 | [`IFogOfWarService`](fog-of-war/README.md) | Перевірка видимості тайлу (Unexplored = блокувати) — `[InjectOptional]` |
-| [`ISaveModule`](save-system.md) | `ConstructionSaveModule` — збереження/завантаження гравцевих будівель |
+| [`ISaveModule`](save-system/README.md) | `ConstructionSaveModule` — збереження/завантаження гравцевих будівель |
 | `IBuildingRegistry` | Пошук `BuildingDefinition` за ID, спавн префабів |
 
 ---
@@ -141,8 +141,8 @@ IConstructionService.Confirm()
 
 - [GameMode](game-mode.md) — перемикає режим будівництва
 - [ObjectsMap](objects-map.md) — реєстрація підтверджених будівель
-- [Signals](signals.md) — будівельні сигнали
+- [Signals](signals/README.md) — будівельні сигнали
 - [Visuals](visuals.md) — `TileView` реагує на `BuildingPreviewChangedSignal`
 - [Interactions](interactions.md) — вимикається під час будівництва
 - [FogOfWar](fog-of-war/README.md) — заборона будівництва на непрозорих тайлах
-- [SaveSystem](save-system.md) — серіалізація будівель через `ConstructionSaveModule`
+- [SaveSystem](save-system/README.md) — серіалізація будівель через `ConstructionSaveModule`

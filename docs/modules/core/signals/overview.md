@@ -18,6 +18,6 @@
 <details>
 <summary>Legacy посилання</summary>
 
-- [../../../systems/signals.md](../../../systems/signals.md)
+- [../../../systems/signals/README.md](../../../systems/signals/README.md)
 
 </details>

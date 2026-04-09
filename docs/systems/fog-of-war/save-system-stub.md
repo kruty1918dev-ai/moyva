@@ -6,7 +6,7 @@
 
 > **Статус (2026):** інтеграція виконана.
 > Fog of War зберігається через `FogOfWarSaveModule` (`ISaveModule`) у `.mvs` блок SaveSystem.
-> Деталі системи: [docs/systems/save-system.md](../save-system.md).
+> Деталі системи: [docs/systems/save-system/README.md](../save-system/README.md).
 
 ---
 

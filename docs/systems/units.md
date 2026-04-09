@@ -131,7 +131,7 @@ public interface IUnitClassConfig
 | [`ITileSettingsService`](grid.md) | Вага тайлу для перевірки стаміни |
 | [`IPathfinder`](pathfinding.md) | Пошук шляху перед рухом |
 | [`IMovementAnimationService`](animations.md) | Плавна анімація кроку |
-| [`SignalBus`](signals.md) | `UnitCreatedSignal`, `UnitMovedSignal`, `InterruptMovementSignal` |
+| [`SignalBus`](signals/README.md) | `UnitCreatedSignal`, `UnitMovedSignal`, `InterruptMovementSignal` |
 | `UnitRegistrySO` | Конфіги класів юнітів |
 | [FogOfWar](fog-of-war/README.md) | Використовує `VisionRange` і позицію юніта для обчислення реальної видимості |
 
@@ -212,5 +212,5 @@ if (_unitService.TryGetUnitPosition("warrior_01_123456", out var pos))
 - [Pathfinding](pathfinding.md) — будує маршрут
 - [Animations](animations.md) — виконує плавний рух
 - [Interactions](interactions.md) — ініціює команду руху
-- [Signals](signals.md) — `UnitCreatedSignal`, `UnitMovedSignal`, `UnitDestroyedSignal`, `InterruptMovementSignal`
+- [Signals](signals/README.md) — `UnitCreatedSignal`, `UnitMovedSignal`, `UnitDestroyedSignal`, `InterruptMovementSignal`
 - [Bootstrap](bootstrap.md) — тестовий спавн юнітів при старті
