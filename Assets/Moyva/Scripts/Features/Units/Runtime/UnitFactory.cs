@@ -1,6 +1,7 @@
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.ObjectsMap.API;
 using UnityEngine;
 using Zenject;
 using System.Collections.Generic;
@@ -13,15 +14,22 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IUnitClassConfig _unitClassConfig;
         private readonly SignalBus _signalBus;
         private readonly IGridService _gridService;
+        private readonly IObjectsMapService _objectsMapService;
         
         private readonly Dictionary<string, int> _typeCounters = new();
 
-        public UnitFactory(DiContainer container, IUnitClassConfig unitClassConfig, SignalBus signalBus, IGridService gridService)
+        public UnitFactory(
+            DiContainer container,
+            IUnitClassConfig unitClassConfig,
+            SignalBus signalBus,
+            IGridService gridService,
+            IObjectsMapService objectsMapService)
         {
             _container = container;
             _unitClassConfig = unitClassConfig;
             _signalBus = signalBus;
             _gridService = gridService;
+            _objectsMapService = objectsMapService;
         }
 
         public string CreateUnit(string typeId, Vector2Int gridPosition)
@@ -30,6 +38,13 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (config == null || config.Prefab == null)
             {
                 Debug.LogError($"[UnitFactory] Cannot find config or prefab for {typeId}");
+                return null;
+            }
+
+            if (_objectsMapService.IsOccupied(gridPosition))
+            {
+                _objectsMapService.TryGetOccupant(gridPosition, out var occupantId);
+                Debug.LogWarning($"[UnitFactory] Cannot create unit '{typeId}' at {gridPosition}: tile is already occupied by '{occupantId}'.");
                 return null;
             }
 

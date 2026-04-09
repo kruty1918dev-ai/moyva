@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -13,6 +14,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IGridService _gridService;
         private readonly ITileSettingsService _tileSettings;
         private readonly IUnitClassConfig _unitClassConfig;
+        private readonly IObjectsMapService _objectsMapService;
 
         private readonly Dictionary<string, float> _unitStamina = new();
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
@@ -21,13 +23,18 @@ namespace Kruty1918.Moyva.Units.Runtime
         // Словник для зберігання посилань на GameObject юнітів
         private readonly Dictionary<string, GameObject> _unitObjects = new();
 
-        public UnitService(SignalBus signalBus, IGridService gridService,
-            ITileSettingsService tileSettings, IUnitClassConfig unitClassConfig)
+        public UnitService(
+            SignalBus signalBus,
+            IGridService gridService,
+            ITileSettingsService tileSettings,
+            IUnitClassConfig unitClassConfig,
+            IObjectsMapService objectsMapService)
         {
             _signalBus = signalBus;
             _gridService = gridService;
             _tileSettings = tileSettings;
             _unitClassConfig = unitClassConfig;
+            _objectsMapService = objectsMapService;
         }
 
         public void Initialize()
@@ -132,10 +139,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private bool CanUnitMove(string unitId, Vector2Int targetPosition)
         {
-            if (!_unitStamina.ContainsKey(unitId) || !_unitPositions.ContainsKey(unitId))
+            if (!_unitStamina.ContainsKey(unitId))
                 return false;
 
-            var currentPos = _unitPositions[unitId];
             var tileCost = _tileSettings.GetTileWeight(_gridService.GetTileData(targetPosition));
             return _unitStamina[unitId] >= tileCost;
         }

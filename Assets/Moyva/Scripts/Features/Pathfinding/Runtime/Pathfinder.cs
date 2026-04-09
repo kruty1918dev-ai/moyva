@@ -64,9 +64,9 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
                 {
                     if (!_gridService.TryGetTileData(neighbor, out var tileTypeId)) continue;
 
-                    // 1. ПЕРЕВІРКА ОКУПАЦІЇ: Ігноруємо зайняті тайли, щоб обходити перешкоди
-                    // Дозволяємо перевірку для цільового тайла (end) та стартового (start)
-                    if (_objectsMapService.IsOccupied(neighbor) && neighbor != start && neighbor != end)
+                    // 1. ПЕРЕВІРКА ОКУПАЦІЇ: зайняті тайли не можна використовувати в маршруті.
+                    // Стартовий тайл ігноруємо, бо на ньому вже стоїть поточний юніт.
+                    if (_objectsMapService.IsOccupied(neighbor) && neighbor != start)
                     {
                         continue;
                     }

@@ -39,10 +39,10 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
         {
             if (_occupants.ContainsKey(signal.Position))
             {
-                Debug.LogWarning($"[ObjectsMap] Position {signal.Position} already occupied when registering unit '{signal.UnitId}'. Overwriting.");
-                var existingId = _occupants[signal.Position];
-                _positions.Remove(existingId);
+                Debug.LogWarning($"[ObjectsMap] Position {signal.Position} already occupied when registering unit '{signal.UnitId}'. Registration skipped.");
+                return;
             }
+
             RegisterInternal(signal.Position, signal.UnitId);
         }
 
@@ -53,6 +53,18 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
                 Debug.LogWarning($"[ObjectsMap] OnUnitMoved: unit '{signal.UnitId}' not found in map.");
                 return;
             }
+
+            if (oldPos == signal.NewPosition)
+            {
+                return;
+            }
+
+            if (_occupants.TryGetValue(signal.NewPosition, out var occupantId) && occupantId != signal.UnitId)
+            {
+                Debug.LogWarning($"[ObjectsMap] OnUnitMoved: destination {signal.NewPosition} is already occupied by '{occupantId}'. Movement skipped for '{signal.UnitId}'.");
+                return;
+            }
+
             MoveInternal(oldPos, signal.NewPosition, signal.UnitId);
         }
 
