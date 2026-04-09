@@ -179,6 +179,7 @@ namespace Kruty1918.Moyva.Construction.UI
             BuildingCategory.Military   => "Військові",
             BuildingCategory.Civilian   => "Цивільні",
             BuildingCategory.Industrial => "Індустріальні",
+            BuildingCategory.Walls      => "Стіни",
             _                           => category.ToString()
         };
     }

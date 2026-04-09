@@ -1,6 +1,7 @@
 using System;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -20,21 +21,31 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const bool VerboseLogs = true;
 
         private readonly IConstructionService _constructionService;
+        private readonly IWallPlacementService _wallPlacementService;
+        private readonly IObjectsMapService _objectsMapService;
         private readonly IScreenToGridConverter _screenToGrid;
         private readonly IGridService _gridService;
         private readonly SignalBus _signalBus;
         private bool _isActive;
         private bool _isDraggingPendingPlacement;
         private Vector2Int _draggedPlacementPosition;
+        private bool _isDraggingWallPath;
+        private Vector2Int _wallDragStartPosition;
+        private Vector2Int _lastWallDragTile;
+        private readonly System.Collections.Generic.HashSet<Vector2Int> _wallDragPendingPositions = new();
 
         [Inject]
         public ConstructionInputService(
             IConstructionService constructionService,
+            IWallPlacementService wallPlacementService,
+            IObjectsMapService objectsMapService,
             IScreenToGridConverter screenToGrid,
             IGridService gridService,
             SignalBus signalBus)
         {
             _constructionService = constructionService;
+            _wallPlacementService = wallPlacementService;
+            _objectsMapService = objectsMapService;
             _screenToGrid = screenToGrid;
             _gridService = gridService;
             _signalBus = signalBus;
@@ -59,12 +70,78 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (mouse == null)
                 return;
 
-            if (_isDraggingPendingPlacement && mouse.leftButton.wasReleasedThisFrame)
+            if (mouse.leftButton.wasReleasedThisFrame)
             {
-                if (VerboseLogs)
-                    Debug.Log($"[ConstructionInput] Drag ended at {_draggedPlacementPosition}.");
+                if (_isDraggingPendingPlacement)
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[ConstructionInput] Drag ended at {_draggedPlacementPosition}.");
 
-                _isDraggingPendingPlacement = false;
+                    _isDraggingPendingPlacement = false;
+                }
+
+                if (_isDraggingWallPath)
+                {
+                    _isDraggingWallPath = false;
+                    _wallDragPendingPositions.Clear();
+                    _wallPlacementService.EndDrag();
+
+                    if (VerboseLogs)
+                        Debug.Log($"[ConstructionInput] Wall drag ended at {_lastWallDragTile}.");
+                }
+            }
+
+            if (_isDraggingWallPath && mouse.leftButton.isPressed)
+            {
+                if (IsClickOnInteractiveUI())
+                    return;
+
+                Vector2 dragScreenPos = mouse.position.ReadValue();
+                Vector2Int dragTilePos = _screenToGrid.ScreenToGrid(dragScreenPos);
+                if (!_gridService.TryGetTileData(dragTilePos, out _))
+                    return;
+
+                if (dragTilePos != _lastWallDragTile)
+                {
+                    var newPath = _wallPlacementService.BuildPath(_wallDragStartPosition, dragTilePos);
+                    var newPathSet = new System.Collections.Generic.HashSet<Vector2Int>(newPath);
+
+                    // Видаляємо позиції, які були в старому шляху, але не в новому
+                    var toRemove = new System.Collections.Generic.List<Vector2Int>();
+                    foreach (var pos in _wallDragPendingPositions)
+                    {
+                        if (!newPathSet.Contains(pos))
+                            toRemove.Add(pos);
+                    }
+                    foreach (var pos in toRemove)
+                    {
+                        _constructionService.RemovePendingAt(pos);
+                        _wallDragPendingPositions.Remove(pos);
+                    }
+
+                    // Додаємо нові позиції шляху
+                    for (int i = 0; i < newPath.Count; i++)
+                    {
+                        var tile = newPath[i];
+
+                        if (!_constructionService.HasPendingPlacementAt(tile))
+                        {
+                            // Якщо на тайлі вже стоїть стіна/ворота — це валідна частина лінії, просто проходимо далі.
+                            if (!_objectsMapService.TryGetOccupant(tile, out var occupantId) || !_wallPlacementService.IsWallOrGate(occupantId))
+                            {
+                                bool placed = _constructionService.TryPreviewAt(tile);
+                                if (!placed)
+                                    break;
+                            }
+                        }
+
+                        _wallDragPendingPositions.Add(tile);
+                    }
+
+                    _lastWallDragTile = dragTilePos;
+                }
+
+                return;
             }
 
             if (_isDraggingPendingPlacement && mouse.leftButton.isPressed)
@@ -131,13 +208,61 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (_constructionService.State == BuildingPlacementState.Placing)
             {
-                if (_constructionService.HasPendingPlacementAt(tilePos))
+                string selectedBuildingId = _constructionService.GetSelectedBuildingId();
+                bool wallMode = !string.IsNullOrWhiteSpace(selectedBuildingId) && _wallPlacementService.IsWall(selectedBuildingId);
+
+                if (wallMode && _objectsMapService.TryGetOccupant(tilePos, out var occupantId) && _wallPlacementService.IsWallOrGate(occupantId))
                 {
-                    _isDraggingPendingPlacement = true;
-                    _draggedPlacementPosition = tilePos;
+                    _wallPlacementService.ShowWallHandles(tilePos);
+                    _isDraggingWallPath = true;
+                    _wallDragStartPosition = tilePos;
+                    _lastWallDragTile = tilePos;
+                    _wallDragPendingPositions.Clear();
+                    _wallDragPendingPositions.Add(tilePos);
 
                     if (VerboseLogs)
-                        Debug.Log($"[ConstructionInput] Drag started for preview at {tilePos}");
+                        Debug.Log($"[ConstructionInput] Wall drag started from existing segment at {tilePos}");
+
+                    return;
+                }
+
+                if (_constructionService.HasPendingPlacementAt(tilePos))
+                {
+                        // Ворота: клік по pending-стіні → замінюємо стіну на ворота
+                        bool gateMode = !string.IsNullOrWhiteSpace(selectedBuildingId)
+                            && _wallPlacementService.IsGate(selectedBuildingId);
+                        if (gateMode)
+                        {
+                            bool placed = _constructionService.TryPreviewAt(tilePos);
+                            if (VerboseLogs)
+                                Debug.Log($"[ConstructionInput] Gate placement on pending tile {tilePos} => {placed}");
+                            return;
+                        }
+
+                        _isDraggingPendingPlacement = true;
+                        _draggedPlacementPosition = tilePos;
+
+                        if (VerboseLogs)
+                            Debug.Log($"[ConstructionInput] Drag started for preview at {tilePos}");
+
+                        return;
+                }
+
+                // Wall mode — drag від порожнього тайлу: ставимо перший сегмент (точка А) і починаємо drag
+                if (wallMode)
+                {
+                    bool placed = _constructionService.TryPreviewAt(tilePos);
+                    if (placed)
+                    {
+                        _isDraggingWallPath = true;
+                        _wallDragStartPosition = tilePos;
+                        _lastWallDragTile = tilePos;
+                        _wallDragPendingPositions.Clear();
+                        _wallDragPendingPositions.Add(tilePos);
+
+                        if (VerboseLogs)
+                            Debug.Log($"[ConstructionInput] Wall drag started from empty tile at {tilePos}");
+                    }
 
                     return;
                 }
@@ -188,7 +313,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _isActive = signal.NewMode == GameModeType.Construction;
             if (!_isActive)
+            {
                 _isDraggingPendingPlacement = false;
+                _isDraggingWallPath = false;
+                _wallDragPendingPositions.Clear();
+                _wallPlacementService.EndDrag();
+            }
 
             if (VerboseLogs)
                 Debug.Log($"[ConstructionInput] Active changed -> {_isActive}");

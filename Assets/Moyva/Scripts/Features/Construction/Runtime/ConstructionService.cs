@@ -26,15 +26,31 @@ namespace Kruty1918.Moyva.Construction.Runtime
             public string BuildingId { get; }
         }
 
+        private readonly struct PendingDemolition
+        {
+            public PendingDemolition(Vector2Int position, string buildingId)
+            {
+                Position = position;
+                BuildingId = buildingId;
+            }
+
+            public Vector2Int Position { get; }
+            public string BuildingId { get; }
+        }
+
         private readonly IObjectsMapService _objectsMapService;
         private readonly SignalBus _signalBus;
         private readonly int _minSpacing;
         private readonly IFogOfWarService _fogOfWarService; // може бути null якщо туман не підключений
+        private readonly IWallPlacementService _wallPlacementService;
 
         private string _selectedBuildingId;
         private readonly List<PendingPlacement> _pendingPlacements = new();
-        private readonly List<PendingPlacement> _redoPlacements = new();
+        private readonly List<List<PendingPlacement>> _undoSnapshots = new();
+        private readonly List<List<PendingPlacement>> _redoSnapshots = new();
         private readonly HashSet<Vector2Int> _pendingPositions = new();
+        private readonly List<PendingDemolition> _pendingDemolitions = new();
+        private readonly HashSet<Vector2Int> _pendingDemolitionPositions = new();
         // Позиції будівель, підтверджених гравцем під час гри (знесення дозволено лише для них)
         private readonly Dictionary<Vector2Int, string> _playerPlacedBuildings = new();
         private bool _isActive;
@@ -47,12 +63,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IObjectsMapService objectsMapService,
             SignalBus signalBus,
             [Inject(Id = "minSpacing")] int minSpacing,
-            [InjectOptional] IFogOfWarService fogOfWarService)
+            [InjectOptional] IFogOfWarService fogOfWarService,
+            [InjectOptional] IWallPlacementService wallPlacementService)
         {
             _objectsMapService = objectsMapService;
             _signalBus = signalBus;
             _minSpacing = minSpacing;
             _fogOfWarService = fogOfWarService;
+            _wallPlacementService = wallPlacementService;
         }
 
         public void Initialize()
@@ -93,12 +111,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             // Вибір будівлі завжди переводить UX у режим розміщення.
+            ClearPendingDemolitionsPreview();
             IsDemolishMode = false;
             _selectedBuildingId = buildingId;
             State = BuildingPlacementState.Placing;
 
             if (VerboseLogs)
                 Debug.Log($"[Construction] SelectBuilding -> id='{_selectedBuildingId}', state={State}");
+        }
+
+        public string GetSelectedBuildingId()
+        {
+            return _selectedBuildingId;
         }
 
         public bool TryPreviewAt(Vector2Int position)
@@ -110,7 +134,38 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            if (!CanPlaceAt(position, null, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
+            bool selectedIsGate = _wallPlacementService != null && _wallPlacementService.IsGate(_selectedBuildingId);
+
+            if (_pendingPositions.Contains(position))
+            {
+                // Дозволяємо у preview заміняти pending-стіну на ворота на тому ж тайлі.
+                if (selectedIsGate && TryReplacePendingWallWithGate(position, _selectedBuildingId))
+                    return true;
+
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = position,
+                    BuildingId = _selectedBuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+                return false;
+            }
+
+            bool gateReplacementAllowed = selectedIsGate
+                && _wallPlacementService.CanReplaceWallWithGate(position, _selectedBuildingId, out _);
+
+            if (selectedIsGate && !gateReplacementAllowed)
+            {
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = position,
+                    BuildingId = _selectedBuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+                return false;
+            }
+
+            if (!gateReplacementAllowed && !CanPlaceAt(position, null, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
@@ -131,6 +186,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public bool HasPendingPlacementAt(Vector2Int position)
         {
             return _pendingPositions.Contains(position);
+        }
+
+        public bool TryGetPendingBuildingIdAt(Vector2Int position, out string buildingId)
+        {
+            int index = FindPendingPlacementIndex(position);
+            if (index < 0)
+            {
+                buildingId = null;
+                return false;
+            }
+
+            buildingId = _pendingPlacements[index].BuildingId;
+            return !string.IsNullOrWhiteSpace(buildingId);
         }
 
         public bool TryMovePendingPlacement(Vector2Int fromPosition, Vector2Int toPosition)
@@ -154,7 +222,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return true;
 
             var placement = _pendingPlacements[index];
-            if (!CanPlaceAt(toPosition, fromPosition, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
+            bool movingGate = _wallPlacementService != null && _wallPlacementService.IsGate(placement.BuildingId);
+            bool gateReplacementAllowed = movingGate
+                && _wallPlacementService.CanReplaceWallWithGate(toPosition, placement.BuildingId, out _);
+
+            if (movingGate && !gateReplacementAllowed)
+            {
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = toPosition,
+                    BuildingId = placement.BuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+                return false;
+            }
+
+            if (!gateReplacementAllowed && !CanPlaceAt(toPosition, fromPosition, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
@@ -169,10 +252,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            SaveSnapshotForUndo(clearRedoHistory: true);
+
             _pendingPositions.Remove(fromPosition);
             _pendingPositions.Add(toPosition);
             _pendingPlacements[index] = new PendingPlacement(toPosition, placement.BuildingId);
-            _redoPlacements.Clear();
 
             _signalBus.Fire(new BuildingPreviewChangedSignal
             {
@@ -198,6 +282,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Confirm()
         {
+            if (IsDemolishMode)
+            {
+                ConfirmPendingDemolitions();
+                return;
+            }
+
             if (VerboseLogs)
                 Debug.Log($"[Construction] Confirm requested. count={_pendingPlacements.Count}");
 
@@ -205,6 +295,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 var pos = placement.Position;
                 var id = placement.BuildingId;
+
+                if (_objectsMapService.IsOccupied(pos))
+                {
+                    bool replaced = _wallPlacementService != null
+                        && _wallPlacementService.IsGate(id)
+                        && _wallPlacementService.CanReplaceWallWithGate(pos, id, out _);
+
+                    if (!replaced)
+                    {
+                        Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: tile occupied.");
+                        continue;
+                    }
+
+                    _objectsMapService.Unregister(pos);
+                }
+
                 _objectsMapService.Register(pos, id);
                 _playerPlacedBuildings[pos] = id;
                 _signalBus.Fire(new BuildingPlacedSignal { BuildingId = id, Position = pos });
@@ -215,7 +321,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _pendingPlacements.Clear();
             _pendingPositions.Clear();
-            _redoPlacements.Clear();
+            _undoSnapshots.Clear();
+            _redoSnapshots.Clear();
             State = BuildingPlacementState.Idle;
             _selectedBuildingId = null;
 
@@ -230,41 +337,36 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void UndoLast()
         {
-            if (_pendingPlacements.Count == 0)
+            if (_undoSnapshots.Count == 0)
             {
                 if (VerboseLogs)
-                    Debug.Log("[Construction] UndoLast ignored: no pending placements.");
+                    Debug.Log("[Construction] UndoLast ignored: undo history is empty.");
                 return;
             }
 
-            int lastIndex = _pendingPlacements.Count - 1;
-            var placement = _pendingPlacements[lastIndex];
-            _pendingPlacements.RemoveAt(lastIndex);
-            _pendingPositions.Remove(placement.Position);
-            _redoPlacements.Add(placement);
+            _redoSnapshots.Add(ClonePendingSnapshot());
 
-            _signalBus.Fire(new BuildingPreviewChangedSignal
-            {
-                Position = placement.Position,
-                BuildingId = placement.BuildingId,
-                PreviewState = BuildingPreviewState.None
-            });
+            int snapshotIndex = _undoSnapshots.Count - 1;
+            var snapshot = _undoSnapshots[snapshotIndex];
+            _undoSnapshots.RemoveAt(snapshotIndex);
+
+            ApplyPendingSnapshot(snapshot);
+
+            if (_pendingPlacements.Count == 0 && State == BuildingPlacementState.Idle)
+                State = BuildingPlacementState.Placing;
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] UndoLast -> removed '{placement.BuildingId}' at {placement.Position}. pendingCount={_pendingPlacements.Count}");
+                Debug.Log($"[Construction] UndoLast completed. pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
         }
 
         public void RedoLast()
         {
-            if (_redoPlacements.Count == 0)
+            if (_redoSnapshots.Count == 0)
             {
                 if (VerboseLogs)
                     Debug.Log("[Construction] RedoLast ignored: redo stack is empty.");
                 return;
             }
-
-            int lastIndex = _redoPlacements.Count - 1;
-            var placement = _redoPlacements[lastIndex];
 
             if (!_isActive)
             {
@@ -273,29 +375,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            if (!CanPlaceAt(placement.Position, null, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
-            {
-                _signalBus.Fire(new BuildingPreviewChangedSignal
-                {
-                    Position = placement.Position,
-                    BuildingId = placement.BuildingId,
-                    PreviewState = BuildingPreviewState.Blocked
-                });
 
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] RedoLast blocked at {placement.Position}. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, remainingRedo={_redoPlacements.Count}");
-                return;
-            }
+            _undoSnapshots.Add(ClonePendingSnapshot());
 
-            State = BuildingPlacementState.Placing;
-            _selectedBuildingId = placement.BuildingId;
+            int snapshotIndex = _redoSnapshots.Count - 1;
+            var snapshot = _redoSnapshots[snapshotIndex];
+            _redoSnapshots.RemoveAt(snapshotIndex);
 
-            bool result = AddPendingPlacement(placement.Position, placement.BuildingId, clearRedoHistory: false);
-            if (result)
-                _redoPlacements.RemoveAt(lastIndex);
+            ApplyPendingSnapshot(snapshot);
+
+            if (State == BuildingPlacementState.Idle)
+                State = BuildingPlacementState.Placing;
+
+            if (_pendingPlacements.Count > 0)
+                _selectedBuildingId = _pendingPlacements[_pendingPlacements.Count - 1].BuildingId;
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] RedoLast -> position={placement.Position}, result={result}, remainingRedo={_redoPlacements.Count}");
+                Debug.Log($"[Construction] RedoLast completed. pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
         }
 
         public void ToggleDemolishMode()
@@ -307,6 +403,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             IsDemolishMode = !IsDemolishMode;
+
+            if (!IsDemolishMode)
+                ClearPendingDemolitionsPreview();
 
             if (VerboseLogs)
                 Debug.Log($"[Construction] ToggleDemolishMode -> {IsDemolishMode}");
@@ -327,18 +426,113 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            _objectsMapService.Unregister(position);
-            _playerPlacedBuildings.Remove(position);
-            _signalBus.Fire(new BuildingDemolishedSignal { BuildingId = buildingId, Position = position });
+            if (_pendingDemolitionPositions.Contains(position))
+            {
+                for (int i = _pendingDemolitions.Count - 1; i >= 0; i--)
+                {
+                    if (_pendingDemolitions[i].Position == position)
+                    {
+                        var pendingBuildingId = _pendingDemolitions[i].BuildingId;
+                        _pendingDemolitions.RemoveAt(i);
+                        _pendingDemolitionPositions.Remove(position);
+
+                        _signalBus.Fire(new BuildingPreviewChangedSignal
+                        {
+                            Position = position,
+                            BuildingId = pendingBuildingId,
+                            PreviewState = BuildingPreviewState.None
+                        });
+
+                        if (VerboseLogs)
+                            Debug.Log($"[Construction] Pending demolition unmarked for '{pendingBuildingId}' at {position}. pendingCount={_pendingDemolitions.Count}");
+
+                        return true;
+                    }
+                }
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] TryDemolishAt({position}) ignored: pending position exists but mark entry was not found.");
+                return true;
+            }
+
+            _pendingDemolitions.Add(new PendingDemolition(position, buildingId));
+            _pendingDemolitionPositions.Add(position);
+
+            _signalBus.Fire(new BuildingPreviewChangedSignal
+            {
+                Position = position,
+                BuildingId = buildingId,
+                PreviewState = BuildingPreviewState.Valid
+            });
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] Demolished '{buildingId}' at {position}");
+                Debug.Log($"[Construction] Pending demolition marked for '{buildingId}' at {position}. pendingCount={_pendingDemolitions.Count}");
 
             return true;
         }
 
+        private void ConfirmPendingDemolitions()
+        {
+            if (VerboseLogs)
+                Debug.Log($"[Construction] Confirm demolish requested. count={_pendingDemolitions.Count}");
+
+            for (int i = 0; i < _pendingDemolitions.Count; i++)
+            {
+                var demolition = _pendingDemolitions[i];
+                var pos = demolition.Position;
+                var id = demolition.BuildingId;
+
+                if (!_playerPlacedBuildings.ContainsKey(pos) || !_objectsMapService.IsOccupied(pos))
+                    continue;
+
+                _objectsMapService.Unregister(pos);
+                _playerPlacedBuildings.Remove(pos);
+                _signalBus.Fire(new BuildingDemolishedSignal { BuildingId = id, Position = pos });
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] Confirm demolished '{id}' at {pos}");
+            }
+
+            _pendingDemolitions.Clear();
+            _pendingDemolitionPositions.Clear();
+
+            if (VerboseLogs)
+                Debug.Log("[Construction] Confirm demolish completed.");
+
+            return;
+        }
+
         public IReadOnlyDictionary<Vector2Int, string> GetPlayerPlacedBuildings()
             => new ReadOnlyDictionary<Vector2Int, string>(_playerPlacedBuildings);
+
+        public bool RemovePendingAt(Vector2Int position)
+        {
+            int index = FindPendingPlacementIndex(position);
+            if (index < 0)
+                return false;
+
+            var placement = _pendingPlacements[index];
+
+            SaveSnapshotForUndo(clearRedoHistory: true);
+
+            _pendingPlacements.RemoveAt(index);
+            _pendingPositions.Remove(position);
+
+            _signalBus.Fire(new BuildingPreviewChangedSignal
+            {
+                Position = position,
+                BuildingId = placement.BuildingId,
+                PreviewState = BuildingPreviewState.None
+            });
+
+            if (VerboseLogs)
+                Debug.Log($"[Construction] RemovePendingAt({position}) -> removed '{placement.BuildingId}'. pendingCount={_pendingPlacements.Count}");
+
+            if (_pendingPlacements.Count == 0)
+                State = BuildingPlacementState.Placing;
+
+            return true;
+        }
 
         public void RestoreFromSave(Vector2Int position, string buildingId)
         {
@@ -400,10 +594,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private bool AddPendingPlacement(Vector2Int position, string buildingId, bool clearRedoHistory)
         {
+            SaveSnapshotForUndo(clearRedoHistory);
+
             _pendingPlacements.Add(new PendingPlacement(position, buildingId));
             _pendingPositions.Add(position);
-            if (clearRedoHistory)
-                _redoPlacements.Clear();
 
             _signalBus.Fire(new BuildingPreviewChangedSignal
             {
@@ -413,7 +607,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             });
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] Pending placement added for '{buildingId}' at {position}. pendingCount={_pendingPlacements.Count}, redoCount={_redoPlacements.Count}");
+                Debug.Log($"[Construction] Pending placement added for '{buildingId}' at {position}. pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
 
             return true;
         }
@@ -429,10 +623,51 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return -1;
         }
 
+        private bool TryReplacePendingWallWithGate(Vector2Int position, string gateBuildingId)
+        {
+            if (_wallPlacementService == null || !_wallPlacementService.IsGate(gateBuildingId))
+                return false;
+
+            int index = FindPendingPlacementIndex(position);
+            if (index < 0)
+                return false;
+
+            var current = _pendingPlacements[index];
+            if (!_wallPlacementService.CanReplaceWallWithGate(position, gateBuildingId, out _))
+                return false;
+
+            if (current.BuildingId == gateBuildingId)
+                return true;
+
+            SaveSnapshotForUndo(clearRedoHistory: true);
+
+            _pendingPlacements[index] = new PendingPlacement(position, gateBuildingId);
+            _selectedBuildingId = gateBuildingId;
+
+            _signalBus.Fire(new BuildingPreviewChangedSignal
+            {
+                Position = position,
+                BuildingId = gateBuildingId,
+                PreviewState = BuildingPreviewState.Valid
+            });
+
+            if (VerboseLogs)
+                Debug.Log($"[Construction] Pending wall at {position} replaced with gate '{gateBuildingId}'.");
+
+            return true;
+        }
+
         private void ResetSession(bool clearRedoHistory)
         {
             if (VerboseLogs)
-                Debug.Log($"[Construction] ResetSession requested. pendingCount={_pendingPlacements.Count}, redoCount={_redoPlacements.Count}, clearRedoHistory={clearRedoHistory}");
+                Debug.Log($"[Construction] ResetSession requested. pendingCount={_pendingPlacements.Count}, redoCount={_redoSnapshots.Count}, clearRedoHistory={clearRedoHistory}");
+
+            if (!clearRedoHistory && _pendingPlacements.Count > 0)
+            {
+                _redoSnapshots.Clear();
+                // Після Cancel можемо повернути останній стан однією операцією Redo.
+                _redoSnapshots.Add(ClonePendingSnapshot());
+            }
 
             for (int i = _pendingPlacements.Count - 1; i >= 0; i--)
             {
@@ -444,21 +679,101 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     PreviewState = BuildingPreviewState.None
                 });
 
-                if (!clearRedoHistory)
-                    _redoPlacements.Add(placement);
             }
 
             _pendingPlacements.Clear();
             _pendingPositions.Clear();
             if (clearRedoHistory)
-                _redoPlacements.Clear();
+                _redoSnapshots.Clear();
+
+            ClearPendingDemolitionsPreview();
+
+            _undoSnapshots.Clear();
 
             _signalBus.Fire(new BuildingCancelledSignal());
             State = BuildingPlacementState.Idle;
             _selectedBuildingId = null;
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] ResetSession completed. state=Idle, redoCount={_redoPlacements.Count}");
+                Debug.Log($"[Construction] ResetSession completed. state=Idle, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
+        }
+
+        private void ClearPendingDemolitionsPreview()
+        {
+            for (int i = 0; i < _pendingDemolitions.Count; i++)
+            {
+                var demolition = _pendingDemolitions[i];
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = demolition.Position,
+                    BuildingId = demolition.BuildingId,
+                    PreviewState = BuildingPreviewState.None
+                });
+            }
+
+            _pendingDemolitions.Clear();
+            _pendingDemolitionPositions.Clear();
+        }
+
+        private void SaveSnapshotForUndo(bool clearRedoHistory)
+        {
+            _undoSnapshots.Add(ClonePendingSnapshot());
+            if (clearRedoHistory)
+                _redoSnapshots.Clear();
+        }
+
+        private List<PendingPlacement> ClonePendingSnapshot()
+        {
+            return new List<PendingPlacement>(_pendingPlacements);
+        }
+
+        private void ApplyPendingSnapshot(List<PendingPlacement> snapshot)
+        {
+            var previous = ClonePendingSnapshot();
+
+            _pendingPlacements.Clear();
+            _pendingPositions.Clear();
+
+            for (int i = 0; i < snapshot.Count; i++)
+            {
+                var placement = snapshot[i];
+                _pendingPlacements.Add(placement);
+                _pendingPositions.Add(placement.Position);
+            }
+
+            var previousByPosition = new Dictionary<Vector2Int, PendingPlacement>();
+            for (int i = 0; i < previous.Count; i++)
+                previousByPosition[previous[i].Position] = previous[i];
+
+            var currentByPosition = new Dictionary<Vector2Int, PendingPlacement>();
+            for (int i = 0; i < _pendingPlacements.Count; i++)
+                currentByPosition[_pendingPlacements[i].Position] = _pendingPlacements[i];
+
+            foreach (var pair in previousByPosition)
+            {
+                if (!currentByPosition.TryGetValue(pair.Key, out var current) || current.BuildingId != pair.Value.BuildingId)
+                {
+                    _signalBus.Fire(new BuildingPreviewChangedSignal
+                    {
+                        Position = pair.Key,
+                        BuildingId = pair.Value.BuildingId,
+                        PreviewState = BuildingPreviewState.None
+                    });
+                }
+            }
+
+            foreach (var pair in currentByPosition)
+            {
+                if (!previousByPosition.TryGetValue(pair.Key, out var previousPlacement) || previousPlacement.BuildingId != pair.Value.BuildingId)
+                {
+                    _signalBus.Fire(new BuildingPreviewChangedSignal
+                    {
+                        Position = pair.Key,
+                        BuildingId = pair.Value.BuildingId,
+                        PreviewState = BuildingPreviewState.Valid
+                    });
+                }
+            }
         }
     }
 }

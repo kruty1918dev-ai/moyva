@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Tests.ConstructionUI
                 CreateDefinition("m1", "Вежа", BuildingCategory.Military),
             };
 
-            var result = factory.BuildMenuItems(definitions, null);
+            var result = factory.BuildMenuItems(definitions, null, null);
 
             Assert.AreEqual(3, result.Count);
             Assert.AreEqual("Вежа", result[0].DisplayName);
@@ -58,7 +58,7 @@ namespace Kruty1918.Moyva.Tests.ConstructionUI
                 Icon = iconFallback
             };
 
-            var sprite = factory.ExtractSpriteForMenu(definition, null);
+            var sprite = factory.ExtractSpriteForMenu(definition, null, null);
 
             Assert.IsNotNull(sprite);
             Assert.AreNotSame(iconFallback, sprite);
@@ -81,7 +81,7 @@ namespace Kruty1918.Moyva.Tests.ConstructionUI
                 Icon = iconFallback
             };
 
-            var sprite = factory.ExtractSpriteForMenu(definition, null);
+            var sprite = factory.ExtractSpriteForMenu(definition, null, null);
 
             Assert.AreSame(iconFallback, sprite);
         }

@@ -15,8 +15,6 @@ MonoBehaviour:
   _definitions:
   - _id: bush
     _visualPrefab: {fileID: 9113448713621649907, guid: 95c5badeee3ddb26f9a546ceeb5dcdfc, type: 3}
-  - _id: tree-birch
-    _visualPrefab: {fileID: 0}
   - _id: tree-pine
     _visualPrefab: {fileID: 4608864207072105692, guid: 6a6b29fc17c7903caa206b7db9c123c1, type: 3}
   - _id: tree-oak

@@ -4,6 +4,7 @@ namespace Kruty1918.Moyva.Construction.API
     {
         Military,     // Військові
         Civilian,     // Цивільні
-        Industrial    // Індустріальні
+        Industrial,   // Індустріальні
+        Walls         // Стіни та ворота
     }
 }

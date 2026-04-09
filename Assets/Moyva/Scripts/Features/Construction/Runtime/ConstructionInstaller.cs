@@ -30,6 +30,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .To<ScreenToGridConverter>()
                 .AsSingle();
 
+            Container.Bind<IAutoTileVariantResolver>()
+                .To<AutoTileVariantResolver>()
+                .AsSingle();
+
+            Container.Bind<IObjectTypePicker>()
+                .To<ObjectTypePickerService>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<ConstructionService>()
                 .AsSingle()
                 .NonLazy();

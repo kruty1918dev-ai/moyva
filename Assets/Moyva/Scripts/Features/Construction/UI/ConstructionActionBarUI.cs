@@ -136,8 +136,9 @@ namespace Kruty1918.Moyva.Construction.UI
         {
             bool isPlacing    = state.IsPlacing;
             bool isDemolish   = state.IsDemolishMode;
+            bool canConfirmDemolish = isDemolish && state.IsConstructionModeActive;
 
-            if (confirmButton  != null) confirmButton.interactable  = isPlacing && !isDemolish;
+            if (confirmButton  != null) confirmButton.interactable  = (isPlacing && !isDemolish) || canConfirmDemolish;
             if (cancelButton   != null) cancelButton.interactable   = isPlacing || isDemolish;
             if (undoButton     != null) undoButton.interactable     = isPlacing && !isDemolish;
             if (redoButton     != null) redoButton.interactable     = isPlacing && !isDemolish;
