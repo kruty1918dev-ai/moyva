@@ -79,6 +79,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
+            // Вибір будівлі завжди переводить UX у режим розміщення.
+            IsDemolishMode = false;
             _selectedBuildingId = buildingId;
             State = BuildingPlacementState.Placing;
 

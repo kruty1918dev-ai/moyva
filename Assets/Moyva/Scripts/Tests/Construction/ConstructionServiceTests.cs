@@ -107,6 +107,21 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
+        public void SelectBuilding_ShouldDisableDemolishMode_AndAllowPreview()
+        {
+            var pos = new Vector2Int(9, 9);
+
+            _service.ToggleDemolishMode();
+            Assert.IsTrue(_service.IsDemolishMode);
+
+            _service.SelectBuilding("barracks");
+
+            Assert.IsFalse(_service.IsDemolishMode);
+            Assert.AreEqual(BuildingPlacementState.Placing, _service.State);
+            Assert.IsTrue(_service.TryPreviewAt(pos));
+        }
+
+        [Test]
         public void ModeChangeToNormal_ShouldCancelPendingPlacements()
         {
             var cancelledSignals = new List<BuildingCancelledSignal>();
