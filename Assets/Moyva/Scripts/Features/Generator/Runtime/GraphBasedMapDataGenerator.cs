@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Reflection;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
@@ -8,8 +7,9 @@ using UnityEngine;
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     /// <summary>
-    /// Adapter: implements IMapDataGenerator by executing a GraphAsset via GraphRunner.
-    /// Drop-in replacement for the old linear MapDataGenerator.
+    /// Адаптер: реалізує IMapDataGenerator через виконання GraphAsset у GraphRunner.
+    /// Замінює лінійний MapDataGenerator на граф-базовану генерацію.
+    /// Використовує ISeedProvider для отримання seed без рефлексії.
     /// </summary>
     internal sealed class GraphBasedMapDataGenerator : IMapDataGenerator
     {
@@ -126,19 +126,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private int GetSeedFromGraph()
         {
-            // Try to read seed from HeightSourceNode's private _noiseSettings field.
-            var noiseSettingsField = typeof(Nodes.HeightSourceNode).GetField(
-                "_noiseSettings",
-                BindingFlags.Instance | BindingFlags.NonPublic);
-
             foreach (var node in _graphAsset.Nodes)
             {
-                if (node is Nodes.HeightSourceNode)
-                {
-                    var settings = noiseSettingsField?.GetValue(node) as DataNoiseSettings;
-                    if (settings != null)
-                        return settings.Seed;
-                }
+                if (node is ISeedProvider seedProvider)
+                    return seedProvider.Seed;
             }
 
             return 42;

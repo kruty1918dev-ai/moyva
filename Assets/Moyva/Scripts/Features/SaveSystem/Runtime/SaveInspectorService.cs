@@ -5,6 +5,11 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.SaveSystem
 {
+    /// <summary>
+    /// Сервіс для інспектування вмісту файлів збереження без їх завантаження.
+    /// Дозволяє перевіряти наявність окремих блоків (модулів) у save-файлі
+    /// за типом, повним ім'ям типу або узагальненим типом.
+    /// </summary>
     internal sealed class SaveInspectorService : ISaveInspectorService
     {
         public bool HasBlock(int slot, string moduleTypeFullName)
@@ -12,7 +17,7 @@ namespace Kruty1918.Moyva.SaveSystem
             if (string.IsNullOrWhiteSpace(moduleTypeFullName))
                 return false;
 
-            uint targetBlockId = ComputeBlockId(moduleTypeFullName);
+            uint targetBlockId = SaveFileCodec.ComputeBlockId(moduleTypeFullName);
             return HasBlockById(slot, targetBlockId);
         }
 
@@ -29,10 +34,10 @@ namespace Kruty1918.Moyva.SaveSystem
 
         private static bool HasBlockById(int slot, uint targetBlockId)
         {
-            if (slot < 0 || slot > 99)
+            if (!SavePipelineHelper.ValidateSlot(slot))
                 return false;
 
-            string path = Path.Combine(Application.persistentDataPath, "saves", $"slot{slot:D2}.mvs");
+            string path = SaveService.GetPath(slot);
             if (!File.Exists(path))
                 return false;
 
@@ -46,7 +51,7 @@ namespace Kruty1918.Moyva.SaveSystem
                 return false;
             }
 
-            var result = SaveFileCodec.TryDecode(bytes, out _, out List<(uint blockId, byte[] payload)> blocks, out _);
+            var result = SaveFileCodec.TryDecode(bytes, out _, out var blocks, out _);
             if (result != SaveFileCodec.DecodeError.None || blocks == null)
                 return false;
 
@@ -57,17 +62,6 @@ namespace Kruty1918.Moyva.SaveSystem
             }
 
             return false;
-        }
-
-        private static uint ComputeBlockId(string fullTypeName)
-        {
-            uint hash = 2166136261u;
-            foreach (char c in fullTypeName)
-            {
-                hash ^= c;
-                hash *= 16777619u;
-            }
-            return hash;
         }
     }
 }

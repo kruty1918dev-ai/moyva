@@ -155,42 +155,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 Width = _currentWorldData.Width,
                 Height = _currentWorldData.Height,
-                TileMap = CloneStringMap(_currentWorldData.BiomeMap),
-                ObjectMap = CloneStringMap(_currentWorldData.ObjectMap),
-                HeightMap = CloneFloatMap(_currentWorldData.HeightMap),
+                TileMap = MapArrayUtils.CloneStringMap(_currentWorldData.BiomeMap),
+                ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
+                HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
             });
-        }
-
-        private static string[,] CloneStringMap(string[,] source)
-        {
-            if (source == null)
-                return null;
-
-            int width = source.GetLength(0);
-            int height = source.GetLength(1);
-            var clone = new string[width, height];
-
-            for (int x = 0; x < width; x++)
-                for (int y = 0; y < height; y++)
-                    clone[x, y] = source[x, y];
-
-            return clone;
-        }
-
-        private static float[,] CloneFloatMap(float[,] source)
-        {
-            if (source == null)
-                return null;
-
-            int width = source.GetLength(0);
-            int height = source.GetLength(1);
-            var clone = new float[width, height];
-
-            for (int x = 0; x < width; x++)
-                for (int y = 0; y < height; y++)
-                    clone[x, y] = source[x, y];
-
-            return clone;
         }
 
         private void EnsureRoots()
