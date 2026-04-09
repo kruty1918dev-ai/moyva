@@ -10,11 +10,34 @@
 
 | Сигнал | Дія |
 |---|---|
-| `UnitCreatedSignal` | `RegisterUnit(signal.UnitId, signal.Position, defaultVisionRange)` |
+| `UnitCreatedSignal` | `RegisterUnit(signal.UnitId, signal.Position, signal.VisionRange)` |
 | `UnitMovedSignal` | `UpdateUnitPosition(signal.UnitId, signal.NewPosition)` |
 | `UnitDestroyedSignal` | `UnregisterUnit(signal.UnitId)` |
+| `WorldGeneratedDataSignal` | Передати `HeightMap` у resolver і перебудувати видимість усіх юнітів |
 
 Відписка відбувається у `Dispose()`.
+
+---
+
+## Оновлені контракти сигналів
+
+### `UnitCreatedSignal`
+
+| Поле | Тип | Призначення |
+|---|---|---|
+| `UnitId` | `string` | Унікальний інстанс-ідентифікатор юніта |
+| `UnitTypeId` | `string` | Тип юніта для пошуку конфіга |
+| `Position` | `Vector2Int` | Початкова позиція на сітці |
+| `VisionRange` | `int` | Базовий радіус зору цього юніта |
+| `UnitObject` | `GameObject` | Посилання на GameObject юніта |
+
+### `WorldGeneratedDataSignal`
+
+Для FogOfWar критичне поле:
+
+| Поле | Тип | Призначення |
+|---|---|---|
+| `HeightMap` | `float[,]` | Висоти тайлів для розрахунку бонусів, штрафів і line of sight |
 
 ---
 
@@ -37,6 +60,16 @@ Container.DeclareSignal<FogStateChangedSignal>();
 ## Data Flow діаграма
 
 ```
+[Generator/MapVisualInstantiator]
+    │
+    └── Fire(WorldGeneratedDataSignal)
+        │
+        ▼
+    [FogOfWarService.OnWorldGeneratedData]
+    → resolver.SetHeightMap(heightMap)
+    → rebuild visibility for all active units
+    → RebuildFullTexture()
+
 [UnitMovementService]
     │
     └── Fire(UnitMovedSignal)
@@ -73,3 +106,5 @@ Container.DeclareSignal<FogStateChangedSignal>();
 | 2 | `FogOfWarInstaller.InstallBindings()` реєструє сервіси |
 | 3 | `FogOfWarService.Initialize()` підписується на сигнали (ExecutionOrder = -5) |
 | 4 | `FogQuadController.Start()` викликає `fogService.Initialize(w,h)` |
+| 5 | `MapVisualInstantiator` надсилає `WorldGeneratedDataSignal` із `HeightMap` |
+| 6 | `FogOfWarService` перепрораховує зір усіх уже зареєстрованих юнітів |

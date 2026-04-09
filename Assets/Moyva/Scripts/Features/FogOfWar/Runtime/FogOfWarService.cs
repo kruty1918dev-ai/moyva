@@ -37,6 +37,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly Dictionary<string, int> _unitVisionRange
             = new Dictionary<string, int>();
 
+        // unitId → current position
+        private readonly Dictionary<string, Vector2Int> _unitPositions
+            = new Dictionary<string, Vector2Int>();
+
         // unitId -> pending registration data received before Initialize(width,height)
         private readonly Dictionary<string, (Vector2Int Position, int VisionRange)> _pendingUnits
             = new Dictionary<string, (Vector2Int Position, int VisionRange)>();
@@ -69,6 +73,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreated);
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGeneratedData);
         }
 
         public void Dispose()
@@ -76,6 +81,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _signalBus.Unsubscribe<UnitCreatedSignal>(OnUnitCreated);
             _signalBus.Unsubscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.Unsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGeneratedData);
         }
 
         // ─── IFogOfWarService ─────────────────────────────────────────────────
@@ -119,6 +125,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             visionRange = ClampVisionRange(visionRange);
             _unitVisionRange[unitId] = visionRange;
+            _unitPositions[unitId] = position;
 
             var tiles = _resolver.ComputeVisibleTiles(position, visionRange, _width, _height);
             _unitVisibleTiles[unitId] = tiles;
@@ -164,6 +171,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             // Compute new visible tiles
             int range = _unitVisionRange.TryGetValue(unitId, out int r) ? r : _defaultVisionRange;
+            _unitPositions[unitId] = newPosition;
             var newTiles = _resolver.ComputeVisibleTiles(newPosition, range, _width, _height);
             _unitVisibleTiles[unitId] = newTiles;
 
@@ -193,6 +201,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             _unitVisibleTiles.Remove(unitId);
             _unitVisionRange.Remove(unitId);
+            _unitPositions.Remove(unitId);
 
             FlushTexture();
         }
@@ -252,13 +261,26 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         // ─── Signal handlers ──────────────────────────────────────────────────
 
         private void OnUnitCreated(UnitCreatedSignal signal)
-            => RegisterUnit(signal.UnitId, signal.Position, ClampVisionRange(_defaultVisionRange));
+        {
+            int requestedRange = signal.VisionRange > 0 ? signal.VisionRange : _defaultVisionRange;
+            RegisterUnit(signal.UnitId, signal.Position, ClampVisionRange(requestedRange));
+        }
 
         private void OnUnitMoved(UnitMovedSignal signal)
             => UpdateUnitPosition(signal.UnitId, signal.NewPosition);
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)
             => UnregisterUnit(signal.UnitId);
+
+        private void OnWorldGeneratedData(WorldGeneratedDataSignal signal)
+        {
+            _resolver.SetHeightMap(signal.HeightMap);
+
+            if (!_initialized)
+                return;
+
+            RecalculateAllVisibility();
+        }
 
         // ─── Helpers ──────────────────────────────────────────────────────────
 
@@ -290,6 +312,33 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_textureUpdater != null)
                 _textureUpdater.UpdateDirtyTiles(this, _lastDirtyTiles);
 
+            _lastDirtyTiles.Clear();
+        }
+
+        private void RecalculateAllVisibility()
+        {
+            if (!_initialized)
+                return;
+
+            Array.Clear(_visibilityCounters, 0, _visibilityCounters.Length);
+            _unitVisibleTiles.Clear();
+
+            foreach (var unitEntry in _unitPositions)
+            {
+                if (!_unitVisionRange.TryGetValue(unitEntry.Key, out int range))
+                    range = _defaultVisionRange;
+
+                var visibleTiles = _resolver.ComputeVisibleTiles(unitEntry.Value, range, _width, _height);
+                _unitVisibleTiles[unitEntry.Key] = visibleTiles;
+
+                foreach (var tile in visibleTiles)
+                {
+                    _visibilityCounters[tile.x, tile.y]++;
+                    _exploredTiles[tile.x, tile.y] = true;
+                }
+            }
+
+            _textureUpdater?.RebuildFullTexture(this);
             _lastDirtyTiles.Clear();
         }
     }

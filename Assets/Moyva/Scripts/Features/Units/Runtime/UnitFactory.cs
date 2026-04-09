@@ -57,7 +57,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             { 
                 UnitId = finalUnitId, 
                 UnitTypeId = typeId, 
-                Position = gridPosition ,
+                Position = gridPosition,
+                VisionRange = Mathf.Max(1, config.VisionRange),
                 UnitObject = unitObj // Додаємо посилання на GameObject юніта
             });
 
