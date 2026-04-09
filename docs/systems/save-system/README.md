@@ -1,6 +1,6 @@
 # SaveSystem — Система збереження
 
-← [Назад до README](../README.md)
+← [Назад до README](../../README.md)
 
 ---
 
@@ -281,14 +281,14 @@ _configService.LoadConfig(modules);
 
 ## Пов'язані документи
 
-- [Signals](../signals.md) — усі сигнали проекту
+- [Signals](../signals/README.md) — усі сигнали проекту
 - [Порядок ініціалізації](../initialization-order.md) — місце SaveSystem у порядку запуску
 - [FogOfWar → Save stub](../fog-of-war/save-system-stub.md) — поточний заглушковий стан FogOfWar
-- [TDD Standard](../../standarts/TDD.md) — архітектурні правила модульності
+- [TDD Standard](../../../standarts/TDD.md) — архітектурні правила модульності
 
 ## Дерево документації SaveSystem
 
-- [SaveSystem Designer Tool Guide](save-system-designer-tool.md)
+- [SaveSystem Designer Tool Guide](designer-tool.md)
 
 ---
 
@@ -363,7 +363,7 @@ _configService.LoadConfig(modules);
 - функції: читання файлів, перегляд блоків, редагування payload, видалення блоків, видалення файлів/слотів, робота з backup, відкриття директорії файлу, показ розміру файлу, розумний перегляд блока генератора
 
 Детальний посібник (по кожному полю та кнопці):
-- [Save System Designer Tool Guide](save-system-designer-tool.md)
+- [Save System Designer Tool Guide](designer-tool.md)
 
 ---
 

@@ -321,5 +321,5 @@ public sealed class ConstructionUIState
 
 - [construction/service.md](service.md) — `IConstructionService` API
 - [construction/registry.md](registry.md) — `BuildingRegistrySO` та `BuildingDefinition`
-- [signals.md](../signals.md) — будівельні сигнали
+- [signals.md](../signals/README.md) — будівельні сигнали
 - [game-mode.md](../game-mode.md) — `IGameModeService`, `GameModeChangedSignal`

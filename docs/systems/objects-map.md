@@ -124,7 +124,7 @@ public class ObjectsMapInstaller : MonoInstaller
 
 | Залежність | Причина |
 |---|---|
-| [`SignalBus`](signals.md) | Підписка на юніт-сигнали; надсилання `OnObjectsMapChangedSignal` |
+| [`SignalBus`](signals/README.md) | Підписка на юніт-сигнали; надсилання `OnObjectsMapChangedSignal` |
 
 ---
 
@@ -134,5 +134,5 @@ public class ObjectsMapInstaller : MonoInstaller
 - [Generator](generator.md) — `MapVisualInstantiator` надсилає `OnMapObjectSpawnedSignal` після спавну статичних обʼєктів
 - [Pathfinding](pathfinding.md) — `Pathfinder` використовує `IObjectsMapService.IsOccupied()` для обходу перешкод
 - [Visuals](visuals.md) — `TileView` підписується на `OnObjectsMapChangedSignal` для оновлення кольору
-- [Signals](signals.md) — нові сигнали `OnMapObjectSpawnedSignal`, `OnObjectsMapChangedSignal`
+- [Signals](signals/README.md) — нові сигнали `OnMapObjectSpawnedSignal`, `OnObjectsMapChangedSignal`
 - [Construction](construction.md) — `ConstructionService.Confirm()` викликає `Register()` для підтверджених будівель

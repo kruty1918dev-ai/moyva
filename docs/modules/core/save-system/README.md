@@ -25,6 +25,6 @@
 <summary>Залежності</summary>
 
 - Пов'язані модулі: див. [../README.md](../README.md)
-- Legacy reference: [../../../systems/save-system.md](../../../systems/save-system.md)
+- Legacy reference: [../../../systems/save-system/README.md](../../../systems/save-system/README.md)
 
 </details>
