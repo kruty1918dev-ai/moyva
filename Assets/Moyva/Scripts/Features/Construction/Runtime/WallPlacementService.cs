@@ -124,7 +124,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             switch (connections)
             {
                 case 0:
-                    prefab = collection.IsolatedPrefab;
+                    // Одиночний сегмент без сусідів — fallback на горизонтальну
+                    prefab = collection.HorizontalPrefab;
                     break;
                 case 1:
                     prefab = (n || s) ? collection.VerticalPrefab : collection.HorizontalPrefab;
@@ -156,19 +157,26 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     }
                     break;
                 case 3:
-                    prefab = collection.TJunctionPrefab;
-                    // Базова орієнтація T: відкрита вниз (без півдня).
-                    if (!s)
-                        rotation = Quaternion.identity;
-                    else if (!w)
-                        rotation = Quaternion.Euler(0f, 0f, -90f);
-                    else if (!n)
-                        rotation = Quaternion.Euler(0f, 0f, 180f);
+                    // T-подібне з'єднання (3 сусіди) — окремого варіанта немає.
+                    // Якщо є обидва кінці прямої осі — показуємо прямий сегмент.
+                    // n+s+e (без w) або n+s+w (без e) → вертикальна
+                    // e+w+n (без s) або e+w+s (без n) → горизонтальна
+                    if (n && s)
+                        prefab = collection.VerticalPrefab;
+                    else if (e && w)
+                        prefab = collection.HorizontalPrefab;
+                    else if (n && e)
+                        prefab = collection.CornerNorthEastPrefab;
+                    else if (n && w)
+                        prefab = collection.CornerNorthWestPrefab;
+                    else if (s && e)
+                        prefab = collection.CornerSouthEastPrefab;
                     else
-                        rotation = Quaternion.Euler(0f, 0f, 90f);
+                        prefab = collection.CornerSouthWestPrefab;
                     break;
                 default:
-                    prefab = collection.CrossPrefab;
+                    // Хрестоподібне з'єднання (4 сусіди) — окремого варіанта немає, fallback горизонтальна.
+                    prefab = collection.HorizontalPrefab;
                     break;
             }
 

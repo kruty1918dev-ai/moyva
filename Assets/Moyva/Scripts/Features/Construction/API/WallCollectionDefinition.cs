@@ -2,41 +2,92 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
 {
+    /// <summary>
+    /// Колекція варіантів стін — набір з 6 сегментів стіни та воріт для одного архітектурного стилю.
+    /// Потрібний варіант обирається автоматично залежно від наявних сусідів тайла.
+    /// </summary>
     [System.Serializable]
     public class WallCollectionDefinition
     {
-        [Header("IDs")]
+        [Header("— Ідентифікатори —")]
+        [Tooltip("Унікальний ідентифікатор колекції стін у реєстрі. " +
+                 "Використовується для розрізнення між різними стилями стін. " +
+                 "Приклади: 'stone-wall', 'wooden-wall', 'castle-wall'.")]
         public string CollectionId = "default-wall";
+
+        [Tooltip("ID будівлі-стіни у BuildingRegistrySO. " +
+                 "Це значення присвоюється тайлу при розміщенні будь-якого сегмента стіни з цієї колекції. " +
+                 "Має збігатися з полем Id відповідного BuildingDefinition.")]
         public string WallBuildingId = "wall";
+
+        [Tooltip("ID будівлі-воріт у BuildingRegistrySO. " +
+                 "Ворота можна встановити лише на тайл, де вже є стіна цієї колекції — вони замінюють її. " +
+                 "Має збігатися з полем Id відповідного BuildingDefinition.")]
         public string GateBuildingId = "gate";
 
-        [Header("Wall Variants (9)")]
-        public GameObject IsolatedPrefab;
+        [Header("— Варіанти стін (6 штук) —")]
+        [Tooltip("ГОРИЗОНТАЛЬНА СТІНА (←→)\n\n" +
+                 "Прямий сегмент стіни вздовж осі X (ліворуч–праворуч).\n\n" +
+                 "Коли використовується:\n" +
+                 "• Є сусіди лише ліворуч і/або праворуч (E, W або E+W)\n" +
+                 "• Немає жодних сусідів (одиночний сегмент — fallback)\n" +
+                 "• Є 3+ сусіди з обох горизонтальних боків (T-подібний та хрест — fallback)")]
         public GameObject HorizontalPrefab;
-        public GameObject VerticalPrefab;
-        public GameObject CornerNorthEastPrefab;
-        public GameObject CornerNorthWestPrefab;
-        public GameObject CornerSouthEastPrefab;
-        public GameObject CornerSouthWestPrefab;
-        public GameObject TJunctionPrefab;
-        public GameObject CrossPrefab;
 
-        [Header("Gate")]
+        [Tooltip("ВЕРТИКАЛЬНА СТІНА (↑↓)\n\n" +
+                 "Прямий сегмент стіни вздовж осі Y (знизу вгору).\n\n" +
+                 "Коли використовується:\n" +
+                 "• Є сусіди лише зверху і/або знизу (N, S або N+S)\n" +
+                 "• При T-подібному з'єднанні де є N+S вісь (N+S+E або N+S+W — fallback)")]
+        public GameObject VerticalPrefab;
+
+        [Tooltip("КУТ 'ПРАВИЙ ВЕРХНІЙ' — NE (↑→)\n\n" +
+                 "Кутовий сегмент що з'єднує напрямки Північ і Схід.\n" +
+                 "Стіна згинається: іде вгору і праворуч.\n\n" +
+                 "Коли використовується:\n" +
+                 "• Є сусід зверху (N) і праворуч (E), але НЕ знизу і НЕ ліворуч")]
+        public GameObject CornerNorthEastPrefab;
+
+        [Tooltip("КУТ 'ЛІВИЙ ВЕРХНІЙ' — NW (↑←)\n\n" +
+                 "Кутовий сегмент що з'єднує напрямки Північ і Захід.\n" +
+                 "Стіна згинається: іде вгору і ліворуч.\n\n" +
+                 "Коли використовується:\n" +
+                 "• Є сусід зверху (N) і ліворуч (W), але НЕ знизу і НЕ праворуч")]
+        public GameObject CornerNorthWestPrefab;
+
+        [Tooltip("КУТ 'ПРАВИЙ НИЖНІЙ' — SE (↓→)\n\n" +
+                 "Кутовий сегмент що з'єднує напрямки Південь і Схід.\n" +
+                 "Стіна згинається: іде вниз і праворуч.\n\n" +
+                 "Коли використовується:\n" +
+                 "• Є сусід знизу (S) і праворуч (E), але НЕ зверху і НЕ ліворуч")]
+        public GameObject CornerSouthEastPrefab;
+
+        [Tooltip("КУТ 'ЛІВИЙ НИЖНІЙ' — SW (↓←)\n\n" +
+                 "Кутовий сегмент що з'єднує напрямки Південь і Захід.\n" +
+                 "Стіна згинається: іде вниз і ліворуч.\n\n" +
+                 "Коли використовується:\n" +
+                 "• Є сусід знизу (S) і ліворуч (W), але НЕ зверху і НЕ праворуч")]
+        public GameObject CornerSouthWestPrefab;
+
+        [Header("— Ворота —")]
+        [Tooltip("ВОРОТА\n\n" +
+                 "Прохідний сегмент, що замінює стіну цієї ж колекції.\n\n" +
+                 "Особливості:\n" +
+                 "• Можна встановити ЛИШЕ на тайл де вже є стіна (WallBuildingId) цієї колекції\n" +
+                 "• При встановленні стіна знищується і замінюється воротами\n" +
+                 "• GateBuildingId має бути зареєстровано у BuildingRegistrySO")]
         public GameObject GatePrefab;
 
-        public bool ContainsBuilding(string buildingId)
-        {
-            return buildingId == WallBuildingId || buildingId == GateBuildingId;
-        }
+        /// <summary>Чи містить колекція цей buildingId (стіна або ворота).</summary>
+        public bool ContainsBuilding(string buildingId) =>
+            buildingId == WallBuildingId || buildingId == GateBuildingId;
 
-        public bool IsWall(string buildingId)
-        {
-            return buildingId == WallBuildingId;
-        }
+        /// <summary>Чи є цей buildingId стіною з цієї колекції.</summary>
+        public bool IsWall(string buildingId) =>
+            buildingId == WallBuildingId;
 
-        public bool IsGate(string buildingId)
-        {
-            return buildingId == GateBuildingId;
-        }
+        /// <summary>Чи є цей buildingId воротами з цієї колекції.</summary>
+        public bool IsGate(string buildingId) =>
+            buildingId == GateBuildingId;
     }
 }
