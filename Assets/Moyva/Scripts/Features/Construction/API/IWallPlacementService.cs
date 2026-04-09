@@ -10,7 +10,8 @@ namespace Kruty1918.Moyva.Construction.API
 
         /// <summary>
         /// Drag від стартової позиції до поточної позиції дотику в світових координатах.
-        /// Будує path за алгоритмом Bresenham і намагається додати preview на кожному тайлі.
+        /// Будує шлях лише у 4 напрямках (верх/право/низ/ліво) з обходом перешкод
+        /// і намагається додати preview на кожному тайлі.
         /// </summary>
         void DragWall(Vector2Int startPosition, Vector2 touchWorldPosition);
 
@@ -34,6 +35,12 @@ namespace Kruty1918.Moyva.Construction.API
         /// Для не-wall елементів повертає false.
         /// </summary>
         bool TryResolvePlacedVisual(Vector2Int position, string occupantId, out GameObject prefab, out Quaternion rotation);
+
+        /// <summary>
+        /// Підібрати prefab для PREVIEW стіни з урахуванням сусідів (і placed, і pending).
+        /// Повертає false якщо buildingId не належить до wall-колекції.
+        /// </summary>
+        bool TryResolvePreviewVisual(Vector2Int position, string buildingId, out GameObject prefab);
 
         /// <summary>Завершити drag. Ручки зникають, pending-розміщення залишаються.</summary>
         void EndDrag();

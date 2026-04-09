@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace Kruty1918.Moyva.Construction.API
 {
@@ -78,13 +79,66 @@ namespace Kruty1918.Moyva.Construction.API
                  "• GateBuildingId має бути зареєстровано у BuildingRegistrySO")]
         public GameObject GatePrefab;
 
+        [Header("— Декларативні правила резолвера —")]
+        [Tooltip("Опціональний список case -> варіації BuildingId. " +
+             "Якщо елементів немає, система використовує legacy fallback з prefab-полів вище.")]
+        public List<TopologyCaseBinding> TopologyBindings = new();
+
         /// <summary>Чи містить колекція цей buildingId (стіна або ворота).</summary>
-        public bool ContainsBuilding(string buildingId) =>
-            buildingId == WallBuildingId || buildingId == GateBuildingId;
+        public bool ContainsBuilding(string buildingId)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId))
+                return false;
+
+            if (buildingId == WallBuildingId || buildingId == GateBuildingId)
+                return true;
+
+            if (TopologyBindings == null)
+                return false;
+
+            for (int i = 0; i < TopologyBindings.Count; i++)
+            {
+                var binding = TopologyBindings[i];
+                if (binding == null || binding.VariantBuildingIds == null)
+                    continue;
+
+                for (int j = 0; j < binding.VariantBuildingIds.Count; j++)
+                {
+                    if (binding.VariantBuildingIds[j] == buildingId)
+                        return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>Чи є цей buildingId стіною з цієї колекції.</summary>
-        public bool IsWall(string buildingId) =>
-            buildingId == WallBuildingId;
+        public bool IsWall(string buildingId)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId))
+                return false;
+
+            if (buildingId == WallBuildingId)
+                return true;
+
+            if (buildingId == GateBuildingId || TopologyBindings == null)
+                return false;
+
+            for (int i = 0; i < TopologyBindings.Count; i++)
+            {
+                var binding = TopologyBindings[i];
+                if (binding == null || binding.VariantBuildingIds == null)
+                    continue;
+
+                for (int j = 0; j < binding.VariantBuildingIds.Count; j++)
+                {
+                    if (binding.VariantBuildingIds[j] == buildingId)
+                        return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>Чи є цей buildingId воротами з цієї колекції.</summary>
         public bool IsGate(string buildingId) =>

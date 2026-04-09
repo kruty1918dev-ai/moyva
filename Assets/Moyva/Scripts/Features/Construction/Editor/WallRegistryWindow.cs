@@ -29,29 +29,33 @@ namespace Kruty1918.Moyva.Construction.Editor
 
             ("CornerNorthEastPrefab",
              "Кут правий верхній — NE ↑→",
-             "З'єднує Північ і Схід.\n" +
-             "Використовується: є сусіди зверху (N) і праворуч (E)."),
+             "Атласний слот NE (правий верхній).\n" +
+             "Логічні сусіди для цього слоту: знизу (S) і ліворуч (W)."),
 
             ("CornerNorthWestPrefab",
              "Кут лівий верхній — NW ↑←",
-             "З'єднує Північ і Захід.\n" +
-             "Використовується: є сусіди зверху (N) і ліворуч (W)."),
+             "Атласний слот NW (лівий верхній).\n" +
+             "Логічні сусіди для цього слоту: знизу (S) і праворуч (E)."),
 
             ("CornerSouthEastPrefab",
              "Кут правий нижній — SE ↓→",
-             "З'єднує Південь і Схід.\n" +
-             "Використовується: є сусіди знизу (S) і праворуч (E)."),
+             "Атласний слот SE (правий нижній).\n" +
+             "Логічні сусіди для цього слоту: зверху (N) і ліворуч (W)."),
 
             ("CornerSouthWestPrefab",
              "Кут лівий нижній — SW ↓←",
-             "З'єднує Південь і Захід.\n" +
-             "Використовується: є сусіди знизу (S) і ліворуч (W)."),
+             "Атласний слот SW (лівий нижній).\n" +
+             "Логічні сусіди для цього слоту: зверху (N) і праворуч (E)."),
         };
 
         // ── Стан вікна ─────────────────────────────────────────────────────────
         private BuildingRegistrySO _registry;
         private Vector2 _scroll;
         private int _openIndex = -1;
+        private int _generatorTargetIndex = -1;
+        private bool _isGeneratorExpanded = true;
+        private bool _isResolverModuleExpanded;
+        private readonly TopologyResolverEditorModule _resolverModule = new();
 
         // ── Автогенерація зі спрайтів ──────────────────────────────────────────
         private string _generatorPrefabRoot = DefaultPrefabRoot;
@@ -93,6 +97,7 @@ namespace Kruty1918.Moyva.Construction.Editor
         private void OnGUI()
         {
             InitStyles();
+            _scroll = EditorGUILayout.BeginScrollView(_scroll);
             DrawHeader();
 
             using (new EditorGUILayout.VerticalScope(_boxedContentStyle))
@@ -116,6 +121,7 @@ namespace Kruty1918.Moyva.Construction.Editor
                         if (GUILayout.Button("Створити новий BuildingRegistrySO", GUILayout.Height(26f)))
                             CreateRegistryAsset();
                     }
+                    EditorGUILayout.EndScrollView();
                     return;
                 }
             }
@@ -130,10 +136,19 @@ namespace Kruty1918.Moyva.Construction.Editor
             EditorGUILayout.Space(6f);
             DrawAutomationPanel(so, collections);
             EditorGUILayout.Space(6f);
+            DrawResolverModulePanel();
+            EditorGUILayout.Space(6f);
 
-            _scroll = EditorGUILayout.BeginScrollView(_scroll);
             for (int i = 0; i < collections.arraySize; i++)
                 DrawCollection(so, collections, i);
+
+            // Авто-синхронізація BuildingDefinition для всіх колекцій (замість ручної кнопки)
+            if (so.hasModifiedProperties)
+            {
+                for (int i = 0; i < collections.arraySize; i++)
+                    EnsureBuildingEntries(so, collections.GetArrayElementAtIndex(i), collectOnly: false);
+            }
+
             EditorGUILayout.EndScrollView();
 
             so.ApplyModifiedProperties();
@@ -179,6 +194,7 @@ namespace Kruty1918.Moyva.Construction.Editor
             {
                 collections.arraySize++;
                 _openIndex = collections.arraySize - 1;
+                _generatorTargetIndex = _openIndex;
 
                 var newItem = collections.GetArrayElementAtIndex(_openIndex);
                 newItem.FindPropertyRelative("CollectionId").stringValue = $"wall-collection-{_openIndex}";
@@ -186,10 +202,25 @@ namespace Kruty1918.Moyva.Construction.Editor
                 newItem.FindPropertyRelative("GateBuildingId").stringValue = "gate";
             }
 
-            if (GUILayout.Button("Fallback'и для всіх", EditorStyles.toolbarButton, GUILayout.Width(130f)))
-                ApplyFallbacksToAll(collections);
+            if (GUILayout.Button("Resolver Editor", EditorStyles.toolbarButton, GUILayout.Width(110f)))
+                TopologyResolverEditorWindow.Open();
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawResolverModulePanel()
+        {
+            using (new EditorGUILayout.VerticalScope(_boxedContentStyle))
+            {
+                _isResolverModuleExpanded = EditorGUILayout.BeginFoldoutHeaderGroup(
+                    _isResolverModuleExpanded,
+                    new GUIContent("Вбудований модуль резолвера", "Редагування декларативної логіки підбору case -> варіації"));
+
+                if (_isResolverModuleExpanded)
+                    _resolverModule.Draw(_registry);
+
+                EditorGUILayout.EndFoldoutHeaderGroup();
+            }
         }
 
         // ── Майстер автогенерації ─────────────────────────────────────────────
@@ -197,35 +228,45 @@ namespace Kruty1918.Moyva.Construction.Editor
         {
             using (new EditorGUILayout.VerticalScope(_boxedContentStyle))
             {
-                EditorGUILayout.LabelField("Майстер автогенерації зі спрайтів", _sectionHeaderStyle);
-                EditorGUILayout.HelpBox(
-                    "Передайте спрайти, натисніть кнопку і інструмент автоматично:\n" +
-                    "1) Згенерує prefab'и у вказаній папці\n" +
-                    "2) Призначить prefab'и у вибрану колекцію\n" +
-                    "3) Створить/оновить BuildingDefinition для стіни та воріт\n" +
-                    "4) Застосує fallback'и для відсутніх варіантів",
-                    MessageType.Info);
+                _isGeneratorExpanded = EditorGUILayout.BeginFoldoutHeaderGroup(
+                    _isGeneratorExpanded,
+                    new GUIContent(
+                        "Майстер автогенерації зі спрайтів",
+                        "Згорніть або розгорніть цей блок. Всередині знаходяться всі інструменти швидкого створення стін."));
 
-                DrawGeneratorTargetSelector(collections);
-                DrawGeneratorSourceSprites();
-                DrawGeneratorOptions();
-
-                using (new EditorGUILayout.HorizontalScope())
+                if (_isGeneratorExpanded)
                 {
-                    if (GUILayout.Button(
-                        new GUIContent("Згенерувати і сетапити", "Запускає повний цикл генерації та автоналаштування"),
-                        GUILayout.Height(32f)))
-                    {
-                        RunAutoGeneration(so, collections);
-                    }
+                    EditorGUILayout.HelpBox(
+                        "Передайте спрайти, натисніть кнопку і інструмент автоматично:\n" +
+                        "1) Згенерує prefab'и у вказаній папці\n" +
+                        "2) Призначить prefab'и у вибрану колекцію\n" +
+                        "3) Створить/оновить BuildingDefinition для стіни та воріт\n" +
+                        "4) Застосує fallback'и для відсутніх варіантів",
+                        MessageType.Info);
 
-                    if (GUILayout.Button(
-                        new GUIContent("Очистити введення", "Скидає лише спрайти/опції генератора, не чіпає реєстр"),
-                        GUILayout.Height(32f), GUILayout.Width(140f)))
+                    DrawGeneratorTargetSelector(collections);
+                    DrawGeneratorSourceSprites();
+                    DrawGeneratorOptions();
+
+                    using (new EditorGUILayout.HorizontalScope())
                     {
-                        ResetGeneratorInputs();
+                        if (GUILayout.Button(
+                            new GUIContent("Згенерувати і сетапити", "Запускає повний цикл генерації та автоналаштування"),
+                            GUILayout.Height(32f)))
+                        {
+                            RunAutoGeneration(so, collections);
+                        }
+
+                        if (GUILayout.Button(
+                            new GUIContent("Очистити введення", "Скидає лише спрайти/опції генератора, не чіпає реєстр"),
+                            GUILayout.Height(32f), GUILayout.Width(140f)))
+                        {
+                            ResetGeneratorInputs();
+                        }
                     }
                 }
+
+                EditorGUILayout.EndFoldoutHeaderGroup();
             }
         }
 
@@ -239,8 +280,8 @@ namespace Kruty1918.Moyva.Construction.Editor
                 return;
             }
 
-            if (_openIndex < 0 || _openIndex >= collections.arraySize)
-                _openIndex = 0;
+            if (_generatorTargetIndex < 0 || _generatorTargetIndex >= collections.arraySize)
+                _generatorTargetIndex = Mathf.Clamp(_openIndex, 0, collections.arraySize - 1);
 
             string[] names = new string[collections.arraySize];
             for (int i = 0; i < collections.arraySize; i++)
@@ -250,9 +291,9 @@ namespace Kruty1918.Moyva.Construction.Editor
                 names[i] = string.IsNullOrWhiteSpace(id) ? $"Колекція #{i}" : id;
             }
 
-            _openIndex = EditorGUILayout.Popup(
+            _generatorTargetIndex = EditorGUILayout.Popup(
                 new GUIContent("Цільова колекція", "У цю колекцію будуть записані згенеровані prefab'и"),
-                _openIndex, names);
+                _generatorTargetIndex, names);
 
             _generatorPrefabRoot = EditorGUILayout.TextField(
                 new GUIContent("Папка для prefab'ів", "Наприклад: Assets/Moyva/Prefabs/Buildings/Walls"),
@@ -277,19 +318,19 @@ namespace Kruty1918.Moyva.Construction.Editor
                 _spriteVertical, typeof(Sprite), false);
 
             _spriteCornerNE = (Sprite)EditorGUILayout.ObjectField(
-                new GUIContent("Кут NE (правий верхній)", "Кут, який з'єднує напрямки N + E."),
+                new GUIContent("Кут NE (правий верхній)", "Атласний слот NE. Логічні сусіди: S + W."),
                 _spriteCornerNE, typeof(Sprite), false);
 
             _spriteCornerNW = (Sprite)EditorGUILayout.ObjectField(
-                new GUIContent("Кут NW (лівий верхній)", "Кут, який з'єднує напрямки N + W."),
+                new GUIContent("Кут NW (лівий верхній)", "Атласний слот NW. Логічні сусіди: S + E."),
                 _spriteCornerNW, typeof(Sprite), false);
 
             _spriteCornerSE = (Sprite)EditorGUILayout.ObjectField(
-                new GUIContent("Кут SE (правий нижній)", "Кут, який з'єднує напрямки S + E."),
+                new GUIContent("Кут SE (правий нижній)", "Атласний слот SE. Логічні сусіди: N + W."),
                 _spriteCornerSE, typeof(Sprite), false);
 
             _spriteCornerSW = (Sprite)EditorGUILayout.ObjectField(
-                new GUIContent("Кут SW (лівий нижній)", "Кут, який з'єднує напрямки S + W."),
+                new GUIContent("Кут SW (лівий нижній)", "Атласний слот SW. Логічні сусіди: N + E."),
                 _spriteCornerSW, typeof(Sprite), false);
 
             _spriteGate = (Sprite)EditorGUILayout.ObjectField(
@@ -352,7 +393,11 @@ namespace Kruty1918.Moyva.Construction.Editor
 
             bool newOpen = EditorGUILayout.Foldout(isOpen, label, true, EditorStyles.foldoutHeader);
             if (newOpen != isOpen)
+            {
                 _openIndex = newOpen ? index : -1;
+                if (newOpen)
+                    _generatorTargetIndex = index;
+            }
 
             DrawReadinessMiniBar(col);
             DrawValidationIcon(col);
@@ -369,6 +414,9 @@ namespace Kruty1918.Moyva.Construction.Editor
                     so.ApplyModifiedProperties();
                     if (_openIndex >= collections.arraySize)
                         _openIndex = collections.arraySize - 1;
+
+                    if (_generatorTargetIndex >= collections.arraySize)
+                        _generatorTargetIndex = collections.arraySize - 1;
                 }
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.EndVertical();
@@ -388,9 +436,12 @@ namespace Kruty1918.Moyva.Construction.Editor
 
                 DrawIds(col);
                 EditorGUILayout.Space(6f);
-                DrawWallVariants(col);
-                EditorGUILayout.Space(6f);
                 DrawGate(col);
+                EditorGUILayout.Space(6f);
+                EditorGUILayout.HelpBox(
+                    "Налаштування типів стін і варіацій виконується через вбудований модуль резолвера вище. " +
+                    "У цьому блоці лишаються тільки ID колекції та ворота.",
+                    MessageType.Info);
                 EditorGUILayout.Space(6f);
                 DrawPerCollectionActions(col);
                 EditorGUILayout.Space(4f);
@@ -450,7 +501,7 @@ namespace Kruty1918.Moyva.Construction.Editor
                 "Встановлюється лише на тайл з існуючою стіною (WallBuildingId).");
 
             EditorGUILayout.HelpBox(
-                "Fallback воріт: якщо GatePrefab порожній, інструмент підставить HorizontalPrefab.",
+                "Рекомендація: призначайте окремий prefab воріт. Якщо GatePrefab порожній, система використовує fallback колекції.",
                 MessageType.None);
         }
 
@@ -460,14 +511,6 @@ namespace Kruty1918.Moyva.Construction.Editor
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button(
-                    new GUIContent("Заповнити пропуски fallback'ами",
-                        "Підставить відсутні prefab'и: спершу Horizontal, потім Vertical, потім будь-який доступний"),
-                    GUILayout.Height(28f)))
-                {
-                    ApplyFallbacks(col);
-                }
-
                 if (GUILayout.Button(
                     new GUIContent("Створити/оновити BuildingDefinition",
                         "Гарантує наявність wall/gate записів у BuildingRegistrySO.Buildings"),
@@ -529,12 +572,10 @@ namespace Kruty1918.Moyva.Construction.Editor
         {
             var missing = new List<string>();
 
-            foreach (var (field, uaName, _) in VariantMeta)
-            {
-                var p = col.FindPropertyRelative(field);
-                if (p != null && p.objectReferenceValue == null)
-                    missing.Add(uaName);
-            }
+            var bindings = col.FindPropertyRelative("TopologyBindings");
+            bool hasAnyBinding = bindings != null && bindings.arraySize > 0;
+            if (!hasAnyBinding)
+                missing.Add("Типи резолвера (додайте через вбудований модуль)");
 
             var gateProp = col.FindPropertyRelative("GatePrefab");
             if (gateProp != null && gateProp.objectReferenceValue == null)
@@ -556,11 +597,12 @@ namespace Kruty1918.Moyva.Construction.Editor
         private static int CountMissingPrefabs(SerializedProperty col)
         {
             int count = 0;
-            foreach (var (field, _, _) in VariantMeta)
-            {
-                var p = col.FindPropertyRelative(field);
-                if (p != null && p.objectReferenceValue == null) count++;
-            }
+
+            var bindings = col.FindPropertyRelative("TopologyBindings");
+            bool hasAnyBinding = bindings != null && bindings.arraySize > 0;
+            if (!hasAnyBinding)
+                count++;
+
             var g = col.FindPropertyRelative("GatePrefab");
             if (g != null && g.objectReferenceValue == null) count++;
             return count;
@@ -624,18 +666,18 @@ namespace Kruty1918.Moyva.Construction.Editor
                 return;
             }
 
-            if (_openIndex < 0 || _openIndex >= collections.arraySize)
+            if (_generatorTargetIndex < 0 || _generatorTargetIndex >= collections.arraySize)
             {
                 EditorUtility.DisplayDialog("Не обрано колекцію", "Оберіть цільову колекцію для генерації.", "OK");
                 return;
             }
 
-            var col = collections.GetArrayElementAtIndex(_openIndex);
+            var col = collections.GetArrayElementAtIndex(_generatorTargetIndex);
             EnsureCollectionDefaults(col);
 
             string collectionId = col.FindPropertyRelative("CollectionId").stringValue;
             if (string.IsNullOrWhiteSpace(collectionId))
-                collectionId = $"wall-collection-{_openIndex}";
+                collectionId = $"wall-collection-{_generatorTargetIndex}";
 
             string collectionFolder = CombineAssetPath(
                 string.IsNullOrWhiteSpace(_generatorPrefabRoot) ? DefaultPrefabRoot : _generatorPrefabRoot,
@@ -729,9 +771,6 @@ namespace Kruty1918.Moyva.Construction.Editor
 
         private void EnsureBuildingEntries(SerializedObject so, SerializedProperty col, bool collectOnly)
         {
-            if (!_generatorCreateBuildingEntries)
-                return;
-
             var buildings = so.FindProperty("Buildings");
             if (buildings == null)
                 return;
@@ -743,24 +782,35 @@ namespace Kruty1918.Moyva.Construction.Editor
 
             var horizontalPrefab = col.FindPropertyRelative("HorizontalPrefab")?.objectReferenceValue as GameObject;
             var gatePrefab = col.FindPropertyRelative("GatePrefab")?.objectReferenceValue as GameObject;
+            var horizontalIcon = _spriteHorizontal ?? ExtractSpriteFromPrefab(horizontalPrefab);
+            var gateIcon = _spriteGate ?? ExtractSpriteFromPrefab(gatePrefab) ?? horizontalIcon;
 
             UpsertBuildingDefinition(
                 buildings,
                 wallId,
                 "Стіна",
-                _spriteHorizontal,
+                horizontalIcon,
                 horizontalPrefab,
-                BuildingCategory.Military,
+                BuildingCategory.Walls,
                 collectOnly);
 
             UpsertBuildingDefinition(
                 buildings,
                 gateId,
                 "Ворота",
-                _spriteGate ?? _spriteHorizontal,
+                gateIcon,
                 gatePrefab,
-                BuildingCategory.Military,
+                BuildingCategory.Walls,
                 collectOnly);
+        }
+
+        private static Sprite ExtractSpriteFromPrefab(GameObject prefab)
+        {
+            if (prefab == null)
+                return null;
+
+            var sr = prefab.GetComponentInChildren<SpriteRenderer>(true);
+            return sr != null ? sr.sprite : null;
         }
 
         private void UpsertBuildingDefinition(
@@ -804,20 +854,20 @@ namespace Kruty1918.Moyva.Construction.Editor
                 nameProp.stringValue = displayName;
 
             var categoryProp = target.FindPropertyRelative("Category");
-            if (categoryProp != null && categoryProp.enumValueIndex < 0)
+            if (categoryProp != null)
                 categoryProp.enumValueIndex = (int)category;
 
             var iconProp = target.FindPropertyRelative("Icon");
             if (iconProp != null)
             {
-                if (_generatorOverwriteBuildingIcon || iconProp.objectReferenceValue == null)
+                if (icon != null && iconProp.objectReferenceValue != icon)
                     iconProp.objectReferenceValue = icon;
             }
 
             var prefabProp = target.FindPropertyRelative("Prefab");
             if (prefabProp != null)
             {
-                if (_generatorOverwriteBuildingPrefab || prefabProp.objectReferenceValue == null)
+                if (prefab != null && prefabProp.objectReferenceValue != prefab)
                     prefabProp.objectReferenceValue = prefab;
             }
         }

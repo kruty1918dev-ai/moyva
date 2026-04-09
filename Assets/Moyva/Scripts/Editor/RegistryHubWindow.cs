@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Generator.API;
@@ -16,13 +17,20 @@ namespace Kruty1918.Moyva.Editor
         //  КОНСТАНТИ
         // ══════════════════════════════════════════════════════
 
-        private enum Tab { Tiles, MapObjects, Units, Buildings, Resources }
+        private enum Tab { Tiles, MapObjects, Units, Buildings, Walls, Resources }
 
         private static readonly string[] TabLabels =
-            { "  Тайли", "  Об'єкти", "  Юніти", "  Будівлі", "  Ресурси" };
+            { "  Тайли", "  Об'єкти", "  Юніти", "  Будівлі", "  Стіни", "  Ресурси" };
 
-        private static readonly string[] TabIcons =
-            { "d_TerrainAsset Icon", "d_Prefab Icon", "d_AvatarSelector", "d_BuildSettings.Standalone.Small", "d_ScriptableObject Icon" };
+        private static readonly string[][] TabIconCandidates =
+        {
+            new[] { "TerrainAsset Icon", "Terrain Icon", "Grid Icon" },
+            new[] { "d_Prefab Icon", "Prefab Icon" },
+            new[] { "d_AvatarSelector", "Avatar Icon" },
+            new[] { "d_BuildSettings.Standalone.Small", "BuildSettings.Standalone.Small" },
+            new[] { "d_SceneViewOrtho", "SceneViewOrtho" },
+            new[] { "d_ScriptableObject Icon", "ScriptableObject Icon" },
+        };
 
         private const string TilePrefabFolder    = "Assets/Moyva/Prefabs/Tiles";
         private const string ObjectPrefabFolder  = "Assets/Moyva/Prefabs/Objects";
@@ -76,6 +84,9 @@ namespace Kruty1918.Moyva.Editor
         private GameObject         _newBldPrefab;
         private bool               _bldCreateOpen = true;
 
+        // Walls
+        private int _expandedWall = -1;
+
         // Inline editing — індекс розгорнутого елемента (-1 = нічого)
         private int _expandedTile = -1;
         private int _expandedObj  = -1;
@@ -112,7 +123,7 @@ namespace Kruty1918.Moyva.Editor
         {
             var w = GetWindow<RegistryHubWindow>("Registry Hub");
             w.minSize = new Vector2(660f, 460f);
-            w._tab = (Tab)Mathf.Clamp(tabIndex, 0, 4);
+            w._tab = (Tab)Mathf.Clamp(tabIndex, 0, 5);
             w.Show();
             w.Focus();
         }
@@ -202,7 +213,7 @@ namespace Kruty1918.Moyva.Editor
                 bool active = _tab == t;
                 GUIStyle st = active ? RegistryEditorStyles.SidebarTabActive : RegistryEditorStyles.SidebarTab;
 
-                GUIContent content = new(TabLabels[i], EditorGUIUtility.IconContent(TabIcons[i]).image);
+                GUIContent content = new(TabLabels[i], FindFirstTabIcon(i));
                 if (GUILayout.Button(content, st))
                 {
                     _tab = t;
@@ -246,6 +257,22 @@ namespace Kruty1918.Moyva.Editor
             EditorGUILayout.EndVertical();
         }
 
+        private static Texture FindFirstTabIcon(int tabIndex)
+        {
+            if (tabIndex < 0 || tabIndex >= TabIconCandidates.Length)
+                return null;
+
+            var names = TabIconCandidates[tabIndex];
+            for (int i = 0; i < names.Length; i++)
+            {
+                var texture = EditorGUIUtility.FindTexture(names[i]);
+                if (texture != null)
+                    return texture;
+            }
+
+            return null;
+        }
+
         private static void DrawAssetRow(string label, UnityEngine.Object asset)
         {
             EditorGUILayout.BeginHorizontal();
@@ -273,6 +300,7 @@ namespace Kruty1918.Moyva.Editor
                 case Tab.MapObjects: DrawObjTab();    break;
                 case Tab.Units:      DrawUnitTab();   break;
                 case Tab.Buildings:  DrawBldTab();    break;
+                case Tab.Walls:      DrawWallsTab();  break;
                 case Tab.Resources:  DrawResourcesTab(); break;
             }
 
@@ -289,10 +317,11 @@ namespace Kruty1918.Moyva.Editor
             int objs  = _objSO?.FindProperty("_definitions")?.arraySize ?? 0;
             int units = _unitSO?.FindProperty("Configs")?.arraySize ?? 0;
             int blds  = _bldSO?.FindProperty("Buildings")?.arraySize ?? 0;
+            int walls = _bldSO?.FindProperty("WallCollections")?.arraySize ?? 0;
 
             Rect r = EditorGUILayout.GetControlRect(false, 20);
             EditorGUI.DrawRect(r, RegistryEditorStyles.SidebarBg);
-            GUI.Label(r, $"   Тайли: {tiles}  |  Об'єкти: {objs}  |  Юніти: {units}  |  Будівлі: {blds}",
+            GUI.Label(r, $"   Тайли: {tiles}  |  Об'єкти: {objs}  |  Юніти: {units}  |  Будівлі: {blds}  |  Стіни: {walls}",
                 EditorStyles.centeredGreyMiniLabel);
         }
 
@@ -772,6 +801,256 @@ namespace Kruty1918.Moyva.Editor
         }
 
         // ══════════════════════════════════════════════════════
+        //  WALLS TAB
+        // ══════════════════════════════════════════════════════
+
+        private static readonly string[] WallVariantFieldNames =
+        {
+            "HorizontalPrefab", "VerticalPrefab",
+            "CornerNorthEastPrefab", "CornerNorthWestPrefab",
+            "CornerSouthEastPrefab", "CornerSouthWestPrefab",
+            "GatePrefab"
+        };
+
+        private static readonly string[] WallVariantLabels =
+        {
+            "Горизонтальна ←→", "Вертикальна ↑↓",
+            "Кут NE ↑→", "Кут NW ↑←",
+            "Кут SE ↓→", "Кут SW ↓←",
+            "Ворота"
+        };
+
+        private void DrawWallsTab()
+        {
+            RegistryEditorStyles.DrawColoredHeader("  Wall Collections — колекції стін", new Color(0.65f, 0.55f, 0.30f));
+
+            _bldReg = (BuildingRegistrySO)EditorGUILayout.ObjectField("Registry Asset", _bldReg, typeof(BuildingRegistrySO), false);
+            if (_bldReg && _bldSO?.targetObject != _bldReg) RefreshSOs();
+            if (!_bldReg) { EditorGUILayout.HelpBox("Оберіть BuildingRegistrySO або натисніть ⟳.", MessageType.Warning); return; }
+
+            DrawAssetPath(_bldReg);
+            RegistryEditorStyles.DrawSeparator();
+
+            var collections = _bldSO.FindProperty("WallCollections");
+            int count = collections?.arraySize ?? 0;
+            EditorGUILayout.LabelField($"Колекції стін ({count})", RegistryEditorStyles.SubHeader);
+
+            if (count == 0)
+                EditorGUILayout.LabelField("Колекцій стін немає. Додайте першу нижче.", RegistryEditorStyles.CenteredMini);
+
+            int removeIdx = -1;
+            for (int i = 0; i < count; i++)
+            {
+                var el = collections.GetArrayElementAtIndex(i);
+                string collId  = el.FindPropertyRelative("CollectionId")?.stringValue ?? "?";
+                string wallId  = el.FindPropertyRelative("WallBuildingId")?.stringValue ?? "";
+                string gateId  = el.FindPropertyRelative("GateBuildingId")?.stringValue ?? "";
+
+                if (!MatchesFilter(collId) && !MatchesFilter(wallId)) continue;
+
+                GUIStyle style = i % 2 == 0 ? RegistryEditorStyles.Card : RegistryEditorStyles.CardAlt;
+                EditorGUILayout.BeginVertical(style);
+
+                EditorGUILayout.BeginHorizontal();
+                bool isOpen = _expandedWall == i;
+                if (GUILayout.Button(isOpen ? "\u25BC" : "\u25B6", EditorStyles.miniLabel, GUILayout.Width(16)))
+                    _expandedWall = isOpen ? -1 : i;
+                DrawIdLabel(collId, 150);
+                EditorGUILayout.LabelField($"wall:{wallId} gate:{gateId}", EditorStyles.miniLabel);
+
+                int missing = CountWallMissing(el);
+                if (missing == 0)
+                {
+                    Color prev = GUI.color;
+                    GUI.color = RegistryEditorStyles.SuccessCol;
+                    GUILayout.Label("✓", GUILayout.Width(18));
+                    GUI.color = prev;
+                }
+                else
+                {
+                    Color prev = GUI.color;
+                    GUI.color = new Color(1f, 0.6f, 0f);
+                    GUILayout.Label($"⚠{missing}", GUILayout.Width(26));
+                    GUI.color = prev;
+                }
+
+                if (DrawDeleteBtn()) removeIdx = i;
+                EditorGUILayout.EndHorizontal();
+
+                if (isOpen)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.PropertyField(el.FindPropertyRelative("CollectionId"), new GUIContent("ID Колекції"));
+                    EditorGUILayout.PropertyField(el.FindPropertyRelative("WallBuildingId"), new GUIContent("ID Стіни"));
+                    EditorGUILayout.PropertyField(el.FindPropertyRelative("GateBuildingId"), new GUIContent("ID Воріт"));
+                    EditorGUILayout.Space(4);
+
+                    for (int v = 0; v < WallVariantFieldNames.Length; v++)
+                    {
+                        var prop = el.FindPropertyRelative(WallVariantFieldNames[v]);
+                        if (prop == null) continue;
+
+                        bool prefabMissing = prop.objectReferenceValue == null;
+                        Color prev = GUI.color;
+                        if (prefabMissing) GUI.color = new Color(1f, 0.72f, 0.72f);
+                        EditorGUILayout.PropertyField(prop, new GUIContent(WallVariantLabels[v]));
+                        GUI.color = prev;
+                    }
+
+                    EditorGUILayout.Space(2);
+                    WallsAutoSyncBuildingDefinitions(el);
+                    EditorGUI.indentLevel--;
+                    _bldSO.ApplyModifiedProperties();
+                }
+
+                EditorGUILayout.EndVertical();
+            }
+
+            if (removeIdx >= 0 && collections != null)
+            {
+                string name = collections.GetArrayElementAtIndex(removeIdx).FindPropertyRelative("CollectionId")?.stringValue ?? "?";
+                if (EditorUtility.DisplayDialog("Видалити колекцію", $"Видалити '{name}'?", "Так", "Ні"))
+                {
+                    collections.DeleteArrayElementAtIndex(removeIdx);
+                    _bldSO.ApplyModifiedProperties();
+                    AssetDatabase.SaveAssets();
+                }
+            }
+
+            RegistryEditorStyles.DrawSeparator();
+
+            // Створити нову колекцію
+            if (GUILayout.Button("+ Додати колекцію стін", RegistryEditorStyles.CreateButton))
+            {
+                if (collections != null)
+                {
+                    int idx = collections.arraySize;
+                    collections.arraySize++;
+                    var newEl = collections.GetArrayElementAtIndex(idx);
+                    newEl.FindPropertyRelative("CollectionId").stringValue = $"wall-collection-{idx}";
+                    newEl.FindPropertyRelative("WallBuildingId").stringValue = "wall";
+                    newEl.FindPropertyRelative("GateBuildingId").stringValue = "gate";
+                    _bldSO.ApplyModifiedProperties();
+                    _expandedWall = idx;
+                    SaveAndNotify("Колекцію стін додано");
+                }
+            }
+
+            EditorGUILayout.Space(4);
+            if (GUILayout.Button("Відкрити повний редактор стін (Wall Registry Editor)"))
+            {
+                // WallRegistryWindow знаходиться в Kruty1918.Moyva.Construction.Editor
+                var type = System.AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => { try { return a.GetTypes(); } catch { return Type.EmptyTypes; } })
+                    .FirstOrDefault(t => t.Name == "WallRegistryWindow" && typeof(EditorWindow).IsAssignableFrom(t));
+                if (type != null)
+                    EditorWindow.GetWindow(type, false, "Wall Registry");
+                else
+                    Debug.LogWarning("[RegistryHub] WallRegistryWindow не знайдено в жодній збірці.");
+            }
+        }
+
+        private static int CountWallMissing(SerializedProperty el)
+        {
+            int missing = 0;
+            foreach (var field in WallVariantFieldNames)
+            {
+                var p = el.FindPropertyRelative(field);
+                if (p != null && p.objectReferenceValue == null) missing++;
+            }
+            return missing;
+        }
+
+        /// <summary>Авто-синхронізує BuildingDefinition для wall/gate при кожному перемальовуванні.</summary>
+        private void WallsAutoSyncBuildingDefinitions(SerializedProperty wallCol)
+        {
+            var buildings = _bldSO.FindProperty("Buildings");
+            if (buildings == null) return;
+
+            string wallId = wallCol.FindPropertyRelative("WallBuildingId")?.stringValue;
+            string gateId = wallCol.FindPropertyRelative("GateBuildingId")?.stringValue;
+            if (string.IsNullOrWhiteSpace(wallId) && string.IsNullOrWhiteSpace(gateId)) return;
+
+            var horizontalPrefab = wallCol.FindPropertyRelative("HorizontalPrefab")?.objectReferenceValue as GameObject;
+            var gatePrefab = wallCol.FindPropertyRelative("GatePrefab")?.objectReferenceValue as GameObject;
+
+            bool changed = false;
+            changed |= AutoSyncOneBuildingDef(buildings, wallId, "Стіна", horizontalPrefab, BuildingCategory.Walls);
+            changed |= AutoSyncOneBuildingDef(buildings, gateId, "Ворота", gatePrefab, BuildingCategory.Walls);
+
+            if (changed)
+                _bldSO.ApplyModifiedProperties();
+        }
+
+        /// <summary>Гарантує наявність і коректність BuildingDefinition для одного ID. Повертає true якщо щось змінено.</summary>
+        private static bool AutoSyncOneBuildingDef(SerializedProperty buildings, string id, string displayName,
+            GameObject prefab, BuildingCategory category)
+        {
+            if (string.IsNullOrWhiteSpace(id)) return false;
+
+            SerializedProperty target = null;
+            for (int i = 0; i < buildings.arraySize; i++)
+            {
+                var item = buildings.GetArrayElementAtIndex(i);
+                if (item.FindPropertyRelative("Id")?.stringValue == id)
+                {
+                    target = item;
+                    break;
+                }
+            }
+
+            bool created = false;
+            if (target == null)
+            {
+                buildings.arraySize++;
+                target = buildings.GetArrayElementAtIndex(buildings.arraySize - 1);
+                target.FindPropertyRelative("Id").stringValue = id;
+                target.FindPropertyRelative("DisplayName").stringValue = displayName;
+                created = true;
+            }
+
+            bool changed = created;
+
+            var catProp = target.FindPropertyRelative("Category");
+            if (catProp != null && catProp.enumValueIndex != (int)category)
+            {
+                catProp.enumValueIndex = (int)category;
+                changed = true;
+            }
+
+            var nameProp = target.FindPropertyRelative("DisplayName");
+            if (nameProp != null && string.IsNullOrWhiteSpace(nameProp.stringValue))
+            {
+                nameProp.stringValue = displayName;
+                changed = true;
+            }
+
+            if (prefab != null)
+            {
+                var prefabProp = target.FindPropertyRelative("Prefab");
+                if (prefabProp != null && prefabProp.objectReferenceValue != prefab)
+                {
+                    prefabProp.objectReferenceValue = prefab;
+                    changed = true;
+                }
+
+                // Авто-іконка зі спрайту prefab
+                var iconProp = target.FindPropertyRelative("Icon");
+                if (iconProp != null)
+                {
+                    var sr = prefab.GetComponentInChildren<SpriteRenderer>(true);
+                    if (sr != null && sr.sprite != null && iconProp.objectReferenceValue != sr.sprite)
+                    {
+                        iconProp.objectReferenceValue = sr.sprite;
+                        changed = true;
+                    }
+                }
+            }
+
+            return changed;
+        }
+
+        // ══════════════════════════════════════════════════════
         //  RESOURCES TAB
         // ══════════════════════════════════════════════════════
 
@@ -1005,6 +1284,7 @@ namespace Kruty1918.Moyva.Editor
             0 => new Color(0.85f, 0.30f, 0.30f), // Military
             1 => new Color(0.35f, 0.70f, 0.35f), // Civilian
             2 => new Color(0.40f, 0.50f, 0.80f), // Industrial
+            3 => new Color(0.65f, 0.55f, 0.30f), // Walls
             _ => Color.grey,
         };
 
