@@ -74,6 +74,12 @@ namespace Kruty1918.Moyva.Tests.Construction
                 return false;
             }
 
+            public bool TryResolvePreviewVisual(Vector2Int position, string buildingId, out GameObject prefab)
+            {
+                prefab = null;
+                return false;
+            }
+
             public void EndDrag() { }
         }
 

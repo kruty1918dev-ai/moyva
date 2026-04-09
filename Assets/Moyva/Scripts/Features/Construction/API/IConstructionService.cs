@@ -32,6 +32,11 @@ namespace Kruty1918.Moyva.Construction.API
         bool HasPendingPlacementAt(Vector2Int position);
 
         /// <summary>
+        /// Повертає buildingId непідтвердженого preview-розміщення на тайлі.
+        /// </summary>
+        bool TryGetPendingBuildingIdAt(Vector2Int position, out string buildingId);
+
+        /// <summary>
         /// Перемістити непідтверджену будівлю з одного тайлу на інший.
         /// Повертає true при успіху, false якщо нова позиція заблокована або preview не знайдено.
         /// </summary>
@@ -40,6 +45,7 @@ namespace Kruty1918.Moyva.Construction.API
         /// <summary>
         /// Підтвердити всі pending-розміщення.
         /// Реєструє кожне в ObjectsMapService, надсилає BuildingPlacedSignal.
+        /// У режимі знесення — підтверджує всі позначені до знесення об'єкти.
         /// Після Confirm дія незворотна.
         /// </summary>
         void Confirm();
@@ -63,8 +69,9 @@ namespace Kruty1918.Moyva.Construction.API
         void ToggleDemolishMode();
 
         /// <summary>
-        /// Знести будівлю на позиції, якщо вона була поставлена гравцем у цій сесії гри.
-        /// Надсилає BuildingDemolishedSignal. Повертає true при успіху.
+        /// Позначити будівлю на позиції до знесення, якщо вона була поставлена гравцем у цій сесії гри.
+        /// Надсилає BuildingPreviewChangedSignal(Valid) для preview-підсвітки.
+        /// Фактичне знесення і BuildingDemolishedSignal відбуваються під час Confirm().
         /// Будівлі, що існували до початку гри або розміщені не гравцем — не знищуються.
         /// </summary>
         bool TryDemolishAt(Vector2Int position);
@@ -81,5 +88,12 @@ namespace Kruty1918.Moyva.Construction.API
         /// Не потребує активного режиму будівництва.
         /// </summary>
         void RestoreFromSave(Vector2Int position, string buildingId);
+
+        /// <summary>
+        /// Видалити конкретне pending-розміщення за позицією.
+        /// Використовується для перебудови шляху стін при drag.
+        /// Повертає true якщо pending було успішно видалено.
+        /// </summary>
+        bool RemovePendingAt(Vector2Int position);
     }
 }

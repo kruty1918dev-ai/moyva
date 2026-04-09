@@ -18,11 +18,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly SignalBus _signalBus;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IObjectsMapService _objectsMapService;
+        private readonly LazyInject<IConstructionService> _constructionService;
         private readonly IWallPlacementService _wallPlacementService;
         private readonly DiContainer _container;
 
         private readonly Dictionary<Vector2Int, GameObject> _previewByPosition = new();
         private readonly Dictionary<Vector2Int, GameObject> _placedByPosition = new();
+        private readonly HashSet<Vector2Int> _demolitionPreviewPositions = new();
 
         private struct FlashRestore
         {
@@ -41,12 +43,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             SignalBus signalBus,
             IBuildingRegistry buildingRegistry,
             IObjectsMapService objectsMapService,
+            LazyInject<IConstructionService> constructionService,
             IWallPlacementService wallPlacementService,
             DiContainer container)
         {
             _signalBus = signalBus;
             _buildingRegistry = buildingRegistry;
             _objectsMapService = objectsMapService;
+            _constructionService = constructionService;
             _wallPlacementService = wallPlacementService;
             _container = container;
         }
@@ -71,6 +75,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
 
             _flashRestores.Clear();
+            ClearDemolitionPreviewStyles();
             ClearDictionary(_previewByPosition);
             ClearDictionary(_placedByPosition);
         }
@@ -98,9 +103,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void OnBuildingPreviewChanged(BuildingPreviewChangedSignal signal)
         {
+            if (_constructionService.Value.IsDemolishMode)
+            {
+                HandleDemolitionPreviewChanged(signal);
+                return;
+            }
+
             if (signal.PreviewState == BuildingPreviewState.None)
             {
                 RemovePreview(signal.Position);
+
+                // Якщо видалили стіну — оновити сусідні preview-спрайти
+                if (!string.IsNullOrWhiteSpace(signal.BuildingId) && _wallPlacementService.IsWallOrGate(signal.BuildingId))
+                    RefreshWallPreviewNeighborhood(signal.Position, signal.BuildingId);
+
                 return;
             }
 
@@ -133,14 +149,53 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!_previewByPosition.TryGetValue(signal.Position, out var instance) || instance == null || !instance.name.Contains(signal.BuildingId))
             {
                 RemovePreview(signal.Position);
-                instance = CreateInstance(def.Prefab, signal.Position, _previewRoot, $"Preview_{signal.BuildingId}_{signal.Position.x}_{signal.Position.y}");
+
+                // Для стін використовуємо prefab з урахуванням сусідів
+                GameObject prefabForPreview = def.Prefab;
+                if (_wallPlacementService.TryResolvePreviewVisual(signal.Position, signal.BuildingId, out var wallPrefab))
+                    prefabForPreview = wallPrefab;
+
+                string prefabTag = prefabForPreview != null ? prefabForPreview.name : "NULL";
+                instance = CreateInstance(prefabForPreview, signal.Position, _previewRoot, $"Preview_{signal.BuildingId}_{prefabTag}_{signal.Position.x}_{signal.Position.y}");
                 _previewByPosition[signal.Position] = instance;
             }
 
             ApplyGhostStyle(instance, true);
 
+            // Для стін — оновити візуал сусідніх preview
+            if (_wallPlacementService.IsWallOrGate(signal.BuildingId))
+                RefreshWallPreviewNeighborhood(signal.Position, signal.BuildingId);
+
             if (VerboseLogs)
                 Debug.Log($"[ConstructionVisual] Preview Valid for '{signal.BuildingId}' at {signal.Position}");
+        }
+
+        private void HandleDemolitionPreviewChanged(BuildingPreviewChangedSignal signal)
+        {
+            if (signal.PreviewState == BuildingPreviewState.None)
+            {
+                _demolitionPreviewPositions.Remove(signal.Position);
+
+                if (_placedByPosition.TryGetValue(signal.Position, out var placed) && placed != null)
+                    ApplySolidStyle(placed);
+
+                return;
+            }
+
+            if (signal.PreviewState == BuildingPreviewState.Blocked)
+            {
+                HandleBlockedFlash(signal.Position);
+                return;
+            }
+
+            if (_placedByPosition.TryGetValue(signal.Position, out var instance) && instance != null)
+            {
+                _demolitionPreviewPositions.Add(signal.Position);
+                ApplyGhostStyle(instance, false);
+
+                if (VerboseLogs)
+                    Debug.Log($"[ConstructionVisual] Demolish preview marked for '{signal.BuildingId}' at {signal.Position}");
+            }
         }
 
         private void HandleBlockedFlash(Vector2Int position)
@@ -181,6 +236,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private void OnBuildingCancelled(BuildingCancelledSignal _)
         {
             ClearDictionary(_previewByPosition);
+            ClearDemolitionPreviewStyles();
 
             if (VerboseLogs)
                 Debug.Log("[ConstructionVisual] Cancel received -> all previews cleared.");
@@ -213,6 +269,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var instance = CreateInstance(def.Prefab, signal.Position, _placedRoot, $"Building_{signal.BuildingId}_{signal.Position.x}_{signal.Position.y}");
             ApplySolidStyle(instance);
             _placedByPosition[signal.Position] = instance;
+            _demolitionPreviewPositions.Remove(signal.Position);
 
             if (VerboseLogs)
                 Debug.Log($"[ConstructionVisual] Spawned placed building '{signal.BuildingId}' at {signal.Position}");
@@ -225,6 +282,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (instance != null)
                     UnityEngine.Object.Destroy(instance);
                 _placedByPosition.Remove(signal.Position);
+                _demolitionPreviewPositions.Remove(signal.Position);
 
                 if (VerboseLogs)
                     Debug.Log($"[ConstructionVisual] Removed building visual '{signal.BuildingId}' at {signal.Position}");
@@ -268,6 +326,40 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var instance = CreateInstance(prefab, position, _placedRoot, $"Building_{occupantId}_{position.x}_{position.y}", rotation);
             ApplySolidStyle(instance);
             _placedByPosition[position] = instance;
+        }
+
+        /// <summary>Оновити preview-спрайти сусідніх стін при додаванні/видаленні wall preview.</summary>
+        private void RefreshWallPreviewNeighborhood(Vector2Int center, string buildingId)
+        {
+            RefreshWallPreviewAt(center + Vector2Int.up, buildingId);
+            RefreshWallPreviewAt(center + Vector2Int.right, buildingId);
+            RefreshWallPreviewAt(center + Vector2Int.down, buildingId);
+            RefreshWallPreviewAt(center + Vector2Int.left, buildingId);
+        }
+
+        private void RefreshWallPreviewAt(Vector2Int position, string wallBuildingId)
+        {
+            if (!_previewByPosition.TryGetValue(position, out var existing) || existing == null)
+                return;
+
+            var sourceBuildingId = wallBuildingId;
+            if (_constructionService.Value.TryGetPendingBuildingIdAt(position, out var pendingBuildingId)
+                && !string.IsNullOrWhiteSpace(pendingBuildingId))
+            {
+                sourceBuildingId = pendingBuildingId;
+            }
+
+            if (!_wallPlacementService.TryResolvePreviewVisual(position, sourceBuildingId, out var prefab))
+                return;
+
+            bool wasGhostGreen = true;
+            UnityEngine.Object.Destroy(existing);
+
+            string prefabTag = prefab != null ? prefab.name : "NULL";
+            var instance = CreateInstance(prefab, position, _previewRoot,
+                $"Preview_{sourceBuildingId}_{prefabTag}_{position.x}_{position.y}");
+            _previewByPosition[position] = instance;
+            if (wasGhostGreen) ApplyGhostStyle(instance, true);
         }
 
         private void EnsureRoots()
@@ -325,12 +417,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var spriteRenderers = rootObject.GetComponentsInChildren<SpriteRenderer>(true);
             for (int i = 0; i < spriteRenderers.Length; i++)
             {
-                var color = spriteRenderers[i].color;
-                color.a = 1f;
-                color.r = Mathf.Clamp01(color.r);
-                color.g = Mathf.Clamp01(color.g);
-                color.b = Mathf.Clamp01(color.b);
-                spriteRenderers[i].color = color;
+                spriteRenderers[i].color = Color.white;
             }
         }
 
@@ -353,6 +440,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             map.Clear();
+        }
+
+        private void ClearDemolitionPreviewStyles()
+        {
+            foreach (var position in _demolitionPreviewPositions)
+            {
+                if (_placedByPosition.TryGetValue(position, out var placed) && placed != null)
+                    ApplySolidStyle(placed);
+            }
+
+            _demolitionPreviewPositions.Clear();
         }
 
         private static void EnsureBuildingSortingOrder(GameObject rootObject, int minOrder)

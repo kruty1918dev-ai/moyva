@@ -103,7 +103,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
             if (!_gridService.TryGetTileData(position, out _))
             {
-                Debug.LogWarning($"[Interaction] HandleTileClick: тайл на позиції {position} не існує в грід-сервісі.");
+                if (VerboseLogs)
+                    Debug.Log($"[Interaction] HandleTileClick ignored: позиція {position} поза межами grid.");
                 return;
             }
 

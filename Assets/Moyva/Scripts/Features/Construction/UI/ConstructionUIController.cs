@@ -265,7 +265,7 @@ namespace Kruty1918.Moyva.Construction.UI
                 return;
 
             var buildings = _buildingRegistry.GetAll();
-            var items = _menuFactory.BuildMenuItems(buildings, this);
+            var items = _menuFactory.BuildMenuItems(buildings, _buildingRegistry, this);
 
             Debug.Log($"[Construction UI] Ініціалізовано меню будівель. Знайдено елементів: {items.Count}.", this);
 
