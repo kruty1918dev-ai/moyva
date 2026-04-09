@@ -49,6 +49,7 @@ Moyva - покрокова стратегія на Unity 2D з DI (Zenject), с�
 - [Wall System](modules/gameplay/wall-system/README.md)
 - [Resolver](modules/gameplay/resolver/README.md)
 - [Object Picker](modules/gameplay/object-picker/README.md)
+- [Economy (legacy systems docs)](systems/economy/README.md)
 
 </details>
 
@@ -60,6 +61,7 @@ Moyva - покрокова стратегія на Unity 2D з DI (Zenject), с�
 - [Registry Hub](modules/tooling/registry-hub/README.md)
 - [Registries](modules/tooling/registries/README.md)
 - [Save System Designer](modules/tooling/save-system-designer/README.md)
+- [Economy Designer (legacy systems docs)](systems/economy/economy-designer.md)
 
 </details>
 
@@ -76,6 +78,7 @@ Moyva - покрокова стратегія на Unity 2D з DI (Zenject), с�
 ## Окремий практичний гайд
 
 - [Гайд: створення нової колекції в Resolver](modules/gameplay/resolver/create-collection-guide.md)
+- [Гайд: Economy Tutorials](systems/economy/tutorials.md)
 
 ## Єдиний формат для всіх модулів
 

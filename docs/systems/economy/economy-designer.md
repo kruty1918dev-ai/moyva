@@ -1,0 +1,36 @@
+# Economy Designer (Quick Start)
+
+## Навіщо цей інструмент
+`Economy Designer` централізує налаштування економіки в одному вікні редактора:
+- дані ресурсів і поселень;
+- політики складів;
+- профілі виробництва;
+- шаблони караванів;
+- AI-порогові правила;
+- валідація, міграція і preview-симуляція.
+
+Меню:
+- `Moyva/Tools/Economy Designer`
+
+## 60-секундний запуск
+1. Відкрийте вікно Economy Designer.
+2. Призначте `EconomyDatabaseSO` або натисніть `Create Database Asset`.
+3. Заповніть вкладки в порядку: Resources -> Settlements -> Warehouses -> Production -> Caravans -> AI Rules.
+4. Відкрийте Validation і натисніть `Run Validation`.
+5. Усуньте Error або застосуйте `Fix Common Issues`.
+6. Перевірте баланс через Simulation (`Run Deterministic Preview`).
+
+## Що роблять вкладки
+- Settlements: `SettlementId`, тип, центр, радіус.
+- Resources: `Id`, назва, категорія, іконка, ліміт.
+- Warehouses: дозволи/пріоритет/резерв по ресурсу.
+- Production: цикл і output виробничих профілів.
+- Caravans: місткість, пріоритет, whitelist ресурсів.
+- AI Rules: пороги дефіциту/надлишку та режими витрат.
+- Validation: перевірка консистентності + автофікси.
+- Simulation: детермінований прогноз приросту ресурсів.
+
+## Детальні розділи
+- [Complete Guide](economy-complete-guide.md)
+- [Tutorials](tutorials.md)
+- [Index](README.md)
