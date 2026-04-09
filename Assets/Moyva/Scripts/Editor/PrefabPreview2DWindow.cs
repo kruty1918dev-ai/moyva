@@ -43,12 +43,12 @@ namespace Kruty1918.Moyva.Editor
 
             if (GUILayout.Button("Налаштувати гізмо для 2D", GUILayout.Height(30)))
             {
-                SetupGizmoFor2D();
+                SetupSceneViewFor2D();
             }
 
             if (GUILayout.Button("Показати Sprite Outline Gizmo", GUILayout.Height(30)))
             {
-                ShowSpriteOutlines();
+                ShowHelp();
             }
 
             EditorGUILayout.Space();
@@ -115,7 +115,7 @@ namespace Kruty1918.Moyva.Editor
             {
                 foreach (var mr in meshRenderers)
                 {
-                    if (!mr.enabled)
+                    if (mr.enabled)
                     {
                         mr.enabled = false;
                         changed = true;
@@ -142,22 +142,28 @@ namespace Kruty1918.Moyva.Editor
             return changed;
         }
 
-        private static void SetupGizmoFor2D()
+        private static void SetupSceneViewFor2D()
         {
-            // Включаємо Sprite Renderer гізмо
-            EditorGizmos.SetGizmoEnabled(typeof(SpriteRenderer), true);
-
-            // Вимикаємо 3D гізмо
-            EditorGizmos.SetGizmoEnabled(typeof(MeshRenderer), false);
-            EditorGizmos.SetGizmoEnabled(typeof(BoxCollider), false);
-
-            EditorUtility.DisplayDialog("Success", "Гізмо налаштовано для 2D!", "OK");
+            EditorUtility.DisplayDialog("Scene View 2D Setup", 
+                "🎮 ГАРЯЧИЙ СВІЖИЙ ТРЮК\\n\\n" +
+                "Найкращий спосіб отримати 2D превью:\\n\\n" +
+                "1. Двічі клікніть на префаб у Project\\n" +
+                "2. Це відкриває Prefab Mode\\n" +
+                "3. Scene View АВТОМАТИЧНО переходить на 2D!\\n\\n" +
+                "Альтернатива: Натисніть '2' на Numpad",
+                "OK");
         }
 
-        private static void ShowSpriteOutlines()
+        private static void ShowHelp()
         {
-            EditorGizmos.SetGizmoEnabled(typeof(SpriteRenderer), true);
-            EditorUtility.DisplayDialog("Info", "Sprite Outline Gizmo включено в Scene View.", "OK");
+            EditorUtility.DisplayDialog("2D Preview Tips", 
+                "💡 Поради для 2D превью:\\n\\n" +
+                "✓ Використовуйте Prefab Mode (двічі клік)\\n" +
+                "✓ Натисніть '2' на Numpad для 2D режиму\\n" +
+                "✓ Натисніть '0' на Numpad для 3D режиму\\n" +
+                "✓ Shift+F = Focus на об'єкт\\n" +
+                "✓ Right Click + Drag = Панорамування",
+                "OK");
         }
     }
 }
