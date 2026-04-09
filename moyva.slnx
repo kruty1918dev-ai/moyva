@@ -31,6 +31,7 @@
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Units.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.FogOfWar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementPlayMode.csproj" />
   <Project Path="Kruty1918.Moyva.Bootstrap.csproj" />
