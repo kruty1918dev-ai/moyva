@@ -33,3 +33,24 @@ MonoBehaviour:
     Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
+  - Id: stone-wall
+    DisplayName: "\u0421\u0442\u0456\u043D\u0430"
+    Category: 3
+    Icon: {fileID: -1448105316, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
+    Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
+  - Id: stone-gate
+    DisplayName: "\u0412\u043E\u0440\u043E\u0442\u0430"
+    Category: 3
+    Icon: {fileID: -1448105316, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
+    Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
+  WallCollections:
+  - CollectionId: wall-stone-collection-0
+    WallBuildingId: stone-wall
+    GateBuildingId: stone-gate
+    HorizontalPrefab: {fileID: 8756741331363231770, guid: 190f77ff4fd19557ebd89ef3e3e06832, type: 3}
+    VerticalPrefab: {fileID: 7852923717619784971, guid: bb393500529ac8d698da53394ba51158, type: 3}
+    CornerNorthEastPrefab: {fileID: 2798815301503560846, guid: 9221769dcedc85a49bc9e5f189344ee2, type: 3}
+    CornerNorthWestPrefab: {fileID: 5369125806635365810, guid: f0bc445aa9db70e92a60000db24d9151, type: 3}
+    CornerSouthEastPrefab: {fileID: 4434023271672679634, guid: 50f4088b57066ed6e8d721fe24e58bec, type: 3}
+    CornerSouthWestPrefab: {fileID: 8085638843886374067, guid: d26a187a3ab43037eb3b243707ad1aa5, type: 3}
+    GatePrefab: {fileID: 4054757616884961693, guid: 2fc84416ec42ca98796010998d7561ef, type: 3}

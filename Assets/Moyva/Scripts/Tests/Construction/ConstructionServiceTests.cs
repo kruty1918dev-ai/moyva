@@ -38,6 +38,51 @@ namespace Kruty1918.Moyva.Tests.Construction
             public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles() => System.Array.Empty<Vector2Int>();
         }
 
+        private sealed class FakeWallPlacementService : IWallPlacementService
+        {
+            private readonly IObjectsMapService _objectsMapService;
+
+            public FakeWallPlacementService(IObjectsMapService objectsMapService)
+            {
+                _objectsMapService = objectsMapService;
+            }
+
+            public void ShowWallHandles(Vector2Int wallPosition) { }
+            public void DragWall(Vector2Int startPosition, Vector2 touchWorldPosition) { }
+            public IReadOnlyList<Vector2Int> BuildPath(Vector2Int startPosition, Vector2Int endPosition) => new[] { startPosition, endPosition };
+            public bool IsWallOrGate(string buildingId) => IsWall(buildingId) || IsGate(buildingId);
+            public bool IsWall(string buildingId) => buildingId == "wall";
+            public bool IsGate(string buildingId) => buildingId == "gate";
+
+            public bool CanReplaceWallWithGate(Vector2Int position, string gateBuildingId, out string replacedWallId)
+            {
+                replacedWallId = null;
+                if (!IsGate(gateBuildingId))
+                    return false;
+
+                if (!_objectsMapService.TryGetOccupant(position, out var occupantId) || occupantId != "wall")
+                    return false;
+
+                replacedWallId = occupantId;
+                return true;
+            }
+
+            public bool TryResolvePlacedVisual(Vector2Int position, string occupantId, out GameObject prefab, out Quaternion rotation)
+            {
+                prefab = null;
+                rotation = Quaternion.identity;
+                return false;
+            }
+
+            public bool TryResolvePreviewVisual(Vector2Int position, string buildingId, out GameObject prefab)
+            {
+                prefab = null;
+                return false;
+            }
+
+            public void EndDrag() { }
+        }
+
         private IConstructionService _service;
         private IInitializable _serviceInitializable;
         private System.IDisposable _serviceDisposable;
@@ -67,6 +112,7 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             Container.BindInterfacesAndSelfTo<ObjectsMapService>().AsSingle().NonLazy();
             Container.Bind<IFogOfWarService>().To<FakeFogOfWarService>().AsSingle();
+            Container.Bind<IWallPlacementService>().To<FakeWallPlacementService>().AsSingle();
 
             var constructionServiceType = typeof(IConstructionService).Assembly
                 .GetType("Kruty1918.Moyva.Construction.Runtime.ConstructionService");
@@ -261,6 +307,30 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.IsTrue(_service.TryMovePendingPlacement(start, end));
             Assert.IsFalse(_service.HasPendingPlacementAt(start));
             Assert.IsTrue(_service.HasPendingPlacementAt(end));
+        }
+
+        [Test]
+        public void GatePreview_ShouldBeBlocked_WhenTargetIsNotWall()
+        {
+            var freePosition = new Vector2Int(20, 3);
+
+            _service.SelectBuilding("gate");
+
+            Assert.IsFalse(_service.TryPreviewAt(freePosition));
+        }
+
+        [Test]
+        public void GateConfirm_ShouldReplaceExistingWall()
+        {
+            var pos = new Vector2Int(21, 3);
+            PlaceAndConfirmBuilding("wall", pos);
+
+            _service.SelectBuilding("gate");
+            Assert.IsTrue(_service.TryPreviewAt(pos));
+            _service.Confirm();
+
+            Assert.IsTrue(_objectsMap.TryGetOccupant(pos, out var occupantId));
+            Assert.AreEqual("gate", occupantId);
         }
 
         // ─── TryDemolishAt ───────────────────────────────────────────────────

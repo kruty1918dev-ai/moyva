@@ -118,6 +118,7 @@ IConstructionService.Confirm()
 | [construction/service.md](construction/service.md) | Детальний опис `IConstructionService` та алгоритмів |
 | [construction/registry.md](construction/registry.md) | `BuildingRegistrySO` та `BuildingDefinition` |
 | [construction/wall-placement.md](construction/wall-placement.md) | `IWallPlacementService`, Bresenham, 8 ручок |
+| [construction/resolver-editor.md](construction/resolver-editor.md) | Універсальний резолвер: центральний підбірник ID + спеціалізований редактор |
 | [construction/screen-to-grid.md](construction/screen-to-grid.md) | `IScreenToGridConverter`, конвертація координат |
 | [construction/ui.md](construction/ui.md) | UI scaffold: підключення кнопок, панелей та сигналів до `IConstructionService` |
 
