@@ -6,99 +6,75 @@ using UnityEngine;
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     /// <summary>
-    /// Symmetric Shadowcasting (8 octants) visibility resolver.
-    /// Based on https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
-    /// Falls back to simple circle vision if gridService is null.
+    /// Height-aware visibility resolver.
+    /// Computes a non-uniform field of view based on base unit vision,
+    /// terrain height bonus/penalty, and line-of-sight over the heightmap.
     /// </summary>
     internal sealed class FogVisibilityResolver : IFogVisibilityResolver
     {
         private readonly IGridService _gridService;
+        private readonly IHeightAwareVisionService _heightVisionService;
+        private readonly FogOfWarSettings _settings;
 
-        public FogVisibilityResolver(IGridService gridService)
+        public FogVisibilityResolver(
+            IGridService gridService,
+            IHeightAwareVisionService heightVisionService,
+            [Zenject.InjectOptional] FogOfWarSettings settings = null)
         {
             _gridService = gridService;
+            _heightVisionService = heightVisionService;
+            _settings = settings;
             if (_gridService == null)
-                Debug.LogWarning("[FogOfWar] FogVisibilityResolver: IGridService is null. Using fallback circular vision.");
+                Debug.LogWarning("[FogOfWar] FogVisibilityResolver: IGridService is null. Using provided map bounds only.");
+        }
+
+        public void SetHeightMap(float[,] heightMap)
+        {
+            _heightVisionService?.SetHeightMap(heightMap);
         }
 
         public IReadOnlyList<Vector2Int> ComputeVisibleTiles(
             Vector2Int origin, int visionRange, int mapWidth, int mapHeight)
         {
             var result = new HashSet<Vector2Int>();
+            int maxRange = _settings != null ? _settings.MaxVisionRange : 12;
+            int safeRange = Mathf.Max(1, visionRange);
 
-            // Always add origin
             if (IsInBounds(origin, mapWidth, mapHeight))
                 result.Add(origin);
 
-            if (visionRange <= 0)
+            if (safeRange <= 0)
                 return new List<Vector2Int>(result);
 
-            // Symmetric shadowcasting: 8 octants
-            for (int octant = 0; octant < 8; octant++)
-                CastOctant(origin, visionRange, octant, mapWidth, mapHeight, result);
+            int searchRadius = _heightVisionService != null
+                ? _heightVisionService.GetSearchRadius(origin, safeRange, maxRange)
+                : Mathf.Clamp(safeRange, 1, maxRange);
 
-            return new List<Vector2Int>(result);
-        }
-
-        // ─── Symmetric Shadowcasting ─────────────────────────────────────────
-
-        private static void CastOctant(
-            Vector2Int origin, int range, int octant,
-            int mapWidth, int mapHeight, HashSet<Vector2Int> result)
-        {
-            // Shadow slope pairs: (start, end) where 0=full-light, 1=full-shadow
-            var shadows = new List<(float start, float end)>();
-
-            for (int row = 1; row <= range; row++)
+            for (int dx = -searchRadius; dx <= searchRadius; dx++)
             {
-                for (int col = 0; col <= row; col++)
+                for (int dy = -searchRadius; dy <= searchRadius; dy++)
                 {
-                    Vector2Int tile = TransformOctant(origin, row, col, octant);
-
-                    if (!IsInBounds(tile, mapWidth, mapHeight))
+                    var target = new Vector2Int(origin.x + dx, origin.y + dy);
+                    if (!IsInBounds(target, mapWidth, mapHeight))
                         continue;
 
-                    float tileSlope1 = (col - 0.5f) / (row + 0.5f);
-                    float tileSlope2 = (col + 0.5f) / (row - 0.5f);
+                    if (target == origin)
+                        continue;
 
-                    bool inShadow = false;
-                    foreach (var (shadowStart, shadowEnd) in shadows)
+                    if (_heightVisionService != null)
                     {
-                        if (shadowStart <= tileSlope1 && tileSlope2 <= shadowEnd)
-                        {
-                            inShadow = true;
-                            break;
-                        }
+                        if (_heightVisionService.IsTargetVisible(origin, target, safeRange, maxRange))
+                            result.Add(target);
+
+                        continue;
                     }
 
-                    if (!inShadow)
-                    {
-                        result.Add(tile);
-
-                        // Since we have no wall API yet, no blocking — all tiles are passable.
-                        // When wall blocking is added, check here and if blocked:
-                        // AddShadow(shadows, tileSlope1, tileSlope2);
-                    }
+                    if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) <= safeRange)
+                        result.Add(target);
                 }
             }
-        }
 
-        private static Vector2Int TransformOctant(Vector2Int origin, int row, int col, int octant)
-        {
-            int dx, dy;
-            switch (octant)
-            {
-                case 0: dx =  col; dy = -row; break;
-                case 1: dx =  row; dy = -col; break;
-                case 2: dx =  row; dy =  col; break;
-                case 3: dx =  col; dy =  row; break;
-                case 4: dx = -col; dy =  row; break;
-                case 5: dx = -row; dy =  col; break;
-                case 6: dx = -row; dy = -col; break;
-                case 7: dx = -col; dy = -row; break;
-                default: dx = 0; dy = 0; break;
-            }
-            return new Vector2Int(origin.x + dx, origin.y + dy);
+            return new List<Vector2Int>(result);
         }
 
         private static bool IsInBounds(Vector2Int pos, int w, int h)

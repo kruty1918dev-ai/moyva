@@ -18,7 +18,7 @@
 | `IUnitService` / `UnitService` | Реєстр стану всіх юнітів (стаміна, позиція, GameObject) |
 | `IUnitMovementService` / `UnitMovementService` | Координація руху: патфайндинг → анімація → оновлення стану |
 | `IUnitClassConfig` / `UnitClassConfigService` | Читання конфігів класів юнітів із `UnitRegistrySO` |
-| `UnitClassConfig` (SO entry) | Дані класу: префаб, базова стаміна, діапазон рандому |
+| `UnitClassConfig` (SO entry) | Дані класу: префаб, базова стаміна, базовий радіус зору, діапазон рандому |
 | `UnitRegistrySO` | ScriptableObject-реєстр усіх класів юнітів |
 
 ---
@@ -30,7 +30,8 @@
 1. Знаходить конфіг класу за `typeId` через `IUnitClassConfig`.
 2. Спавнить префаб через `DiContainer.InstantiatePrefab` (щоб інжекції в сам юніт теж працювали).
 3. Генерує унікальний ID: `warrior_01_123456`.
-4. Надсилає сигнал `UnitCreatedSignal` — його підхопить `UnitService`.
+4. Передає в `UnitCreatedSignal` також `VisionRange` із конфіга юніта.
+5. Надсилає сигнал `UnitCreatedSignal` — його підхопить `UnitService` та FogOfWar.
 
 ### Реєстрація стану (`UnitService`)
 
@@ -104,6 +105,7 @@ public interface IUnitClassConfig
 | `TypeId` | `string` | Ідентифікатор класу (без підкреслень; рекомендується дефіс або camelCase, наприклад `"warrior-01"` або `"Warrior01"`) |
 | `Prefab` | `GameObject` | Ігровий префаб юніта |
 | `BaseStamina` | `float` | Базова стаміна при старті |
+| `VisionRange` | `int` | Базовий радіус зору цього типу юніта. Мінімально коректне значення для поточної системи: `1` |
 | `StaminaRandomRange` | `Vector2` | Двосторонній рандомний модифікатор стаміни, який додається до `BaseStamina` (наприклад, `(-5, 5)` → `BaseStamina ± 5`) |
 | `AnimationSettings` | `PathAnimationSettings` | Налаштування анімації руху |
 
@@ -131,6 +133,7 @@ public interface IUnitClassConfig
 | [`IMovementAnimationService`](animations.md) | Плавна анімація кроку |
 | [`SignalBus`](signals.md) | `UnitCreatedSignal`, `UnitMovedSignal`, `InterruptMovementSignal` |
 | `UnitRegistrySO` | Конфіги класів юнітів |
+| [FogOfWar](fog-of-war/README.md) | Використовує `VisionRange` і позицію юніта для обчислення реальної видимості |
 
 ---
 

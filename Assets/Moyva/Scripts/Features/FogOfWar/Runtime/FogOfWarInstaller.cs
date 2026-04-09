@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Container.BindInstance(_settings).AsSingle();
 
             Container.Bind<IFogSaveDataProvider>().To<FogSaveDataStub>().AsSingle();
+            Container.Bind<IHeightAwareVisionService>().To<HeightAwareVisionService>().AsSingle();
             Container.Bind<IFogVisibilityResolver>().To<FogVisibilityResolver>().AsSingle();
             Container.Bind<IFogTextureUpdater>().To<FogTextureUpdater>().AsSingle();
 

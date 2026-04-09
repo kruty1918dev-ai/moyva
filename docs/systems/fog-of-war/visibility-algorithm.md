@@ -4,71 +4,117 @@
 
 ---
 
-## Symmetric Shadowcasting
+## Height-Aware Visibility
 
-Реалізовано алгоритм **Symmetric Shadowcasting** (8 октантів) за [Bob Nystrom](https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/).
+Поточний алгоритм видимості побудований навколо двох рівнів логіки:
 
-### Чому симетричний?
-
-Якщо юніт A бачить юніта B — то й юніт B бачить юніта A. Класичний shadowcasting цього не гарантує. Симетрична версія виправляє цю проблему за рахунок перевірки нахилів тіней.
-
----
-
-## 8 Октантів
-
-```
- \ 7 | 0 /
-  \  |  /
-6  \ | / 1
-    \|/
-----[O]----
-    /|\
-5  / | \ 2
-  /  |  \
- / 4 | 3 \
-```
-
-Кожен октант охоплює 45°. Разом 360° навколо джерела зору.
+1. `FogVisibilityResolver` перебирає тайли в квадраті пошуку навколо юніта.
+2. `HeightAwareVisionService` вирішує, чи справді тайл видно, з огляду на висоту, штрафи, бонуси й line of sight.
 
 ---
 
-## Логіка одного ряду
+## Базові правила
 
-Для кожного ряду `row` (від 1 до `visionRange`):
-
-1. Для кожного стовпця `col` від 0 до `row`:
-   - Обчислити кут видимості тайлу: `slope1 = (col-0.5)/(row+0.5)`, `slope2 = (col+0.5)/(row-0.5)`
-   - Якщо тайл повністю в тіні — пропустити
-   - Інакше — додати в результат
-   - Якщо тайл блокує (стіна) — додати до списку тіней
+| Правило | Поведінка |
+|---|---|
+| Мінімальний радіус | `visionRange` затискається до `1` |
+| Один рівень висоти | Видимість без штрафу |
+| Спостерігач вище | Може бачити далі |
+| Ціль вище | Дальність до цілі зменшується |
+| Рельєф між точками | Може повністю закрити видимість |
 
 ---
 
-## Стіни (wall blocking)
+## Обчислення радіуса пошуку
 
-Наразі `IGridService` не має wall API → всі тайли прохідні. Коли буде додано, потрібно:
+Спершу система рахує не фактичну видимість, а максимальний радіус, у якому варто перевіряти тайли.
 
-```csharp
-// У CastOctant — після result.Add(tile):
-if (IsBlocking(tile))
-    AddShadow(shadows, tileSlope1, tileSlope2);
+Формула на рівні ідеї така:
+
+```text
+searchRadius = clamp(baseVisionRange + observerHeightBonus, 1, maxVisionRange)
 ```
+
+`observerHeightBonus` залежить від висоти тайлу, на якому стоїть юніт, і від параметрів `FogOfWarSettings`.
+
+---
+
+## Перевірка конкретного тайлу
+
+Для кожного тайлу-кандидата система рахує ефективну дальність до нього:
+
+```text
+effectiveRange = clamp(
+    baseVisionRange
+    + observerHeightBonus
+    + downhillVisionBonus
+    - uphillVisionPenalty,
+    0,
+    maxVisionRange)
+```
+
+Якщо відстань до цілі більша за `effectiveRange`, тайл одразу вважається невидимим.
+
+Відстань у поточній реалізації рахується через Chebyshev metric:
+
+```text
+distance = max(abs(dx), abs(dy))
+```
+
+---
+
+## Line of Sight по HeightMap
+
+Після перевірки дальності виконується line of sight уздовж дискретної лінії між `origin` і `target`.
+
+Алгоритм:
+
+1. Береться висота спостерігача `originHeight`.
+2. Береться висота цілі `targetHeight`.
+3. Обчислюється нахил до цілі:
+
+```text
+targetSlope = (targetHeight - originHeight) / distance
+```
+
+4. Для кожної проміжної точки обчислюється її локальний нахил:
+
+```text
+sampleSlope = (sampleHeight - originHeight) / stepIndex
+```
+
+5. Якщо `sampleSlope > targetSlope + OcclusionSlopeBias`, проміжний рельєф перекриває огляд.
+
+Це дає такі ефекти:
+
+| Ситуація | Результат |
+|---|---|
+| Юніт стоїть високо, дивиться вниз | Добра дальність, часто видно далі базового радіуса |
+| Юніт стоїть низько, дивиться на височину | Дальність падає, інколи ціль повністю невидима |
+| Юніт і ціль на одному рівні | Тайл видно в межах нормальної дальності |
+| Між юнітом і ціллю є вищий хребет | Огляд блокується |
 
 ---
 
 ## Межі карти
 
-`FogVisibilityResolver` завжди перевіряє `IsInBounds(tile, mapWidth, mapHeight)`. Тайли поза межами ніколи не потрапляють у результат.
+`FogVisibilityResolver` завжди перевіряє `IsInBounds(tile, mapWidth, mapHeight)`. Тайли поза межами не потрапляють у результат навіть якщо бонус висоти збільшує радіус пошуку.
 
 ---
 
-## Fallback (null gridService)
+## Джерело HeightMap
 
-Якщо `IGridService == null`, `FogVisibilityResolver` будує **кругову зону** без блокування (radius-based), логуючи WARNING.
+Карта висот надходить із `WorldGeneratedDataSignal.HeightMap` після завершення генерації світу.
+
+`FogOfWarService`:
+
+1. передає її в `IFogVisibilityResolver.SetHeightMap(...)`
+2. очищає лічильники видимості
+3. заново рахує видимі тайли для всіх зареєстрованих юнітів
+4. перебудовує fog texture
 
 ---
 
 ## Посилання
 
-- [Bob Nystrom — What the Hero Sees](https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/)
 - [Red Blob Games — Field of View](https://www.redblobgames.com/grids/hexagons/#field-of-view)

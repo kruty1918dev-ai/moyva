@@ -31,9 +31,10 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         private class TestTextureUpdater : IFogTextureUpdater
         {
             public int UpdateCallCount { get; private set; }
+            public int RebuildCallCount { get; private set; }
             public void Initialize(int w, int h, Material mat) { }
             public void UpdateDirtyTiles(IFogOfWarService svc, IEnumerable<Vector2Int> dirty) => UpdateCallCount++;
-            public void RebuildFullTexture(IFogOfWarService svc) { }
+            public void RebuildFullTexture(IFogOfWarService svc) => RebuildCallCount++;
         }
 
         private class TestSaveDataProvider : IFogSaveDataProvider
@@ -50,6 +51,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         private TestTextureUpdater  _textureUpdater;
         private TestSaveDataProvider _saveProvider;
         private TestGridService     _gridService;
+        private FogOfWarSettings    _settings;
 
         public override void Setup()
         {
@@ -60,15 +62,26 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Container.DeclareSignal<UnitCreatedSignal>();
             Container.DeclareSignal<UnitMovedSignal>();
             Container.DeclareSignal<UnitDestroyedSignal>();
+            Container.DeclareSignal<WorldGeneratedDataSignal>();
 
             _gridService     = new TestGridService();
             _textureUpdater  = new TestTextureUpdater();
             _saveProvider    = new TestSaveDataProvider();
+            _settings        = ScriptableObject.CreateInstance<FogOfWarSettings>();
+            _settings.DefaultVisionRange = 1;
+            _settings.MinVisionRange = 1;
+            _settings.MaxVisionRange = 8;
+            _settings.ElevationStep = 0.25f;
+            _settings.MaxObserverHeightBonus = 4;
+            _settings.MaxDownhillVisionBonus = 2;
+            _settings.MaxUphillVisionPenalty = 4;
 
             Container.BindInstance<IGridService>(_gridService).AsSingle();
             Container.BindInstance<IFogTextureUpdater>(_textureUpdater).AsSingle();
             Container.BindInstance<IFogSaveDataProvider>(_saveProvider).AsSingle();
+            Container.BindInstance(_settings).AsSingle();
 
+            Container.Bind<IHeightAwareVisionService>().To<HeightAwareVisionService>().AsSingle();
             Container.Bind<IFogVisibilityResolver>().To<FogVisibilityResolver>().AsSingle();
             Container.BindInterfacesAndSelfTo<FogOfWarService>().AsSingle().NonLazy();
 
@@ -80,6 +93,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         public override void Teardown()
         {
             _service.Dispose();
+            Object.DestroyImmediate(_settings);
             base.Teardown();
         }
 
@@ -141,7 +155,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         {
             InitMap();
             var origin = new Vector2Int(5, 5);
-            _service.RegisterUnit("u1", origin, 0); // visionRange=0 → only origin
+            _service.RegisterUnit("u1", origin, 0);
             _service.RegisterUnit("u2", origin, 0);
 
             // Move u1 away
@@ -215,19 +229,16 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.AreEqual(FogStateType.Visible, _service.GetFogState(pos));
         }
 
-        // ─── 10. NullSettings_DoesNotThrow_UsesDefaults ──────────────────────
+        // ─── 10. MinVisionRange_IsClampedToOne ───────────────────────────────
 
         [Test]
-        public void NullSettings_DoesNotThrow_UsesDefaults()
+        public void MinVisionRange_IsClampedToOne()
         {
-            // FogOfWarService is created without settings by the container above
-            // (no FogOfWarSettings bound → null injected)
-            // The service should still initialise and operate without throwing.
-            Assert.DoesNotThrow(() =>
-            {
-                _service.Initialize(5, 5);
-                _service.RegisterUnit("u1", new Vector2Int(2, 2), 2);
-            });
+            InitMap();
+
+            _service.RegisterUnit("u1", new Vector2Int(2, 2), 0);
+
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(3, 3)));
         }
 
         // ─── 11. UpdateUnitPosition_UnknownUnit_DoesNotThrow ─────────────────
@@ -253,6 +264,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
                 UnitId     = "warrior-01_1",
                 UnitTypeId = "warrior",
                 Position   = pos,
+                VisionRange = 1,
                 UnitObject = null
             });
 
@@ -270,7 +282,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
             _signalBus.Fire(new UnitCreatedSignal
             {
-                UnitId = "u1", UnitTypeId = "warrior", Position = start, UnitObject = null
+                UnitId = "u1", UnitTypeId = "warrior", Position = start, VisionRange = 1, UnitObject = null
             });
 
             _signalBus.Fire(new UnitMovedSignal { UnitId = "u1", NewPosition = end, Cost = 1f });
@@ -289,12 +301,38 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
             _signalBus.Fire(new UnitCreatedSignal
             {
-                UnitId = "u1", UnitTypeId = "warrior", Position = pos, UnitObject = null
+                UnitId = "u1", UnitTypeId = "warrior", Position = pos, VisionRange = 1, UnitObject = null
             });
 
             _signalBus.Fire(new UnitDestroyedSignal { UnitId = "u1" });
 
             Assert.IsFalse(_service.IsVisible(pos));
+        }
+
+        [Test]
+        public void WorldGeneratedDataSignal_RebuildsVisionWithHeightMap()
+        {
+            InitMap();
+            var unitPos = new Vector2Int(5, 5);
+            var farTile = new Vector2Int(7, 5);
+
+            _service.RegisterUnit("u1", unitPos, 1);
+            Assert.IsFalse(_service.IsVisible(farTile));
+
+            var heightMap = new float[10, 10];
+            heightMap[5, 5] = 0.75f;
+
+            _signalBus.Fire(new WorldGeneratedDataSignal
+            {
+                Width = 10,
+                Height = 10,
+                HeightMap = heightMap,
+                TileMap = null,
+                ObjectMap = null,
+            });
+
+            Assert.IsTrue(_service.IsVisible(farTile));
+            Assert.GreaterOrEqual(_textureUpdater.RebuildCallCount, 1);
         }
     }
 }
