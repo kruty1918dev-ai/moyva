@@ -33,7 +33,7 @@ jobs:
       - name: Validate core documentation files
         run: |
           MISSING=0
-          for f in docs/README.md docs/index.html; do
+          for f in docs/README.md docs/index.html docs/pages.json; do
             if [ ! -f "$f" ]; then
               echo "MISSING: $f"
               MISSING=$((MISSING + 1))
@@ -44,6 +44,54 @@ jobs:
             exit 1
           fi
           echo "Core documentation files are present."
+
+      - name: Validate pages.json structure
+        run: |
+          python3 << 'PYEOF'
+          import json, sys, os
+
+          with open('docs/pages.json', encoding='utf-8') as f:
+              data = json.load(f)
+
+          if not isinstance(data, dict) or 'sections' not in data:
+              print('ERROR: pages.json must be an object with "sections" array.')
+              print('       Got:', type(data).__name__, '— keys:', list(data.keys()) if isinstance(data, dict) else 'N/A')
+              sys.exit(1)
+
+          sections = data['sections']
+          if not isinstance(sections, list) or len(sections) == 0:
+              print('ERROR: "sections" must be a non-empty array.')
+              sys.exit(1)
+
+          errors = 0
+          total_pages = 0
+          for i, sec in enumerate(sections):
+              if not isinstance(sec, dict):
+                  print(f'ERROR: sections[{i}] is not an object')
+                  errors += 1
+                  continue
+              for key in ('id', 'title', 'icon', 'pages'):
+                  if key not in sec:
+                      print(f'ERROR: sections[{i}] ("{sec.get("id","?")}") missing "{key}"')
+                      errors += 1
+              if not isinstance(sec.get('pages'), list):
+                  print(f'ERROR: sections[{i}].pages is not an array')
+                  errors += 1
+                  continue
+              for j, page in enumerate(sec['pages']):
+                  total_pages += 1
+                  if 'path' not in page:
+                      print(f'ERROR: sections[{i}].pages[{j}] missing "path"')
+                      errors += 1
+                  elif not os.path.isfile(os.path.join('docs', page['path'])):
+                      print(f'WARNING: file not found: docs/{page["path"]}')
+
+          if errors > 0:
+              print(f'Validation FAILED with {errors} error(s).')
+              sys.exit(1)
+
+          print(f'pages.json OK: {len(sections)} sections, {total_pages} pages.')
+          PYEOF
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

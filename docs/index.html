@@ -376,16 +376,24 @@ function buildSite(manifest) {
   var navEl = document.getElementById('nav');
   var ul = document.createElement('ul');
 
+  if (!manifest || !Array.isArray(manifest.sections) || manifest.sections.length === 0) {
+    wrapper.innerHTML = '<p style="color:#ef4444;padding:40px">Маніфест порожній або не містить секцій.</p>';
+    return;
+  }
+
   SECTIONS = manifest.sections;
 
   manifest.sections.forEach(function(section, si) {
+    if (!section || !Array.isArray(section.pages)) return;
+
     // Register all pages in this section
     section.pages.forEach(function(item) {
+      if (!item || !item.path) return;
       var route = routeFromPath(item.path);
       var elId = elIdFromRoute(route);
       PAGES[route] = {
-        el: elId, file: item.path, loaded: false, title: item.title,
-        tag: item.tag || null, section: section.title, sectionIcon: section.icon
+        el: elId, file: item.path, loaded: false, title: item.title || item.path,
+        tag: item.tag || null, section: section.title || '', sectionIcon: section.icon || '📄'
       };
       var div = document.createElement('div');
       div.id = elId;
@@ -398,8 +406,8 @@ function buildSite(manifest) {
     var sectionHeader = document.createElement('div');
     sectionHeader.className = 'nav-section' + (si === 0 ? ' open' : '');
     sectionHeader.innerHTML =
-      '<span class="nav-section-icon">' + section.icon + '</span>' +
-      '<span class="nav-section-title">' + section.title + '</span>' +
+      '<span class="nav-section-icon">' + (section.icon || '📄') + '</span>' +
+      '<span class="nav-section-title">' + (section.title || section.id || 'Без назви') + '</span>' +
       '<span class="nav-section-arrow">▶</span>';
     sectionLi.appendChild(sectionHeader);
 
@@ -408,14 +416,15 @@ function buildSite(manifest) {
     pagesUl.className = 'nav-pages' + (si === 0 ? ' open' : '');
 
     section.pages.forEach(function(item) {
+      if (!item || !item.path) return;
       var route = routeFromPath(item.path);
       var li = document.createElement('li');
       li.dataset.page = route;
-      li.dataset.section = section.id;
+      li.dataset.section = section.id || '';
       var a = document.createElement('a');
       a.href = '#' + route;
       a.className = 'nav-link';
-      a.textContent = item.title;
+      a.textContent = item.title || item.path;
       if (item.tag) {
         var tagSpan = document.createElement('span');
         tagSpan.className = 'nav-tag nav-tag-' + item.tag.replace(/\s+/g, '-');
@@ -444,7 +453,10 @@ function buildSite(manifest) {
 // ── Build Table of Contents for current page ───────────────────────────────
 function buildToc(route) {
   var tocEl = document.getElementById('toc');
-  var pageEl = document.getElementById(PAGES[route].el);
+  var page = PAGES[route];
+  if (!page) { tocEl.innerHTML = ''; return; }
+  var pageEl = document.getElementById(page.el);
+  if (!pageEl) { tocEl.innerHTML = ''; return; }
   var headings = pageEl.querySelectorAll('h2, h3');
   if (headings.length < 2) { tocEl.innerHTML = ''; return; }
 
@@ -512,11 +524,19 @@ function navigate(hash) {
   hash = hash || 'home';
   if (hash.startsWith('#')) hash = hash.slice(1);
   if (!PAGES[hash]) hash = 'home';
+  if (!PAGES[hash]) {
+    // Even 'home' doesn't exist — pick the first available page
+    var keys = Object.keys(PAGES);
+    if (keys.length === 0) return;
+    hash = keys[0];
+  }
   currentRoute = hash;
 
   // Hide all pages, show current
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-  var el = document.getElementById(PAGES[hash].el);
+  var page = PAGES[hash];
+  if (!page) return;
+  var el = document.getElementById(page.el);
   if (el) el.classList.add('active');
 
   loadPage(hash, function() {
@@ -540,7 +560,7 @@ function navigate(hash) {
   window.scrollTo(0, 0);
 
   // Update title
-  document.title = PAGES[hash].title + ' — Moyva';
+  document.title = (page.title || 'Документація') + ' — Moyva';
 }
 
 window.addEventListener('hashchange', function() { navigate(location.hash.slice(1)); });
@@ -625,12 +645,39 @@ window.addEventListener('hashchange', function() {
   if (window.innerWidth <= 768) closeSidebar();
 });
 
+// ── Manifest normalisation ──────────────────────────────────────────────────
+// If a stale cache or legacy workflow produced a flat array instead of the
+// expected {sections:[…]} object, convert it on-the-fly so the rest of
+// the code always works with the canonical format.
+function normaliseManifest(data) {
+  if (!data) return null;
+  // Already correct format
+  if (data.sections && Array.isArray(data.sections)) return data;
+  // Legacy flat-array format: [{path,title},…]
+  if (Array.isArray(data) && data.length > 0 && data[0].path) {
+    return {
+      sections: [{
+        id: 'all', title: 'Усі сторінки', icon: '📄',
+        pages: data.map(function(p) { return { path: p.path, title: p.title }; })
+      }]
+    };
+  }
+  return null;
+}
+
 // ── Init ───────────────────────────────────────────────────────────────────
-fetch('pages.json')
-  .then(function(r) { return r.ok ? r.json() : Promise.reject('HTTP ' + r.status); })
-  .then(function(manifest) {
-    if (!manifest || !Array.isArray(manifest.sections)) {
-      return Promise.reject('pages.json має невірну структуру: відсутнє поле "sections"');
+fetch('pages.json?v=' + Date.now())
+  .then(function(r) {
+    if (!r.ok) return Promise.reject('HTTP ' + r.status + ' при завантаженні pages.json');
+    return r.json();
+  })
+  .then(function(raw) {
+    var manifest = normaliseManifest(raw);
+    if (!manifest) {
+      var detail = 'Отримано: ' + (typeof raw) +
+        (Array.isArray(raw) ? ' (масив, ' + raw.length + ' ел.)' : '') +
+        (raw && typeof raw === 'object' ? ', ключі: ' + Object.keys(raw).join(', ') : '');
+      return Promise.reject('pages.json має невірну структуру. ' + detail);
     }
     buildSite(manifest);
     navigate(location.hash.slice(1) || 'home');
@@ -638,8 +685,15 @@ fetch('pages.json')
     initSearch();
   })
   .catch(function(err) {
+    var msg = (err && err.message) ? err.message : String(err);
     document.getElementById('page-wrapper').innerHTML =
-      '<p style="color:#ef4444;padding:40px">Помилка завантаження: ' + err + '</p>';
+      '<div style="padding:40px;max-width:600px;margin:auto">' +
+        '<h2 style="color:#ef4444;margin-bottom:12px">⚠️ Помилка завантаження документації</h2>' +
+        '<p style="color:#64748b;margin-bottom:16px">' + msg + '</p>' +
+        '<p style="color:#64748b;font-size:.9rem">Спробуйте <a href="#" onclick="location.reload(true);return false" style="color:var(--accent)">оновити сторінку</a> ' +
+        'або очистити кеш браузера (Ctrl+Shift+R).</p>' +
+      '</div>';
+    console.error('[Moyva Docs] Init error:', err);
   });
 </script>
 <!-- Mermaid.js for diagrams -->
