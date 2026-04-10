@@ -690,7 +690,7 @@ fetch('pages.json?v=' + Date.now())
       '<div style="padding:40px;max-width:600px;margin:auto">' +
         '<h2 style="color:#ef4444;margin-bottom:12px">⚠️ Помилка завантаження документації</h2>' +
         '<p style="color:#64748b;margin-bottom:16px">' + msg + '</p>' +
-        '<p style="color:#64748b;font-size:.9rem">Спробуйте <a href="javascript:location.reload(true)" style="color:var(--accent)">оновити сторінку</a> ' +
+        '<p style="color:#64748b;font-size:.9rem">Спробуйте <a href="#" onclick="location.reload(true);return false" style="color:var(--accent)">оновити сторінку</a> ' +
         'або очистити кеш браузера (Ctrl+Shift+R).</p>' +
       '</div>';
     console.error('[Moyva Docs] Init error:', err);
