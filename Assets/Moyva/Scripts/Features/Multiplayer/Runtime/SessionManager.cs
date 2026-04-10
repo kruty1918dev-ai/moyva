@@ -112,16 +112,18 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
         internal static uint ComputeConfigChecksum(MultiplayerConfig config)
         {
-            // Simple deterministic checksum over the key config fields.
+            // FNV-1a 32-bit hash over key config fields.
+            const uint FnvOffsetBasis = 2166136261u;
+            const uint FnvPrime = 16777619u;
             unchecked
             {
-                uint crc = 2166136261u;
-                crc = (crc ^ (uint)config.SchemaVersion) * 16777619u;
-                crc = (crc ^ (uint)config.ProviderType) * 16777619u;
-                crc = (crc ^ (config.StrictParticipantLock ? 1u : 0u)) * 16777619u;
-                crc = (crc ^ (config.EnforceConfigConsistency ? 1u : 0u)) * 16777619u;
-                crc = (crc ^ (uint)config.DefaultSessionRules.Mode) * 16777619u;
-                crc = (crc ^ (uint)config.DefaultSessionRules.MaxParticipants) * 16777619u;
+                uint crc = FnvOffsetBasis;
+                crc = (crc ^ (uint)config.SchemaVersion) * FnvPrime;
+                crc = (crc ^ (uint)config.ProviderType) * FnvPrime;
+                crc = (crc ^ (config.StrictParticipantLock ? 1u : 0u)) * FnvPrime;
+                crc = (crc ^ (config.EnforceConfigConsistency ? 1u : 0u)) * FnvPrime;
+                crc = (crc ^ (uint)config.DefaultSessionRules.Mode) * FnvPrime;
+                crc = (crc ^ (uint)config.DefaultSessionRules.MaxParticipants) * FnvPrime;
                 return crc;
             }
         }

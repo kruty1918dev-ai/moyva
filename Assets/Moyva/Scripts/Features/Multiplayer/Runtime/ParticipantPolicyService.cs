@@ -43,7 +43,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 else humanCount++;
             }
 
-            if (!candidate.PlayerId.StartsWith("BOT_"))
+            if (!candidate.PlayerId.StartsWith(ParticipantIdentity.BotIdPrefix))
             {
                 if (humanCount >= rules.MaxHumans)
                 {
@@ -74,8 +74,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
         private bool IsInLockedSet(ParticipantIdentity candidate, string worldId)
         {
+            // TODO: Implement strict lock validation once the world snapshot stores participant sets.
             // The locked participant set is stored as part of the world snapshot metadata.
-            // This is the carcass: we delegate to the snapshot store to check.
             // Concrete comparison happens in WorldConsistencyService or extended snapshot data.
             // For this carcass we return true (no lock data yet) unless snapshot says otherwise.
             return true;

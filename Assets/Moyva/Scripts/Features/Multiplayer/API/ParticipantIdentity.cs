@@ -7,6 +7,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
     /// </summary>
     public sealed class ParticipantIdentity : IEquatable<ParticipantIdentity>
     {
+        public const string BotIdPrefix = "BOT_";
+
         public string PlayerId { get; }
         public string Nickname { get; }
 
