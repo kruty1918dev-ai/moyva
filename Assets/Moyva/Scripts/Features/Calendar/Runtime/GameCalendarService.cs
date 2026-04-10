@@ -53,9 +53,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
             _totalHours = totalHours;
             Recalculate(raiseEvents: true);
 
-            // Hour always changes when this method is called with a different value
-            if (_current != prevDt || _totalHours != totalHours)
-                OnHourChanged?.Invoke();
+            OnHourChanged?.Invoke();
 
             if (_current.Day   != prevDt.Day)   OnDayChanged?.Invoke();
             if (_current.Month != prevDt.Month) OnMonthChanged?.Invoke();

@@ -35,6 +35,8 @@ namespace Kruty1918.Moyva.Calendar.Editor
         // Multiplayer
         private int _hoursPerTurn      = 1;
 
+        private int _schemaVersion = CalendarConfig.CurrentSchemaVersion;
+
         // Preview
         private int _previewHour       = 12;
         private Vector2 _scroll;
@@ -215,8 +217,6 @@ namespace Kruty1918.Moyva.Calendar.Editor
             _duskDurationHours  = c.DuskDurationHours;
             _hoursPerTurn       = c.HoursPerTurn;
         }
-
-        private int _schemaVersion = CalendarConfig.CurrentSchemaVersion;
 
         private CalendarConfig BuildConfig() =>
             new CalendarConfig(
