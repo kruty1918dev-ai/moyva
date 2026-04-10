@@ -17,8 +17,9 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
         private const string ConfigPath = "Assets/Moyva/multiplayer_config.dat";
         private const int HardMaxParticipants = 4;
 
-        // Editable fields
+        // ── General fields ─────────────────────────────────────────────────────────
         private NetworkProviderType _providerType;
+        private NetworkProviderType _fallbackProviderType;
         private SessionMode _sessionMode;
         private int _maxParticipants = 4;
         private int _maxHumans = 4;
@@ -29,6 +30,22 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
         private bool _allowMatchSave;
         private bool _enforceConfigConsistency = true;
 
+        // ── Relay settings ─────────────────────────────────────────────────────────
+        private bool _relayFoldout = true;
+        private string _relayProjectId = string.Empty;
+        private string _relayEnvironment = "production";
+        private string _relayRegion = string.Empty;
+        private int _relayMaxConnections = 4;
+
+        // ── WebSocket settings ─────────────────────────────────────────────────────
+        private bool _wsFoldout = true;
+        private string _wsServerUrl = "ws://localhost";
+        private int _wsPort = 9999;
+        private string _wsAuthToken = string.Empty;
+        private int _wsReconnectAttempts = 3;
+        private float _wsReconnectDelay = 2f;
+
+        // ── UI state ───────────────────────────────────────────────────────────────
         private string _validationMessage;
         private MessageType _validationMessageType;
         private Vector2 _scroll;
@@ -37,7 +54,7 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
         public static void Open()
         {
             var window = GetWindow<MultiplayerConfigEditorWindow>("Multiplayer Config Hub");
-            window.minSize = new Vector2(480, 520);
+            window.minSize = new Vector2(480, 560);
             window.LoadFromFile();
         }
 
@@ -46,12 +63,13 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             EditorGUILayout.Space(6);
             EditorGUILayout.LabelField("Multiplayer Configuration Hub", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Configure session rules and multiplayer flags. Saved to a binary config file.",
+                "Configure the networking provider, session rules, and per-provider settings. Saved to a binary config file.",
                 MessageType.Info);
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
             DrawNetworkSection();
+            DrawProviderSettingsSection();
             DrawSessionRulesSection();
             DrawFlagsSection();
             DrawValidation();
@@ -60,11 +78,80 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             EditorGUILayout.EndScrollView();
         }
 
+        // ── Section drawers ────────────────────────────────────────────────────────
+
         private void DrawNetworkSection()
         {
             EditorGUILayout.Space(8);
             EditorGUILayout.LabelField("Network Provider", EditorStyles.boldLabel);
-            _providerType = (NetworkProviderType)EditorGUILayout.EnumPopup("Provider Type", _providerType);
+            _providerType = (NetworkProviderType)EditorGUILayout.EnumPopup("Primary Provider", _providerType);
+            _fallbackProviderType = (NetworkProviderType)EditorGUILayout.EnumPopup("Fallback Provider", _fallbackProviderType);
+
+            if (_providerType == _fallbackProviderType && _providerType != NetworkProviderType.Offline)
+            {
+                EditorGUILayout.HelpBox(
+                    "Primary and fallback providers are the same. Set a different fallback for automatic recovery.",
+                    MessageType.Warning);
+            }
+            else if (_providerType != NetworkProviderType.Offline)
+            {
+                EditorGUILayout.HelpBox(
+                    $"If {_providerType} fails, the system will automatically switch to {_fallbackProviderType}.",
+                    MessageType.Info);
+            }
+        }
+
+        private void DrawProviderSettingsSection()
+        {
+            bool needsRelay = _providerType == NetworkProviderType.Relay ||
+                              _fallbackProviderType == NetworkProviderType.Relay;
+            bool needsWs = _providerType == NetworkProviderType.WebSocket ||
+                           _fallbackProviderType == NetworkProviderType.WebSocket;
+
+            if (needsRelay)
+                DrawRelaySettings();
+
+            if (needsWs)
+                DrawWebSocketSettings();
+        }
+
+        private void DrawRelaySettings()
+        {
+            EditorGUILayout.Space(6);
+            _relayFoldout = EditorGUILayout.Foldout(_relayFoldout, "Unity Relay Settings", true, EditorStyles.foldoutHeader);
+            if (!_relayFoldout) return;
+
+            EditorGUI.indentLevel++;
+            EditorGUILayout.HelpBox(
+                "Requires Unity Gaming Services Relay SDK (com.unity.services.relay).\n" +
+                "After installing, add the MOYVA_UGS_RELAY scripting define under Player Settings.",
+                MessageType.Info);
+
+            _relayProjectId = EditorGUILayout.TextField(new GUIContent("Project ID", "Found in Unity Dashboard → Settings → Project ID"), _relayProjectId);
+            _relayEnvironment = EditorGUILayout.TextField(new GUIContent("Environment", "\"production\" or \"development\""), _relayEnvironment);
+            _relayRegion = EditorGUILayout.TextField(new GUIContent("Region", "Allocation region, e.g. eu-west-1. Leave empty for automatic selection."), _relayRegion);
+            _relayMaxConnections = EditorGUILayout.IntField(new GUIContent("Max Connections", "Max peers supported by the Relay allocation."), _relayMaxConnections);
+            EditorGUI.indentLevel--;
+        }
+
+        private void DrawWebSocketSettings()
+        {
+            EditorGUILayout.Space(6);
+            _wsFoldout = EditorGUILayout.Foldout(_wsFoldout, "WebSocket Settings", true, EditorStyles.foldoutHeader);
+            if (!_wsFoldout) return;
+
+            EditorGUI.indentLevel++;
+            EditorGUILayout.HelpBox(
+                "Connect to a custom WebSocket relay server (ws:// or wss://).\n" +
+                "The server must implement the Moyva WebSocket protocol (see docs/systems/multiplayer/network-providers.md).",
+                MessageType.Info);
+
+            _wsServerUrl = EditorGUILayout.TextField(new GUIContent("Server URL", "WebSocket server URL, e.g. ws://localhost or wss://example.com"), _wsServerUrl);
+            _wsPort = EditorGUILayout.IntField(new GUIContent("Port", "Port to append to the server URL."), _wsPort);
+            _wsAuthToken = EditorGUILayout.PasswordField(new GUIContent("Auth Token", "Optional Bearer token sent in the Authorization header on connect."), _wsAuthToken);
+            _wsReconnectAttempts = EditorGUILayout.IntField(new GUIContent("Reconnect Attempts", "How many times to retry after a disconnect (0 = no retry)."), _wsReconnectAttempts);
+            _wsReconnectDelay = EditorGUILayout.FloatField(new GUIContent("Reconnect Delay (s)", "Seconds to wait between reconnection attempts."), _wsReconnectDelay);
+            EditorGUI.indentLevel--;
         }
 
         private void DrawSessionRulesSection()
@@ -106,6 +193,16 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
                 _validationMessage = $"Max Humans ({_maxHumans}) + Max Bots ({_maxBots}) = {_maxHumans + _maxBots} exceeds Max Participants ({_maxParticipants}).";
                 _validationMessageType = MessageType.Error;
             }
+            else if (_providerType == NetworkProviderType.Relay && string.IsNullOrEmpty(_relayProjectId))
+            {
+                _validationMessage = "Relay selected but Project ID is empty. Fill in the Unity Relay settings.";
+                _validationMessageType = MessageType.Warning;
+            }
+            else if (_providerType == NetworkProviderType.WebSocket && string.IsNullOrEmpty(_wsServerUrl))
+            {
+                _validationMessage = "WebSocket selected but Server URL is empty.";
+                _validationMessageType = MessageType.Error;
+            }
             else if (_strictParticipantLock && _maxBots > 0)
             {
                 _validationMessage = "Warning: Strict 4-player lock with bots may prevent re-joining if bots are replaced.";
@@ -142,6 +239,8 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             EditorGUILayout.EndHorizontal();
         }
 
+        // ── Load / Save ────────────────────────────────────────────────────────────
+
         private void LoadFromFile()
         {
             var store = new BinaryConfigStore(ConfigPath);
@@ -161,13 +260,29 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
                 _allowMatchSave,
                 _strictParticipantLock);
 
+            var relay = new RelayProviderSettings(
+                _relayProjectId,
+                _relayEnvironment,
+                _relayRegion,
+                _relayMaxConnections);
+
+            var ws = new WebSocketProviderSettings(
+                _wsServerUrl,
+                _wsPort,
+                _wsAuthToken,
+                _wsReconnectAttempts,
+                _wsReconnectDelay);
+
             var config = new MultiplayerConfig(
                 MultiplayerConfig.CurrentSchemaVersion,
                 _providerType,
                 rules,
                 _strictParticipantLock,
                 _enforceConfigConsistency,
-                _enableMatchmaking);
+                _enableMatchmaking,
+                relay,
+                ws,
+                _fallbackProviderType);
 
             string dir = Path.GetDirectoryName(ConfigPath);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -182,6 +297,7 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
         private void ApplyConfig(MultiplayerConfig config)
         {
             _providerType = config.ProviderType;
+            _fallbackProviderType = config.FallbackProviderType;
             _sessionMode = config.DefaultSessionRules.Mode;
             _maxParticipants = config.DefaultSessionRules.MaxParticipants;
             _maxHumans = config.DefaultSessionRules.MaxHumans;
@@ -191,6 +307,19 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             _strictParticipantLock = config.StrictParticipantLock;
             _enforceConfigConsistency = config.EnforceConfigConsistency;
             _enableMatchmaking = config.MatchmakingEnabled;
+
+            var relay = config.RelaySettings;
+            _relayProjectId = relay.ProjectId;
+            _relayEnvironment = relay.Environment;
+            _relayRegion = relay.Region;
+            _relayMaxConnections = relay.MaxConnections;
+
+            var ws = config.WebSocketSettings;
+            _wsServerUrl = ws.ServerUrl;
+            _wsPort = ws.Port;
+            _wsAuthToken = ws.AuthToken;
+            _wsReconnectAttempts = ws.ReconnectAttempts;
+            _wsReconnectDelay = ws.ReconnectDelaySeconds;
         }
     }
 }

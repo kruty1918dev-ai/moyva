@@ -10,6 +10,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// <summary>
     /// Stores and retrieves MultiplayerConfig from a local binary file.
     /// Runtime-friendly; does not depend on UnityEditor.
+    /// Schema v1 files are read without provider-specific settings (defaults applied).
+    /// Schema v2 adds RelayProviderSettings, WebSocketProviderSettings, and FallbackProviderType.
     /// </summary>
     public sealed class BinaryConfigStore : IConfigStore
     {
@@ -60,7 +62,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         internal static void WriteConfig(BinaryWriter bw, MultiplayerConfig config)
         {
-            bw.Write(config.SchemaVersion);
+            // v1 fields
+            bw.Write(MultiplayerConfig.CurrentSchemaVersion);
             bw.Write((int)config.ProviderType);
             bw.Write(config.StrictParticipantLock);
             bw.Write(config.EnforceConfigConsistency);
@@ -74,6 +77,22 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             bw.Write(rules.AllowBotsFallbackOnLeave);
             bw.Write(rules.AllowMatchSaveForAnalysis);
             bw.Write(rules.StrictParticipantLock);
+
+            // v2 fields — provider-specific settings
+            bw.Write((int)config.FallbackProviderType);
+
+            var relay = config.RelaySettings;
+            bw.Write(relay.ProjectId);
+            bw.Write(relay.Environment);
+            bw.Write(relay.Region);
+            bw.Write(relay.MaxConnections);
+
+            var ws = config.WebSocketSettings;
+            bw.Write(ws.ServerUrl);
+            bw.Write(ws.Port);
+            bw.Write(ws.AuthToken);
+            bw.Write(ws.ReconnectAttempts);
+            bw.Write(ws.ReconnectDelaySeconds);
         }
 
         internal static MultiplayerConfig ReadConfig(BinaryReader br)
@@ -93,7 +112,40 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             bool rulesStrictLock = br.ReadBoolean();
 
             var rules = new SessionRules(mode, maxParticipants, maxHumans, maxBots, botsFallback, matchSave, rulesStrictLock);
-            return new MultiplayerConfig(schemaVersion, providerType, rules, strictLock, enforceConsistency, matchmaking);
+
+            // v2 fields — use defaults for v1 configs
+            var fallbackProviderType = NetworkProviderType.Offline;
+            var relaySettings = RelayProviderSettings.Default();
+            var webSocketSettings = WebSocketProviderSettings.Default();
+
+            if (schemaVersion >= 2)
+            {
+                fallbackProviderType = (NetworkProviderType)br.ReadInt32();
+
+                string relayProjectId = br.ReadString();
+                string relayEnvironment = br.ReadString();
+                string relayRegion = br.ReadString();
+                int relayMaxConnections = br.ReadInt32();
+                relaySettings = new RelayProviderSettings(relayProjectId, relayEnvironment, relayRegion, relayMaxConnections);
+
+                string wsUrl = br.ReadString();
+                int wsPort = br.ReadInt32();
+                string wsAuthToken = br.ReadString();
+                int wsReconnectAttempts = br.ReadInt32();
+                float wsReconnectDelay = br.ReadSingle();
+                webSocketSettings = new WebSocketProviderSettings(wsUrl, wsPort, wsAuthToken, wsReconnectAttempts, wsReconnectDelay);
+            }
+
+            return new MultiplayerConfig(
+                schemaVersion,
+                providerType,
+                rules,
+                strictLock,
+                enforceConsistency,
+                matchmaking,
+                relaySettings,
+                webSocketSettings,
+                fallbackProviderType);
         }
     }
 }

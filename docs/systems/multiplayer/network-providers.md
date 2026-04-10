@@ -11,8 +11,19 @@
 
 Це дозволяє:
 - **Тестувати** SessionManager без жодного мережевого з'єднання (`OfflineNetworkProvider`).
-- **Перемикати** бекенди (Relay ↔ Mirror ↔ Offline) без зміни будь-якої ігрової логіки.
+- **Перемикати** бекенди (Relay ↔ WebSocket ↔ Offline) без зміни будь-якої ігрової логіки.
+- **Автоматично деградувати** через `FallbackNetworkProvider` — якщо primary не відповідає, система сама переходить на fallback.
 - **Розширювати** систему майбутніми транспортами без модифікацій ядра.
+
+---
+
+## Підтримувані провайдери
+
+| Тип (`NetworkProviderType`) | Клас | Статус |
+|---|---|---|
+| `Offline` | `OfflineNetworkProvider` | ✅ Повна реалізація |
+| `Relay` | `RelayNetworkProvider` | ⚙️ Потребує UGS SDK (MOYVA_UGS_RELAY define) |
+| `WebSocket` | `WebSocketNetworkProvider` | ✅ Повна реалізація |
 
 ---
 
@@ -23,57 +34,14 @@
 ```csharp
 public interface INetworkProvider
 {
-    // Спостерігач за вхідними повідомленнями (IObservable)
     IObservable<NetworkMessage> Messages { get; }
-
-    // Події підключення/відключення однорангових вузлів
     event Action<string> PeerConnected;
     event Action<string> PeerDisconnected;
 
-    // Стати хостом сесії
     Task<SessionResult> HostSessionAsync(string sessionId, CancellationToken ct = default);
-
-    // Приєднатись до існуючої сесії
     Task<SessionResult> JoinSessionAsync(string sessionId, CancellationToken ct = default);
-
-    // Покинути сесію
     Task LeaveSessionAsync(CancellationToken ct = default);
-
-    // Надіслати повідомлення конкретному пірові
     Task SendMessageAsync(string targetPeerId, byte[] payload, CancellationToken ct = default);
-}
-```
-
----
-
-## DTOs
-
-### `SessionResult`
-
-Повертається з `HostSessionAsync` і `JoinSessionAsync`.
-
-```csharp
-public sealed class SessionResult
-{
-    public bool Success { get; }
-    public string SessionId { get; }
-    public string ErrorMessage { get; }
-
-    // Фабричні методи
-    public static SessionResult Ok(string sessionId);
-    public static SessionResult Fail(string error);
-}
-```
-
-### `NetworkMessage`
-
-Вхідне повідомлення від іншого піра.
-
-```csharp
-public sealed class NetworkMessage
-{
-    public string SenderId { get; }   // ID відправника
-    public byte[] Payload { get; }    // сирі байти повідомлення
 }
 ```
 
@@ -83,114 +51,153 @@ public sealed class NetworkMessage
 
 **Файл:** `Runtime/OfflineNetworkProvider.cs`
 
-Реалізація без реального мережевого з'єднання. Призначена для:
-- **offline/single-player** режиму (та сама API, що і мережева),
-- **unit- та integration-тестів** SessionManager.
-
-### Поведінка
+Реалізація без мережі. Призначена для offline/single-player та unit-тестів.
 
 | Метод | Поведінка |
 |---|---|
-| `HostSessionAsync` | Завжди `SessionResult.Ok(sessionId)`, встановлює внутрішній прапор `_isHosting = true` |
-| `JoinSessionAsync` | `Ok` якщо `_isHosting = true`, `Fail` якщо немає активної сесії |
-| `LeaveSessionAsync` | Скидає `_isHosting = false` |
-| `SendMessageAsync` | Loopback — надсилає повідомлення назад всім підписникам `Messages` |
+| `HostSessionAsync` | Завжди `Ok`, встановлює `_isHosting = true` |
+| `JoinSessionAsync` | `Ok` якщо `_isHosting = true`, інакше `Fail` |
+| `SendMessageAsync` | Loopback — повертає повідомлення всім підписникам |
 
-### Приклад
+---
+
+## RelayNetworkProvider
+
+**Файл:** `Runtime/RelayNetworkProvider.cs`
+
+Unity Gaming Services Relay — хмарний NAT traversal без відкритих портів.
+
+### Активація
+
+1. Встановіть пакет: `Window → Package Manager → Unity Gaming Services → Relay`
+2. Додайте scripting define: `Edit → Project Settings → Player → Scripting Define Symbols → MOYVA_UGS_RELAY`
+3. Перед викликом `HostSessionAsync` / `JoinSessionAsync` виконайте автентифікацію:
 
 ```csharp
-var network = new OfflineNetworkProvider();
+await UnityServices.InitializeAsync();
+await AuthenticationService.Instance.SignInAnonymouslyAsync();
+```
 
-// Підписатись на повідомлення
-network.Messages.Subscribe(msg => Debug.Log($"Msg from {msg.SenderId}"));
+### Як працює
 
-// Хост відкриває сесію
-var result = await network.HostSessionAsync("my-room");
-// result.Success == true
+- `HostSessionAsync` → `RelayService.Instance.CreateAllocationAsync(maxConnections, region)` → повертає **Join Code** як `SessionResult.SessionId`
+- `JoinSessionAsync(joinCode)` → `RelayService.Instance.JoinAllocationAsync(joinCode)`
+- Без `MOYVA_UGS_RELAY` provider повертає `SessionResult.Fail(...)`, `FallbackNetworkProvider` автоматично переходить на fallback.
 
-// Клієнт приєднується
-var join = await network.JoinSessionAsync("my-room");
-// join.Success == true (бо _isHosting = true)
+### Налаштування (RelayProviderSettings)
 
-// Надіслати повідомлення (loopback)
-await network.SendMessageAsync("peer-1", new byte[] { 1, 2, 3 });
-// підписники Messages отримають повідомлення від "local"
+| Поле | Опис |
+|---|---|
+| `ProjectId` | ID проекту з Unity Dashboard → Settings |
+| `Environment` | `"production"` або `"development"` |
+| `Region` | Регіон, наприклад `eu-west-1`. Порожнє = автовибір |
+| `MaxConnections` | Максимальна кількість підключень в алокації |
+
+---
+
+## WebSocketNetworkProvider
+
+**Файл:** `Runtime/WebSocketNetworkProvider.cs`
+
+Підключається до власного WebSocket-сервера (ws:// або wss://).  
+Використовує `System.Net.WebSockets.ClientWebSocket` — доступний на всіх платформах Unity, крім WebGL.
+
+### Протокол
+
+**Контрольні повідомлення** (текстові фрейми, UTF-8):
+
+| Напрямок | Формат | Опис |
+|---|---|---|
+| → сервер | `HOST:<sessionId>:<peerId>` | Стати хостом кімнати |
+| → сервер | `JOIN:<sessionId>:<peerId>` | Приєднатись до кімнати |
+| ← сервер | `OK:<sessionId>` | Підтвердження |
+| ← сервер | `ERR:<reason>` | Відмова |
+| ← сервер | `PEER_CONNECTED:<peerId>` | Новий учасник |
+| ← сервер | `PEER_DISCONNECTED:<peerId>` | Учасник вийшов |
+
+**Дані** (бінарні фрейми):
+
+```
+[16 байт senderId (ASCII, доповнений нулями)] [payload bytes]
+```
+
+### Налаштування (WebSocketProviderSettings)
+
+| Поле | Опис |
+|---|---|
+| `ServerUrl` | URL сервера, наприклад `ws://localhost` або `wss://example.com` |
+| `Port` | Порт, що додається до URL |
+| `AuthToken` | Bearer-токен для Authorization header (необов'язково) |
+| `ReconnectAttempts` | Кількість спроб перепідключення (0 = без перепідключення) |
+| `ReconnectDelaySeconds` | Затримка між спробами перепідключення |
+
+### Реконект
+
+При розриві з'єднання `WebSocketNetworkProvider` автоматично:
+1. Чекає `ReconnectDelaySeconds`
+2. Повторно підключається та надсилає `JOIN:<sessionId>:<peerId>`
+3. Якщо `ReconnectAttempts` вичерпані — повертає помилку (→ `FallbackNetworkProvider` переходить на fallback)
+
+---
+
+## FallbackNetworkProvider
+
+**Файл:** `Runtime/FallbackNetworkProvider.cs`
+
+Обгортка над двома провайдерами — primary і fallback.
+
+```
+HostSessionAsync / JoinSessionAsync
+        │
+        ▼ primary.HostSessionAsync()
+    ┌───────────┐
+    │  Success? │──── Так ──→ повертає результат
+    └───────────┘
+         │ Ні (Fail або Exception)
+         ▼
+    _usingFallback = true
+    SubscribeTo(fallback)
+         │
+         ▼ fallback.HostSessionAsync()
+    повертає результат
+```
+
+- Після першого перемикання всі наступні виклики йдуть напряму до fallback.
+- Виклик `Reset()` повертає систему до primary (якщо він знову доступний).
+- Підписники `Messages` прозоро отримують повідомлення від поточного активного провайдера.
+
+---
+
+## NetworkProviderFactory
+
+**Файл:** `Runtime/NetworkProviderFactory.cs`
+
+```csharp
+// Автоматично будує ланцюг з конфігу:
+INetworkProvider provider = NetworkProviderFactory.Create(config, logger);
+
+// Якщо ProviderType != FallbackProviderType і ProviderType != Offline:
+//   → повертає FallbackNetworkProvider(primary, fallback)
+// Інакше:
+//   → повертає одиночний провайдер без обгортки
 ```
 
 ---
 
-## RelayNetworkProvider (заглушка)
+## Вибір провайдера через Config Hub
 
-> **Статус:** Carcass — тільки типи визначені, конкретна реалізація буде пізніше.
+Відкрийте `Moyva → Multiplayer → Config Hub` в Unity Editor:
 
-Unity Relay — хмарний транспорт Unity Gaming Services:
-- Не потребує відкритих портів (NAT traversal).
-- Гравці підключаються через relay-сервер, не напряму.
-- Генерує **Join Code** для запрошення інших.
-
-**Що потрібно реалізувати:**
-- Ініціалізацію через `Unity.Services.Core.UnityServices.InitializeAsync()`.
-- `HostSessionAsync` → `RelayService.Instance.CreateAllocationAsync()` + `JoinAllocationAsync`.
-- `JoinSessionAsync` → `RelayService.Instance.JoinAllocationAsync(joinCode)`.
-- Передавати Join Code через `SessionResult.SessionId`.
-
----
-
-## MirrorNetworkProvider (заглушка)
-
-> **Статус:** Carcass — тільки типи визначені.
-
-Mirror — open-source networking framework для Unity:
-- Підтримує TCP/UDP/WebSockets.
-- Host-authoritative модель.
-- Підходить для LAN або direct-connect.
-
-**Що потрібно реалізувати:**
-- `HostSessionAsync` → `NetworkManager.StartHost()`.
-- `JoinSessionAsync` → `NetworkManager.StartClient()` з IP/port.
-- Перетворити Mirror callbacks (`OnServerConnect`, `OnClientConnect`) на `PeerConnected` event.
+1. Виберіть **Primary Provider** (Relay або WebSocket або Offline)
+2. Виберіть **Fallback Provider** (зазвичай Offline або другий провайдер)
+3. Заповніть поля **Unity Relay Settings** або **WebSocket Settings** — вони з'являються автоматично залежно від вибору
+4. Натисніть **Save Config** — конфіг зберігається в `Assets/Moyva/multiplayer_config.dat`
 
 ---
 
 ## Як додати власний провайдер
 
 1. Створіть клас у `Runtime/` і реалізуйте `INetworkProvider`.
-2. Зареєструйте через DI або передайте напряму у `SessionManager`.
-3. Додайте значення до `NetworkProviderType` enum.
-4. Оновіть `BinaryConfigStore` (новий int-маппінг автоматичний).
-5. Виберіть тип у `Config Hub`.
-
-```csharp
-public sealed class CustomNetworkProvider : INetworkProvider
-{
-    public IObservable<NetworkMessage> Messages => /* your observable */;
-    public event Action<string> PeerConnected;
-    public event Action<string> PeerDisconnected;
-
-    public Task<SessionResult> HostSessionAsync(string sessionId, CancellationToken ct)
-    {
-        // Ваша логіка
-        return Task.FromResult(SessionResult.Ok(sessionId));
-    }
-
-    // ... інші методи
-}
-```
-
----
-
-## Вибір провайдера на основі конфігу
-
-```csharp
-var config = configStore.Load();
-
-INetworkProvider provider = config.ProviderType switch
-{
-    NetworkProviderType.Offline => new OfflineNetworkProvider(),
-    NetworkProviderType.Relay   => new RelayNetworkProvider(),   // TODO
-    NetworkProviderType.Mirror  => new MirrorNetworkProvider(),  // TODO
-    _                           => new OfflineNetworkProvider()
-};
-
-var manager = new SessionManager(provider, /* ... */);
-```
+2. Додайте значення до `NetworkProviderType` (не змінюйте існуючі значення — вони збережені у бінарному конфізі).
+3. Додайте новий тип у `NetworkProviderFactory.CreateSingle()`.
+4. За потреби додайте `ProviderSettings`-клас і поля в `MultiplayerConfig` / `BinaryConfigStore`.
