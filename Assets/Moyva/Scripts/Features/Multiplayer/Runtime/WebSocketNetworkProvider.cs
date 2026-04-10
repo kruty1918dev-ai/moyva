@@ -9,7 +9,7 @@
 //     ← PEER_CONNECTED:<peerId>              — another peer joined
 //     ← PEER_DISCONNECTED:<peerId>           — a peer left
 //   Data messages (Binary frames):
-//     → [8-byte senderId (ASCII, space-padded)] [payload bytes]
+//     → [16-byte senderId (ASCII, zero/space-padded)] [payload bytes]
 //     ← same framing from server → client
 //
 // The server-side relay implementation is intentionally outside this file.
@@ -166,10 +166,19 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private Uri BuildUri()
         {
-            // Append port only if the URL doesn't already embed it
+            // Use Uri parsing to check whether the URL already contains a port.
+            // Append the configured port only when no port is present in the URL.
             string url = _settings.ServerUrl.TrimEnd('/');
-            if (!url.Contains(":" + _settings.Port) && _settings.Port > 0)
+
+            // Temporarily substitute ws/wss scheme with http/https so Uri can parse it.
+            string parseUrl = url.Replace("wss://", "https://").Replace("ws://", "http://");
+            if (Uri.TryCreate(parseUrl, UriKind.Absolute, out var parsed) &&
+                (parsed.IsDefaultPort || parsed.Port < 0) &&
+                _settings.Port > 0)
+            {
                 url = $"{url}:{_settings.Port}";
+            }
+
             return new Uri(url);
         }
 

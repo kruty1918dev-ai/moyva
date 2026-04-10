@@ -118,7 +118,7 @@ await AuthenticationService.Instance.SignInAnonymouslyAsync();
 **Дані** (бінарні фрейми):
 
 ```
-[16 байт senderId (ASCII, доповнений нулями)] [payload bytes]
+[16 байт senderId (ASCII, доповнений нулями або пробілами)] [payload bytes]
 ```
 
 ### Налаштування (WebSocketProviderSettings)
