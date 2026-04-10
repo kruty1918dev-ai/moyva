@@ -45,46 +45,6 @@ jobs:
           fi
           echo "Core documentation files are present."
 
-      - name: Generate pages manifest
-        run: |
-          python3 << 'PYEOF'
-          import os, json, re
-
-          DOCS = 'docs'
-          pages = []
-
-          for root, dirs, files in os.walk(DOCS):
-              dirs.sort()
-              for f in sorted(files):
-                  if not f.lower().endswith('.md'):
-                      continue
-                  full = os.path.join(root, f)
-                  rel = os.path.relpath(full, DOCS).replace(os.sep, '/')
-                  title = None
-                  with open(full, encoding='utf-8') as fh:
-                      for line in fh:
-                          m = re.match(r'^#\s+(.+)', line)
-                          if m:
-                              raw = m.group(1).strip()
-                              raw = re.sub(r'\*+|__|~~|`', '', raw)
-                              raw = re.sub(r'\[([^\]]+)\]\([^)]*\)', r'\1', raw)
-                              title = raw
-                              break
-                  if not title:
-                      name = os.path.splitext(f)[0]
-                      if name.lower() == 'readme':
-                          parent = os.path.basename(root)
-                          title = parent if parent != DOCS else 'Home'
-                      else:
-                          title = name.replace('-', ' ').title()
-                  pages.append({'path': rel, 'title': title})
-
-          out_path = os.path.join(DOCS, 'pages.json')
-          with open(out_path, 'w', encoding='utf-8') as out:
-              json.dump(pages, out, ensure_ascii=False, indent=2)
-          print(f'Generated pages.json with {len(pages)} entries')
-          PYEOF
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
