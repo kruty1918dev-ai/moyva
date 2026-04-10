@@ -96,7 +96,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             HandleTileClick(signal.Position);
         }
 
-        public async void HandleTileClick(Vector2Int position)
+        public void HandleTileClick(Vector2Int position)
         {
             if (!_isActive)
                 return;
