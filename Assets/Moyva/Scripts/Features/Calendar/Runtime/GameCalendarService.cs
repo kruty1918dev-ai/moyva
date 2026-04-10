@@ -73,7 +73,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
 
         // ------------------------------------------------------------------ internal helpers (visible to tests)
 
-        internal static GameDateTime ComputeDateTime(CalendarConfig cfg, long totalHours)
+        public static GameDateTime ComputeDateTime(CalendarConfig cfg, long totalHours)
         {
             long hoursInDay   = cfg.HoursInDay;
             long daysInMonth  = cfg.DaysInMonth;
@@ -99,7 +99,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
                 hour:  (int)hour);
         }
 
-        internal static DayPhase ComputeDayPhase(CalendarConfig cfg, int hour)
+        public static DayPhase ComputeDayPhase(CalendarConfig cfg, int hour)
         {
             int dawnStart = cfg.DayStartHour - cfg.DawnDurationHours;
             int duskStart = cfg.NightStartHour - cfg.DuskDurationHours;

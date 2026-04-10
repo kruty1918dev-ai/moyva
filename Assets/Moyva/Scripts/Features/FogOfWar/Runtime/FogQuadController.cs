@@ -13,9 +13,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         [SerializeField] private FogOfWarSettings _settings;
 
-        [Inject] private IFogOfWarService   _fogService;
-        [Inject] private IFogTextureUpdater _textureUpdater;
-        [Inject] private IGridService       _gridService;
+        [InjectOptional] private IFogOfWarService   _fogService;
+        [InjectOptional] private IFogTextureUpdater _textureUpdater;
+        [InjectOptional] private IGridService       _gridService;
 
         private Material _mat;
 
@@ -30,6 +30,20 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             var mr = GetComponent<MeshRenderer>();
             _mat = mr.material;
             ApplyOverlayRenderPriority(mr);
+
+            if (_mat == null)
+            {
+                Debug.LogWarning("[FogOfWar] FogQuadController: material не знайдено. Fog overlay вимкнено.");
+                enabled = false;
+                return;
+            }
+
+            if (_textureUpdater == null || _fogService == null)
+            {
+                Debug.LogWarning("[FogOfWar] FogQuadController: залежності не проінжекчені. Fog overlay вимкнено.");
+                enabled = false;
+                return;
+            }
 
             _textureUpdater.Initialize(w, h, _mat);
             _fogService.Initialize(w, h);
