@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Config;
@@ -35,6 +36,34 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             public bool Exists(string worldId) => _store.ContainsKey(worldId);
             public WorldSnapshot Load(string worldId) => _store.TryGetValue(worldId, out var s) ? s : null;
             public void Save(WorldSnapshot snapshot) => _store[snapshot.WorldId] = snapshot;
+        }
+
+        private sealed class AlwaysFailNetworkProvider : INetworkProvider
+        {
+            public IObservable<NetworkMessage> Messages => new EmptyObservable();
+            public event System.Action<string> PeerConnected { add { } remove { } }
+            public event System.Action<string> PeerDisconnected { add { } remove { } }
+
+            public Task<SessionResult> HostSessionAsync(string sessionId, System.Threading.CancellationToken ct = default)
+                => Task.FromResult(SessionResult.Fail("host failed"));
+
+            public Task<SessionResult> JoinSessionAsync(string sessionId, System.Threading.CancellationToken ct = default)
+                => Task.FromResult(SessionResult.Fail("join failed"));
+
+            public Task LeaveSessionAsync(System.Threading.CancellationToken ct = default) => Task.CompletedTask;
+
+            public Task SendMessageAsync(string targetPeerId, byte[] payload, System.Threading.CancellationToken ct = default)
+                => Task.CompletedTask;
+
+            private sealed class EmptyObservable : IObservable<NetworkMessage>
+            {
+                public IDisposable Subscribe(IObserver<NetworkMessage> observer) => new NoopDisposable();
+            }
+
+            private sealed class NoopDisposable : IDisposable
+            {
+                public void Dispose() { }
+            }
         }
 
         private sealed class FakeConfigStore : IConfigStore
@@ -139,6 +168,35 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             var result = await manager.CreateOrJoinSessionAsync(opt2);
 
             Assert.IsFalse(result);
+        }
+
+        [Test]
+        public async Task CreateOrJoin_ShouldFallbackToSolo_WhenRoomIdIsMissing()
+        {
+            var manager = BuildManager();
+
+            var identity = new ParticipantIdentity("p1", "Player1");
+            var options = new SessionConnectOptions(identity, "", createIfNotExists: false, SessionRules.Default(), configChecksum: 1234);
+
+            var result = await manager.CreateOrJoinSessionAsync(options);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(1, manager.Participants.Count);
+            Assert.AreEqual("p1", manager.Participants[0].Identity.PlayerId);
+            Assert.IsTrue(manager.Participants[0].IsHost);
+        }
+
+        [Test]
+        public async Task CreateOrJoin_ShouldFallbackToLocalSinglePlayer_WhenNetworkFails()
+        {
+            var manager = BuildManager(network: new AlwaysFailNetworkProvider());
+            var options = MakeOptions(roomId: "room-x", create: true);
+
+            var result = await manager.CreateOrJoinSessionAsync(options);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(1, manager.Participants.Count);
+            Assert.IsTrue(manager.Participants[0].IsHost);
         }
     }
 }

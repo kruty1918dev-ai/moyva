@@ -21,6 +21,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.Multiplayer.Core;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Multiplayer.Networking

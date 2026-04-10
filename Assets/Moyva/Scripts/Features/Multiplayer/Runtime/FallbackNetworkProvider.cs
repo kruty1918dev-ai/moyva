@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.Multiplayer.Core;
 
 namespace Kruty1918.Moyva.Multiplayer.Networking
 {
