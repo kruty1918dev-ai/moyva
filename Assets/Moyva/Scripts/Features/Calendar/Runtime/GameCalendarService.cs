@@ -33,7 +33,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _totalHours = 0;
-            Recalculate(raiseEvents: false);
+            Recalculate();
         }
 
         // ------------------------------------------------------------------ mutation
@@ -51,7 +51,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
             DayPhase     prevPhase  = _dayPhase;
 
             _totalHours = totalHours;
-            Recalculate(raiseEvents: true);
+            Recalculate();
 
             OnHourChanged?.Invoke();
 
@@ -65,7 +65,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
 
         // ------------------------------------------------------------------ private
 
-        private void Recalculate(bool raiseEvents)
+        private void Recalculate()
         {
             _current  = ComputeDateTime(_config, _totalHours);
             _dayPhase = ComputeDayPhase(_config, _current.Hour);
