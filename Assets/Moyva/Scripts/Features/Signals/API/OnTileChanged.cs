@@ -10,6 +10,24 @@ namespace Kruty1918.Moyva.Signals
         public UnityEngine.Vector2Int Position;
         public int VisionRange;
         public UnityEngine.GameObject UnitObject;
+
+        /// <summary>
+        /// Ідентифікатор фракції-власника (FactionId.Value).
+        /// Null або порожній рядок — юніт не прив'язаний до жодної фракції.
+        /// FactionOwnershipService підхопить це значення автоматично.
+        /// </summary>
+        public string OwnerId;
+    }
+
+    /// <summary>
+    /// Надсилається коли фракцію вважають переможеною (всі юніти знищені або
+    /// досягнуто умову поразки).
+    /// Отримується: UI, GameOverService тощо.
+    /// </summary>
+    public struct FactionEliminatedSignal
+    {
+        /// <summary>FactionId.Value переможеної фракції.</summary>
+        public string FactionId;
     }
 
     // Викликається, коли юніт перемістився
