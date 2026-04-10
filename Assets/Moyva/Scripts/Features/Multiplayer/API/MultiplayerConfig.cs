@@ -9,10 +9,23 @@ namespace Kruty1918.Moyva.Multiplayer.Config
     /// </summary>
     public sealed class MultiplayerConfig
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
 
         public int SchemaVersion { get; }
         public NetworkProviderType ProviderType { get; }
+
+        /// <summary>
+        /// Provider to fall back to when <see cref="ProviderType"/> fails.
+        /// Defaults to <see cref="NetworkProviderType.Offline"/>.
+        /// </summary>
+        public NetworkProviderType FallbackProviderType { get; }
+
+        /// <summary>Settings used when <see cref="ProviderType"/> or <see cref="FallbackProviderType"/> is <see cref="NetworkProviderType.Relay"/>.</summary>
+        public RelayProviderSettings RelaySettings { get; }
+
+        /// <summary>Settings used when <see cref="ProviderType"/> or <see cref="FallbackProviderType"/> is <see cref="NetworkProviderType.WebSocket"/>.</summary>
+        public WebSocketProviderSettings WebSocketSettings { get; }
+
         public SessionRules DefaultSessionRules { get; }
         public bool StrictParticipantLock { get; }
         public bool EnforceConfigConsistency { get; }
@@ -24,10 +37,16 @@ namespace Kruty1918.Moyva.Multiplayer.Config
             SessionRules defaultSessionRules,
             bool strictParticipantLock,
             bool enforceConfigConsistency,
-            bool matchmakingEnabled)
+            bool matchmakingEnabled,
+            RelayProviderSettings relaySettings = null,
+            WebSocketProviderSettings webSocketSettings = null,
+            NetworkProviderType fallbackProviderType = NetworkProviderType.Offline)
         {
             SchemaVersion = schemaVersion;
             ProviderType = providerType;
+            FallbackProviderType = fallbackProviderType;
+            RelaySettings = relaySettings ?? RelayProviderSettings.Default();
+            WebSocketSettings = webSocketSettings ?? WebSocketProviderSettings.Default();
             DefaultSessionRules = defaultSessionRules;
             StrictParticipantLock = strictParticipantLock;
             EnforceConfigConsistency = enforceConfigConsistency;
@@ -41,6 +60,9 @@ namespace Kruty1918.Moyva.Multiplayer.Config
                 defaultSessionRules: SessionRules.Default(),
                 strictParticipantLock: false,
                 enforceConfigConsistency: true,
-                matchmakingEnabled: false);
+                matchmakingEnabled: false,
+                relaySettings: RelayProviderSettings.Default(),
+                webSocketSettings: WebSocketProviderSettings.Default(),
+                fallbackProviderType: NetworkProviderType.Offline);
     }
 }
