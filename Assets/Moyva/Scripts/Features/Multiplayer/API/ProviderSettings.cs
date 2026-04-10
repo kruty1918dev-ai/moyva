@@ -4,13 +4,14 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// Settings specific to the Unity Relay backend.
     /// Requires the Unity Gaming Services Relay package (com.unity.services.relay).
     /// Enable the <c>MOYVA_UGS_RELAY</c> scripting define after installing the package.
+    /// API key is not required for Relay; Unity Services initialization + auth is used.
     /// </summary>
     public sealed class RelayProviderSettings
     {
-        /// <summary>Unity project ID (from Unity Dashboard → Settings).</summary>
+        /// <summary>Optional project metadata for tooling/UI.</summary>
         public string ProjectId { get; }
 
-        /// <summary>Service environment: "production" or "development".</summary>
+        /// <summary>Optional environment metadata: "production" or "development".</summary>
         public string Environment { get; }
 
         /// <summary>Preferred allocation region, e.g. "eu-west-1". Empty = auto.</summary>
