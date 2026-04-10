@@ -15,7 +15,8 @@
       "pages": [
         { "path": "systems/graph-system/quickstart.md", "title": "Перший граф за 5 хвилин", "tag": "tutorial" },
         { "path": "systems/bootstrap.md", "title": "Ініціалізація сцени", "tag": "guide" },
-        { "path": "systems/initialization-order.md", "title": "Порядок ініціалізації", "tag": "guide" }
+        { "path": "systems/initialization-order.md", "title": "Порядок ініціалізації", "tag": "guide" },
+        { "path": "systems/multiplayer/quickstart.md", "title": "Multiplayer — швидкий старт", "tag": "tutorial" }
       ]
     },
     {
@@ -29,7 +30,8 @@
         { "path": "systems/fog-of-war/vision-tuner-guide.md", "title": "Fog of War — Vision Tuner", "tag": "step-by-step" },
         { "path": "systems/graph-system/editor-guide.md", "title": "Графовий редактор — гайд користувача", "tag": "step-by-step" },
         { "path": "systems/save-system/designer-tool.md", "title": "Save System Designer Tool", "tag": "step-by-step" },
-        { "path": "modules/gameplay/resolver/create-collection-guide.md", "title": "Створення нової колекції в Resolver", "tag": "step-by-step" }
+        { "path": "modules/gameplay/resolver/create-collection-guide.md", "title": "Створення нової колекції в Resolver", "tag": "step-by-step" },
+        { "path": "systems/multiplayer/config-hub-guide.md", "title": "Multiplayer Config Hub — повний гайд", "tag": "step-by-step" }
       ]
     },
     {
@@ -180,6 +182,26 @@
         { "path": "systems/economy/economy-designer.md", "title": "Economy Designer", "tag": "guide" },
         { "path": "systems/economy/economy-complete-guide.md", "title": "Economy — повний гайд", "tag": "guide" },
         { "path": "systems/economy/tutorials.md", "title": "Economy — туторіали", "tag": "tutorial" }
+      ]
+    },
+    {
+      "id": "multiplayer",
+      "title": "Мультиплеєр",
+      "icon": "🌐",
+      "pages": [
+        { "path": "systems/multiplayer/README.md", "title": "Multiplayer — огляд системи" },
+        { "path": "systems/multiplayer/architecture.md", "title": "Архітектура та assembly definitions", "tag": "reference" },
+        { "path": "systems/multiplayer/domain-models.md", "title": "Доменні моделі та enum-и", "tag": "reference" },
+        { "path": "systems/multiplayer/interfaces.md", "title": "Довідник інтерфейсів", "tag": "reference" },
+        { "path": "systems/multiplayer/session-manager.md", "title": "SessionManager — деталі" },
+        { "path": "systems/multiplayer/network-providers.md", "title": "INetworkProvider та провайдери" },
+        { "path": "systems/multiplayer/config-store.md", "title": "MultiplayerConfig та BinaryConfigStore" },
+        { "path": "systems/multiplayer/participant-policy.md", "title": "ParticipantPolicyService та правило 4 гравців" },
+        { "path": "systems/multiplayer/world-consistency.md", "title": "WorldConsistencyService та snapshots" },
+        { "path": "systems/multiplayer/logging-and-errors.md", "title": "Логування та обробка помилок" },
+        { "path": "systems/multiplayer/config-hub-guide.md", "title": "Multiplayer Config Hub — редактор", "tag": "guide" },
+        { "path": "systems/multiplayer/testing.md", "title": "TDD та unit-тести", "tag": "reference" },
+        { "path": "systems/multiplayer/quickstart.md", "title": "Швидкий старт", "tag": "tutorial" }
       ]
     },
     {
