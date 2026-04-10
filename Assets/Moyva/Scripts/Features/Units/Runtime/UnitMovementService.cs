@@ -93,6 +93,12 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return;
             }
 
+            if (startPosition == targetPosition)
+            {
+                Debug.Log($"[UnitMovement] MoveUnitAsync: '{unitId}' вже знаходиться на {targetPosition}. Рух не потрібен.");
+                return;
+            }
+
             if (_objectsMapService.IsOccupied(targetPosition)
                 && _objectsMapService.TryGetOccupant(targetPosition, out var targetOccupantId)
                 && targetOccupantId != unitId)
