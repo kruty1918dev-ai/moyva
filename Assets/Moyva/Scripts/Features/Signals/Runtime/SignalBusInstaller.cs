@@ -36,6 +36,9 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<SaveRequestedSignal>();
             Container.DeclareSignal<LoadRequestedSignal>();
             Container.DeclareSignal<SaveCompletedSignal>().OptionalSubscriber();
+
+            // Faction
+            Container.DeclareSignal<FactionEliminatedSignal>().OptionalSubscriber();
         }
     }
 }

@@ -33,6 +33,9 @@ namespace Kruty1918.Moyva.Units.Runtime
         }
 
         public string CreateUnit(string typeId, Vector2Int gridPosition)
+            => CreateUnit(typeId, gridPosition, null);
+
+        public string CreateUnit(string typeId, Vector2Int gridPosition, string ownerId)
         {
             var config = _unitClassConfig.GetConfig(typeId);
             if (config == null || config.Prefab == null)
@@ -74,7 +77,8 @@ namespace Kruty1918.Moyva.Units.Runtime
                 UnitTypeId = typeId, 
                 Position = gridPosition,
                 VisionRange = Mathf.Max(1, config.VisionRange),
-                UnitObject = unitObj // Додаємо посилання на GameObject юніта
+                UnitObject = unitObj,
+                OwnerId = ownerId
             });
 
             return finalUnitId;
