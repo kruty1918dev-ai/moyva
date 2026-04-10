@@ -172,6 +172,17 @@
       ]
     },
     {
+      "id": "economy",
+      "title": "Економіка",
+      "icon": "💰",
+      "pages": [
+        { "path": "systems/economy/README.md", "title": "Economy — огляд" },
+        { "path": "systems/economy/economy-designer.md", "title": "Economy Designer", "tag": "guide" },
+        { "path": "systems/economy/economy-complete-guide.md", "title": "Economy — повний гайд", "tag": "guide" },
+        { "path": "systems/economy/tutorials.md", "title": "Economy — туторіали", "tag": "tutorial" }
+      ]
+    },
+    {
       "id": "standards",
       "title": "Стандарти",
       "icon": "📐",

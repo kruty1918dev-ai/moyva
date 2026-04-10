@@ -629,6 +629,9 @@ window.addEventListener('hashchange', function() {
 fetch('pages.json')
   .then(function(r) { return r.ok ? r.json() : Promise.reject('HTTP ' + r.status); })
   .then(function(manifest) {
+    if (!manifest || !Array.isArray(manifest.sections)) {
+      return Promise.reject('pages.json має невірну структуру: відсутнє поле "sections"');
+    }
     buildSite(manifest);
     navigate(location.hash.slice(1) || 'home');
     preloadAll();
