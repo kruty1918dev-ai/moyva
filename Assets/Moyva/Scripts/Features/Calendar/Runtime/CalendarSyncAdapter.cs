@@ -13,6 +13,9 @@ namespace Kruty1918.Moyva.Calendar.Runtime
         private readonly ICalendarService _authoritative;
         private readonly ClientCalendarProxy _proxy;
 
+        /// <inheritdoc/>
+        public event Action<long> OnHostAdvanced;
+
         /// <param name="authoritative">Server-side <see cref="GameCalendarService"/>.</param>
         /// <param name="proxy">Client-side proxy — may be null when running as a dedicated server.</param>
         public CalendarSyncAdapter(ICalendarService authoritative, ClientCalendarProxy proxy = null)
@@ -24,6 +27,7 @@ namespace Kruty1918.Moyva.Calendar.Runtime
         public void NotifyTurnCompleted()
         {
             _authoritative.AdvanceTurn();
+            OnHostAdvanced?.Invoke(_authoritative.TotalHoursSinceEpoch);
         }
 
         public void ApplyRemoteSnapshot(long totalHoursSinceEpoch)

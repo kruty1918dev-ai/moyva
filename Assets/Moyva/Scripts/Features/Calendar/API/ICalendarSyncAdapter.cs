@@ -1,3 +1,4 @@
+using System;
 using Kruty1918.Moyva.Calendar.Core;
 
 namespace Kruty1918.Moyva.Calendar.Multiplayer
@@ -10,6 +11,13 @@ namespace Kruty1918.Moyva.Calendar.Multiplayer
     /// </summary>
     public interface ICalendarSyncAdapter
     {
+        /// <summary>
+        /// Fired by the host after each turn is resolved.
+        /// The argument is the new <see cref="ICalendarService.TotalHoursSinceEpoch"/> that
+        /// the session/network layer must broadcast to all clients.
+        /// </summary>
+        event Action<long> OnHostAdvanced;
+
         /// <summary>
         /// Called by the session layer (host/server) after a global turn has been resolved.
         /// Internally calls <see cref="ICalendarService.AdvanceTurn"/>.
