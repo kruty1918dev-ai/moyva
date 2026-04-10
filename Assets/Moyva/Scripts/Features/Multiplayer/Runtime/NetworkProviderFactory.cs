@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Multiplayer.Config;
+using Kruty1918.Moyva.Multiplayer.Core;
 
 namespace Kruty1918.Moyva.Multiplayer.Networking
 {

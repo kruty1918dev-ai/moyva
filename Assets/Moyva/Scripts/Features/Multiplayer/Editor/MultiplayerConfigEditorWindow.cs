@@ -124,11 +124,10 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             EditorGUI.indentLevel++;
             EditorGUILayout.HelpBox(
                 "Requires Unity Gaming Services Relay SDK (com.unity.services.relay).\n" +
-                "After installing, add the MOYVA_UGS_RELAY scripting define under Player Settings.",
+                "After installing, add the MOYVA_UGS_RELAY scripting define under Player Settings.\n" +
+                "Relay uses Unity Services initialization + anonymous auth (no API key).",
                 MessageType.Info);
 
-            _relayProjectId = EditorGUILayout.TextField(new GUIContent("Project ID", "Found in Unity Dashboard → Settings → Project ID"), _relayProjectId);
-            _relayEnvironment = EditorGUILayout.TextField(new GUIContent("Environment", "\"production\" or \"development\""), _relayEnvironment);
             _relayRegion = EditorGUILayout.TextField(new GUIContent("Region", "Allocation region, e.g. eu-west-1. Leave empty for automatic selection."), _relayRegion);
             _relayMaxConnections = EditorGUILayout.IntField(new GUIContent("Max Connections", "Max peers supported by the Relay allocation."), _relayMaxConnections);
             EditorGUI.indentLevel--;
@@ -192,11 +191,6 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             {
                 _validationMessage = $"Max Humans ({_maxHumans}) + Max Bots ({_maxBots}) = {_maxHumans + _maxBots} exceeds Max Participants ({_maxParticipants}).";
                 _validationMessageType = MessageType.Error;
-            }
-            else if (_providerType == NetworkProviderType.Relay && string.IsNullOrEmpty(_relayProjectId))
-            {
-                _validationMessage = "Relay selected but Project ID is empty. Fill in the Unity Relay settings.";
-                _validationMessageType = MessageType.Warning;
             }
             else if (_providerType == NetworkProviderType.WebSocket && string.IsNullOrEmpty(_wsServerUrl))
             {

@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System;
+using Kruty1918.Moyva.Calendar.Core;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
@@ -15,6 +17,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly ITileSettingsService _tileSettings;
         private readonly IUnitClassConfig _unitClassConfig;
         private readonly IObjectsMapService _objectsMapService;
+        private readonly ICalendarService _calendarService;
 
         private readonly Dictionary<string, float> _unitStamina = new();
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
@@ -28,13 +31,15 @@ namespace Kruty1918.Moyva.Units.Runtime
             IGridService gridService,
             ITileSettingsService tileSettings,
             IUnitClassConfig unitClassConfig,
-            IObjectsMapService objectsMapService)
+            IObjectsMapService objectsMapService,
+            ICalendarService calendarService = null)
         {
             _signalBus = signalBus;
             _gridService = gridService;
             _tileSettings = tileSettings;
             _unitClassConfig = unitClassConfig;
             _objectsMapService = objectsMapService;
+            _calendarService = calendarService;
         }
 
         public void Initialize()
@@ -60,7 +65,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return;
             }
 
-            float randomMod = Random.Range(config.StaminaRandomRange.x, config.StaminaRandomRange.y);
+            float randomMod = UnityEngine.Random.Range(config.StaminaRandomRange.x, config.StaminaRandomRange.y);
             float startStamina = config.BaseStamina + randomMod;
 
             _unitStamina[signal.UnitId] = startStamina;
@@ -97,6 +102,21 @@ namespace Kruty1918.Moyva.Units.Runtime
             _unitPositions[signal.UnitId] = signal.NewPosition;
 
             Debug.Log($"[UnitService] Unit {signal.UnitId} рух до {signal.NewPosition}. Стаміна: {staminaBefore} → {_unitStamina[signal.UnitId]} (витрачено {signal.Cost})");
+
+            if (_calendarService != null)
+            {
+                try
+                {
+                    _calendarService.AdvanceTurn();
+                }
+                catch (InvalidOperationException)
+                {
+                    // ClientCalendarProxy is read-only and advances only via snapshots.
+                }
+
+                var now = _calendarService.Current;
+                Debug.Log($"[Time] Після кроку {signal.UnitId}: {now.Year:D4}-{now.Month:D2}-{now.Day:D2} {now.Hour:D2}:00, фаза={_calendarService.CurrentDayPhase}, totalHours={_calendarService.TotalHoursSinceEpoch}");
+            }
         }
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)

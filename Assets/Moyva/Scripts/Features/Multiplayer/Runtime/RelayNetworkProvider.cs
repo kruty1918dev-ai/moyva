@@ -4,9 +4,7 @@
 //   1. Install the Relay SDK:  Window → Package Manager → Unity Gaming Services → Relay
 //   2. Add the scripting define MOYVA_UGS_RELAY:
 //      Edit → Project Settings → Player → Scripting Define Symbols
-//   3. Authenticate with UGS before calling HostSessionAsync / JoinSessionAsync:
-//        await UnityServices.InitializeAsync();
-//        await AuthenticationService.Instance.SignInAnonymouslyAsync();
+//   3. Ensure Unity Project is linked to UGS in Project Settings (no API key required).
 //
 // Without MOYVA_UGS_RELAY the provider compiles cleanly but returns a graceful failure,
 // so FallbackNetworkProvider will automatically promote the fallback (WebSocket / Offline).
@@ -15,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.Multiplayer.Core;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Multiplayer.Networking
@@ -45,28 +44,41 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         public async Task<SessionResult> HostSessionAsync(string sessionId, CancellationToken ct = default)
         {
 #if MOYVA_UGS_RELAY
-            return await HostViaRelayAsync(sessionId, ct);
+            var result = await HostViaRelayAsync(sessionId, ct);
 #else
-            return await Task.FromResult(UgsNotAvailable());
+            var result = await Task.FromResult(UgsNotAvailable());
 #endif
+
+            if (result.Success)
+                PeerConnected?.Invoke("local");
+
+            return result;
         }
 
         public async Task<SessionResult> JoinSessionAsync(string sessionId, CancellationToken ct = default)
         {
 #if MOYVA_UGS_RELAY
-            return await JoinViaRelayAsync(sessionId, ct);
+            var result = await JoinViaRelayAsync(sessionId, ct);
 #else
-            return await Task.FromResult(UgsNotAvailable());
+            var result = await Task.FromResult(UgsNotAvailable());
 #endif
+
+            if (result.Success)
+                PeerConnected?.Invoke("local");
+
+            return result;
         }
 
         public Task LeaveSessionAsync(CancellationToken ct = default)
         {
 #if MOYVA_UGS_RELAY
-            return LeaveRelayAsync(ct);
+            var task = LeaveRelayAsync(ct);
 #else
-            return Task.CompletedTask;
+            var task = Task.CompletedTask;
 #endif
+
+            PeerDisconnected?.Invoke("local");
+            return task;
         }
 
         public Task SendMessageAsync(string targetPeerId, byte[] payload, CancellationToken ct = default)
@@ -97,6 +109,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             try
             {
+                await EnsureRelayReadyAsync();
+
                 // 1. Create a Relay allocation
                 var allocation = await Unity.Services.Relay.RelayService.Instance
                     .CreateAllocationAsync(_settings.MaxConnections, _settings.Region);
@@ -129,6 +143,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             try
             {
+                await EnsureRelayReadyAsync();
+
                 // 1. Join allocation via join code
                 var joinAllocation = await Unity.Services.Relay.RelayService.Instance
                     .JoinAllocationAsync(joinCode);
@@ -169,6 +185,21 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             return Task.CompletedTask;
         }
 
+        private async Task EnsureRelayReadyAsync()
+        {
+            if (Unity.Services.Core.UnityServices.State != Unity.Services.Core.ServicesInitializationState.Initialized)
+            {
+                await Unity.Services.Core.UnityServices.InitializeAsync();
+                _logger.Info("[Relay] Unity Services initialized.");
+            }
+
+            if (!Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
+            {
+                await Unity.Services.Authentication.AuthenticationService.Instance.SignInAnonymouslyAsync();
+                _logger.Info("[Relay] Signed in anonymously.");
+            }
+        }
+
         private void OnRelayMessageReceived(string senderId, byte[] payload)
         {
             var msg = new NetworkMessage(senderId, payload);
@@ -183,7 +214,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             const string msg =
                 "Unity Gaming Services Relay SDK is not installed. " +
-                "Install com.unity.services.relay and add the MOYVA_UGS_RELAY scripting define.";
+                "Install com.unity.services.relay and add the MOYVA_UGS_RELAY scripting define. " +
+                "Relay does not require an API key.";
             _logger.Warn($"[Relay] {msg}");
             return SessionResult.Fail(msg);
         }
