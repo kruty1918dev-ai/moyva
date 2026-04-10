@@ -8,6 +8,12 @@ namespace Kruty1918.Moyva.Calendar.Config
     {
         public const int CurrentSchemaVersion = 1;
 
+        /// <summary>
+        /// Easter egg: рік смерті Ярослава Мудрого і кінець золотої доби Київської Русі —
+        /// найпотужнішого державного утворення в історії України (1054 р.).
+        /// </summary>
+        public const int PeakUkraineYear = 1054;
+
         /// <summary>Binary format version for forward compatibility.</summary>
         public int SchemaVersion { get; }
 
@@ -69,7 +75,7 @@ namespace Kruty1918.Moyva.Calendar.Config
         public static CalendarConfig Default() =>
             new CalendarConfig(
                 schemaVersion:     CurrentSchemaVersion,
-                startYear:         1,
+                startYear:         PeakUkraineYear,
                 startMonth:        1,
                 startDay:          1,
                 startHour:         6,
