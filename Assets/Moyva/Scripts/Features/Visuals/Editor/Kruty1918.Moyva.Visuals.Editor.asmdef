@@ -1,15 +1,14 @@
 {
-    "name": "Kruty1918.Moyva.Visuals",
-    "rootNamespace": "Kruty1918.Moyva.Visuals",
+    "name": "Kruty1918.Moyva.Visuals.Editor",
+    "rootNamespace": "Kruty1918.Moyva.Visuals.Editor",
     "references": [
-        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
-        "GUID:dbeb150ae01f08dd59e8e397e8ee8e2a",
-        "Kruty1918.Moyva.ObjectsMap",
-        "Kruty1918.Moyva.Calendar",
+        "Kruty1918.Moyva.Visuals",
         "Unity.RenderPipelines.Core.Runtime",
         "Unity.RenderPipelines.Universal.Runtime"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
