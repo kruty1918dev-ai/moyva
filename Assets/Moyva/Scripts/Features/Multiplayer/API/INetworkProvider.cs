@@ -40,7 +40,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     }
 
     /// <summary>
-    /// Abstraction over networking backends (Relay, Mirror, Offline).
+    /// Abstraction over networking backends (Relay, WebSocket, Offline).
     /// </summary>
     public interface INetworkProvider
     {
