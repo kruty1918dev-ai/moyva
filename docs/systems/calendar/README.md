@@ -71,7 +71,7 @@ Assets/Moyva/Scripts/Tests/Calendar/
 | [architecture.md](architecture.md) | Збірки, класи, потік даних |
 | [interfaces.md](interfaces.md) | Довідник усіх інтерфейсів і типів |
 | [config.md](config.md) | `CalendarConfig`, зберігання, завантаження |
-| [editor-guide.md](editor-guide.md) | Повний гайд з редактора Calendar Config Hub |
+| [editor-guide.md](editor-guide.md) | Посібник користувача: календар, day/night візуал, пресети, тюнінг темної ночі |
 | [quickstart.md](quickstart.md) | Покрокове увімкнення календаря в новій сцені |
 | [multiplayer-integration.md](multiplayer-integration.md) | Інтеграція з мультиплеєром |
 | [usage-examples.md](usage-examples.md) | Приклади використання в інших системах |
