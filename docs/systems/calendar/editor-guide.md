@@ -1,113 +1,184 @@
-# Calendar — Гайд по редактору (Calendar Config Hub)
+# Calendar — Посібник користувача
 
 ← [Назад до огляду](README.md)
 
----
+## Для чого цей посібник
 
-## Відкриття редактора
+Цей документ пояснює, як налаштувати календар і візуальні фази доби так, щоб:
 
-Меню Unity: **Moyva → Calendar → Config Hub**
+- час у грі рухався передбачувано;
+- фази День/Ніч/Світанок/Сутінки були помітні;
+- ніч могла бути дійсно темною;
+- параметри було зручно тюнити під час Play Mode.
 
-Або через пошук: `Ctrl+P` → `Calendar Config Hub`.
+## 1) Налаштування календаря в Calendar Config Hub
 
----
+Відкрити в Unity:
 
-## Огляд панелей
+- Moyva → Calendar → Config Hub
 
-### 1. Calendar Structure
+### 1.1 Структура календаря
 
-| Поле | Опис |
-|---|---|
-| Months per Year | Скільки місяців у ігровому році (1–24) |
-| Days per Month | Днів у кожному місяці (1–60, фіксоване для всіх місяців) |
-| Hours per Day | Годин у добі (1–48; для реалізму зазвичай 24) |
+Поля:
 
-### 2. Start Date / Time
+- Кількість місяців у році
+- Кількість днів у місяці
+- Кількість годин у добі
 
-| Поле | Опис |
-|---|---|
-| Start Year | Рік початку нової гри |
-| Start Month | Місяць початку (1..Months per Year) |
-| Start Day | День початку (1..Days per Month) |
-| Start Hour | Година початку (0..Hours per Day - 1) |
+Це базова математика календаря. Якщо змінюєте ці значення, автоматично змінюється загальна тривалість доби/місяця/року.
 
-### 3. Day / Night Boundaries
+### 1.2 Стартова дата і час
 
-| Поле | Опис |
-|---|---|
-| Day Start Hour | З якої години починається день |
-| Night Start Hour | З якої години починається ніч |
-| Dawn Duration (hours) | Скільки годин тривають світанкові переходи |
-| Dusk Duration (hours) | Скільки годин тривають сутінки |
+Поля:
 
-Формула:
-- Світанок: `[DayStart - DawnDuration, DayStart)`
-- День: `[DayStart, NightStart - DuskDuration)`
-- Сутінки: `[NightStart - DuskDuration, NightStart)`
-- Ніч: все інше
+- Початковий рік
+- Початковий місяць
+- Початковий день
+- Початкова година
 
-### 4. Multiplayer / Turns
+Ці значення визначають момент старту нової сесії.
 
-| Поле | Опис |
-|---|---|
-| Hours per Turn | Скільки ігрових годин за один хід |
-| (readonly label) | Скільки ходів у грі = 1 ігрова доба |
+### 1.3 Межі дня/ночі
 
-**Приклад:** Hours per Day = 24, Hours per Turn = 1 → 24 ходи = 1 доба.
+Поля:
 
-### 5. Day Phase Preview
+- Початок дня
+- Початок ночі
+- Тривалість світанку
+- Тривалість сутінок
 
-Слайдер **Preview Hour** дозволяє перевірити, яка фаза буде активна в певну годину.  
-Колір фону мітки змінюється:
+Логіка фаз:
 
-| Фаза | Колір фону |
-|---|---|
-| Day | Жовтий (сонячний) |
-| Night | Темно-синій |
-| Dawn | Помаранчевий |
-| Dusk | Фіолетовий |
+- Світанок: [DayStart - DawnDuration, DayStart)
+- День: [DayStart, NightStart - DuskDuration)
+- Сутінки: [NightStart - DuskDuration, NightStart)
+- Ніч: усе інше
 
----
+### 1.4 Швидкість плину часу
 
-## Валідація
+Поле:
 
-Редактор показує попередження / помилки прямо в панелі:
+- Годин за 1 хід
 
-| Умова | Тип |
-|---|---|
-| Day Start Hour ≥ Night Start Hour | ❌ Error (кнопка Save заблокована) |
-| Dawn Duration ≥ Day Start Hour | ⚠ Warning |
-| Night Start + Dusk Duration > Hours in Day | ⚠ Warning |
+Приклад:
 
----
+- HoursInDay = 24
+- HoursPerTurn = 1
+- 24 ходи = 1 ігрова доба
 
-## Кнопки
+### 1.5 Прев'ю в самому редакторі
 
-| Кнопка | Дія |
-|---|---|
-| **Save Config** | Зберігає конфіг у `Assets/Moyva/calendar_config.dat` |
-| **Load Config** | Завантажує конфіг із файлу (або дефолт якщо файл відсутній) |
-| **Reset to Defaults** | Застосовує `CalendarConfig.Default()` без збереження |
+У вікні є:
 
-Після натискання **Save Config** автоматично викликається `AssetDatabase.Refresh()`, тому Unity-провідник оновлюється.
+- Прев'ю фази на вибраній годині
+- Кольорова шкала фаз по всій добі
+- Прев'ю через N ходів (майбутня дата/час/фаза)
 
----
+Це допомагає швидко зрозуміти, чи правильні межі дня/ночі до запуску гри.
 
-## Ручні кроки після налаштування конфігу
+## 2) Збереження і застосування конфігу
 
-1. **Перевірте**, що файл `Assets/Moyva/calendar_config.dat` з'явився у провіднику Unity.
-2. **Додайте** `CalendarInstaller` (ваш Zenject MonoInstaller) до сцени гри або `GameContext`.
-3. **Вкажіть** шлях `"Assets/Moyva/calendar_config.dat"` або залиште дефолт (`Application.persistentDataPath`) в залежності від вашої стратегії деплою.
-4. Якщо ви додаєте шейдер день/ніч — підпишіть його на `ICalendarService.OnDayPhaseChanged`. Детальніше: [usage-examples.md](usage-examples.md).
+Кнопки:
 
----
+- Зберегти конфіг
+- Завантажити конфіг
+- Скинути до типових
 
-## Де зберігається файл конфігурації
+Файл конфігурації:
 
-| Контекст | Шлях |
-|---|---|
-| Editor (Config Hub) | `Assets/Moyva/calendar_config.dat` |
-| Runtime (за замовчуванням) | `Application.persistentDataPath/calendar_config.dat` |
-| Тести | Передається як аргумент конструктора |
+- Editor: Assets/Moyva/calendar_config.dat
 
-> **Примітка:** файл `.dat` є бінарним — не редагуйте вручну. Для змін завжди використовуйте Config Hub.
+Примітка:
+
+- Це бінарний файл. Редагувати вручну не потрібно.
+
+## 3) Як увімкнути візуальні фази доби (шейдер)
+
+Переконайтесь, що у вашому renderer (наприклад Mobile_Renderer) доданий DayNightScreenFilterFeature.
+
+Він використовує параметри календаря і глобальні шейдерні значення, щоб фарбувати сцену під поточну фазу.
+
+## 4) Пресети для шейдера через ПКМ (без списку)
+
+Для DayNightScreenFilterFeature в інспекторі є спеціальна зона:
+
+- "ПКМ тут: Пресети -> Обрати профіль дня/ночі"
+
+Кроки:
+
+1. Виберіть renderer asset (наприклад Mobile_Renderer).
+2. Знайдіть DayNightScreenFilterFeature.
+3. Клікніть правою кнопкою у зоні пресетів.
+4. Оберіть один із пресетів:
+5. Neutral Contrast
+6. Cinematic Dusk
+7. Extreme Night
+
+Після вибору значення одразу записуються у feature, тобто у сам renderer asset.
+
+## 5) Як зробити дійсно темну ніч
+
+Якщо навіть після пресета здається світло, використайте такі ключові ручки:
+
+- FilterStrength: 0.95-1.00
+- NightExposure: 0.15-0.25
+- NightMinBrightness: 0.02-0.06
+- NightContrast: 1.5-1.8
+- NightSaturation: 0.20-0.40
+- ColorizeStrength: 0.90-1.00
+
+Що робить кожен параметр:
+
+- NightExposure: загальна яскравість ночі.
+- NightMinBrightness: жорстка нижня межа темряви вночі.
+- ColorizeStrength: наскільки сцена підтягується до заданого кольору фази.
+- FilterStrength: загальна сила післяобробки.
+
+Рекомендований старт для максимально виразної ночі:
+
+- застосуйте пресет Extreme Night,
+- потім зменште NightExposure і NightMinBrightness до комфортного рівня читабельності.
+
+## 6) Рекомендовані профілі календаря
+
+### Реалістичний (класика)
+
+- HoursInDay: 24
+- DayStart: 6
+- NightStart: 20
+- DawnDuration: 1
+- DuskDuration: 1
+- HoursPerTurn: 1
+
+### Швидкий цикл для тестів
+
+- HoursInDay: 24
+- DayStart: 8
+- NightStart: 18
+- DawnDuration: 2
+- DuskDuration: 2
+- HoursPerTurn: 3
+
+### Атмосферний (довгі переходи)
+
+- HoursInDay: 24
+- DayStart: 7
+- NightStart: 19
+- DawnDuration: 3
+- DuskDuration: 3
+- HoursPerTurn: 1
+
+## 7) Чекліст, якщо ефект слабкий або неочікуваний
+
+1. Перевірте, що активний саме Mobile_Renderer у вашому URP Asset.
+2. Перевірте, що в renderer доданий DayNightScreenFilterFeature.
+3. Перевірте, що календар рухається по ходах (є зміна години).
+4. Застосуйте пресет Extreme Night через ПКМ у feature.
+5. Дотисніть NightExposure і NightMinBrightness вручну.
+
+## 8) Корисні посилання
+
+- [quickstart.md](quickstart.md)
+- [config.md](config.md)
+- [usage-examples.md](usage-examples.md)
+- [multiplayer-integration.md](multiplayer-integration.md)
