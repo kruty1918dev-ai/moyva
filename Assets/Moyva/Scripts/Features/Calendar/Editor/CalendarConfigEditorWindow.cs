@@ -21,7 +21,7 @@ namespace Kruty1918.Moyva.Calendar.Editor
         private int _hoursInDay        = 24;
 
         // Start date
-        private int _startYear         = 1;
+        private int _startYear         = CalendarConfig.PeakUkraineYear;
         private int _startMonth        = 1;
         private int _startDay          = 1;
         private int _startHour         = 6;
