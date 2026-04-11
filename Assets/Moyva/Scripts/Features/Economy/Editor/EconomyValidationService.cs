@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             ValidateWarehousePolicies(database, issues);
             ValidateProduction(database, issues);
             ValidateCaravans(database, issues);
+            ValidateRulesConfig(database, issues);
 
             return issues;
         }
@@ -121,6 +122,40 @@ namespace Kruty1918.Moyva.Economy.Editor
                 if (caravan.Capacity <= 0)
                     issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, $"Caravan template '{id}' has invalid Capacity ({caravan.Capacity}).", caravan));
             }
+        }
+
+        private static void ValidateRulesConfig(EconomyDatabaseSO database, List<EconomyValidationIssue> issues)
+        {
+            var rules = database.RulesConfig;
+            if (rules == null)
+            {
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Economy rules config is not assigned.", database));
+                return;
+            }
+
+            if (rules.Settlement.MaxSettlements <= 0)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: MaxSettlements must be > 0.", rules));
+
+            if (rules.Settlement.MinTownHallDistance <= 0)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: MinTownHallDistance must be > 0.", rules));
+
+            if (rules.Population.NewResidentsArrivalIntervalTurns <= 0)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: NewResidentsArrivalIntervalTurns must be > 0.", rules));
+
+            if (rules.Caravan.MaxCaravansPerSettlement <= 0)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: MaxCaravansPerSettlement must be > 0.", rules));
+
+            if (rules.Market.TargetStock <= 0f)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: Market TargetStock must be > 0.", rules));
+
+            if (rules.Market.ReferenceTradeVolume <= 0f)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: Market ReferenceTradeVolume must be > 0.", rules));
+
+            if (rules.Market.MinPriceMultiplier <= 0f || rules.Market.MaxPriceMultiplier <= 0f)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: Market multipliers must be > 0.", rules));
+
+            if (rules.Market.MaxPriceMultiplier < rules.Market.MinPriceMultiplier)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: MaxPriceMultiplier cannot be lower than MinPriceMultiplier.", rules));
         }
 
         private static string Normalize(string value) => (value ?? string.Empty).Trim();
