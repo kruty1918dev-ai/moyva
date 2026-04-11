@@ -13,6 +13,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
         [Tooltip("Мінімальна відстань (в тайлах) між будівлями. 0 = можна ставити впритул.")]
         [SerializeField] private int _minSpacingBetweenBuildings = 0;
 
+        [Tooltip("Радіус дії ратуші для будівництва (в тайлах).\nНе-ратуші можна ставити лише в цій зоні.\n0 = вимкнути правило.")]
+        [SerializeField] private int _townHallBuildRadius = 12;
+
         public override void InstallBindings()
         {
             if (buildingRegistry == null)
@@ -24,7 +27,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Container.BindInstance(buildingRegistry).AsSingle();
             Container.Bind<IBuildingRegistry>().FromInstance(buildingRegistry).AsSingle();
 
-            Container.Bind<int>().WithId("minSpacing").FromInstance(_minSpacingBetweenBuildings).AsSingle();
+            Container.BindInstance(_minSpacingBetweenBuildings).WithId("minSpacing");
+            Container.BindInstance(_townHallBuildRadius).WithId("townHallBuildRadius");
 
             Container.Bind<IScreenToGridConverter>()
                 .To<ScreenToGridConverter>()

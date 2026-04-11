@@ -39,8 +39,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         private readonly IObjectsMapService _objectsMapService;
+        private readonly IBuildingRegistry _buildingRegistry;
         private readonly SignalBus _signalBus;
         private readonly int _minSpacing;
+        private readonly int _townHallBuildRadius;
         private readonly IFogOfWarService _fogOfWarService; // може бути null якщо туман не підключений
         private readonly IWallPlacementService _wallPlacementService;
 
@@ -61,14 +63,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
         [Inject]
         public ConstructionService(
             IObjectsMapService objectsMapService,
+            IBuildingRegistry buildingRegistry,
             SignalBus signalBus,
             [Inject(Id = "minSpacing")] int minSpacing,
+            [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius,
             [InjectOptional] IFogOfWarService fogOfWarService,
             [InjectOptional] IWallPlacementService wallPlacementService)
         {
             _objectsMapService = objectsMapService;
+            _buildingRegistry = buildingRegistry;
             _signalBus = signalBus;
             _minSpacing = minSpacing;
+            _townHallBuildRadius = Mathf.Max(0, townHallBuildRadius);
             _fogOfWarService = fogOfWarService;
             _wallPlacementService = wallPlacementService;
         }
@@ -165,7 +171,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            if (!gateReplacementAllowed && !CanPlaceAt(position, null, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
+            if (!gateReplacementAllowed && !CanPlaceAt(position, null, _selectedBuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var townHallZoneBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
@@ -175,7 +181,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 });
 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] TryPreviewAt({position}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, minSpacing={_minSpacing}");
+                    Debug.Log($"[Construction] TryPreviewAt({position}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, townHallZoneBlocked={townHallZoneBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
 
                 return false;
             }
@@ -237,7 +243,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            if (!gateReplacementAllowed && !CanPlaceAt(toPosition, fromPosition, out var tileOccupied, out var spacingBlocked, out var fogBlocked))
+            if (!gateReplacementAllowed && !CanPlaceAt(toPosition, fromPosition, placement.BuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var townHallZoneBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
@@ -247,7 +253,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 });
 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, minSpacing={_minSpacing}");
+                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, townHallZoneBlocked={townHallZoneBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
 
                 return false;
             }
@@ -583,13 +589,74 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return _fogOfWarService.GetFogState(position) != FogStateType.Visible;
         }
 
-        private bool CanPlaceAt(Vector2Int position, Vector2Int? ignoredPendingPosition, out bool tileOccupied, out bool spacingBlocked, out bool fogBlocked)
+        private bool CanPlaceAt(
+            Vector2Int position,
+            Vector2Int? ignoredPendingPosition,
+            string buildingId,
+            out bool tileOccupied,
+            out bool spacingBlocked,
+            out bool fogBlocked,
+            out bool townHallZoneBlocked)
         {
             tileOccupied = _objectsMapService.IsOccupied(position)
                 || (_pendingPositions.Contains(position) && position != ignoredPendingPosition);
             spacingBlocked = !tileOccupied && IsBlockedBySpacing(position, ignoredPendingPosition);
             fogBlocked = !tileOccupied && !spacingBlocked && IsBlockedByFog(position);
-            return !tileOccupied && !spacingBlocked && !fogBlocked;
+            townHallZoneBlocked = !tileOccupied && !spacingBlocked && !fogBlocked
+                && IsBlockedByTownHallZone(position, buildingId, ignoredPendingPosition);
+
+            return !tileOccupied && !spacingBlocked && !fogBlocked && !townHallZoneBlocked;
+        }
+
+        /// <summary>
+        /// Правило поселення: будь-яку не-ратушу можна ставити лише в зоні дії ратуші.
+        /// Якщо ратуш ще немає — блокуємо будівництво всіх інших будівель.
+        /// </summary>
+        private bool IsBlockedByTownHallZone(Vector2Int position, string buildingId, Vector2Int? ignoredPendingPosition)
+        {
+            if (_townHallBuildRadius <= 0)
+                return false;
+
+            if (string.IsNullOrWhiteSpace(buildingId) || _buildingRegistry == null)
+                return false;
+
+            var candidate = _buildingRegistry.GetById(buildingId);
+            if (candidate == null)
+                return false;
+
+            // Ратушу дозволяємо ставити будь-де (інші обмеження застосовуються окремо).
+            if (candidate.IsTownHall)
+                return false;
+
+            int radiusSq = _townHallBuildRadius * _townHallBuildRadius;
+
+            // 1) Уже підтверджені гравцем ратуші
+            foreach (var kvp in _playerPlacedBuildings)
+            {
+                var def = _buildingRegistry.GetById(kvp.Value);
+                if (def == null || !def.IsTownHall)
+                    continue;
+
+                if ((kvp.Key - position).sqrMagnitude <= radiusSq)
+                    return false;
+            }
+
+            // 2) Ратуша в поточному pending-сеті (дозволяє в одній сесії: спочатку ратушу, потім інші)
+            for (int i = 0; i < _pendingPlacements.Count; i++)
+            {
+                var pending = _pendingPlacements[i];
+                if (pending.Position == ignoredPendingPosition)
+                    continue;
+
+                var pendingDef = _buildingRegistry.GetById(pending.BuildingId);
+                if (pendingDef == null || !pendingDef.IsTownHall)
+                    continue;
+
+                if ((pending.Position - position).sqrMagnitude <= radiusSq)
+                    return false;
+            }
+
+            return true;
         }
 
         private bool AddPendingPlacement(Vector2Int position, string buildingId, bool clearRedoHistory)
