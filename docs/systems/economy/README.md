@@ -16,6 +16,8 @@
 - [Complete Guide](economy-complete-guide.md)
 - [Tutorials](tutorials.md)
 - [Economy Designer (Quick Start)](economy-designer.md)
+- [Economy Runtime Logic Plan](economy-runtime-logic-plan.md)
+- [Economy Runtime Implementation](economy-runtime-implementation.md)
 
 ## Для кого
 - геймдизайнери, які налаштовують економіку;
