@@ -1871,6 +1871,7 @@ MonoBehaviour:
   - {fileID: 1877777218}
   - {fileID: 59869031}
   - {fileID: 1757640777}
+  - {fileID: 2100979367}
   _installerPrefabs: []
   _autoRun: 1
   OnPreInstall:
@@ -5059,6 +5060,7 @@ GameObject:
   - component: {fileID: 2100979363}
   - component: {fileID: 2100979365}
   - component: {fileID: 2100979366}
+  - component: {fileID: 2100979367}
   m_Layer: 0
   m_Name: BootstrapInstaller
   m_TagString: Untagged
@@ -5119,6 +5121,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.Runtime.ConstructionInstaller
   buildingRegistry: {fileID: 11400000, guid: 10b50407045da99758fd720b41437642, type: 2}
   _minSpacingBetweenBuildings: 0
+--- !u!114 &2100979367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2100979362}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0e8379e3a3854067b25e81f5ff9edc0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.Economy::Kruty1918.Moyva.Economy.EconomyInstaller
+  _database: {fileID: 11400000, guid: 545b933e7bbc78a5b8dd553f7e1604f8, type: 2}
 --- !u!1 &2141750535
 GameObject:
   m_ObjectHideFlags: 0

@@ -34,6 +34,7 @@
   <Project Path="Kruty1918.Moyva.Camera.csproj" />
   <Project Path="Kruty1918.Moyva.GameMode.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Economy.csproj" />
   <Project Path="Kruty1918.Moyva.Faction.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
@@ -50,7 +51,7 @@
   <Project Path="Kruty1918.Moyva.Visuals.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.GameMode.csproj" />
   <Project Path="Kruty1918.Moyva.SaveSystem.Editor.csproj" />
-  <Project Path="Kruty1918.Moyva.Tests.Economy.csproj" />
+  <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementIntegration.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.ObjectsMap.csproj" />
 </Solution>
