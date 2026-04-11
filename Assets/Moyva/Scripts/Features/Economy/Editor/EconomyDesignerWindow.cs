@@ -406,6 +406,50 @@ namespace Kruty1918.Moyva.Economy.Editor
                 return;
             }
 
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Дозволити усе", GUILayout.Width(160f)))
+            {
+                Undo.RecordObject(_rulesConfiguration, "Economy: allow all overrides");
+                for (int i = 0; i < parameters.arraySize; i++)
+                {
+                    var element = parameters.GetArrayElementAtIndex(i);
+                    var overridableProp = element.FindPropertyRelative("_isOverridable");
+                    if (overridableProp != null)
+                        overridableProp.boolValue = true;
+                }
+
+                if (_rulesConfigurationSo.ApplyModifiedProperties())
+                    EditorUtility.SetDirty(_rulesConfiguration);
+            }
+
+            if (GUILayout.Button("Заборонити усе", GUILayout.Width(160f)))
+            {
+                Undo.RecordObject(_rulesConfiguration, "Economy: disallow all overrides");
+                for (int i = 0; i < parameters.arraySize; i++)
+                {
+                    var element = parameters.GetArrayElementAtIndex(i);
+                    var overridableProp = element.FindPropertyRelative("_isOverridable");
+                    if (overridableProp != null)
+                        overridableProp.boolValue = false;
+                }
+
+                if (_rulesConfigurationSo.ApplyModifiedProperties())
+                    EditorUtility.SetDirty(_rulesConfiguration);
+            }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
+            if (parameters.arraySize == 0)
+            {
+                EditorGUILayout.HelpBox("Список параметрів порожній. Натисніть кнопку нижче щоб заповнити дефолтними правилами.", MessageType.Warning);
+                if (GUILayout.Button("Заповнити дефолтними правилами", GUILayout.Height(30f)))
+                {
+                    _rulesConfiguration.InitializeDefaults();
+                    _rulesConfigurationSo = new SerializedObject(_rulesConfiguration);
+                }
+                return;
+            }
+
             _rulesScroll = EditorGUILayout.BeginScrollView(_rulesScroll, "box");
             for (int i = 0; i < parameters.arraySize; i++)
             {
@@ -451,6 +495,17 @@ namespace Kruty1918.Moyva.Economy.Editor
             if (parameters == null)
             {
                 EditorGUILayout.HelpBox("Список '_parameters' не знайдено в EconomyRulesConfiguration.", MessageType.Error);
+                return;
+            }
+
+            if (parameters.arraySize == 0)
+            {
+                EditorGUILayout.HelpBox("Список параметрів порожній. Натисніть кнопку нижче щоб заповнити дефолтними правилами.", MessageType.Warning);
+                if (GUILayout.Button("Заповнити дефолтними правилами", GUILayout.Height(30f)))
+                {
+                    _rulesConfiguration.InitializeDefaults();
+                    _rulesConfigurationSo = new SerializedObject(_rulesConfiguration);
+                }
                 return;
             }
 
@@ -524,6 +579,15 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             if (_rulesConfigurationSo == null || _rulesConfigurationSo.targetObject != _rulesConfiguration)
                 _rulesConfigurationSo = new SerializedObject(_rulesConfiguration);
+
+            var parameters = _rulesConfigurationSo.FindProperty("_parameters");
+            if (parameters != null && parameters.arraySize == 0)
+            {
+                _rulesConfiguration.InitializeDefaults();
+                _rulesConfigurationSo = new SerializedObject(_rulesConfiguration);
+                EditorUtility.SetDirty(_rulesConfiguration);
+                AssetDatabase.SaveAssets();
+            }
 
             return true;
         }
