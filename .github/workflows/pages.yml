@@ -118,7 +118,7 @@ jobs:
           npx --yes surge ./docs "${{ steps.preview_url.outputs.domain }}" --token "$SURGE_TOKEN"
 
       - name: Publish preview summary
-        if: github.ref != 'refs/heads/main'
+        if: always() && github.ref != 'refs/heads/main'
         run: |
           {
             echo "## 📄 Documentation Preview"
