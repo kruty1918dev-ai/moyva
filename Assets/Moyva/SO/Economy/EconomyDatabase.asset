@@ -13,9 +13,90 @@ MonoBehaviour:
   m_Name: EconomyDatabase
   m_EditorClassIdentifier: Kruty1918.Moyva.Economy::Kruty1918.Moyva.Economy.API.EconomyDatabaseSO
   _schemaVersion: 2
-  _resources: []
+  _resources:
+  - {fileID: 11400000, guid: b607065dfeb2c6544a0e9be876389d1e, type: 2}
+  - {fileID: 11400000, guid: 44981519979c52cee88418305f3be67f, type: 2}
+  - {fileID: 11400000, guid: a0474060c4514280acfa386d2f07bfde, type: 2}
+  - {fileID: 11400000, guid: 96ced90b67c84e1699c5fc3b48de3fc9, type: 2}
+  - {fileID: 11400000, guid: b4e763f76d514f49b106f0998d622e4d, type: 2}
+  - {fileID: 11400000, guid: 2afbcf3abf494ba9abb7fbad5e2cd48d, type: 2}
+  - {fileID: 11400000, guid: 7863ca2d47694a64886d87598d456845, type: 2}
+  - {fileID: 11400000, guid: 14a35d0b650646d49ca371342f1b5bf5, type: 2}
+  - {fileID: 11400000, guid: ed37f7b37788436cb17cf06f4d6844f4, type: 2}
+  - {fileID: 11400000, guid: 5df3c6176fb04295a5fcde8631f1829e, type: 2}
+  - {fileID: 11400000, guid: 27a5ff04a0c04f0fbf4e1d6a2f7fe1d1, type: 2}
+  - {fileID: 11400000, guid: 9b5e91ab040442cf8a1f30526119a2a1, type: 2}
+  - {fileID: 11400000, guid: 592d8fe6184e44018fea41d58586a6c2, type: 2}
+  - {fileID: 11400000, guid: ada8b61321c34bd79c9785ab1cb57b19, type: 2}
+  - {fileID: 11400000, guid: b0d524aa7a254b118584fa8271670ba3, type: 2}
+  - {fileID: 11400000, guid: be646f45ddff4974a38ec40db96a1d4a, type: 2}
+  - {fileID: 11400000, guid: 0b59e904702942cb8d86534bbfdd4a1d, type: 2}
+  - {fileID: 11400000, guid: dec93e436b2a4539ad160870b489fc39, type: 2}
+  - {fileID: 11400000, guid: 0c343ac31eba4c5ab993061d1d227400, type: 2}
+  - {fileID: 11400000, guid: 1664b389279740b9bf0bf8ca17e546ae, type: 2}
+  - {fileID: 11400000, guid: 6132d589116b48b5ac83925f40b3c069, type: 2}
+  - {fileID: 11400000, guid: 895e1f686ec74d28bf927b6a0fc8aae7, type: 2}
+  - {fileID: 11400000, guid: 589cfbe9cb5d4c1a9111fed406e201bb, type: 2}
+  - {fileID: 11400000, guid: 297a8e6149cd48fc87d6abd0f3352bc4, type: 2}
+  - {fileID: 11400000, guid: 295765c7941c4ce49c5b22bd4e38cd33, type: 2}
+  - {fileID: 11400000, guid: 813927edeeb34ce7a9de314bc2b6c16d, type: 2}
+  - {fileID: 11400000, guid: ff4450de26f64284bc728e1bf05d9b15, type: 2}
+  - {fileID: 11400000, guid: cf8647b5c95c415787ceaf822e055268, type: 2}
+  - {fileID: 11400000, guid: a805e14c9d6e447cafc8d88c2b2d976e, type: 2}
+  - {fileID: 11400000, guid: ff490840ff4345cd8839642240d5ffe6, type: 2}
+  - {fileID: 11400000, guid: f215b90fb9d04d0e9ec9268ddf17b076, type: 2}
+  - {fileID: 11400000, guid: 601102c3a7d24feaba52ebeb74ba3550, type: 2}
+  - {fileID: 11400000, guid: 1aca25c524ee44cf82f91af4c802f338, type: 2}
+  - {fileID: 11400000, guid: fc8c8452101d40f996fd0a52beb6dfda, type: 2}
+  - {fileID: 11400000, guid: f0ab03d4bb63423e8a83ccf56b7016a0, type: 2}
+  - {fileID: 11400000, guid: 4864036ac38d408e8f59a38bf41df9d9, type: 2}
+  - {fileID: 11400000, guid: e78877605f8d43e3b0d2b5e2e3e74c9d, type: 2}
+  - {fileID: 11400000, guid: 51bd2aa2d56944ad8826ceab7469081c, type: 2}
+  - {fileID: 11400000, guid: 34c67abaa9dd483995e517ed32163c8d, type: 2}
+  - {fileID: 11400000, guid: 16daac64f3f54fd4a34db2a9f489d077, type: 2}
+  - {fileID: 11400000, guid: f350a7bd629a4320bf42623a22f1c3e9, type: 2}
+  - {fileID: 11400000, guid: 52b74c4d7c61430e9d12d5bef5460c8e, type: 2}
+  - {fileID: 11400000, guid: fa3719f58ea9441fb709111f4b9cba34, type: 2}
+  - {fileID: 11400000, guid: f1782a0660ae47f28d9643cb09f5481b, type: 2}
+  - {fileID: 11400000, guid: 76aa641866e24ec498183ab0d3940c81, type: 2}
+  - {fileID: 11400000, guid: 964d51ec50f34297899b4274d91b4057, type: 2}
+  - {fileID: 11400000, guid: a91be8f2b7754978898fe48dfcc842e8, type: 2}
+  - {fileID: 11400000, guid: 31e74b24363b487c9100334b0374fc02, type: 2}
+  - {fileID: 11400000, guid: de8814bb67ba4b3f96fbb701a4b8c6b3, type: 2}
+  - {fileID: 11400000, guid: bf64386917214800a7bd8b59324e8940, type: 2}
+  - {fileID: 11400000, guid: 0c529b983be84aa2bd79f000361abcad, type: 2}
+  - {fileID: 11400000, guid: 9aea2c120f7d47b9a3656f0949b9b837, type: 2}
+  - {fileID: 11400000, guid: 7ff7957152b44d13afc598bb6f3f2f5b, type: 2}
+  - {fileID: 11400000, guid: 539a132a3b43476cb7e3a36cc4dc98a6, type: 2}
+  - {fileID: 11400000, guid: b26dc85780fa4dc7bdeefd61eeeb4660, type: 2}
+  - {fileID: 11400000, guid: fcb98148a6fc432f84091f4cc82bc2bd, type: 2}
+  - {fileID: 11400000, guid: 84fb9d16ef83476c9194bf6e77f2b624, type: 2}
+  - {fileID: 11400000, guid: 246b1cc6702249968bf13d1749d56f85, type: 2}
+  - {fileID: 11400000, guid: d2028673d32f4038b3326263b60f839d, type: 2}
+  - {fileID: 11400000, guid: db7fcd5f4fb74b80b8e331f928f18d33, type: 2}
+  - {fileID: 11400000, guid: 5d61af080426468fbe817b8e329da7c7, type: 2}
+  - {fileID: 11400000, guid: 1cdbbcd2bf03421985f7d3861e6fdb46, type: 2}
+  - {fileID: 11400000, guid: 3b519cf7f33143d08253b5c9ca49e35d, type: 2}
+  - {fileID: 11400000, guid: 938fcc81e44a4d71a8218d2e9e43cb1f, type: 2}
+  - {fileID: 11400000, guid: 9ce91407e82f4b2cbc8b2d5c29a83a7d, type: 2}
+  - {fileID: 11400000, guid: 8ce5a7661c214ba4a812ef1912e0b398, type: 2}
+  - {fileID: 11400000, guid: 82b1c6a1a1ee4b5d9dc06a02103c459b, type: 2}
+  - {fileID: 11400000, guid: 8f933d1cd69646f399aeebaaf232302a, type: 2}
+  - {fileID: 11400000, guid: c81a90938db44b1984a51acae94446e8, type: 2}
+  - {fileID: 11400000, guid: 6c9c4f83a28f40e89b484138658060a4, type: 2}
+  - {fileID: 11400000, guid: 342267b46a524aff8330a0fb16954875, type: 2}
+  - {fileID: 11400000, guid: 04e16c5649074232bde41e9129e00189, type: 2}
+  - {fileID: 11400000, guid: 961ba039f06e4594ae88cfdf6e82db90, type: 2}
+  - {fileID: 11400000, guid: d62eb4e8f77546288733fa4fd80bfcdb, type: 2}
+  - {fileID: 11400000, guid: 2bf358de103742b0a929cc682bb5e31d, type: 2}
+  - {fileID: 11400000, guid: ebd3a0f71fcd4c3cac4bd44c6792855a, type: 2}
+  - {fileID: 11400000, guid: dff157eb1a7440808bd4b1b58dba85c6, type: 2}
+  - {fileID: 11400000, guid: c3894322889f41da8b91ee7316c1e546, type: 2}
+  - {fileID: 11400000, guid: 22be7686064e4e41848e9d690efc6a81, type: 2}
+  - {fileID: 11400000, guid: d6270431a6ce40e9bb06fa5cb7e5dd30, type: 2}
   _settlements: []
   _warehousePolicies: []
   _productionProfiles: []
   _caravanTemplates: []
   _aiRuleProfiles: []
+  _rulesConfig: {fileID: 11400000, guid: 35071a3ae4fbc232a96169cc2e4e3e00, type: 2}
