@@ -48,6 +48,14 @@ namespace Kruty1918.Moyva.Economy.API
 
 #if UNITY_EDITOR
         /// <summary>
+        /// Автоматично викликається Unity при створенні нового SO-ассета.
+        /// </summary>
+        private void Reset()
+        {
+            InitializeDefaults();
+        }
+
+        /// <summary>
         /// [Editor only] Ініціалізувати дефолтні правила.
         /// Викликається один раз при створенні SO.
         /// </summary>
