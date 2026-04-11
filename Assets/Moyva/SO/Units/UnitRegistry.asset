@@ -15,6 +15,9 @@ MonoBehaviour:
   Configs:
   - TypeId: warrior
     BaseStamina: 15
-    StaminaRegenBase: 3
+    VisionRange: 1
     Prefab: {fileID: 3012185294812511675, guid: 4d504a73108154c2a87c088a007ff633, type: 3}
     StaminaRandomRange: {x: -1, y: 1}
+    AnimationSettings:
+      MoveDurationPerTile: 0.3
+      DelayOnTile: 0.05
