@@ -2,7 +2,8 @@
     "name": "Kruty1918.Moyva.Economy.Editor",
     "rootNamespace": "Kruty1918.Moyva.Economy.Editor",
     "references": [
-        "Kruty1918.Moyva.Economy"
+        "Kruty1918.Moyva.Economy",
+        "Kruty1918.Moyva.EditorShared"
     ],
     "includePlatforms": [
         "Editor"
