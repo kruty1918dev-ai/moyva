@@ -11,7 +11,7 @@ on:
   delete:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -93,29 +93,30 @@ jobs:
           print(f'pages.json OK: {len(sections)} sections, {total_pages} pages.')
           PYEOF
 
-      - name: Setup Pages
+      - name: Deploy to GitHub Pages (main)
         if: github.ref == 'refs/heads/main'
-        uses: actions/configure-pages@v4
-
-      - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v3
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          path: './docs'
+          folder: docs
+          clean: true
+          clean-exclude: |
+            preview
 
-      - name: Compute preview URL
+      - name: Compute preview branch name
         if: github.ref != 'refs/heads/main'
         id: preview_url
         run: |
           SAFE_BRANCH=$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | tr '/[:space:]' '--' | tr -cd '[:alnum:]-')
-          echo "domain=preview-${SAFE_BRANCH}-moyva.surge.sh" >> "$GITHUB_OUTPUT"
+          echo "branch=${SAFE_BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "domain=kruty1918dev-ai.github.io/moyva/preview/${SAFE_BRANCH}" >> "$GITHUB_OUTPUT"
 
-      - name: Deploy preview to Surge
+      - name: Deploy preview to GitHub Pages
         if: github.ref != 'refs/heads/main'
-        env:
-          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
-        run: |
-          npx --yes surge ./docs "${{ steps.preview_url.outputs.domain }}" --token "$SURGE_TOKEN"
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: docs
+          target-folder: preview/${{ steps.preview_url.outputs.branch }}
+          clean: true
 
       - name: Publish preview summary
         if: always() && github.ref != 'refs/heads/main'
@@ -126,37 +127,36 @@ jobs:
             echo "Гілка: \`${GITHUB_REF_NAME}\`"
             echo ""
             echo "🔗 **Live preview:** https://${{ steps.preview_url.outputs.domain }}"
-            echo ""
-            echo "> Сайт існує лише для цієї гілки і буде видалений разом з нею."
           } >> "$GITHUB_STEP_SUMMARY"
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
 
   cleanup-preview:
     runs-on: ubuntu-latest
     if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
     steps:
-      - name: Compute preview URL
+      - name: Compute preview branch name
         id: preview_url
         run: |
           SAFE_BRANCH=$(echo "${{ github.event.ref }}" | tr '[:upper:]' '[:lower:]' | tr '/[:space:]' '--' | tr -cd '[:alnum:]-')
-          echo "domain=preview-${SAFE_BRANCH}-moyva.surge.sh" >> "$GITHUB_OUTPUT"
+          echo "branch=${SAFE_BRANCH}" >> "$GITHUB_OUTPUT"
+          echo "domain=kruty1918dev-ai.github.io/moyva/preview/${SAFE_BRANCH}" >> "$GITHUB_OUTPUT"
 
-      - name: Teardown Surge preview
-        env:
-          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+
+      - name: Remove preview directory
         run: |
-          npx --yes surge teardown "${{ steps.preview_url.outputs.domain }}" --token "$SURGE_TOKEN"
+          PREVIEW_DIR="preview/${{ steps.preview_url.outputs.branch }}"
+          if [ -d "$PREVIEW_DIR" ]; then
+            git rm -rf "$PREVIEW_DIR"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git config user.name "github-actions[bot]"
+            git commit -m "chore: remove preview for ${{ github.event.ref }}"
+            git push
+          else
+            echo "Preview directory not found, nothing to remove."
+          fi
 
       - name: Publish teardown summary
         run: |
