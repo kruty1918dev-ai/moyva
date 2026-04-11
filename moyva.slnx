@@ -52,6 +52,7 @@
   <Project Path="Kruty1918.Moyva.Tests.GameMode.csproj" />
   <Project Path="Kruty1918.Moyva.SaveSystem.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
+  <Project Path="Kruty1918.Moyva.Economy.UI.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementIntegration.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.ObjectsMap.csproj" />
 </Solution>

@@ -11,6 +11,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
     public sealed class EconomySettlementState
     {
         public string SettlementId;
+        public string OwnerId;
         public bool IsActive = true;
         public int CurrentTurn;
 

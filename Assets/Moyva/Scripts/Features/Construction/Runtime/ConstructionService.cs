@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     internal sealed class ConstructionService : IConstructionService, IInitializable, IDisposable
     {
         private const bool VerboseLogs = true;
+        private const string DefaultOwnerId = "player_0";
 
         private readonly struct PendingPlacement
         {
@@ -55,6 +56,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly HashSet<Vector2Int> _pendingDemolitionPositions = new();
         // Позиції будівель, підтверджених гравцем під час гри (знесення дозволено лише для них)
         private readonly Dictionary<Vector2Int, string> _playerPlacedBuildings = new();
+        private string _activeOwnerId = DefaultOwnerId;
         private bool _isActive;
 
         public BuildingPlacementState State { get; private set; } = BuildingPlacementState.Idle;
@@ -129,6 +131,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public string GetSelectedBuildingId()
         {
             return _selectedBuildingId;
+        }
+
+        public void SetActiveOwner(string ownerId)
+        {
+            _activeOwnerId = string.IsNullOrWhiteSpace(ownerId) ? DefaultOwnerId : ownerId.Trim();
+        }
+
+        public string GetActiveOwner()
+        {
+            return _activeOwnerId;
         }
 
         public bool TryPreviewAt(Vector2Int position)
@@ -319,7 +331,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 _objectsMapService.Register(pos, id);
                 _playerPlacedBuildings[pos] = id;
-                _signalBus.Fire(new BuildingPlacedSignal { BuildingId = id, Position = pos });
+                _signalBus.Fire(new BuildingPlacedSignal
+                {
+                    BuildingId = id,
+                    Position = pos,
+                    OwnerId = _activeOwnerId,
+                });
 
                 if (VerboseLogs)
                     Debug.Log($"[Construction] Confirm placed '{id}' at {pos}");
@@ -493,7 +510,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 _objectsMapService.Unregister(pos);
                 _playerPlacedBuildings.Remove(pos);
-                _signalBus.Fire(new BuildingDemolishedSignal { BuildingId = id, Position = pos });
+                _signalBus.Fire(new BuildingDemolishedSignal
+                {
+                    BuildingId = id,
+                    Position = pos,
+                    OwnerId = _activeOwnerId,
+                });
 
                 if (VerboseLogs)
                     Debug.Log($"[Construction] Confirm demolished '{id}' at {pos}");
@@ -550,7 +572,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _objectsMapService.Register(position, buildingId);
             _playerPlacedBuildings[position] = buildingId;
-            _signalBus.Fire(new BuildingPlacedSignal { BuildingId = buildingId, Position = position });
+            _signalBus.Fire(new BuildingPlacedSignal
+            {
+                BuildingId = buildingId,
+                Position = position,
+                OwnerId = _activeOwnerId,
+            });
 
             if (VerboseLogs)
                 Debug.Log($"[Construction] RestoreFromSave: відновлено '{buildingId}' на {position}");

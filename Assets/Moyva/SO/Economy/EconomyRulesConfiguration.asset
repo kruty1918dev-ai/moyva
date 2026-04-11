@@ -25,7 +25,7 @@ MonoBehaviour:
     _minValue: 10
     _maxValue: 50
     _step: 1
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: max-settlements
     _displayName: "\u041C\u0430\u043A\u0441\u0438\u043C\u0443\u043C \u043F\u043E\u0441\u0435\u043B\u0435\u043D\u044C"
     _description: "\u041C\u0430\u043A\u0441\u0438\u043C\u0430\u043B\u044C\u043D\u0430
@@ -51,7 +51,7 @@ MonoBehaviour:
     _minValue: 5
     _maxValue: 30
     _step: 1
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: worker-reallocation-frequency
     _displayName: "\u0427\u0430\u0441\u0442\u043E\u0442\u0430 \u0440\u043E\u0437\u043F\u043E\u0434\u0456\u043B\u0443
       \u0440\u043E\u0431\u0456\u0442\u043D\u0438\u043A\u0456\u0432"
@@ -79,7 +79,7 @@ MonoBehaviour:
     _minValue: 0.1
     _maxValue: 5.0
     _step: 0.1
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: granary-capacity-unlimited
     _displayName: "\u0410\u043C\u0431\u0430\u0440 \u0431\u0435\u0437 \u043B\u0456\u043C\u0456\u0442\u0443"
     _description: "\u0427\u0438 \u043C\u0430\u044E\u0442\u044C \u0430\u043C\u0431\u0430\u0440\u0438
@@ -117,7 +117,7 @@ MonoBehaviour:
     _minValue: 1000
     _maxValue: 500000
     _step: 500
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: caravan-max-total-size
     _displayName: "\u041C\u0430\u043A\u0441\u0438\u043C\u0430\u043B\u044C\u043D\u0438\u0439
       \u0441\u0443\u043C\u0430\u0440\u043D\u0438\u0439 \u0440\u043E\u0437\u043C\u0456\u0440
@@ -133,7 +133,7 @@ MonoBehaviour:
     _minValue: 0.1
     _maxValue: 10.0
     _step: 0.1
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: caravan-single-full-size-only
     _displayName: "\u0420\u043E\u0437\u043C\u0456\u0440 1.0 \u0437\u0430\u0439\u043C\u0430\u0454
       \u043F\u043E\u0432\u043E\u0437\u043A\u0443 \u043F\u043E\u0432\u043D\u0456\u0441\u0442\u044E"
@@ -148,7 +148,7 @@ MonoBehaviour:
     _minValue: 
     _maxValue: 
     _step: 
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: stock-exponent
     _displayName: "\u041F\u043E\u043A\u0430\u0437\u043D\u0438\u043A \u0437\u0430\u043F\u0430\u0441\u0443"
     _description: "\u041F\u043E\u043A\u0430\u0437\u043D\u0438\u043A \u0441\u0442\u0435\u043F\u0435\u043D\u044F
@@ -160,7 +160,7 @@ MonoBehaviour:
     _minValue: 0.1
     _maxValue: 1.0
     _step: 0.05
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: volume-exponent
     _displayName: "\u041F\u043E\u043A\u0430\u0437\u043D\u0438\u043A \u043E\u0431'\u0454\u043C\u0443"
     _description: "\u041F\u043E\u043A\u0430\u0437\u043D\u0438\u043A \u0441\u0442\u0435\u043F\u0435\u043D\u044F
@@ -172,7 +172,7 @@ MonoBehaviour:
     _minValue: 0.1
     _maxValue: 1.0
     _step: 0.05
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: food-consumption-adult
     _displayName: "\u0421\u043F\u043E\u0436\u0438\u0432\u0430\u043D\u043D\u044F \u0457\u0436\u0456
       (\u0434\u043E\u0440\u043E\u0441\u043B\u0456)"
@@ -185,7 +185,7 @@ MonoBehaviour:
     _minValue: 0.1
     _maxValue: 5.0
     _step: 0.1
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: food-consumption-child
     _displayName: "\u0421\u043F\u043E\u0436\u0438\u0432\u0430\u043D\u043D\u044F \u0457\u0436\u0456
       (\u0434\u0456\u0442\u0438)"
@@ -198,7 +198,7 @@ MonoBehaviour:
     _minValue: 0.1
     _maxValue: 3.0
     _step: 0.1
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: food-consumption-elder
     _displayName: "\u0421\u043F\u043E\u0436\u0438\u0432\u0430\u043D\u043D\u044F \u0457\u0436\u0456
       (\u043F\u0435\u043D\u0441\u0456\u043E\u043D\u0435\u0440\u0438)"
@@ -211,7 +211,7 @@ MonoBehaviour:
     _minValue: 0.1
     _maxValue: 3.0
     _step: 0.1
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: hunger-death-modifier
     _displayName: "\u041C\u043E\u0434\u0438\u0444\u0456\u043A\u0430\u0442\u043E\u0440
       \u0441\u043C\u0435\u0440\u0442\u043D\u043E\u0441\u0442\u0456 \u0432\u0456\u0434
@@ -225,7 +225,7 @@ MonoBehaviour:
     _minValue: 0.001
     _maxValue: 0.1
     _step: 0.001
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: cold-death-modifier
     _displayName: "\u041C\u043E\u0434\u0438\u0444\u0456\u043A\u0430\u0442\u043E\u0440
       \u0441\u043C\u0435\u0440\u0442\u043D\u043E\u0441\u0442\u0456 \u0432\u0456\u0434
@@ -239,7 +239,7 @@ MonoBehaviour:
     _minValue: 0.001
     _maxValue: 0.1
     _step: 0.001
-    _isOverridable: 1
+    _isOverridable: 0
   - _id: one-recipe-per-building
     _displayName: "\u041E\u0434\u0438\u043D \u0440\u0435\u0446\u0435\u043F\u0442
       \u043D\u0430 \u0431\u0443\u0434\u0456\u0432\u043B\u044E"

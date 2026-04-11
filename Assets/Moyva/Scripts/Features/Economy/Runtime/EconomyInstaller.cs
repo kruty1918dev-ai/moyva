@@ -22,6 +22,10 @@ namespace Kruty1918.Moyva.Economy
         [Tooltip("Основна база даних економіки. Створюється через Economy Hub (Moyva/Tools/Редактор Економіки).")]
         private EconomyDatabaseSO _database;
 
+        [SerializeField]
+        [Tooltip("Шаблон параметрів Economy Hub (EconomyRulesConfiguration). Використовується runtime API для централізованого форматування UI-даних.")]
+        private EconomyRulesConfiguration _rulesTemplate;
+
         public override void InstallBindings()
         {
             if (_database == null)
@@ -40,6 +44,12 @@ namespace Kruty1918.Moyva.Economy
             Container.BindInstance(_database)
                 .IfNotBound();
 
+            if (_rulesTemplate != null)
+            {
+                Container.BindInstance(_rulesTemplate)
+                    .IfNotBound();
+            }
+
             // Main facade — handles Calendar + Construction signals integration
             // Scene can accidentally contain multiple EconomyInstaller instances.
             // Guard against duplicate AsSingle bindings (Zenject 6+).
@@ -51,6 +61,13 @@ namespace Kruty1918.Moyva.Economy
 
                 // Explicit execution order: Economy initializes AFTER Construction (0) and GameMode (-10)
                 Container.BindExecutionOrder<EconomyManager>(20);
+            }
+
+            if (!Container.HasBinding<IEconomyRuntimeApi>())
+            {
+                Container.Bind<IEconomyRuntimeApi>()
+                    .To<EconomyRuntimeApi>()
+                    .AsSingle();
             }
         }
     }

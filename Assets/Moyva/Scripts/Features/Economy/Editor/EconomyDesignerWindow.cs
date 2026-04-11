@@ -33,18 +33,18 @@ namespace Kruty1918.Moyva.Economy.Editor
         private static readonly string[] TabLabels =
         {
             " Ресурси",
-            " Overridable",
-            " Settlement Rules",
-            " Population Rules",
-            " Workforce Rules",
-            " Production Rules",
-            " Storage Rules",
-            " Caravan Rules",
-            " Market Rules",
-            " Consumption/Needs",
-            " Death/Mortality",
-            " Building Rules",
-            " AI Extensibility",
+            " Оверайди",
+            " Правила: Поселення",
+            " Правила: Населення",
+            " Правила: Робоча сила",
+            " Правила: Виробництво",
+            " Правила: Склади",
+            " Правила: Каравани",
+            " Правила: Ринок",
+            " Правила: Споживання",
+            " Правила: Смертність",
+            " Правила: Будівлі",
+            " Правила: ШІ",
             " Валідація",
             " Симуляція",
         };
@@ -144,6 +144,28 @@ namespace Kruty1918.Moyva.Economy.Editor
                 "Шукає: дублікати ID, порожні посилання, некоректні числа.\n" +
                 "'Виправити' — безпечне автоматичне виправлення типових помилок.\n" +
                 "Приклад: якщо два ресурси мають ID 'wood' — буде помилка дублікату.";
+
+            public const string OverridableTab =
+                "Оверайди параметрів для налаштувань світу.\n" +
+                "Тут визначається, які параметри можна змінювати перед стартом гри.\n" +
+                "Приклад: дозволити змінювати лише Population і Market, а критичні параметри лишити фіксованими.";
+
+            public const string RulesTemplateField =
+                "Базовий шаблон економічних правил.\n" +
+                "Всі категорії читають параметри саме з цього ассета.\n" +
+                "Якщо список порожній — заповніть дефолтними правилами.";
+
+            public const string AllowAllOverridesBtn =
+                "Увімкнути можливість оверайду для всіх параметрів одразу.\n" +
+                "Зручно для швидких тестів балансу або sandbox-режиму.";
+
+            public const string DisallowAllOverridesBtn =
+                "Вимкнути можливість оверайду для всіх параметрів одразу.\n" +
+                "Після цього можна вручну увімкнути лише потрібні параметри.";
+
+            public const string FillDefaultRulesBtn =
+                "Заповнити список параметрів дефолтними правилами хабу.\n" +
+                "Використовуйте, якщо шаблон створено порожнім або очищено.";
 
             public const string SimulationTab =
                 "Детерміністична симуляція виробництва.\n" +
@@ -332,47 +354,47 @@ namespace Kruty1918.Moyva.Economy.Editor
                     break;
 
                 case Tab.SettlementRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.SettlementRules, "Settlement Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.SettlementRules, "Правила: Поселення");
                     break;
 
                 case Tab.PopulationRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.PopulationRules, "Population Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.PopulationRules, "Правила: Населення");
                     break;
 
                 case Tab.WorkforceRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.WorkforceRules, "Workforce Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.WorkforceRules, "Правила: Робоча сила");
                     break;
 
                 case Tab.ProductionRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.ProductionRules, "Production Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.ProductionRules, "Правила: Виробництво");
                     break;
 
                 case Tab.StorageRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.StorageRules, "Storage Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.StorageRules, "Правила: Склади");
                     break;
 
                 case Tab.CaravanRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.CaravanRules, "Caravan Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.CaravanRules, "Правила: Каравани");
                     break;
 
                 case Tab.MarketRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.MarketRules, "Market Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.MarketRules, "Правила: Ринок");
                     break;
 
                 case Tab.ConsumptionNeedsRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.ConsumptionNeeds, "Consumption/Needs Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.ConsumptionNeeds, "Правила: Споживання");
                     break;
 
                 case Tab.DeathMortalityRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.DeathMortality, "Death/Mortality Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.DeathMortality, "Правила: Смертність");
                     break;
 
                 case Tab.BuildingRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.BuildingRules, "Building Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.BuildingRules, "Правила: Будівлі");
                     break;
 
                 case Tab.AiExtensibilityRules:
-                    DrawRuleCategoryTab(EconomyRuleCategory.AIExtensibility, "AI Extensibility Rules");
+                    DrawRuleCategoryTab(EconomyRuleCategory.AIExtensibility, "Правила: ШІ та розширюваність");
                     break;
 
                 case Tab.Validation:
@@ -392,10 +414,8 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             _rulesConfigurationSo.Update();
 
-            EditorGUILayout.LabelField("Overridable Parameters", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(
-                "Тут визначається, які параметри гравець може змінювати у розширених налаштуваннях світу.",
-                MessageType.Info);
+            EditorGUILayout.LabelField("Оверайди параметрів", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(Tips.OverridableTab, MessageType.Info);
 
             DrawRulesConfigurationSelector();
 
@@ -407,7 +427,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             }
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Дозволити усе", GUILayout.Width(160f)))
+            if (GUILayout.Button(new GUIContent("Дозволити усе", Tips.AllowAllOverridesBtn), GUILayout.Width(160f)))
             {
                 Undo.RecordObject(_rulesConfiguration, "Economy: allow all overrides");
                 for (int i = 0; i < parameters.arraySize; i++)
@@ -422,7 +442,7 @@ namespace Kruty1918.Moyva.Economy.Editor
                     EditorUtility.SetDirty(_rulesConfiguration);
             }
 
-            if (GUILayout.Button("Заборонити усе", GUILayout.Width(160f)))
+            if (GUILayout.Button(new GUIContent("Заборонити усе", Tips.DisallowAllOverridesBtn), GUILayout.Width(160f)))
             {
                 Undo.RecordObject(_rulesConfiguration, "Economy: disallow all overrides");
                 for (int i = 0; i < parameters.arraySize; i++)
@@ -442,7 +462,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             if (parameters.arraySize == 0)
             {
                 EditorGUILayout.HelpBox("Список параметрів порожній. Натисніть кнопку нижче щоб заповнити дефолтними правилами.", MessageType.Warning);
-                if (GUILayout.Button("Заповнити дефолтними правилами", GUILayout.Height(30f)))
+                if (GUILayout.Button(new GUIContent("Заповнити дефолтними правилами", Tips.FillDefaultRulesBtn), GUILayout.Height(30f)))
                 {
                     _rulesConfiguration.InitializeDefaults();
                     _rulesConfigurationSo = new SerializedObject(_rulesConfiguration);
@@ -487,7 +507,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             _rulesConfigurationSo.Update();
 
             EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("Редагуйте параметри категорії. Ці значення використовуються як дефолтний шаблон для runtime і world override.", MessageType.Info);
+            EditorGUILayout.HelpBox(GetRuleCategoryHint(category), MessageType.Info);
 
             DrawRulesConfigurationSelector();
 
@@ -501,7 +521,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             if (parameters.arraySize == 0)
             {
                 EditorGUILayout.HelpBox("Список параметрів порожній. Натисніть кнопку нижче щоб заповнити дефолтними правилами.", MessageType.Warning);
-                if (GUILayout.Button("Заповнити дефолтними правилами", GUILayout.Height(30f)))
+                if (GUILayout.Button(new GUIContent("Заповнити дефолтними правилами", Tips.FillDefaultRulesBtn), GUILayout.Height(30f)))
                 {
                     _rulesConfiguration.InitializeDefaults();
                     _rulesConfigurationSo = new SerializedObject(_rulesConfiguration);
@@ -547,12 +567,43 @@ namespace Kruty1918.Moyva.Economy.Editor
                 EditorUtility.SetDirty(_rulesConfiguration);
         }
 
+        private static string GetRuleCategoryHint(EconomyRuleCategory category)
+        {
+            switch (category)
+            {
+                case EconomyRuleCategory.SettlementRules:
+                    return "Правила поселень: ліміт поселень, мінімальна відстань між ратушами, базові умови існування поселення.";
+                case EconomyRuleCategory.PopulationRules:
+                    return "Правила населення: приріст, прибуття нових жителів, ключові демографічні параметри.";
+                case EconomyRuleCategory.WorkforceRules:
+                    return "Правила робочої сили: пріоритети розподілу робітників і баланс між базовими потребами та виробництвом.";
+                case EconomyRuleCategory.ProductionRules:
+                    return "Правила виробництва: швидкість циклів, вимоги до input, коефіцієнти продуктивності та псування їжі.";
+                case EconomyRuleCategory.StorageRules:
+                    return "Правила складів: модель зберігання, логіка загального пулу поселення, обмеження на типи складів.";
+                case EconomyRuleCategory.CaravanRules:
+                    return "Правила караванів: ліміти, вантажомісткість, вага і розмір товарів, особливі обмеження логістики.";
+                case EconomyRuleCategory.MarketRules:
+                    return "Правила ринку: формула ціни, вплив запасів і обсягу угоди, граничні мультиплікатори ціни.";
+                case EconomyRuleCategory.ConsumptionNeeds:
+                    return "Правила споживання: потреби за віком, витрати їжі/води/дров/одягу і наслідки дефіциту.";
+                case EconomyRuleCategory.DeathMortality:
+                    return "Правила смертності: ризики від голоду, холоду, хвороб, війни та інші причини втрат населення.";
+                case EconomyRuleCategory.BuildingRules:
+                    return "Правила будівель: пауза виробництва, maintenance, обмеження рецептів і поведінка пошкоджених будівель.";
+                case EconomyRuleCategory.AIExtensibility:
+                    return "Правила ШІ-розширюваності: підготовка параметрів для майбутньої автономної AI-економіки та торгівлі.";
+                default:
+                    return "Редагуйте параметри категорії. Ці значення використовуються як дефолтний шаблон для runtime і world override.";
+            }
+        }
+
         private void DrawRulesConfigurationSelector()
         {
             EditorGUILayout.BeginHorizontal();
             EditorGUI.BeginChangeCheck();
             var next = (EconomyRulesConfiguration)EditorGUILayout.ObjectField(
-                new GUIContent("Rules Template"),
+                new GUIContent("Шаблон правил", Tips.RulesTemplateField),
                 _rulesConfiguration,
                 typeof(EconomyRulesConfiguration),
                 false);
@@ -579,6 +630,9 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             if (_rulesConfigurationSo == null || _rulesConfigurationSo.targetObject != _rulesConfiguration)
                 _rulesConfigurationSo = new SerializedObject(_rulesConfiguration);
+
+            _rulesConfiguration.EnsureDefaultUiFormattingParameters();
+            _rulesConfigurationSo.Update();
 
             var parameters = _rulesConfigurationSo.FindProperty("_parameters");
             if (parameters != null && parameters.arraySize == 0)

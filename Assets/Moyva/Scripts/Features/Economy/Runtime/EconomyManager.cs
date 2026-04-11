@@ -18,6 +18,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
     /// </summary>
     public sealed class EconomyManager : IInitializable, IDisposable
     {
+        public const string DefaultOwnerId = "player_0";
+
         private readonly ICalendarService _calendar;
         private readonly SignalBus _signalBus;
         private readonly EconomyDatabaseSO _database;
@@ -89,6 +91,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 _signalBus.Fire(new EconomyTickCompletedSignal
                 {
                     SettlementId = state.SettlementId,
+                    OwnerId = NormalizeOwnerId(state.OwnerId),
                     Turn = result.Turn,
                     TotalPopulation = result.TotalPopulation,
                     Arrivals = result.Arrivals,
@@ -102,6 +105,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     _signalBus.Fire(new SettlementDeactivatedSignal
                     {
                         SettlementId = state.SettlementId,
+                        OwnerId = NormalizeOwnerId(state.OwnerId),
                         Reason = "Населення = 0",
                     });
                 }
@@ -119,18 +123,20 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (definition == null)
                 return;
 
+            var ownerId = NormalizeOwnerId(signal.OwnerId);
+
             // If this building is a TownHall, create a new settlement
             if (definition.IsTownHall)
             {
-                CreateSettlement(signal.BuildingId, signal.Position, definition);
+                CreateSettlement(signal.BuildingId, signal.Position, definition, ownerId);
                 return;
             }
 
-            // Otherwise, assign building to nearest settlement
-            var settlementId = FindNearestSettlement(signal.Position);
+            // Otherwise, assign building to nearest settlement of the same owner
+            var settlementId = FindNearestSettlement(signal.Position, ownerId);
             if (settlementId == null)
             {
-                Debug.LogWarning($"[Economy] Будівлю '{signal.BuildingId}' розміщено за межами поселень.");
+                Debug.LogWarning($"[Economy] Будівлю '{signal.BuildingId}' (owner='{ownerId}') розміщено за межами поселень цього власника.");
                 return;
             }
 
@@ -175,6 +181,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 _signalBus.Fire(new SettlementDeactivatedSignal
                 {
                     SettlementId = settlementId,
+                    OwnerId = NormalizeOwnerId(state.OwnerId),
                     Reason = "Ратушу знищено",
                 });
             }
@@ -185,7 +192,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         // ───────────────────────── Settlement Management
 
-        private void CreateSettlement(string townHallBuildingId, Vector2Int position, BuildingDefinition definition)
+        private void CreateSettlement(string townHallBuildingId, Vector2Int position, BuildingDefinition definition, string ownerId)
         {
             var rules = Rules;
             if (rules == null)
@@ -209,6 +216,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             var state = new EconomySettlementState
             {
                 SettlementId = id,
+                OwnerId = ownerId,
                 IsActive = true,
             };
 
@@ -227,10 +235,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _signalBus.Fire(new SettlementCreatedSignal
             {
                 SettlementId = id,
+                OwnerId = ownerId,
                 TownHallPosition = position,
             });
 
-            Debug.Log($"[Economy] Поселення '{id}' створено на позиції {position}.");
+            Debug.Log($"[Economy] Поселення '{id}' (owner='{ownerId}') створено на позиції {position}.");
         }
 
         private static void AddBuildingToSettlement(EconomySettlementState state, string buildingId, BuildingDefinition definition)
@@ -267,7 +276,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return _buildingRegistry.GetById(buildingId);
         }
 
-        private string FindNearestSettlement(Vector2Int position)
+        private string FindNearestSettlement(Vector2Int position, string ownerId)
         {
             // Simple approach: find closest town hall position
             string closest = null;
@@ -276,6 +285,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
             foreach (var kvp in _positionToSettlement)
             {
                 if (!_settlements.TryGetValue(kvp.Value, out var state) || !state.IsActive)
+                    continue;
+
+                if (!string.Equals(state.OwnerId, ownerId, StringComparison.Ordinal))
                     continue;
 
                 float dist = Vector2Int.Distance(kvp.Key, position);
@@ -303,9 +315,15 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 _signalBus.Fire(new ResourceDeficitSignal
                 {
                     SettlementId = state.SettlementId,
+                    OwnerId = NormalizeOwnerId(state.OwnerId),
                     ResourceId = resourceId,
                 });
             }
+        }
+
+        private static string NormalizeOwnerId(string ownerId)
+        {
+            return string.IsNullOrWhiteSpace(ownerId) ? DefaultOwnerId : ownerId.Trim();
         }
 
         // ───────────────────────── Public API for UI / other systems
@@ -329,6 +347,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _signalBus.Fire(new SettlementResourceChangedSignal
             {
                 SettlementId = settlementId,
+                OwnerId = NormalizeOwnerId(state.OwnerId),
                 ResourceId = resourceId,
                 NewAmount = state.GetResource(resourceId),
                 Delta = amount,

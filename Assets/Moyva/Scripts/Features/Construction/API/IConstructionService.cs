@@ -20,6 +20,17 @@ namespace Kruty1918.Moyva.Construction.API
         string GetSelectedBuildingId();
 
         /// <summary>
+        /// Встановити owner для наступних операцій Confirm/RestoreFromSave.
+        /// Використовується для мультиплеєра/ботів (ізоляція подій по власнику).
+        /// </summary>
+        void SetActiveOwner(string ownerId);
+
+        /// <summary>
+        /// Поточний owner, який буде записаний у BuildingPlacedSignal / BuildingDemolishedSignal.
+        /// </summary>
+        string GetActiveOwner();
+
+        /// <summary>
         /// Спробувати розмістити preview будівлі на тайлі.
         /// Надсилає BuildingPreviewChangedSignal з актуальним BuildingPreviewState.
         /// Повертає true якщо PreviewState = Valid, false якщо Blocked або State != Placing.

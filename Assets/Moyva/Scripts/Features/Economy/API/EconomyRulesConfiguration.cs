@@ -144,6 +144,18 @@ namespace Kruty1918.Moyva.Economy.API
                 EconomyRuleCategory.MarketRules, EconomyRuleParameterType.Float,
                 "0.20", "0.1", "1.0", "0.05", true));
 
+            _parameters.Add(new EconomyRuleParameter(
+                "ui-summary-materials-format", "Формат UI: підсумок матеріалів",
+                "Рядок форматування для загального підсумку матеріалів у UI гравця. Використовуйте плейсхолдер {0} для числа.",
+                EconomyRuleCategory.MarketRules, EconomyRuleParameterType.String,
+                "Матеріали: {0:0.#}", null, null, null, false));
+
+            _parameters.Add(new EconomyRuleParameter(
+                "ui-summary-food-format", "Формат UI: підсумок їжі",
+                "Рядок форматування для загального підсумку їжі у UI гравця. Використовуйте плейсхолдер {0} для числа.",
+                EconomyRuleCategory.MarketRules, EconomyRuleParameterType.String,
+                "Їжа: {0:0.#}", null, null, null, false));
+
             // Consumption/Needs Rules
             _parameters.Add(new EconomyRuleParameter(
                 "food-consumption-adult", "Споживання їжі (дорослі)",
@@ -190,6 +202,33 @@ namespace Kruty1918.Moyva.Economy.API
                 EconomyRuleCategory.AIExtensibility, EconomyRuleParameterType.Boolean,
                 "false", null, null, null, false));
 
+            UnityEditor.EditorUtility.SetDirty(this);
+        }
+
+        /// <summary>
+        /// [Editor only] Додає обов'язкові UI-параметри, якщо їх бракує в існуючому ассеті.
+        /// </summary>
+        public void EnsureDefaultUiFormattingParameters()
+        {
+            EnsureParameterExists(new EconomyRuleParameter(
+                "ui-summary-materials-format", "Формат UI: підсумок матеріалів",
+                "Рядок форматування для загального підсумку матеріалів у UI гравця. Використовуйте плейсхолдер {0} для числа.",
+                EconomyRuleCategory.MarketRules, EconomyRuleParameterType.String,
+                "Матеріали: {0:0.#}", null, null, null, false));
+
+            EnsureParameterExists(new EconomyRuleParameter(
+                "ui-summary-food-format", "Формат UI: підсумок їжі",
+                "Рядок форматування для загального підсумку їжі у UI гравця. Використовуйте плейсхолдер {0} для числа.",
+                EconomyRuleCategory.MarketRules, EconomyRuleParameterType.String,
+                "Їжа: {0:0.#}", null, null, null, false));
+        }
+
+        private void EnsureParameterExists(EconomyRuleParameter parameter)
+        {
+            if (_parameters.Exists(p => p != null && p.Id == parameter.Id))
+                return;
+
+            _parameters.Add(parameter);
             UnityEditor.EditorUtility.SetDirty(this);
         }
 #endif

@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.Signals
     public struct EconomyTickCompletedSignal
     {
         public string SettlementId;
+        public string OwnerId;
         public int Turn;
         public int TotalPopulation;
         public int Arrivals;
@@ -23,6 +24,7 @@ namespace Kruty1918.Moyva.Signals
     public struct SettlementCreatedSignal
     {
         public string SettlementId;
+        public string OwnerId;
         public Vector2Int TownHallPosition;
     }
 
@@ -33,6 +35,7 @@ namespace Kruty1918.Moyva.Signals
     public struct SettlementDeactivatedSignal
     {
         public string SettlementId;
+        public string OwnerId;
         public string Reason;
     }
 
@@ -43,6 +46,7 @@ namespace Kruty1918.Moyva.Signals
     public struct SettlementResourceChangedSignal
     {
         public string SettlementId;
+        public string OwnerId;
         public string ResourceId;
         public float NewAmount;
         public float Delta;
@@ -55,6 +59,7 @@ namespace Kruty1918.Moyva.Signals
     public struct ResourceDeficitSignal
     {
         public string SettlementId;
+        public string OwnerId;
         public string ResourceId;
     }
 }
