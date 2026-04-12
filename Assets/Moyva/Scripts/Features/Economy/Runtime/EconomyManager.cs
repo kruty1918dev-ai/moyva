@@ -36,6 +36,13 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly Dictionary<Vector2Int, string> _positionToSettlement =
             new Dictionary<Vector2Int, string>();
 
+        // Map of position → building id/owner for ownership checks and contextual UI.
+        private readonly Dictionary<Vector2Int, string> _positionToBuildingId =
+            new Dictionary<Vector2Int, string>();
+
+        private readonly Dictionary<Vector2Int, string> _positionToOwnerId =
+            new Dictionary<Vector2Int, string>();
+
         private EconomyRulesConfigSO Rules => _database?.RulesConfig;
 
         [Inject]
@@ -143,6 +150,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
             var state = _settlements[settlementId];
             AddBuildingToSettlement(state, signal.BuildingId, definition);
             _positionToSettlement[signal.Position] = settlementId;
+            _positionToBuildingId[signal.Position] = signal.BuildingId;
+            _positionToOwnerId[signal.Position] = ownerId;
+
+            if (definition.IsWarehouse)
+                state.EnsureWarehousePool(ToWarehouseKey(signal.Position));
 
             // Update housing capacity
             if (definition.IsHousing)
@@ -173,6 +185,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
             }
 
             _positionToSettlement.Remove(signal.Position);
+            _positionToBuildingId.Remove(signal.Position);
+            _positionToOwnerId.Remove(signal.Position);
+
+            if (definition.IsWarehouse)
+                state.RemoveWarehousePool(ToWarehouseKey(signal.Position));
 
             // TownHall destroyed → deactivate settlement
             if (definition.IsTownHall)
@@ -216,6 +233,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             var state = new EconomySettlementState
             {
                 SettlementId = id,
+                SettlementName = $"Settlement {_settlements.Count + 1}",
                 OwnerId = ownerId,
                 IsActive = true,
             };
@@ -231,6 +249,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             _settlements[id] = state;
             _positionToSettlement[position] = id;
+            _positionToBuildingId[position] = townHallBuildingId;
+            _positionToOwnerId[position] = ownerId;
 
             _signalBus.Fire(new SettlementCreatedSignal
             {
@@ -252,6 +272,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 IsActive = true,
                 ProductionProgress = 0f,
             });
+        }
+
+        private static string ToWarehouseKey(Vector2Int position)
+        {
+            return $"{position.x}:{position.y}";
         }
 
         private void RecalculateHousing(EconomySettlementState state)
@@ -331,8 +356,94 @@ namespace Kruty1918.Moyva.Economy.Runtime
         /// <summary>Отримати стан поселення за ID.</summary>
         public EconomySettlementState GetSettlement(string settlementId)
         {
+            if (string.IsNullOrWhiteSpace(settlementId))
+                return null;
+
             _settlements.TryGetValue(settlementId, out var state);
             return state;
+        }
+
+        public bool TryGetSettlementByPosition(Vector2Int position, out EconomySettlementState state)
+        {
+            state = null;
+            if (!_positionToSettlement.TryGetValue(position, out var settlementId))
+                return false;
+
+            if (!_settlements.TryGetValue(settlementId, out state))
+                return false;
+
+            return state != null;
+        }
+
+        public bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId)
+        {
+            buildingId = null;
+            ownerId = null;
+
+            if (!_positionToBuildingId.TryGetValue(position, out buildingId) || string.IsNullOrWhiteSpace(buildingId))
+                return false;
+
+            _positionToOwnerId.TryGetValue(position, out ownerId);
+            ownerId = NormalizeOwnerId(ownerId);
+            return true;
+        }
+
+        public Dictionary<string, float> GetWarehouseResourceTotalsByPosition(Vector2Int warehousePosition)
+        {
+            if (!_positionToSettlement.TryGetValue(warehousePosition, out var settlementId))
+                return new Dictionary<string, float>(StringComparer.Ordinal);
+
+            if (!_settlements.TryGetValue(settlementId, out var state) || state == null)
+                return new Dictionary<string, float>(StringComparer.Ordinal);
+
+            return state.GetWarehouseSnapshot(ToWarehouseKey(warehousePosition));
+        }
+
+        public Dictionary<string, float> GetSettlementWarehousesTotal(string settlementId)
+        {
+            if (string.IsNullOrWhiteSpace(settlementId))
+                return new Dictionary<string, float>(StringComparer.Ordinal);
+
+            if (!_settlements.TryGetValue(settlementId, out var state) || state == null)
+                return new Dictionary<string, float>(StringComparer.Ordinal);
+
+            return state.GetAllWarehousesTotalSnapshot();
+        }
+
+        public Dictionary<string, float> GetSettlementResourceTotals(string settlementId)
+        {
+            if (string.IsNullOrWhiteSpace(settlementId))
+                return new Dictionary<string, float>(StringComparer.Ordinal);
+
+            if (!_settlements.TryGetValue(settlementId, out var state) || state == null)
+                return new Dictionary<string, float>(StringComparer.Ordinal);
+
+            return new Dictionary<string, float>(state.ResourcePool, StringComparer.Ordinal);
+        }
+
+        public Dictionary<string, float> GetOwnerResourceTotals(string ownerId)
+        {
+            var normalized = NormalizeOwnerId(ownerId);
+            var totals = new Dictionary<string, float>(StringComparer.Ordinal);
+
+            foreach (var settlement in _settlements.Values)
+            {
+                if (settlement == null)
+                    continue;
+
+                if (!string.Equals(NormalizeOwnerId(settlement.OwnerId), normalized, StringComparison.Ordinal))
+                    continue;
+
+                foreach (var resource in settlement.ResourcePool)
+                {
+                    if (totals.ContainsKey(resource.Key))
+                        totals[resource.Key] += resource.Value;
+                    else
+                        totals[resource.Key] = resource.Value;
+                }
+            }
+
+            return totals;
         }
 
         /// <summary>Додати ресурс до поселення вручну (караван, чіт, тестування).</summary>
@@ -352,6 +463,20 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 NewAmount = state.GetResource(resourceId),
                 Delta = amount,
             });
+        }
+
+        public string GetSettlementNameOrFallback(string settlementId)
+        {
+            if (string.IsNullOrWhiteSpace(settlementId))
+                return "Без поселення";
+
+            if (!_settlements.TryGetValue(settlementId, out var state) || state == null)
+                return settlementId;
+
+            if (!string.IsNullOrWhiteSpace(state.SettlementName))
+                return state.SettlementName;
+
+            return state.SettlementId;
         }
     }
 }

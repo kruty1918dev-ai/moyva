@@ -11,6 +11,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             Container.BindInterfacesAndSelfTo<TileClickInputService>()
                 .AsSingle();
 
+            Container.BindInterfacesAndSelfTo<WorldInfoSelectionCoordinator>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<TileInteractionService>()
                 .AsSingle();
         }

@@ -83,12 +83,44 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Initialize()
         {
-            _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
+            Debug.Log("[Construction] Initialize() почало роботу...");
+            
+            try
+            {
+                if (_signalBus == null)
+                {
+                    Debug.LogError("[Construction] Initialize: _signalBus == null");
+                    return;
+                }
+
+                _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
+                Debug.Log("[Construction] ✓ GameModeChangedSignal підписано");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[Construction] ПОМИЛКА в Initialize(): {ex.GetType().Name} - {ex.Message}");
+            }
         }
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+            Debug.Log("[Construction] Dispose() почало роботу...");
+            
+            try
+            {
+                if (_signalBus == null)
+                {
+                    Debug.LogWarning("[Construction] Dispose: _signalBus == null");
+                    return;
+                }
+
+                _signalBus.Unsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+                Debug.Log("[Construction] ✓ GameModeChangedSignal відписано");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[Construction] ПОМИЛКА в Dispose(): {ex.GetType().Name} - {ex.Message}");
+            }
         }
 
         private void OnGameModeChanged(GameModeChangedSignal signal)
@@ -106,26 +138,34 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void SelectBuilding(string buildingId)
         {
+            Debug.Log($"[Construction] SelectBuilding('{buildingId}') викликана. active={_isActive}");
+
             if (!_isActive)
             {
-                Debug.LogWarning("[Construction] SelectBuilding called outside Construction mode.");
+                Debug.LogWarning("[Construction] SelectBuilding: Construction mode ВИМКНЕНА");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(buildingId))
             {
-                Debug.LogWarning("[Construction] SelectBuilding called with empty buildingId.");
+                Debug.LogWarning("[Construction] SelectBuilding: buildingId порожня");
                 return;
             }
 
-            // Вибір будівлі завжди переводить UX у режим розміщення.
-            ClearPendingDemolitionsPreview();
-            IsDemolishMode = false;
-            _selectedBuildingId = buildingId;
-            State = BuildingPlacementState.Placing;
+            try
+            {
+                // Вибір будівлі завжди переводить UX у режим розміщення.
+                ClearPendingDemolitionsPreview();
+                IsDemolishMode = false;
+                _selectedBuildingId = buildingId;
+                State = BuildingPlacementState.Placing;
 
-            if (VerboseLogs)
-                Debug.Log($"[Construction] SelectBuilding -> id='{_selectedBuildingId}', state={State}");
+                Debug.Log($"[Construction] ✓ SelectBuilding -> id='{_selectedBuildingId}', state={State}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[Construction] ПОМИЛКА в SelectBuilding('{buildingId}'): {ex.GetType().Name} - {ex.Message}");
+            }
         }
 
         public string GetSelectedBuildingId()
@@ -145,17 +185,29 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool TryPreviewAt(Vector2Int position)
         {
+            // Перевірка стану
             if (State != BuildingPlacementState.Placing)
             {
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] TryPreviewAt({position}) ignored: state={State}");
+                    Debug.Log($"[Construction] TryPreviewAt({position}) проігнорована: неправильний стан {State}");
+                return false;
+            }
+
+            // Перевірка, чи вибрано будівлю
+            if (string.IsNullOrWhiteSpace(_selectedBuildingId))
+            {
+                Debug.LogWarning("[Construction] TryPreviewAt: _selectedBuildingId порожній або null");
                 return false;
             }
 
             bool selectedIsGate = _wallPlacementService != null && _wallPlacementService.IsGate(_selectedBuildingId);
 
+            // Перевірка на дублювання позиції
             if (_pendingPositions.Contains(position))
             {
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] TryPreviewAt({position}): позиція вже у pending-списку");
+                
                 // Дозволяємо у preview заміняти pending-стіну на ворота на тому ж тайлі.
                 if (selectedIsGate && TryReplacePendingWallWithGate(position, _selectedBuildingId))
                     return true;
@@ -174,6 +226,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (selectedIsGate && !gateReplacementAllowed)
             {
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] Ворота на {position} не можуть замінити стіну");
+                
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
                     Position = position,
@@ -183,6 +238,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            // Основна перевірка розміщення
             if (!gateReplacementAllowed && !CanPlaceAt(position, null, _selectedBuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var townHallZoneBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
@@ -197,6 +253,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 return false;
             }
+
+            if (VerboseLogs)
+                Debug.Log($"[Construction] TryPreviewAt({position}) -> VALID для {_selectedBuildingId}");
 
             return AddPendingPlacement(position, _selectedBuildingId, clearRedoHistory: true);
         }
@@ -589,20 +648,56 @@ namespace Kruty1918.Moyva.Construction.Runtime
         /// </summary>
         private bool IsBlockedBySpacing(Vector2Int position, Vector2Int? ignoredPendingPosition)
         {
-            if (_minSpacing <= 0) return false;
-
-            for (int dx = -_minSpacing; dx <= _minSpacing; dx++)
-                for (int dy = -_minSpacing; dy <= _minSpacing; dy++)
+            try
+            {
+                if (_minSpacing <= 0)
                 {
-                    if (dx == 0 && dy == 0) continue;
-                    var neighbor = new Vector2Int(position.x + dx, position.y + dy);
-
-                    bool blockedByPending = _pendingPositions.Contains(neighbor) && neighbor != ignoredPendingPosition;
-                    if (_objectsMapService.IsOccupied(neighbor) || blockedByPending)
-                        return true;
+                    if (VerboseLogs)
+                        Debug.Log($"[Construction] IsBlockedBySpacing({position}): _minSpacing <= 0, spacing-перевірка відключена");
+                    return false;
                 }
 
-            return false;
+                if (_objectsMapService == null)
+                {
+                    Debug.LogError("[Construction] IsBlockedBySpacing: _objectsMapService == null");
+                    return false;
+                }
+
+                if (_pendingPositions == null)
+                {
+                    Debug.LogError("[Construction] IsBlockedBySpacing: _pendingPositions == null");
+                    return false;
+                }
+
+                for (int dx = -_minSpacing; dx <= _minSpacing; dx++)
+                {
+                    for (int dy = -_minSpacing; dy <= _minSpacing; dy++)
+                    {
+                        if (dx == 0 && dy == 0) continue;
+                        var neighbor = new Vector2Int(position.x + dx, position.y + dy);
+
+                        bool blockedByPending = _pendingPositions.Contains(neighbor) && neighbor != ignoredPendingPosition;
+                        bool isOccupied = _objectsMapService.IsOccupied(neighbor);
+
+                        if (isOccupied || blockedByPending)
+                        {
+                            if (VerboseLogs)
+                                Debug.Log($"[Construction] IsBlockedBySpacing({position}): BLOCKED біля {neighbor} (occupied={isOccupied}, pending={blockedByPending})");
+                            return true;
+                        }
+                    }
+                }
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] IsBlockedBySpacing({position}): OK (spacing={_minSpacing})");
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Construction] ПОМИЛКА в IsBlockedBySpacing({position}): {ex.GetType().Name} - {ex.Message}");
+                return false;
+            }
         }
 
         /// <summary>
@@ -612,8 +707,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
         /// </summary>
         private bool IsBlockedByFog(Vector2Int position)
         {
-            if (_fogOfWarService == null) return false;
-            return _fogOfWarService.GetFogState(position) != FogStateType.Visible;
+            try
+            {
+                if (_fogOfWarService == null)
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[Construction] IsBlockedByFog({position}): _fogOfWarService == null, fog-перевірка відключена");
+                    return false;
+                }
+
+                var fogState = _fogOfWarService.GetFogState(position);
+                bool isBlocked = fogState != FogStateType.Visible;
+
+                if (VerboseLogs && isBlocked)
+                    Debug.Log($"[Construction] IsBlockedByFog({position}): BLOCKED (fogState={fogState})");
+
+                return isBlocked;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Construction] ПОМИЛКА в IsBlockedByFog({position}): {ex.GetType().Name} - {ex.Message}");
+                return false;
+            }
         }
 
         private bool CanPlaceAt(
@@ -625,50 +740,168 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out bool fogBlocked,
             out bool townHallZoneBlocked)
         {
-            tileOccupied = _objectsMapService.IsOccupied(position)
-                || (_pendingPositions.Contains(position) && position != ignoredPendingPosition);
-            spacingBlocked = !tileOccupied && IsBlockedBySpacing(position, ignoredPendingPosition);
-            fogBlocked = !tileOccupied && !spacingBlocked && IsBlockedByFog(position);
-            townHallZoneBlocked = !tileOccupied && !spacingBlocked && !fogBlocked
-                && IsBlockedByTownHallZone(position, buildingId, ignoredPendingPosition);
+            if (VerboseLogs)
+                Debug.Log($"[Construction] CanPlaceAt({position}, buildingId={buildingId}) проверка ПОЧАЛАСЬ");
 
-            return !tileOccupied && !spacingBlocked && !fogBlocked && !townHallZoneBlocked;
+            try
+            {
+                tileOccupied = _objectsMapService.IsOccupied(position)
+                    || (_pendingPositions.Contains(position) && position != ignoredPendingPosition);
+                
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] CanPlaceAt({position}): tileOccupied={tileOccupied}");
+
+                spacingBlocked = !tileOccupied && IsBlockedBySpacing(position, ignoredPendingPosition);
+                
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] CanPlaceAt({position}): spacingBlocked={spacingBlocked}");
+
+                fogBlocked = !tileOccupied && !spacingBlocked && IsBlockedByFog(position);
+                
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] CanPlaceAt({position}): fogBlocked={fogBlocked}");
+
+                townHallZoneBlocked = !tileOccupied && !spacingBlocked && !fogBlocked
+                    && IsBlockedByTownHallZone(position, buildingId, ignoredPendingPosition);
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] CanPlaceAt({position}): townHallZoneBlocked={townHallZoneBlocked}");
+
+                bool result = !tileOccupied && !spacingBlocked && !fogBlocked && !townHallZoneBlocked;
+                
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] CanPlaceAt({position}) результат: {(result ? "✓ VALID" : "❌ BLOCKED")}");
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Construction] ПОМИЛКА в CanPlaceAt({position}, {buildingId}): {ex.GetType().Name} - {ex.Message}");
+                tileOccupied = false;
+                spacingBlocked = false;
+                fogBlocked = false;
+                townHallZoneBlocked = false;
+                return false;
+            }
         }
 
         /// <summary>
         /// Правило поселення: будь-яку не-ратушу можна ставити лише в зоні дії ратуші.
-        /// Якщо ратуш ще немає — блокуємо будівництво всіх інших будівель.
+        /// Якщо в реєстрі взагалі немає будівель типу TownHall — правило ігнорується.
         /// </summary>
         private bool IsBlockedByTownHallZone(Vector2Int position, string buildingId, Vector2Int? ignoredPendingPosition)
         {
-            if (_townHallBuildRadius <= 0)
+            // Базові перевірки
+            if (string.IsNullOrWhiteSpace(buildingId))
+            {
+                Debug.LogWarning("[Construction] IsBlockedByTownHallZone: buildingId порожній");
                 return false;
+            }
 
-            if (string.IsNullOrWhiteSpace(buildingId) || _buildingRegistry == null)
+            if (_buildingRegistry == null)
+            {
+                Debug.LogError("[Construction] IsBlockedByTownHallZone: _buildingRegistry == null");
                 return false;
+            }
 
             var candidate = _buildingRegistry.GetById(buildingId);
             if (candidate == null)
-                return false;
-
-            // Ратушу дозволяємо ставити будь-де (інші обмеження застосовуються окремо).
-            if (candidate.IsTownHall)
-                return false;
-
-            int radiusSq = _townHallBuildRadius * _townHallBuildRadius;
-
-            // 1) Уже підтверджені гравцем ратуші
-            foreach (var kvp in _playerPlacedBuildings)
             {
-                var def = _buildingRegistry.GetById(kvp.Value);
-                if (def == null || !def.IsTownHall)
-                    continue;
-
-                if ((kvp.Key - position).sqrMagnitude <= radiusSq)
-                    return false;
+                Debug.LogWarning($"[Construction] IsBlockedByTownHallZone: будівля '{buildingId}' не знайдена у реєстрі");
+                return false;
             }
 
-            // 2) Ратуша в поточному pending-сеті (дозволяє в одній сесії: спочатку ратушу, потім інші)
+            // Якщо жодна будівля в реєстрі не позначена IsTownHall — правило не діє.
+            bool anyTownHallDefined = System.Array.Exists(
+                _buildingRegistry.GetAll(),
+                def => def != null && def.IsTownHall);
+            
+            if (!anyTownHallDefined)
+            {
+                if (VerboseLogs)
+                    Debug.Log("[Construction] IsBlockedByTownHallZone: RuleDisabled - немає ніякої TownHall будівлі у реєстрі");
+                return false;
+            }
+
+            int radius = candidate.TownHallProximityRadiusOverride > 0
+                ? candidate.TownHallProximityRadiusOverride
+                : _townHallBuildRadius;
+
+            if (radius <= 0)
+            {
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] IsBlockedByTownHallZone: radius <= 0 ({radius}) - правило відключено");
+                return false;
+            }
+
+            bool hasTownHallInRange = HasTownHallInRadius(position, radius, ignoredPendingPosition);
+            
+            if (VerboseLogs)
+                Debug.Log($"[Construction] IsBlockedByTownHallZone({position}, {buildingId}): radius={radius}, hasTownHallInRange={hasTownHallInRange}");
+
+            bool requireTownHallInRange;
+            bool blockWhenTownHallExists;
+
+            if (candidate.UseCustomTownHallRules)
+            {
+                requireTownHallInRange = candidate.RequireTownHallInRange;
+                blockWhenTownHallExists = candidate.BlockIfTownHallAlreadyInRange;
+                
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] IsBlockedByTownHallZone: CustomRules - require={requireTownHallInRange}, blockWhenExists={blockWhenTownHallExists}");
+            }
+            else
+            {
+                // Базова логіка за типом будівлі.
+                requireTownHallInRange = !candidate.IsTownHall;
+                blockWhenTownHallExists = candidate.IsTownHall;
+                
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] IsBlockedByTownHallZone: DefaultRules - isTownHall={candidate.IsTownHall}, require={requireTownHallInRange}, blockWhenExists={blockWhenTownHallExists}");
+            }
+
+            if (requireTownHallInRange && !hasTownHallInRange)
+            {
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] IsBlockedByTownHallZone: BLOCKED - вимагається TownHall, але його немає в радіусі {radius}");
+                return true;
+            }
+
+            if (blockWhenTownHallExists && hasTownHallInRange)
+            {
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] IsBlockedByTownHallZone: BLOCKED - TownHall вже в радіусі {radius}, нові TownHall не дозволяються");
+                return true;
+            }
+
+            if (VerboseLogs)
+                Debug.Log($"[Construction] IsBlockedByTownHallZone: ALLOWED - переговорами пройшла");
+
+            return false;
+        }
+
+        private bool HasTownHallInRadius(Vector2Int center, int radius, Vector2Int? ignoredPendingPosition)
+        {
+            if (radius <= 0)
+                return false;
+
+            // 1) Вже зайняті тайли (будь-які джерела: placed, restored, world bootstrap)
+            for (int dx = -radius; dx <= radius; dx++)
+            {
+                for (int dy = -radius; dy <= radius; dy++)
+                {
+                    var pos = new Vector2Int(center.x + dx, center.y + dy);
+
+                    if (!_objectsMapService.TryGetOccupant(pos, out var occupantId) || string.IsNullOrWhiteSpace(occupantId))
+                        continue;
+
+                    var def = _buildingRegistry.GetById(occupantId);
+                    if (def != null && def.IsTownHall)
+                        return true;
+                }
+            }
+
+            // 2) Ратуша в поточному pending-сеті (дозволяє в одній сесії будувати пачкою)
             for (int i = 0; i < _pendingPlacements.Count; i++)
             {
                 var pending = _pendingPlacements[i];
@@ -679,76 +912,163 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (pendingDef == null || !pendingDef.IsTownHall)
                     continue;
 
-                if ((pending.Position - position).sqrMagnitude <= radiusSq)
-                    return false;
+                var delta = pending.Position - center;
+                if (Mathf.Max(Mathf.Abs(delta.x), Mathf.Abs(delta.y)) <= radius)
+                    return true;
             }
 
-            return true;
+            return false;
         }
 
         private bool AddPendingPlacement(Vector2Int position, string buildingId, bool clearRedoHistory)
         {
-            SaveSnapshotForUndo(clearRedoHistory);
-
-            _pendingPlacements.Add(new PendingPlacement(position, buildingId));
-            _pendingPositions.Add(position);
-
-            _signalBus.Fire(new BuildingPreviewChangedSignal
+            // Базові перевірки
+            if (string.IsNullOrWhiteSpace(buildingId))
             {
-                Position = position,
-                BuildingId = buildingId,
-                PreviewState = BuildingPreviewState.Valid
-            });
+                Debug.LogError($"[Construction] AddPendingPlacement: buildingId порожній на позиції {position}");
+                return false;
+            }
 
-            if (VerboseLogs)
-                Debug.Log($"[Construction] Pending placement added for '{buildingId}' at {position}. pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
+            if (_signalBus == null)
+            {
+                Debug.LogError("[Construction] AddPendingPlacement: _signalBus == null");
+                return false;
+            }
 
-            return true;
+            if (_pendingPlacements == null || _pendingPositions == null)
+            {
+                Debug.LogError("[Construction] AddPendingPlacement: _pendingPlacements або _pendingPositions == null");
+                return false;
+            }
+
+            try
+            {
+                SaveSnapshotForUndo(clearRedoHistory);
+
+                _pendingPlacements.Add(new PendingPlacement(position, buildingId));
+                _pendingPositions.Add(position);
+
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = position,
+                    BuildingId = buildingId,
+                    PreviewState = BuildingPreviewState.Valid
+                });
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] ✓ Pending placement додана для '{buildingId}' at {position}. pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Construction] ПОМИЛКА в AddPendingPlacement({position}, {buildingId}): {ex.GetType().Name} - {ex.Message}");
+                return false;
+            }
         }
 
         private int FindPendingPlacementIndex(Vector2Int position)
         {
-            for (int i = 0; i < _pendingPlacements.Count; i++)
+            try
             {
-                if (_pendingPlacements[i].Position == position)
-                    return i;
-            }
+                if (_pendingPlacements == null)
+                {
+                    Debug.LogError("[Construction] FindPendingPlacementIndex: _pendingPlacements == null");
+                    return -1;
+                }
 
-            return -1;
+                for (int i = 0; i < _pendingPlacements.Count; i++)
+                {
+                    if (_pendingPlacements[i].Position == position)
+                    {
+                        if (VerboseLogs)
+                            Debug.Log($"[Construction] FindPendingPlacementIndex({position}): знайдена на індексі {i}");
+                        return i;
+                    }
+                }
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] FindPendingPlacementIndex({position}): не знайдена (повертаю -1)");
+
+                return -1;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Construction] ПОМИЛКА в FindPendingPlacementIndex({position}): {ex.GetType().Name} - {ex.Message}");
+                return -1;
+            }
         }
 
         private bool TryReplacePendingWallWithGate(Vector2Int position, string gateBuildingId)
         {
-            if (_wallPlacementService == null || !_wallPlacementService.IsGate(gateBuildingId))
-                return false;
-
-            int index = FindPendingPlacementIndex(position);
-            if (index < 0)
-                return false;
-
-            var current = _pendingPlacements[index];
-            if (!_wallPlacementService.CanReplaceWallWithGate(position, gateBuildingId, out _))
-                return false;
-
-            if (current.BuildingId == gateBuildingId)
-                return true;
-
-            SaveSnapshotForUndo(clearRedoHistory: true);
-
-            _pendingPlacements[index] = new PendingPlacement(position, gateBuildingId);
-            _selectedBuildingId = gateBuildingId;
-
-            _signalBus.Fire(new BuildingPreviewChangedSignal
+            try
             {
-                Position = position,
-                BuildingId = gateBuildingId,
-                PreviewState = BuildingPreviewState.Valid
-            });
+                if (string.IsNullOrWhiteSpace(gateBuildingId))
+                {
+                    if (VerboseLogs)
+                        Debug.Log("[Construction] TryReplacePendingWallWithGate: gateBuildingId порожній");
+                    return false;
+                }
 
-            if (VerboseLogs)
-                Debug.Log($"[Construction] Pending wall at {position} replaced with gate '{gateBuildingId}'.");
+                if (_wallPlacementService == null)
+                {
+                    if (VerboseLogs)
+                        Debug.Log("[Construction] TryReplacePendingWallWithGate: _wallPlacementService == null");
+                    return false;
+                }
 
-            return true;
+                if (!_wallPlacementService.IsGate(gateBuildingId))
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[Construction] TryReplacePendingWallWithGate: '{gateBuildingId}' не є воротами");
+                    return false;
+                }
+
+                int index = FindPendingPlacementIndex(position);
+                if (index < 0)
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[Construction] TryReplacePendingWallWithGate({position}): pending placement не знайдена");
+                    return false;
+                }
+
+                var current = _pendingPlacements[index];
+                if (!_wallPlacementService.CanReplaceWallWithGate(position, gateBuildingId, out _))
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[Construction] TryReplacePendingWallWithGate({position}): заміна недозволена");
+                    return false;
+                }
+
+                if (current.BuildingId == gateBuildingId)
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[Construction] TryReplacePendingWallWithGate({position}): вже ворота '{gateBuildingId}'");
+                    return true;
+                }
+
+                SaveSnapshotForUndo(clearRedoHistory: true);
+
+                _pendingPlacements[index] = new PendingPlacement(position, gateBuildingId);
+                _selectedBuildingId = gateBuildingId;
+
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = position,
+                    BuildingId = gateBuildingId,
+                    PreviewState = BuildingPreviewState.Valid
+                });
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] ✓ Pending wall at {position} replaced with gate '{gateBuildingId}'.");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Construction] ПОМИЛКА в TryReplacePendingWallWithGate({position}, {gateBuildingId}): {ex.GetType().Name} - {ex.Message}");
+                return false;
+            }
         }
 
         private void ResetSession(bool clearRedoHistory)

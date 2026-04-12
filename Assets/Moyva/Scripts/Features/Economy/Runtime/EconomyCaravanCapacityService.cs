@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Kruty1918.Moyva.Economy.Runtime
 {
     /// <summary>
-    /// Перевіряє чи вміщується вантаж у повозку за обмеженнями ваги та розміру.
+    /// Перевіряє чи вміщується вантаж у повозку за обмеженнями кількості та ваги.
     /// </summary>
     public sealed class EconomyCaravanCapacityService
     {
@@ -45,8 +45,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             int currentUnits = 0;
             long currentWeight = 0;
-            float currentSize = 0f;
-            int currentFullSizeItems = 0;
 
             if (currentCargo != null)
             {
@@ -58,17 +56,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
                     currentUnits += entry.Quantity;
                     currentWeight += (long)entry.Resource.WeightGrams * entry.Quantity;
-                    currentSize += entry.Resource.SizeNormalized * entry.Quantity;
-
-                    if (entry.Resource.SizeNormalized >= 1f)
-                        currentFullSizeItems += entry.Quantity;
                 }
             }
 
             int targetUnits = currentUnits + addQuantity;
             long targetWeight = currentWeight + (long)resource.WeightGrams * addQuantity;
-            float targetSize = currentSize + resource.SizeNormalized * addQuantity;
-            int targetFullSizeItems = currentFullSizeItems + (resource.SizeNormalized >= 1f ? addQuantity : 0);
 
             if (targetUnits > template.Capacity)
             {
@@ -79,26 +71,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (targetWeight > template.MaxWeightGrams)
             {
                 reason = $"Перевищено вагу: {targetWeight}г/{template.MaxWeightGrams}г.";
-                return false;
-            }
-
-            if (targetSize > template.MaxTotalSizeUnits + 0.0001f)
-            {
-                reason = $"Перевищено сумарний розмір: {targetSize:0.###}/{template.MaxTotalSizeUnits:0.###}.";
-                return false;
-            }
-
-            if (template.AllowOnlySingleFullSizeItem && targetFullSizeItems > 1)
-            {
-                reason = "Повозка може перевозити лише один предмет розміру 1.0.";
-                return false;
-            }
-
-            // Якщо є хоча б один full-size предмет, інші предмети вже не повинні поміститись при MaxTotalSizeUnits=1.
-            // Але перевірку залишаємо явно, щоб правило було очевидне навіть при інших місткостях.
-            if (template.AllowOnlySingleFullSizeItem && targetFullSizeItems > 0 && targetUnits > targetFullSizeItems)
-            {
-                reason = "Предмет розміру 1.0 не можна комбінувати з іншими предметами в одній повозці.";
                 return false;
             }
 

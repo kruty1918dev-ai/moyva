@@ -3,6 +3,7 @@
     "rootNamespace": "Kruty1918.Moyva.Interactions.API",
     "references": [
         "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
+        "GUID:2184a61147db9a3028e020da0232f700",
         "GUID:c1642f5cae15ed69da041d910650a38e",
         "GUID:cb909cbe767e912beb860df019d12fbb",
         "GUID:dbeb150ae01f08dd59e8e397e8ee8e2a",

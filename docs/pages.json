@@ -574,6 +574,31 @@
           "tag": "guide"
         },
         {
+          "path": "systems/economy/economy-handbook.md",
+          "title": "Economy Handbook",
+          "tag": "guide"
+        },
+        {
+          "path": "systems/economy/economy-api-files-reference.md",
+          "title": "Economy API Files Reference",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/economy/tutorial-add-resource.md",
+          "title": "Economy — додати новий ресурс",
+          "tag": "tutorial"
+        },
+        {
+          "path": "systems/economy/economy-runtime-implementation.md",
+          "title": "Economy Runtime — Implementation",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/economy/economy-runtime-logic-plan.md",
+          "title": "Economy Runtime — Logic Plan",
+          "tag": "reference"
+        },
+        {
           "path": "systems/economy/tutorials.md",
           "title": "Economy — туторіали",
           "tag": "tutorial"

@@ -20,6 +20,7 @@
   <Project Path="Kruty1918.Moyva.Construction.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.csproj" />
+  <Project Path="Kruty1918.Moyva.InfoPanel.csproj" />
   <Project Path="Kruty1918.Moyva.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Multiplayer.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
@@ -29,6 +30,7 @@
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Signals.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Calendar.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.InfoPanel.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />
   <Project Path="Kruty1918.Moyva.Camera.csproj" />

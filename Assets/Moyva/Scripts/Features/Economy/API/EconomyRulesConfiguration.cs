@@ -119,18 +119,6 @@ namespace Kruty1918.Moyva.Economy.API
                 EconomyRuleCategory.CaravanRules, EconomyRuleParameterType.Integer,
                 "50000", "1000", "500000", "500", true));
 
-            _parameters.Add(new EconomyRuleParameter(
-                "caravan-max-total-size", "Максимальний сумарний розмір повозки",
-                "Сумарний розмір вантажу. 1.0 = одна велика одиниця або кілька малих сумарно до 1.0.",
-                EconomyRuleCategory.CaravanRules, EconomyRuleParameterType.Float,
-                "1.0", "0.1", "10.0", "0.1", true));
-
-            _parameters.Add(new EconomyRuleParameter(
-                "caravan-single-full-size-only", "Розмір 1.0 займає повозку повністю",
-                "Якщо увімкнено, предмет із розміром 1.0 дозволено перевозити лише в одиничній кількості.",
-                EconomyRuleCategory.CaravanRules, EconomyRuleParameterType.Boolean,
-                "true", null, null, null, true));
-
             // Market Rules — ціноутворення
             _parameters.Add(new EconomyRuleParameter(
                 "stock-exponent", "Показник запасу",

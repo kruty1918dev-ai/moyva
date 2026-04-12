@@ -1,0 +1,25 @@
+{
+    "name": "Kruty1918.Moyva.Tests.InfoPanel",
+    "rootNamespace": "Kruty1918.Moyva.Tests.InfoPanel",
+    "references": [
+        "Zenject",
+        "Zenject-TestFramework",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Unity.TextMeshPro",
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.InfoPanel",
+        "Kruty1918.Moyva.Interactions.API",
+        "Kruty1918.Moyva.Construction",
+        "Kruty1918.Moyva.Units"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": ["nunit.framework.dll"],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

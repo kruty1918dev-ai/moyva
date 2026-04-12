@@ -29,6 +29,14 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
             Container.DeclareSignal<ShowWallHandlesSignal>();
 
+            // Building Info Panel
+            Container.DeclareSignal<WorldInfoPanelRequestedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<WorldInfoPanelClosedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingInfoPanelRequestedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingInfoPanelClosedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<UnitInfoPanelRequestedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<WorldInfoSelectionChangedSignal>().OptionalSubscriber();
+
             // FogOfWar
             Container.DeclareSignal<FogStateChangedSignal>();
 

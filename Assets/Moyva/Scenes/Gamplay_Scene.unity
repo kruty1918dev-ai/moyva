@@ -882,6 +882,7 @@ Transform:
   - {fileID: 1757640778}
   - {fileID: 1306218300}
   - {fileID: 275478189}
+  - {fileID: 1215295425}
   m_Father: {fileID: 663835483}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &330585543
@@ -2058,6 +2059,7 @@ MonoBehaviour:
   - {fileID: 1757640777}
   - {fileID: 2100979367}
   - {fileID: 275478190}
+  - {fileID: 1215295424}
   _installerPrefabs: []
   _autoRun: 1
   OnPreInstall:
@@ -3160,6 +3162,52 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1215295423
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1215295425}
+  - component: {fileID: 1215295424}
+  m_Layer: 0
+  m_Name: WorldInfoPanelInstaller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1215295424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1215295423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1b6eab8f5e24c98b63d5ee6db3b912a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  panelPrefab: {fileID: 900000, guid: 73d0f1dd3d7a44d8b7c67f5d8f6b31f1, type: 3}
+  panelParent: {fileID: 1800989655}
+--- !u!4 &1215295425
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1215295423}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 326201343}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1287845383
 GameObject:
   m_ObjectHideFlags: 0
@@ -5608,7 +5656,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.Runtime.ConstructionInstaller
   buildingRegistry: {fileID: 11400000, guid: 10b50407045da99758fd720b41437642, type: 2}
   _minSpacingBetweenBuildings: 0
-  _townHallBuildRadius: 12
 --- !u!114 &2100979367
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5622,7 +5669,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Economy::Kruty1918.Moyva.Economy.EconomyInstaller
   _database: {fileID: 11400000, guid: 545b933e7bbc78a5b8dd553f7e1604f8, type: 2}
-  _rulesTemplate: {fileID: 0}
+  _rulesTemplate: {fileID: 11400000, guid: 5a4cd68b049c62ec099070e7cbc5fe76, type: 2}
 --- !u!1 &2141750535
 GameObject:
   m_ObjectHideFlags: 0

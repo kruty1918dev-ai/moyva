@@ -21,6 +21,9 @@ namespace Kruty1918.Moyva.Construction.API
         [Tooltip("Чи є ця будівля житловою (дає ліміт населення).\nТільки житлові будівлі впливають на Housing.\nПриклад: true для хати/казарми, false для лісопилки.")]
         public bool IsHousing;
 
+        [Tooltip("Чи є ця будівля складом.\nЯкщо true — ресурси можуть відображатися як окремий складський пул для UI/аналітики.")]
+        public bool IsWarehouse;
+
         [Tooltip("Ліміт жителів якщо IsHousing=true.\n0 = не обмежує.\nПриклад: хата = 4, казарма = 10.")]
         public int HousingCapacity;
 
@@ -32,5 +35,18 @@ namespace Kruty1918.Moyva.Construction.API
 
         [Tooltip("Для Industrial-класу: який ресурс виробляє/обробляє ця будівля (resourceId).\nПриклад: wood, stone, grain.\nДля інших класів можна залишити порожнім.")]
         public string IndustrialResourceId;
+
+        [Header("Правила розміщення")]
+        [Tooltip("Увімкнути кастомні правила розміщення відносно ратуші для цієї будівлі.\nЯкщо вимкнено — застосовуються стандартні правила за класом будівлі.")]
+        public bool UseCustomTownHallRules;
+
+        [Tooltip("Чи потребує будівля наявності ратуші в радіусі дії.\nЗа замовчуванням для не-ратуш це true, для ратуші — false.")]
+        public bool RequireTownHallInRange = true;
+
+        [Tooltip("Чи забороняти розміщення, якщо в радіусі вже є інша ратуша.\nЗа замовчуванням true для ратуші та false для інших.")]
+        public bool BlockIfTownHallAlreadyInRange;
+
+        [Tooltip("Локальний override радіусу правил ратуші для цієї будівлі.\n<= 0 означає використати глобальний радіус із ConstructionInstaller.")]
+        public int TownHallProximityRadiusOverride;
     }
 }

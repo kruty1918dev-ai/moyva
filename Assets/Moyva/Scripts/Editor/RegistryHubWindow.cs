@@ -91,9 +91,14 @@ namespace Kruty1918.Moyva.Editor
         private int                _newBldWorkers;
         private int                _newBldPriority;
         private bool               _newBldIsHousing;
+        private bool               _newBldIsWarehouse;
         private int                _newBldHousingCap;
         private bool               _newBldIsTownHall;
         private bool               _newBldIsCastle;
+        private bool               _newBldUseCustomTownHallRules;
+        private bool               _newBldRequireTownHallInRange = true;
+        private bool               _newBldBlockIfTownHallInRange;
+        private int                _newBldTownHallRadiusOverride;
         private bool               _bldCreateOpen = true;
 
         private string             _newBldIndustrialResourceId = string.Empty;
@@ -781,6 +786,7 @@ namespace Kruty1918.Moyva.Editor
 
                 int workers = el.FindPropertyRelative("RequiredWorkers")?.intValue ?? 0;
                 bool isHousing = el.FindPropertyRelative("IsHousing")?.boolValue ?? false;
+                bool isWarehouse = el.FindPropertyRelative("IsWarehouse")?.boolValue ?? false;
                 bool isTownHall = el.FindPropertyRelative("IsTownHall")?.boolValue ?? false;
                 bool isCastle = el.FindPropertyRelative("IsCastle")?.boolValue ?? false;
                 if (workers > 0)
@@ -790,6 +796,8 @@ namespace Kruty1918.Moyva.Editor
                     int cap = el.FindPropertyRelative("HousingCapacity")?.intValue ?? 0;
                     RegistryEditorStyles.DrawBadge($"\u2302{cap}", new Color(0.3f, 0.7f, 0.4f));
                 }
+                if (isWarehouse)
+                    RegistryEditorStyles.DrawBadge("WH", new Color(0.25f, 0.55f, 0.9f));
                 if (isTownHall)
                     RegistryEditorStyles.DrawBadge("TH", new Color(0.8f, 0.6f, 0.2f));
                 if (isCastle)
@@ -845,6 +853,7 @@ namespace Kruty1918.Moyva.Editor
                 EditorGUILayout.LabelField("Економіка", EditorStyles.boldLabel);
                 _newBldWorkers   = EditorGUILayout.IntField(new GUIContent("Робітники", "Кількість робітників для роботи будівлі. 0 = не потребує."), Mathf.Max(0, _newBldWorkers));
                 _newBldPriority  = EditorGUILayout.IntField(new GUIContent("Пріоритет", "Пріоритет розподілу робітників (вищий = важливіший)."), Mathf.Max(0, _newBldPriority));
+                _newBldIsWarehouse = EditorGUILayout.Toggle(new GUIContent("Склад", "Позначає будівлю як склад для окремого обліку ресурсів."), _newBldIsWarehouse);
 
                 if (_newBldCategory == BuildingCategory.Civilian)
                 {
@@ -888,14 +897,20 @@ namespace Kruty1918.Moyva.Editor
             el.FindPropertyRelative("RequiredWorkers").intValue = _newBldWorkers;
             el.FindPropertyRelative("EconomyPriority").intValue = _newBldPriority;
             el.FindPropertyRelative("IsHousing").boolValue = _newBldIsHousing;
+            el.FindPropertyRelative("IsWarehouse").boolValue = _newBldIsWarehouse;
             el.FindPropertyRelative("HousingCapacity").intValue = _newBldHousingCap;
             el.FindPropertyRelative("IsTownHall").boolValue = _newBldIsTownHall;
             el.FindPropertyRelative("IsCastle").boolValue = _newBldIsCastle;
             el.FindPropertyRelative("IndustrialResourceId").stringValue = (_newBldIndustrialResourceId ?? string.Empty).Trim();
+            el.FindPropertyRelative("UseCustomTownHallRules").boolValue = _newBldUseCustomTownHallRules;
+            el.FindPropertyRelative("RequireTownHallInRange").boolValue = _newBldRequireTownHallInRange;
+            el.FindPropertyRelative("BlockIfTownHallAlreadyInRange").boolValue = _newBldBlockIfTownHallInRange;
+            el.FindPropertyRelative("TownHallProximityRadiusOverride").intValue = Mathf.Max(0, _newBldTownHallRadiusOverride);
             _bldSO.ApplyModifiedProperties();
             SaveAndNotify($"Будівлю '{id}' створено");
             _newBldId = ""; _newBldName = ""; _newBldSprite = null; _newBldPrefab = null;
-            _newBldWorkers = 0; _newBldPriority = 0; _newBldIsHousing = false; _newBldHousingCap = 0; _newBldIsTownHall = false; _newBldIsCastle = false; _newBldIndustrialResourceId = string.Empty;
+            _newBldWorkers = 0; _newBldPriority = 0; _newBldIsHousing = false; _newBldIsWarehouse = false; _newBldHousingCap = 0; _newBldIsTownHall = false; _newBldIsCastle = false; _newBldIndustrialResourceId = string.Empty;
+            _newBldUseCustomTownHallRules = false; _newBldRequireTownHallInRange = true; _newBldBlockIfTownHallInRange = false; _newBldTownHallRadiusOverride = 0;
         }
 
         private void DrawBuildingInlineEditBox(SerializedProperty el)
@@ -909,6 +924,7 @@ namespace Kruty1918.Moyva.Editor
             EditorGUILayout.PropertyField(el.FindPropertyRelative("Prefab"), new GUIContent("Prefab"));
             EditorGUILayout.PropertyField(el.FindPropertyRelative("RequiredWorkers"), new GUIContent("Робітники"));
             EditorGUILayout.PropertyField(el.FindPropertyRelative("EconomyPriority"), new GUIContent("Пріоритет економіки"));
+            EditorGUILayout.PropertyField(el.FindPropertyRelative("IsWarehouse"), new GUIContent("Склад"));
 
             DrawBuildingClassSettings(el);
 
@@ -938,6 +954,10 @@ namespace Kruty1918.Moyva.Editor
             var isTownHallProp = el.FindPropertyRelative("IsTownHall");
             var isCastleProp = el.FindPropertyRelative("IsCastle");
             var industrialResourceProp = el.FindPropertyRelative("IndustrialResourceId");
+            var useCustomTownHallRulesProp = el.FindPropertyRelative("UseCustomTownHallRules");
+            var requireTownHallInRangeProp = el.FindPropertyRelative("RequireTownHallInRange");
+            var blockIfTownHallInRangeProp = el.FindPropertyRelative("BlockIfTownHallAlreadyInRange");
+            var townHallRadiusOverrideProp = el.FindPropertyRelative("TownHallProximityRadiusOverride");
 
             if (categoryProp == null) return;
             var category = (BuildingCategory)categoryProp.enumValueIndex;
@@ -974,6 +994,26 @@ namespace Kruty1918.Moyva.Editor
                     new GUIContent("Ресурс (resourceId)", "Який ресурс пов'язаний з індустріальною будівлею."),
                     EconomyResourceEditorShared.LoadResourceIds());
             }
+
+            // Єдине джерело правди для правил ратуші — Economy Rules.
+            // У Registry Hub ці параметри не редагуються, щоб уникнути дублювання налаштувань.
+            bool defaultRequireTownHall = isTownHallProp == null || !isTownHallProp.boolValue;
+            bool defaultBlockTownHallInRange = isTownHallProp != null && isTownHallProp.boolValue;
+
+            if (useCustomTownHallRulesProp != null)
+                useCustomTownHallRulesProp.boolValue = false;
+            if (requireTownHallInRangeProp != null)
+                requireTownHallInRangeProp.boolValue = defaultRequireTownHall;
+            if (blockIfTownHallInRangeProp != null)
+                blockIfTownHallInRangeProp.boolValue = defaultBlockTownHallInRange;
+            if (townHallRadiusOverrideProp != null)
+                townHallRadiusOverrideProp.intValue = 0;
+
+            EditorGUILayout.Space(2);
+            EditorGUILayout.HelpBox(
+                "Правила біля ратуші керуються лише через Economy Hub (EconomyRulesConfigSO). " +
+                "У Registry Hub ці значення зафіксовано й не редагуються.",
+                MessageType.Info);
         }
 
         private void DrawNewBuildingClassSettings()
@@ -1009,6 +1049,20 @@ namespace Kruty1918.Moyva.Editor
             {
                 _newBldIndustrialResourceId = string.Empty;
             }
+
+            bool defaultRequireTownHall = !_newBldIsTownHall;
+            bool defaultBlockTownHallInRange = _newBldIsTownHall;
+
+            // Єдине джерело правди для правил ратуші — Economy Rules.
+            _newBldUseCustomTownHallRules = false;
+            _newBldRequireTownHallInRange = defaultRequireTownHall;
+            _newBldBlockIfTownHallInRange = defaultBlockTownHallInRange;
+            _newBldTownHallRadiusOverride = 0;
+
+            EditorGUILayout.Space(2);
+            EditorGUILayout.HelpBox(
+                "Правила біля ратуші для нових будівель керуються лише через Economy Hub.",
+                MessageType.Info);
         }
         // ══════════════════════════════════════════════════════
         //  WALLS TAB

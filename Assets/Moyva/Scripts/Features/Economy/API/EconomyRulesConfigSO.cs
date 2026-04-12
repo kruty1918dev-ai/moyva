@@ -103,10 +103,6 @@ namespace Kruty1918.Moyva.Economy.API
         [SerializeField] private int _maxCaravansPerSettlement = 1;
         [Tooltip("Максимальна сумарна вага вантажу в грамах.\nПриклад: 50000 = 50 кг.")]
         [SerializeField] private int _maxWeightGrams = 50000;
-        [Tooltip("Максимальний сумарний розмір вантажу.\n1.0 = одна повнорозмірна одиниця або кілька дрібніших сумарно до 1.0.")]
-        [SerializeField] private float _maxTotalSizeUnits = 1f;
-        [Tooltip("true = вантаж із розміром 1.0 займає повозку повністю (можна лише одну таку одиницю).")]
-        [SerializeField] private bool _allowOnlySingleFullSizeItem = true;
         [Tooltip("Множник дальності руху каравану поза дорогами.\n0.7 = -30% до базового радіусу. Менше 1.0 — бездоріжжя сповільнює.")]
         [SerializeField] private float _offRoadRangeMultiplier = 0.70f;
         [Tooltip("Множник дальності руху каравану по дорогах.\n1.2 = +20% до базового радіусу. Більше 1.0 — дороги прискорюють.")]
@@ -117,8 +113,6 @@ namespace Kruty1918.Moyva.Economy.API
         public bool ManualControlOnly => _manualControlOnly;
         public int MaxCaravansPerSettlement => _maxCaravansPerSettlement;
         public int MaxWeightGrams => _maxWeightGrams;
-        public float MaxTotalSizeUnits => _maxTotalSizeUnits;
-        public bool AllowOnlySingleFullSizeItem => _allowOnlySingleFullSizeItem;
         public float OffRoadRangeMultiplier => _offRoadRangeMultiplier;
         public float RoadRangeMultiplier => _roadRangeMultiplier;
         public bool EnableInstantCombatInterceptionFallback => _enableInstantCombatInterceptionFallback;

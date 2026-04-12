@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
 
@@ -67,6 +68,13 @@ namespace Kruty1918.Moyva.Economy
             {
                 Container.Bind<IEconomyRuntimeApi>()
                     .To<EconomyRuntimeApi>()
+                    .AsSingle();
+            }
+
+            if (!Container.HasBinding<IEconomyInfoMediator>())
+            {
+                Container.Bind<IEconomyInfoMediator>()
+                    .To<EconomyInfoMediator>()
                     .AsSingle();
             }
         }
