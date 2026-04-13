@@ -350,6 +350,16 @@
         {
           "path": "systems/game-mode.md",
           "title": "Game Mode — ігрові режими"
+        },
+        {
+          "path": "systems/bot-ai/README.md",
+          "title": "AI Бот",
+          "tag": "AI"
+        },
+        {
+          "path": "systems/bot-ai/difficulty.md",
+          "title": "Складність бота",
+          "tag": "AI"
         }
       ]
     },
@@ -642,6 +652,16 @@
           "path": "systems/multiplayer/quickstart.md",
           "title": "Швидкий старт",
           "tag": "tutorial"
+        },
+        {
+          "path": "systems/multiplayer/game-state.md",
+          "title": "Ігровий цикл",
+          "tag": "new"
+        },
+        {
+          "path": "systems/multiplayer/game-sync.md",
+          "title": "Синхронізація команд",
+          "tag": "new"
         }
       ]
     },

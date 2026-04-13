@@ -37,6 +37,11 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<LoadRequestedSignal>();
             Container.DeclareSignal<SaveCompletedSignal>().OptionalSubscriber();
 
+            // GameState
+            Container.DeclareSignal<GameStartedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<GameEndedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<GamePausedSignal>().OptionalSubscriber();
+
             // Faction
             Container.DeclareSignal<FactionEliminatedSignal>().OptionalSubscriber();
         }
