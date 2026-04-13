@@ -39,6 +39,10 @@ namespace Kruty1918.Moyva.Signals
 
             // Faction
             Container.DeclareSignal<FactionEliminatedSignal>().OptionalSubscriber();
+
+            // WorldCreation
+            Container.DeclareSignal<WorldCreationConfirmedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<WorldCreationCancelledSignal>().OptionalSubscriber();
         }
     }
 }

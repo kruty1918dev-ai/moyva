@@ -5,7 +5,10 @@
       "title": "Головна",
       "icon": "🏠",
       "pages": [
-        { "path": "README.md", "title": "Про проєкт Moyva" }
+        {
+          "path": "README.md",
+          "title": "Про проєкт Moyva"
+        }
       ]
     },
     {
@@ -13,10 +16,26 @@
       "title": "Швидкий старт",
       "icon": "🚀",
       "pages": [
-        { "path": "systems/graph-system/quickstart.md", "title": "Перший граф за 5 хвилин", "tag": "tutorial" },
-        { "path": "systems/bootstrap.md", "title": "Ініціалізація сцени", "tag": "guide" },
-        { "path": "systems/initialization-order.md", "title": "Порядок ініціалізації", "tag": "guide" },
-        { "path": "systems/multiplayer/quickstart.md", "title": "Multiplayer — швидкий старт", "tag": "tutorial" }
+        {
+          "path": "systems/graph-system/quickstart.md",
+          "title": "Перший граф за 5 хвилин",
+          "tag": "tutorial"
+        },
+        {
+          "path": "systems/bootstrap.md",
+          "title": "Ініціалізація сцени",
+          "tag": "guide"
+        },
+        {
+          "path": "systems/initialization-order.md",
+          "title": "Порядок ініціалізації",
+          "tag": "guide"
+        },
+        {
+          "path": "systems/multiplayer/quickstart.md",
+          "title": "Multiplayer — швидкий старт",
+          "tag": "tutorial"
+        }
       ]
     },
     {
@@ -24,14 +43,46 @@
       "title": "Туторіали",
       "icon": "📖",
       "pages": [
-        { "path": "systems/construction/walls-setup-guide.md", "title": "Стіни та ворота — покроковий гайд", "tag": "step-by-step" },
-        { "path": "systems/fog-of-war/scene-connection-guide.md", "title": "Fog of War — підключення сцени", "tag": "step-by-step" },
-        { "path": "systems/fog-of-war/so-setup-guide.md", "title": "Fog of War — налаштування FogOfWarSettings", "tag": "step-by-step" },
-        { "path": "systems/fog-of-war/vision-tuner-guide.md", "title": "Fog of War — Vision Tuner", "tag": "step-by-step" },
-        { "path": "systems/graph-system/editor-guide.md", "title": "Графовий редактор — гайд користувача", "tag": "step-by-step" },
-        { "path": "systems/save-system/designer-tool.md", "title": "Save System Designer Tool", "tag": "step-by-step" },
-        { "path": "modules/gameplay/resolver/create-collection-guide.md", "title": "Створення нової колекції в Resolver", "tag": "step-by-step" },
-        { "path": "systems/multiplayer/config-hub-guide.md", "title": "Multiplayer Config Hub — повний гайд", "tag": "step-by-step" }
+        {
+          "path": "systems/construction/walls-setup-guide.md",
+          "title": "Стіни та ворота — покроковий гайд",
+          "tag": "step-by-step"
+        },
+        {
+          "path": "systems/fog-of-war/scene-connection-guide.md",
+          "title": "Fog of War — підключення сцени",
+          "tag": "step-by-step"
+        },
+        {
+          "path": "systems/fog-of-war/so-setup-guide.md",
+          "title": "Fog of War — налаштування FogOfWarSettings",
+          "tag": "step-by-step"
+        },
+        {
+          "path": "systems/fog-of-war/vision-tuner-guide.md",
+          "title": "Fog of War — Vision Tuner",
+          "tag": "step-by-step"
+        },
+        {
+          "path": "systems/graph-system/editor-guide.md",
+          "title": "Графовий редактор — гайд користувача",
+          "tag": "step-by-step"
+        },
+        {
+          "path": "systems/save-system/designer-tool.md",
+          "title": "Save System Designer Tool",
+          "tag": "step-by-step"
+        },
+        {
+          "path": "modules/gameplay/resolver/create-collection-guide.md",
+          "title": "Створення нової колекції в Resolver",
+          "tag": "step-by-step"
+        },
+        {
+          "path": "systems/multiplayer/config-hub-guide.md",
+          "title": "Multiplayer Config Hub — повний гайд",
+          "tag": "step-by-step"
+        }
       ]
     },
     {
@@ -39,17 +90,57 @@
       "title": "Генерація світу",
       "icon": "🗺️",
       "pages": [
-        { "path": "systems/generator.md", "title": "Generator Pipeline" },
-        { "path": "systems/graph-system/README.md", "title": "Graph System — огляд" },
-        { "path": "systems/graph-system/api-reference.md", "title": "API та створення власних нодів" },
-        { "path": "systems/auto-tile-naming.md", "title": "Auto-Tile найменування" },
-        { "path": "systems/graph-system/nodes-generators.md", "title": "Ноди: Генератори та Конвертери", "tag": "reference" },
-        { "path": "systems/graph-system/nodes-processing.md", "title": "Ноди: Обробка", "tag": "reference" },
-        { "path": "systems/graph-system/nodes-terrain.md", "title": "Ноди: Терейн", "tag": "reference" },
-        { "path": "systems/graph-system/nodes-features.md", "title": "Ноди: Особливості", "tag": "reference" },
-        { "path": "systems/graph-system/nodes-utility.md", "title": "Ноди: Утиліти та Логіка", "tag": "reference" },
-        { "path": "systems/graph-system/nodes-analysis.md", "title": "Ноди: Аналіз", "tag": "reference" },
-        { "path": "systems/graph-system/nodes-wfc.md", "title": "Ноди: WFC", "tag": "reference" }
+        {
+          "path": "systems/generator.md",
+          "title": "Generator Pipeline"
+        },
+        {
+          "path": "systems/graph-system/README.md",
+          "title": "Graph System — огляд"
+        },
+        {
+          "path": "systems/graph-system/api-reference.md",
+          "title": "API та створення власних нодів"
+        },
+        {
+          "path": "systems/auto-tile-naming.md",
+          "title": "Auto-Tile найменування"
+        },
+        {
+          "path": "systems/graph-system/nodes-generators.md",
+          "title": "Ноди: Генератори та Конвертери",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/graph-system/nodes-processing.md",
+          "title": "Ноди: Обробка",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/graph-system/nodes-terrain.md",
+          "title": "Ноди: Терейн",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/graph-system/nodes-features.md",
+          "title": "Ноди: Особливості",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/graph-system/nodes-utility.md",
+          "title": "Ноди: Утиліти та Логіка",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/graph-system/nodes-analysis.md",
+          "title": "Ноди: Аналіз",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/graph-system/nodes-wfc.md",
+          "title": "Ноди: WFC",
+          "tag": "reference"
+        }
       ]
     },
     {
@@ -57,38 +148,166 @@
       "title": "Довідник нодів",
       "icon": "🔗",
       "pages": [
-        { "path": "systems/graph-system/nodes/height-source.md", "title": "Height Source", "tag": "node" },
-        { "path": "systems/graph-system/nodes/noise-combiner.md", "title": "Noise Combiner", "tag": "node" },
-        { "path": "systems/graph-system/nodes/height-to-tile.md", "title": "Height To Tile", "tag": "node" },
-        { "path": "systems/graph-system/nodes/map-scale.md", "title": "Map Scale", "tag": "node" },
-        { "path": "systems/graph-system/nodes/smooth.md", "title": "Smooth", "tag": "node" },
-        { "path": "systems/graph-system/nodes/terrace.md", "title": "Terrace", "tag": "node" },
-        { "path": "systems/graph-system/nodes/erosion.md", "title": "Erosion", "tag": "node" },
-        { "path": "systems/graph-system/nodes/mask.md", "title": "Mask", "tag": "node" },
-        { "path": "systems/graph-system/nodes/overlay.md", "title": "Overlay", "tag": "node" },
-        { "path": "systems/graph-system/nodes/cellular-automata.md", "title": "Cellular Automata", "tag": "node" },
-        { "path": "systems/graph-system/nodes/border-frame.md", "title": "Border Frame", "tag": "node" },
-        { "path": "systems/graph-system/nodes/tile-replace.md", "title": "Tile Replace", "tag": "node" },
-        { "path": "systems/graph-system/nodes/conditional-switch.md", "title": "Conditional Switch", "tag": "node" },
-        { "path": "systems/graph-system/nodes/debug-preview.md", "title": "Debug Preview", "tag": "node" },
-        { "path": "systems/graph-system/nodes/output.md", "title": "Output", "tag": "node" },
-        { "path": "systems/graph-system/nodes/random-scatter.md", "title": "Random Scatter", "tag": "node" },
-        { "path": "systems/graph-system/nodes/multi-layer-scatter.md", "title": "Multi-Layer Scatter", "tag": "node" },
-        { "path": "systems/graph-system/nodes/forest-cluster.md", "title": "Forest Cluster", "tag": "node" },
-        { "path": "systems/graph-system/nodes/mountain-scatter.md", "title": "Mountain Scatter", "tag": "node" },
-        { "path": "systems/graph-system/nodes/poi-placement.md", "title": "POI Placement", "tag": "node" },
-        { "path": "systems/graph-system/nodes/sea-coastline.md", "title": "Sea / Coastline", "tag": "node" },
-        { "path": "systems/graph-system/nodes/lake-generation.md", "title": "Lake Generation", "tag": "node" },
-        { "path": "systems/graph-system/nodes/river-generator.md", "title": "River Generator", "tag": "node" },
-        { "path": "systems/graph-system/nodes/water-smooth.md", "title": "Water Smooth", "tag": "node" },
-        { "path": "systems/graph-system/nodes/road-path.md", "title": "Road / Path", "tag": "node" },
-        { "path": "systems/graph-system/nodes/voronoi-regions.md", "title": "Voronoi Regions", "tag": "node" },
-        { "path": "systems/graph-system/nodes/biome-resolver.md", "title": "Biome Resolver", "tag": "node" },
-        { "path": "systems/graph-system/nodes/fertility-map.md", "title": "Fertility Map", "tag": "node" },
-        { "path": "systems/graph-system/nodes/autotile-transitions.md", "title": "AutoTile Transitions", "tag": "node" },
-        { "path": "systems/graph-system/nodes/chokepoint-analyzer.md", "title": "Chokepoint Analyzer", "tag": "node" },
-        { "path": "systems/graph-system/nodes/wfc-generator.md", "title": "WFC Generator", "tag": "node" },
-        { "path": "systems/graph-system/nodes/constraint-polish.md", "title": "Constraint Polish", "tag": "node" }
+        {
+          "path": "systems/graph-system/nodes/height-source.md",
+          "title": "Height Source",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/noise-combiner.md",
+          "title": "Noise Combiner",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/height-to-tile.md",
+          "title": "Height To Tile",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/map-scale.md",
+          "title": "Map Scale",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/smooth.md",
+          "title": "Smooth",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/terrace.md",
+          "title": "Terrace",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/erosion.md",
+          "title": "Erosion",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/mask.md",
+          "title": "Mask",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/overlay.md",
+          "title": "Overlay",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/cellular-automata.md",
+          "title": "Cellular Automata",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/border-frame.md",
+          "title": "Border Frame",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/tile-replace.md",
+          "title": "Tile Replace",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/conditional-switch.md",
+          "title": "Conditional Switch",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/debug-preview.md",
+          "title": "Debug Preview",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/output.md",
+          "title": "Output",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/random-scatter.md",
+          "title": "Random Scatter",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/multi-layer-scatter.md",
+          "title": "Multi-Layer Scatter",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/forest-cluster.md",
+          "title": "Forest Cluster",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/mountain-scatter.md",
+          "title": "Mountain Scatter",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/poi-placement.md",
+          "title": "POI Placement",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/sea-coastline.md",
+          "title": "Sea / Coastline",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/lake-generation.md",
+          "title": "Lake Generation",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/river-generator.md",
+          "title": "River Generator",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/water-smooth.md",
+          "title": "Water Smooth",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/road-path.md",
+          "title": "Road / Path",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/voronoi-regions.md",
+          "title": "Voronoi Regions",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/biome-resolver.md",
+          "title": "Biome Resolver",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/fertility-map.md",
+          "title": "Fertility Map",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/autotile-transitions.md",
+          "title": "AutoTile Transitions",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/chokepoint-analyzer.md",
+          "title": "Chokepoint Analyzer",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/wfc-generator.md",
+          "title": "WFC Generator",
+          "tag": "node"
+        },
+        {
+          "path": "systems/graph-system/nodes/constraint-polish.md",
+          "title": "Constraint Polish",
+          "tag": "node"
+        }
       ]
     },
     {
@@ -96,15 +315,47 @@
       "title": "Ігрові системи",
       "icon": "🎮",
       "pages": [
-        { "path": "systems/grid.md", "title": "Grid — тайлова сітка" },
-        { "path": "systems/objects-map.md", "title": "Objects Map — карта обʼєктів" },
-        { "path": "systems/visuals.md", "title": "Visuals — візуалізація тайлів" },
-        { "path": "systems/animations.md", "title": "Animations — анімації руху" },
-        { "path": "systems/camera.md", "title": "Camera — керування камерою" },
-        { "path": "systems/interactions.md", "title": "Interactions — взаємодія з тайлами" },
-        { "path": "systems/units.md", "title": "Units — система юнітів" },
-        { "path": "systems/pathfinding.md", "title": "Pathfinding — пошук шляху" },
-        { "path": "systems/game-mode.md", "title": "Game Mode — ігрові режими" }
+        {
+          "path": "systems/grid.md",
+          "title": "Grid — тайлова сітка"
+        },
+        {
+          "path": "systems/objects-map.md",
+          "title": "Objects Map — карта обʼєктів"
+        },
+        {
+          "path": "systems/visuals.md",
+          "title": "Visuals — візуалізація тайлів"
+        },
+        {
+          "path": "systems/animations.md",
+          "title": "Animations — анімації руху"
+        },
+        {
+          "path": "systems/camera.md",
+          "title": "Camera — керування камерою"
+        },
+        {
+          "path": "systems/interactions.md",
+          "title": "Interactions — взаємодія з тайлами"
+        },
+        {
+          "path": "systems/units.md",
+          "title": "Units — система юнітів"
+        },
+        {
+          "path": "systems/pathfinding.md",
+          "title": "Pathfinding — пошук шляху"
+        },
+        {
+          "path": "systems/game-mode.md",
+          "title": "Game Mode — ігрові режими"
+        },
+        {
+          "path": "systems/world-creation/README.md",
+          "title": "World Creation UI — екран створення світу",
+          "tag": "guide"
+        }
       ]
     },
     {
@@ -112,13 +363,34 @@
       "title": "Будівництво",
       "icon": "🏗️",
       "pages": [
-        { "path": "systems/construction.md", "title": "Construction — огляд системи" },
-        { "path": "systems/construction/service.md", "title": "ConstructionService" },
-        { "path": "systems/construction/registry.md", "title": "BuildingRegistry — реєстр будівель" },
-        { "path": "systems/construction/ui.md", "title": "Construction UI" },
-        { "path": "systems/construction/screen-to-grid.md", "title": "ScreenToGrid — конвертація координат" },
-        { "path": "systems/construction/wall-placement.md", "title": "WallPlacement — розміщення стін" },
-        { "path": "systems/construction/resolver-editor.md", "title": "Resolver Editor" }
+        {
+          "path": "systems/construction.md",
+          "title": "Construction — огляд системи"
+        },
+        {
+          "path": "systems/construction/service.md",
+          "title": "ConstructionService"
+        },
+        {
+          "path": "systems/construction/registry.md",
+          "title": "BuildingRegistry — реєстр будівель"
+        },
+        {
+          "path": "systems/construction/ui.md",
+          "title": "Construction UI"
+        },
+        {
+          "path": "systems/construction/screen-to-grid.md",
+          "title": "ScreenToGrid — конвертація координат"
+        },
+        {
+          "path": "systems/construction/wall-placement.md",
+          "title": "WallPlacement — розміщення стін"
+        },
+        {
+          "path": "systems/construction/resolver-editor.md",
+          "title": "Resolver Editor"
+        }
       ]
     },
     {
@@ -126,15 +398,42 @@
       "title": "Туман війни",
       "icon": "🌫️",
       "pages": [
-        { "path": "systems/fog-of-war/README.md", "title": "Fog of War — огляд" },
-        { "path": "systems/fog-of-war/architecture.md", "title": "Архітектура" },
-        { "path": "systems/fog-of-war/visibility-algorithm.md", "title": "Алгоритм видимості" },
-        { "path": "systems/fog-of-war/texture-pipeline.md", "title": "Texture Pipeline" },
-        { "path": "systems/fog-of-war/shader.md", "title": "Шейдер" },
-        { "path": "systems/fog-of-war/initialization-order.md", "title": "Порядок ініціалізації" },
-        { "path": "systems/fog-of-war/signals-and-integration.md", "title": "Сигнали та інтеграція" },
-        { "path": "systems/fog-of-war/save-system-stub.md", "title": "Інтеграція з SaveSystem" },
-        { "path": "systems/fog-of-war/testing.md", "title": "Тести" }
+        {
+          "path": "systems/fog-of-war/README.md",
+          "title": "Fog of War — огляд"
+        },
+        {
+          "path": "systems/fog-of-war/architecture.md",
+          "title": "Архітектура"
+        },
+        {
+          "path": "systems/fog-of-war/visibility-algorithm.md",
+          "title": "Алгоритм видимості"
+        },
+        {
+          "path": "systems/fog-of-war/texture-pipeline.md",
+          "title": "Texture Pipeline"
+        },
+        {
+          "path": "systems/fog-of-war/shader.md",
+          "title": "Шейдер"
+        },
+        {
+          "path": "systems/fog-of-war/initialization-order.md",
+          "title": "Порядок ініціалізації"
+        },
+        {
+          "path": "systems/fog-of-war/signals-and-integration.md",
+          "title": "Сигнали та інтеграція"
+        },
+        {
+          "path": "systems/fog-of-war/save-system-stub.md",
+          "title": "Інтеграція з SaveSystem"
+        },
+        {
+          "path": "systems/fog-of-war/testing.md",
+          "title": "Тести"
+        }
       ]
     },
     {
@@ -142,7 +441,10 @@
       "title": "Збереження",
       "icon": "💾",
       "pages": [
-        { "path": "systems/save-system/README.md", "title": "SaveSystem — огляд" }
+        {
+          "path": "systems/save-system/README.md",
+          "title": "SaveSystem — огляд"
+        }
       ]
     },
     {
@@ -150,27 +452,111 @@
       "title": "Сигнали",
       "icon": "📡",
       "pages": [
-        { "path": "systems/signals/README.md", "title": "Signals — огляд системи", "tag": "reference" },
-        { "path": "systems/signals/tile-clicked.md", "title": "TileClickedSignal", "tag": "signal" },
-        { "path": "systems/signals/building-placed.md", "title": "BuildingPlacedSignal", "tag": "signal" },
-        { "path": "systems/signals/building-cancelled.md", "title": "BuildingCancelledSignal", "tag": "signal" },
-        { "path": "systems/signals/building-demolished.md", "title": "BuildingDemolishedSignal", "tag": "signal" },
-        { "path": "systems/signals/building-preview-changed.md", "title": "BuildingPreviewChangedSignal", "tag": "signal" },
-        { "path": "systems/signals/game-mode-changed.md", "title": "GameModeChangedSignal", "tag": "signal" },
-        { "path": "systems/signals/game-mode-change-requested.md", "title": "GameModeChangeRequestedSignal", "tag": "signal" },
-        { "path": "systems/signals/unit-created.md", "title": "UnitCreatedSignal", "tag": "signal" },
-        { "path": "systems/signals/unit-destroyed.md", "title": "UnitDestroyedSignal", "tag": "signal" },
-        { "path": "systems/signals/unit-moved.md", "title": "UnitMovedSignal", "tag": "signal" },
-        { "path": "systems/signals/interrupt-movement.md", "title": "InterruptMovementSignal", "tag": "signal" },
-        { "path": "systems/signals/fog-state-changed.md", "title": "FogStateChangedSignal", "tag": "signal" },
-        { "path": "systems/signals/save-requested.md", "title": "SaveRequestedSignal", "tag": "signal" },
-        { "path": "systems/signals/save-completed.md", "title": "SaveCompletedSignal", "tag": "signal" },
-        { "path": "systems/signals/load-requested.md", "title": "LoadRequestedSignal", "tag": "signal" },
-        { "path": "systems/signals/world-built.md", "title": "WorldBuiltSignal", "tag": "signal" },
-        { "path": "systems/signals/world-generated-data.md", "title": "WorldGeneratedDataSignal", "tag": "signal" },
-        { "path": "systems/signals/map-object-spawned.md", "title": "OnMapObjectSpawnedSignal", "tag": "signal" },
-        { "path": "systems/signals/objects-map-changed.md", "title": "OnObjectsMapChangedSignal", "tag": "signal" },
-        { "path": "systems/signals/show-wall-handles.md", "title": "ShowWallHandlesSignal", "tag": "signal" }
+        {
+          "path": "systems/signals/README.md",
+          "title": "Signals — огляд системи",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/signals/tile-clicked.md",
+          "title": "TileClickedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/building-placed.md",
+          "title": "BuildingPlacedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/building-cancelled.md",
+          "title": "BuildingCancelledSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/building-demolished.md",
+          "title": "BuildingDemolishedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/building-preview-changed.md",
+          "title": "BuildingPreviewChangedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/game-mode-changed.md",
+          "title": "GameModeChangedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/game-mode-change-requested.md",
+          "title": "GameModeChangeRequestedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/unit-created.md",
+          "title": "UnitCreatedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/unit-destroyed.md",
+          "title": "UnitDestroyedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/unit-moved.md",
+          "title": "UnitMovedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/interrupt-movement.md",
+          "title": "InterruptMovementSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/fog-state-changed.md",
+          "title": "FogStateChangedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/save-requested.md",
+          "title": "SaveRequestedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/save-completed.md",
+          "title": "SaveCompletedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/load-requested.md",
+          "title": "LoadRequestedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/world-built.md",
+          "title": "WorldBuiltSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/world-generated-data.md",
+          "title": "WorldGeneratedDataSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/map-object-spawned.md",
+          "title": "OnMapObjectSpawnedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/objects-map-changed.md",
+          "title": "OnObjectsMapChangedSignal",
+          "tag": "signal"
+        },
+        {
+          "path": "systems/signals/show-wall-handles.md",
+          "title": "ShowWallHandlesSignal",
+          "tag": "signal"
+        }
       ]
     },
     {
@@ -178,10 +564,25 @@
       "title": "Економіка",
       "icon": "💰",
       "pages": [
-        { "path": "systems/economy/README.md", "title": "Economy — огляд" },
-        { "path": "systems/economy/economy-designer.md", "title": "Economy Designer", "tag": "guide" },
-        { "path": "systems/economy/economy-complete-guide.md", "title": "Economy — повний гайд", "tag": "guide" },
-        { "path": "systems/economy/tutorials.md", "title": "Economy — туторіали", "tag": "tutorial" }
+        {
+          "path": "systems/economy/README.md",
+          "title": "Economy — огляд"
+        },
+        {
+          "path": "systems/economy/economy-designer.md",
+          "title": "Economy Designer",
+          "tag": "guide"
+        },
+        {
+          "path": "systems/economy/economy-complete-guide.md",
+          "title": "Economy — повний гайд",
+          "tag": "guide"
+        },
+        {
+          "path": "systems/economy/tutorials.md",
+          "title": "Economy — туторіали",
+          "tag": "tutorial"
+        }
       ]
     },
     {
@@ -189,19 +590,64 @@
       "title": "Мультиплеєр",
       "icon": "🌐",
       "pages": [
-        { "path": "systems/multiplayer/README.md", "title": "Multiplayer — огляд системи" },
-        { "path": "systems/multiplayer/architecture.md", "title": "Архітектура та assembly definitions", "tag": "reference" },
-        { "path": "systems/multiplayer/domain-models.md", "title": "Доменні моделі та enum-и", "tag": "reference" },
-        { "path": "systems/multiplayer/interfaces.md", "title": "Довідник інтерфейсів", "tag": "reference" },
-        { "path": "systems/multiplayer/session-manager.md", "title": "SessionManager — деталі" },
-        { "path": "systems/multiplayer/network-providers.md", "title": "INetworkProvider та провайдери" },
-        { "path": "systems/multiplayer/config-store.md", "title": "MultiplayerConfig та BinaryConfigStore" },
-        { "path": "systems/multiplayer/participant-policy.md", "title": "ParticipantPolicyService та правило 4 гравців" },
-        { "path": "systems/multiplayer/world-consistency.md", "title": "WorldConsistencyService та snapshots" },
-        { "path": "systems/multiplayer/logging-and-errors.md", "title": "Логування та обробка помилок" },
-        { "path": "systems/multiplayer/config-hub-guide.md", "title": "Multiplayer Config Hub — редактор", "tag": "guide" },
-        { "path": "systems/multiplayer/testing.md", "title": "TDD та unit-тести", "tag": "reference" },
-        { "path": "systems/multiplayer/quickstart.md", "title": "Швидкий старт", "tag": "tutorial" }
+        {
+          "path": "systems/multiplayer/README.md",
+          "title": "Multiplayer — огляд системи"
+        },
+        {
+          "path": "systems/multiplayer/architecture.md",
+          "title": "Архітектура та assembly definitions",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/multiplayer/domain-models.md",
+          "title": "Доменні моделі та enum-и",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/multiplayer/interfaces.md",
+          "title": "Довідник інтерфейсів",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/multiplayer/session-manager.md",
+          "title": "SessionManager — деталі"
+        },
+        {
+          "path": "systems/multiplayer/network-providers.md",
+          "title": "INetworkProvider та провайдери"
+        },
+        {
+          "path": "systems/multiplayer/config-store.md",
+          "title": "MultiplayerConfig та BinaryConfigStore"
+        },
+        {
+          "path": "systems/multiplayer/participant-policy.md",
+          "title": "ParticipantPolicyService та правило 4 гравців"
+        },
+        {
+          "path": "systems/multiplayer/world-consistency.md",
+          "title": "WorldConsistencyService та snapshots"
+        },
+        {
+          "path": "systems/multiplayer/logging-and-errors.md",
+          "title": "Логування та обробка помилок"
+        },
+        {
+          "path": "systems/multiplayer/config-hub-guide.md",
+          "title": "Multiplayer Config Hub — редактор",
+          "tag": "guide"
+        },
+        {
+          "path": "systems/multiplayer/testing.md",
+          "title": "TDD та unit-тести",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/multiplayer/quickstart.md",
+          "title": "Швидкий старт",
+          "tag": "tutorial"
+        }
       ]
     },
     {
@@ -209,7 +655,10 @@
       "title": "Стандарти",
       "icon": "📐",
       "pages": [
-        { "path": "standarts/TDD.md", "title": "TDD: Модульна архітектура Unity" }
+        {
+          "path": "standarts/TDD.md",
+          "title": "TDD: Модульна архітектура Unity"
+        }
       ]
     }
   ]
