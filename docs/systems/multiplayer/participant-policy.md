@@ -210,7 +210,7 @@ public interface IParticipantFallbackService
 ```
 
 Якщо `AllowBotsFallbackOnLeave = true` у правилах, цей сервіс повинен повернути Participant з `IsBot = true`.  
-Конкретна реалізація — заглушка, буде реалізована пізніше.
+Реалізовано у `ParticipantFallbackService`. Деталі: [host-migration.md](host-migration.md).
 
 ---
 
@@ -227,5 +227,5 @@ public interface IHostMigrationService
 }
 ```
 
-Критерії вибору (майбутня реалізація): мінімальний ping, стабільне з'єднання, не бот.  
-Повертає `null` якщо немає кандидатів.
+Реалізовано у `HostMigrationService` (пріоритет — перший живий учасник-людина). Деталі: [host-migration.md](host-migration.md).  
+Повертає `null` якщо немає людських кандидатів.

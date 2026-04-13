@@ -619,6 +619,11 @@
           "title": "SessionManager — деталі"
         },
         {
+          "path": "systems/multiplayer/host-migration.md",
+          "title": "Міграція хоста",
+          "tag": "new"
+        },
+        {
           "path": "systems/multiplayer/network-providers.md",
           "title": "INetworkProvider та провайдери"
         },

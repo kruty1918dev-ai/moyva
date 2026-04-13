@@ -1,24 +1,43 @@
 # AI Бот (`BotAI`)
 
-## Архітектура
+← [Назад до системних документів](../../index.html)
 
-Модуль `BotAI` складається з трьох основних компонентів:
+---
+
+## Огляд
+
+Модуль `BotAI` реалізує поведінку AI-бота для Bot-фракцій у грі.  
+Архітектура розроблена навколо FSM (Finite State Machine) з підтримкою рівнів складності.
+
+### Компоненти
 
 | Компонент | Роль |
 |---|---|
 | `IBotController` | Контракт для будь-якого AI-контролера фракції |
-| `BotBrain` | Реалізація FSM-логіки для однієї Bot-фракції |
-| `BotTickScheduler` | Планувальник тіків: ініціалізує ботів та викликає `Tick()` з throttle |
+| `BotBrain` | FSM-реалізація AI-мозку для однієї Bot-фракції |
+| `BotTickScheduler` | Планувальник тіків: ініціалізує ботів та викликає `Tick()` |
+| `IBotDifficultySettings` | Параметри складності (tickInterval, thresholds) |
+| `BotDifficultySettings` | Пресети Easy / Normal / Hard |
+| `BotInstaller` | Zenject MonoInstaller для DI-реєстрації |
 
-### Ієрархія
+---
+
+## Архітектура
 
 ```
 BotInstaller
+  ├── IBotDifficultySettings → BotDifficultySettings.Normal()
   └── BotTickScheduler (IInitializable, ITickable)
-        └── BotBrain (IBotController)  ← один екземпляр на кожну Bot-фракцію
+        ├── IFactionRegistry.GetBotFactions()
+        └── DiContainer.Instantiate<BotBrain>(faction)
+              ├── FactionDefinition  (ін'єктується як extra arg)
+              ├── IUnitFactory       (з DI-контейнера)
+              ├── IFactionOwnershipService (з DI-контейнера)
+              └── IBotDifficultySettings   (з DI-контейнера)
 ```
 
-`BotTickScheduler` отримує всі `FactionDefinition` з `IFactionRegistry.GetBotFactions()` та через `DiContainer.Instantiate<BotBrain>()` створює по одному `BotBrain` на фракцію.
+`BotTickScheduler` створює по одному `BotBrain` на кожну Bot-фракцію, отриману з `IFactionRegistry`.  
+Кожен `BotBrain` незалежно керує поведінкою своєї фракції.
 
 ---
 
@@ -28,26 +47,29 @@ BotInstaller
 stateDiagram-v2
     [*] --> Idle
 
-    Idle --> Expanding : Tick()
+    Idle --> Expanding : Tick() (перший виклик)
 
     Expanding --> Attacking : unitCount >= AttackThreshold
-    Expanding --> Expanding : unitCount < AttackThreshold (spawn unit)
+    Expanding --> Expanding : unitCount < AttackThreshold\n(spawn unit)
 
     Attacking --> Defending : unitCount <= DefendThreshold
-    Attacking --> Attacking : unitCount > DefendThreshold (ready to attack)
+    Attacking --> Attacking : unitCount > DefendThreshold\n(placeholder — атака)
 
-    Defending --> Expanding : unitCount < DefendThreshold (need more units)
-    Defending --> Defending : unitCount >= DefendThreshold (hold position)
+    Defending --> Expanding : unitCount < DefendThreshold\n(потрібно більше юнітів)
+    Defending --> Defending : unitCount >= DefendThreshold\n(утримуємо позиції)
 ```
 
-### Опис станів
+### Таблиця станів
 
-| Стан | Умова входу | Дії | Умова виходу |
+| Стан | Умова входу | Дії при активному стані | Умова переходу |
 |---|---|---|---|
-| **Idle** | Початковий стан | Нічого | Завжди → Expanding |
-| **Expanding** | З Idle; або мало юнітів | Спавнить нові юніти | `unitCount >= AttackThreshold` → Attacking |
-| **Attacking** | Достатньо юнітів | Готується до атаки (placeholder) | `unitCount <= DefendThreshold` → Defending |
-| **Defending** | Мало юнітів в атаці | Утримує позиції | `unitCount < DefendThreshold` → Expanding |
+| **Idle** | Початковий стан (spawn) | Нічого | → Expanding (при першому Tick) |
+| **Expanding** | Idle; або нестача юнітів | Спавнить нові юніти через `IUnitFactory` | → Attacking (unitCount ≥ AttackThreshold) |
+| **Attacking** | Достатньо юнітів | Лог "Готовий до атаки" *(placeholder)* | → Defending (unitCount ≤ DefendThreshold) |
+| **Defending** | Втрата юнітів | Утримує позиції *(placeholder)* | → Expanding (unitCount < DefendThreshold) |
+
+> **Примітка:** Стани `Attacking` і `Defending` є placeholder — логіка Pathfinding/атаки буде
+> розширена у майбутніх фазах розробки.
 
 ---
 
@@ -55,40 +77,200 @@ stateDiagram-v2
 
 Рівень складності впливає на поведінку бота через `IBotDifficultySettings`:
 
-| Рівень | `TickInterval` | `AttackThreshold` | `DefendThreshold` |
-|---|---|---|---|
-| Easy   | 4 с | 5 | 2 |
-| Normal | 2 с | 3 | 1 |
-| Hard   | 1 с | 2 | 1 |
+| Рівень | `TickInterval` | `AttackThreshold` | `DefendThreshold` | Агресивність |
+|---|---|---|---|---|
+| **Easy** | 4.0 с | 5 юнітів | 2 юніти | Повільний, реагує пізно |
+| **Normal** | 2.0 с | 3 юніти | 1 юніт | Збалансований |
+| **Hard** | 1.0 с | 2 юніти | 1 юніт | Швидкий, рано атакує |
 
-Деталі — у [difficulty.md](./difficulty.md).
+Деталі та кастомізація — у [difficulty.md](./difficulty.md).
 
 ---
 
-## Як зареєструвати власний IBotController
+## Ключові інтерфейси
 
-1. Створіть клас, що реалізує `IBotController`:
+### `IBotController`
 
 ```csharp
-public sealed class MyCustomBot : IBotController
+public interface IBotController
+{
+    FactionId FactionId { get; }
+    void Tick();
+}
+```
+
+Мінімальний контракт. `BotTickScheduler` викликає `Tick()` на кожному інтервалі.
+
+### `IBotDifficultySettings`
+
+```csharp
+public interface IBotDifficultySettings
+{
+    DifficultyLevel Difficulty    { get; }
+    float           TickInterval  { get; }  // секунди між тіками
+    int             AttackThreshold { get; }
+    int             DefendThreshold { get; }
+}
+```
+
+### `BotState`
+
+```csharp
+public enum BotState { Idle, Expanding, Attacking, Defending }
+```
+
+Поточний стан бота доступний через `BotBrain.CurrentState`.
+
+---
+
+## BotBrain — FSM Logic
+
+`BotBrain` реалізує `IBotController` і зберігає поточний стан FSM.
+
+**Конструктор (ін'єктується через Zenject):**
+
+```csharp
+public BotBrain(
+    FactionDefinition        definition,   // extra arg з BotTickScheduler
+    IUnitFactory             unitFactory,
+    IFactionOwnershipService ownership,
+    IBotDifficultySettings   settings)
+```
+
+**Метод `Tick()`:**
+
+```csharp
+public void Tick()
+{
+    var myUnits = _ownership.GetUnitIds(_definition.FactionId);
+    int unitCount = myUnits.Count;
+
+    switch (CurrentState)
+    {
+        case BotState.Idle:      TransitionToExpanding(); break;
+        case BotState.Expanding: TickExpanding(unitCount); break;
+        case BotState.Attacking: TickAttacking(unitCount); break;
+        case BotState.Defending: TickDefending(unitCount); break;
+    }
+}
+```
+
+---
+
+## BotTickScheduler
+
+`BotTickScheduler` реалізує `IInitializable` і `ITickable` з Zenject.
+
+**При `Initialize()`:**
+```csharp
+foreach (var faction in _factionRegistry.GetBotFactions())
+{
+    var brain = _container.Instantiate<BotBrain>(new object[] { faction });
+    _brains.Add(brain);
+}
+```
+
+**При `Tick()`:**
+```csharp
+_timer += Time.deltaTime;
+if (_timer < _settings.TickInterval) return;
+_timer = 0f;
+
+foreach (var brain in _brains)
+    brain.Tick();
+```
+
+`TickInterval` визначається через `IBotDifficultySettings` — можна змінювати без зміни коду.
+
+---
+
+## Zenject реєстрація
+
+Щоб підключити BotAI до сцени:
+
+1. Додайте `BotInstaller` як MonoInstaller у Zenject SceneContext.
+2. Переконайтесь, що `FactionInstaller` встановлений **перед** `BotInstaller` (для `IFactionRegistry`).
+
+**`BotInstaller.cs`:**
+
+```csharp
+public sealed class BotInstaller : MonoInstaller
+{
+    public override void InstallBindings()
+    {
+        Container.Bind<IBotDifficultySettings>()
+            .FromInstance(BotDifficultySettings.Normal())
+            .AsSingle();
+
+        Container.BindInterfacesAndSelfTo<BotTickScheduler>()
+            .AsSingle()
+            .NonLazy();
+    }
+}
+```
+
+---
+
+## Як зареєструвати власний `IBotController`
+
+1. Створіть клас що реалізує `IBotController`:
+
+```csharp
+public sealed class AggressiveBotController : IBotController
 {
     public FactionId FactionId => _definition.FactionId;
 
     [Inject]
-    public MyCustomBot(FactionDefinition definition) { ... }
+    public AggressiveBotController(
+        FactionDefinition definition,
+        IUnitFactory unitFactory,
+        IBotDifficultySettings settings)
+    {
+        // ...
+    }
 
-    public void Tick() { /* ваша логіка */ }
+    public void Tick()
+    {
+        // Ваша кастомна логіка
+    }
 }
 ```
 
-2. Зареєструйте у вашому інсталері замість `BotBrain`:
+2. Модифікуйте `BotTickScheduler`, щоб він інстанціював ваш клас замість `BotBrain`:
 
 ```csharp
-Container.Bind<IBotDifficultySettings>()
-    .FromInstance(BotDifficultySettings.Hard())
-    .AsSingle();
-
-// BotTickScheduler використає будь-який IBotController, що повернений через Instantiate
+// У BotTickScheduler.Initialize():
+var brain = _container.Instantiate<AggressiveBotController>(new object[] { faction });
 ```
 
-> **Примітка:** `BotTickScheduler` наразі явно інстанціює `BotBrain`. Якщо потрібна розширюваність — вийдіть з `BotTickScheduler` або замініть його власним планувальником.
+> **Альтернатива:** Замість правки `BotTickScheduler` реалізуйте власний `IInitializable` + `ITickable`,
+> який отримує `IFactionRegistry` і самостійно створює потрібні контролери.
+
+---
+
+## Розширення у наступних фазах
+
+| Фаза | Що планується |
+|---|---|
+| Фаза 2 (поточна) | Базова FSM: Idle, Expanding, Attacking, Defending |
+| Фаза 2 розширення | Інтеграція `IConstructionService` для будівництва |
+| Фаза 2 розширення | Переміщення юнітів через Pathfinding (атака/захист бази) |
+| Фаза 6 | Підключення FactionSlot → BotAI залежно від SessionMode |
+
+---
+
+## Тести
+
+```
+Assets/Moyva/Scripts/Tests/BotAI/BotBrainFsmTests.cs
+```
+
+| Тест | Що перевіряє |
+|---|---|
+| `WhenNoUnits_StartsInIdle` | Початковий стан — Idle |
+| `WhenNoUnits_TickTransitionsToExpanding` | Перший Tick: Idle → Expanding |
+| `WhenEnoughUnits_TransitionsToAttacking` | Expanding → Attacking (≥ threshold) |
+| `WhenFewUnits_TransitionsToDefending` | Attacking → Defending (≤ threshold) |
+
+**Assembly:** `Kruty1918.Moyva.Tests.BotAI`  
+**Тип фікстури:** `ZenjectUnitTestFixture`
