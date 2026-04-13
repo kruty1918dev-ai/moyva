@@ -33,6 +33,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Container.QueueForInject(fogQuad);
             }
 
+            Container.Bind<IFogOfWarServiceRegistry>()
+                .To<FogOfWarServiceRegistry>()
+                .AsSingle();
+
             Container.BindExecutionOrder<FogOfWarService>(-5);
         }
     }
