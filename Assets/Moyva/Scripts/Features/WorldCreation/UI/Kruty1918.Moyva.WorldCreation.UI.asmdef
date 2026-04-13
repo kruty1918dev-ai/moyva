@@ -1,12 +1,11 @@
 {
-    "name": "Kruty1918.Moyva.BotAI",
-    "rootNamespace": "Kruty1918.Moyva.BotAI",
+    "name": "Kruty1918.Moyva.WorldCreation.UI",
+    "rootNamespace": "Kruty1918.Moyva.WorldCreation.UI",
     "references": [
         "Zenject",
+        "Kruty1918.Moyva.WorldCreation",
         "Kruty1918.Moyva.Signals",
-        "Kruty1918.Moyva.Faction",
-        "Kruty1918.Moyva.Units",
-        "Kruty1918.Moyva.FogOfWar"
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

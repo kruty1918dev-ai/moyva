@@ -1,12 +1,9 @@
 {
-    "name": "Kruty1918.Moyva.BotAI",
-    "rootNamespace": "Kruty1918.Moyva.BotAI",
+    "name": "Kruty1918.Moyva.WorldCreation",
+    "rootNamespace": "Kruty1918.Moyva.WorldCreation",
     "references": [
         "Zenject",
-        "Kruty1918.Moyva.Signals",
-        "Kruty1918.Moyva.Faction",
-        "Kruty1918.Moyva.Units",
-        "Kruty1918.Moyva.FogOfWar"
+        "Kruty1918.Moyva.Signals"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

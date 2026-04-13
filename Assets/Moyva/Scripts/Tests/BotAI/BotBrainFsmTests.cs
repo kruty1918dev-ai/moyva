@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.BotAI.API;
 using Kruty1918.Moyva.BotAI.Runtime;
 using Kruty1918.Moyva.Faction.API;
@@ -34,6 +36,33 @@ namespace Kruty1918.Moyva.Tests.BotAI
             public void Unregister(string unitId) { }
         }
 
+        private sealed class FakeFactionRegistry : IFactionRegistry
+        {
+            public FactionDefinition LocalPlayerFaction => null;
+            public IReadOnlyList<FactionDefinition> GetAll() => new List<FactionDefinition>();
+            public IReadOnlyList<FactionDefinition> GetBotFactions() => new List<FactionDefinition>();
+            public bool TryGet(FactionId id, out FactionDefinition definition)
+            {
+                definition = default;
+                return false;
+            }
+        }
+
+        private sealed class FakeUnitService : IUnitService
+        {
+            public bool TryGetUnitPosition(string unitId, out Vector2Int position)
+            {
+                position = Vector2Int.zero;
+                return false;
+            }
+        }
+
+        private sealed class FakeMovementService : IUnitMovementService
+        {
+            public Task MoveUnitAsync(string unitId, Vector2Int target, CancellationToken ct = default)
+                => Task.CompletedTask;
+        }
+
         private FactionDefinition MakeFaction() =>
             new FactionDefinition(
                 new FactionId("bot_1"),
@@ -48,8 +77,11 @@ namespace Kruty1918.Moyva.Tests.BotAI
 
             return new BotBrain(
                 MakeFaction(),
+                new FakeFactionRegistry(),
                 new FakeUnitFactory(),
                 new FakeOwnershipService(units),
+                new FakeUnitService(),
+                new FakeMovementService(),
                 settings);
         }
 
@@ -91,7 +123,7 @@ namespace Kruty1918.Moyva.Tests.BotAI
             brain.Tick(); // Idle → Expanding
             brain.Tick(); // Expanding → Attacking
 
-            // Тепер видаляємо юнітів нижче DefendThreshold
+            // Видаляємо юнітів нижче DefendThreshold
             units.Clear();
 
             brain.Tick(); // Attacking → Defending (unitCount <= DefendThreshold)

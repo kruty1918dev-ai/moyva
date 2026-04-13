@@ -352,6 +352,11 @@
           "title": "Game Mode — ігрові режими"
         },
         {
+          "path": "systems/world-creation/README.md",
+          "title": "World Creation UI — екран створення світу",
+          "tag": "guide"
+        },
+        {
           "path": "systems/bot-ai/README.md",
           "title": "AI Бот",
           "tag": "AI"
@@ -728,6 +733,15 @@
           "path": "standarts/TDD.md",
           "title": "TDD: Модульна архітектура Unity"
         }
+      ]
+    },
+    {
+      "id": "bot-ai",
+      "title": "Bot AI",
+      "icon": "🤖",
+      "pages": [
+        { "path": "systems/bot-ai/README.md", "title": "BotAI — Огляд", "tag": "new" },
+        { "path": "systems/bot-ai/brain.md", "title": "BotBrain — Логіка", "tag": "new" }
       ]
     }
   ]

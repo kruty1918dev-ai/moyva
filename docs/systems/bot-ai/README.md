@@ -18,6 +18,7 @@
 | `BotTickScheduler` | Планувальник тіків: ініціалізує ботів та викликає `Tick()` |
 | `IBotDifficultySettings` | Параметри складності (tickInterval, thresholds) |
 | `BotDifficultySettings` | Пресети Easy / Normal / Hard |
+| `BotFogInitializer` | Реєструє туман для Bot-фракцій у `IFogOfWarServiceRegistry` |
 | `BotInstaller` | Zenject MonoInstaller для DI-реєстрації |
 
 ---
@@ -31,9 +32,13 @@ BotInstaller
         ├── IFactionRegistry.GetBotFactions()
         └── DiContainer.Instantiate<BotBrain>(faction)
               ├── FactionDefinition  (ін'єктується як extra arg)
-              ├── IUnitFactory       (з DI-контейнера)
+              ├── IFactionRegistry         (з DI-контейнера)
+              ├── IUnitFactory             (з DI-контейнера)
               ├── IFactionOwnershipService (з DI-контейнера)
-              └── IBotDifficultySettings   (з DI-контейнера)
+              ├── IUnitService             (з DI-контейнера)
+              ├── IUnitMovementService     (з DI-контейнера)
+              ├── IBotDifficultySettings   (з DI-контейнера)
+              └── IFogOfWarServiceRegistry (optional field inject)
 ```
 
 `BotTickScheduler` створює по одному `BotBrain` на кожну Bot-фракцію, отриману з `IFactionRegistry`.  
@@ -65,11 +70,8 @@ stateDiagram-v2
 |---|---|---|---|
 | **Idle** | Початковий стан (spawn) | Нічого | → Expanding (при першому Tick) |
 | **Expanding** | Idle; або нестача юнітів | Спавнить нові юніти через `IUnitFactory` | → Attacking (unitCount ≥ AttackThreshold) |
-| **Attacking** | Достатньо юнітів | Лог "Готовий до атаки" *(placeholder)* | → Defending (unitCount ≤ DefendThreshold) |
-| **Defending** | Втрата юнітів | Утримує позиції *(placeholder)* | → Expanding (unitCount < DefendThreshold) |
-
-> **Примітка:** Стани `Attacking` і `Defending` є placeholder — логіка Pathfinding/атаки буде
-> розширена у майбутніх фазах розробки.
+| **Attacking** | Достатньо юнітів | Надсилає юніти до найближчого видимого ворога через `IUnitMovementService` | → Defending (unitCount ≤ DefendThreshold) |
+| **Defending** | Втрата юнітів | Утримує базові охоронці (`MinBaseGuards = 2` біля старту) | → Expanding (unitCount < DefendThreshold) |
 
 ---
 
@@ -131,10 +133,14 @@ public enum BotState { Idle, Expanding, Attacking, Defending }
 
 ```csharp
 public BotBrain(
-    FactionDefinition        definition,   // extra arg з BotTickScheduler
+    FactionDefinition        definition,     // extra arg з BotTickScheduler
+    IFactionRegistry         factionRegistry,
     IUnitFactory             unitFactory,
     IFactionOwnershipService ownership,
+    IUnitService             unitService,
+    IUnitMovementService     movementService,
     IBotDifficultySettings   settings)
+// [InjectOptional] IFogOfWarServiceRegistry _fogRegistry (field injection)
 ```
 
 **Метод `Tick()`:**

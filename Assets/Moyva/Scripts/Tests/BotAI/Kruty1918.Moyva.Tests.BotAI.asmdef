@@ -6,9 +6,11 @@
         "Zenject-TestFramework",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "Kruty1918.Moyva.BotAI",
+        "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.Faction",
-        "Kruty1918.Moyva.Units"
+        "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.BotAI",
+        "Kruty1918.Moyva.FogOfWar"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
