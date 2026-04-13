@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="1" result="Failed(Child)" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-04-13 15:41:50Z" end-time="2026-04-13 15:41:50Z" duration="0,0781175">
+  <test-suite type="TestSuite" id="2530" name="moyva_project" fullname="moyva_project" runstate="Runnable" testcasecount="1176" result="Failed" site="Child" start-time="2026-04-13 15:41:50Z" end-time="2026-04-13 15:41:50Z" duration="0.078118" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="Assembly" id="1134" name="Kruty1918.Moyva.Tests.Construction.dll" fullname="/home/oleks/moyva/Library/ScriptAssemblies/Kruty1918.Moyva.Tests.Construction.dll" runstate="Runnable" testcasecount="48" result="Failed" site="Child" start-time="2026-04-13 15:41:50Z" end-time="2026-04-13 15:41:50Z" duration="0.056771" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="14038" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1135" name="Kruty1918" fullname="Kruty1918" runstate="Runnable" testcasecount="48" result="Failed" site="Child" start-time="2026-04-13 15:41:50Z" end-time="2026-04-13 15:41:50Z" duration="0.055346" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1136" name="Moyva" fullname="Kruty1918.Moyva" runstate="Runnable" testcasecount="48" result="Failed" site="Child" start-time="2026-04-13 15:41:50Z" end-time="2026-04-13 15:41:50Z" duration="0.054422" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestSuite" id="1137" name="Tests" fullname="Kruty1918.Moyva.Tests" runstate="Runnable" testcasecount="48" result="Failed" site="Child" start-time="2026-04-13 15:41:50Z" end-time="2026-04-13 15:41:50Z" duration="0.053602" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="TestSuite" id="1138" name="Construction" fullname="Kruty1918.Moyva.Tests.Construction" runstate="Runnable" testcasecount="48" result="Failed" site="Child" start-time="2026-04-13 15:41:50Z" end-time="2026-04-13 15:41:50Z" duration="0.052730" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-suite type="TestFixture" id="1088" name="ConstructionServiceExtendedTests" fullname="Kruty1918.Moyva.Tests.Construction.ConstructionServiceExtendedTests" classname="Kruty1918.Moyva.Tests.Construction.ConstructionServiceExtendedTests" runstate="Runnable" testcasecount="21" result="Failed" site="Child" start-time="2026-04-13 15:41:50Z" end-time="2026-04-13 15:41:50Z" duration="0.050856" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <failure>
+                  <message><![CDATA[One or more child tests had errors]]></message>
+                </failure>
+                <test-case id="1105" name="RemovePendingAt_NoPending_ReturnsFalse" fullname="Kruty1918.Moyva.Tests.Construction.ConstructionServiceExtendedTests.RemovePendingAt_NoPending_ReturnsFalse" methodname="RemovePendingAt_NoPending_ReturnsFalse" classname="Kruty1918.Moyva.Tests.Construction.ConstructionServiceExtendedTests" runstate="Runnable" seed="2122888186" result="Failed" start-time="2026-04-13 15:41:50Z" end-time="2026-04-13 15:41:50Z" duration="0.024499" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <failure>
+                    <message><![CDATA[SetUp : Zenject.ZenjectException : Fired undeclared signal 'GameModeChangedSignal'!
+TearDown : Unhandled log message: '[Error] [Construction] ПОМИЛКА в Dispose(): ZenjectException - Called unsubscribe for signal '{0}' but could not find corresponding subscribe.  If this is intentional, call TryUnsubscribe instead.'. Use UnityEngine.TestTools.LogAssert.Expect]]></message>
+                    <stack-trace><![CDATA[Kruty1918.Moyva.Construction.Runtime.ConstructionService:Dispose () (at Assets/Moyva/Scripts/Features/Construction/Runtime/ConstructionService.cs:123)
+Kruty1918.Moyva.Tests.Construction.ConstructionServiceExtendedTests:Teardown () (at Assets/Moyva/Scripts/Tests/Construction/ConstructionServiceExtendedTests.cs:130)
+System.Reflection.MethodBase:Invoke (object,object[])
+NUnit.Framework.Internal.Reflect:InvokeMethod (System.Reflection.MethodInfo,object,object[])
+NUnit.Framework.Internal.Reflect:InvokeMethod (System.Reflection.MethodInfo,object)
+UnityEditor.EditorApplication:Internal_CallUpdateFunctions () (at /home/bokken/build/output/unity/unity/Editor/Mono/EditorApplication.cs:392)
+
+]]></stack-trace>
+                  </failure>
+                  <output><![CDATA[[Construction] Initialize() почало роботу...
+[Construction] ПОМИЛКА в Initialize(): ZenjectException - Tried subscribing to undeclared signal 'GameModeChangedSignal'!
+[Construction] Dispose() почало роботу...
+[Construction] ПОМИЛКА в Dispose(): ZenjectException - Called unsubscribe for signal '{0}' but could not find corresponding subscribe.  If this is intentional, call TryUnsubscribe instead.
+Saving results to: /home/oleks/.config/unity3d/DefaultCompany/moyva_project/TestResults.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

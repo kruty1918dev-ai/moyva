@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
     {
         private readonly SignalBus _signalBus;
         private readonly IGameModeService _gameModeService;
+        private bool _disposed;
 
         [Inject]
         public GameModeChangeRequestRouter(SignalBus signalBus, IGameModeService gameModeService)
@@ -28,7 +29,9 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<GameModeChangeRequestedSignal>(OnModeChangeRequested);
+            if (_disposed) return;
+            _disposed = true;
+            _signalBus.TryUnsubscribe<GameModeChangeRequestedSignal>(OnModeChangeRequested);
         }
 
         private void OnModeChangeRequested(GameModeChangeRequestedSignal signal)

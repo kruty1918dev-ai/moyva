@@ -61,7 +61,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             var config = _unitClassConfig.GetConfig(signal.UnitTypeId);
             if (config == null)
             {
-                Debug.LogError($"[UnitService] OnUnitCreated: конфігурація для typeId='{signal.UnitTypeId}' (unitId='{signal.UnitId}') НЕ ЗНАЙДЕНА! Юніт НЕ буде зареєстрований.");
+                Debug.LogWarning($"[UnitService] OnUnitCreated: конфігурація для typeId='{signal.UnitTypeId}' (unitId='{signal.UnitId}') НЕ ЗНАЙДЕНА! Юніт НЕ буде зареєстрований.");
                 return;
             }
 

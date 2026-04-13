@@ -156,10 +156,9 @@ namespace Kruty1918.Moyva.Tests.Calendar
             DayPhase? lastPhase = null;
             svc.OnDayPhaseChanged += p => lastPhase = p;
 
-            // Move from start (Dawn at h=6 → startHour offset) to full Day
-            svc.SetByTotalHours(cfg.HoursPerTurn);   // may or may not change phase, just force it
-            // Explicitly move to noon
-            svc.SetByTotalHours(6);                  // 6 hours in: hour = (6+6)%24 = 12 → Day
+            // Initial phase at epoch (startHour=6) is Day.
+            // 13 hours in: hour = (13+6)%24 = 19 → Dusk (different from Day).
+            svc.SetByTotalHours(13);
 
             Assert.IsNotNull(lastPhase);
         }

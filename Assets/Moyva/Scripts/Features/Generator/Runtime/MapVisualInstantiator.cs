@@ -238,7 +238,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
-            Debug.LogError($"[MapVisualInstantiator] Object layer ID '{layerEntityId}' не знайдено ні в MapObjectRegistry, ні в UnitRegistry.");
+            // Fallback: object layer може містити tile ID (наприклад, river), який
+            // має перезаписати базовий біом у GridService.
+            if (_definitionsCache.ContainsKey(layerEntityId))
+            {
+                CreateTileView(position, layerEntityId, _objectsRoot, 0);
+                return;
+            }
+
+            Debug.LogWarning($"[MapVisualInstantiator] Object layer ID '{layerEntityId}' не знайдено ні в MapObjectRegistry, ні в UnitRegistry.");
         }
 
         private void CreateObjectView(Vector2Int position, string objectId, Transform root, int sortingOrder)

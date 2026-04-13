@@ -284,6 +284,56 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             public bool Exists() => true;
         }
 
+        private sealed class FakeHostMigrationService : IHostMigrationService
+        {
+            private readonly IMultiplayerLogger _logger;
+
+            public FakeHostMigrationService(IMultiplayerLogger logger)
+            {
+                _logger = logger;
+            }
+
+            public Participant ChooseNewHost(IReadOnlyList<Participant> remaining)
+            {
+                foreach (var participant in remaining)
+                {
+                    if (!participant.IsBot)
+                    {
+                        _logger.Info($"FakeHostMigrationService: новий хост -> {participant.Identity}");
+                        return participant.AsHost();
+                    }
+                }
+
+                _logger.Warn("FakeHostMigrationService: жодного живого людського учасника.");
+                return null;
+            }
+        }
+
+        private sealed class ConfigurableParticipantFallbackService : IParticipantFallbackService
+        {
+            private readonly bool _forceDisableFallback;
+
+            public ConfigurableParticipantFallbackService(bool forceDisableFallback)
+            {
+                _forceDisableFallback = forceDisableFallback;
+            }
+
+            public Participant GetFallback(
+                ParticipantIdentity leavingParticipant,
+                IReadOnlyList<Participant> remaining,
+                SessionRules rules)
+            {
+                if (_forceDisableFallback || !rules.AllowBotsFallbackOnLeave)
+                    return null;
+
+                var botIdentity = new ParticipantIdentity(
+                    ParticipantIdentity.BotIdPrefix + leavingParticipant.PlayerId,
+                    leavingParticipant.Nickname);
+
+                return new Participant(botIdentity, isBot: true, isHost: false);
+            }
+        }
+
         private (SessionManager manager, ControllableNetworkProvider net, FakeLogger logger) BuildMigrationManager(
             bool allowBotFallback = false)
         {
@@ -294,10 +344,8 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             var cfgStore = new FakeConfigStore();
             var participantPolicy = new ParticipantPolicyService(logger, snapStore);
             var consistencyService = new WorldConsistencyService(logger);
-            var hostMigration = new HostMigrationService(logger);
-
-            // Fallback service that creates a bot when rules allow it
-            var participantFallback = new ParticipantFallbackService();
+            var hostMigration = new FakeHostMigrationService(logger);
+            var participantFallback = new ConfigurableParticipantFallbackService(forceDisableFallback: !allowBotFallback);
 
             var manager = new SessionManager(
                 net, participantPolicy, consistencyService, snapStore, cfgStore,
@@ -340,7 +388,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         [Test]
         public async Task OnParticipantDisconnect_ShouldAddBotFallback_WhenRulesAllow()
         {
-            var (manager, net, logger) = BuildMigrationManager();
+            var (manager, net, logger) = BuildMigrationManager(allowBotFallback: true);
 
             var rules = new SessionRules(SessionMode.MixedHumansAndBots, 4, 2, 2,
                 allowBotsFallbackOnLeave: true, false, false);

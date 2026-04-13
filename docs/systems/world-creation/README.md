@@ -1,6 +1,6 @@
 # World Creation UI — Екран створення нового світу
 
-← [Назад до систем](../README.md)
+← [Назад до README](../../README.md)
 
 ---
 

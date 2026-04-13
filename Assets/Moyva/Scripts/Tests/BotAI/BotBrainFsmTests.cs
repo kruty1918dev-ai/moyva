@@ -55,6 +55,12 @@ namespace Kruty1918.Moyva.Tests.BotAI
                 position = Vector2Int.zero;
                 return false;
             }
+            public float GetStamina(string unitId) => 1f;
+            public void SetStamina(string unitId, float stamina) { }
+            public GameObject GetUnitObject(string unitId) => null;
+            public System.Collections.Generic.IReadOnlyCollection<string> GetAllUnitIds()
+                => System.Array.Empty<string>();
+            public string GetUnitTypeId(string unitId) => "warrior";
         }
 
         private sealed class FakeMovementService : IUnitMovementService

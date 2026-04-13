@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.BotAI.API;
+using Kruty1918.Moyva.BotAI.Runtime;
 using Kruty1918.Moyva.Faction.API;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Units.API;
@@ -181,7 +182,8 @@ namespace Kruty1918.Moyva.Tests.BotAI
             var brain = Container.Instantiate<Kruty1918.Moyva.BotAI.Runtime.BotBrain>(
                 new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement, BotDifficultySettings.Normal() });
 
-            brain.Tick();
+            brain.Tick(); // Idle → Expanding
+            brain.Tick(); // Expanding: unitCount=0 < AttackThreshold → SpawnStartUnit()
 
             Assert.AreEqual(1, fakeFactory.SpawnedUnitIds.Count, "Повинен спавнити один юніт якщо їх немає.");
         }
@@ -195,22 +197,28 @@ namespace Kruty1918.Moyva.Tests.BotAI
             var botFaction   = MakeBotFaction("bot1", new Vector2Int(0, 0));
             var humanFaction = MakeHumanFaction("human1");
 
+            // Hard: AttackThreshold=2, DefendThreshold=1
+            // Потрібно 2 юніти бота для переходу в Attacking
             var fakeOwnership = new FakeOwnership();
             fakeOwnership.AddUnit(new FactionId("bot1"), "bot-unit-1");
+            fakeOwnership.AddUnit(new FactionId("bot1"), "bot-unit-2");
             fakeOwnership.AddUnit(new FactionId("human1"), "human-unit-1");
 
             var fakeUnitService = new FakeUnitService();
             fakeUnitService.SetPosition("bot-unit-1", new Vector2Int(0, 0));
-            fakeUnitService.SetPosition("human-unit-1", new Vector2Int(3, 0)); // відстань 3 ≤ 8
+            fakeUnitService.SetPosition("bot-unit-2", new Vector2Int(100, 100)); // далеко — поза AttackRange
+            fakeUnitService.SetPosition("human-unit-1", new Vector2Int(3, 0));   // відстань 3 ≤ 8
 
             var fakeMovement = new FakeMovementService();
             var fakeFactory  = new FakeUnitFactory();
             var fakeRegistry = new FakeFactionRegistry(new List<FactionDefinition> { botFaction, humanFaction });
 
             var brain = Container.Instantiate<Kruty1918.Moyva.BotAI.Runtime.BotBrain>(
-                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement, BotDifficultySettings.Normal() });
+                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement, BotDifficultySettings.Hard() });
 
-            brain.Tick();
+            brain.Tick(); // Idle → Expanding
+            brain.Tick(); // Expanding: unitCount=2 >= AttackThreshold(2) → Attacking
+            brain.Tick(); // Attacking: unitCount=2 > DefendThreshold(1) → ExecuteAttack
 
             Assert.AreEqual(1, fakeMovement.IssuedOrders.Count, "Повинна бути видана команда атаки.");
             Assert.AreEqual("bot-unit-1", fakeMovement.IssuedOrders[0].UnitId);
@@ -226,12 +234,15 @@ namespace Kruty1918.Moyva.Tests.BotAI
             var botFaction   = MakeBotFaction("bot1", new Vector2Int(0, 0));
             var humanFaction = MakeHumanFaction("human1");
 
+            // Hard: AttackThreshold=2, DefendThreshold=1
             var fakeOwnership = new FakeOwnership();
             fakeOwnership.AddUnit(new FactionId("bot1"), "bot-unit-1");
+            fakeOwnership.AddUnit(new FactionId("bot1"), "bot-unit-2");
             fakeOwnership.AddUnit(new FactionId("human1"), "human-unit-1");
 
             var fakeUnitService = new FakeUnitService();
             fakeUnitService.SetPosition("bot-unit-1", new Vector2Int(0, 0));
+            fakeUnitService.SetPosition("bot-unit-2", new Vector2Int(1, 0));
             fakeUnitService.SetPosition("human-unit-1", new Vector2Int(3, 0));
 
             var fakeFog = new FakeFogOfWarService();
@@ -247,9 +258,11 @@ namespace Kruty1918.Moyva.Tests.BotAI
             Container.Bind<IFogOfWarServiceRegistry>().FromInstance(fakeFogRegistry);
 
             var brain = Container.Instantiate<Kruty1918.Moyva.BotAI.Runtime.BotBrain>(
-                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement, BotDifficultySettings.Normal() });
+                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement, BotDifficultySettings.Hard() });
 
-            brain.Tick();
+            brain.Tick(); // Idle → Expanding
+            brain.Tick(); // Expanding: unitCount=2 >= 2 → Attacking
+            brain.Tick(); // Attacking: ExecuteAttack — ворог у тумані, команд не видає
 
             Assert.AreEqual(0, fakeMovement.IssuedOrders.Count, "Не повинно бути команд — ворог у тумані.");
         }
@@ -284,7 +297,9 @@ namespace Kruty1918.Moyva.Tests.BotAI
             var brain = Container.Instantiate<Kruty1918.Moyva.BotAI.Runtime.BotBrain>(
                 new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement, BotDifficultySettings.Normal() });
 
-            brain.Tick();
+            brain.Tick(); // Idle → Expanding
+            brain.Tick(); // Expanding: unitCount=3 >= AttackThreshold(3) → Attacking
+            brain.Tick(); // Attacking: ExecuteAttack
 
             // Лише один не-охоронець (bot-unit-3) може атакувати
             // Але bot-unit-3 далеко (10+10=20 Manhattan) — поза AttackRange=8, тому теж не атакує

@@ -1,6 +1,6 @@
 # Multiplayer — Огляд системи
 
-← [Назад до README](../../../README.md)
+← [Назад до README](../../README.md)
 
 ---
 
@@ -77,6 +77,9 @@ Assets/Moyva/Scripts/Tests/Multiplayer/
 | [config-hub-guide.md](config-hub-guide.md) | **Multiplayer Config Hub** — повний гайд |
 | [testing.md](testing.md) | TDD, unit-тести |
 | [quickstart.md](quickstart.md) | Швидкий старт |
+| [host-migration.md](host-migration.md) | Міграція хоста |
+| [game-state.md](game-state.md) | Стан гри (мережева синхронізація) |
+| [game-sync.md](game-sync.md) | Синхронізація ігрових команд |
 
 ---
 

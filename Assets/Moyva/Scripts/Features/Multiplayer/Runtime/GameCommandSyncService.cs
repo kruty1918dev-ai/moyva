@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _network = network;
             _logger  = logger;
 
-            _subscription = _network.Messages.Subscribe(OnMessageReceived);
+            _subscription = _network.Messages.Subscribe(new ActionObserver<NetworkMessage>(OnMessageReceived));
         }
 
         public void SendCommand(GameCommandType type, byte[] payload)
@@ -69,6 +69,15 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             if (payload != null && payload.Length > 0)
                 Buffer.BlockCopy(payload, 0, packet, 1, payload.Length);
             return packet;
+        }
+
+        private sealed class ActionObserver<T> : IObserver<T>
+        {
+            private readonly Action<T> _onNext;
+            public ActionObserver(Action<T> onNext) => _onNext = onNext;
+            public void OnNext(T value) => _onNext(value);
+            public void OnError(Exception error) { }
+            public void OnCompleted() { }
         }
     }
 }

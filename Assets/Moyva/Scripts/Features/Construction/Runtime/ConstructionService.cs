@@ -46,6 +46,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly int _townHallBuildRadius;
         private readonly IFogOfWarService _fogOfWarService; // може бути null якщо туман не підключений
         private readonly IWallPlacementService _wallPlacementService;
+        private bool _initialized;
+        private bool _disposed;
 
         private string _selectedBuildingId;
         private readonly List<PendingPlacement> _pendingPlacements = new();
@@ -84,6 +86,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Initialize()
         {
+            if (_disposed || _initialized)
+                return;
+
             Debug.Log("[Construction] Initialize() почало роботу...");
             
             try
@@ -95,6 +100,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
 
                 _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
+                _initialized = true;
                 Debug.Log("[Construction] ✓ GameModeChangedSignal підписано");
             }
             catch (System.Exception ex)
@@ -105,6 +111,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Dispose()
         {
+            if (_disposed)
+                return;
+
+            _disposed = true;
             Debug.Log("[Construction] Dispose() почало роботу...");
             
             try
@@ -115,7 +125,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     return;
                 }
 
-                _signalBus.Unsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+                _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
                 Debug.Log("[Construction] ✓ GameModeChangedSignal відписано");
             }
             catch (System.Exception ex)

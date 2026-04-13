@@ -1,0 +1,16 @@
+{
+    "name": "Kruty1918.Moyva.WorldCreation.API",
+    "rootNamespace": "Kruty1918.Moyva.WorldCreation.API",
+    "references": [
+        "Kruty1918.Moyva.Signals"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
