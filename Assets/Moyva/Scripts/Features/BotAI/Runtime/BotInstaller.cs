@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.BotAI.API;
 using Zenject;
 
 namespace Kruty1918.Moyva.BotAI.Runtime
@@ -10,6 +11,10 @@ namespace Kruty1918.Moyva.BotAI.Runtime
     {
         public override void InstallBindings()
         {
+            Container.Bind<IBotDifficultySettings>()
+                .FromInstance(BotDifficultySettings.Normal())
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<BotTickScheduler>()
                 .AsSingle()
                 .NonLazy();

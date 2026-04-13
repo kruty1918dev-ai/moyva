@@ -355,6 +355,16 @@
           "path": "systems/world-creation/README.md",
           "title": "World Creation UI — екран створення світу",
           "tag": "guide"
+        },
+        {
+          "path": "systems/bot-ai/README.md",
+          "title": "AI Бот",
+          "tag": "AI"
+        },
+        {
+          "path": "systems/bot-ai/difficulty.md",
+          "title": "Складність бота",
+          "tag": "AI"
         }
       ]
     },
@@ -614,6 +624,11 @@
           "title": "SessionManager — деталі"
         },
         {
+          "path": "systems/multiplayer/host-migration.md",
+          "title": "Міграція хоста",
+          "tag": "new"
+        },
+        {
           "path": "systems/multiplayer/network-providers.md",
           "title": "INetworkProvider та провайдери"
         },
@@ -647,6 +662,16 @@
           "path": "systems/multiplayer/quickstart.md",
           "title": "Швидкий старт",
           "tag": "tutorial"
+        },
+        {
+          "path": "systems/multiplayer/game-state.md",
+          "title": "Ігровий цикл",
+          "tag": "new"
+        },
+        {
+          "path": "systems/multiplayer/game-sync.md",
+          "title": "Синхронізація команд",
+          "tag": "new"
         }
       ]
     },
