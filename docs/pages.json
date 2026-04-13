@@ -350,6 +350,11 @@
         {
           "path": "systems/game-mode.md",
           "title": "Game Mode — ігрові режими"
+        },
+        {
+          "path": "systems/world-creation/README.md",
+          "title": "World Creation UI — екран створення світу",
+          "tag": "guide"
         }
       ]
     },

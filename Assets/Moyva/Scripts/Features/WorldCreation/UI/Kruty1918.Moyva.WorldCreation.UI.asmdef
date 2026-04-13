@@ -1,0 +1,19 @@
+{
+    "name": "Kruty1918.Moyva.WorldCreation.UI",
+    "rootNamespace": "Kruty1918.Moyva.WorldCreation.UI",
+    "references": [
+        "Zenject",
+        "Kruty1918.Moyva.WorldCreation",
+        "Kruty1918.Moyva.Signals",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
