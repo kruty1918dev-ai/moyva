@@ -493,60 +493,12 @@ namespace Kruty1918.Moyva.Construction.UI
             if (_isPreviewInfoPinned)
                 sb.AppendLine($"Тайл: {position.x}, {position.y}");
 
-            sb.AppendLine();
-            sb.AppendLine("Потреби:");
-            sb.AppendLine($"• Робітники: {Mathf.Max(0, definition.RequiredWorkers)}");
-            sb.AppendLine($"• Пріоритет: {Mathf.Max(0, definition.EconomyPriority)}");
-
-            bool requiresTownHall = definition.UseCustomTownHallRules
-                ? definition.RequireTownHallInRange
-                : !definition.IsTownHall;
-            bool blockSecondTownHall = definition.UseCustomTownHallRules
-                ? definition.BlockIfTownHallAlreadyInRange
-                : definition.IsTownHall;
-
-            sb.AppendLine($"• Ратуша поруч: {(requiresTownHall ? "так" : "ні")}");
-            sb.AppendLine($"• Блок другої ратуші: {(blockSecondTownHall ? "так" : "ні")}");
-
-            if (definition.TownHallProximityRadiusOverride > 0)
-                sb.AppendLine($"• Радіус правил: {definition.TownHallProximityRadiusOverride}");
-
-            sb.AppendLine();
-            sb.AppendLine("Що дає:");
-
-            bool hasBenefits = false;
-            if (definition.IsHousing)
+            int beforeFacts = sb.Length;
+            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, sb))
             {
-                sb.AppendLine($"• Житло: +{Mathf.Max(0, definition.HousingCapacity)}");
-                hasBenefits = true;
+                if (beforeFacts > 0)
+                    sb.Insert(beforeFacts, Environment.NewLine);
             }
-
-            if (definition.IsWarehouse)
-            {
-                sb.AppendLine("• Локальний склад ресурсів");
-                hasBenefits = true;
-            }
-
-            if (!string.IsNullOrWhiteSpace(definition.IndustrialResourceId))
-            {
-                sb.AppendLine($"• Профіль ресурсу: {definition.IndustrialResourceId}");
-                hasBenefits = true;
-            }
-
-            if (definition.IsTownHall)
-            {
-                sb.AppendLine("• Центр поселення");
-                hasBenefits = true;
-            }
-
-            if (definition.IsCastle)
-            {
-                sb.AppendLine("• Центр фракції");
-                hasBenefits = true;
-            }
-
-            if (!hasBenefits)
-                sb.AppendLine("• Додаткових ефектів не задано");
 
             AppendOwnerResourcesBlock(sb);
             return sb.ToString().TrimEnd();

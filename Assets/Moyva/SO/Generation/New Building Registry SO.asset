@@ -25,14 +25,16 @@ MonoBehaviour:
     HousingCapacity: 0
     IsTownHall: 1
     IsCastle: 0
-    IndustrialResourceId: 
+    IndustrialResourceId: aloe-herb-food-resources
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 0
     BlockIfTownHallAlreadyInRange: 1
     TownHallProximityRadiusOverride: 0
+    RequiresTiles: 0
+    TileRequirements: []
   - Id: bridge-wood-01
     DisplayName: Wood Bridge
-    Category: 0
+    Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 8030073889366943068, guid: f9fff611f2465687b966cf0e0cfdda74, type: 3}
     RequiredWorkers: 0
@@ -42,11 +44,13 @@ MonoBehaviour:
     HousingCapacity: 0
     IsTownHall: 0
     IsCastle: 0
-    IndustrialResourceId: 
+    IndustrialResourceId: aloe-herb-food-resources
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
     TownHallProximityRadiusOverride: 0
+    RequiresTiles: 0
+    TileRequirements: []
   - Id: windmill-01
     DisplayName: Windmill
     Category: 2
@@ -64,6 +68,8 @@ MonoBehaviour:
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
     TownHallProximityRadiusOverride: 0
+    RequiresTiles: 0
+    TileRequirements: []
   - Id: house-01
     DisplayName: House
     Category: 1
@@ -81,6 +87,8 @@ MonoBehaviour:
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
     TownHallProximityRadiusOverride: 0
+    RequiresTiles: 0
+    TileRequirements: []
   - Id: stone-wall
     DisplayName: "\u0421\u0442\u0456\u043D\u0430"
     Category: 3
@@ -98,6 +106,8 @@ MonoBehaviour:
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
     TownHallProximityRadiusOverride: 0
+    RequiresTiles: 0
+    TileRequirements: []
   - Id: stone-gate
     DisplayName: "\u0412\u043E\u0440\u043E\u0442\u0430"
     Category: 3
@@ -115,6 +125,8 @@ MonoBehaviour:
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
     TownHallProximityRadiusOverride: 0
+    RequiresTiles: 0
+    TileRequirements: []
   WallCollections:
   - CollectionId: wall-stone-collection-0
     WallBuildingId: stone-wall

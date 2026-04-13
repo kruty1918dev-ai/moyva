@@ -2,6 +2,25 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
 {
+    /// <summary>
+    /// Вимога до тайла для роботи індустріальної будівлі.
+    /// Будівля може потребувати одного або кількох типів тайлів.
+    /// </summary>
+    [System.Serializable]
+    public class TileRequirementDefinition
+    {
+        [Tooltip("ID тайла, який потребується (наприклад 'forest', 'water', 'mountain').")]
+        public string TileId;
+
+        [Tooltip("Радіус, в якому має бути цей тайл від будівлі (в клітинках).")]
+        [Min(1)]
+        public int Radius = 3;
+
+        [Tooltip("Мінімальна кількість клітинок цього тайла в радіусі.")]
+        [Min(1)]
+        public int MinimumTileCount = 1;
+    }
+
     [System.Serializable]
     public class BuildingDefinition
     {
@@ -48,5 +67,12 @@ namespace Kruty1918.Moyva.Construction.API
 
         [Tooltip("Локальний override радіусу правил ратуші для цієї будівлі.\n<= 0 означає використати глобальний радіус із ConstructionInstaller.")]
         public int TownHallProximityRadiusOverride;
+
+        [Header("Вимоги до тайлів")]
+        [Tooltip("Чи потребує ця будівля певних типів тайлів для роботи.\nСтосується переважно індустріальних об'єктів.")]
+        public bool RequiresTiles;
+
+        [Tooltip("Массив вимог до тайлів. Кожен елемент задає тип тайла та його мінімальну кількість в радіусі.")]
+        public TileRequirementDefinition[] TileRequirements = new TileRequirementDefinition[0];
     }
 }

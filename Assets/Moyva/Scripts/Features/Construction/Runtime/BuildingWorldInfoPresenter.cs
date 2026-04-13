@@ -100,15 +100,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             details.AppendLine("Базова інформація");
             details.AppendLine($"ID: {definition.Id}");
             details.AppendLine($"Категорія: {definition.Category}");
-            details.AppendLine($"Потрібно робітників: {Mathf.Max(0, definition.RequiredWorkers)}");
-            details.AppendLine($"Пріоритет економіки: {Mathf.Max(0, definition.EconomyPriority)}");
 
-            if (definition.IsTownHall)
-                details.AppendLine("Тип: Ратуша");
-            else if (definition.IsWarehouse)
-                details.AppendLine("Тип: Склад");
-            else if (definition.IsCastle)
-                details.AppendLine("Тип: Капітал");
+            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, details))
+                return details.ToString().TrimEnd();
 
             return details.ToString().TrimEnd();
         }
@@ -138,9 +132,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             resources = _economyInfoMediator.GetSettlementResourceTotals(settlementContext.SettlementId);
             var details = new StringBuilder();
             details.AppendLine(FormatResources(resources, "Ресурси поселення"));
-            details.AppendLine();
-            details.AppendLine($"Потрібно робітників: {Mathf.Max(0, definition.RequiredWorkers)}");
-            details.AppendLine($"Пріоритет економіки: {Mathf.Max(0, definition.EconomyPriority)}");
+
+            int beforeFacts = details.Length;
+            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, details))
+            {
+                if (beforeFacts > 0)
+                    details.Insert(beforeFacts, Environment.NewLine);
+            }
+
             return details.ToString().TrimEnd();
         }
 
