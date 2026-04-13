@@ -28,7 +28,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         public void SendCommand(GameCommandType type, byte[] payload)
         {
             var packet = BuildPacket(type, payload);
-            _network.SendMessageAsync("*", packet, CancellationToken.None);
+            // Надсилання всім пірам (fire-and-forget); помилки логуються провайдером.
+            _ = _network.SendMessageAsync("*", packet, CancellationToken.None);
         }
 
         public void RegisterHandler(GameCommandType type, Action<string, byte[]> handler)
