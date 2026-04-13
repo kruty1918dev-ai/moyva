@@ -7,6 +7,7 @@ using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Units.Runtime;
 using UnityEditor;
 using UnityEngine;
@@ -399,6 +400,7 @@ namespace Kruty1918.Moyva.Economy.Editor
         private readonly HashSet<EconomyProductionProfile> _simulationProfiles = new HashSet<EconomyProductionProfile>();
         private EconomySimulationResult _simulationResult;
         private readonly StringBuilder _buildingInfoBuffer = new StringBuilder(256);
+        private readonly StringBuilder _unitInfoBuffer = new StringBuilder(256);
 
         private int _bulkCategoryIndex;
         private string _bulkSearch = string.Empty;
@@ -1294,6 +1296,8 @@ namespace Kruty1918.Moyva.Economy.Editor
             var isTownHallProp = buildingProperty.FindPropertyRelative("IsTownHall");
             var isCastleProp = buildingProperty.FindPropertyRelative("IsCastle");
             var industrialResourceIdProp = buildingProperty.FindPropertyRelative("IndustrialResourceId");
+            var requiresTilesProp = buildingProperty.FindPropertyRelative("RequiresTiles");
+            var tileRequirementsProp = buildingProperty.FindPropertyRelative("TileRequirements");
             var useCustomTownHallRulesProp = buildingProperty.FindPropertyRelative("UseCustomTownHallRules");
             var requireTownHallInRangeProp = buildingProperty.FindPropertyRelative("RequireTownHallInRange");
             var blockIfTownHallAlreadyInRangeProp = buildingProperty.FindPropertyRelative("BlockIfTownHallAlreadyInRange");
@@ -1349,18 +1353,24 @@ namespace Kruty1918.Moyva.Economy.Editor
                 isCastle = false;
             }
 
-            if (isWall || isTownHall)
+            bool isCentral = isTownHall || isCastle;
+
+            if (isWall || isCentral)
             {
                 if (requiredWorkersProp != null) requiredWorkersProp.intValue = 0;
                 if (economyPriorityProp != null) economyPriorityProp.intValue = 0;
                 if (isWarehouseProp != null) isWarehouseProp.boolValue = false;
                 if (housingCapacityProp != null) housingCapacityProp.intValue = 0;
                 if (industrialResourceIdProp != null) industrialResourceIdProp.stringValue = string.Empty;
+                if (requiresTilesProp != null) requiresTilesProp.boolValue = false;
+                if (tileRequirementsProp != null && tileRequirementsProp.isArray) tileRequirementsProp.arraySize = 0;
 
-                if (isTownHall)
-                {
-                    if (isHousingProp != null) isHousingProp.boolValue = false;
-                }
+                if (useCustomTownHallRulesProp != null) useCustomTownHallRulesProp.boolValue = false;
+                if (requireTownHallInRangeProp != null) requireTownHallInRangeProp.boolValue = false;
+                if (blockIfTownHallAlreadyInRangeProp != null) blockIfTownHallAlreadyInRangeProp.boolValue = true;
+                if (townHallRadiusOverrideProp != null) townHallRadiusOverrideProp.intValue = 0;
+
+                if (isHousingProp != null) isHousingProp.boolValue = false;
             }
 
             if (isWall)
@@ -1371,19 +1381,19 @@ namespace Kruty1918.Moyva.Economy.Editor
             EditorGUILayout.Space(6f);
             EditorGUILayout.LabelField("Економічні параметри", EditorStyles.boldLabel);
 
-            using (new EditorGUI.DisabledScope(isWall || isTownHall))
+            using (new EditorGUI.DisabledScope(isWall || isCentral))
             {
                 EditorGUILayout.PropertyField(requiredWorkersProp);
                 EditorGUILayout.PropertyField(economyPriorityProp);
                 EditorGUILayout.PropertyField(isWarehouseProp);
             }
 
-            using (new EditorGUI.DisabledScope(isWall || isTownHall))
+            using (new EditorGUI.DisabledScope(isWall || isCentral))
             {
                 EditorGUILayout.PropertyField(isHousingProp);
             }
 
-            bool isHousing = isHousingProp != null && isHousingProp.boolValue && !isWall && !isTownHall;
+            bool isHousing = isHousingProp != null && isHousingProp.boolValue && !isWall && !isCentral;
             if (!isHousing && housingCapacityProp != null)
                 housingCapacityProp.intValue = 0;
 
@@ -1393,15 +1403,7 @@ namespace Kruty1918.Moyva.Economy.Editor
                     EditorGUILayout.PropertyField(housingCapacityProp);
             }
 
-            if (isTownHall)
-            {
-                if (useCustomTownHallRulesProp != null) useCustomTownHallRulesProp.boolValue = false;
-                if (requireTownHallInRangeProp != null) requireTownHallInRangeProp.boolValue = false;
-                if (blockIfTownHallAlreadyInRangeProp != null) blockIfTownHallAlreadyInRangeProp.boolValue = true;
-                if (townHallRadiusOverrideProp != null) townHallRadiusOverrideProp.intValue = 0;
-            }
-
-            using (new EditorGUI.DisabledScope(!isIndustrial || isWall || isTownHall))
+            using (new EditorGUI.DisabledScope(!isIndustrial || isWall || isCentral))
             {
                 if (industrialResourceIdProp != null)
                     DrawResourceSelector(industrialResourceIdProp);
@@ -1413,18 +1415,18 @@ namespace Kruty1918.Moyva.Economy.Editor
             EditorGUILayout.Space(6f);
             EditorGUILayout.LabelField("Правила розміщення", EditorStyles.boldLabel);
 
-            using (new EditorGUI.DisabledScope(isTownHall))
+            using (new EditorGUI.DisabledScope(isCentral))
             {
                 if (useCustomTownHallRulesProp != null)
                     EditorGUILayout.PropertyField(useCustomTownHallRulesProp);
             }
 
-            bool usesCustomTownHallRules = !isTownHall
+            bool usesCustomTownHallRules = !isCentral
                 && useCustomTownHallRulesProp != null
                 && useCustomTownHallRulesProp.boolValue;
 
-            bool defaultRequireTownHall = !isTownHall;
-            bool defaultBlockTownHallAlreadyInRange = isTownHall;
+            bool defaultRequireTownHall = !isCentral;
+            bool defaultBlockTownHallAlreadyInRange = isCentral;
 
             if (!usesCustomTownHallRules)
             {
@@ -1456,6 +1458,12 @@ namespace Kruty1918.Moyva.Economy.Editor
             {
                 EditorGUILayout.HelpBox(
                     "Ратуша не може бути одночасно замком. Для ратуші вимкнені робітники, економічний пріоритет, склад, житло та ресурсний профіль; правила розміщення також фіксовані.",
+                    MessageType.Info);
+            }
+            else if (isCastle)
+            {
+                EditorGUILayout.HelpBox(
+                    "Замок не може бути одночасно ратушею. Для замку вимкнені робітники, економічний пріоритет, склад, житло, ресурсний профіль і тайлові вимоги; правила розміщення фіксовані.",
                     MessageType.Info);
             }
             else if (!isIndustrial)
@@ -2039,9 +2047,7 @@ namespace Kruty1918.Moyva.Economy.Editor
                 EditorGUILayout.EndVertical();
                 EditorGUILayout.EndHorizontal();
 
-                EditorGUILayout.HelpBox(
-                    "Тут редагуються параметри UnitClassConfig. Для подальших економічних полів достатньо додати їх у UnitClassConfig — вони з’являться тут автоматично.",
-                    MessageType.Info);
+                DrawUnitDefaultInfoPanel(selectedProp);
                 DrawUnitEntityInspector(selectedProp);
             }
             EditorGUILayout.EndScrollView();
@@ -2090,6 +2096,57 @@ namespace Kruty1918.Moyva.Economy.Editor
                 return;
 
             EditorGUILayout.HelpBox(_buildingInfoBuffer.ToString().TrimEnd(), MessageType.Info);
+        }
+
+        private void DrawUnitDefaultInfoPanel(SerializedProperty unitProperty)
+        {
+            if (unitProperty == null || _unitRegistry == null || _unitRegistry.Configs == null)
+                return;
+
+            var typeId = unitProperty.FindPropertyRelative("TypeId")?.stringValue;
+            if (string.IsNullOrWhiteSpace(typeId))
+                return;
+
+            UnitClassConfig config = null;
+            var source = _unitRegistry.Configs;
+            for (int i = 0; i < source.Count; i++)
+            {
+                var candidate = source[i];
+                if (candidate != null && candidate.TypeId == typeId)
+                {
+                    config = candidate;
+                    break;
+                }
+            }
+
+            if (config == null)
+                return;
+
+            _unitInfoBuffer.Clear();
+
+            if (!string.IsNullOrWhiteSpace(config.TypeId))
+                _unitInfoBuffer.AppendLine($"TypeId: {config.TypeId}");
+
+            _unitInfoBuffer.AppendLine(config.Role == Kruty1918.Moyva.Units.API.UnitRole.Military
+                ? "Прапорець: бойовий юніт"
+                : "Прапорець: економічний юніт");
+
+            if (config.BaseStamina > 0f)
+                _unitInfoBuffer.AppendLine($"Базова стаміна: {config.BaseStamina:0.#}");
+
+            if (config.VisionRange > 0)
+                _unitInfoBuffer.AppendLine($"Дальність огляду: {config.VisionRange}");
+
+            if (config.StaminaRandomRange != Vector2.zero)
+                _unitInfoBuffer.AppendLine($"Рандом стаміни: {config.StaminaRandomRange.x:0.#} .. {config.StaminaRandomRange.y:0.#}");
+
+            if (config.Prefab != null)
+                _unitInfoBuffer.AppendLine("Прапорець: має prefab");
+
+            if (_unitInfoBuffer.Length == 0)
+                return;
+
+            EditorGUILayout.HelpBox(_unitInfoBuffer.ToString().TrimEnd(), MessageType.Info);
         }
 
         private bool EnsureDatabaseSerialized()

@@ -96,13 +96,11 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (!string.IsNullOrWhiteSpace(unitTypeId))
                 sb.AppendLine($"Тип: {unitTypeId}");
 
-            sb.AppendLine($"Роль: {ResolveRoleText(config)}");
-
-            if (config != null)
-            {
-                sb.AppendLine($"Базова стаміна: {config.BaseStamina:0.#}");
-                sb.AppendLine($"Дальність огляду: {config.VisionRange}");
-            }
+            int beforeFacts = sb.Length;
+            if (config != null && AppendMeaningfulFacts(config, sb))
+                sb.Insert(beforeFacts, Environment.NewLine);
+            else
+                sb.AppendLine($"Роль: {ResolveRoleText(config)}");
 
             sb.AppendLine($"Поточна стаміна: {_unitService.GetStamina(unitId):0.#}");
 
@@ -120,6 +118,35 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
 
             return sb.ToString().TrimEnd();
+        }
+
+        private static bool AppendMeaningfulFacts(UnitClassConfig config, StringBuilder output)
+        {
+            if (config == null || output == null)
+                return false;
+
+            int startLength = output.Length;
+
+            if (!string.IsNullOrWhiteSpace(config.TypeId))
+                output.AppendLine($"TypeId: {config.TypeId}");
+
+            output.AppendLine(config.Role == UnitRole.Military
+                ? "Прапорець: бойовий юніт"
+                : "Прапорець: економічний юніт");
+
+            if (config.BaseStamina > 0f)
+                output.AppendLine($"Базова стаміна: {config.BaseStamina:0.#}");
+
+            if (config.VisionRange > 0)
+                output.AppendLine($"Дальність огляду: {config.VisionRange}");
+
+            if (config.StaminaRandomRange != UnityEngine.Vector2.zero)
+                output.AppendLine($"Рандом стаміни: {config.StaminaRandomRange.x:0.#} .. {config.StaminaRandomRange.y:0.#}");
+
+            if (config.Prefab != null)
+                output.AppendLine("Прапорець: має prefab");
+
+            return output.Length > startLength;
         }
 
         private static string ResolveRoleText(UnitClassConfig config)
