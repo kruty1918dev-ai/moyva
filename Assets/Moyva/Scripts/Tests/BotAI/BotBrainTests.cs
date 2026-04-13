@@ -179,7 +179,7 @@ namespace Kruty1918.Moyva.Tests.BotAI
             Container.Bind<IUnitMovementService>().FromInstance(fakeMovement);
 
             var brain = Container.Instantiate<Kruty1918.Moyva.BotAI.Runtime.BotBrain>(
-                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement });
+                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement, BotDifficultySettings.Normal() });
 
             brain.Tick();
 
@@ -208,7 +208,7 @@ namespace Kruty1918.Moyva.Tests.BotAI
             var fakeRegistry = new FakeFactionRegistry(new List<FactionDefinition> { botFaction, humanFaction });
 
             var brain = Container.Instantiate<Kruty1918.Moyva.BotAI.Runtime.BotBrain>(
-                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement });
+                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement, BotDifficultySettings.Normal() });
 
             brain.Tick();
 
@@ -247,7 +247,7 @@ namespace Kruty1918.Moyva.Tests.BotAI
             Container.Bind<IFogOfWarServiceRegistry>().FromInstance(fakeFogRegistry);
 
             var brain = Container.Instantiate<Kruty1918.Moyva.BotAI.Runtime.BotBrain>(
-                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement });
+                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement, BotDifficultySettings.Normal() });
 
             brain.Tick();
 
@@ -282,7 +282,7 @@ namespace Kruty1918.Moyva.Tests.BotAI
             var fakeRegistry = new FakeFactionRegistry(new List<FactionDefinition> { botFaction, humanFaction });
 
             var brain = Container.Instantiate<Kruty1918.Moyva.BotAI.Runtime.BotBrain>(
-                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement });
+                new object[] { botFaction, fakeRegistry, fakeFactory, fakeOwnership, fakeUnitService, fakeMovement, BotDifficultySettings.Normal() });
 
             brain.Tick();
 

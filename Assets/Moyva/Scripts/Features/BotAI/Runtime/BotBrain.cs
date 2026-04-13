@@ -9,12 +9,22 @@ using Zenject;
 
 namespace Kruty1918.Moyva.BotAI.Runtime
 {
+    /// <summary>
+    /// FSM-реалізація AI-мозку для однієї Bot-фракції.
+    ///
+    /// Стани:
+    ///   Idle      → початковий стан після ініціалізації.
+    ///   Expanding → бот нарощує кількість юнітів.
+    ///   Attacking → достатньо юнітів; рухає їх до найближчого ворога.
+    ///   Defending → мало юнітів; тримає базові охоронці.
+    /// </summary>
     internal sealed class BotBrain : IBotController
     {
         private const int AttackRange   = 8;
         private const int MinBaseGuards = 2;
 
-        public FactionId FactionId => _definition.FactionId;
+        public FactionId FactionId    => _definition.FactionId;
+        public BotState  CurrentState { get; private set; } = BotState.Idle;
 
         private readonly FactionDefinition        _definition;
         private readonly IFactionRegistry         _factionRegistry;
@@ -22,6 +32,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IFactionOwnershipService _ownership;
         private readonly IUnitService             _unitService;
         private readonly IUnitMovementService     _movementService;
+        private readonly IBotDifficultySettings   _settings;
 
         [InjectOptional]
         private IFogOfWarServiceRegistry _fogRegistry;
@@ -29,6 +40,10 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         // CancellationTokenSource per unit to cancel previous orders
         private readonly Dictionary<string, CancellationTokenSource> _activeMoves = new();
 
+        /// <summary>
+        /// Zenject inject: _definition передається як extra arg через container.Instantiate,
+        /// решта — стандартні DI-залежності.
+        /// </summary>
         [Inject]
         public BotBrain(
             FactionDefinition        definition,
@@ -36,7 +51,8 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             IUnitFactory             unitFactory,
             IFactionOwnershipService ownership,
             IUnitService             unitService,
-            IUnitMovementService     movementService)
+            IUnitMovementService     movementService,
+            IBotDifficultySettings   settings)
         {
             _definition      = definition;
             _factionRegistry = factionRegistry;
@@ -44,25 +60,87 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             _ownership       = ownership;
             _unitService     = unitService;
             _movementService = movementService;
+            _settings        = settings;
         }
 
         public void Tick()
         {
-            var myUnits = _ownership.GetUnitIds(_definition.FactionId);
+            var myUnits   = _ownership.GetUnitIds(_definition.FactionId);
+            int unitCount = myUnits.Count;
 
-            // — spawn if no units
-            if (myUnits.Count == 0)
+            switch (CurrentState)
             {
-                SpawnStartUnit();
+                case BotState.Idle:
+                    TransitionToExpanding();
+                    break;
+
+                case BotState.Expanding:
+                    TickExpanding(unitCount, myUnits);
+                    break;
+
+                case BotState.Attacking:
+                    TickAttacking(unitCount, myUnits);
+                    break;
+
+                case BotState.Defending:
+                    TickDefending(unitCount, myUnits);
+                    break;
+            }
+        }
+
+        // ─── State Transitions ────────────────────────────────────────────────
+
+        private void TransitionToExpanding()
+        {
+            CurrentState = BotState.Expanding;
+            Debug.Log($"[BotBrain:{_definition.FactionId}] → Expanding");
+        }
+
+        private void TickExpanding(int unitCount, IReadOnlyList<string> myUnits)
+        {
+            if (unitCount >= _settings.AttackThreshold)
+            {
+                CurrentState = BotState.Attacking;
+                Debug.Log($"[BotBrain:{_definition.FactionId}] → Attacking ({unitCount} юнітів)");
                 return;
             }
 
-            // — gather enemy unit positions
+            SpawnStartUnit();
+        }
+
+        private void TickAttacking(int unitCount, IReadOnlyList<string> myUnits)
+        {
+            if (unitCount <= _settings.DefendThreshold)
+            {
+                CurrentState = BotState.Defending;
+                Debug.Log($"[BotBrain:{_definition.FactionId}] → Defending ({unitCount} юнітів)");
+                return;
+            }
+
+            ExecuteAttack(myUnits);
+        }
+
+        private void TickDefending(int unitCount, IReadOnlyList<string> myUnits)
+        {
+            if (unitCount < _settings.DefendThreshold)
+            {
+                CurrentState = BotState.Expanding;
+                Debug.Log($"[BotBrain:{_definition.FactionId}] → Expanding (мало юнітів: {unitCount})");
+                return;
+            }
+
+            // In defending state, hold guard positions (same logic as attack but staying near base)
+        }
+
+        // ─── Combat Logic ─────────────────────────────────────────────────────
+
+        private void ExecuteAttack(IReadOnlyList<string> myUnits)
+        {
             var enemyPositions = CollectEnemyPositions();
             if (enemyPositions.Count == 0)
                 return;
 
-            // — determine which of our units are "base guards"
+            // Determine which of our units are "base guards"
             var baseGuards = new HashSet<string>();
             if (myUnits.Count > MinBaseGuards)
             {
@@ -78,7 +156,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 }
             }
 
-            // — attack: send non-guard units toward nearest visible enemy
+            // Send non-guard units toward nearest visible enemy
             foreach (var uid in myUnits)
             {
                 if (baseGuards.Contains(uid)) continue;

@@ -36,6 +36,10 @@ namespace Kruty1918.Moyva.GameMode.Runtime
             }
 
             // Явний порядок Initialize() — менше число = раніше.
+            Container.Bind<IGameStateService>()
+                .To<GameStateService>()
+                .AsSingle();
+
             Container.BindExecutionOrder<GameModeChangeRequestRouter>(-10);
             Container.BindExecutionOrder<GameModePanelController>(-10);
             Container.BindExecutionOrder<GameModeUIController>(-5);

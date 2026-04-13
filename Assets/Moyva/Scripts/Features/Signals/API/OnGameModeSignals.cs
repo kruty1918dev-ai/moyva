@@ -4,7 +4,8 @@ namespace Kruty1918.Moyva.Signals
     public enum GameModeType
     {
         Normal       = 0,
-        Construction = 1
+        Construction = 1,
+        Lobby        = 10,
     }
 
     /// <summary>
