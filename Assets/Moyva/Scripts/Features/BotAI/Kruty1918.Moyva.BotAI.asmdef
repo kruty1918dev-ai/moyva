@@ -5,7 +5,8 @@
         "Zenject",
         "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.Faction",
-        "Kruty1918.Moyva.Units"
+        "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.FogOfWar"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

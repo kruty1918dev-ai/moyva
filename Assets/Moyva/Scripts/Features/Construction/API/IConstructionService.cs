@@ -95,5 +95,19 @@ namespace Kruty1918.Moyva.Construction.API
         /// Повертає true якщо pending було успішно видалено.
         /// </summary>
         bool RemovePendingAt(Vector2Int position);
+
+        /// <summary>
+        /// Безпосередньо розміщує будівлю від імені фракції, минаючи UI flow.
+        /// Не потребує активного режиму будівництва.
+        /// Повертає true якщо розміщення успішне (тайл вільний).
+        /// </summary>
+        bool TryDirectPlace(string buildingId, Vector2Int position, string placedByFactionId);
+
+        /// <summary>
+        /// Знести будівлю від імені фракції (для AI/мережевих команд).
+        /// Фракція повинна бути власником будівлі.
+        /// Повертає true якщо успішно.
+        /// </summary>
+        bool TryDemolishByFaction(Vector2Int position, string factionId);
     }
 }
