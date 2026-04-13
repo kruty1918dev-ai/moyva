@@ -30,7 +30,7 @@ namespace Kruty1918.Moyva.Faction.Runtime
                 .IfNotBound();
 
             Container.Bind<IFactionRegistry>()
-                .FromResolve<FactionRegistry>()
+                .FromResolve()
                 .AsSingle()
                 .IfNotBound();
 

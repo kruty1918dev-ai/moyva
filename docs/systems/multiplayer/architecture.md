@@ -33,6 +33,10 @@ Multiplayer-система побудована на таких принципа
 │  ParticipantPolicyService                           │
 │  WorldConsistencyService                            │
 │  OfflineNetworkProvider                             │
+│  RelayNetworkProvider                               │
+│  WebSocketNetworkProvider                           │
+│  FallbackNetworkProvider                            │
+│  NetworkProviderFactory                             │
 │  BinaryConfigStore                                  │
 │  UnityMultiplayerLogger                             │
 │  SimpleFailureHandlingPolicy                        │
@@ -185,8 +189,8 @@ SessionManager
 
 ## Заплановані майбутні розширення
 
-- `RelayNetworkProvider` — Unity Relay backend
-- `MirrorNetworkProvider` — Mirror networking layer
+- `RelayNetworkProvider` — Unity Relay backend ✅ (потребує MOYVA_UGS_RELAY define + UGS SDK)
+- `WebSocketNetworkProvider` — WebSocket layer
 - Конкретна реалізація `IHostMigrationService` (вибір нового хоста)
 - Конкретна реалізація `IParticipantFallbackService` (замінити на бота)
 - Конкретна реалізація `IConfigSyncService` (синхронізація конфігу між хостом і клієнтом)

@@ -651,6 +651,55 @@
       ]
     },
     {
+      "id": "calendar",
+      "title": "Ігровий Календар",
+      "icon": "📅",
+      "pages": [
+        {
+          "path": "systems/calendar/README.md",
+          "title": "Calendar — огляд системи"
+        },
+        {
+          "path": "systems/calendar/architecture.md",
+          "title": "Архітектура та assembly definitions",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/calendar/interfaces.md",
+          "title": "Довідник інтерфейсів і типів",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/calendar/config.md",
+          "title": "CalendarConfig та CalendarBinaryConfigStore"
+        },
+        {
+          "path": "systems/calendar/editor-guide.md",
+          "title": "Calendar Config Hub — редактор",
+          "tag": "guide"
+        },
+        {
+          "path": "systems/calendar/quickstart.md",
+          "title": "Швидкий старт",
+          "tag": "tutorial"
+        },
+        {
+          "path": "systems/calendar/multiplayer-integration.md",
+          "title": "Інтеграція з Multiplayer"
+        },
+        {
+          "path": "systems/calendar/usage-examples.md",
+          "title": "Приклади використання",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/calendar/testing.md",
+          "title": "Тестування Calendar",
+          "tag": "reference"
+        }
+      ]
+    },
+    {
       "id": "standards",
       "title": "Стандарти",
       "icon": "📐",

@@ -27,6 +27,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .To<FogOfWarSaveModule>()
                 .AsSingle();
 
+            var fogQuads = Object.FindObjectsOfType<FogQuadController>(true);
+            foreach (var fogQuad in fogQuads)
+            {
+                Container.QueueForInject(fogQuad);
+            }
+
             Container.BindExecutionOrder<FogOfWarService>(-5);
         }
     }

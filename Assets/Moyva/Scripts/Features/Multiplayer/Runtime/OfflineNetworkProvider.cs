@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         public Task<SessionResult> HostSessionAsync(string sessionId, CancellationToken ct = default)
         {
             _isHosting = true;
+            PeerConnected?.Invoke("local");
             return Task.FromResult(SessionResult.Ok(sessionId));
         }
 
@@ -31,12 +32,15 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             if (!_isHosting)
                 return Task.FromResult(SessionResult.Fail("No session to join in offline mode."));
+
+            PeerConnected?.Invoke("local");
             return Task.FromResult(SessionResult.Ok(sessionId));
         }
 
         public Task LeaveSessionAsync(CancellationToken ct = default)
         {
             _isHosting = false;
+            PeerDisconnected?.Invoke("local");
             return Task.CompletedTask;
         }
 
