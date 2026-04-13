@@ -22,6 +22,7 @@ namespace Kruty1918.Moyva.Signals
         public string BuildingId;
         public Vector2Int Position;
         public string OwnerId;
+        public string SourceFactionId;
     }
 
     /// <summary>
@@ -50,6 +51,7 @@ namespace Kruty1918.Moyva.Signals
         public string BuildingId;
         public Vector2Int Position;
         public string OwnerId;
+        public string SourceFactionId;
     }
 
     /// <summary>

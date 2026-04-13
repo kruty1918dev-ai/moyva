@@ -9,27 +9,33 @@ namespace Kruty1918.Moyva.BotAI.Runtime
     /// <summary>
     /// Керує всіма Bot-контролерами: створює їх на старті та тікає з throttle.
     ///
-    /// Throttle: один тік AI кожні <see cref="TickIntervalSeconds"/> секунд,
+    /// Throttle: один тік AI кожні <see cref="_tickInterval"/> секунд,
     /// щоб не навантажувати CPU щокадру.
     /// </summary>
     internal sealed class BotTickScheduler : IInitializable, ITickable
     {
-        private const float TickIntervalSeconds = 2f;
-
-        private readonly IFactionRegistry _factionRegistry;
-        private readonly DiContainer      _container;
+        private readonly IFactionRegistry      _factionRegistry;
+        private readonly DiContainer           _container;
+        private readonly IBotDifficultySettings _settings;
 
         private readonly List<IBotController> _bots = new();
         private float _timer;
+        private float _tickInterval;
 
-        public BotTickScheduler(IFactionRegistry factionRegistry, DiContainer container)
+        public BotTickScheduler(
+            IFactionRegistry       factionRegistry,
+            DiContainer            container,
+            IBotDifficultySettings settings)
         {
             _factionRegistry = factionRegistry;
             _container       = container;
+            _settings        = settings;
         }
 
         public void Initialize()
         {
+            _tickInterval = _settings.TickInterval;
+
             foreach (var faction in _factionRegistry.GetBotFactions())
             {
                 var bot = _container.Instantiate<BotBrain>(new object[] { faction });
@@ -47,7 +53,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
                 return;
 
             _timer += Time.deltaTime;
-            if (_timer < TickIntervalSeconds)
+            if (_timer < _tickInterval)
                 return;
 
             _timer = 0f;

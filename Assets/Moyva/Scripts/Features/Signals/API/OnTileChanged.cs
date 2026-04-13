@@ -36,6 +36,7 @@ namespace Kruty1918.Moyva.Signals
         public string UnitId;
         public UnityEngine.Vector2Int NewPosition;
         public float Cost;
+        public string SourceFactionId;
     }
 
     // Викликається при смерті/видаленні
