@@ -13,6 +13,8 @@ Shader "Moyva/2D/SelectionSprite"
         _AnimationSpeed ("Animation Speed", Float) = 2.5
         _AnimationMin ("Animation Min", Range(0, 1)) = 0.0
         _AnimationMax ("Animation Max", Range(0, 1)) = 1.0
+        _DashLen ("Dash Length", Float) = 0.2
+        _GapLen ("Gap Length", Float) = 0.12
 
         [HideInInspector] _Color ("Tint", Color) = (1,1,1,1)
         [HideInInspector] _RendererColor ("RendererColor", Color) = (1,1,1,1)
@@ -78,6 +80,8 @@ Shader "Moyva/2D/SelectionSprite"
                 float _AnimationSpeed;
                 float _AnimationMin;
                 float _AnimationMax;
+                float _DashLen;
+                float _GapLen;
                 float _OutlineWidthOS;
                 float4 _SpriteLocalMin;
                 float4 _SpriteLocalMax;
@@ -104,11 +108,39 @@ Shader "Moyva/2D/SelectionSprite"
                 return any(localPos < _SpriteLocalMin.xy) || any(localPos > _SpriteLocalMax.xy);
             }
 
-            half3 GetAnimatedOutlineColor()
+            half ComputeDashMask(float2 localPos)
             {
-                half wave = sin(_Time.y * _AnimationSpeed) * 0.5h + 0.5h;
-                half mixValue = lerp((half)_AnimationMin, (half)_AnimationMax, wave);
-                return lerp(_OutlineColor.rgb, _OutlineColorSecondary.rgb, mixValue);
+                float2 mn = _SpriteLocalMin.xy;
+                float2 mx = _SpriteLocalMax.xy;
+                float w = max(mx.x - mn.x, 0.0001);
+                float h = max(mx.y - mn.y, 0.0001);
+                float2 center = (mn + mx) * 0.5;
+                float2 halfSize = float2(w, h) * 0.5;
+                float2 rel = localPos - center;
+
+                float anx = abs(rel.x) / max(halfSize.x, 0.0001);
+                float anyN = abs(rel.y) / max(halfSize.y, 0.0001);
+
+                float cx = clamp(localPos.x, mn.x, mx.x);
+                float cy = clamp(localPos.y, mn.y, mx.y);
+
+                float p;
+                if (anyN >= anx)
+                {
+                    p = (rel.y < 0.0)
+                        ? (cx - mn.x)
+                        : (w + h + (mx.x - cx));
+                }
+                else
+                {
+                    p = (rel.x > 0.0)
+                        ? (w + (cy - mn.y))
+                        : (2.0 * w + h + (mx.y - cy));
+                }
+
+                float period = max(_DashLen + _GapLen, 0.0001);
+                float t = fmod(p + _Time.y * _AnimationSpeed + period * 1024.0, period);
+                return (half)step(t, _DashLen);
             }
 
             float2 ClampToSpriteUv(float2 uv)
@@ -124,17 +156,18 @@ Shader "Moyva/2D/SelectionSprite"
             half ComputeOutlineAlpha(float2 selectionUv)
             {
                 float2 texel = _MainTexTexelSize.xy;
-                float radius = max(_OutlineSize, 1.0);
+                int r = clamp((int)_OutlineSize, 1, 6);
+                half maxAlpha = 0.0h;
 
-                half maxAlpha = SampleSpriteAlpha(selectionUv);
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(texel.x * radius, 0.0)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(-texel.x * radius, 0.0)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(0.0, texel.y * radius)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(0.0, -texel.y * radius)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(texel.x * radius, texel.y * radius)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(-texel.x * radius, texel.y * radius)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(texel.x * radius, -texel.y * radius)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(-texel.x * radius, -texel.y * radius)));
+                for (int dy = -r; dy <= r; dy++)
+                {
+                    for (int dx = -r; dx <= r; dx++)
+                    {
+                        float2 sampleUv = selectionUv + texel * float2((float)dx, (float)dy);
+                        maxAlpha = max(maxAlpha, SampleSpriteAlpha(sampleUv));
+                        if (maxAlpha > 0.99h) return 1.0h;
+                    }
+                }
 
                 return maxAlpha;
             }
@@ -160,9 +193,17 @@ Shader "Moyva/2D/SelectionSprite"
                 half4 sampledMask = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, selectionUv);
                 half3 sampledNormal = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, selectionUv));
 
-                half4 composed = outside
-                    ? half4(GetAnimatedOutlineColor(), sampledMain.a)
-                    : sampledMain;
+                half4 composed;
+                if (outside)
+                {
+                    half outlineAlpha = ComputeOutlineAlpha(selectionUv);
+                    half dashMask = ComputeDashMask(input.localPos);
+                    composed = half4((half3)1.0, outlineAlpha * dashMask);
+                }
+                else
+                {
+                    composed = sampledMain;
+                }
 
                 SurfaceData2D surfaceData;
                 InputData2D inputData;
@@ -216,6 +257,8 @@ Shader "Moyva/2D/SelectionSprite"
                 float _AnimationSpeed;
                 float _AnimationMin;
                 float _AnimationMax;
+                float _DashLen;
+                float _GapLen;
                 float _OutlineWidthOS;
                 float4 _SpriteLocalMin;
                 float4 _SpriteLocalMax;
@@ -286,6 +329,8 @@ Shader "Moyva/2D/SelectionSprite"
                 float _AnimationSpeed;
                 float _AnimationMin;
                 float _AnimationMax;
+                float _DashLen;
+                float _GapLen;
                 float _OutlineWidthOS;
                 float4 _SpriteLocalMin;
                 float4 _SpriteLocalMax;
@@ -312,11 +357,39 @@ Shader "Moyva/2D/SelectionSprite"
                 return any(localPos < _SpriteLocalMin.xy) || any(localPos > _SpriteLocalMax.xy);
             }
 
-            half3 GetAnimatedOutlineColor()
+            half ComputeDashMask(float2 localPos)
             {
-                half wave = sin(_Time.y * _AnimationSpeed) * 0.5h + 0.5h;
-                half mixValue = lerp((half)_AnimationMin, (half)_AnimationMax, wave);
-                return lerp(_OutlineColor.rgb, _OutlineColorSecondary.rgb, mixValue);
+                float2 mn = _SpriteLocalMin.xy;
+                float2 mx = _SpriteLocalMax.xy;
+                float w = max(mx.x - mn.x, 0.0001);
+                float h = max(mx.y - mn.y, 0.0001);
+                float2 center = (mn + mx) * 0.5;
+                float2 halfSize = float2(w, h) * 0.5;
+                float2 rel = localPos - center;
+
+                float anx = abs(rel.x) / max(halfSize.x, 0.0001);
+                float anyN = abs(rel.y) / max(halfSize.y, 0.0001);
+
+                float cx = clamp(localPos.x, mn.x, mx.x);
+                float cy = clamp(localPos.y, mn.y, mx.y);
+
+                float p;
+                if (anyN >= anx)
+                {
+                    p = (rel.y < 0.0)
+                        ? (cx - mn.x)
+                        : (w + h + (mx.x - cx));
+                }
+                else
+                {
+                    p = (rel.x > 0.0)
+                        ? (w + (cy - mn.y))
+                        : (2.0 * w + h + (mx.y - cy));
+                }
+
+                float period = max(_DashLen + _GapLen, 0.0001);
+                float t = fmod(p + _Time.y * _AnimationSpeed + period * 1024.0, period);
+                return (half)step(t, _DashLen);
             }
 
             float2 ClampToSpriteUv(float2 uv)
@@ -332,17 +405,18 @@ Shader "Moyva/2D/SelectionSprite"
             half ComputeOutlineAlpha(float2 selectionUv)
             {
                 float2 texel = _MainTexTexelSize.xy;
-                float radius = max(_OutlineSize, 1.0);
+                int r = clamp((int)_OutlineSize, 1, 6);
+                half maxAlpha = 0.0h;
 
-                half maxAlpha = SampleSpriteAlpha(selectionUv);
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(texel.x * radius, 0.0)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(-texel.x * radius, 0.0)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(0.0, texel.y * radius)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(0.0, -texel.y * radius)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(texel.x * radius, texel.y * radius)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(-texel.x * radius, texel.y * radius)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(texel.x * radius, -texel.y * radius)));
-                maxAlpha = max(maxAlpha, SampleSpriteAlpha(selectionUv + float2(-texel.x * radius, -texel.y * radius)));
+                for (int dy = -r; dy <= r; dy++)
+                {
+                    for (int dx = -r; dx <= r; dx++)
+                    {
+                        float2 sampleUv = selectionUv + texel * float2((float)dx, (float)dy);
+                        maxAlpha = max(maxAlpha, SampleSpriteAlpha(sampleUv));
+                        if (maxAlpha > 0.99h) return 1.0h;
+                    }
+                }
 
                 return maxAlpha;
             }
@@ -370,7 +444,8 @@ Shader "Moyva/2D/SelectionSprite"
                 if (!outside)
                     return sampledMain;
 
-                return half4(GetAnimatedOutlineColor(), outlineAlpha);
+                half dashMask = ComputeDashMask(input.localPos);
+                return half4((half3)1.0, outlineAlpha * dashMask);
             }
             ENDHLSL
         }

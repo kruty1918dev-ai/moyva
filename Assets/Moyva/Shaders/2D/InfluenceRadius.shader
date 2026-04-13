@@ -2,12 +2,12 @@ Shader "Moyva/2D/InfluenceRadius"
 {
     Properties
     {
-        _Color       ("Border Color",      Color)  = (0.35, 1.0, 0.35, 1.0)
-        _FillColor   ("Fill Color",        Color)  = (0.35, 1.0, 0.35, 0.06)
-        _BorderWidth ("Border Width (UV)", Float)  = 0.04
-        _DashLen     ("Dash Length",       Float)  = 0.08
-        _GapLen      ("Gap Length",        Float)  = 0.04
-        _Speed       ("Animation Speed",   Float)  = 0.25
+        _Color       ("Border Color",        Color)  = (1.0, 1.0, 1.0, 1.0)
+        _FillColor   ("Fill Color",          Color)  = (1.0, 1.0, 1.0, 0.04)
+        _BorderWidth ("Ring Width (World)",  Float)  = 0.5
+        _DashLen     ("Dash Length (World)", Float)  = 0.9
+        _GapLen      ("Gap Length (World)",  Float)  = 0.55
+        _Speed       ("Dash Speed",          Float)  = 1.25
         _MapRect     ("Map Rect XYXY",     Vector) = (-9999, -9999, 9999, 9999)
     }
 
@@ -75,45 +75,40 @@ Shader "Moyva/2D/InfluenceRadius"
 
             float4 frag(Varyings IN) : SV_Target
             {
-                float2 uv = IN.uv;
-
                 // Маска меж мапи: обрізаємо все поза прямокутником тайлів
                 if (IN.worldXY.x < _MapRect.x || IN.worldXY.x > _MapRect.z ||
                     IN.worldXY.y < _MapRect.y || IN.worldXY.y > _MapRect.w)
                     return float4(0, 0, 0, 0);
 
-                // Відстань до кожного краю квадрата (0 = на краю, 0.5 = центр)
-                float2 fromEdge = min(uv, 1.0 - uv);
-                float  edgeDist = min(fromEdge.x, fromEdge.y);
+                float2 centerWS = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xy;
+                float2 dir = IN.worldXY - centerWS;
+                float distanceToCenter = length(dir);
+                float ringRadius = min(
+                    length(mul(unity_ObjectToWorld, float4(0.5, 0.0, 0.0, 0.0)).xy),
+                    length(mul(unity_ObjectToWorld, float4(0.0, 0.5, 0.0, 0.0)).xy));
 
-                // Заливка всередині — повертаємо напівпрозорий колір
-                if (edgeDist >= _BorderWidth)
-                    return _FillColor;
+                float halfWidth = max(_BorderWidth * 0.5, 0.0001);
+                float edgeDistance = abs(distanceToCenter - ringRadius);
+                float edgeFeather = max(fwidth(edgeDistance), 0.001);
+                float ringMask = 1.0 - smoothstep(halfWidth - edgeFeather, halfWidth + edgeFeather, edgeDistance);
+                float fillMask = 1.0 - smoothstep(ringRadius - halfWidth - edgeFeather, ringRadius - halfWidth + edgeFeather, distanceToCenter);
 
-                // Визначаємо позицію вздовж периметру [0..4) за годинниковою стрілкою:
-                // нижній: 0→1, правий: 1→2, верхній: 2→3, лівий: 3→4
-                float p;
-                float ex = fromEdge.x, ey = fromEdge.y;
+                if (ringMask <= 0.0 && fillMask <= 0.0)
+                    return float4(0, 0, 0, 0);
 
-                if (ey < ex)
-                {
-                    // горизонтальний край
-                    if (uv.y < 0.5) p = uv.x;                 // нижній: зліва→праворуч
-                    else            p = 2.0 + (1.0 - uv.x);   // верхній: праворуч→зліва
-                }
-                else
-                {
-                    // вертикальний край
-                    if (uv.x >= 0.5) p = 1.0 + uv.y;          // правий: знизу→вгору
-                    else             p = 3.0 + (1.0 - uv.y);  // лівий: вгору→знизу
-                }
+                if (ringMask <= 0.0)
+                    return float4(_FillColor.rgb, _FillColor.a * fillMask);
 
-                // Анімовані штрихи: зміщення периметра в часі
-                float period = _DashLen + _GapLen;
-                float t      = fmod(p - _Time.y * _Speed + 1000.0, period);
-                float onDash = step(t, _DashLen);
+                const float TAU = 6.28318530718;
+                float angle = atan2(dir.y, dir.x);
+                float normalizedAngle = frac((angle + PI) / TAU);
+                float perimeterPosition = normalizedAngle * (TAU * max(ringRadius, 0.0001));
 
-                return float4(_Color.rgb, _Color.a * onDash);
+                float period = max(_DashLen + _GapLen, 0.0001);
+                float dashPhase = fmod(perimeterPosition - _Time.y * _Speed + period * 1024.0, period);
+                float onDash = step(dashPhase, _DashLen);
+
+                return float4(_Color.rgb, _Color.a * ringMask * onDash);
             }
             ENDHLSL
         }

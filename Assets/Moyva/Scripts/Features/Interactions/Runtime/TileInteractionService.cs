@@ -78,6 +78,10 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             {
                 _selectedUnitId = null;
 
+                // Закриваємо інфо панель при вході в режим будування
+                if (_inspectedKind != WorldInfoSelectionKind.None)
+                    _signalBus.Fire(new WorldInfoPanelClosedSignal());
+
                 if (_moveCts != null && !string.IsNullOrEmpty(_activeMoveUnitId))
                 {
                     _queuedResumeMove = (_activeMoveUnitId, _activeMoveTarget);
@@ -116,73 +120,77 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 return;
             }
 
-            // Інформацію про будівлю можна відкривати в будь-якому режимі (Normal/Construction).
-            if (_objectsMapService.TryGetOccupant(position, out var occupantId)
+            // Інфо панель НЕ працює в режимі будування
+            if (!_isActive)
+                return;
+
+            _objectsMapService.TryGetOccupant(position, out var occupantId);
+
+            bool isBuilding = !string.IsNullOrEmpty(occupantId)
                 && _buildingRegistry != null
-                && _buildingRegistry.GetById(occupantId) != null)
+                && _buildingRegistry.GetById(occupantId) != null;
+
+            // --- Клік на будівлю ---
+            if (isBuilding)
             {
                 // Повторний клік на вже відкриту будівлю — закрити панель (toggle)
                 if (_inspectedKind == WorldInfoSelectionKind.Building
                     && string.Equals(_inspectedObjectId, occupantId, StringComparison.Ordinal))
                 {
                     _signalBus.Fire(new WorldInfoPanelClosedSignal());
-                    return;
-                }
-
-                _signalBus.Fire(new BuildingInfoPanelRequestedSignal
-                {
-                    BuildingId = occupantId,
-                    Position = position,
-                });
-
-                if (VerboseLogs)
-                    Debug.Log($"[Interaction] Building info requested for '{occupantId}' at {position}. mode={_currentMode}");
-
-                return;
-            }
-
-            // Інтеракції з юнітами (select/move) працюють лише в Normal режимі.
-            if (!_isActive)
-                return;
-
-            // КРОК 1: Вибір юніта (якщо ніхто не вибраний)
-            if (string.IsNullOrEmpty(_selectedUnitId))
-            {
-                if (_objectsMapService.TryGetOccupant(position, out var unitOccupantId))
-                {
-                    _selectedUnitId = unitOccupantId;
-                    _signalBus.Fire(new UnitInfoPanelRequestedSignal
-                    {
-                        UnitId = unitOccupantId,
-                        Position = position,
-                    });
-                    Debug.Log($"[Interaction] Вибрано юніта: {_selectedUnitId} на позиції {position}");
                 }
                 else
                 {
-                    Debug.Log($"[Interaction] Тайл {position} натиснуто, але окупант не знайдений в ObjectsMapService. IsOccupied={_objectsMapService.IsOccupied(position)}");
+                    _signalBus.Fire(new BuildingInfoPanelRequestedSignal
+                    {
+                        BuildingId = occupantId,
+                        Position = position,
+                    });
+
+                    if (VerboseLogs)
+                        Debug.Log($"[Interaction] Building info requested for '{occupantId}' at {position}. mode={_currentMode}");
                 }
-                return;
-            }
 
-            // Повторний клік на вже вибраного юніта — зняти вибір (toggle)
-            // occupantId може бути ненуль, якщо будівельна перевірка вище вже знайшла окупанта.
-            if (!string.IsNullOrEmpty(_selectedUnitId)
-                && string.Equals(occupantId, _selectedUnitId, StringComparison.Ordinal))
-            {
+                // Знімаємо вибір юніта при кліку на будівлю
                 _selectedUnitId = null;
-                _signalBus.Fire(new WorldInfoPanelClosedSignal());
-                Debug.Log($"[Interaction] Вибір юніта скасовано (toggle): {occupantId}");
                 return;
             }
 
-            // КРОК 2: Наказ на рух (якщо юніт вже вибраний)
-            string unitToMove = _selectedUnitId;
-            _selectedUnitId = null; // Скидаємо виділення перед початком руху
+            bool isUnit = !string.IsNullOrEmpty(occupantId);
 
-            Debug.Log($"[Interaction] Наказ для {unitToMove}: рух до {position}");
+            // --- Клік на юніта ---
+            if (isUnit)
+            {
+                // Повторний клік на вже вибраного юніта — зняти вибір (toggle)
+                if (string.Equals(occupantId, _selectedUnitId, StringComparison.Ordinal))
+                {
+                    _selectedUnitId = null;
+                    _signalBus.Fire(new WorldInfoPanelClosedSignal());
+                    Debug.Log($"[Interaction] Вибір юніта скасовано (toggle): {occupantId}");
+                    return;
+                }
 
-            StartMove(unitToMove, position);
+                // Вибрати нового юніта (замість попереднього)
+                _selectedUnitId = occupantId;
+                _signalBus.Fire(new UnitInfoPanelRequestedSignal
+                {
+                    UnitId = occupantId,
+                    Position = position,
+                });
+                Debug.Log($"[Interaction] Вибрано юніта: {_selectedUnitId} на позиції {position}");
+                return;
+            }
+
+            // --- Клік на порожній тайл ---
+            if (!string.IsNullOrEmpty(_selectedUnitId))
+            {
+                string unitToMove = _selectedUnitId;
+                _selectedUnitId = null;
+
+                Debug.Log($"[Interaction] Наказ для {unitToMove}: рух до {position}");
+
+                StartMove(unitToMove, position);
+            }
         }
 
         private async void StartMove(string unitId, Vector2Int target)

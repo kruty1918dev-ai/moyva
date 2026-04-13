@@ -44,6 +44,7 @@ namespace Kruty1918.Moyva.InfoPanel.UI
                 }
 
                 _signalBus.Subscribe<WorldInfoPanelRequestedSignal>(OnInfoRequested);
+                _signalBus.Subscribe<WorldInfoPanelClosedSignal>(OnPanelClosed);
 
                 if (_closeButton != null)
                     _closeButton.onClick.AddListener(ClosePanel);
@@ -64,6 +65,7 @@ namespace Kruty1918.Moyva.InfoPanel.UI
                     return;
 
                 _signalBus.TryUnsubscribe<WorldInfoPanelRequestedSignal>(OnInfoRequested);
+                _signalBus.TryUnsubscribe<WorldInfoPanelClosedSignal>(OnPanelClosed);
 
                 if (_closeButton != null)
                     _closeButton.onClick.RemoveListener(ClosePanel);
@@ -89,6 +91,11 @@ namespace Kruty1918.Moyva.InfoPanel.UI
                 Debug.LogError($"[WorldInfoPanel] ПОМИЛКА в OnInfoRequested(): {ex.GetType().Name} - {ex.Message}");
                 SetVisible(false);
             }
+        }
+
+        private void OnPanelClosed(WorldInfoPanelClosedSignal _)
+        {
+            SetVisible(false);
         }
 
         private void ClosePanel()

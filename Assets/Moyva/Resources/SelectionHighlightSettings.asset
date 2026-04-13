@@ -15,6 +15,6 @@ MonoBehaviour:
   OutlineSizePixels: 2
   OutlineColorPrimary: {r: 0.2, g: 0.95, b: 0.3, a: 1}
   OutlineColorSecondary: {r: 1, g: 1, b: 1, a: 1}
-  AnimationSpeed: 2.5
+  AnimationSpeed: 1
   AnimationMin: 0
   AnimationMax: 1

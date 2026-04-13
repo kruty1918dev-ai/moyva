@@ -184,7 +184,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (HasInfluenceRadius(blockedDef))
                 {
                     int radius = ResolveInfluenceRadius(blockedDef);
-                    DrawInfluenceRadius(_previewRadiusGo, _previewRadiusMR, _previewRadiusMat, signal.Position, radius, new Color(1f, 0.35f, 0.35f, 0.95f));
+                    DrawInfluenceRadius(_previewRadiusGo, _previewRadiusMR, _previewRadiusMat, signal.Position, radius);
                 }
 
                 return;
@@ -228,7 +228,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (HasInfluenceRadius(def))
             {
                 int radius = ResolveInfluenceRadius(def);
-                DrawInfluenceRadius(_previewRadiusGo, _previewRadiusMR, _previewRadiusMat, signal.Position, radius, new Color(0.35f, 1f, 0.35f, 0.95f));
+                DrawInfluenceRadius(_previewRadiusGo, _previewRadiusMR, _previewRadiusMat, signal.Position, radius);
             }
             else
             {
@@ -405,7 +405,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             int radius = ResolveInfluenceRadius(def);
-            DrawInfluenceRadius(_inspectionRadiusGo, _inspectionRadiusMR, _inspectionRadiusMat, signal.Position, radius, new Color(0.35f, 0.75f, 1f, 0.95f));
+            DrawInfluenceRadius(_inspectionRadiusGo, _inspectionRadiusMR, _inspectionRadiusMat, signal.Position, radius);
         }
 
         private void RefreshWallNeighborhood(Vector2Int center)
@@ -573,11 +573,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         /// <summary>
         /// Позиціонує, масштабує та вмикає зону впливу.
         /// localScale = (2r+1) × (2r+1) → кожен юніт = один тайл.
-        /// _BorderWidth = 0.5 тайла / (2r+1) у UV-просторі.
+        /// Ring width, dash length and gap length задаються у world-space,
+        /// щоб пунктир мав однакову довжину незалежно від радіуса.
         /// </summary>
         private static void DrawInfluenceRadius(
             GameObject go, MeshRenderer mr, Material mat,
-            Vector2Int center, int radius, Color color)
+            Vector2Int center, int radius)
         {
             if (mr == null) return;
 
@@ -585,12 +586,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             go.transform.position   = new Vector3(center.x, center.y, 0.05f);
             go.transform.localScale = new Vector3(size, size, 1f);
 
-            // Ширина контуру у UV: щоб дорівнювала ~0.5 тайла у world-space
-            float borderUV = Mathf.Max(0.015f, 0.5f / size);
+            const float borderWidthWorld = 0.5f;
+            var white = new Color(1f, 1f, 1f, 0.95f);
 
-            mat.SetColor("_Color",       color);
-            mat.SetColor("_FillColor",   new Color(color.r, color.g, color.b, 0.06f));
-            mat.SetFloat("_BorderWidth", borderUV);
+            mat.SetColor("_Color", white);
+            mat.SetColor("_FillColor", new Color(1f, 1f, 1f, 0.04f));
+            mat.SetFloat("_BorderWidth", borderWidthWorld);
 
             mr.enabled = true;
         }
