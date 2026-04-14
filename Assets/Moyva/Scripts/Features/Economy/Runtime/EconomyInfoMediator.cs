@@ -33,6 +33,22 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return true;
         }
 
+        public bool TryResolveConstructionSettlement(Vector2Int position, string ownerId, out EconomySettlementContext context)
+        {
+            context = default;
+            if (_economyManager == null)
+                return false;
+
+            if (!_economyManager.TryResolveConstructionSettlement(position, ownerId, out var state) || state == null)
+                return false;
+
+            context = new EconomySettlementContext(
+                state.SettlementId,
+                _economyManager.GetSettlementNameOrFallback(state.SettlementId),
+                state.OwnerId);
+            return true;
+        }
+
         public bool TryGetBuildingContext(Vector2Int position, out string buildingId, out string ownerId)
         {
             buildingId = null;
@@ -42,6 +58,13 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 return false;
 
             return _economyManager.TryGetBuildingAtPosition(position, out buildingId, out ownerId);
+        }
+
+        public bool TryConsumeSettlementResources(string settlementId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
+        {
+            errorMessage = null;
+            return _economyManager != null
+                && _economyManager.TryConsumeSettlementResources(settlementId, resourceCosts, out errorMessage);
         }
 
         public IReadOnlyDictionary<string, float> GetWarehouseResourceTotals(Vector2Int warehousePosition)

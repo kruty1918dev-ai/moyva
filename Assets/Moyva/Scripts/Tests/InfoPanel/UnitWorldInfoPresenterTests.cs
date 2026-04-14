@@ -62,11 +62,29 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
                 return true;
             }
 
+            public bool TryResolveConstructionSettlement(Vector2Int position, string ownerId, out EconomySettlementContext context)
+            {
+                if (ownerId == "player_0")
+                {
+                    context = new EconomySettlementContext("settlement-1", "Поселення №1", "player_0");
+                    return true;
+                }
+                context = default;
+                return false;
+            }
+
             public bool TryGetBuildingContext(Vector2Int position, out string buildingId, out string ownerId)
             {
                 buildingId = null;
                 ownerId = "player_0";
                 return false;
+            }
+
+            public bool TryConsumeSettlementResources(string settlementId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
+            {
+                // Для тесту просто дозволяємо найменування ресурсів
+                errorMessage = string.Empty;
+                return true;
             }
 
             public IReadOnlyDictionary<string, float> GetWarehouseResourceTotals(Vector2Int warehousePosition)

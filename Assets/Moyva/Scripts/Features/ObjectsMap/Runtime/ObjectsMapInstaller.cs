@@ -11,8 +11,8 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            // ObjectsMapService повинен ініціалізуватись раніше за TestUnitSpawner,
-            // щоб підписатись на UnitCreatedSignal до створення юнітів.
+            // ObjectsMapService повинен ініціалізуватись першим,
+            // щоб підписатись на сигнали до решти сервісів.
             Container.BindExecutionOrder<ObjectsMapService>(-10);
         }
     }

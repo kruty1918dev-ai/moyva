@@ -68,6 +68,28 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 return false;
 
             ResourcePool[resourceId] = current - amount;
+            if (ResourcePool[resourceId] <= 0.0001f)
+                ResourcePool.Remove(resourceId);
+
+            float remaining = amount;
+            foreach (var warehouse in WarehouseResourcePools)
+            {
+                if (warehouse.Value == null)
+                    continue;
+
+                if (!warehouse.Value.TryGetValue(resourceId, out var warehouseAmount) || warehouseAmount <= 0f)
+                    continue;
+
+                float consumed = Math.Min(warehouseAmount, remaining);
+                warehouse.Value[resourceId] = warehouseAmount - consumed;
+                if (warehouse.Value[resourceId] <= 0.0001f)
+                    warehouse.Value.Remove(resourceId);
+
+                remaining -= consumed;
+                if (remaining <= 0.0001f)
+                    break;
+            }
+
             return true;
         }
 

@@ -364,10 +364,31 @@ namespace Kruty1918.Moyva.Economy.API
         [SerializeField] private bool _allowBuildingPause = true;
         [Tooltip("true = пошкоджена будівля автоматично зупиняє виробництво.\nНаразі не реалізовано — запланована функція.")]
         [SerializeField] private bool _buildingDamageStopsProduction;
+        [Tooltip("true = TownHallModule не може поєднуватися з HousingModule.")]
+        [SerializeField] private bool _validateTownHallHousingConflict = true;
+        [Tooltip("true = Workerless/Wall/Gate не можуть поєднуватися з HousingModule.")]
+        [SerializeField] private bool _validateWorkerlessHousingConflict = true;
+        [Tooltip("true = Workerless/Wall/Gate не можуть поєднуватися з ProductionModule.")]
+        [SerializeField] private bool _validateWorkerlessProductionConflict = true;
+        [Tooltip("true = ProductionModule зобов'язаний мати ResourceId.")]
+        [SerializeField] private bool _requireProductionResourceId = true;
+        [Tooltip("true = TileRequirementModule мусить містити хоча б одну валідну вимогу.")]
+        [SerializeField] private bool _requireTileRequirementEntries = true;
+        [Tooltip("true = показувати warning, якщо WorkersRequired буде примусово зведено до 0 для Workerless/Wall/Gate.")]
+        [SerializeField] private bool _warnWorkerlessProductionWorkers = true;
+        [Tooltip("true = singleton modules не можна дублювати в межах однієї будівлі.")]
+        [SerializeField] private bool _enforceSingletonModules = true;
 
         public bool EnableMaintenance => _enableMaintenance;
         public bool AllowBuildingPause => _allowBuildingPause;
         public bool BuildingDamageStopsProduction => _buildingDamageStopsProduction;
+        public bool ValidateTownHallHousingConflict => _validateTownHallHousingConflict;
+        public bool ValidateWorkerlessHousingConflict => _validateWorkerlessHousingConflict;
+        public bool ValidateWorkerlessProductionConflict => _validateWorkerlessProductionConflict;
+        public bool RequireProductionResourceId => _requireProductionResourceId;
+        public bool RequireTileRequirementEntries => _requireTileRequirementEntries;
+        public bool WarnWorkerlessProductionWorkers => _warnWorkerlessProductionWorkers;
+        public bool EnforceSingletonModules => _enforceSingletonModules;
     }
 
     [Serializable]

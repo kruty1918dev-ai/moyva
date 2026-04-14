@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Economy.API;
+using Kruty1918.Moyva.Editor.Shared;
 
 namespace Kruty1918.Moyva.Economy.Editor
 {
     public sealed class EconomyValidationService
     {
-        public IReadOnlyList<EconomyValidationIssue> Validate(EconomyDatabaseSO database)
+        public IReadOnlyList<EconomyValidationIssue> Validate(EconomyDatabaseSO database, BuildingRegistrySO buildingRegistry = null)
         {
             var issues = new List<EconomyValidationIssue>();
             if (database == null)
@@ -22,8 +25,61 @@ namespace Kruty1918.Moyva.Economy.Editor
             ValidateProduction(database, issues);
             ValidateCaravans(database, issues);
             ValidateRulesConfig(database, issues);
+            ValidateBuildingModules(buildingRegistry, database.RulesConfig?.Building, issues);
 
             return issues;
+        }
+
+        public IReadOnlyList<EconomyValidationIssue> ValidateBuildingModules(BuildingRegistrySO buildingRegistry)
+        {
+            var issues = new List<EconomyValidationIssue>();
+            ValidateBuildingModules(buildingRegistry, null, issues);
+            return issues;
+        }
+
+        public IReadOnlyList<EconomyValidationIssue> ValidateBuildingModules(BuildingDefinition definition, int fallbackIndex = -1, EconomyBuildingRules rules = null)
+        {
+            var issues = new List<EconomyValidationIssue>();
+            AppendBuildingModuleIssues(definition, fallbackIndex, issues, null, rules);
+            return issues;
+        }
+
+        private static void ValidateBuildingModules(BuildingRegistrySO buildingRegistry, EconomyBuildingRules rules, List<EconomyValidationIssue> issues)
+        {
+            if (buildingRegistry == null || buildingRegistry.Buildings == null)
+                return;
+
+            for (int i = 0; i < buildingRegistry.Buildings.Length; i++)
+                AppendBuildingModuleIssues(buildingRegistry.Buildings[i], i, issues, buildingRegistry, rules);
+        }
+
+        private static void AppendBuildingModuleIssues(
+            BuildingDefinition definition,
+            int fallbackIndex,
+            List<EconomyValidationIssue> issues,
+            BuildingRegistrySO context = null,
+            EconomyBuildingRules rules = null)
+        {
+            if (definition == null)
+                return;
+
+            var moduleIssues = BuildingModuleEditorShared.GetFilteredIssues(definition, rules);
+            for (int j = 0; j < moduleIssues.Count; j++)
+            {
+                var issue = moduleIssues[j];
+                if (issue == null)
+                    continue;
+
+                var severity = issue.Severity == BuildingValidationSeverity.Error
+                    ? EconomyValidationSeverity.Error
+                    : EconomyValidationSeverity.Warning;
+
+                string buildingId = string.IsNullOrWhiteSpace(definition.Id) ? $"<building:{fallbackIndex}>" : definition.Id;
+                issues.Add(new EconomyValidationIssue(
+                    severity,
+                    $"Building '{buildingId}': [{issue.Code}] {issue.Message}",
+                    context));
+            }
         }
 
         private static void ValidateResources(EconomyDatabaseSO database, List<EconomyValidationIssue> issues)

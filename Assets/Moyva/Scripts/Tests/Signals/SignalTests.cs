@@ -153,7 +153,7 @@ namespace Kruty1918.Moyva.Tests.Signals
         [Test]
         public void CanBeConstructed()
         {
-            Assert.DoesNotThrow(() => { var s = new WorldBuiltSignal(); });
+            Assert.DoesNotThrow(() => new WorldBuiltSignal());
         }
     }
 
@@ -211,7 +211,7 @@ namespace Kruty1918.Moyva.Tests.Signals
         [Test]
         public void CanBeConstructed()
         {
-            Assert.DoesNotThrow(() => { var s = new BuildingCancelledSignal(); });
+            Assert.DoesNotThrow(() => new BuildingCancelledSignal());
         }
     }
 
@@ -426,7 +426,7 @@ namespace Kruty1918.Moyva.Tests.Signals
         [Test]
         public void CanBeConstructed()
         {
-            Assert.DoesNotThrow(() => { var s = new GameStartedSignal(); });
+            Assert.DoesNotThrow(() => new GameStartedSignal());
         }
     }
 
@@ -581,7 +581,7 @@ namespace Kruty1918.Moyva.Tests.Signals
         [Test]
         public void CanBeConstructed()
         {
-            Assert.DoesNotThrow(() => { var s = new WorldCreationCancelledSignal(); });
+            Assert.DoesNotThrow(() => new WorldCreationCancelledSignal());
         }
     }
 
@@ -611,7 +611,7 @@ namespace Kruty1918.Moyva.Tests.Signals
         [Test]
         public void CanBeConstructed()
         {
-            Assert.DoesNotThrow(() => { var s = new WorldInfoPanelClosedSignal(); });
+            Assert.DoesNotThrow(() => new WorldInfoPanelClosedSignal());
         }
     }
 

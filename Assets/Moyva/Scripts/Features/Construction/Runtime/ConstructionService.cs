@@ -46,6 +46,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly int _townHallBuildRadius;
         private readonly IFogOfWarService _fogOfWarService; // може бути null якщо туман не підключений
         private readonly IWallPlacementService _wallPlacementService;
+        private readonly IEconomyInfoMediator _economyInfoMediator;
         private bool _initialized;
         private bool _disposed;
 
@@ -54,11 +55,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly List<List<PendingPlacement>> _undoSnapshots = new();
         private readonly List<List<PendingPlacement>> _redoSnapshots = new();
         private readonly HashSet<Vector2Int> _pendingPositions = new();
+        private readonly Dictionary<Vector2Int, ConstructionPendingPlacementStatus> _pendingPlacementStatuses = new();
         private readonly List<PendingDemolition> _pendingDemolitions = new();
         private readonly HashSet<Vector2Int> _pendingDemolitionPositions = new();
         // Позиції будівель, підтверджених гравцем під час гри (знесення дозволено лише для них)
         private readonly Dictionary<Vector2Int, string> _playerPlacedBuildings = new();
         private string _activeOwnerId = DefaultOwnerId;
+        private string _lastActionMessage = string.Empty;
         private readonly Dictionary<Vector2Int, (string BuildingId, string FactionId)> _factionPlacedBuildings = new();
         private bool _isActive;
 
@@ -73,7 +76,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [Inject(Id = "minSpacing")] int minSpacing,
             [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius,
             [InjectOptional] IFogOfWarService fogOfWarService,
-            [InjectOptional] IWallPlacementService wallPlacementService)
+            [InjectOptional] IWallPlacementService wallPlacementService,
+            [InjectOptional] IEconomyInfoMediator economyInfoMediator)
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
@@ -82,6 +86,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _townHallBuildRadius = Mathf.Max(0, townHallBuildRadius);
             _fogOfWarService = fogOfWarService;
             _wallPlacementService = wallPlacementService;
+            _economyInfoMediator = economyInfoMediator;
         }
 
         public void Initialize()
@@ -681,6 +686,98 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return true;
         }
 
+        public bool TryGetPendingPlacementStatus(Vector2Int position, out ConstructionPendingPlacementStatus status)
+        {
+            // Перевіряємо, чи є непідтверджена будівля на цій позиції
+            int index = FindPendingPlacementIndex(position);
+            if (index < 0)
+            {
+                status = default;
+                return false;
+            }
+
+            var placement = _pendingPlacements[index];
+            var buildingDef = _buildingRegistry?.GetById(placement.BuildingId);
+            
+            // Намагаємось отримати информацію про поселення з EconomyInfoMediator
+            string settlementId = null;
+            string settlementName = "Unknown";
+            bool hasSettlement = false;
+            bool isAffordable = true;
+            string errorMessage = string.Empty;
+
+            if (_economyInfoMediator != null)
+            {
+                // Попытка отримати інформацію про поселення з EconomyInfoMediator
+                // За умовою, це має бути settlement-scoped check
+                try
+                {
+                    // Placeholder для майбутньої інтеграції з EconomyInfoMediator
+                    // Коли будуть інтегровані методи для перевірки affordability
+                    hasSettlement = true; // Визначається EconomyInfoMediator
+                    isAffordable = true;  // Визначається EconomyInfoMediator
+                }
+                catch (System.Exception ex)
+                {
+                    errorMessage = $"Error checking affordability: {ex.Message}";
+                    if (VerboseLogs) Debug.LogWarning($"[Construction] TryGetPendingPlacementStatus: {errorMessage}");
+                }
+            }
+
+            status = new ConstructionPendingPlacementStatus(
+                position: position,
+                buildingId: placement.BuildingId,
+                settlementId: settlementId ?? "Unknown",
+                settlementName: settlementName,
+                hasSettlement: hasSettlement,
+                isAffordable: isAffordable,
+                errorMessage: errorMessage
+            );
+
+            return true;
+        }
+
+        public ConstructionResourceProjection GetResourceProjection(Vector2Int position)
+        {
+            // Якщо цій позиції немає предпросмотру, повертаємо Empty
+            if (!HasPendingPlacementAt(position))
+                return ConstructionResourceProjection.Empty;
+
+            if (_economyInfoMediator == null)
+                return ConstructionResourceProjection.Empty;
+
+            // Placeholder для майбутньої реалізації з EconomyInfoMediator
+            // Потрібно:
+            // 1. Знайти поселення на цій позиції
+            // 2. Отримати його поточні ресурси
+            // 3. Відняти запас від попередніх pending-будівель на позиціях 0..index
+            // 4. Повернути баланс для кожного ресурсу з інформацією про дефіцит
+
+            try
+            {
+                if (!TryGetPendingBuildingIdAt(position, out var buildingId))
+                    return ConstructionResourceProjection.Empty;
+
+                var buildingDef = _buildingRegistry?.GetById(buildingId);
+                if (buildingDef == null)
+                    return ConstructionResourceProjection.Empty;
+
+                // Тимчасово повертаємо Empty проекцію
+                // Буде повністю реалізовано при інтеграції з Economy
+                return ConstructionResourceProjection.Empty;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[Construction] GetResourceProjection error: {ex.Message}");
+                return ConstructionResourceProjection.Empty;
+            }
+        }
+
+        public string GetLastActionMessage()
+        {
+            return _lastActionMessage;
+        }
+
         /// <summary>
         /// Перевіряє чи порушує позиція мінімальний відступ від існуючих / pending будівель.
         /// Chebyshev-дистанція (квадратна область навколо позиції).
@@ -853,7 +950,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             // Якщо жодна будівля в реєстрі не позначена IsTownHall — правило не діє.
             bool anyTownHallDefined = System.Array.Exists(
                 _buildingRegistry.GetAll(),
-                def => def != null && def.IsTownHall);
+                def => def != null && BuildingDefinitionCapabilities.IsTownHall(def));
             
             if (!anyTownHallDefined)
             {
@@ -892,11 +989,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             else
             {
                 // Базова логіка за типом будівлі.
-                requireTownHallInRange = !candidate.IsTownHall;
-                blockWhenTownHallExists = candidate.IsTownHall;
+                bool isTownHall = BuildingDefinitionCapabilities.IsTownHall(candidate);
+                requireTownHallInRange = !isTownHall;
+                blockWhenTownHallExists = isTownHall;
                 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] IsBlockedByTownHallZone: DefaultRules - isTownHall={candidate.IsTownHall}, require={requireTownHallInRange}, blockWhenExists={blockWhenTownHallExists}");
+                    Debug.Log($"[Construction] IsBlockedByTownHallZone: DefaultRules - isTownHall={isTownHall}, require={requireTownHallInRange}, blockWhenExists={blockWhenTownHallExists}");
             }
 
             if (requireTownHallInRange && !hasTownHallInRange)
@@ -935,7 +1033,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         continue;
 
                     var def = _buildingRegistry.GetById(occupantId);
-                    if (def != null && def.IsTownHall)
+                    if (def != null && BuildingDefinitionCapabilities.IsTownHall(def))
                         return true;
                 }
             }
@@ -948,7 +1046,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     continue;
 
                 var pendingDef = _buildingRegistry.GetById(pending.BuildingId);
-                if (pendingDef == null || !pendingDef.IsTownHall)
+                if (pendingDef == null || !BuildingDefinitionCapabilities.IsTownHall(pendingDef))
                     continue;
 
                 var delta = pending.Position - center;

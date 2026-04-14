@@ -130,10 +130,18 @@ namespace Kruty1918.Moyva.Economy.Runtime
             if (definition == null)
                 return;
 
+            var validationIssues = BuildingModuleValidation.Validate(definition);
+            if (BuildingModuleValidation.HasErrors(validationIssues))
+            {
+                Debug.LogError($"[Economy] Будівля '{signal.BuildingId}' містить невалідну модульну конфігурацію. Розміщення в економіці пропущено.");
+                return;
+            }
+
             var ownerId = NormalizeOwnerId(signal.OwnerId);
 
-            // If this building is a TownHall, create a new settlement
-            if (definition.IsTownHall)
+            // If this building is a TownHall or Castle, create a new settlement
+            if (BuildingDefinitionCapabilities.IsTownHall(definition) ||
+                BuildingDefinitionCapabilities.IsCastle(definition))
             {
                 CreateSettlement(signal.BuildingId, signal.Position, definition, ownerId);
                 return;
@@ -153,11 +161,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _positionToBuildingId[signal.Position] = signal.BuildingId;
             _positionToOwnerId[signal.Position] = ownerId;
 
-            if (definition.IsWarehouse)
+            if (BuildingDefinitionCapabilities.IsWarehouse(definition))
                 state.EnsureWarehousePool(ToWarehouseKey(signal.Position));
 
             // Update housing capacity
-            if (definition.IsHousing)
+            if (BuildingDefinitionCapabilities.IsHousing(definition))
                 RecalculateHousing(state);
         }
 
@@ -188,11 +196,11 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _positionToBuildingId.Remove(signal.Position);
             _positionToOwnerId.Remove(signal.Position);
 
-            if (definition.IsWarehouse)
+            if (BuildingDefinitionCapabilities.IsWarehouse(definition))
                 state.RemoveWarehousePool(ToWarehouseKey(signal.Position));
 
             // TownHall destroyed → deactivate settlement
-            if (definition.IsTownHall)
+            if (BuildingDefinitionCapabilities.IsTownHall(definition))
             {
                 state.IsActive = false;
                 _signalBus.Fire(new SettlementDeactivatedSignal
@@ -203,7 +211,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 });
             }
 
-            if (definition.IsHousing)
+            if (BuildingDefinitionCapabilities.IsHousing(definition))
                 RecalculateHousing(state);
         }
 
@@ -267,8 +275,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
             state.Buildings.Add(new EconomyBuildingState
             {
                 BuildingId = buildingId,
-                RequiredWorkers = definition.RequiredWorkers,
-                EconomyPriority = definition.EconomyPriority,
+                RequiredWorkers = BuildingDefinitionCapabilities.GetRequiredWorkers(definition),
+                EconomyPriority = BuildingDefinitionCapabilities.GetEconomyPriority(definition),
                 IsActive = true,
                 ProductionProgress = 0f,
             });
@@ -285,8 +293,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
             for (int i = 0; i < state.Buildings.Count; i++)
             {
                 var def = FindBuildingDefinition(state.Buildings[i].BuildingId);
-                if (def != null && def.IsHousing)
-                    total += def.HousingCapacity;
+                if (def != null && BuildingDefinitionCapabilities.IsHousing(def))
+                    total += BuildingDefinitionCapabilities.GetHousingCapacity(def);
             }
             state.TotalHousingCapacity = total;
         }
@@ -373,6 +381,82 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 return false;
 
             return state != null;
+        }
+
+        public bool TryResolveConstructionSettlement(Vector2Int position, string ownerId, out EconomySettlementState state)
+        {
+            state = null;
+            var settlementId = FindNearestSettlement(position, NormalizeOwnerId(ownerId));
+            if (string.IsNullOrWhiteSpace(settlementId))
+                return false;
+
+            if (!_settlements.TryGetValue(settlementId, out state) || state == null || !state.IsActive)
+                return false;
+
+            return string.Equals(NormalizeOwnerId(state.OwnerId), NormalizeOwnerId(ownerId), StringComparison.Ordinal);
+        }
+
+        public bool TryConsumeSettlementResources(string settlementId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
+        {
+            errorMessage = null;
+
+            if (string.IsNullOrWhiteSpace(settlementId))
+            {
+                errorMessage = "Не визначено поселення для списання ресурсів.";
+                return false;
+            }
+
+            if (!_settlements.TryGetValue(settlementId, out var state) || state == null || !state.IsActive)
+            {
+                errorMessage = $"Поселення '{settlementId}' недоступне або неактивне.";
+                return false;
+            }
+
+            if (resourceCosts == null || resourceCosts.Count == 0)
+                return true;
+
+            foreach (var pair in resourceCosts)
+            {
+                if (string.IsNullOrWhiteSpace(pair.Key))
+                {
+                    errorMessage = "Спроба списати ресурс з порожнім ID.";
+                    return false;
+                }
+
+                if (pair.Value <= 0f)
+                    continue;
+
+                float currentAmount = state.GetResource(pair.Key);
+                if (currentAmount + 0.0001f < pair.Value)
+                {
+                    errorMessage = $"Недостатньо ресурсу '{pair.Key}' у поселенні '{GetSettlementNameOrFallback(settlementId)}': потрібно {pair.Value:0.#}, зараз {currentAmount:0.#}.";
+                    return false;
+                }
+            }
+
+            foreach (var pair in resourceCosts)
+            {
+                if (pair.Value <= 0f)
+                    continue;
+
+                float before = state.GetResource(pair.Key);
+                if (!state.ConsumeResource(pair.Key, pair.Value))
+                {
+                    errorMessage = $"Не вдалося списати ресурс '{pair.Key}' у поселенні '{GetSettlementNameOrFallback(settlementId)}'.";
+                    return false;
+                }
+
+                _signalBus.Fire(new SettlementResourceChangedSignal
+                {
+                    SettlementId = settlementId,
+                    OwnerId = NormalizeOwnerId(state.OwnerId),
+                    ResourceId = pair.Key,
+                    NewAmount = state.GetResource(pair.Key),
+                    Delta = state.GetResource(pair.Key) - before,
+                });
+            }
+
+            return true;
         }
 
         public bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId)

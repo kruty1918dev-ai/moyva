@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Kruty1918.Moyva.Economy",
-        "Kruty1918.Moyva.Economy.Editor"
+        "Kruty1918.Moyva.Economy.Editor",
+        "Kruty1918.Moyva.Construction"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],

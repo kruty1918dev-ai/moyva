@@ -1,4 +1,6 @@
 using UnityEngine;
+using System.Collections.Generic;
+using Kruty1918.Moyva.Grid.API;
 
 namespace Kruty1918.Moyva.Construction.API
 {
@@ -9,14 +11,15 @@ namespace Kruty1918.Moyva.Construction.API
     [System.Serializable]
     public class TileRequirementDefinition
     {
-        [Tooltip("ID тайла, який потребується (наприклад 'forest', 'water', 'mountain').")]
+        [Tooltip("ID потрібного тайла або біому.\nСаме це поле каже системі, який тип місцевості шукати навколо будівлі.\nПриклади: forest-dense для лісу, water для води, grass для відкритої рівнини.")]
+        [TileId]
         public string TileId;
 
-        [Tooltip("Радіус, в якому має бути цей тайл від будівлі (в клітинках).")]
+        [Tooltip("Радіус пошуку тайла в клітинках.\nВизначає, наскільки далеко від будівлі дозволено шукати потрібну місцевість.\nЗбільшуйте значення для споруд, що використовують широку околицю, і зменшуйте для локальних залежностей.")]
         [Min(1)]
         public int Radius = 3;
 
-        [Tooltip("Мінімальна кількість клітинок цього тайла в радіусі.")]
+        [Tooltip("Мінімальна кількість клітинок цього типу, яку треба знайти в заданому радіусі.\nПоле задає поріг достатності місцевості для роботи будівлі.\nНаприклад, мисливська хатина може вимагати кілька лісових клітин, а місту вистачає однієї водної.")]
         [Min(1)]
         public int MinimumTileCount = 1;
     }
@@ -24,36 +27,32 @@ namespace Kruty1918.Moyva.Construction.API
     [System.Serializable]
     public class BuildingDefinition
     {
+        [System.Serializable]
+        public sealed class BuildingConstructionCostEntry
+        {
+            [Tooltip("ID ресурсу з EconomyDatabaseSO, який потрібен для будівництва.\nВибирається зі списку ресурсів через dropdown.")]
+            [ResourceId]
+            public string ResourceId;
+
+            [Tooltip("Кількість ресурсу, яка витрачається на будівництво 1 одиниці цієї споруди.")]
+            [Min(1)]
+            public int Amount = 1;
+        }
+
         public string Id;               // Унікальний ідентифікатор, наприклад "barracks"
         public string DisplayName;      // Назва для UI, наприклад "Казарма"
         public BuildingCategory Category;
         public Sprite Icon;             // Іконка будівлі для меню будівництва
         public GameObject Prefab;       // Prefab будівлі (stub: null поки арт не готовий)
 
-        [Header("Економіка")]
-        [Tooltip("Кількість робітників потрібних для роботи будівлі.\n0 = будівля не потребує робітників (наприклад, стіна).\nПриклад: лісопилка = 2, ферма = 3.")]
-        public int RequiredWorkers;
+        [Header("Вартість будівництва")]
+        [Tooltip("Список ресурсів і кількостей, необхідних для побудови 1 екземпляра цієї будівлі.\nПорожній список означає безкоштовне будівництво.")]
+        public List<BuildingConstructionCostEntry> ConstructionCost = new List<BuildingConstructionCostEntry>();
 
-        [Tooltip("Пріоритет розподілу робітників (вищий = важливіший).\nВикористовується системою Worker Allocation.\nПриклад: харчова будівля = 400, матеріали = 200.")]
-        public int EconomyPriority;
-
-        [Tooltip("Чи є ця будівля житловою (дає ліміт населення).\nТільки житлові будівлі впливають на Housing.\nПриклад: true для хати/казарми, false для лісопилки.")]
-        public bool IsHousing;
-
-        [Tooltip("Чи є ця будівля складом.\nЯкщо true — ресурси можуть відображатися як окремий складський пул для UI/аналітики.")]
-        public bool IsWarehouse;
-
-        [Tooltip("Ліміт жителів якщо IsHousing=true.\n0 = не обмежує.\nПриклад: хата = 4, казарма = 10.")]
-        public int HousingCapacity;
-
-        [Tooltip("Чи є ця будівля центральною (ратушею) поселення.\nЛише одна центральна будівля на поселення.\nПриклад: true лише для town-hall.")]
-        public bool IsTownHall;
-
-        [Tooltip("Чи є ця будівля замком (столичним центром фракції).\nЗамок задається окремо від ратуші та використовується для сценаріїв головного поселення.")]
-        public bool IsCastle;
-
-        [Tooltip("Для Industrial-класу: який ресурс виробляє/обробляє ця будівля (resourceId).\nПриклад: wood, stone, grain.\nДля інших класів можна залишити порожнім.")]
-        public string IndustrialResourceId;
+        [Header("Модулі")]
+        [Tooltip("Компонентна модель будівлі. Runtime використовує модулі для визначення можливостей.")]
+        [SerializeReference]
+        public List<BuildingModuleDefinition> Modules = new List<BuildingModuleDefinition>();
 
         [Header("Правила розміщення")]
         [Tooltip("Увімкнути кастомні правила розміщення відносно ратуші для цієї будівлі.\nЯкщо вимкнено — застосовуються стандартні правила за класом будівлі.")]
@@ -67,12 +66,5 @@ namespace Kruty1918.Moyva.Construction.API
 
         [Tooltip("Локальний override радіусу правил ратуші для цієї будівлі.\n<= 0 означає використати глобальний радіус із ConstructionInstaller.")]
         public int TownHallProximityRadiusOverride;
-
-        [Header("Вимоги до тайлів")]
-        [Tooltip("Чи потребує ця будівля певних типів тайлів для роботи.\nСтосується переважно індустріальних об'єктів.")]
-        public bool RequiresTiles;
-
-        [Tooltip("Массив вимог до тайлів. Кожен елемент задає тип тайла та його мінімальну кількість в радіусі.")]
-        public TileRequirementDefinition[] TileRequirements = new TileRequirementDefinition[0];
     }
 }

@@ -115,6 +115,21 @@ namespace Kruty1918.Moyva.Construction.API
         bool TryDirectPlace(string buildingId, Vector2Int position, string placedByFactionId);
 
         /// <summary>
+        /// Повертає affordability-стан для конкретного pending preview.
+        /// </summary>
+        bool TryGetPendingPlacementStatus(Vector2Int position, out ConstructionPendingPlacementStatus status);
+
+        /// <summary>
+        /// Повертає проєкцію ресурсів поселення для позиції прев'ю з урахуванням усіх pending будівель.
+        /// </summary>
+        ConstructionResourceProjection GetResourceProjection(Vector2Int position);
+
+        /// <summary>
+        /// Останнє детальне повідомлення про дію сервісу будівництва.
+        /// </summary>
+        string GetLastActionMessage();
+
+        /// <summary>
         /// Знести будівлю від імені фракції (для AI/мережевих команд).
         /// Фракція повинна бути власником будівлі.
         /// Повертає true якщо успішно.

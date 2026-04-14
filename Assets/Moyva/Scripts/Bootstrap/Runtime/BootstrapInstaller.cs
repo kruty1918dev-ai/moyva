@@ -1,13 +1,26 @@
 using Zenject;
-using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.SaveSystem;
+using UnityEngine;
+using Kruty1918.Moyva.Bootstrap.Runtime;
 
 namespace Kruty1918.Moyva.Bootstrap
 {
     public class BootstrapInstaller : MonoInstaller
     {
+        [SerializeField] private BootstrapGameSettings _gameSettings = new();
+        [SerializeField] private StartingPositionInitializerSettings _startingPositionSettings = new();
+
         public override void InstallBindings()
         {
+            // Спільний стан стартової позиції (читається BootstrapGameInitializer після того,
+            // як StartingPositionInitializer запише значення при обробці WorldGeneratedDataSignal).
+            Container.Bind<BootstrapStartingPositionState>().AsSingle();
+
+            // Гра-bootstrap робить дефолтну будівлю та видає стартові ресурси
+            Container.BindInstance(_gameSettings).AsSingle();
+            Container.BindInterfacesTo<BootstrapGameInitializer>().AsSingle().NonLazy();
+            Container.BindExecutionOrder<BootstrapGameInitializer>(102); // після StartingPositionInitializer (101)
+
             // Модуль збереження юнітів — реєструється як ISaveModule, автоматично
             // потрапляє в List<ISaveModule> при ініціалізації SaveService.
             Container.BindInterfacesAndSelfTo<UnitsSaveModule>()
@@ -18,13 +31,16 @@ namespace Kruty1918.Moyva.Bootstrap
                 .AsSingle()
                 .NonLazy();
 
-            // TestUnitSpawner: перевіряє наявність сейву —
-            // якщо є сейв, завантажує юнітів; інакше спавнить тестові.
+            // Ініціалізатор запуску: перевіряє наявність сейву і завантажує його.
+            // Має ініціалізуватись після усіх сервісів.
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
-
-            // TestUnitSpawner має ініціалізуватись ОСТАННІМ — після усіх сервісів,
-            // щоб усі підписки на сигнали (ObjectsMapService, UnitService тощо) були готові.
             Container.BindExecutionOrder<TestUnitSpawner>(100);
+
+            // Розкриває туман навколо стартової позиції і телепортує камеру туди.
+            // Виконується після TestUnitSpawner, щоб знати чи є збереження.
+            Container.BindInstance(_startingPositionSettings).AsSingle();
+            Container.BindInterfacesTo<StartingPositionInitializer>().AsSingle().NonLazy();
+            Container.BindExecutionOrder<StartingPositionInitializer>(101);
         }
     }
 }

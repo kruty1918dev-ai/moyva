@@ -20,7 +20,9 @@ namespace Kruty1918.Moyva.Signals
     public interface IEconomyInfoMediator
     {
         bool TryGetSettlementContext(Vector2Int position, out EconomySettlementContext context);
+        bool TryResolveConstructionSettlement(Vector2Int position, string ownerId, out EconomySettlementContext context);
         bool TryGetBuildingContext(Vector2Int position, out string buildingId, out string ownerId);
+        bool TryConsumeSettlementResources(string settlementId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage);
         IReadOnlyDictionary<string, float> GetWarehouseResourceTotals(Vector2Int warehousePosition);
         IReadOnlyDictionary<string, float> GetSettlementWarehousesTotal(string settlementId);
         IReadOnlyDictionary<string, float> GetSettlementResourceTotals(string settlementId);

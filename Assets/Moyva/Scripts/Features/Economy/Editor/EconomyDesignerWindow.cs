@@ -44,13 +44,6 @@ namespace Kruty1918.Moyva.Economy.Editor
             Сутності = 3,
         }
 
-        private enum CivilianBuildingType
-        {
-            Regular = 0,
-            TownHall = 1,
-            Castle = 2,
-        }
-
         private static readonly string[] TabGroupLabels =
         {
             "Дані",
@@ -695,8 +688,42 @@ namespace Kruty1918.Moyva.Economy.Editor
             if (!found)
                 EditorGUILayout.HelpBox("У цій категорії ще немає параметрів.", MessageType.Info);
 
+            if (category == EconomyRuleCategory.BuildingRules)
+                DrawBuildingModuleValidationRulesSection();
+
             if (_rulesConfigurationSo.ApplyModifiedProperties())
                 EditorUtility.SetDirty(_rulesConfiguration);
+        }
+
+        private void DrawBuildingModuleValidationRulesSection()
+        {
+            if (_database == null || _database.RulesConfig == null)
+            {
+                EditorGUILayout.HelpBox("Для runtime-правил модульної валідації призначте EconomyRulesConfigSO в EconomyDatabase.", MessageType.Info);
+                return;
+            }
+
+            var rulesConfigSo = new SerializedObject(_database.RulesConfig);
+            rulesConfigSo.Update();
+
+            var buildingRulesProp = rulesConfigSo.FindProperty("_building");
+            if (buildingRulesProp == null)
+            {
+                EditorGUILayout.HelpBox("Секцію '_building' не знайдено в EconomyRulesConfigSO.", MessageType.Error);
+                return;
+            }
+
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.BeginVertical("box");
+            EditorGUILayout.LabelField("Runtime Rules: Module Validation", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Ці перемикачі визначають, які інваріанти модульної моделі вважаються помилками або warning в Economy Hub validation/save flow.",
+                MessageType.None);
+            DrawSerializedPropertyChildren(buildingRulesProp);
+            EditorGUILayout.EndVertical();
+
+            if (rulesConfigSo.ApplyModifiedProperties())
+                EditorUtility.SetDirty(_database.RulesConfig);
         }
 
         private static string GetRuleCategoryHint(EconomyRuleCategory category)
@@ -1283,160 +1310,28 @@ namespace Kruty1918.Moyva.Economy.Editor
             if (buildingProperty == null)
                 return;
 
-            var idProp = buildingProperty.FindPropertyRelative("Id");
-            var displayNameProp = buildingProperty.FindPropertyRelative("DisplayName");
-            var categoryProp = buildingProperty.FindPropertyRelative("Category");
-            var iconProp = buildingProperty.FindPropertyRelative("Icon");
-            var prefabProp = buildingProperty.FindPropertyRelative("Prefab");
-            var requiredWorkersProp = buildingProperty.FindPropertyRelative("RequiredWorkers");
-            var economyPriorityProp = buildingProperty.FindPropertyRelative("EconomyPriority");
-            var isHousingProp = buildingProperty.FindPropertyRelative("IsHousing");
-            var isWarehouseProp = buildingProperty.FindPropertyRelative("IsWarehouse");
-            var housingCapacityProp = buildingProperty.FindPropertyRelative("HousingCapacity");
-            var isTownHallProp = buildingProperty.FindPropertyRelative("IsTownHall");
-            var isCastleProp = buildingProperty.FindPropertyRelative("IsCastle");
-            var industrialResourceIdProp = buildingProperty.FindPropertyRelative("IndustrialResourceId");
-            var requiresTilesProp = buildingProperty.FindPropertyRelative("RequiresTiles");
-            var tileRequirementsProp = buildingProperty.FindPropertyRelative("TileRequirements");
+            EditorGUILayout.PropertyField(buildingProperty.FindPropertyRelative("Id"));
+            EditorGUILayout.PropertyField(buildingProperty.FindPropertyRelative("DisplayName"));
+            EditorGUILayout.PropertyField(buildingProperty.FindPropertyRelative("Category"));
+            EditorGUILayout.PropertyField(buildingProperty.FindPropertyRelative("Icon"));
+            EditorGUILayout.PropertyField(buildingProperty.FindPropertyRelative("Prefab"));
+
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.LabelField("Вартість будівництва", EditorStyles.boldLabel);
+            DrawConstructionCostList(buildingProperty.FindPropertyRelative("ConstructionCost"));
+
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.LabelField("Правила розміщення", EditorStyles.boldLabel);
+
             var useCustomTownHallRulesProp = buildingProperty.FindPropertyRelative("UseCustomTownHallRules");
             var requireTownHallInRangeProp = buildingProperty.FindPropertyRelative("RequireTownHallInRange");
             var blockIfTownHallAlreadyInRangeProp = buildingProperty.FindPropertyRelative("BlockIfTownHallAlreadyInRange");
             var townHallRadiusOverrideProp = buildingProperty.FindPropertyRelative("TownHallProximityRadiusOverride");
 
-            EditorGUILayout.PropertyField(idProp);
-            EditorGUILayout.PropertyField(displayNameProp);
-            EditorGUILayout.PropertyField(categoryProp);
-            EditorGUILayout.PropertyField(iconProp);
-            EditorGUILayout.PropertyField(prefabProp);
+            if (useCustomTownHallRulesProp != null)
+                EditorGUILayout.PropertyField(useCustomTownHallRulesProp);
 
-            var category = categoryProp != null
-                ? (Kruty1918.Moyva.Construction.API.BuildingCategory)categoryProp.enumValueIndex
-                : Kruty1918.Moyva.Construction.API.BuildingCategory.Civilian;
-
-            bool isWall = category == Kruty1918.Moyva.Construction.API.BuildingCategory.Walls;
-            bool isIndustrial = category == Kruty1918.Moyva.Construction.API.BuildingCategory.Industrial;
-            bool isCivilian = category == Kruty1918.Moyva.Construction.API.BuildingCategory.Civilian;
-
-            if (!isCivilian)
-            {
-                if (isTownHallProp != null) isTownHallProp.boolValue = false;
-                if (isCastleProp != null) isCastleProp.boolValue = false;
-            }
-
-            if (isCivilian)
-            {
-                var selected = CivilianBuildingType.Regular;
-                if (isTownHallProp != null && isTownHallProp.boolValue)
-                    selected = CivilianBuildingType.TownHall;
-                else if (isCastleProp != null && isCastleProp.boolValue)
-                    selected = CivilianBuildingType.Castle;
-
-                selected = (CivilianBuildingType)EditorGUILayout.EnumPopup(
-                    new GUIContent("Тип цивільної споруди", "Для Civilian-категорії: звичайна, ратуша або замок. Ратуша і замок взаємовиключні."),
-                    selected);
-
-                if (isTownHallProp != null)
-                    isTownHallProp.boolValue = selected == CivilianBuildingType.TownHall;
-                if (isCastleProp != null)
-                    isCastleProp.boolValue = selected == CivilianBuildingType.Castle;
-            }
-
-            if (!isIndustrial && industrialResourceIdProp != null)
-                industrialResourceIdProp.stringValue = string.Empty;
-
-            bool isTownHall = isTownHallProp != null && isTownHallProp.boolValue;
-            bool isCastle = isCastleProp != null && isCastleProp.boolValue;
-
-            if (isTownHall && isCastle && isCastleProp != null)
-            {
-                isCastleProp.boolValue = false;
-                isCastle = false;
-            }
-
-            bool isCentral = isTownHall || isCastle;
-
-            if (isWall || isCentral)
-            {
-                if (requiredWorkersProp != null) requiredWorkersProp.intValue = 0;
-                if (economyPriorityProp != null) economyPriorityProp.intValue = 0;
-                if (isWarehouseProp != null) isWarehouseProp.boolValue = false;
-                if (housingCapacityProp != null) housingCapacityProp.intValue = 0;
-                if (industrialResourceIdProp != null) industrialResourceIdProp.stringValue = string.Empty;
-                if (requiresTilesProp != null) requiresTilesProp.boolValue = false;
-                if (tileRequirementsProp != null && tileRequirementsProp.isArray) tileRequirementsProp.arraySize = 0;
-
-                if (useCustomTownHallRulesProp != null) useCustomTownHallRulesProp.boolValue = false;
-                if (requireTownHallInRangeProp != null) requireTownHallInRangeProp.boolValue = false;
-                if (blockIfTownHallAlreadyInRangeProp != null) blockIfTownHallAlreadyInRangeProp.boolValue = true;
-                if (townHallRadiusOverrideProp != null) townHallRadiusOverrideProp.intValue = 0;
-
-                if (isHousingProp != null) isHousingProp.boolValue = false;
-            }
-
-            if (isWall)
-            {
-                if (isHousingProp != null) isHousingProp.boolValue = false;
-            }
-
-            EditorGUILayout.Space(6f);
-            EditorGUILayout.LabelField("Економічні параметри", EditorStyles.boldLabel);
-
-            using (new EditorGUI.DisabledScope(isWall || isCentral))
-            {
-                EditorGUILayout.PropertyField(requiredWorkersProp);
-                EditorGUILayout.PropertyField(economyPriorityProp);
-                EditorGUILayout.PropertyField(isWarehouseProp);
-            }
-
-            using (new EditorGUI.DisabledScope(isWall || isCentral))
-            {
-                EditorGUILayout.PropertyField(isHousingProp);
-            }
-
-            bool isHousing = isHousingProp != null && isHousingProp.boolValue && !isWall && !isCentral;
-            if (!isHousing && housingCapacityProp != null)
-                housingCapacityProp.intValue = 0;
-
-            using (new EditorGUI.DisabledScope(!isHousing))
-            {
-                if (housingCapacityProp != null)
-                    EditorGUILayout.PropertyField(housingCapacityProp);
-            }
-
-            using (new EditorGUI.DisabledScope(!isIndustrial || isWall || isCentral))
-            {
-                if (industrialResourceIdProp != null)
-                    DrawResourceSelector(industrialResourceIdProp);
-            }
-
-            // Вимоги до тайлів
-            DrawTileRequirementsUI(buildingProperty);
-
-            EditorGUILayout.Space(6f);
-            EditorGUILayout.LabelField("Правила розміщення", EditorStyles.boldLabel);
-
-            using (new EditorGUI.DisabledScope(isCentral))
-            {
-                if (useCustomTownHallRulesProp != null)
-                    EditorGUILayout.PropertyField(useCustomTownHallRulesProp);
-            }
-
-            bool usesCustomTownHallRules = !isCentral
-                && useCustomTownHallRulesProp != null
-                && useCustomTownHallRulesProp.boolValue;
-
-            bool defaultRequireTownHall = !isCentral;
-            bool defaultBlockTownHallAlreadyInRange = isCentral;
-
-            if (!usesCustomTownHallRules)
-            {
-                if (requireTownHallInRangeProp != null)
-                    requireTownHallInRangeProp.boolValue = defaultRequireTownHall;
-                if (blockIfTownHallAlreadyInRangeProp != null)
-                    blockIfTownHallAlreadyInRangeProp.boolValue = defaultBlockTownHallAlreadyInRange;
-                if (townHallRadiusOverrideProp != null)
-                    townHallRadiusOverrideProp.intValue = 0;
-            }
+            bool usesCustomTownHallRules = useCustomTownHallRulesProp != null && useCustomTownHallRulesProp.boolValue;
 
             using (new EditorGUI.DisabledScope(!usesCustomTownHallRules))
             {
@@ -1448,30 +1343,132 @@ namespace Kruty1918.Moyva.Economy.Editor
                     EditorGUILayout.PropertyField(townHallRadiusOverrideProp);
             }
 
-            if (isWall)
+            DrawBuildingModulesInspector(buildingProperty);
+        }
+
+        private void DrawBuildingModulesInspector(SerializedProperty buildingProperty)
+        {
+            if (buildingProperty == null || _buildingRegistry == null || _buildingRegistry.Buildings == null)
+                return;
+
+            var definition = FindBuildingDefinitionForInspector(buildingProperty);
+
+            if (definition == null)
+                return;
+
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.LabelField("Модулі будівлі", EditorStyles.boldLabel);
+
+            var modulesProp = buildingProperty.FindPropertyRelative("Modules");
+            if (modulesProp == null || !modulesProp.isArray)
             {
-                EditorGUILayout.HelpBox(
-                    "Для стін економічні параметри, житло, склади та промисловий ресурс недоступні.",
-                    MessageType.Info);
+                EditorGUILayout.HelpBox("Поле Modules не знайдено в BuildingDefinition.", MessageType.Error);
+                return;
             }
-            else if (isTownHall)
+
+            BuildingModuleEditorShared.DrawModulesSection(modulesProp, null, () => _buildingRegistrySo.ApplyModifiedProperties());
+            BuildingModuleEditorShared.DrawValidationIssuesForDefinition(
+                definition,
+                buildingProperty,
+                () => _buildingRegistrySo.ApplyModifiedProperties(),
+                GetActiveBuildingModuleRules());
+        }
+
+        private void DrawConstructionCostList(SerializedProperty costListProperty)
+        {
+            if (costListProperty == null || !costListProperty.isArray)
             {
-                EditorGUILayout.HelpBox(
-                    "Ратуша не може бути одночасно замком. Для ратуші вимкнені робітники, економічний пріоритет, склад, житло та ресурсний профіль; правила розміщення також фіксовані.",
-                    MessageType.Info);
+                EditorGUILayout.HelpBox("Не вдалося знайти список вартості будівництва.", MessageType.Error);
+                return;
             }
-            else if (isCastle)
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+            if (costListProperty.arraySize == 0)
+                EditorGUILayout.HelpBox("Будівництво безкоштовне. Додайте ресурс, якщо споруда має ціну.", MessageType.Info);
+
+            int removeIndex = -1;
+            for (int i = 0; i < costListProperty.arraySize; i++)
             {
-                EditorGUILayout.HelpBox(
-                    "Замок не може бути одночасно ратушею. Для замку вимкнені робітники, економічний пріоритет, склад, житло, ресурсний профіль і тайлові вимоги; правила розміщення фіксовані.",
-                    MessageType.Info);
+                var entry = costListProperty.GetArrayElementAtIndex(i);
+                if (entry == null)
+                    continue;
+
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField($"Ресурс {i + 1}", EditorStyles.miniBoldLabel);
+                GUILayout.FlexibleSpace();
+
+                Color previousColor = GUI.color;
+                GUI.color = new Color(0.9f, 0.35f, 0.35f);
+                if (GUILayout.Button("Видалити", GUILayout.Width(82f)))
+                    removeIndex = i;
+                GUI.color = previousColor;
+                EditorGUILayout.EndHorizontal();
+
+                EditorGUILayout.PropertyField(entry.FindPropertyRelative("ResourceId"), new GUIContent("Ресурс"));
+                EditorGUILayout.PropertyField(entry.FindPropertyRelative("Amount"), new GUIContent("Кількість"));
+                EditorGUILayout.EndVertical();
             }
-            else if (!isIndustrial)
+
+            EditorGUILayout.Space(4f);
+            if (GUILayout.Button("Додати ресурс для будівництва"))
             {
-                EditorGUILayout.HelpBox(
-                    "Поле Industrial Resource Id активне лише для Industrial-споруд.",
-                    MessageType.None);
+                costListProperty.arraySize++;
+                var entry = costListProperty.GetArrayElementAtIndex(costListProperty.arraySize - 1);
+                entry.FindPropertyRelative("Amount").intValue = 1;
+                entry.FindPropertyRelative("ResourceId").stringValue = FindFirstConstructionCostResourceId();
             }
+
+            if (removeIndex >= 0)
+                costListProperty.DeleteArrayElementAtIndex(removeIndex);
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private static string FindFirstConstructionCostResourceId()
+        {
+            var guids = AssetDatabase.FindAssets($"t:{nameof(EconomyResourceDefinition)}");
+            var resourceIds = new List<string>(guids.Length);
+            for (int i = 0; i < guids.Length; i++)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var resource = AssetDatabase.LoadAssetAtPath<EconomyResourceDefinition>(path);
+                if (resource == null || string.IsNullOrWhiteSpace(resource.Id))
+                    continue;
+
+                resourceIds.Add(resource.Id.Trim());
+            }
+
+            resourceIds.Sort(StringComparer.Ordinal);
+            return resourceIds.Count > 0 ? resourceIds[0] : string.Empty;
+        }
+
+        private EconomyBuildingRules GetActiveBuildingModuleRules()
+        {
+            return _database != null && _database.RulesConfig != null
+                ? _database.RulesConfig.Building
+                : null;
+        }
+
+        private BuildingDefinition FindBuildingDefinitionForInspector(SerializedProperty buildingProperty)
+        {
+            if (buildingProperty == null || _buildingRegistry == null || _buildingRegistry.Buildings == null)
+                return null;
+
+            var id = buildingProperty.FindPropertyRelative("Id")?.stringValue;
+            if (string.IsNullOrWhiteSpace(id))
+                return null;
+
+            var source = _buildingRegistry.Buildings;
+            for (int i = 0; i < source.Length; i++)
+            {
+                var candidate = source[i];
+                if (candidate != null && candidate.Id == id)
+                    return candidate;
+            }
+
+            return null;
         }
 
         private void DrawUnitEntityInspector(SerializedProperty unitProperty)
@@ -1643,13 +1640,13 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button(new GUIContent("Запустити Перевірку", Tips.RunValidationBtn), GUILayout.Height(28f)))
-                _validationIssues = _validationService.Validate(_database).ToList();
+                _validationIssues = _validationService.Validate(_database, _buildingRegistry).ToList();
 
             if (GUILayout.Button(new GUIContent("Виправити Помилки", Tips.FixIssuesBtn), GUILayout.Height(28f)))
             {
                 Undo.RecordObject(_database, "Економіка: виправлення помилок");
                 var fixedCount = _autoFixService.FixCommonIssues(_database);
-                _validationIssues = _validationService.Validate(_database).ToList();
+                _validationIssues = _validationService.Validate(_database, _buildingRegistry).ToList();
                 ShowNotification(new GUIContent($"Виправлено {fixedCount} проблем."));
                 AssetDatabase.SaveAssets();
             }
@@ -1876,6 +1873,15 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             EditorGUILayout.EndHorizontal();
 
+            EditorGUILayout.BeginHorizontal();
+            using (new EditorGUI.DisabledScope(_buildingRegistry == null))
+            {
+                if (GUILayout.Button("Валідувати модулі", GUILayout.Width(150f)))
+                    ValidateAllBuildingModulesInEconomyHub();
+            }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
             if (_buildingRegistrySo == null)
             {
                 EditorGUILayout.HelpBox("Оберіть BuildingRegistrySO, щоб редагувати економічні параметри споруд.", MessageType.Warning);
@@ -1953,7 +1959,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             EditorGUILayout.EndHorizontal();
 
             if (_buildingRegistrySo.ApplyModifiedProperties())
-                CommitSharedAssetChange(_buildingRegistry);
+                CommitBuildingRegistryChange();
         }
 
         private void DrawLivingEntitiesTab()
@@ -2065,6 +2071,37 @@ namespace Kruty1918.Moyva.Economy.Editor
                 return;
 
             EditorUtility.SetDirty(asset);
+        }
+
+        private void CommitBuildingRegistryChange()
+        {
+            if (_buildingRegistry == null)
+                return;
+
+            var source = _buildingRegistry.Buildings;
+            var invalidBuildings = BuildingModuleEditorShared.CollectInvalidBuildingIds(source, GetActiveBuildingModuleRules());
+
+            if (invalidBuildings.Count > 0)
+            {
+                EditorUtility.DisplayDialog(
+                    "Редактор Економіки",
+                    "Збереження BuildingRegistry заблоковано. Є критичні помилки модулів у будівлях:\n- " + string.Join("\n- ", invalidBuildings),
+                    "OK");
+                _buildingRegistrySo = new SerializedObject(_buildingRegistry);
+                return;
+            }
+
+            CommitSharedAssetChange(_buildingRegistry);
+        }
+
+        private void ValidateAllBuildingModulesInEconomyHub()
+        {
+            if (_buildingRegistry == null || _buildingRegistry.Buildings == null)
+                return;
+
+            BuildingModuleEditorShared.CountValidationIssues(_buildingRegistry.Buildings, out int errors, out int warnings, GetActiveBuildingModuleRules());
+
+            ShowNotification(new GUIContent($"Building modules: errors={errors}, warnings={warnings}"));
         }
 
         private void DrawBuildingDefaultInfoPanel(SerializedProperty buildingProperty)
@@ -2684,6 +2721,9 @@ namespace Kruty1918.Moyva.Economy.Editor
             if (string.IsNullOrEmpty(resourceId))
                 return null;
 
+            if (_resourceCacheDirty)
+                RefreshResourceCache();
+
             if (_resourceIconCache.TryGetValue(resourceId, out var icon))
                 return icon;
 
@@ -2713,6 +2753,9 @@ namespace Kruty1918.Moyva.Economy.Editor
         {
             if (resourceIdProp == null)
                 return;
+
+            if (_resourceCacheDirty)
+                RefreshResourceCache();
 
             // Fallback: якщо кеш не ініціалізований, то ініціалізуємо
             if (_resourceDisplayNames == null || _resourceDisplayNames.Length == 0)
@@ -2782,102 +2825,6 @@ namespace Kruty1918.Moyva.Economy.Editor
 
                 DrawSpriteRectDirect(iconRect, sprite);
             }
-        }
-
-        private void DrawTileRequirementsUI(SerializedProperty buildingProperty)
-        {
-            if (buildingProperty == null)
-                return;
-
-            var requiresTilesProp = buildingProperty.FindPropertyRelative("RequiresTiles");
-            var tileRequirementsProp = buildingProperty.FindPropertyRelative("TileRequirements");
-
-            if (requiresTilesProp == null || tileRequirementsProp == null)
-                return;
-
-            if (_tileCacheDirty)
-                RefreshTileCache();
-
-            EditorGUILayout.Space(4f);
-            EditorGUILayout.LabelField("Вимоги до тайлів", EditorStyles.boldLabel);
-
-            requiresTilesProp.boolValue = EditorGUILayout.Toggle("Потребує тайлів", requiresTilesProp.boolValue);
-
-            if (!requiresTilesProp.boolValue)
-                return;
-
-            EditorGUILayout.HelpBox("Задайте тайли й умови, необхідні для роботи цієї будівлі.", MessageType.Info);
-
-            EditorGUILayout.LabelField($"Налаштовано вимог: {tileRequirementsProp.arraySize}", EditorStyles.miniLabel);
-
-            if (GUILayout.Button("+ Додати вимогу до тайла", GUILayout.Height(28)))
-            {
-                tileRequirementsProp.arraySize++;
-                var newElement = tileRequirementsProp.GetArrayElementAtIndex(tileRequirementsProp.arraySize - 1);
-                newElement.FindPropertyRelative("TileId").stringValue = "";
-                newElement.FindPropertyRelative("Radius").intValue = 3;
-                newElement.FindPropertyRelative("MinimumTileCount").intValue = 1;
-            }
-
-            for (int i = 0; i < tileRequirementsProp.arraySize; i++)
-            {
-                var reqProp = tileRequirementsProp.GetArrayElementAtIndex(i);
-                if (DrawTileRequirementItem(reqProp, i, tileRequirementsProp))
-                    break;
-            }
-        }
-
-        private bool DrawTileRequirementItem(SerializedProperty reqProp, int index, SerializedProperty arrayProp)
-        {
-            var tileIdProp = reqProp.FindPropertyRelative("TileId");
-            var radiusProp = reqProp.FindPropertyRelative("Radius");
-            var countProp = reqProp.FindPropertyRelative("MinimumTileCount");
-            var tileId = tileIdProp?.stringValue ?? string.Empty;
-            var tileIcon = GetTileIcon(tileId);
-
-            EditorGUILayout.BeginVertical("box");
-
-            EditorGUILayout.BeginHorizontal();
-            DrawEntitySpritePreview(tileIcon, 42f);
-
-            EditorGUILayout.BeginVertical();
-            EditorGUILayout.LabelField($"Тайл #{index + 1}", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField(
-                string.IsNullOrWhiteSpace(tileId) ? "ID тайла не обрано" : $"ID: {tileId}",
-                EditorStyles.miniLabel);
-            EditorGUILayout.EndVertical();
-
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Видалити", GUILayout.Width(90f), GUILayout.Height(24f)))
-            {
-                arrayProp.DeleteArrayElementAtIndex(index);
-                EditorGUILayout.EndHorizontal();
-                EditorGUILayout.EndVertical();
-                return true;
-            }
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.Space(2f);
-
-            if (_tileDisplayIds != null && _tileDisplayIds.Length > 0)
-            {
-                int selectedIdx = _tileIdToIndex.TryGetValue(tileIdProp.stringValue, out var idx) ? idx : 0;
-                selectedIdx = EditorGUILayout.Popup("Тайл", selectedIdx, _tileDisplayIds);
-                if (selectedIdx >= 0 && selectedIdx < _tileDisplayIds.Length)
-                    tileIdProp.stringValue = _tileDisplayIds[selectedIdx];
-            }
-            else
-            {
-                tileIdProp.stringValue = EditorGUILayout.TextField("Тайл", tileIdProp.stringValue);
-            }
-
-            EditorGUILayout.BeginHorizontal();
-            radiusProp.intValue = EditorGUILayout.IntField("Радіус пошуку", radiusProp.intValue);
-            countProp.intValue = EditorGUILayout.IntField("Мін. кількість", countProp.intValue);
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.EndVertical();
-            return false;
         }
 
         private void RebuildBuildingEntityCache()

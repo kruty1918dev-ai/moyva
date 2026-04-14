@@ -562,7 +562,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private bool HasInfluenceRadius(BuildingDefinition def)
         {
-            return def != null && (def.IsTownHall || def.IsCastle);
+            return def != null &&
+                (BuildingDefinitionCapabilities.IsTownHall(def) || BuildingDefinitionCapabilities.IsCastle(def));
         }
 
         private int ResolveInfluenceRadius(BuildingDefinition def)
@@ -730,6 +731,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (sg.sortingOrder < minOrder)
                     sg.sortingOrder = minOrder;
             }
+        }
+
+        public bool TryGetPlacedVisual(Vector2Int position, out GameObject visual)
+        {
+            if (_placedByPosition.TryGetValue(position, out var go) && go != null)
+            {
+                visual = go;
+                return true;
+            }
+            visual = null;
+            return false;
         }
     }
 }

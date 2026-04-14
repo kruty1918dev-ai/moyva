@@ -82,13 +82,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (string.IsNullOrWhiteSpace(settlementName))
                 settlementName = "Без поселення";
 
-            if (definition.IsTownHall)
+            if (BuildingDefinitionCapabilities.IsTownHall(definition))
                 return $"Ратуша • {settlementName}";
 
-            if (definition.IsWarehouse)
+            if (BuildingDefinitionCapabilities.IsWarehouse(definition))
                 return $"Склад • {settlementName}";
 
-            if (definition.IsCastle)
+            if (BuildingDefinitionCapabilities.IsCastle(definition))
                 return $"Капітал • {settlementName}";
 
             return $"Будівля • {settlementName}";
@@ -111,19 +111,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             IReadOnlyDictionary<string, float> resources;
 
-            if (definition.IsWarehouse)
+            if (BuildingDefinitionCapabilities.IsWarehouse(definition))
             {
                 resources = _economyInfoMediator.GetWarehouseResourceTotals(position);
                 return FormatResources(resources, "Ресурси складу");
             }
 
-            if (definition.IsTownHall)
+            if (BuildingDefinitionCapabilities.IsTownHall(definition))
             {
                 resources = _economyInfoMediator.GetSettlementWarehousesTotal(settlementContext.SettlementId);
                 return FormatResources(resources, "Ресурси всіх складів поселення");
             }
 
-            if (definition.IsCastle)
+            if (BuildingDefinitionCapabilities.IsCastle(definition))
             {
                 resources = _economyInfoMediator.GetOwnerResourceTotals(settlementContext.OwnerId);
                 return FormatResources(resources, "Зведення по капіталу власника");

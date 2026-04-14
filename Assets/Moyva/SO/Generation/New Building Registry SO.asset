@@ -18,115 +18,63 @@ MonoBehaviour:
     Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
-    RequiredWorkers: 0
-    EconomyPriority: 0
-    IsHousing: 0
-    IsWarehouse: 0
-    HousingCapacity: 0
-    IsTownHall: 1
-    IsCastle: 0
-    IndustrialResourceId: aloe-herb-food-resources
+    Modules:
+    - rid: 1139584718011891780
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 0
     BlockIfTownHallAlreadyInRange: 1
     TownHallProximityRadiusOverride: 0
-    RequiresTiles: 0
-    TileRequirements: []
   - Id: bridge-wood-01
     DisplayName: Wood Bridge
     Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 8030073889366943068, guid: f9fff611f2465687b966cf0e0cfdda74, type: 3}
-    RequiredWorkers: 0
-    EconomyPriority: 0
-    IsHousing: 0
-    IsWarehouse: 0
-    HousingCapacity: 0
-    IsTownHall: 0
-    IsCastle: 0
-    IndustrialResourceId: aloe-herb-food-resources
+    Modules:
+    - rid: 1139584718011891781
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
     TownHallProximityRadiusOverride: 0
-    RequiresTiles: 0
-    TileRequirements: []
   - Id: windmill-01
     DisplayName: Windmill
     Category: 2
     Icon: {fileID: 0}
     Prefab: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
-    RequiredWorkers: 0
-    EconomyPriority: 0
-    IsHousing: 0
-    IsWarehouse: 0
-    HousingCapacity: 0
-    IsTownHall: 0
-    IsCastle: 0
-    IndustrialResourceId: 
+    Modules: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
     TownHallProximityRadiusOverride: 0
-    RequiresTiles: 0
-    TileRequirements: []
   - Id: house-01
     DisplayName: House
     Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
-    RequiredWorkers: 0
-    EconomyPriority: 0
-    IsHousing: 1
-    IsWarehouse: 0
-    HousingCapacity: 0
-    IsTownHall: 0
-    IsCastle: 0
-    IndustrialResourceId: 
+    Modules: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
     TownHallProximityRadiusOverride: 0
-    RequiresTiles: 0
-    TileRequirements: []
   - Id: stone-wall
     DisplayName: "\u0421\u0442\u0456\u043D\u0430"
     Category: 3
     Icon: {fileID: -1448105316, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
     Prefab: {fileID: 8756741331363231770, guid: 190f77ff4fd19557ebd89ef3e3e06832, type: 3}
-    RequiredWorkers: 0
-    EconomyPriority: 0
-    IsHousing: 0
-    IsWarehouse: 0
-    HousingCapacity: 0
-    IsTownHall: 0
-    IsCastle: 0
-    IndustrialResourceId: 
+    Modules: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
     TownHallProximityRadiusOverride: 0
-    RequiresTiles: 0
-    TileRequirements: []
   - Id: stone-gate
     DisplayName: "\u0412\u043E\u0440\u043E\u0442\u0430"
     Category: 3
     Icon: {fileID: 1129816292, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
     Prefab: {fileID: 4054757616884961693, guid: 2fc84416ec42ca98796010998d7561ef, type: 3}
-    RequiredWorkers: 0
-    EconomyPriority: 0
-    IsHousing: 0
-    IsWarehouse: 0
-    HousingCapacity: 0
-    IsTownHall: 0
-    IsCastle: 0
-    IndustrialResourceId: 
+    Modules: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
     TownHallProximityRadiusOverride: 0
-    RequiresTiles: 0
-    TileRequirements: []
   WallCollections:
   - CollectionId: wall-stone-collection-0
     WallBuildingId: stone-wall
@@ -181,3 +129,19 @@ MonoBehaviour:
     - CaseType: 19
       VariantBuildingIds:
       - wall_stone_collection_0_end_west
+  references:
+    version: 2
+    RefIds:
+    - rid: 1139584718011891780
+      type: {class: CastleBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
+        IsCapital: 1
+        GarrisonCapacity: 0
+        ExclusionRadius: 0
+    - rid: 1139584718011891781
+      type: {class: WorkerlessBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1

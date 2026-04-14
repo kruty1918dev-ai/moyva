@@ -54,8 +54,10 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
                         Id = "sawmill",
                         DisplayName = "Лісопилка",
                         Category = BuildingCategory.Industrial,
-                        RequiredWorkers = 2,
-                        EconomyPriority = 100
+                        Modules = new System.Collections.Generic.List<BuildingModuleDefinition>
+                        {
+                            new ProductionBuildingModule { WorkersRequired = 2, Priority = 100, ResourceId = "wood" }
+                        }
                     }
                 }
             });

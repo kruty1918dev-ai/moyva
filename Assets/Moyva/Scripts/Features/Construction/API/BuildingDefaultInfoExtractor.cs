@@ -25,41 +25,73 @@ namespace Kruty1918.Moyva.Construction.API
             int startLength = output.Length;
 
             bool isWall = definition.Category == BuildingCategory.Walls;
-            bool isCentral = definition.IsTownHall || definition.IsCastle;
+            bool isTownHall = BuildingDefinitionCapabilities.IsTownHall(definition);
+            bool isCastle = BuildingDefinitionCapabilities.IsCastle(definition);
+            bool isWarehouse = BuildingDefinitionCapabilities.IsWarehouse(definition);
+            bool isHousing = BuildingDefinitionCapabilities.IsHousing(definition);
+            int requiredWorkers = BuildingDefinitionCapabilities.GetRequiredWorkers(definition);
+            int economyPriority = BuildingDefinitionCapabilities.GetEconomyPriority(definition);
+            int housingCapacity = BuildingDefinitionCapabilities.GetHousingCapacity(definition);
+            string industrialResourceId = BuildingDefinitionCapabilities.GetIndustrialResourceId(definition);
+            bool requiresTiles = BuildingDefinitionCapabilities.RequiresTiles(definition);
+            var tileRequirements = BuildingDefinitionCapabilities.GetTileRequirements(definition);
+            var constructionCost = BuildingDefinitionCapabilities.GetConstructionCost(definition);
+
+            bool isCentral = isTownHall || isCastle;
             bool disablesEconomyService = isWall || isCentral;
 
-            if (definition.IsTownHall)
+            if (isTownHall)
                 output.AppendLine("Прапорець: ратуша");
 
-            if (definition.IsCastle)
+            if (isCastle)
                 output.AppendLine("Прапорець: замок");
 
-            if (definition.IsWarehouse && !disablesEconomyService)
+            if (isWarehouse && !disablesEconomyService)
                 output.AppendLine("Прапорець: склад");
 
-            if (definition.IsHousing && !disablesEconomyService)
+            if (isHousing && !disablesEconomyService)
                 output.AppendLine("Прапорець: житло");
 
             if (TryGetMaintenanceFlag(definition, out var requiresMaintenance))
                 output.AppendLine($"Потребує обслуговування: {(disablesEconomyService ? "ні" : (requiresMaintenance ? "так" : "ні"))}");
 
-            if (!disablesEconomyService && definition.RequiredWorkers > 0)
-                output.AppendLine($"Потрібно робітників: {definition.RequiredWorkers}");
+            if (!disablesEconomyService && requiredWorkers > 0)
+                output.AppendLine($"Потрібно робітників: {requiredWorkers}");
 
-            if (!disablesEconomyService && definition.EconomyPriority > 0)
-                output.AppendLine($"Економічний пріоритет: {definition.EconomyPriority}");
+            if (!disablesEconomyService && economyPriority > 0)
+                output.AppendLine($"Економічний пріоритет: {economyPriority}");
 
-            if (!disablesEconomyService && definition.IsHousing && definition.HousingCapacity > 0)
-                output.AppendLine($"Житло: +{definition.HousingCapacity}");
+            if (!disablesEconomyService && isHousing && housingCapacity > 0)
+                output.AppendLine($"Житло: +{housingCapacity}");
 
-            if (!disablesEconomyService && !string.IsNullOrWhiteSpace(definition.IndustrialResourceId))
+            if (!disablesEconomyService && !string.IsNullOrWhiteSpace(industrialResourceId))
             {
                 output.AppendLine("Прапорець: виготовляє/працює з ресурсом");
-                output.AppendLine($"Промисловий ресурс: {definition.IndustrialResourceId}");
+                output.AppendLine($"Промисловий ресурс: {industrialResourceId}");
             }
 
             if (!disablesEconomyService && definition.UseCustomTownHallRules)
                 output.AppendLine("Прапорець: кастомні правила ратуші");
+
+            if (!disablesEconomyService)
+            {
+                if (constructionCost != null && constructionCost.Count > 0)
+                {
+                    output.AppendLine($"Вартість будівництва: {constructionCost.Count} ресурс(ів)");
+                    for (int i = 0; i < constructionCost.Count; i++)
+                    {
+                        var cost = constructionCost[i];
+                        if (cost == null || string.IsNullOrWhiteSpace(cost.ResourceId) || cost.Amount <= 0)
+                            continue;
+
+                        output.AppendLine($"- {cost.ResourceId}: {cost.Amount}");
+                    }
+                }
+                else
+                {
+                    output.AppendLine("Вартість будівництва: безкоштовно");
+                }
+            }
 
             if (definition.RequireTownHallInRange)
                 output.AppendLine("Прапорець: потребує ратушу в радіусі");
@@ -67,10 +99,10 @@ namespace Kruty1918.Moyva.Construction.API
             if (definition.BlockIfTownHallAlreadyInRange)
                 output.AppendLine("Прапорець: блокує другу ратушу/замок у радіусі");
 
-            if (!disablesEconomyService && definition.RequiresTiles)
+            if (!disablesEconomyService && requiresTiles)
             {
                 output.AppendLine("Прапорець: потребує тайли");
-                var requirements = definition.TileRequirements;
+                var requirements = tileRequirements;
                 if (requirements != null)
                 {
                     int validCount = 0;

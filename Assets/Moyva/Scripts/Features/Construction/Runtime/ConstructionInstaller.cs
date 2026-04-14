@@ -15,6 +15,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
         [Tooltip("Мінімальна відстань (в тайлах) між будівлями. 0 = можна ставити впритул.")]
         [SerializeField] private int _minSpacingBetweenBuildings = 0;
 
+        [Header("Підписи поселень")]
+        [SerializeField] private SettlementLabelSettings _settlementLabelSettings = new();
+
         public override void InstallBindings()
         {
             if (buildingRegistry == null)
@@ -73,6 +76,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInstance(_settlementLabelSettings).AsSingle();
+            Container.BindInterfacesAndSelfTo<SettlementLabelService>()
+                .AsSingle()
+                .NonLazy();
+
             Container.Bind<ISaveModule>()
                 .To<ConstructionSaveModule>()
                 .AsSingle();
@@ -82,6 +90,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Container.BindExecutionOrder<ConstructionInputService>(5);
             Container.BindExecutionOrder<ConstructionVisualService>(10);
             Container.BindExecutionOrder<BuildingWorldInfoPresenter>(15);
+            Container.BindExecutionOrder<SettlementLabelService>(20);
         }
 
         private int ResolveTownHallBuildRadiusFromEconomy()
