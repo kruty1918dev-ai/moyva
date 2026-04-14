@@ -77,6 +77,13 @@ namespace Kruty1918.Moyva.Economy
                     .To<EconomyInfoMediator>()
                     .AsSingle();
             }
+
+            if (!Container.HasBinding<IMapObjectEconomyService>())
+            {
+                Container.Bind<IMapObjectEconomyService>()
+                    .To<MapObjectEconomyService>()
+                    .AsSingle();
+            }
         }
     }
 }

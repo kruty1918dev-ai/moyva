@@ -7,6 +7,7 @@ namespace Kruty1918.Moyva.Signals
         None = 0,
         Building = 1,
         Unit = 2,
+        MapObject = 3,
     }
 
     public struct WorldInfoPanelRequestedSignal
@@ -34,6 +35,12 @@ namespace Kruty1918.Moyva.Signals
     {
         public string UnitId;
         public UnityEngine.Vector2Int Position;
+    }
+
+    public struct MapObjectInfoPanelRequestedSignal
+    {
+        public string MapObjectId;
+        public Vector2Int Position;
     }
 
     public struct WorldInfoSelectionChangedSignal

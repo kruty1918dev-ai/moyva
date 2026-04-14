@@ -170,7 +170,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             var container = new DiContainer();
             container.Inject(tileRegistry);
 
-            var instantiator = new MapVisualInstantiator(tileRegistry, new FakeMapObjectRegistry(), null, null, null, grid, dataGenerator, container, _signalBus);
+            var instantiator = new MapVisualInstantiator(tileRegistry, new FakeMapObjectRegistry(), null, null, null, null, grid, dataGenerator, container, _signalBus);
             instantiator.Initialize();
 
             var sourceWorld = new GeneratedWorldData
@@ -200,7 +200,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             var freshGrid = new FakeGridService(2, 2);
             var freshGenerator = new FakeMapDataGenerator();
             var freshContainer = new DiContainer();
-            var freshInstantiator = new MapVisualInstantiator(tileRegistry, new FakeMapObjectRegistry(), null, null, null, freshGrid, freshGenerator, freshContainer, _signalBus);
+            var freshInstantiator = new MapVisualInstantiator(tileRegistry, new FakeMapObjectRegistry(), null, null, null, null, freshGrid, freshGenerator, freshContainer, _signalBus);
             freshInstantiator.Initialize();
 
             var loadWorldModule = new GeneratedWorldSaveModule(freshInstantiator);

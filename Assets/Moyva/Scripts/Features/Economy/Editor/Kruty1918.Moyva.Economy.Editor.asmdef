@@ -6,7 +6,8 @@
         "Kruty1918.Moyva.EditorShared",
         "Kruty1918.Moyva.Construction",
         "Kruty1918.Moyva.Units",
-        "Kruty1918.Moyva.Grid"
+        "Kruty1918.Moyva.Grid",
+        "Kruty1918.Moyva.Generator"
     ],
     "includePlatforms": [
         "Editor"

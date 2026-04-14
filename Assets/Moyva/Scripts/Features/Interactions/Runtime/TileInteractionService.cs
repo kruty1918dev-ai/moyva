@@ -2,6 +2,8 @@ using Kruty1918.Moyva.Interactions.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -26,6 +28,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IGridService _gridService;
         private readonly IObjectsMapService _objectsMapService;
         private readonly IBuildingRegistry _buildingRegistry;
+        private readonly IMapObjectRegistryService _mapObjectRegistryService;
+        private readonly IMapObjectEconomyService _mapObjectEconomyService;
         private readonly IUnitMovementService _unitMovementService;
         private readonly SignalBus _signalBus;
         private GameModeType _currentMode = GameModeType.Normal;
@@ -45,12 +49,16 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             IGridService gridService,
             IObjectsMapService objectsMapService,
             IBuildingRegistry buildingRegistry,
+            IMapObjectRegistryService mapObjectRegistryService,
+            IMapObjectEconomyService mapObjectEconomyService,
             IUnitMovementService unitMovementService, 
             SignalBus signalBus)
         {
             _gridService = gridService;
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
+            _mapObjectRegistryService = mapObjectRegistryService;
+            _mapObjectEconomyService = mapObjectEconomyService;
             _unitMovementService = unitMovementService;
             _signalBus = signalBus;
         }
@@ -130,6 +138,14 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 && _buildingRegistry != null
                 && _buildingRegistry.GetById(occupantId) != null;
 
+            bool isMapObject = !string.IsNullOrEmpty(occupantId)
+                && _mapObjectRegistryService != null
+                && _mapObjectRegistryService.TryGetDefinition(occupantId, out _);
+
+            bool isMapObjectInteractable = isMapObject
+                && _mapObjectEconomyService != null
+                && _mapObjectEconomyService.IsInteractable(occupantId);
+
             // --- Клік на будівлю ---
             if (isBuilding)
             {
@@ -152,6 +168,37 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 }
 
                 // Знімаємо вибір юніта при кліку на будівлю
+                _selectedUnitId = null;
+                return;
+            }
+
+            // --- Клік на інтерактивний об'єкт карти ---
+            if (isMapObject)
+            {
+                if (!isMapObjectInteractable)
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[Interaction] Map object '{occupantId}' at {position} is not interactable. Ignored.");
+                    return;
+                }
+
+                if (_inspectedKind == WorldInfoSelectionKind.MapObject
+                    && string.Equals(_inspectedObjectId, occupantId, StringComparison.Ordinal))
+                {
+                    _signalBus.Fire(new WorldInfoPanelClosedSignal());
+                }
+                else
+                {
+                    _signalBus.Fire(new MapObjectInfoPanelRequestedSignal
+                    {
+                        MapObjectId = occupantId,
+                        Position = position,
+                    });
+
+                    if (VerboseLogs)
+                        Debug.Log($"[Interaction] MapObject info requested for '{occupantId}' at {position}. mode={_currentMode}");
+                }
+
                 _selectedUnitId = null;
                 return;
             }

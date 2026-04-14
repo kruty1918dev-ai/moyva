@@ -16,6 +16,12 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
             Container.BindInterfacesAndSelfTo<TileInteractionService>()
                 .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<MapObjectWorldInfoPresenter>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<MapObjectSelectionHighlightService>()
+                .AsSingle();
         }
     }
 }

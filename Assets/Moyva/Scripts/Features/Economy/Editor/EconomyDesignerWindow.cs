@@ -7,6 +7,7 @@ using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Units.Runtime;
 using UnityEditor;
@@ -34,6 +35,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             Validation = 13,
             Simulation = 14,
             EntitiesSettings = 15,
+            MapObjects = 16,
         }
 
         private enum TabGroup
@@ -70,11 +72,12 @@ namespace Kruty1918.Moyva.Economy.Editor
             { Tab.Validation, "Валідація" },
             { Tab.Simulation, "Симуляція" },
             { Tab.EntitiesSettings, "Налаштування сутностей" },
+            { Tab.MapObjects, "Обʼєкти карти" },
         };
 
         private static readonly Dictionary<TabGroup, Tab[]> TabsByGroup = new Dictionary<TabGroup, Tab[]>
         {
-            { TabGroup.Дані, new[] { Tab.Resources, Tab.OverridableParameters } },
+            { TabGroup.Дані, new[] { Tab.Resources, Tab.OverridableParameters, Tab.MapObjects } },
             {
                 TabGroup.Правила,
                 new[]
@@ -226,6 +229,63 @@ namespace Kruty1918.Moyva.Economy.Editor
                 "УВАГА: .asset-файли НЕ видаляються з диску — лише прибирається посилання з бази.\n" +
                 "Приклад: прибрати 10 застарілих виробничих профілів за один клік.";
 
+            public const string MapObjectsTab =
+                "Об'єкти карти — це міст між генератором світу та економікою.\n" +
+                "Тут для КОЖНОГО MapObject з реєстру визначається, як він поводиться в грі: чи можна на нього натискати,\n" +
+                "чи повертає він ресурс, яку назву бачить гравець і який саме ресурс пов'язаний із добуванням.\n" +
+                "Приклади: ліс → інтерактивний, віддає wood; гора → інтерактивна, віддає stone; декорація → не інтерактивна.";
+
+            public const string MapObjectsSearchField =
+                "Пошук по ID об'єкта карти.\n" +
+                "Фільтр працює по технічному ID з MapObjectRegistry, а не по локалізованій назві.\n" +
+                "Приклад: введіть 'forest' або 'river', щоб швидко знайти потрібний запис серед великого списку.";
+
+            public const string MapObjectsRegistryMissing =
+                "MapObjectRegistrySO не знайдено в проєкті.\n" +
+                "Без цього реєстру редактор економіки не знає, для яких саме об'єктів створювати економічні записи.\n" +
+                "Натисніть кнопку нижче, щоб автоматично знайти перший реєстр у проєкті.";
+
+            public const string FindMapObjectRegistryBtn =
+                "Автоматично шукає MapObjectRegistrySO у проєкті.\n" +
+                "Використовуйте, якщо реєстр уже створений, але не підхопився після перезавантаження домену або відкриття вікна.";
+
+            public const string MapObjectCardHeader =
+                "Технічний ID об'єкта карти з реєстру генератора.\n" +
+                "Це стабільний ключ зв'язку між генератором світу, інтеракціями, info panel та економічною логікою.\n" +
+                "Змінювати тут ID не потрібно — він синхронізується з MapObjectRegistry автоматично.";
+
+            public const string MapObjectPrefabInfo =
+                "Visual Prefab, який буде заспавнений у світі для цього map object.\n" +
+                "Поле інформаційне: воно допомагає швидко перевірити, який саме prefab асоційовано з записом реєстру.";
+
+            public const string MapObjectDisplayNameField =
+                "Людинозрозуміла назва об'єкта, яку можна показувати в UI, info panel і редакторських інструментах.\n" +
+                "Якщо лишити порожнім, runtime може використати технічний ID, що небажано для гравця.\n" +
+                "Приклад: 'forest_oak_01' → 'Дубовий ліс'.";
+
+            public const string MapObjectInteractableField =
+                "Визначає, чи реагує об'єкт на клік у runtime.\n" +
+                "Якщо вимкнено: клік по об'єкту ігнорується, info panel не відкривається, outline-підсвітка не застосовується.\n" +
+                "Якщо увімкнено: об'єкт можна вибирати, відкривати його картку та показувати пов'язану інформацію.";
+
+            public const string MapObjectYieldsResourceField =
+                "Визначає, чи прив'язаний до об'єкта ресурс добування.\n" +
+                "Це не означає автоматичне видобування прямо зараз, але задає економічну семантику об'єкта.\n" +
+                "Якщо прапорець вимкнено — поле ресурсу нижче блокується і вважається, що об'єкт нічого не повертає.";
+
+            public const string MapObjectHarvestResourceField =
+                "Ресурс, який логічно пов'язаний із добуванням або взаємодією з цим об'єктом.\n" +
+                "Доступний лише коли увімкнено 'Повертає ресурс при добуванні'.\n" +
+                "Приклади: forest → wood, berry-bush → berries, rock → stone. Якщо ресурс не вибрано, логіка вважається неповною.";
+
+            public const string MapObjectsScrollArea =
+                "Скрольований список усіх об'єктів карти, що пройшли поточний пошук.\n" +
+                "Корисно коли реєстр великий і на екрані одночасно не вміщаються всі записи.";
+
+            public const string MapObjectsNoResults =
+                "Поточний пошук не повернув жодного map object.\n" +
+                "Очистьте фільтр або змініть текст пошуку, щоб побачити інші записи.";
+
             // Entity operations
             public const string CreateEntityBtn =
                 "Створити новий ScriptableObject-ассет цього типу.\n" +
@@ -335,10 +395,13 @@ namespace Kruty1918.Moyva.Economy.Editor
         private Vector2 _rulesScroll;
         private Vector2 _entitiesLeftScroll;
         private Vector2 _entitiesRightScroll;
+        private Vector2 _mapObjectsScroll;
+        private Vector2 _mapObjectsDetailsScroll;
 
         private int _entitiesSubTab;
         private int _selectedBuildingEntityIndex = -1;
         private int _selectedUnitEntityIndex = -1;
+        private string _selectedMapObjectId = string.Empty;
         private string _entitiesBuildingSearch = string.Empty;
         private string _entitiesUnitSearch = string.Empty;
 
@@ -348,6 +411,7 @@ namespace Kruty1918.Moyva.Economy.Editor
         private SerializedObject _unitRegistrySo;
 
         private Kruty1918.Moyva.Grid.API.TileRegistrySO _tileRegistry;
+        private MapObjectRegistrySO _mapObjectRegistry;
         private List<EconomyResourceDefinition> _cachedResources = new List<EconomyResourceDefinition>();
         private Dictionary<string, Sprite> _resourceIconCache = new Dictionary<string, Sprite>();
         
@@ -409,6 +473,18 @@ namespace Kruty1918.Moyva.Economy.Editor
             window.Show();
         }
 
+        public static void OpenMapObjectsTab(string mapObjectId = null)
+        {
+            var window = GetWindow<EconomyDesignerWindow>("Редактор Економіки");
+            window.minSize = new Vector2(940f, 560f);
+            window._tabGroup = TabGroup.Дані;
+            window._tab = Tab.MapObjects;
+            if (!string.IsNullOrWhiteSpace(mapObjectId))
+                window.SetSearch(mapObjectId);
+            window.Show();
+            window.Focus();
+        }
+
         private void OnEnable()
         {
             if (_database == null)
@@ -425,6 +501,9 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             if (_tileRegistry == null)
                 _tileRegistry = FindFirstAsset<Kruty1918.Moyva.Grid.API.TileRegistrySO>();
+
+            if (_mapObjectRegistry == null)
+                _mapObjectRegistry = FindFirstAsset<MapObjectRegistrySO>();
 
             RefreshResourceCache();
             RefreshTileCache();
@@ -528,6 +607,10 @@ namespace Kruty1918.Moyva.Economy.Editor
 
                 case Tab.EntitiesSettings:
                     DrawEntitiesSettingsTab();
+                    break;
+
+                case Tab.MapObjects:
+                    DrawMapObjectsTab();
                     break;
             }
         }
@@ -957,6 +1040,296 @@ namespace Kruty1918.Moyva.Economy.Editor
             int nextIndex = GUILayout.Toolbar(currentIndex, labels);
             nextIndex = Mathf.Clamp(nextIndex, 0, groupTabs.Length - 1);
             _tab = groupTabs[nextIndex];
+        }
+
+        private void DrawMapObjectsTab()
+        {
+            if (!EnsureDatabaseSerialized())
+                return;
+
+            _databaseSo.Update();
+
+            var entriesProperty = _databaseSo.FindProperty("_mapObjectEconomyEntries");
+            if (entriesProperty == null)
+            {
+                EditorGUILayout.HelpBox("Список '_mapObjectEconomyEntries' не знайдено в EconomyDatabaseSO.", MessageType.Error);
+                return;
+            }
+
+            EditorGUILayout.LabelField(new GUIContent("Об'єкти карти", Tips.MapObjectsTab), EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(Tips.MapObjectsTab, MessageType.Info);
+
+            SetSearch(EditorGUILayout.TextField(new GUIContent("Пошук", Tips.MapObjectsSearchField), GetSearch()));
+            var search = GetSearch();
+
+            if (_mapObjectRegistry == null)
+            {
+                EditorGUILayout.HelpBox(Tips.MapObjectsRegistryMissing, MessageType.Warning);
+                if (GUILayout.Button(new GUIContent("Знайти MapObjectRegistrySO", Tips.FindMapObjectRegistryBtn)))
+                    _mapObjectRegistry = FindFirstAsset<MapObjectRegistrySO>();
+                _databaseSo.ApplyModifiedProperties();
+                return;
+            }
+
+            var definitions = _mapObjectRegistry.Definitions;
+            if (definitions == null || definitions.Length == 0)
+            {
+                EditorGUILayout.HelpBox("У MapObjectRegistry немає визначень об'єктів.", MessageType.Info);
+                _databaseSo.ApplyModifiedProperties();
+                return;
+            }
+
+            var filteredDefinitions = new List<MapObjectDefinition>();
+            for (int i = 0; i < definitions.Length; i++)
+            {
+                var definition = definitions[i];
+                if (definition == null || string.IsNullOrWhiteSpace(definition.Id))
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(search)
+                    && definition.Id.IndexOf(search, StringComparison.OrdinalIgnoreCase) < 0)
+                    continue;
+
+                filteredDefinitions.Add(definition);
+            }
+
+            if (filteredDefinitions.Count == 0)
+            {
+                EditorGUILayout.HelpBox(Tips.MapObjectsNoResults, MessageType.Info);
+                _databaseSo.ApplyModifiedProperties();
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_selectedMapObjectId)
+                || filteredDefinitions.All(d => !string.Equals(d.Id, _selectedMapObjectId, StringComparison.Ordinal)))
+            {
+                _selectedMapObjectId = filteredDefinitions[0].Id;
+            }
+
+            var selectedDefinition = filteredDefinitions.FirstOrDefault(d => string.Equals(d.Id, _selectedMapObjectId, StringComparison.Ordinal))
+                ?? filteredDefinitions[0];
+            _selectedMapObjectId = selectedDefinition.Id;
+
+            var selectedEntry = GetOrCreateMapObjectEntry(entriesProperty, selectedDefinition.Id);
+
+            EditorGUILayout.BeginHorizontal();
+
+            EditorGUILayout.BeginVertical("box", GUILayout.Width(330f), GUILayout.ExpandHeight(true));
+            EditorGUILayout.LabelField(new GUIContent("Список об'єктів", Tips.MapObjectsScrollArea), EditorStyles.miniBoldLabel);
+            _mapObjectsScroll = EditorGUILayout.BeginScrollView(_mapObjectsScroll, GUILayout.ExpandHeight(true));
+            for (int i = 0; i < filteredDefinitions.Count; i++)
+            {
+                var definition = filteredDefinitions[i];
+                var entry = GetOrCreateMapObjectEntry(entriesProperty, definition.Id);
+                var displayNameProperty = entry.FindPropertyRelative("_displayName");
+                var interactableProperty = entry.FindPropertyRelative("_isInteractable");
+                var yieldsResourceProperty = entry.FindPropertyRelative("_yieldsResource");
+                var resourceIdProperty = entry.FindPropertyRelative("_harvestResourceId");
+                var itemRect = EditorGUILayout.BeginHorizontal("box", GUILayout.Height(54f));
+
+                var icon = GetMapObjectPreviewSprite(definition);
+                DrawEntitySpritePreview(icon, 34f);
+
+                EditorGUILayout.BeginVertical();
+                string title = string.IsNullOrWhiteSpace(displayNameProperty?.stringValue) ? definition.Id : displayNameProperty.stringValue;
+                EditorGUILayout.LabelField(title, string.Equals(_selectedMapObjectId, definition.Id, StringComparison.Ordinal) ? EditorStyles.boldLabel : EditorStyles.label);
+
+                var badges = new List<string>();
+                badges.Add(interactableProperty != null && interactableProperty.boolValue ? "Інтерактивний" : "Статичний");
+                badges.Add(yieldsResourceProperty != null && yieldsResourceProperty.boolValue
+                    ? $"Ресурс: {GetResourceDisplayLabel(resourceIdProperty?.stringValue)}"
+                    : "Без ресурсу");
+                EditorGUILayout.LabelField(string.Join(" • ", badges), EditorStyles.miniLabel);
+                EditorGUILayout.EndVertical();
+
+                EditorGUILayout.EndHorizontal();
+
+                if (Event.current.type == EventType.MouseDown && itemRect.Contains(Event.current.mousePosition))
+                {
+                    _selectedMapObjectId = definition.Id;
+                    GUI.FocusControl(null);
+                    Event.current.Use();
+                }
+            }
+            EditorGUILayout.EndScrollView();
+            EditorGUILayout.LabelField($"Показано: {filteredDefinitions.Count}", EditorStyles.miniLabel);
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.BeginVertical("box", GUILayout.ExpandHeight(true));
+            _mapObjectsDetailsScroll = EditorGUILayout.BeginScrollView(_mapObjectsDetailsScroll, GUILayout.ExpandHeight(true));
+
+            DrawMapObjectSectionHeader("Основне", new Color(0.24f, 0.37f, 0.56f, 0.22f));
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(new GUIContent(selectedDefinition.Id, Tips.MapObjectCardHeader), EditorStyles.boldLabel);
+            GUILayout.FlexibleSpace();
+            if (selectedDefinition.VisualPrefab != null)
+                EditorGUILayout.LabelField(new GUIContent($"Prefab: {selectedDefinition.VisualPrefab.name}", Tips.MapObjectPrefabInfo), EditorStyles.miniLabel, GUILayout.Width(240f));
+            EditorGUILayout.EndHorizontal();
+
+            var selectedIcon = GetMapObjectPreviewSprite(selectedDefinition);
+            if (selectedIcon != null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                DrawEntitySpritePreview(selectedIcon, 52f);
+                EditorGUILayout.BeginVertical();
+                EditorGUILayout.LabelField("Візуал об'єкта", EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("Іконка береться зі SpriteRenderer prefab-а об'єкта карти.", EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.EndHorizontal();
+            }
+
+            var mapObjectIdProperty = selectedEntry.FindPropertyRelative("_mapObjectId");
+            if (mapObjectIdProperty != null)
+                mapObjectIdProperty.stringValue = selectedDefinition.Id;
+
+            EditorGUILayout.PropertyField(selectedEntry.FindPropertyRelative("_displayName"), new GUIContent("Назва", Tips.MapObjectDisplayNameField));
+            EditorGUILayout.EndVertical();
+
+            DrawMapObjectSectionHeader("Інтеракція", new Color(0.22f, 0.48f, 0.29f, 0.22f));
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.PropertyField(selectedEntry.FindPropertyRelative("_isInteractable"), new GUIContent("Інтерактивний", Tips.MapObjectInteractableField));
+            EditorGUILayout.HelpBox(Tips.MapObjectInteractableField, MessageType.None);
+            EditorGUILayout.EndVertical();
+
+            DrawMapObjectSectionHeader("Добування", new Color(0.53f, 0.38f, 0.16f, 0.22f));
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            var selectedYieldsResourceProperty = selectedEntry.FindPropertyRelative("_yieldsResource");
+            EditorGUILayout.PropertyField(selectedYieldsResourceProperty, new GUIContent("Повертає ресурс при добуванні", Tips.MapObjectYieldsResourceField));
+
+            using (new EditorGUI.DisabledScope(selectedYieldsResourceProperty == null || !selectedYieldsResourceProperty.boolValue))
+            {
+                var resourceIdProperty = selectedEntry.FindPropertyRelative("_harvestResourceId");
+                DrawMapObjectResourcePicker(resourceIdProperty);
+                DrawSelectedMapObjectResourcePreview(resourceIdProperty?.stringValue);
+            }
+
+            EditorGUILayout.HelpBox(Tips.MapObjectHarvestResourceField, MessageType.None);
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.EndScrollView();
+            EditorGUILayout.EndVertical();
+
+            EditorGUILayout.EndHorizontal();
+
+            _databaseSo.ApplyModifiedProperties();
+        }
+
+        private SerializedProperty GetOrCreateMapObjectEntry(SerializedProperty entriesProperty, string mapObjectId)
+        {
+            for (int i = 0; i < entriesProperty.arraySize; i++)
+            {
+                var candidate = entriesProperty.GetArrayElementAtIndex(i);
+                var idProperty = candidate.FindPropertyRelative("_mapObjectId");
+                if (idProperty != null && string.Equals(idProperty.stringValue, mapObjectId, StringComparison.Ordinal))
+                    return candidate;
+            }
+
+            int entryIndex = entriesProperty.arraySize;
+            entriesProperty.InsertArrayElementAtIndex(entryIndex);
+            var newEntry = entriesProperty.GetArrayElementAtIndex(entryIndex);
+            newEntry.FindPropertyRelative("_mapObjectId").stringValue = mapObjectId;
+            newEntry.FindPropertyRelative("_displayName").stringValue = mapObjectId;
+            newEntry.FindPropertyRelative("_isInteractable").boolValue = false;
+            newEntry.FindPropertyRelative("_yieldsResource").boolValue = false;
+            newEntry.FindPropertyRelative("_harvestResourceId").stringValue = string.Empty;
+            return newEntry;
+        }
+
+        private void DrawMapObjectSectionHeader(string title, Color color)
+        {
+            var rect = GUILayoutUtility.GetRect(10f, 22f, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(rect, color);
+            EditorGUI.LabelField(rect, title, EditorStyles.boldLabel);
+        }
+
+        private void DrawMapObjectResourcePicker(SerializedProperty resourceIdProperty)
+        {
+            if (resourceIdProperty == null)
+                return;
+
+            string currentResourceId = resourceIdProperty.stringValue ?? string.Empty;
+            int currentIndex = 0;
+            if (_cachedResources != null)
+            {
+                for (int r = 0; r < _cachedResources.Count; r++)
+                {
+                    var resource = _cachedResources[r];
+                    if (resource != null && string.Equals(resource.Id, currentResourceId, StringComparison.Ordinal))
+                    {
+                        currentIndex = r + 1;
+                        break;
+                    }
+                }
+            }
+
+            var resourceOptions = new List<string> { "<Немає>" };
+            if (_cachedResources != null)
+            {
+                for (int r = 0; r < _cachedResources.Count; r++)
+                {
+                    var resource = _cachedResources[r];
+                    if (resource == null)
+                        continue;
+
+                    string display = string.IsNullOrWhiteSpace(resource.DisplayName)
+                        ? resource.Id
+                        : $"{resource.Id} - {resource.DisplayName}";
+                    resourceOptions.Add(display);
+                }
+            }
+
+            int nextIndex = EditorGUILayout.Popup(
+                new GUIContent("Ресурс добування", Tips.MapObjectHarvestResourceField),
+                currentIndex,
+                resourceOptions.ToArray());
+
+            if (nextIndex <= 0)
+            {
+                resourceIdProperty.stringValue = string.Empty;
+            }
+            else if (_cachedResources != null && nextIndex - 1 < _cachedResources.Count)
+            {
+                var selectedResource = _cachedResources[nextIndex - 1];
+                resourceIdProperty.stringValue = selectedResource != null ? selectedResource.Id : string.Empty;
+            }
+        }
+
+        private void DrawSelectedMapObjectResourcePreview(string resourceId)
+        {
+            EditorGUILayout.BeginHorizontal(EditorStyles.helpBox);
+            var icon = GetResourceIcon(resourceId);
+            DrawEntitySpritePreview(icon, 34f);
+            EditorGUILayout.BeginVertical();
+            EditorGUILayout.LabelField("Поточний ресурс", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField(GetResourceDisplayLabel(resourceId), EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private string GetResourceDisplayLabel(string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(resourceId))
+                return "<Не вибрано>";
+
+            if (_resourceCacheDirty)
+                RefreshResourceCache();
+
+            var resource = _cachedResources.FirstOrDefault(r => r != null && string.Equals(r.Id, resourceId, StringComparison.Ordinal));
+            if (resource == null)
+                return resourceId;
+
+            return string.IsNullOrWhiteSpace(resource.DisplayName)
+                ? resource.Id
+                : $"{resource.Id} - {resource.DisplayName}";
+        }
+
+        private static Sprite GetMapObjectPreviewSprite(MapObjectDefinition definition)
+        {
+            if (definition?.VisualPrefab == null)
+                return null;
+
+            return ExtractSpriteFromPrefab(definition.VisualPrefab);
         }
 
         private void DrawEntityTab<T>(string title, string hint, string listPropertyName, Func<T, string> displayName, string defaultAssetName)

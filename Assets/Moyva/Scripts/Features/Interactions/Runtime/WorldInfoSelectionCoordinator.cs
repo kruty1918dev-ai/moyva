@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         {
             _signalBus.Subscribe<BuildingInfoPanelRequestedSignal>(OnBuildingInfoRequested);
             _signalBus.Subscribe<UnitInfoPanelRequestedSignal>(OnUnitInfoRequested);
+            _signalBus.Subscribe<MapObjectInfoPanelRequestedSignal>(OnMapObjectInfoRequested);
             _signalBus.Subscribe<WorldInfoPanelClosedSignal>(OnWorldInfoPanelClosed);
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.Subscribe<EconomyTickCompletedSignal>(OnEconomyTickCompleted);
@@ -35,6 +36,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         {
             _signalBus.TryUnsubscribe<BuildingInfoPanelRequestedSignal>(OnBuildingInfoRequested);
             _signalBus.TryUnsubscribe<UnitInfoPanelRequestedSignal>(OnUnitInfoRequested);
+            _signalBus.TryUnsubscribe<MapObjectInfoPanelRequestedSignal>(OnMapObjectInfoRequested);
             _signalBus.TryUnsubscribe<WorldInfoPanelClosedSignal>(OnWorldInfoPanelClosed);
             _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.TryUnsubscribe<EconomyTickCompletedSignal>(OnEconomyTickCompleted);
@@ -55,6 +57,14 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 return;
 
             UpdateSelection(WorldInfoSelectionKind.Unit, signal.UnitId, signal.Position, emitWhenPositionChanged: false);
+        }
+
+        private void OnMapObjectInfoRequested(MapObjectInfoPanelRequestedSignal signal)
+        {
+            if (string.IsNullOrWhiteSpace(signal.MapObjectId))
+                return;
+
+            UpdateSelection(WorldInfoSelectionKind.MapObject, signal.MapObjectId, signal.Position, emitWhenPositionChanged: true);
         }
 
         private void OnWorldInfoPanelClosed(WorldInfoPanelClosedSignal _)
@@ -122,6 +132,14 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                     _signalBus.Fire(new UnitInfoPanelRequestedSignal
                     {
                         UnitId = _selectedObjectId,
+                        Position = _selectedPosition,
+                    });
+                    break;
+
+                case WorldInfoSelectionKind.MapObject when !string.IsNullOrWhiteSpace(_selectedObjectId):
+                    _signalBus.Fire(new MapObjectInfoPanelRequestedSignal
+                    {
+                        MapObjectId = _selectedObjectId,
                         Position = _selectedPosition,
                     });
                     break;
