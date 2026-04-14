@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
@@ -47,26 +48,35 @@ namespace Kruty1918.Moyva.Construction.Editor
             if (!isValid && !string.IsNullOrEmpty(currentValue))
                 GUI.color = Color.red;
 
-            var displayOptions = BuildDisplayOptions(ids, currentValue, isValid, out int selectedIndex);
-
             EditorGUI.BeginProperty(position, label, property);
 
-            int newIndex = EditorGUI.Popup(popupRect, label.text, selectedIndex, displayOptions);
-            if (newIndex != selectedIndex)
+            var serializedObject = property.serializedObject;
+            string propertyPath = property.propertyPath;
+            string buttonText = BuildCurrentValueLabel(currentValue, isValid);
+            Rect buttonRect = EditorGUI.PrefixLabel(popupRect, label);
+
+            if (EditorGUI.DropdownButton(buttonRect, new GUIContent(buttonText), FocusType.Keyboard))
             {
-                string selected = displayOptions[newIndex];
-                if (selected == "(none)")
-                    property.stringValue = string.Empty;
-                else if (!selected.StartsWith("\u26a0 "))
-                    property.stringValue = selected;
+                PopupWindow.Show(buttonRect, new BuildingPickerPopup(
+                    currentValue,
+                    selectedId =>
+                    {
+                        serializedObject.Update();
+                        var currentProperty = serializedObject.FindProperty(propertyPath);
+                        if (currentProperty == null || currentProperty.propertyType != SerializedPropertyType.String)
+                            return;
+
+                        currentProperty.stringValue = selectedId;
+                        serializedObject.ApplyModifiedProperties();
+                    }));
             }
 
             GUI.color = prevColor;
 
             // Sprite preview
             Sprite sprite = GetSpriteForBuildingId(currentValue);
-            if (sprite != null)
-                GUI.DrawTexture(spriteRect, sprite.texture, ScaleMode.ScaleToFit);
+            if (sprite != null && sprite.texture != null)
+                DrawSprite(spriteRect, sprite);
 
             // Error box + create button (ID not found)
             if (!isValid && !string.IsNullOrEmpty(currentValue))
@@ -109,23 +119,182 @@ namespace Kruty1918.Moyva.Construction.Editor
             EditorGUI.EndProperty();
         }
 
-        private static string[] BuildDisplayOptions(string[] ids, string currentValue, bool isValid, out int selectedIndex)
+        private static string BuildCurrentValueLabel(string currentValue, bool isValid)
         {
-            var list = new List<string> { "(none)" };
-            list.AddRange(ids);
+            if (string.IsNullOrEmpty(currentValue))
+                return "(none)";
 
-            if (!isValid && !string.IsNullOrEmpty(currentValue))
+            if (!isValid)
+                return $"⚠ {currentValue}";
+
+            return BuildBuildingLabel(currentValue);
+        }
+
+        private static string BuildBuildingLabel(string buildingId)
+        {
+            string displayName = GetDisplayNameForBuildingId(buildingId);
+            return $"{buildingId} — {displayName}";
+        }
+
+        private static void DrawSprite(Rect rect, Sprite sprite)
+        {
+            Rect texRect = sprite.textureRect;
+            Rect texCoords = new Rect(
+                texRect.x / sprite.texture.width,
+                texRect.y / sprite.texture.height,
+                texRect.width / sprite.texture.width,
+                texRect.height / sprite.texture.height
+            );
+
+            GUI.DrawTextureWithTexCoords(rect, sprite.texture, texCoords);
+        }
+
+        private sealed class BuildingPickerPopup : PopupWindowContent
+        {
+            private const float PopupWidth = 700f;
+            private const float PopupHeight = 420f;
+            private const float HeaderHeight = 20f;
+            private const float SectionHeaderHeight = 18f;
+            private const float RowHeight = 22f;
+            private const float Padding = 6f;
+            private const float ColumnGap = 8f;
+            private const float SectionGap = 8f;
+            private const float IconSize = 16f;
+
+            private static readonly BuildingCategory[] OrderedCategories =
             {
-                list.Insert(0, $"\u26a0 {currentValue}");
-                selectedIndex = 0;
-            }
-            else
+                BuildingCategory.Military,
+                BuildingCategory.Civilian,
+                BuildingCategory.Industrial,
+                BuildingCategory.Walls,
+            };
+
+            private readonly string _currentValue;
+            private readonly Action<string> _onSelected;
+            private Vector2 _leftScroll;
+            private Vector2 _rightScroll;
+
+            public BuildingPickerPopup(string currentValue, Action<string> onSelected)
             {
-                selectedIndex = string.IsNullOrEmpty(currentValue) ? 0 : list.IndexOf(currentValue);
-                if (selectedIndex < 0) selectedIndex = 0;
+                _currentValue = currentValue;
+                _onSelected = onSelected;
             }
 
-            return list.ToArray();
+            public override Vector2 GetWindowSize() => new Vector2(PopupWidth, PopupHeight);
+
+            public override void OnGUI(Rect rect)
+            {
+                DrawNoneButton();
+
+                Rect columnsRect = new Rect(
+                    Padding,
+                    Padding + RowHeight + Padding,
+                    rect.width - Padding * 2,
+                    rect.height - (Padding * 3 + RowHeight)
+                );
+
+                float columnWidth = (columnsRect.width - ColumnGap) * 0.5f;
+                Rect leftRect = new Rect(columnsRect.x, columnsRect.y, columnWidth, columnsRect.height);
+                Rect rightRect = new Rect(columnsRect.x + columnWidth + ColumnGap, columnsRect.y, columnWidth, columnsRect.height);
+
+                DrawColumn(leftRect, 0, ref _leftScroll);
+                DrawColumn(rightRect, 1, ref _rightScroll);
+            }
+
+            private void DrawNoneButton()
+            {
+                Rect noneRect = new Rect(Padding, Padding, PopupWidth - Padding * 2, RowHeight);
+                bool isNoneSelected = string.IsNullOrEmpty(_currentValue);
+
+                if (isNoneSelected)
+                    EditorGUI.DrawRect(noneRect, new Color(0.24f, 0.36f, 0.24f, 0.7f));
+
+                if (GUI.Button(noneRect, "(none)", EditorStyles.miniButton))
+                {
+                    _onSelected?.Invoke(string.Empty);
+                    editorWindow.Close();
+                }
+            }
+
+            private void DrawColumn(Rect rect, int columnIndex, ref Vector2 scroll)
+            {
+                EditorGUI.DrawRect(rect, new Color(0f, 0f, 0f, 0.08f));
+
+                Rect headerRect = new Rect(rect.x + 2f, rect.y + 2f, rect.width - 4f, HeaderHeight);
+                EditorGUI.LabelField(headerRect, columnIndex == 0 ? "Building Classes A" : "Building Classes B", EditorStyles.boldLabel);
+
+                Rect viewRect = new Rect(rect.x + 2f, rect.y + HeaderHeight + 4f, rect.width - 4f, rect.height - HeaderHeight - 6f);
+
+                float contentHeight = 0f;
+                for (int i = columnIndex; i < OrderedCategories.Length; i += 2)
+                {
+                    string[] ids = GetBuildingIdsByCategory(OrderedCategories[i]);
+                    contentHeight += SectionHeaderHeight;
+                    contentHeight += Mathf.Max(1, ids.Length) * RowHeight;
+                    contentHeight += SectionGap;
+                }
+
+                Rect contentRect = new Rect(0f, 0f, viewRect.width - 14f, Mathf.Max(viewRect.height - 2f, contentHeight));
+
+                scroll = GUI.BeginScrollView(viewRect, scroll, contentRect);
+
+                float y = 0f;
+                for (int i = columnIndex; i < OrderedCategories.Length; i += 2)
+                {
+                    var category = OrderedCategories[i];
+                    y = DrawCategorySection(category, y, contentRect.width);
+                }
+
+                GUI.EndScrollView();
+            }
+
+            private float DrawCategorySection(BuildingCategory category, float y, float width)
+            {
+                Rect sectionHeaderRect = new Rect(0f, y, width, SectionHeaderHeight);
+                EditorGUI.LabelField(sectionHeaderRect, category.ToString(), EditorStyles.boldLabel);
+                y += SectionHeaderHeight;
+
+                string[] ids = GetBuildingIdsByCategory(category);
+                if (ids.Length == 0)
+                {
+                    Rect emptyRect = new Rect(0f, y, width, RowHeight);
+                    EditorGUI.LabelField(emptyRect, "(порожньо)");
+                    y += RowHeight + SectionGap;
+                    return y;
+                }
+
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    Rect rowRect = new Rect(0f, y, width, RowHeight - 1f);
+                    DrawBuildingRow(rowRect, ids[i]);
+                    y += RowHeight;
+                }
+
+                y += SectionGap;
+                return y;
+            }
+
+            private void DrawBuildingRow(Rect rowRect, string id)
+            {
+                bool isSelected = string.Equals(_currentValue, id, StringComparison.Ordinal);
+                if (isSelected)
+                    EditorGUI.DrawRect(rowRect, new Color(0.24f, 0.36f, 0.24f, 0.7f));
+
+                if (GUI.Button(rowRect, GUIContent.none, GUIStyle.none))
+                {
+                    _onSelected?.Invoke(id);
+                    editorWindow.Close();
+                    return;
+                }
+
+                Rect iconRect = new Rect(rowRect.x + 4f, rowRect.y + (RowHeight - IconSize) * 0.5f, IconSize, IconSize);
+                Sprite sprite = GetSpriteForBuildingId(id);
+                if (sprite != null && sprite.texture != null)
+                    DrawSprite(iconRect, sprite);
+
+                Rect labelRect = new Rect(iconRect.xMax + 6f, rowRect.y + 2f, rowRect.width - iconRect.width - 10f, RowHeight - 2f);
+                GUI.Label(labelRect, BuildBuildingLabel(id), EditorStyles.label);
+            }
         }
 
         // ── Static cache (1-second TTL) ──
@@ -133,6 +302,8 @@ namespace Kruty1918.Moyva.Construction.Editor
         private static string[] _cachedIds = System.Array.Empty<string>();
         private static readonly Dictionary<string, Sprite> _spriteCache = new();
         private static readonly Dictionary<string, bool> _prefabCache = new();
+        private static readonly Dictionary<string, string> _displayNameCache = new();
+        private static readonly Dictionary<string, BuildingCategory> _categoryCache = new();
         private static double _cacheTime;
         private const double CacheTTL = 1.0;
 
@@ -145,6 +316,8 @@ namespace Kruty1918.Moyva.Construction.Editor
             _cacheTime = now;
             _spriteCache.Clear();
             _prefabCache.Clear();
+            _displayNameCache.Clear();
+            _categoryCache.Clear();
 
             if (_cachedRegistry?.Buildings == null)
             {
@@ -158,7 +331,14 @@ namespace Kruty1918.Moyva.Construction.Editor
                 if (string.IsNullOrEmpty(def.Id)) continue;
                 ids.Add(def.Id);
                 _prefabCache[def.Id] = def.Prefab != null;
-                if (def.Prefab != null)
+                _displayNameCache[def.Id] = string.IsNullOrWhiteSpace(def.DisplayName) ? def.Id : def.DisplayName;
+                _categoryCache[def.Id] = def.Category;
+
+                if (def.Icon != null)
+                {
+                    _spriteCache[def.Id] = def.Icon;
+                }
+                else if (def.Prefab != null)
                 {
                     var sr = def.Prefab.GetComponentInChildren<SpriteRenderer>(true);
                     if (sr != null && sr.sprite != null)
@@ -191,11 +371,35 @@ namespace Kruty1918.Moyva.Construction.Editor
             return _cachedIds;
         }
 
+        private static string[] GetBuildingIdsByCategory(BuildingCategory category)
+        {
+            EnsureCache();
+            if (_cachedIds.Length == 0)
+                return System.Array.Empty<string>();
+
+            var filtered = new List<string>();
+            for (int i = 0; i < _cachedIds.Length; i++)
+            {
+                string id = _cachedIds[i];
+                if (_categoryCache.TryGetValue(id, out var cachedCategory) && cachedCategory == category)
+                    filtered.Add(id);
+            }
+
+            return filtered.ToArray();
+        }
+
         private static Sprite GetSpriteForBuildingId(string id)
         {
             if (string.IsNullOrEmpty(id)) return null;
             EnsureCache();
             return _spriteCache.TryGetValue(id, out var s) ? s : null;
+        }
+
+        private static string GetDisplayNameForBuildingId(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return id;
+            EnsureCache();
+            return _displayNameCache.TryGetValue(id, out var name) ? name : id;
         }
 
         private static void CreateBuildingEntry(string id)

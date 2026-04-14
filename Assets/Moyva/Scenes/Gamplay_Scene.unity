@@ -5968,19 +5968,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f99540aed5077c59a895fdaa0858276b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Bootstrap::Kruty1918.Moyva.Bootstrap.BootstrapInstaller
-  _startingPositionSettings:
+  _config: {fileID: 0}
+  _legacyGameSettings:
+    DefaultBuildingId: 
+    InitialResources:
+    - ResourceId: food
+      Amount: 50
+    - ResourceId: wood
+      Amount: 30
+  _legacyStartingPositionSettings:
     minMarginFromBorder: 5
     relativeMarginFactor: 0.1667
-    innerRadius: 2
+    innerRadius: 8
     keepCoreFullyVisible: 1
-    coreVisibleRadiusOverride: 1
-    outerRadius: 12
-    outerPadding: 2
-    noiseScale: 60
+    coreVisibleRadiusOverride: 0
+    outerRadius: 15
+    outerPadding: 4
+    noiseScale: 0.35
     noiseOffsetRange: 200
     outerStartReveal: 0.65
-    outerEndReveal: 0.04
-    outerNoiseMinFactor: 0.5
+    outerEndReveal: 0.08
+    outerNoiseMinFactor: 0.35
     outerNoiseFactor: 0.85
     cameraZ: -10
 --- !u!4 &2100979364
@@ -6024,6 +6032,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.Runtime.ConstructionInstaller
   buildingRegistry: {fileID: 11400000, guid: 10b50407045da99758fd720b41437642, type: 2}
   _minSpacingBetweenBuildings: 0
+  _settlementLabelSettings:
+    _townHall:
+      _fontSize: 40
+      _color: {r: 1, g: 1, b: 1, a: 1}
+      _offset: {x: 0, y: 1.5, z: -0.1}
+      _anchor: 7
+      _alignment: 1
+      _sortingLayerName: Default
+      _sortingOrder: 100
+    _castle:
+      _fontSize: 40
+      _color: {r: 1, g: 1, b: 1, a: 1}
+      _offset: {x: 0, y: 1.5, z: -0.1}
+      _anchor: 7
+      _alignment: 1
+      _sortingLayerName: Default
+      _sortingOrder: 100
 --- !u!114 &2100979367
 MonoBehaviour:
   m_ObjectHideFlags: 0
