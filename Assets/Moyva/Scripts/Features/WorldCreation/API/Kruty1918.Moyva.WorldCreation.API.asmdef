@@ -1,12 +1,8 @@
 {
-    "name": "Kruty1918.Moyva.WorldCreation.UI",
-    "rootNamespace": "Kruty1918.Moyva.WorldCreation.UI",
+    "name": "Kruty1918.Moyva.WorldCreation.API",
+    "rootNamespace": "Kruty1918.Moyva.WorldCreation.API",
     "references": [
-        "Zenject",
-        "Kruty1918.Moyva.WorldCreation",
-        "Kruty1918.Moyva.WorldCreation.API",
-        "Kruty1918.Moyva.Signals",
-        "Unity.TextMeshPro"
+        "Kruty1918.Moyva.Signals"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
