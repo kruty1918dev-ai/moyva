@@ -12,6 +12,28 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// </summary>
     internal sealed class GameCommandSyncService : IGameCommandSyncService, IDisposable
     {
+        private sealed class NetworkMessageObserver : IObserver<NetworkMessage>
+        {
+            private readonly GameCommandSyncService _owner;
+
+            public NetworkMessageObserver(GameCommandSyncService owner)
+            {
+                _owner = owner;
+            }
+
+            public void OnNext(NetworkMessage value) => _owner.OnMessageReceived(value);
+
+            public void OnError(Exception error)
+            {
+                _owner._logger.Warn($"GameCommandSyncService stream error: {error.Message}");
+            }
+
+            public void OnCompleted()
+            {
+                _owner._logger.Trace("GameCommandSyncService stream completed");
+            }
+        }
+
         private readonly INetworkProvider _network;
         private readonly IMultiplayerLogger _logger;
         private readonly Dictionary<GameCommandType, Action<string, byte[]>> _handlers = new();
@@ -22,7 +44,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _network = network;
             _logger  = logger;
 
-            _subscription = _network.Messages.Subscribe(OnMessageReceived);
+            _subscription = _network.Messages.Subscribe(new NetworkMessageObserver(this));
         }
 
         public void SendCommand(GameCommandType type, byte[] payload)
