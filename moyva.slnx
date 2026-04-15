@@ -16,6 +16,7 @@
   <Project Path="Kruty1918.Moyva.Construction.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.BotAI.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.csproj" />
@@ -28,15 +29,19 @@
   <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Signals.csproj" />
+  <Project Path="Kruty1918.Moyva.WorldCreation.UI.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Calendar.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />
+  <Project Path="Kruty1918.Moyva.WorldCreation.csproj" />
+  <Project Path="Kruty1918.Moyva.Multiplayer.UI.csproj" />
   <Project Path="Kruty1918.Moyva.Camera.csproj" />
   <Project Path="Kruty1918.Moyva.GameMode.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Faction.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
+  <Project Path="Kruty1918.Moyva.WorldCreation.API.csproj" />
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.Editor.csproj" />
