@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
+using Kruty1918.Moyva.Multiplayer.Runtime;
 using NUnit.Framework;
 
 namespace Kruty1918.Moyva.Tests.Multiplayer
