@@ -21,7 +21,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            var gameModeUiController = Object.FindObjectOfType<GameModeUIController>(true);
+            var gameModeUiController = Object.FindFirstObjectByType<GameModeUIController>(FindObjectsInactive.Include);
             if (gameModeUiController != null)
             {
                 Container.QueueForInject(gameModeUiController);

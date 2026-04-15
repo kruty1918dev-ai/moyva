@@ -3,6 +3,7 @@
     "rootNamespace": "Kruty1918.Moyva.WorldCreation",
     "references": [
         "Zenject",
+        "Kruty1918.Moyva.WorldCreation.API",
         "Kruty1918.Moyva.Signals"
     ],
     "includePlatforms": [],
