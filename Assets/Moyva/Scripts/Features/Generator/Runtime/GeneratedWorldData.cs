@@ -12,6 +12,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public string[,] ObjectMap;
         public float[,] HeightMap;
         public string[,] BuildingMap;
+        public float[,] ShoreDistanceMap;
+        public int[,] ShoreMask;
+        public int[,] NeighborMask;
 
         public GeneratedWorldData Clone()
         {
@@ -23,6 +26,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ObjectMap = MapArrayUtils.CloneStringMap(ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(HeightMap),
                 BuildingMap = MapArrayUtils.CloneStringMap(BuildingMap),
+                ShoreDistanceMap = MapArrayUtils.CloneFloatMap(ShoreDistanceMap),
+                ShoreMask = MapArrayUtils.CloneIntMap(ShoreMask),
+                NeighborMask = MapArrayUtils.CloneIntMap(NeighborMask),
             };
         }
     }

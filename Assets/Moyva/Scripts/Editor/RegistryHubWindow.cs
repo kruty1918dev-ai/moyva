@@ -54,7 +54,7 @@ namespace Kruty1918.Moyva.Editor
         private float            _newTileCost = 1f;
         private Sprite           _newTileSprite;
         private GameObject       _newTilePrefab;
-        private bool             _tileCreateOpen = true;
+        private bool             _tileCreateOpen;
 
         // MapObject
         private MapObjectRegistrySO _objReg;
@@ -62,7 +62,7 @@ namespace Kruty1918.Moyva.Editor
         private string              _newObjId = "";
         private Sprite              _newObjSprite;
         private GameObject          _newObjPrefab;
-        private bool                _objCreateOpen = true;
+        private bool                _objCreateOpen;
 
         // Unit
         private UnitRegistrySO   _unitReg;
@@ -72,7 +72,7 @@ namespace Kruty1918.Moyva.Editor
         private Vector2          _newUnitStaminaRange = new(-5f, 5f);
         private Sprite           _newUnitSprite;
         private GameObject       _newUnitPrefab;
-        private bool             _unitCreateOpen = true;
+        private bool             _unitCreateOpen;
 
         // Building
         private BuildingRegistrySO _bldReg;
@@ -82,7 +82,13 @@ namespace Kruty1918.Moyva.Editor
         private BuildingCategory   _newBldCategory;
         private Sprite             _newBldSprite;
         private GameObject         _newBldPrefab;
-        private bool               _bldCreateOpen = true;
+        private bool               _bldCreateOpen;
+
+        // Масове видалення за ключовим словом
+        private string _tileDeleteKeyword = "";
+        private string _objDeleteKeyword = "";
+        private string _unitDeleteKeyword = "";
+        private string _bldDeleteKeyword = "";
 
         // Walls
         private int _expandedWall = -1;
@@ -190,6 +196,8 @@ namespace Kruty1918.Moyva.Editor
             _searchFilter = EditorGUILayout.TextField(_searchFilter, EditorStyles.toolbarSearchField, GUILayout.Width(200));
             if (GUILayout.Button(new GUIContent("  _ \u2192 -", "Замінити '_' на '-' в усіх ID та їх посиланнях"), EditorStyles.toolbarButton))
                 FixUnderscoreIds();
+            if (GUILayout.Button(new GUIContent("  \u2717 Invalid", "Видалити всі записи з невалідними ID"), EditorStyles.toolbarButton))
+                RemoveInvalidEntries();
             if (GUILayout.Button(EditorGUIUtility.IconContent("d_Refresh"), EditorStyles.toolbarButton, GUILayout.Width(28)))
             {
                 _tileReg = null; _objReg = null; _unitReg = null; _bldReg = null;
@@ -398,6 +406,7 @@ namespace Kruty1918.Moyva.Editor
 
             HandleRemove(defs, removeIdx, "_id", _tileSO);
             DrawDeleteAllButton(defs, "_id", _tileSO, "тайлів");
+            DrawDeleteByKeywordSection(defs, "_id", _tileSO, "тайлів", ref _tileDeleteKeyword);
             RegistryEditorStyles.DrawSeparator();
 
             // ── Створення ──
@@ -509,6 +518,7 @@ namespace Kruty1918.Moyva.Editor
 
             HandleRemove(defs, removeIdx, "_id", _objSO);
             DrawDeleteAllButton(defs, "_id", _objSO, "об'єктів");
+            DrawDeleteByKeywordSection(defs, "_id", _objSO, "об'єктів", ref _objDeleteKeyword);
             RegistryEditorStyles.DrawSeparator();
 
             _objCreateOpen = EditorGUILayout.Foldout(_objCreateOpen, "\u2795 Створити новий об'єкт", true, EditorStyles.foldoutHeader);
@@ -622,6 +632,7 @@ namespace Kruty1918.Moyva.Editor
 
             HandleRemove(configs, removeIdx, "TypeId", _unitSO);
             DrawDeleteAllButton(configs, "TypeId", _unitSO, "юнітів");
+            DrawDeleteByKeywordSection(configs, "TypeId", _unitSO, "юнітів", ref _unitDeleteKeyword);
             RegistryEditorStyles.DrawSeparator();
 
             _unitCreateOpen = EditorGUILayout.Foldout(_unitCreateOpen, "\u2795 Створити нового юніта", true, EditorStyles.foldoutHeader);
@@ -756,6 +767,7 @@ namespace Kruty1918.Moyva.Editor
 
             HandleRemove(blds, removeIdx, "Id", _bldSO);
             DrawDeleteAllButton(blds, "Id", _bldSO, "будівель");
+            DrawDeleteByKeywordSection(blds, "Id", _bldSO, "будівель", ref _bldDeleteKeyword, "DisplayName");
             RegistryEditorStyles.DrawSeparator();
 
             _bldCreateOpen = EditorGUILayout.Foldout(_bldCreateOpen, "\u2795 Створити нову будівлю", true, EditorStyles.foldoutHeader);
@@ -1153,6 +1165,87 @@ namespace Kruty1918.Moyva.Editor
             GUI.color = prev;
         }
 
+        private static void DrawDeleteByKeywordSection(SerializedProperty arr, string idProp, SerializedObject so,
+            string itemsLabel, ref string keyword, string extraProp = null)
+        {
+            if (arr == null || arr.arraySize == 0) return;
+
+            EditorGUILayout.BeginHorizontal();
+            keyword = EditorGUILayout.TextField("Ключове слово", keyword);
+
+            Color prev = GUI.color;
+            GUI.color = RegistryEditorStyles.WarningCol;
+            if (GUILayout.Button("Видалити за словом", GUILayout.Width(150), GUILayout.Height(20)))
+            {
+                string term = keyword?.Trim() ?? "";
+                if (string.IsNullOrEmpty(term))
+                {
+                    EditorUtility.DisplayDialog("Registry Hub", "Введіть ключове слово для видалення.", "OK");
+                }
+                else
+                {
+                    int matched = CountEntriesByKeyword(arr, idProp, term, extraProp);
+                    if (matched == 0)
+                    {
+                        EditorUtility.DisplayDialog("Registry Hub",
+                            $"За ключовим словом '{term}' нічого не знайдено.", "OK");
+                    }
+                    else if (EditorUtility.DisplayDialog("Видалити за ключовим словом",
+                                 $"Знайдено {matched} {itemsLabel}, що містять '{term}'.\nВидалити їх?",
+                                 "Видалити", "Скасувати"))
+                    {
+                        int removed = RemoveEntriesByKeyword(arr, idProp, term, extraProp);
+                        if (removed > 0)
+                        {
+                            so.ApplyModifiedProperties();
+                            AssetDatabase.SaveAssets();
+                            keyword = "";
+                        }
+                    }
+                }
+            }
+            GUI.color = prev;
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private static int CountEntriesByKeyword(SerializedProperty arr, string idProp, string keyword, string extraProp = null)
+        {
+            int count = 0;
+            for (int i = 0; i < arr.arraySize; i++)
+            {
+                if (EntryMatchesKeyword(arr.GetArrayElementAtIndex(i), idProp, keyword, extraProp))
+                    count++;
+            }
+            return count;
+        }
+
+        private static int RemoveEntriesByKeyword(SerializedProperty arr, string idProp, string keyword, string extraProp = null)
+        {
+            int removed = 0;
+            for (int i = arr.arraySize - 1; i >= 0; i--)
+            {
+                if (!EntryMatchesKeyword(arr.GetArrayElementAtIndex(i), idProp, keyword, extraProp)) continue;
+                arr.DeleteArrayElementAtIndex(i);
+                removed++;
+            }
+            return removed;
+        }
+
+        private static bool EntryMatchesKeyword(SerializedProperty entry, string idProp, string keyword, string extraProp = null)
+        {
+            string id = entry.FindPropertyRelative(idProp)?.stringValue;
+            if (!string.IsNullOrEmpty(id)
+                && id.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            if (string.IsNullOrEmpty(extraProp))
+                return false;
+
+            string extra = entry.FindPropertyRelative(extraProp)?.stringValue;
+            return !string.IsNullOrEmpty(extra)
+                   && extra.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         private static void DrawAssetPath(UnityEngine.Object asset)
         {
             string path = AssetDatabase.GetAssetPath(asset);
@@ -1536,6 +1629,71 @@ namespace Kruty1918.Moyva.Editor
         // ══════════════════════════════════════════════════════
         //  ЗАМІНА _ → - В УСІХ ID
         // ══════════════════════════════════════════════════════
+
+        private void RemoveInvalidEntries()
+        {
+            int total = CountInvalidEntries();
+            if (total == 0)
+            {
+                EditorUtility.DisplayDialog("Registry Hub", "Невалідних записів не знайдено.", "OK");
+                return;
+            }
+
+            if (!EditorUtility.DisplayDialog("Видалити невалідні записи",
+                    $"Знайдено {total} записів з невалідним ID (порожній або містить '_').\nВидалити їх з усіх реєстрів?",
+                    "Видалити", "Скасувати"))
+                return;
+
+            int removed = 0;
+            removed += RemoveInvalidFromArray(_tileSO, "_definitions", "_id");
+            removed += RemoveInvalidFromArray(_objSO,  "_definitions", "_id");
+            removed += RemoveInvalidFromArray(_unitSO, "Configs",      "TypeId");
+            removed += RemoveInvalidFromArray(_bldSO,  "Buildings",    "Id");
+
+            AssetDatabase.SaveAssets();
+            ShowNotification(new GUIContent($"\u2713 Видалено {removed} невалідних записів"));
+        }
+
+        private int CountInvalidEntries()
+        {
+            return CountInvalidInArray(_tileSO, "_definitions", "_id")
+                 + CountInvalidInArray(_objSO,  "_definitions", "_id")
+                 + CountInvalidInArray(_unitSO, "Configs",      "TypeId")
+                 + CountInvalidInArray(_bldSO,  "Buildings",    "Id");
+        }
+
+        private static int CountInvalidInArray(SerializedObject so, string arrayProp, string idProp)
+        {
+            if (so == null) return 0;
+            var arr = so.FindProperty(arrayProp);
+            if (arr == null) return 0;
+            int count = 0;
+            for (int i = 0; i < arr.arraySize; i++)
+            {
+                string id = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp)?.stringValue;
+                if (RegistryEditorStyles.ValidateId(id) != null) count++;
+            }
+            return count;
+        }
+
+        private static int RemoveInvalidFromArray(SerializedObject so, string arrayProp, string idProp)
+        {
+            if (so == null) return 0;
+            var arr = so.FindProperty(arrayProp);
+            if (arr == null) return 0;
+            int removed = 0;
+            for (int i = arr.arraySize - 1; i >= 0; i--)
+            {
+                string id = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp)?.stringValue;
+                if (RegistryEditorStyles.ValidateId(id) != null)
+                {
+                    arr.DeleteArrayElementAtIndex(i);
+                    removed++;
+                }
+            }
+            if (removed > 0) so.ApplyModifiedProperties();
+            return removed;
+        }
 
         private void FixUnderscoreIds()
         {

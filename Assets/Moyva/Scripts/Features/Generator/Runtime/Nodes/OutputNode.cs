@@ -14,7 +14,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             PortDefinition.Input<string[,]>("BiomeMap"),
             PortDefinition.Input<string[,]>("ObjectMap"),
             PortDefinition.Input<float[,]>("HeightMap"),
-            PortDefinition.Input<string[,]>("BuildingMap")
+            PortDefinition.Input<string[,]>("BuildingMap"),
+            PortDefinition.Input<float[,]>("ShoreDistanceMap"),
+            PortDefinition.Input<int[,]>("ShoreMask"),
+            PortDefinition.Input<int[,]>("NeighborMask")
         };
 
         public override PortDefinition[] Outputs => Array.Empty<PortDefinition>();
@@ -31,8 +34,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             var objectMap = inputs[1] as string[,] ?? new string[w, h];
             var heightMap = inputs[2] as float[,] ?? new float[w, h];
             var buildingMap = inputs[3] as string[,] ?? new string[w, h];
+            var shoreDistanceMap = inputs[4] as float[,];
+            var shoreMask = inputs[5] as int[,];
+            var neighborMask = inputs[6] as int[,];
 
-            return NodeOutput.Success(biomeMap, objectMap, heightMap, buildingMap);
+            return NodeOutput.Success(biomeMap, objectMap, heightMap, buildingMap,
+                shoreDistanceMap, shoreMask, neighborMask);
         }
     }
 }

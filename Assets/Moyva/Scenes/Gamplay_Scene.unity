@@ -1957,6 +1957,9 @@ MonoBehaviour:
   _mapObjectRegistry: {fileID: 11400000, guid: 1aa3411356147585fb2c8534e5b707b8, type: 2}
   _useGraphGenerator: 1
   _graphAsset: {fileID: 11400000, guid: e728959edc09a5fea829221821058070, type: 2}
+  _waterMaterial: {fileID: 2100000, guid: c928dfb99fea47d8ebc166d9a49387fb, type: 2}
+  _tileBlendMaterial: {fileID: 2100000, guid: e46a4d71e771abfaeb75c6cd8a61231d, type: 2}
+  _tileTextureAtlas: {fileID: 11400000, guid: 0810248a040141055a494fd83f652eb6, type: 2}
 --- !u!1 &820743902
 GameObject:
   m_ObjectHideFlags: 0

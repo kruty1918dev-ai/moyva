@@ -3,6 +3,7 @@ using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.GraphSystem.Runtime;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.Visuals;
 using UnityEngine;
 using Zenject;
 
@@ -21,6 +22,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
         [Header("Graph-Based Generator")]
         [SerializeField] private bool _useGraphGenerator;
         [SerializeField] private GraphAsset _graphAsset;
+
+        [Header("Tile Rendering (Optional)")]
+        [SerializeField] private Material _waterMaterial;
+        [SerializeField] private Material _tileBlendMaterial;
+        [SerializeField] private TileTextureAtlasSO _tileTextureAtlas;
+        [SerializeField] private string[] _waterTileIds = { "water" };
 
         public override void InstallBindings()
         {
@@ -55,6 +62,30 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Container.Bind<IMapFeatureGenerator>().To<WaterPostProcessor>().AsTransient();
             Container.Bind<IMapObjectRegistryService>().To<MapObjectRegistryService>().AsSingle();
             Container.Bind<IMapLayerRegistry>().To<MapLayerRegistry>().AsSingle();
+
+            if (_waterMaterial != null)
+                Container.BindInstance(_waterMaterial).WithId("WaterMaterial");
+
+            if (_tileBlendMaterial != null)
+                Container.BindInstance(_tileBlendMaterial).WithId("TileBlendMaterial");
+
+            if (_tileTextureAtlas != null)
+                Container.BindInstance(_tileTextureAtlas).AsSingle();
+
+            if (_waterTileIds != null && _waterTileIds.Length > 0)
+                Container.BindInstance(_waterTileIds).WithId("WaterTileIds");
+
+            if (_waterMaterial == null)
+                Debug.LogWarning("[GeneratorInstaller] Water material is not assigned. Water shader fallback will be used.");
+
+            if (_tileBlendMaterial == null)
+                Debug.LogWarning("[GeneratorInstaller] Tile blend material is not assigned. Terrain blend shader fallback will be used.");
+
+            if (_tileTextureAtlas == null)
+                Debug.LogWarning("[GeneratorInstaller] Tile texture atlas is not assigned. Terrain blend shader fallback will be used.");
+
+            if (_waterTileIds == null || _waterTileIds.Length == 0)
+                Debug.LogWarning("[GeneratorInstaller] Water tile IDs are not configured. Falling back to 'water'.");
 
             Container.BindInterfacesAndSelfTo<MapVisualInstantiator>().AsSingle();
             Container.Bind<ISaveModule>().To<GeneratedWorldSaveModule>().AsSingle();

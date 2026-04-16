@@ -14,24 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.OutputNode
   _nodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
   _editorPosition: {x: 2744, y: 108}
---- !u!114 &-8338458835910421542
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1eba1b01631655af8c4070c80af81e9, type: 3}
-  m_Name: ObjectAutoTileNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectAutoTileNode
-  _nodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
-  _editorPosition: {x: 2668, y: 403}
-  _rules: {fileID: 11400000, guid: 383706c016f2e3cd9953b8a5fd2bdfd7, type: 2}
-  _excludeObjectPrefixes:
-  - river-outlet
-  _separator: 45
 --- !u!114 &-7084966060804210501
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -46,7 +28,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.MergeObjectMapNode
   _nodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
   _editorPosition: {x: 1838, y: 350}
---- !u!114 &-6657117628486784735
+--- !u!114 &-4904442200050902648
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -55,30 +37,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ffa4aef3b4be320b4bff096ea4b7c5b8, type: 3}
-  m_Name: RiverToWaterOutletNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.RiverToWaterOutletNode
-  _nodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
-  _editorPosition: {x: 2548, y: 400}
-  _riverBaseObjectId: river
-  _matchBaseRiverType: 1
-  _objectSeparator: 45
-  _waterLikeTileIds: []
-  _matchBaseWaterType: 1
-  _maxSearchDistance: 96
-  _allowDiagonalPath: 0
-  _overwriteObjectsOnPath: 0
-  _pathRiverObjectId: river
-  _defaultOutletObjectId: river-outlet
-  _directionalOutletRules:
-  - Direction: 0
-    OutletObjectId: river-outlet-n
-  - Direction: 1
-    OutletObjectId: river-outlet-e
-  - Direction: 2
-    OutletObjectId: river-outlet-s
-  - Direction: 3
-    OutletObjectId: river-outlet-w
+  m_Script: {fileID: 11500000, guid: 716532e6e0ddd8878b41150fe7b18e18, type: 3}
+  m_Name: WaterVisualNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.WaterVisualNode
+  _nodeId: 5f7b9d31-66c5-401a-973b-cb3da45bb77e
+  _editorPosition: {x: 2290, y: 420}
+  _waterTileIds:
+  - water
+  _maxDepthTiles: 4
 --- !u!114 &-4353351513909256736
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -126,6 +92,20 @@ MonoBehaviour:
   _comparison: 2
   _threshold: 0.3
   _upperThreshold: 0.7
+--- !u!114 &-2486460709054767066
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28fb4cbaf88760a2681456b0b9f95ab7, type: 3}
+  m_Name: TransitionDataNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TransitionDataNode
+  _nodeId: e82af13d-a322-4b37-b66c-2356e99b467b
+  _editorPosition: {x: 2300, y: -40}
 --- !u!114 &-2093333369695154509
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -145,47 +125,12 @@ MonoBehaviour:
     OnlyIfNearWater: 0
     ExclusionMode: 1
     ForbiddenObjectIds: []
-  - TargetTileId: grass
-    OnlyIfNearWater: 1
-    ExclusionMode: 2
-    ForbiddenObjectIds:
-    - river
-    - river-outlet
-    - river-outlet-n
-    - river-outlet-e
-    - river-outlet-s
-    - river-outlet-w
   _matchBaseTileType: 1
   _matchBaseObjectType: 1
   _tileSeparator: 45
   _waterLikeTileIds: []
   _waterNeighborRadius: 1
   _includeDiagonalWaterNeighbors: 1
---- !u!114 &-1777979022269502339
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ffa4aef3b4be320b4bff096ea4b7c5b8, type: 3}
-  m_Name: RiverToWaterOutletNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.RiverToWaterOutletNode
-  _nodeId: 17725292-307c-4a4a-96b0-3249ee01a899
-  _editorPosition: {x: 1586, y: 401}
-  _riverBaseObjectId: river
-  _matchBaseRiverType: 1
-  _objectSeparator: 45
-  _waterLikeTileIds: []
-  _matchBaseWaterType: 1
-  _maxSearchDistance: 96
-  _allowDiagonalPath: 0
-  _overwriteObjectsOnPath: 1
-  _pathRiverObjectId: river
-  _defaultOutletObjectId: 
-  _directionalOutletRules: []
 --- !u!114 &-637788932830468543
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -232,19 +177,16 @@ MonoBehaviour:
   - {fileID: -8602289470833621846}
   - {fileID: 6196857447019223289}
   - {fileID: 9153540141703597084}
-  - {fileID: 1588712245531615232}
   - {fileID: 2150266364944049067}
   - {fileID: 5711163357783835068}
   - {fileID: -3083299416676339975}
   - {fileID: -637788932830468543}
   - {fileID: -7084966060804210501}
   - {fileID: 990565413746460129}
-  - {fileID: 9041462927370201531}
   - {fileID: -2093333369695154509}
-  - {fileID: -1777979022269502339}
-  - {fileID: -6657117628486784735}
-  - {fileID: -8338458835910421542}
   - {fileID: -3964688717336489773}
+  - {fileID: -2486460709054767066}
+  - {fileID: -4904442200050902648}
   _connections:
   - _sourceNodeId: 9e153028-994c-43bd-ab66-200e639bc754
     _sourcePortIndex: 0
@@ -291,14 +233,6 @@ MonoBehaviour:
     _targetNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
     _targetPortIndex: 2
   - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
-    _sourcePortIndex: 0
-    _targetNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
-    _targetPortIndex: 0
-  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-    _sourcePortIndex: 0
-    _targetNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
-    _targetPortIndex: 1
-  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
     _sourcePortIndex: 1
     _targetNodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
     _targetPortIndex: 0
@@ -310,54 +244,42 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
     _targetPortIndex: 2
-  - _sourceNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
-    _sourcePortIndex: 0
-    _targetNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-    _targetPortIndex: 0
-  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-    _sourcePortIndex: 0
-    _targetNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-    _targetPortIndex: 1
-  - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-    _sourcePortIndex: 0
-    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
-    _targetPortIndex: 0
   - _sourceNodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
     _sourcePortIndex: 0
     _targetNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
     _targetPortIndex: 1
-  - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-    _sourcePortIndex: 0
-    _targetNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
-    _targetPortIndex: 0
-  - _sourceNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
-    _sourcePortIndex: 0
-    _targetNodeId: 17725292-307c-4a4a-96b0-3249ee01a899
-    _targetPortIndex: 0
-  - _sourceNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
-    _sourcePortIndex: 1
-    _targetNodeId: 17725292-307c-4a4a-96b0-3249ee01a899
-    _targetPortIndex: 1
-  - _sourceNodeId: 17725292-307c-4a4a-96b0-3249ee01a899
-    _sourcePortIndex: 0
-    _targetNodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
-    _targetPortIndex: 1
   - _sourceNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
-    _sourcePortIndex: 0
-    _targetNodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
-    _targetPortIndex: 1
-  - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-    _sourcePortIndex: 0
-    _targetNodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
-    _targetPortIndex: 0
-  - _sourceNodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
-    _sourcePortIndex: 0
-    _targetNodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
-    _targetPortIndex: 0
-  - _sourceNodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
     _sourcePortIndex: 0
     _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
     _targetPortIndex: 1
+  - _sourceNodeId: e82af13d-a322-4b37-b66c-2356e99b467b
+    _sourcePortIndex: 0
+    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
+    _targetPortIndex: 6
+  - _sourceNodeId: 5f7b9d31-66c5-401a-973b-cb3da45bb77e
+    _sourcePortIndex: 0
+    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
+    _targetPortIndex: 4
+  - _sourceNodeId: 5f7b9d31-66c5-401a-973b-cb3da45bb77e
+    _sourcePortIndex: 1
+    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
+    _targetPortIndex: 5
+  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _sourcePortIndex: 0
+    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
+    _targetPortIndex: 0
+  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _sourcePortIndex: 0
+    _targetNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
+    _targetPortIndex: 0
+  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _sourcePortIndex: 0
+    _targetNodeId: e82af13d-a322-4b37-b66c-2356e99b467b
+    _targetPortIndex: 0
+  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _sourcePortIndex: 0
+    _targetNodeId: 5f7b9d31-66c5-401a-973b-cb3da45bb77e
+    _targetPortIndex: 0
   _version: 1
 --- !u!114 &990565413746460129
 MonoBehaviour:
@@ -374,28 +296,8 @@ MonoBehaviour:
   _nodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
   _editorPosition: {x: 2062, y: 363}
   _rules: {fileID: 11400000, guid: 383706c016f2e3cd9953b8a5fd2bdfd7, type: 2}
-  _excludeObjectPrefixes:
-  - river-outlet
+  _excludeObjectPrefixes: []
   _separator: 45
---- !u!114 &1588712245531615232
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1fd2e06fead249bab92989df5c8e5e08, type: 3}
-  m_Name: RiverNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.RiverNode
-  _nodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
-  _editorPosition: {x: 1500, y: 250}
-  _baseObjectId: river
-  _riversCount: 3
-  _usedCellPenalty: 120
-  _nearRiverPenalty: 35
-  _nearRiverRadius: 1
 --- !u!114 &2150266364944049067
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -459,21 +361,6 @@ MonoBehaviour:
   _editorPosition: {x: -150, y: 151}
   _radius: 2
   _iterations: 4
---- !u!114 &9041462927370201531
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e2523f701ac02af79efd1c8c58149aa, type: 3}
-  m_Name: ConstraintPolishNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ConstraintPolishNode
-  _nodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-  _editorPosition: {x: 1897, y: 57}
-  _wfcSettings: {fileID: 11400000, guid: fea7d1c6ea24608b2b4e75e082c67e84, type: 2}
 --- !u!114 &9153540141703597084
 MonoBehaviour:
   m_ObjectHideFlags: 1
