@@ -21,13 +21,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
+            // Усі входи необов'язкові: якщо BiomeMap не підключено — повертаємо
+            // порожні мапи, щоб граф міг працювати лише через side-effects (шари тощо).
             var biomeMap = inputs[0] as string[,];
-            if (biomeMap == null)
-                return NodeOutput.Error("BiomeMap input is required.");
 
-            int w = biomeMap.GetLength(0);
-            int h = biomeMap.GetLength(1);
+            int w = biomeMap?.GetLength(0) ?? context.MapSize.x;
+            int h = biomeMap?.GetLength(1) ?? context.MapSize.y;
 
+            biomeMap ??= new string[w, h];
             var objectMap = inputs[1] as string[,] ?? new string[w, h];
             var heightMap = inputs[2] as float[,] ?? new float[w, h];
             var buildingMap = inputs[3] as string[,] ?? new string[w, h];

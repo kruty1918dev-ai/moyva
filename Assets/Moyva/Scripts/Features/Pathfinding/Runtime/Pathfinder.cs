@@ -63,6 +63,7 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
                 foreach (var neighbor in GetNeighbors(current))
                 {
                     if (!_gridService.TryGetTileData(neighbor, out var tileTypeId)) continue;
+                    if (string.IsNullOrEmpty(tileTypeId)) continue;
 
                     // 1. ПЕРЕВІРКА ОКУПАЦІЇ: зайняті тайли не можна використовувати в маршруті.
                     // Стартовий тайл ігноруємо, бо на ньому вже стоїть поточний юніт.

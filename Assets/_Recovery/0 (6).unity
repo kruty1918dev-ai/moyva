@@ -1957,6 +1957,39 @@ MonoBehaviour:
   _mapObjectRegistry: {fileID: 11400000, guid: 1aa3411356147585fb2c8534e5b707b8, type: 2}
   _useGraphGenerator: 1
   _graphAsset: {fileID: 11400000, guid: e728959edc09a5fea829221821058070, type: 2}
+  _waterLayerMaterialSettings:
+    _useSceneEdge: 1
+    _useDepthEdge: 1
+    _useShoreDepth: 1
+    _useContourAlpha: 0
+    _contourColor: {r: 0.78, g: 0.92, b: 1, a: 1}
+    _contourWidth: 1
+    _contourThreshold: 0.01
+    _contourSharpness: 24
+    _contourOpacity: 1
+    _lineThreshold: 0.04
+    _lineThickness: 0.85
+    _lineSoftness: 0.01
+    _colorSteps: 16
+    _contourSteps: 3
+    _useVoronoiOverlay: 1
+    _voronoiColor: {r: 0.78, g: 0.9, b: 1, a: 1}
+    _voronoiScale: 18
+    _voronoiLineWidth: 0.08
+    _voronoiSoftness: 0.04
+    _voronoiOpacity: 0.22
+    _voronoiJitter: 1
+    _voronoiSpeed: 0.35
+    _voronoiFlowDir: {x: 1, y: 0.35}
+    _usePixelNoise: 0
+    _usePixelScroll: 0
+    _usePixelHighlights: 0
+    _usePixelRipple: 0
+    _useDitherContour: 0
+    _useEdgeAnimation: 0
+    _useEdgeUvDistort: 0
+    _useSpecularEdge: 0
+    _useDepthThickness: 0
 --- !u!1 &820743902
 GameObject:
   m_ObjectHideFlags: 0
