@@ -11,9 +11,17 @@ namespace Kruty1918.Moyva.GraphSystem.API
         [SerializeField] private List<Connection> _connections = new();
         [SerializeField] private int _version = 1;
 
+        [SerializeField] private GraphSharedSettings _sharedSettings = new();
+
         public IReadOnlyList<NodeBase> Nodes => _nodes;
         public IReadOnlyList<Connection> Connections => _connections;
         public int Version => _version;
+
+        /// <summary>
+        /// Спільні налаштування графа (розмір мапи тощо).
+        /// Змінюються прямо в інспекторі GraphAsset — без потреби в окремому ноді.
+        /// </summary>
+        public GraphSharedSettings SharedSettings => _sharedSettings ??= new GraphSharedSettings();
 
         public NodeBase GetNodeById(string nodeId)
         {

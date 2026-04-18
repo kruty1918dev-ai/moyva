@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
             if (String.IsNullOrEmpty(tileTypeId))
             {
                 Debug.LogError("TileSettingsService: GetTileWeight called with null or empty tileTypeId");
-                return 0f; // або можна повернути 1f, залежно від логіки гри    
+                return float.PositiveInfinity;
             }
 
             if (_cache.TryGetValue(tileTypeId, out var props))
@@ -30,8 +30,8 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
             Debug.LogError($"TileSettingsService: Tile type ID '{tileTypeId}' not found in registry!");
 
-            // Повертаємо дефолтні значення, якщо ID не знайдено, щоб гра не впала
-            return 0f; // або можна повернути 1f, залежно від логіки гри
+            // Невідомий тайл не має бути прохідним для руху/pathfinding.
+            return float.PositiveInfinity;
         }
     }
 }

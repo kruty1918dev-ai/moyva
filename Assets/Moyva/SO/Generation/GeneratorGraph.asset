@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: OutputNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.OutputNode
   _nodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
-  _editorPosition: {x: 2744, y: 108}
+  _editorPosition: {x: 3113, y: 135}
 --- !u!114 &-8338458835910421542
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -27,7 +27,7 @@ MonoBehaviour:
   m_Name: ObjectAutoTileNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectAutoTileNode
   _nodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
-  _editorPosition: {x: 2668, y: 403}
+  _editorPosition: {x: 2773, y: 347}
   _rules: {fileID: 11400000, guid: 383706c016f2e3cd9953b8a5fd2bdfd7, type: 2}
   _excludeObjectPrefixes:
   - river-outlet
@@ -230,21 +230,18 @@ MonoBehaviour:
   - {fileID: -4353351513909256736}
   - {fileID: 7416864558252163659}
   - {fileID: -8602289470833621846}
-  - {fileID: 6196857447019223289}
   - {fileID: 9153540141703597084}
-  - {fileID: 1588712245531615232}
   - {fileID: 2150266364944049067}
   - {fileID: 5711163357783835068}
   - {fileID: -3083299416676339975}
   - {fileID: -637788932830468543}
-  - {fileID: -7084966060804210501}
   - {fileID: 990565413746460129}
   - {fileID: 9041462927370201531}
   - {fileID: -2093333369695154509}
-  - {fileID: -1777979022269502339}
-  - {fileID: -6657117628486784735}
   - {fileID: -8338458835910421542}
   - {fileID: -3964688717336489773}
+  - {fileID: 3449561521929793199}
+  - {fileID: 8073196480034848754}
   _connections:
   - _sourceNodeId: 9e153028-994c-43bd-ab66-200e639bc754
     _sourcePortIndex: 0
@@ -256,16 +253,8 @@ MonoBehaviour:
     _targetPortIndex: 0
   - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
     _sourcePortIndex: 0
-    _targetNodeId: c6167af5-c3f0-44c0-bfc5-8694dc3b63ae
-    _targetPortIndex: 0
-  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-    _sourcePortIndex: 0
     _targetNodeId: 142239be-0529-4bbe-b745-44e82de7a5c7
     _targetPortIndex: 0
-  - _sourceNodeId: c6167af5-c3f0-44c0-bfc5-8694dc3b63ae
-    _sourcePortIndex: 0
-    _targetNodeId: 142239be-0529-4bbe-b745-44e82de7a5c7
-    _targetPortIndex: 1
   - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
     _sourcePortIndex: 0
     _targetNodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
@@ -290,38 +279,14 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
     _targetPortIndex: 2
-  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
-    _sourcePortIndex: 0
-    _targetNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
-    _targetPortIndex: 0
-  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-    _sourcePortIndex: 0
-    _targetNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
-    _targetPortIndex: 1
-  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
-    _sourcePortIndex: 1
-    _targetNodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
-    _targetPortIndex: 0
-  - _sourceNodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
-    _sourcePortIndex: 0
-    _targetNodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
-    _targetPortIndex: 0
   - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
     _sourcePortIndex: 0
     _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
     _targetPortIndex: 2
-  - _sourceNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
-    _sourcePortIndex: 0
-    _targetNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-    _targetPortIndex: 0
   - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
     _sourcePortIndex: 0
     _targetNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
     _targetPortIndex: 1
-  - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-    _sourcePortIndex: 0
-    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
-    _targetPortIndex: 0
   - _sourceNodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
     _sourcePortIndex: 0
     _targetNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
@@ -330,35 +295,42 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
     _targetPortIndex: 0
-  - _sourceNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
+  - _sourceNodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
     _sourcePortIndex: 0
-    _targetNodeId: 17725292-307c-4a4a-96b0-3249ee01a899
-    _targetPortIndex: 0
-  - _sourceNodeId: 291baee0-fd8d-4c81-8c15-f5f876c58a66
-    _sourcePortIndex: 1
-    _targetNodeId: 17725292-307c-4a4a-96b0-3249ee01a899
-    _targetPortIndex: 1
-  - _sourceNodeId: 17725292-307c-4a4a-96b0-3249ee01a899
-    _sourcePortIndex: 0
-    _targetNodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
-    _targetPortIndex: 1
-  - _sourceNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
-    _sourcePortIndex: 0
-    _targetNodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
+    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
     _targetPortIndex: 1
   - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
     _sourcePortIndex: 0
-    _targetNodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
+    _targetNodeId: e4d3e321-ff97-4a18-895b-b5f2a2d70d0c
     _targetPortIndex: 0
-  - _sourceNodeId: b26e7f81-74dc-45be-85b0-5890e0fc594d
+  - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
+    _sourcePortIndex: 0
+    _targetNodeId: b3057065-7169-46ba-8089-8572f7e79dd5
+    _targetPortIndex: 0
+  - _sourceNodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
+    _sourcePortIndex: 1
+    _targetNodeId: b3057065-7169-46ba-8089-8572f7e79dd5
+    _targetPortIndex: 1
+  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _sourcePortIndex: 0
+    _targetNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
+    _targetPortIndex: 0
+  - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _sourcePortIndex: 1
+    _targetNodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
+    _targetPortIndex: 0
+  - _sourceNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
     _sourcePortIndex: 0
     _targetNodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
     _targetPortIndex: 0
   - _sourceNodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
     _sourcePortIndex: 0
-    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
-    _targetPortIndex: 1
+    _targetNodeId: b3057065-7169-46ba-8089-8572f7e79dd5
+    _targetPortIndex: 2
   _version: 1
+  _sharedSettings:
+    _mapWidth: 0
+    _mapHeight: 0
 --- !u!114 &990565413746460129
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -413,6 +385,31 @@ MonoBehaviour:
   _erosionRate: 0.02
   _iterations: 20
   _talusAngle: 0.03
+--- !u!114 &3449561521929793199
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82d7c3125e9d5ba50a75de26a51caf6a, type: 3}
+  m_Name: SingleTileLayerNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SingleTileLayerNode
+  _nodeId: e4d3e321-ff97-4a18-895b-b5f2a2d70d0c
+  _editorPosition: {x: 2543, y: -228}
+  _tileId: water
+  _tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
+  _resolutionScale: 0.2
+  _filterMode: 0
+  _useMipMaps: 1
+  _textureFormat: 4
+  _layerShader: {fileID: 0}
+  _layerShaderPath: 
+  _sortingLayerName: Default
+  _sortingOrder: 0
+  _holeObjectPrefixes: []
 --- !u!114 &5711163357783835068
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -426,23 +423,8 @@ MonoBehaviour:
   m_Name: BiomeResolverNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.BiomeResolverNode
   _nodeId: 142239be-0529-4bbe-b745-44e82de7a5c7
-  _editorPosition: {x: 601, y: 50}
+  _editorPosition: {x: 502, y: 30}
   _biomesSettings: {fileID: 11400000, guid: 61667c86198a4161b96bd05257abedf0, type: 2}
---- !u!114 &6196857447019223289
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f9b103a4741edc237b84b1c8805282c3, type: 3}
-  m_Name: HeightToTileNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.HeightToTileNode
-  _nodeId: c6167af5-c3f0-44c0-bfc5-8694dc3b63ae
-  _editorPosition: {x: 350, y: 0}
-  _heightMapSettings: {fileID: 11400000, guid: d9ae4edf61a2041109744a6c8a7ab13e, type: 2}
 --- !u!114 &7416864558252163659
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -459,6 +441,32 @@ MonoBehaviour:
   _editorPosition: {x: -150, y: 151}
   _radius: 2
   _iterations: 4
+--- !u!114 &8073196480034848754
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82d7c3125e9d5ba50a75de26a51caf6a, type: 3}
+  m_Name: SingleTileLayerNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SingleTileLayerNode
+  _nodeId: b3057065-7169-46ba-8089-8572f7e79dd5
+  _editorPosition: {x: 2523, y: -63}
+  _tileId: grass
+  _tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
+  _resolutionScale: 0.2
+  _filterMode: 0
+  _useMipMaps: 1
+  _textureFormat: 4
+  _layerShader: {fileID: 0}
+  _layerShaderPath: 
+  _sortingLayerName: Default
+  _sortingOrder: 1
+  _holeObjectPrefixes:
+  - river
 --- !u!114 &9041462927370201531
 MonoBehaviour:
   m_ObjectHideFlags: 1
