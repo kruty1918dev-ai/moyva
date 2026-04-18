@@ -26,17 +26,32 @@ namespace Kruty1918.Moyva.Construction.UI
 
         public override void InstallBindings()
         {
+            Debug.Log("[ConstructionUIInstaller] InstallBindings РОЗПОЧАТО...");
+            
             if (uiController == null)
             {
-                Debug.LogWarning("[ConstructionUIInstaller] Поле 'uiController' не призначено. " +
+                Debug.LogError("[ConstructionUIInstaller] КРИТИЧНА ПОМИЛКА: Поле 'uiController' НЕ ПРИСВОЄНО. " +
                                  "Перетягни ConstructionUIController у поле цього інсталера.");
                 return;
             }
+            Debug.Log($"[ConstructionUIInstaller] ✓ uiController знайдено: {uiController.name}");
 
-            Container.BindInterfacesAndSelfTo<ConstructionUIController>()
-                .FromComponentOn(uiController.gameObject)
-                .AsSingle()
-                .NonLazy(); // Ініціалізується одразу, ОСТАННІМ
+            // Реєстрація ConstructionUIController
+            try
+            {
+                Container.BindInterfacesAndSelfTo<ConstructionUIController>()
+                    .FromComponentOn(uiController.gameObject)
+                    .AsSingle()
+                    .NonLazy(); // Ініціалізується одразу, ОСТАННІМ
+                Debug.Log("[ConstructionUIInstaller] ✓ ConstructionUIController зареєстрований у контейнері");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[ConstructionUIInstaller] ПОМИЛКА реєстрації ConstructionUIController: {ex.Message}");
+                return;
+            }
+
+            Debug.Log("[ConstructionUIInstaller] ✅ InstallBindings УСПІШНО ЗАВЕРШЕНО");
         }
     }
 }

@@ -65,6 +65,8 @@ namespace Kruty1918.Moyva.Editor
                 EditorGUILayout.PropertyField(el.FindPropertyRelative("_id"), new GUIContent("ID"));
                 ValidateInlineId(el.FindPropertyRelative("_id")?.stringValue);
                 EditorGUILayout.PropertyField(el.FindPropertyRelative("_visualPrefab"), new GUIContent("Visual Prefab"));
+                if (GUILayout.Button("Відкрити в редакторі економіки", GUILayout.Width(240f)))
+                    OpenEconomyMapObjectsTab(id);
                 EditorGUI.indentLevel--;
 
                 EditorGUILayout.EndVertical();
@@ -190,6 +192,30 @@ namespace Kruty1918.Moyva.Editor
             DestroyImmediate(go);
             AssetDatabase.Refresh();
             return pfb;
+        }
+
+        private static void OpenEconomyMapObjectsTab(string mapObjectId)
+        {
+            var windowType = System.Type.GetType(
+                "Kruty1918.Moyva.Economy.Editor.EconomyDesignerWindow, Kruty1918.Moyva.Economy.Editor");
+
+            if (windowType == null)
+            {
+                EditorApplication.ExecuteMenuItem("Moyva/Tools/Редактор Економіки");
+                return;
+            }
+
+            var method = windowType.GetMethod(
+                "OpenMapObjectsTab",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+            if (method != null)
+            {
+                method.Invoke(null, new object[] { mapObjectId });
+                return;
+            }
+
+            EditorApplication.ExecuteMenuItem("Moyva/Tools/Редактор Економіки");
         }
     }
 }

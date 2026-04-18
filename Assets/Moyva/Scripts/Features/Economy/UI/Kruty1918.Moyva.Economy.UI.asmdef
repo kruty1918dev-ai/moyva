@@ -1,0 +1,20 @@
+{
+    "name": "Kruty1918.Moyva.Economy.UI",
+    "rootNamespace": "Kruty1918.Moyva.Economy.UI",
+    "references": [
+        "Zenject",
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.Economy",
+        "Kruty1918.Moyva.Construction",
+        "Unity.TextMeshPro"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

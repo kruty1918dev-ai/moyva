@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
+using Kruty1918.Moyva.Editor.Shared;
 using UnityEditor;
 using UnityEngine;
 
@@ -81,6 +82,10 @@ namespace Kruty1918.Moyva.Editor
                 EditorGUILayout.PropertyField(el.FindPropertyRelative("DisplayName"));
                 EditorGUILayout.PropertyField(el.FindPropertyRelative("Category"));
                 EditorGUILayout.PropertyField(el.FindPropertyRelative("Prefab"));
+                EditorGUILayout.LabelField("Вартість будівництва", EditorStyles.boldLabel);
+                BuildingConstructionCostEditorShared.DrawCostList(
+                    el.FindPropertyRelative("ConstructionCost"),
+                    "Додати ресурс для будівництва");
                 EditorGUI.indentLevel--;
 
                 EditorGUILayout.EndVertical();

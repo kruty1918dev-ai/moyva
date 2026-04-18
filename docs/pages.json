@@ -584,9 +584,54 @@
           "tag": "guide"
         },
         {
+          "path": "systems/economy/economy-designer-advanced-building-setup.md",
+          "title": "Economy Designer — налаштування будівель",
+          "tag": "guide"
+        },
+        {
           "path": "systems/economy/economy-complete-guide.md",
           "title": "Economy — повний гайд",
           "tag": "guide"
+        },
+        {
+          "path": "systems/economy/economy-handbook.md",
+          "title": "Economy Handbook",
+          "tag": "guide"
+        },
+        {
+          "path": "systems/economy/economy-api-files-reference.md",
+          "title": "Economy API Files Reference",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/economy/economy-api-tab.md",
+          "title": "Economy API — вкладка",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/economy/economy-interface-catalog.md",
+          "title": "Economy — каталог інтерфейсів",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/economy/economy-top-100-qa.md",
+          "title": "Top 100 Питань По Economy",
+          "tag": "guide"
+        },
+        {
+          "path": "systems/economy/tutorial-add-resource.md",
+          "title": "Economy — додати новий ресурс",
+          "tag": "tutorial"
+        },
+        {
+          "path": "systems/economy/economy-runtime-implementation.md",
+          "title": "Economy Runtime — Implementation",
+          "tag": "reference"
+        },
+        {
+          "path": "systems/economy/economy-runtime-logic-plan.md",
+          "title": "Economy Runtime — Logic Plan",
+          "tag": "reference"
         },
         {
           "path": "systems/economy/tutorials.md",
@@ -603,6 +648,11 @@
         {
           "path": "systems/multiplayer/README.md",
           "title": "Multiplayer — огляд системи"
+        },
+        {
+          "path": "systems/multiplayer/multiplayer-top-100-qa.md",
+          "title": "Top 100 Питань По Multiplayer",
+          "tag": "guide"
         },
         {
           "path": "systems/multiplayer/architecture.md",

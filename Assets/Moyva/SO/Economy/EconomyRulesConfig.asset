@@ -1,0 +1,143 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd6f742a644ae571fa7eaa6585779f6d, type: 3}
+  m_Name: EconomyRulesConfig
+  m_EditorClassIdentifier: Kruty1918.Moyva.Economy::Kruty1918.Moyva.Economy.API.EconomyRulesConfigSO
+  _settlement:
+    _maxSettlements: 3
+    _minTownHallDistance: 25
+    _allowSettlementWithoutPopulation: 0
+    _deactivateSettlementWhenPopulationIsZero: 1
+  _population:
+    _newResidentsArrivalIntervalTurns: 10
+    _requireHousingForFamilyCreation: 1
+    _enableWarMortality: 1
+    _enableDiseaseMortality: 1
+  _workforce:
+    _foodChainPriority: 400
+    _heatAndClothingPriority: 300
+    _materialsPriority: 200
+    _otherPriority: 100
+  _production:
+    _stopProductionWhenInputMissing: 1
+    _enableTileDependencyModifiers: 1
+    _enableFoodDecay: 1
+    _foodDecayPerTurn: 0.02
+  _storage:
+    _unlimitedCapacity: 1
+    _singleBarnPerSettlement: 1
+    _singleWarehousePerSettlement: 1
+    _sharedSettlementResourcePool: 1
+  _caravan:
+    _manualControlOnly: 1
+    _maxCaravansPerSettlement: 1
+    _offRoadRangeMultiplier: 0.7
+    _roadRangeMultiplier: 1.2
+    _enableInstantCombatInterceptionFallback: 1
+  _market:
+    _stockExponent: 0.35
+    _volumeExponent: 0.2
+    _minPriceMultiplier: 0.5
+    _maxPriceMultiplier: 2.5
+    _targetStock: 200
+    _referenceTradeVolume: 50
+    _resourceBasePrices:
+    - _resourceId: Wood
+      _basePrice: 5
+    - _resourceId: Stone
+      _basePrice: 6
+    - _resourceId: Grain
+      _basePrice: 5
+    - _resourceId: Meat
+      _basePrice: 8
+    - _resourceId: Berries
+      _basePrice: 6
+    - _resourceId: Water
+      _basePrice: 3
+    - _resourceId: Coal
+      _basePrice: 9
+    - _resourceId: Clothing
+      _basePrice: 12
+    - _resourceId: Planks
+      _basePrice: 8
+    - _resourceId: Tools
+      _basePrice: 14
+  _consumption:
+    _comfortWeights:
+      _foodWeight: 0.35
+      _heatWeight: 0.25
+      _lightWeight: 0.1
+      _clothingWeight: 0.1
+      _taxWeight: 0.1
+      _lawWeight: 0.1
+    _ageConsumption:
+    - _label: Child
+      _minAge: 0
+      _maxAge: 15
+      _foodPerTurn: 0.6
+      _waterPerTurn: 0.7
+      _firewoodPerTurn: 0.4
+      _clothingPerTurn: 0.2
+    - _label: Adult
+      _minAge: 16
+      _maxAge: 59
+      _foodPerTurn: 1
+      _waterPerTurn: 1
+      _firewoodPerTurn: 0.7
+      _clothingPerTurn: 0.3
+    - _label: Elder
+      _minAge: 60
+      _maxAge: 200
+      _foodPerTurn: 0.8
+      _waterPerTurn: 0.9
+      _firewoodPerTurn: 0.8
+      _clothingPerTurn: 0.35
+    _deficitPenalties:
+      _foodOrWaterHpDelta: -2
+      _foodOrWaterComfortDelta: -4
+      _firewoodHpDelta: -1
+      _firewoodComfortDelta: -3
+      _clothingComfortDelta: -2
+  _mortality:
+    _ageTiers:
+    - _minAge: 0
+      _maxAge: 44
+      _baseDeathChance: 0
+    - _minAge: 45
+      _maxAge: 54
+      _baseDeathChance: 0.0005
+    - _minAge: 55
+      _maxAge: 64
+      _baseDeathChance: 0.0015
+    - _minAge: 65
+      _maxAge: 74
+      _baseDeathChance: 0.004
+    - _minAge: 75
+      _maxAge: 200
+      _baseDeathChance: 0.01
+    _hungerWeight: 0.015
+    _coldWeight: 0.01
+    _diseaseWeight: 0.012
+    _warWeight: 0.02
+    _hungerCap: 0.15
+    _coldCap: 0.1
+    _diseaseCap: 0.12
+    _warCap: 0.2
+    _collapseDeathChance: 1
+  _building:
+    _enableMaintenance: 0
+    _allowBuildingPause: 1
+    _buildingDamageStopsProduction: 0
+  _aiExtensibility:
+    _enableAutonomousAiEconomy: 0
+    _enableAiTradeWithPlayer: 0
+    _reserveHooksForCaravanEscort: 1

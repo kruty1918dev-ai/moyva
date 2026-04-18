@@ -279,7 +279,10 @@ public class HostMigrationServiceTests
 
 ---
 
-## Що ще тестувати (TODO)
+## Подальше покриття тестами
+
+> **Статус**: більшість пунктів нижче покрито у `MultiplayerExtendedTests.cs` (80 тестів).
+> Перевірити, що наступні сценарії також покриті:
 
 - `BinaryConfigStore.WriteConfig` / `ReadConfig` — round-trip тест
 - `OfflineNetworkProvider` — підписка на `Messages`, loopback

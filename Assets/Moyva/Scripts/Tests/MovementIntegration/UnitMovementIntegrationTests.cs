@@ -87,7 +87,8 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
                 _gridService,
                 _tileSettingsService,
                 _unitClassConfig,
-                _objectsMapService);
+                _objectsMapService,
+                null);
             _unitServiceInstance = _unitService;
 
             _pathfinder = CreateInternal<IPathfinder>(

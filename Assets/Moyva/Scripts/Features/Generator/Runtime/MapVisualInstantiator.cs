@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IMapDataGenerator _mapDataGenerator;
         private readonly TileRegistrySO _tileRegistry;
         private readonly IMapObjectRegistryService _objectRegistry;
+        private readonly IMapObjectVisualRegistryService _mapObjectVisualRegistryService;
         private readonly IUnitClassConfig _unitClassConfig;
         private readonly IUnitFactory _unitFactory;
         private readonly IBuildingRegistry _buildingRegistry;
@@ -39,6 +40,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public MapVisualInstantiator(
             TileRegistrySO tileRegistry,
             IMapObjectRegistryService objectRegistry,
+            IMapObjectVisualRegistryService mapObjectVisualRegistryService,
             [InjectOptional] IUnitClassConfig unitClassConfig,
             [InjectOptional] IUnitFactory unitFactory,
             [InjectOptional] IBuildingRegistry buildingRegistry,
@@ -52,6 +54,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             _tileRegistry = tileRegistry;
             _objectRegistry = objectRegistry;
+            _mapObjectVisualRegistryService = mapObjectVisualRegistryService;
             _unitClassConfig = unitClassConfig;
             _unitFactory = unitFactory;
             _buildingRegistry = buildingRegistry;
@@ -128,6 +131,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private void BuildWorldFromData(GeneratedWorldData worldData)
         {
             EnsureRoots();
+            _mapObjectVisualRegistryService?.Clear();
             ClearRoot(_tilesRoot);
             ClearRoot(_objectsRoot);
             ClearRoot(_buildingsRoot);
@@ -364,7 +368,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
-            Debug.LogError($"[MapVisualInstantiator] Object layer ID '{layerEntityId}' не знайдено ні в MapObjectRegistry, ні в UnitRegistry.");
+            // Fallback: object layer може містити tile ID (наприклад, river), який
+            // має перезаписати базовий біом у GridService.
+            if (_definitionsCache.ContainsKey(layerEntityId))
+            {
+                CreateTileView(position, layerEntityId, _objectsRoot, 0);
+                return;
+            }
+
+            Debug.LogWarning($"[MapVisualInstantiator] Object layer ID '{layerEntityId}' не знайдено ні в MapObjectRegistry, ні в UnitRegistry.");
         }
 
         private void CreateObjectView(Vector2Int position, string objectId, Transform root, int sortingOrder)
@@ -399,6 +411,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             ApplySortingOrder(instance, ObjectLayerSortingOrder);
+            _mapObjectVisualRegistryService?.Register(objectId, position, instance);
         }
 
         private void CreateBuildingView(Vector2Int position, string buildingId)

@@ -1,11 +1,14 @@
-name: Deploy Documentation
+name: Build Documentation
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - '**'
     paths:
       - 'docs/**'
   workflow_dispatch:
+  delete:
 
 permissions:
   contents: read
@@ -16,16 +19,13 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 concurrency:
-  group: pages
+  group: docs-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    if: "!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'"
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    if: "github.event_name != 'delete' && !contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -94,13 +94,76 @@ jobs:
           PYEOF
 
       - name: Setup Pages
+        if: github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v4
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: './docs'
 
+      - name: Compute preview URL
+        if: github.ref != 'refs/heads/main'
+        id: preview_url
+        run: |
+          SAFE_BRANCH=$(echo "${GITHUB_REF_NAME}" | tr '[:upper:]' '[:lower:]' | tr '/[:space:]' '--' | tr -cd '[:alnum:]-')
+          echo "domain=preview-${SAFE_BRANCH}-moyva.surge.sh" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy preview to Surge
+        if: github.ref != 'refs/heads/main'
+        env:
+          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        run: |
+          npx --yes surge ./docs "${{ steps.preview_url.outputs.domain }}" --token "$SURGE_TOKEN"
+
+      - name: Publish preview summary
+        if: github.ref != 'refs/heads/main'
+        run: |
+          {
+            echo "## 📄 Documentation Preview"
+            echo ""
+            echo "Гілка: \`${GITHUB_REF_NAME}\`"
+            echo ""
+            echo "🔗 **Live preview:** https://${{ steps.preview_url.outputs.domain }}"
+            echo ""
+            echo "> Сайт існує лише для цієї гілки і буде видалений разом з нею."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  cleanup-preview:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'delete' && github.event.ref_type == 'branch' && github.event.ref != 'main'
+    steps:
+      - name: Compute preview URL
+        id: preview_url
+        run: |
+          SAFE_BRANCH=$(echo "${{ github.event.ref }}" | tr '[:upper:]' '[:lower:]' | tr '/[:space:]' '--' | tr -cd '[:alnum:]-')
+          echo "domain=preview-${SAFE_BRANCH}-moyva.surge.sh" >> "$GITHUB_OUTPUT"
+
+      - name: Teardown Surge preview
+        env:
+          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        run: |
+          npx --yes surge teardown "${{ steps.preview_url.outputs.domain }}" --token "$SURGE_TOKEN"
+
+      - name: Publish teardown summary
+        run: |
+          {
+            echo "## 🗑️ Preview Removed"
+            echo ""
+            echo "Гілку \`${{ github.event.ref }}\` видалено — превʼю сайт також прибрано."
+            echo ""
+            echo "~~https://${{ steps.preview_url.outputs.domain }}~~"
+          } >> "$GITHUB_STEP_SUMMARY"

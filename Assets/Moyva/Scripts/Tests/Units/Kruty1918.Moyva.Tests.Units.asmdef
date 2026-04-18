@@ -1,0 +1,29 @@
+{
+    "name": "Kruty1918.Moyva.Tests.Units",
+    "rootNamespace": "Kruty1918.Moyva.Tests.Units",
+    "references": [
+        "Zenject",
+        "Zenject-TestFramework",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.Faction",
+        "Kruty1918.Moyva.ObjectsMap",
+        "Kruty1918.Moyva.Pathfinding",
+        "Kruty1918.Moyva.Grid",
+        "Kruty1918.Moyva.GameMode"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "Zenject-usage.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

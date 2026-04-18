@@ -2,7 +2,12 @@
     "name": "Kruty1918.Moyva.Economy.Editor",
     "rootNamespace": "Kruty1918.Moyva.Economy.Editor",
     "references": [
-        "Kruty1918.Moyva.Economy"
+        "Kruty1918.Moyva.Economy",
+        "Kruty1918.Moyva.EditorShared",
+        "Kruty1918.Moyva.Construction",
+        "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.Grid",
+        "Kruty1918.Moyva.Generator"
     ],
     "includePlatforms": [
         "Editor"

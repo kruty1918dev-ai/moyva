@@ -56,6 +56,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 			Container.Bind<IMapFeatureGenerator>().To<RiverFeatureGenerator>().AsTransient();
 			Container.Bind<IMapFeatureGenerator>().To<WaterPostProcessor>().AsTransient();
 			Container.Bind<IMapObjectRegistryService>().To<MapObjectRegistryService>().AsSingle();
+			Container.Bind<IMapObjectVisualRegistryService>().To<MapObjectVisualRegistryService>().AsSingle();
 			Container.Bind<IMapLayerRegistry>().To<MapLayerRegistry>().AsSingle();
 
 			Container.BindInterfacesAndSelfTo<MapVisualInstantiator>().AsSingle();

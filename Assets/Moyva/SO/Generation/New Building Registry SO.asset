@@ -15,104 +15,66 @@ MonoBehaviour:
   Buildings:
   - Id: castle-01
     DisplayName: Castle
-    Category: 0
+    Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
+    Modules:
+    - rid: 1139584718011891780
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 1
+    TownHallProximityRadiusOverride: 0
   - Id: bridge-wood-01
     DisplayName: Wood Bridge
-    Category: 0
+    Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 8030073889366943068, guid: f9fff611f2465687b966cf0e0cfdda74, type: 3}
+    Modules:
+    - rid: 1139584718011891781
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 1
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
   - Id: windmill-01
     DisplayName: Windmill
     Category: 2
     Icon: {fileID: 0}
     Prefab: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 1
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
   - Id: house-01
     DisplayName: House
     Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 1
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
   - Id: stone-wall
     DisplayName: "\u0421\u0442\u0456\u043D\u0430"
     Category: 3
     Icon: {fileID: -1448105316, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
     Prefab: {fileID: 8756741331363231770, guid: 190f77ff4fd19557ebd89ef3e3e06832, type: 3}
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 1
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
   - Id: stone-gate
     DisplayName: "\u0412\u043E\u0440\u043E\u0442\u0430"
     Category: 3
     Icon: {fileID: 1129816292, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
     Prefab: {fileID: 4054757616884961693, guid: 2fc84416ec42ca98796010998d7561ef, type: 3}
-  - Id: stone-wall_horizontal
-    DisplayName: stone-wall_horizontal
-    Category: 3
-    Icon: {fileID: -1448105316, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 8756741331363231770, guid: 190f77ff4fd19557ebd89ef3e3e06832, type: 3}
-  - Id: stone-wall_vertical
-    DisplayName: stone-wall_vertical
-    Category: 3
-    Icon: {fileID: -1351515445, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 7852923717619784971, guid: bb393500529ac8d698da53394ba51158, type: 3}
-  - Id: stone-wall_corner_ne
-    DisplayName: stone-wall_corner_ne
-    Category: 3
-    Icon: {fileID: 985711805, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 2798815301503560846, guid: 9221769dcedc85a49bc9e5f189344ee2, type: 3}
-  - Id: stone-wall_corner_nw
-    DisplayName: stone-wall_corner_nw
-    Category: 3
-    Icon: {fileID: 1039766584, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 5369125806635365810, guid: f0bc445aa9db70e92a60000db24d9151, type: 3}
-  - Id: stone-wall_corner_se
-    DisplayName: stone-wall_corner_se
-    Category: 3
-    Icon: {fileID: 1328215145, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 4434023271672679634, guid: 50f4088b57066ed6e8d721fe24e58bec, type: 3}
-  - Id: stone-wall_corner_sw
-    DisplayName: stone-wall_corner_sw
-    Category: 3
-    Icon: {fileID: 627416457, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 8085638843886374067, guid: d26a187a3ab43037eb3b243707ad1aa5, type: 3}
-  - Id: wall_stone_collection_0_vertical_left
-    DisplayName: wall_stone_collection_0_vertical_left
-    Category: 3
-    Icon: {fileID: -1351515445, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 6427818827552956734, guid: 1eaf9eb89ee8098ffa265c54b45a338c, type: 3}
-  - Id: wall_stone_collection_0_vertical_right
-    DisplayName: wall_stone_collection_0_vertical_right
-    Category: 3
-    Icon: {fileID: -2132216590, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 8548276578524884552, guid: 06be2c1fb51e080f48ab7efc336c55f6, type: 3}
-  - Id: wall_stone_collection_0_horizontal_top
-    DisplayName: wall_stone_collection_0_horizontal_top
-    Category: 3
-    Icon: {fileID: -1448105316, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 2729050660660972765, guid: a629a010f236f5568a240da129e2afeb, type: 3}
-  - Id: wall_stone_collection_0_horizontal_bottom
-    DisplayName: wall_stone_collection_0_horizontal_bottom
-    Category: 3
-    Icon: {fileID: -1734412484, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 7438152736694371768, guid: 2d2a2802bd3630a409ab9d485d0364a8, type: 3}
-  - Id: wall_stone_collection_0_end_east
-    DisplayName: wall_stone_collection_0_end_east
-    Category: 3
-    Icon: {fileID: 1963208848, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 9215799940741238362, guid: 8310835d046692bc28606793c9bb8895, type: 3}
-  - Id: wall_stone_collection_0_end_north
-    DisplayName: wall_stone_collection_0_end_north
-    Category: 3
-    Icon: {fileID: 937292747, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 6199964147653762297, guid: f94b7a102b4d85f38b360bc1f641d551, type: 3}
-  - Id: wall_stone_collection_0_end_south
-    DisplayName: wall_stone_collection_0_end_south
-    Category: 3
-    Icon: {fileID: 937292747, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 7801827503312876729, guid: bccb568a624e7aaddb7e180286e8be29, type: 3}
-  - Id: wall_stone_collection_0_end_west
-    DisplayName: wall_stone_collection_0_end_west
-    Category: 3
-    Icon: {fileID: -413498563, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    Prefab: {fileID: 5943897703083617285, guid: 771f465b1af2eacf1a71fb95935e5591, type: 3}
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 1
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
   WallCollections:
   - CollectionId: wall-stone-collection-0
     WallBuildingId: stone-wall
@@ -167,3 +129,19 @@ MonoBehaviour:
     - CaseType: 19
       VariantBuildingIds:
       - wall_stone_collection_0_end_west
+  references:
+    version: 2
+    RefIds:
+    - rid: 1139584718011891780
+      type: {class: CastleBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
+        IsCapital: 1
+        GarrisonCapacity: 0
+        ExclusionRadius: 0
+    - rid: 1139584718011891781
+      type: {class: WorkerlessBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
