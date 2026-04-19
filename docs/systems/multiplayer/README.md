@@ -1,6 +1,6 @@
 # Multiplayer — Огляд системи
 
-← [Назад до README](../../../README.md)
+← [Назад до README](../../README.md)
 
 ---
 
@@ -66,6 +66,7 @@ Assets/Moyva/Scripts/Tests/Multiplayer/
 | Файл | Зміст |
 |---|---|
 | [architecture.md](architecture.md) | Архітектура, залежності, assembly definitions |
+| [multiplayer-top-100-qa.md](multiplayer-top-100-qa.md) | Top 100 питань по Multiplayer |
 | [domain-models.md](domain-models.md) | Усі доменні моделі та enum-и |
 | [interfaces.md](interfaces.md) | Довідник усіх інтерфейсів |
 | [session-manager.md](session-manager.md) | SessionManager — детальний опис |
@@ -77,6 +78,9 @@ Assets/Moyva/Scripts/Tests/Multiplayer/
 | [config-hub-guide.md](config-hub-guide.md) | **Multiplayer Config Hub** — повний гайд |
 | [testing.md](testing.md) | TDD, unit-тести |
 | [quickstart.md](quickstart.md) | Швидкий старт |
+| [host-migration.md](host-migration.md) | Міграція хоста |
+| [game-state.md](game-state.md) | Стан гри (мережева синхронізація) |
+| [game-sync.md](game-sync.md) | Синхронізація ігрових команд |
 
 ---
 

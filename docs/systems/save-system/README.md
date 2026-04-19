@@ -284,7 +284,7 @@ _configService.LoadConfig(modules);
 - [Signals](../signals/README.md) — усі сигнали проекту
 - [Порядок ініціалізації](../initialization-order.md) — місце SaveSystem у порядку запуску
 - [FogOfWar → Save stub](../fog-of-war/save-system-stub.md) — поточний заглушковий стан FogOfWar
-- [TDD Standard](../../../standarts/TDD.md) — архітектурні правила модульності
+- [TDD Standard](../../standarts/TDD.md) — архітектурні правила модульності
 
 ## Дерево документації SaveSystem
 

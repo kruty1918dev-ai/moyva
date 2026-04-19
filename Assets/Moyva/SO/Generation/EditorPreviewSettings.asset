@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3b2597fd6a61cccc8e25726fd0e8446, type: 3}
+  m_Name: EditorPreviewSettings
+  m_EditorClassIdentifier: Kruty1918.Moyva.GraphSystem.Editor::Kruty1918.Moyva.GraphSystem.Editor.EditorPreviewSettings
+  _previewWidth: 64
+  _previewHeight: 64
+  _noiseSettings: {fileID: 11400000, guid: 29912cd5071f7de84a54c8b3129843ad, type: 2}
+  _heightMapSettings: {fileID: 11400000, guid: c3d295a14e0ab800893230f6b49661e2, type: 2}
+  _biomesSettings: {fileID: 11400000, guid: 61667c86198a4161b96bd05257abedf0, type: 2}
+  _wfcDataSettings: {fileID: 11400000, guid: fea7d1c6ea24608b2b4e75e082c67e84, type: 2}
+  _tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
+  _mapObjectRegistry: {fileID: 11400000, guid: 1aa3411356147585fb2c8534e5b707b8, type: 2}
+  _buildingRegistry: {fileID: 11400000, guid: 10b50407045da99758fd720b41437642, type: 2}

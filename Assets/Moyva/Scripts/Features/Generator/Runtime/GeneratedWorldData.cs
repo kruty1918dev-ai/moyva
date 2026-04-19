@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     /// <summary>
@@ -13,6 +15,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public float[,] HeightMap;
         public string[,] BuildingMap;
 
+        /// <summary>
+        /// індекс шару - це його порядок у ордер лейері шарів тобто 0 - це шар який є в самомум низу чим індекс вищий то тим шар рендеру вищий іншими словами 1 буде перекравати 0 
+        /// </summary>
+        public WorldLayerData[] LayerData;
+
         public GeneratedWorldData Clone()
         {
             return new GeneratedWorldData
@@ -23,7 +30,43 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ObjectMap = MapArrayUtils.CloneStringMap(ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(HeightMap),
                 BuildingMap = MapArrayUtils.CloneStringMap(BuildingMap),
+                LayerData = LayerData != null ? (WorldLayerData[])LayerData.Clone() : null,
             };
         }
+    }
+
+    internal struct WorldLayerData
+    {
+        /// <summary>
+        /// Ідентифікатор тайлу який вертається при запиті ширу. Яким тайлом то є 
+        /// </summary>
+        public string LayerTileID;
+
+        /// <summary>
+        /// зегенрована текстура розміром в усю мапу
+        /// </summary>
+        public Texture2D TileTexture;
+
+        /// <summary>
+        /// Пряме посилання на шейдер шару (включно з Shader Graph).
+        /// Якщо задано, має пріоритет над LayerShaderName.
+        /// </summary>
+        public Shader LayerShader;
+
+        /// <summary>
+        /// Шлях шейдера для рендеру цього шару (наприклад "Sprites/Default").
+        /// Якщо порожнє, використовується дефолтний матеріал SpriteRenderer.
+        /// </summary>
+        public string LayerShaderName;
+
+        /// <summary>
+        /// Ім'я Sorting Layer для SpriteRenderer шару. Порожнє = "Default".
+        /// </summary>
+        public string SortingLayerName;
+
+        /// <summary>
+        /// Sorting Order шару у вказаному Sorting Layer.
+        /// </summary>
+        public int SortingOrder;
     }
 }

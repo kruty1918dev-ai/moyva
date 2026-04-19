@@ -443,7 +443,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return true;
 
             if (_constructionService.Value.HasPendingPlacementAt(position))
-                return true;
+            {
+                // Прохідний лише якщо pending — це стіна/ворота;
+                // не-стінна будівля (ратуша, склад тощо) блокує шлях.
+                return _constructionService.Value.TryGetPendingBuildingIdAt(position, out var pendingId)
+                    && IsWallOrGate(pendingId);
+            }
 
             if (!_objectsMapService.TryGetOccupant(position, out var occupantId))
                 return true;

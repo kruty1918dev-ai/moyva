@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f86307a9b0dba0a8494a3e1785737409, type: 3}
+  m_Name: BootstrapInstallerConfig
+  m_EditorClassIdentifier: Kruty1918.Moyva.Bootstrap::Kruty1918.Moyva.Bootstrap.Runtime.BootstrapInstallerConfigSO
+  _gameSettings:
+    DefaultBuildingId: castle-01
+    InitialResources:
+    - ResourceId: steak-food-resources
+      Amount: 50
+    - ResourceId: copper-ore-materials-resources
+      Amount: 30
+  _startingPositionSettings:
+    minMarginFromBorder: 3
+    relativeMarginFactor: 0.1667
+    innerRadius: 3
+    keepCoreFullyVisible: 1
+    coreVisibleRadiusOverride: 1
+    outerRadius: 12
+    outerPadding: 1
+    noiseScale: 60
+    noiseOffsetRange: 200
+    outerStartReveal: 0.708
+    outerEndReveal: 0.109
+    outerNoiseMinFactor: 0.42
+    outerNoiseFactor: 0.95
+    cameraZ: -10

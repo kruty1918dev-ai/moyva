@@ -184,6 +184,12 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             if (_gridService.TryGetTileData(stepPos, out var tileTypeId))
             {
+                if (string.IsNullOrEmpty(tileTypeId))
+                {
+                    Debug.LogWarning($"[UnitMovement] CanMakeStep: тайл {stepPos} має порожній tileTypeId.");
+                    return false;
+                }
+
                 float cost = _tileSettings.GetTileWeight(tileTypeId);
                 bool canStep = currentStamina >= cost;
                 Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: стаміна={currentStamina}, вартість={cost}, результат={canStep}");
@@ -197,6 +203,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private void OnStepCompleted(string unitId, Vector2Int stepPos)
         {
             if (!_gridService.TryGetTileData(stepPos, out var tileTypeId)) return;
+            if (string.IsNullOrEmpty(tileTypeId)) return;
 
             float stepCost = _tileSettings.GetTileWeight(tileTypeId);
 

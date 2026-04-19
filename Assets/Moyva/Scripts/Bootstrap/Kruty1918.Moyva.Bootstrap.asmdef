@@ -2,11 +2,14 @@
     "name": "Kruty1918.Moyva.Bootstrap",
     "rootNamespace": "Kruty1918.Moyva.Bootstrap",
     "references": [
-        "GUID:0d8beb7f090555447a6cf5ce9e54dbb4",
-        "GUID:2b899efd7b6bd1c4d87cf559c9c2d0fb",
-        "GUID:aa310a9f8edd56c1af65521810fee4f8",
-        "GUID:7e12538b6dd3dbbc18a25ab1c49a6e26",
-        "GUID:dbeb150ae01f08dd59e8e397e8ee8e2a"
+        "Zenject",
+        "Kruty1918.Moyva.FogOfWar",
+        "Kruty1918.Moyva.SaveSystem",
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.Calendar",
+        "Kruty1918.Moyva.Camera",
+        "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.Construction"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

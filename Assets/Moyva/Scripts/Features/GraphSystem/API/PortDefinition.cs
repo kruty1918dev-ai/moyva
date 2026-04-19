@@ -30,6 +30,11 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public bool IsCompatibleWith(PortDefinition other)
         {
             if (Direction == other.Direction) return false;
+
+            // object-port works as a wildcard passthrough for reroute/route-point nodes.
+            if (ValueType == typeof(object) || other.ValueType == typeof(object))
+                return true;
+
             return ValueType.IsAssignableFrom(other.ValueType)
                 || other.ValueType.IsAssignableFrom(ValueType);
         }

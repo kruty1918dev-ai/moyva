@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
+using TMPro;
 using UnityEngine;
 using Zenject;
 
@@ -44,9 +47,16 @@ namespace Kruty1918.Moyva.Construction.UI
         [Tooltip("Кореневий GameObject UI будівництва. Якщо null — використовується gameObject цього компонента.")]
         [SerializeField] private GameObject constructionUIRoot;
 
+        [Header("Налаштування превью більд панелі (опціонально)")]
+        [SerializeField] private GameObject previewInfoPanelPrefab;
+        private const string previewInfoPanelTextLabelKeyWord = "Label";
+        private const string previewInfoPanelTextInfoKeyWord = "Info";
+        private const int previewInfoMaxResourcesLines = 6;
+
         // --- Інжектується Zenject ---
         private IConstructionService _constructionService;
         private IBuildingRegistry _buildingRegistry;
+        private IEconomyInfoMediator _economyInfoMediator;
         private SignalBus _signalBus;
 
         // --- Внутрішній стан ---
@@ -55,17 +65,26 @@ namespace Kruty1918.Moyva.Construction.UI
         private Vector2Int _lastPreviewPosition;
         private bool _isConstructionModeActive;
         private readonly BuildingMenuFactory _menuFactory = new BuildingMenuFactory();
+        private GameObject _previewInfoPanelInstance;
+        private TMP_Text _previewInfoPanelLabel;
+        private TMP_Text _previewInfoPanelInfo;
+        private bool _isPreviewInfoVisible;
+        private bool _isPreviewInfoPinned;
+        private Vector2Int _pinnedPreviewPosition;
+        private string _pinnedPreviewBuildingId;
 
         /// <summary>Точка ін'єкції Zenject. Не викликати вручну.</summary>
         [Inject]
         public void Construct(
             IConstructionService constructionService,
             IBuildingRegistry buildingRegistry,
-            SignalBus signalBus)
+            SignalBus signalBus,
+            [InjectOptional] IEconomyInfoMediator economyInfoMediator = null)
         {
             _constructionService = constructionService;
             _buildingRegistry = buildingRegistry;
             _signalBus = signalBus;
+            _economyInfoMediator = economyInfoMediator;
         }
 
         /// <summary>Викликається Zenject після ін'єкції. Підписується на сигнали та заповнює UI.</summary>
@@ -81,6 +100,7 @@ namespace Kruty1918.Moyva.Construction.UI
             _signalBus.Subscribe<BuildingCancelledSignal>(OnBuildingCancelled);
             _signalBus.Subscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
             _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
+            _signalBus.Subscribe<TileClickedSignal>(OnTileClicked);
 
             if (selectionPanel != null)
                 selectionPanel.OnBuildingClicked += OnBuildingSelected;
@@ -104,6 +124,8 @@ namespace Kruty1918.Moyva.Construction.UI
 
             // Ховаємо UI будівництва при старті
             SetConstructionUIVisible(false);
+            EnsurePreviewInfoPanel();
+            HidePreviewInfoPanel();
 
             PopulateBuildingList();
             RefreshUI();
@@ -118,6 +140,7 @@ namespace Kruty1918.Moyva.Construction.UI
                 _signalBus.TryUnsubscribe<BuildingCancelledSignal>(OnBuildingCancelled);
                 _signalBus.TryUnsubscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
                 _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+                _signalBus.TryUnsubscribe<TileClickedSignal>(OnTileClicked);
             }
 
             if (selectionPanel != null)
@@ -130,6 +153,13 @@ namespace Kruty1918.Moyva.Construction.UI
                 actionBar.OnUndoClicked     -= OnUndoClicked;
                 actionBar.OnRedoClicked     -= OnRedoClicked;
                 actionBar.OnDemolishToggled -= OnDemolishToggled;
+            }
+
+            if (_previewInfoPanelInstance != null
+                && previewInfoPanelPrefab != null
+                && !previewInfoPanelPrefab.scene.IsValid())
+            {
+                Destroy(_previewInfoPanelInstance);
             }
         }
 
@@ -191,9 +221,14 @@ namespace Kruty1918.Moyva.Construction.UI
         {
             _selectedBuildingId = buildingId;
             _constructionService.SelectBuilding(buildingId);
+            _isPreviewInfoPinned = false;
+            _pinnedPreviewBuildingId = null;
 
             if (selectionPanel != null)
                 selectionPanel.SetSelectedBuilding(buildingId);
+
+            if (_isConstructionModeActive && !string.IsNullOrWhiteSpace(buildingId))
+                ShowPreviewInfoPanel(buildingId, _lastPreviewPosition, pinToPreviewObject: false);
 
             RefreshUI();
         }
@@ -204,6 +239,9 @@ namespace Kruty1918.Moyva.Construction.UI
         /// </summary>
         public void OnTileSelected(Vector2Int position)
         {
+            if (!_constructionService.IsDemolishMode && TryTogglePreviewInfoByPosition(position))
+                return;
+
             if (_constructionService.IsDemolishMode)
                 _constructionService.TryDemolishAt(position);
             else
@@ -223,6 +261,7 @@ namespace Kruty1918.Moyva.Construction.UI
         {
             _selectedBuildingId = null;
             _lastPreviewState = BuildingPreviewState.None;
+            HidePreviewInfoPanel();
             if (selectionPanel != null)
                 selectionPanel.ClearSelection();
             RefreshUI();
@@ -232,6 +271,17 @@ namespace Kruty1918.Moyva.Construction.UI
         {
             _lastPreviewState = signal.PreviewState;
             _lastPreviewPosition = signal.Position;
+
+            if (_isPreviewInfoPinned
+                && !string.IsNullOrWhiteSpace(_pinnedPreviewBuildingId)
+                && signal.PreviewState != BuildingPreviewState.None
+                && string.Equals(signal.BuildingId, _pinnedPreviewBuildingId, StringComparison.Ordinal)
+                && _constructionService.HasPendingPlacementAt(signal.Position))
+            {
+                _pinnedPreviewPosition = signal.Position;
+                ShowPreviewInfoPanel(signal.BuildingId, signal.Position, pinToPreviewObject: true);
+            }
+
             RefreshUI();
         }
 
@@ -239,7 +289,25 @@ namespace Kruty1918.Moyva.Construction.UI
         {
             _isConstructionModeActive = signal.NewMode == GameModeType.Construction;
             SetConstructionUIVisible(_isConstructionModeActive);
+
+            if (!_isConstructionModeActive)
+            {
+                HidePreviewInfoPanel();
+            }
+            else if (!string.IsNullOrWhiteSpace(_selectedBuildingId))
+            {
+                ShowPreviewInfoPanel(_selectedBuildingId, _lastPreviewPosition, pinToPreviewObject: false);
+            }
+
             RefreshUI();
+        }
+
+        private void OnTileClicked(TileClickedSignal signal)
+        {
+            if (!_isConstructionModeActive)
+                return;
+
+            TryTogglePreviewInfoByPosition(signal.Position);
         }
 
         // -----------------------------------------------------------------------
@@ -287,6 +355,186 @@ namespace Kruty1918.Moyva.Construction.UI
 
             if (statusDisplay != null)
                 statusDisplay.UpdateState(state);
+
+            if (_isConstructionModeActive && string.IsNullOrWhiteSpace(_selectedBuildingId) && !_isPreviewInfoPinned)
+                HidePreviewInfoPanel();
+        }
+
+        private void EnsurePreviewInfoPanel()
+        {
+            if (_previewInfoPanelInstance != null)
+                return;
+
+            if (previewInfoPanelPrefab == null)
+                return;
+
+            if (previewInfoPanelPrefab.scene.IsValid())
+            {
+                _previewInfoPanelInstance = previewInfoPanelPrefab;
+            }
+            else
+            {
+                _previewInfoPanelInstance = Instantiate(previewInfoPanelPrefab, transform);
+                _previewInfoPanelInstance.name = previewInfoPanelPrefab.name;
+            }
+
+            CachePreviewInfoPanelTexts();
+        }
+
+        private void CachePreviewInfoPanelTexts()
+        {
+            if (_previewInfoPanelInstance == null)
+                return;
+
+            var texts = _previewInfoPanelInstance.GetComponentsInChildren<TMP_Text>(true);
+            _previewInfoPanelLabel = FindTextByKeyword(texts, previewInfoPanelTextLabelKeyWord);
+            _previewInfoPanelInfo = FindTextByKeyword(texts, previewInfoPanelTextInfoKeyWord);
+
+            if (_previewInfoPanelLabel == null && texts.Length > 0)
+                _previewInfoPanelLabel = texts[0];
+
+            if (_previewInfoPanelInfo == null && texts.Length > 1)
+                _previewInfoPanelInfo = texts[1];
+
+            if (_previewInfoPanelInfo == null)
+                _previewInfoPanelInfo = _previewInfoPanelLabel;
+        }
+
+        private static TMP_Text FindTextByKeyword(IEnumerable<TMP_Text> texts, string keyword)
+        {
+            if (texts == null || string.IsNullOrWhiteSpace(keyword))
+                return null;
+
+            foreach (var text in texts)
+            {
+                if (text == null || string.IsNullOrWhiteSpace(text.name))
+                    continue;
+
+                if (text.name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                    return text;
+            }
+
+            return null;
+        }
+
+        private bool TryTogglePreviewInfoByPosition(Vector2Int position)
+        {
+            if (_constructionService == null)
+                return false;
+
+            if (_constructionService.HasPendingPlacementAt(position)
+                && _constructionService.TryGetPendingBuildingIdAt(position, out var previewBuildingId)
+                && !string.IsNullOrWhiteSpace(previewBuildingId))
+            {
+                bool isSamePinnedPreview = _isPreviewInfoVisible
+                                           && _isPreviewInfoPinned
+                                           && _pinnedPreviewPosition == position;
+
+                if (isSamePinnedPreview)
+                {
+                    HidePreviewInfoPanel();
+                    return true;
+                }
+
+                ShowPreviewInfoPanel(previewBuildingId, position, pinToPreviewObject: true);
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(_selectedBuildingId))
+                HidePreviewInfoPanel();
+
+            return false;
+        }
+
+        private void ShowPreviewInfoPanel(string buildingId, Vector2Int position, bool pinToPreviewObject)
+        {
+            EnsurePreviewInfoPanel();
+            if (_previewInfoPanelInstance == null)
+                return;
+
+            var definition = _buildingRegistry?.GetById(buildingId);
+            if (definition == null)
+                return;
+
+            if (_previewInfoPanelLabel != null)
+                _previewInfoPanelLabel.text = "Параметри розміщення";
+
+            if (_previewInfoPanelInfo != null)
+                _previewInfoPanelInfo.text = BuildPreviewInfoText(definition, position);
+
+            _previewInfoPanelInstance.SetActive(true);
+            _isPreviewInfoVisible = true;
+
+            _isPreviewInfoPinned = pinToPreviewObject;
+            _pinnedPreviewBuildingId = buildingId;
+            if (pinToPreviewObject)
+                _pinnedPreviewPosition = position;
+        }
+
+        private void HidePreviewInfoPanel()
+        {
+            if (_previewInfoPanelInstance != null)
+                _previewInfoPanelInstance.SetActive(false);
+
+            _isPreviewInfoVisible = false;
+            _isPreviewInfoPinned = false;
+            _pinnedPreviewBuildingId = null;
+        }
+
+        private string BuildPreviewInfoText(BuildingDefinition definition, Vector2Int position)
+        {
+            var sb = new StringBuilder();
+
+            var displayName = string.IsNullOrWhiteSpace(definition.DisplayName)
+                ? definition.Id
+                : definition.DisplayName;
+
+            sb.AppendLine($"Обрано: {displayName}");
+            if (_isPreviewInfoPinned)
+                sb.AppendLine($"Тайл: {position.x}, {position.y}");
+
+            int beforeFacts = sb.Length;
+            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, sb))
+            {
+                if (beforeFacts > 0)
+                    sb.Insert(beforeFacts, Environment.NewLine);
+            }
+
+            AppendOwnerResourcesBlock(sb);
+            return sb.ToString().TrimEnd();
+        }
+
+        private void AppendOwnerResourcesBlock(StringBuilder sb)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Ресурси власника зараз:");
+
+            if (_economyInfoMediator == null || _constructionService == null)
+            {
+                sb.AppendLine("• Дані економіки недоступні");
+                return;
+            }
+
+            var ownerId = _constructionService.GetActiveOwner();
+            var totals = _economyInfoMediator.GetOwnerResourceTotals(ownerId);
+            if (totals == null || totals.Count == 0)
+            {
+                sb.AppendLine("• Немає ресурсів");
+                return;
+            }
+
+            var topResources = totals
+                .OrderByDescending(x => x.Value)
+                .ThenBy(x => x.Key, StringComparer.Ordinal)
+                .Take(previewInfoMaxResourcesLines)
+                .ToList();
+
+            foreach (var resource in topResources)
+                sb.AppendLine($"• {resource.Key}: {resource.Value:0.#}");
+
+            int hiddenCount = totals.Count - topResources.Count;
+            if (hiddenCount > 0)
+                sb.AppendLine($"• + ще {hiddenCount}");
         }
     }
 }

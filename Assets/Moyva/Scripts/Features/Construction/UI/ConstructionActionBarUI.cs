@@ -143,9 +143,13 @@ namespace Kruty1918.Moyva.Construction.UI
             if (undoButton     != null) undoButton.interactable     = isPlacing && !isDemolish;
             if (redoButton     != null) redoButton.interactable     = isPlacing && !isDemolish;
 
-            // Кнопка знесення активна завжди в режимі будівництва (для перемикання)
+            // Кнопка знесення прихована під час активного preview-розміщення
             if (demolishButton != null)
-                demolishButton.interactable = state.IsConstructionModeActive;
+            {
+                demolishButton.gameObject.SetActive(!isPlacing);
+                if (!isPlacing)
+                    demolishButton.interactable = state.IsConstructionModeActive;
+            }
         }
     }
 }

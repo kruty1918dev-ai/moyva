@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Economy.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Economy/Database", fileName = "EconomyDatabase")]
+    [CreateAssetMenu(menuName = "Moyva/Economy/Economy Catalog", fileName = "EconomyCatalog")]
     public sealed class EconomyDatabaseSO : ScriptableObject
     {
         [SerializeField] private int _schemaVersion = 1;
@@ -13,6 +13,8 @@ namespace Kruty1918.Moyva.Economy.API
         [SerializeField] private List<EconomyProductionProfile> _productionProfiles = new List<EconomyProductionProfile>();
         [SerializeField] private List<EconomyCaravanTemplate> _caravanTemplates = new List<EconomyCaravanTemplate>();
         [SerializeField] private List<EconomyAiRuleProfile> _aiRuleProfiles = new List<EconomyAiRuleProfile>();
+        [SerializeField] private List<MapObjectEconomyEntry> _mapObjectEconomyEntries = new List<MapObjectEconomyEntry>();
+        [SerializeField] private EconomyRulesConfigSO _rulesConfig;
 
         public int SchemaVersion
         {
@@ -26,5 +28,7 @@ namespace Kruty1918.Moyva.Economy.API
         public IReadOnlyList<EconomyProductionProfile> ProductionProfiles => _productionProfiles;
         public IReadOnlyList<EconomyCaravanTemplate> CaravanTemplates => _caravanTemplates;
         public IReadOnlyList<EconomyAiRuleProfile> AiRuleProfiles => _aiRuleProfiles;
+        public IReadOnlyList<MapObjectEconomyEntry> MapObjectEconomyEntries => _mapObjectEconomyEntries;
+        public EconomyRulesConfigSO RulesConfig => _rulesConfig;
     }
 }

@@ -48,15 +48,21 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public NodeStatus Status { get; }
         public string Message { get; }
         public float DurationMs { get; }
+        public long AllocationBytes { get; }
+        public long IterationCount { get; }
 
         public NodeExecutionLog(string nodeId, string nodeTitle,
-            NodeStatus status, string message, float durationMs)
+            NodeStatus status, string message, float durationMs,
+            long allocationBytes = 0,
+            long iterationCount = 0)
         {
             NodeId = nodeId;
             NodeTitle = nodeTitle;
             Status = status;
             Message = message;
             DurationMs = durationMs;
+            AllocationBytes = allocationBytes;
+            IterationCount = iterationCount;
         }
     }
 }

@@ -6,6 +6,9 @@ namespace Kruty1918.Moyva.Camera.Runtime
 {
     internal sealed class CameraZoom : ICameraZoom, IInitializable, ILateTickable
     {
+        private const string GlobalMipBiasProperty = "_MoyvaTexLodBias";
+        private const float MaxAutoMipBias = 3.0f;
+
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
 
@@ -32,6 +35,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
             {
                 _targetZoom = _camera.fieldOfView;
             }
+
+            UpdateGlobalMipBias();
         }
 
         public void ZoomCamera(float delta)
@@ -85,6 +90,22 @@ namespace Kruty1918.Moyva.Camera.Runtime
                     _settings.smoothTime
                 );
             }
+
+            UpdateGlobalMipBias();
+        }
+
+        private void UpdateGlobalMipBias()
+        {
+            float currentZoom = _camera.orthographic ? _camera.orthographicSize : _camera.fieldOfView;
+            float minZoom = _settings.minZoom;
+            float maxZoom = _settings.maxZoom;
+
+            float normalized = maxZoom > minZoom
+                ? Mathf.InverseLerp(minZoom, maxZoom, currentZoom)
+                : 0f;
+
+            float mipBias = normalized * MaxAutoMipBias;
+            Shader.SetGlobalFloat(GlobalMipBiasProperty, mipBias);
         }
     }
 }

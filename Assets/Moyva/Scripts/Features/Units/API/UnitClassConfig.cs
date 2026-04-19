@@ -4,6 +4,12 @@ using Kruty1918.Moyva.Animations.API;
 
 namespace Kruty1918.Moyva.Units.API
 {
+    public enum UnitRole
+    {
+        Worker = 0,
+        Military = 1,
+    }
+
     [Serializable]
     public class UnitClassConfig
     {
@@ -12,6 +18,10 @@ namespace Kruty1918.Moyva.Units.API
         /// </summary>
         [Tooltip("У написані айді НЕ повино використовуватися нижнє підкреслення, окільки це є зарезервований символ для внутрішнього використання (наприклад, для позначення інстанцій юнітів). Рекомендується використовувати дефіси або camelCase. Наприклад: \"warrior-01\" або \"Warrior01\".")]
         public string TypeId; // наприклад "warrior-01"
+
+        [Tooltip("Класифікація юніта: Worker (економічні задачі) або Military (бойові задачі).")]
+        public UnitRole Role = UnitRole.Worker;
+
         public float BaseStamina;
         [Min(1)] public int VisionRange = 1;
         public GameObject Prefab;

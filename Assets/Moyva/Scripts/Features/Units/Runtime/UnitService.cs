@@ -61,7 +61,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             var config = _unitClassConfig.GetConfig(signal.UnitTypeId);
             if (config == null)
             {
-                Debug.LogError($"[UnitService] OnUnitCreated: конфігурація для typeId='{signal.UnitTypeId}' (unitId='{signal.UnitId}') НЕ ЗНАЙДЕНА! Юніт НЕ буде зареєстрований.");
+                Debug.LogWarning($"[UnitService] OnUnitCreated: конфігурація для typeId='{signal.UnitTypeId}' (unitId='{signal.UnitId}') НЕ ЗНАЙДЕНА! Юніт НЕ буде зареєстрований.");
                 return;
             }
 
@@ -162,7 +162,13 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (!_unitStamina.ContainsKey(unitId))
                 return false;
 
-            var tileCost = _tileSettings.GetTileWeight(_gridService.GetTileData(targetPosition));
+            if (!_gridService.TryGetTileData(targetPosition, out var tileTypeId))
+                return false;
+
+            if (string.IsNullOrEmpty(tileTypeId))
+                return false;
+
+            var tileCost = _tileSettings.GetTileWeight(tileTypeId);
             return _unitStamina[unitId] >= tileCost;
         }
     }

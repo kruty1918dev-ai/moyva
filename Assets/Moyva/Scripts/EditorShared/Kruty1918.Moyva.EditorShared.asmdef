@@ -1,0 +1,19 @@
+{
+  "name": "Kruty1918.Moyva.EditorShared",
+  "rootNamespace": "Kruty1918.Moyva.Editor.Shared",
+  "references": [
+    "Kruty1918.Moyva.Economy",
+    "Kruty1918.Moyva.Construction"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

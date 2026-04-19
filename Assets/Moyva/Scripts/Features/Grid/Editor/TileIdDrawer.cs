@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Grid.API;
 using UnityEditor;
@@ -46,26 +47,35 @@ namespace Kruty1918.Moyva.Grid.Editor
             if (!isValid && !string.IsNullOrEmpty(currentValue))
                 GUI.color = Color.red;
 
-            var displayOptions = BuildDisplayOptions(ids, currentValue, isValid, out int selectedIndex);
-
             EditorGUI.BeginProperty(position, label, property);
 
-            int newIndex = EditorGUI.Popup(popupRect, label.text, selectedIndex, displayOptions);
-            if (newIndex != selectedIndex)
+            var serializedObject = property.serializedObject;
+            string propertyPath = property.propertyPath;
+            string buttonText = BuildCurrentValueLabel(currentValue, isValid);
+            Rect buttonRect = EditorGUI.PrefixLabel(popupRect, label);
+
+            if (EditorGUI.DropdownButton(buttonRect, new GUIContent(buttonText), FocusType.Keyboard))
             {
-                string selected = displayOptions[newIndex];
-                if (selected == "(none)")
-                    property.stringValue = string.Empty;
-                else if (!selected.StartsWith("\u26a0 "))
-                    property.stringValue = selected;
+                PopupWindow.Show(buttonRect, new TilePickerPopup(
+                    currentValue,
+                    selectedId =>
+                    {
+                        serializedObject.Update();
+                        var currentProperty = serializedObject.FindProperty(propertyPath);
+                        if (currentProperty == null || currentProperty.propertyType != SerializedPropertyType.String)
+                            return;
+
+                        currentProperty.stringValue = selectedId;
+                        serializedObject.ApplyModifiedProperties();
+                    }));
             }
 
             GUI.color = prevColor;
 
             // Sprite preview
             Sprite sprite = GetSpriteForTileId(currentValue);
-            if (sprite != null)
-                GUI.DrawTexture(spriteRect, sprite.texture, ScaleMode.ScaleToFit);
+            if (sprite != null && sprite.texture != null)
+                DrawSprite(spriteRect, sprite);
 
             // Error box + create button (ID not found)
             if (!isValid && !string.IsNullOrEmpty(currentValue))
@@ -108,23 +118,98 @@ namespace Kruty1918.Moyva.Grid.Editor
             EditorGUI.EndProperty();
         }
 
-        private static string[] BuildDisplayOptions(string[] ids, string currentValue, bool isValid, out int selectedIndex)
+        private static string BuildCurrentValueLabel(string currentValue, bool isValid)
         {
-            var list = new List<string> { "(none)" };
-            list.AddRange(ids);
+            if (string.IsNullOrEmpty(currentValue))
+                return "(none)";
 
-            if (!isValid && !string.IsNullOrEmpty(currentValue))
+            if (!isValid)
+                return $"⚠ {currentValue}";
+
+            return currentValue;
+        }
+
+        private static void DrawSprite(Rect rect, Sprite sprite)
+        {
+            var tex = sprite.texture;
+            var sr = sprite.textureRect;
+            var uv = new Rect(sr.x / tex.width, sr.y / tex.height, sr.width / tex.width, sr.height / tex.height);
+            GUI.DrawTextureWithTexCoords(rect, tex, uv);
+        }
+
+        private sealed class TilePickerPopup : PopupWindowContent
+        {
+            private const float PopupWidth = 420f;
+            private const float PopupHeight = 360f;
+            private const float RowHeight = 22f;
+            private const float IconSize = 16f;
+            private const float Padding = 6f;
+
+            private readonly string _currentValue;
+            private readonly Action<string> _onSelected;
+            private Vector2 _scroll;
+
+            public TilePickerPopup(string currentValue, Action<string> onSelected)
             {
-                list.Insert(0, $"\u26a0 {currentValue}");
-                selectedIndex = 0;
-            }
-            else
-            {
-                selectedIndex = string.IsNullOrEmpty(currentValue) ? 0 : list.IndexOf(currentValue);
-                if (selectedIndex < 0) selectedIndex = 0;
+                _currentValue = currentValue;
+                _onSelected = onSelected;
             }
 
-            return list.ToArray();
+            public override Vector2 GetWindowSize() => new Vector2(PopupWidth, PopupHeight);
+
+            public override void OnGUI(Rect rect)
+            {
+                var ids = GetTileIds();
+
+                Rect noneRect = new Rect(Padding, Padding, rect.width - Padding * 2f, RowHeight);
+                bool isNoneSelected = string.IsNullOrEmpty(_currentValue);
+                if (isNoneSelected)
+                    EditorGUI.DrawRect(noneRect, new Color(0.24f, 0.36f, 0.24f, 0.7f));
+
+                if (GUI.Button(noneRect, "(none)", EditorStyles.miniButton))
+                {
+                    _onSelected?.Invoke(string.Empty);
+                    editorWindow.Close();
+                    return;
+                }
+
+                Rect viewRect = new Rect(
+                    Padding,
+                    Padding + RowHeight + Padding,
+                    rect.width - Padding * 2f,
+                    rect.height - (Padding * 3f + RowHeight));
+
+                Rect contentRect = new Rect(0f, 0f, viewRect.width - 14f, Mathf.Max(2f, ids.Length * RowHeight));
+                _scroll = GUI.BeginScrollView(viewRect, _scroll, contentRect);
+                for (int i = 0; i < ids.Length; i++)
+                {
+                    Rect rowRect = new Rect(0f, i * RowHeight, contentRect.width, RowHeight - 1f);
+                    DrawTileRow(rowRect, ids[i]);
+                }
+                GUI.EndScrollView();
+            }
+
+            private void DrawTileRow(Rect rowRect, string id)
+            {
+                bool isSelected = string.Equals(_currentValue, id, StringComparison.Ordinal);
+                if (isSelected)
+                    EditorGUI.DrawRect(rowRect, new Color(0.24f, 0.36f, 0.24f, 0.7f));
+
+                if (GUI.Button(rowRect, GUIContent.none, GUIStyle.none))
+                {
+                    _onSelected?.Invoke(id);
+                    editorWindow.Close();
+                    return;
+                }
+
+                Rect iconRect = new Rect(rowRect.x + 4f, rowRect.y + (RowHeight - IconSize) * 0.5f, IconSize, IconSize);
+                var sprite = GetSpriteForTileId(id);
+                if (sprite != null && sprite.texture != null)
+                    DrawSprite(iconRect, sprite);
+
+                Rect labelRect = new Rect(iconRect.xMax + 6f, rowRect.y + 2f, rowRect.width - iconRect.width - 10f, RowHeight - 2f);
+                GUI.Label(labelRect, id, EditorStyles.label);
+            }
         }
 
         // ── Static cache (1-second TTL) ──

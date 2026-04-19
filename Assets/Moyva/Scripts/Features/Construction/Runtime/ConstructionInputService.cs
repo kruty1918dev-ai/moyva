@@ -133,9 +133,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                                 if (!placed)
                                     break;
                             }
+                            _wallDragPendingPositions.Add(tile);
                         }
-
-                        _wallDragPendingPositions.Add(tile);
+                        else if (_constructionService.TryGetPendingBuildingIdAt(tile, out var existingPendingId)
+                                 && _wallPlacementService.IsWallOrGate(existingPendingId))
+                        {
+                            // Тайл вже має pending-стіну/ворота — відстежуємо для можливого видалення.
+                            _wallDragPendingPositions.Add(tile);
+                        }
+                        // Non-wall pending (ратуша, склад тощо) — ігноруємо, не додаємо до сету.
                     }
 
                     _lastWallDragTile = dragTilePos;
@@ -198,7 +204,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            if (_constructionService.IsDemolishMode)
+            if (_constructionService.IsDemolishMode && _constructionService.State != BuildingPlacementState.Placing)
             {
                 bool result = _constructionService.TryDemolishAt(tilePos);
                 if (VerboseLogs)

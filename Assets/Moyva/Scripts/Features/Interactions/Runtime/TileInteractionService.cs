@@ -1,6 +1,9 @@
 using Kruty1918.Moyva.Interactions.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
+using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -24,12 +27,19 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private readonly IGridService _gridService;
         private readonly IObjectsMapService _objectsMapService;
+        private readonly IBuildingRegistry _buildingRegistry;
+        private readonly IMapObjectRegistryService _mapObjectRegistryService;
+        private readonly IMapObjectEconomyService _mapObjectEconomyService;
         private readonly IUnitMovementService _unitMovementService;
         private readonly SignalBus _signalBus;
+        private GameModeType _currentMode = GameModeType.Normal;
         
         private string _selectedUnitId;
         private CancellationTokenSource _moveCts;
         private bool _isActive = true;
+        // Tracks what the WorldInfoPanel is currently showing (synced via signal).
+        private WorldInfoSelectionKind _inspectedKind;
+        private string _inspectedObjectId;
         private string _activeMoveUnitId;
         private Vector2Int _activeMoveTarget;
         private (string unitId, Vector2Int target)? _queuedResumeMove;
@@ -38,11 +48,17 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         public TileInteractionService(
             IGridService gridService,
             IObjectsMapService objectsMapService,
+            IBuildingRegistry buildingRegistry,
+            IMapObjectRegistryService mapObjectRegistryService,
+            IMapObjectEconomyService mapObjectEconomyService,
             IUnitMovementService unitMovementService, 
             SignalBus signalBus)
         {
             _gridService = gridService;
             _objectsMapService = objectsMapService;
+            _buildingRegistry = buildingRegistry;
+            _mapObjectRegistryService = mapObjectRegistryService;
+            _mapObjectEconomyService = mapObjectEconomyService;
             _unitMovementService = unitMovementService;
             _signalBus = signalBus;
         }
@@ -51,21 +67,28 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         {
             _signalBus.Subscribe<TileClickedSignal>(OnTileClicked);
             _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
+            _signalBus.Subscribe<WorldInfoSelectionChangedSignal>(OnWorldInfoSelectionChanged);
         }
 
         public void Dispose()
         {
             _signalBus.TryUnsubscribe<TileClickedSignal>(OnTileClicked);
             _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+            _signalBus.TryUnsubscribe<WorldInfoSelectionChangedSignal>(OnWorldInfoSelectionChanged);
             CancelMovement(MovementCancelReason.Dispose);
         }
 
         private void OnGameModeChanged(GameModeChangedSignal signal)
         {
+            _currentMode = signal.NewMode;
             _isActive = signal.NewMode == GameModeType.Normal;
             if (!_isActive)
             {
                 _selectedUnitId = null;
+
+                // Закриваємо інфо панель при вході в режим будування
+                if (_inspectedKind != WorldInfoSelectionKind.None)
+                    _signalBus.Fire(new WorldInfoPanelClosedSignal());
 
                 if (_moveCts != null && !string.IsNullOrEmpty(_activeMoveUnitId))
                 {
@@ -98,9 +121,6 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         public void HandleTileClick(Vector2Int position)
         {
-            if (!_isActive)
-                return;
-
             if (!_gridService.TryGetTileData(position, out _))
             {
                 if (VerboseLogs)
@@ -108,28 +128,116 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 return;
             }
 
-            // КРОК 1: Вибір юніта (якщо ніхто не вибраний)
-            if (string.IsNullOrEmpty(_selectedUnitId))
+            // Інфо панель НЕ працює в режимі будування
+            if (!_isActive)
+                return;
+
+            _objectsMapService.TryGetOccupant(position, out var occupantId);
+
+            bool isBuilding = !string.IsNullOrEmpty(occupantId)
+                && _buildingRegistry != null
+                && _buildingRegistry.GetById(occupantId) != null;
+
+            bool isMapObject = !string.IsNullOrEmpty(occupantId)
+                && _mapObjectRegistryService != null
+                && _mapObjectRegistryService.TryGetDefinition(occupantId, out _);
+
+            bool isMapObjectInteractable = isMapObject
+                && _mapObjectEconomyService != null
+                && _mapObjectEconomyService.IsInteractable(occupantId);
+
+            // --- Клік на будівлю ---
+            if (isBuilding)
             {
-                if (_objectsMapService.TryGetOccupant(position, out var occupantId))
+                // Повторний клік на вже відкриту будівлю — закрити панель (toggle)
+                if (_inspectedKind == WorldInfoSelectionKind.Building
+                    && string.Equals(_inspectedObjectId, occupantId, StringComparison.Ordinal))
                 {
-                    _selectedUnitId = occupantId;
-                    Debug.Log($"[Interaction] Вибрано юніта: {_selectedUnitId} на позиції {position}");
+                    _signalBus.Fire(new WorldInfoPanelClosedSignal());
                 }
                 else
                 {
-                    Debug.Log($"[Interaction] Тайл {position} натиснуто, але окупант не знайдений в ObjectsMapService. IsOccupied={_objectsMapService.IsOccupied(position)}");
+                    _signalBus.Fire(new BuildingInfoPanelRequestedSignal
+                    {
+                        BuildingId = occupantId,
+                        Position = position,
+                    });
+
+                    if (VerboseLogs)
+                        Debug.Log($"[Interaction] Building info requested for '{occupantId}' at {position}. mode={_currentMode}");
                 }
+
+                // Знімаємо вибір юніта при кліку на будівлю
+                _selectedUnitId = null;
                 return;
             }
 
-            // КРОК 2: Наказ на рух (якщо юніт вже вибраний)
-            string unitToMove = _selectedUnitId;
-            _selectedUnitId = null; // Скидаємо виділення перед початком руху
+            // --- Клік на інтерактивний об'єкт карти ---
+            if (isMapObject)
+            {
+                if (!isMapObjectInteractable)
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[Interaction] Map object '{occupantId}' at {position} is not interactable. Ignored.");
+                    return;
+                }
 
-            Debug.Log($"[Interaction] Наказ для {unitToMove}: рух до {position}");
+                if (_inspectedKind == WorldInfoSelectionKind.MapObject
+                    && string.Equals(_inspectedObjectId, occupantId, StringComparison.Ordinal))
+                {
+                    _signalBus.Fire(new WorldInfoPanelClosedSignal());
+                }
+                else
+                {
+                    _signalBus.Fire(new MapObjectInfoPanelRequestedSignal
+                    {
+                        MapObjectId = occupantId,
+                        Position = position,
+                    });
 
-            StartMove(unitToMove, position);
+                    if (VerboseLogs)
+                        Debug.Log($"[Interaction] MapObject info requested for '{occupantId}' at {position}. mode={_currentMode}");
+                }
+
+                _selectedUnitId = null;
+                return;
+            }
+
+            bool isUnit = !string.IsNullOrEmpty(occupantId);
+
+            // --- Клік на юніта ---
+            if (isUnit)
+            {
+                // Повторний клік на вже вибраного юніта — зняти вибір (toggle)
+                if (string.Equals(occupantId, _selectedUnitId, StringComparison.Ordinal))
+                {
+                    _selectedUnitId = null;
+                    _signalBus.Fire(new WorldInfoPanelClosedSignal());
+                    Debug.Log($"[Interaction] Вибір юніта скасовано (toggle): {occupantId}");
+                    return;
+                }
+
+                // Вибрати нового юніта (замість попереднього)
+                _selectedUnitId = occupantId;
+                _signalBus.Fire(new UnitInfoPanelRequestedSignal
+                {
+                    UnitId = occupantId,
+                    Position = position,
+                });
+                Debug.Log($"[Interaction] Вибрано юніта: {_selectedUnitId} на позиції {position}");
+                return;
+            }
+
+            // --- Клік на порожній тайл ---
+            if (!string.IsNullOrEmpty(_selectedUnitId))
+            {
+                string unitToMove = _selectedUnitId;
+                _selectedUnitId = null;
+
+                Debug.Log($"[Interaction] Наказ для {unitToMove}: рух до {position}");
+
+                StartMove(unitToMove, position);
+            }
         }
 
         private async void StartMove(string unitId, Vector2Int target)
@@ -170,8 +278,29 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 }
 
                 _activeMoveUnitId = null;
+
+                // Після успішного завершення руху — повертаємо юніта до поточного стану вибраного.
+                // Це дозволяє гравцю відразу дати наступну команду без повторного кліку для вибору.
+                if (_cancelReason == MovementCancelReason.None
+                    && !string.IsNullOrEmpty(unitId)
+                    && _inspectedKind == WorldInfoSelectionKind.Unit
+                    && string.Equals(_inspectedObjectId, unitId, StringComparison.Ordinal))
+                {
+                    _selectedUnitId = unitId;
+                }
+
                 _cancelReason = MovementCancelReason.None;
             }
+        }
+
+        private void OnWorldInfoSelectionChanged(WorldInfoSelectionChangedSignal signal)
+        {
+            _inspectedKind     = signal.Kind;
+            _inspectedObjectId = signal.ObjectId;
+
+            // Якщо панель закрита ззовні (наприклад кнопкою X) — скидаємо вибір юніта
+            if (signal.Kind == WorldInfoSelectionKind.None)
+                _selectedUnitId = null;
         }
 
         private void CancelMovement(MovementCancelReason reason)

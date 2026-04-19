@@ -212,6 +212,7 @@ namespace Kruty1918.Moyva.Units.Editor
             arr.arraySize++;
             var newElem = arr.GetArrayElementAtIndex(arr.arraySize - 1);
             newElem.FindPropertyRelative("TypeId").stringValue = id;
+            newElem.FindPropertyRelative("Role").enumValueIndex = (int)UnitRole.Worker;
             newElem.FindPropertyRelative("BaseStamina").floatValue = 10f;
             newElem.FindPropertyRelative("Prefab").objectReferenceValue = null;
             so.ApplyModifiedProperties();

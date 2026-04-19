@@ -102,6 +102,42 @@ namespace Kruty1918.Moyva.Economy.Editor
                 fixes += TrimString(profile, "_profileId");
             }
 
+            if (database.RulesConfig != null)
+                fixes += FixRulesConfig(database.RulesConfig);
+
+            return fixes;
+        }
+
+        private static int FixRulesConfig(EconomyRulesConfigSO rules)
+        {
+            var fixes = 0;
+            var so = new SerializedObject(rules);
+            so.Update();
+
+            fixes += ClampSerializedMinInt(so.FindProperty("_settlement").FindPropertyRelative("_maxSettlements"), 1);
+            fixes += ClampSerializedMinInt(so.FindProperty("_settlement").FindPropertyRelative("_minTownHallDistance"), 1);
+            fixes += ClampSerializedMinInt(so.FindProperty("_population").FindPropertyRelative("_newResidentsArrivalIntervalTurns"), 1);
+            fixes += ClampSerializedMinInt(so.FindProperty("_caravan").FindPropertyRelative("_maxCaravansPerSettlement"), 1);
+
+            fixes += ClampSerializedMinFloat(so.FindProperty("_market").FindPropertyRelative("_targetStock"), 1f);
+            fixes += ClampSerializedMinFloat(so.FindProperty("_market").FindPropertyRelative("_referenceTradeVolume"), 1f);
+            fixes += ClampSerializedMinFloat(so.FindProperty("_market").FindPropertyRelative("_minPriceMultiplier"), 0.01f);
+            fixes += ClampSerializedMinFloat(so.FindProperty("_market").FindPropertyRelative("_maxPriceMultiplier"), 0.01f);
+
+            var minPrice = so.FindProperty("_market").FindPropertyRelative("_minPriceMultiplier");
+            var maxPrice = so.FindProperty("_market").FindPropertyRelative("_maxPriceMultiplier");
+            if (minPrice != null && maxPrice != null && maxPrice.floatValue < minPrice.floatValue)
+            {
+                maxPrice.floatValue = minPrice.floatValue;
+                fixes++;
+            }
+
+            if (fixes > 0)
+            {
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(rules);
+            }
+
             return fixes;
         }
 
@@ -155,6 +191,24 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             prop.stringValue = trimmed;
             return true;
+        }
+
+        private static int ClampSerializedMinInt(SerializedProperty prop, int minValue)
+        {
+            if (prop == null || prop.propertyType != SerializedPropertyType.Integer || prop.intValue >= minValue)
+                return 0;
+
+            prop.intValue = minValue;
+            return 1;
+        }
+
+        private static int ClampSerializedMinFloat(SerializedProperty prop, float minValue)
+        {
+            if (prop == null || prop.propertyType != SerializedPropertyType.Float || prop.floatValue >= minValue)
+                return 0;
+
+            prop.floatValue = minValue;
+            return 1;
         }
     }
 }
