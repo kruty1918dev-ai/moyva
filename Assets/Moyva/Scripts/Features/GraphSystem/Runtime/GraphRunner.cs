@@ -30,6 +30,8 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
 
                 var inputs = GatherInputs(node, cache, connectionsByTarget);
                 var sw = System.Diagnostics.Stopwatch.StartNew();
+                long allocBefore = GetThreadAllocatedBytes();
+                context.ResetNodeProfiling();
 
                 NodeOutput output;
                 try
@@ -42,14 +44,25 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 }
                 catch (Exception ex)
                 {
+                    long allocOnError = GetThreadAllocatedBytes() - allocBefore;
+                    long iterOnError = context.ConsumeNodeIterations();
                     logs.Add(new NodeExecutionLog(node.NodeId, node.Title,
-                        NodeStatus.Error, ex.Message, sw.ElapsedMilliseconds));
+                        NodeStatus.Error, ex.Message, sw.ElapsedMilliseconds,
+                        allocOnError,
+                        iterOnError));
                     return new GraphExecutionResult(node.NodeId, ex.Message, logs);
                 }
 
                 sw.Stop();
+                long allocDelta = GetThreadAllocatedBytes() - allocBefore;
+                long iterations = context.ConsumeNodeIterations();
+                if (iterations <= 0)
+                    iterations = EstimateIterationsFromOutputs(output?.Values);
+
                 logs.Add(new NodeExecutionLog(node.NodeId, node.Title,
-                    output.Status, output.Message, sw.ElapsedMilliseconds));
+                    output.Status, output.Message, sw.ElapsedMilliseconds,
+                    allocDelta,
+                    iterations));
 
                 if (output.Status == NodeStatus.Error)
                     return new GraphExecutionResult(node.NodeId, output.Message, logs);
@@ -81,6 +94,8 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
 
                 var inputs = GatherInputs(node, cache, connectionsByTarget);
                 var sw = System.Diagnostics.Stopwatch.StartNew();
+                long allocBefore = GetThreadAllocatedBytes();
+                context.ResetNodeProfiling();
 
                 NodeOutput output;
                 try
@@ -92,14 +107,25 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 }
                 catch (Exception ex)
                 {
+                    long allocOnError = GetThreadAllocatedBytes() - allocBefore;
+                    long iterOnError = context.ConsumeNodeIterations();
                     logs.Add(new NodeExecutionLog(node.NodeId, node.Title,
-                        NodeStatus.Error, ex.Message, sw.ElapsedMilliseconds));
+                        NodeStatus.Error, ex.Message, sw.ElapsedMilliseconds,
+                        allocOnError,
+                        iterOnError));
                     return new GraphExecutionResult(node.NodeId, ex.Message, logs);
                 }
 
                 sw.Stop();
+                long allocDelta = GetThreadAllocatedBytes() - allocBefore;
+                long iterations = context.ConsumeNodeIterations();
+                if (iterations <= 0)
+                    iterations = EstimateIterationsFromOutputs(output?.Values);
+
                 logs.Add(new NodeExecutionLog(node.NodeId, node.Title,
-                    output.Status, output.Message, sw.ElapsedMilliseconds));
+                    output.Status, output.Message, sw.ElapsedMilliseconds,
+                    allocDelta,
+                    iterations));
 
                 if (output.Status == NodeStatus.Error)
                     return new GraphExecutionResult(node.NodeId, output.Message, logs);
@@ -155,6 +181,32 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             }
 
             return index;
+        }
+
+        private static long GetThreadAllocatedBytes()
+        {
+            try
+            {
+                return GC.GetAllocatedBytesForCurrentThread();
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        private static long EstimateIterationsFromOutputs(object[] values)
+        {
+            if (values == null || values.Length == 0)
+                return 0;
+
+            for (int i = 0; i < values.Length; i++)
+            {
+                if (values[i] is Array a && a.Rank == 2)
+                    return (long)a.GetLength(0) * a.GetLength(1);
+            }
+
+            return 0;
         }
     }
 }

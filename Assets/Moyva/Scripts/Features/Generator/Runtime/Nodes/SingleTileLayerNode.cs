@@ -139,7 +139,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 Debug.LogWarning("[SingleTileLayerNode] List<WorldLayerData> not found in NodeContext. " +
                     "Шар не буде рендеритись. Переконайтесь що граф запускається через GraphBasedMapDataGenerator.");
 
-            return NodeOutput.Success();
+            // Повертаємо текстуру шару як вихід для превью (node має 0 output-портів,
+            // тому downstream ноди не будуть зачеплені, але GraphRunner збереже значення для превью).
+            return NodeOutput.Success(layerData.TileTexture);
         }
 
         // ── Private helpers ──────────────────────────────────────────────────

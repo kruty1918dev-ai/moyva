@@ -58,8 +58,8 @@
   <Project Path="Kruty1918.Moyva.FogOfWar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementPlayMode.csproj" />
-  <Project Path="Kruty1918.Moyva.Tests.ConstructionUI.csproj" />
   <Project Path="Kruty1918.Moyva.GraphSystem.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.ConstructionUI.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.WorldCreation.csproj" />

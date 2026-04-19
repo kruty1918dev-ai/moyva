@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: OutputNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.OutputNode
   _nodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
-  _editorPosition: {x: 3113, y: 135}
+  _editorPosition: {x: 2750, y: -70}
 --- !u!114 &-8338458835910421542
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -27,7 +27,7 @@ MonoBehaviour:
   m_Name: ObjectAutoTileNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectAutoTileNode
   _nodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
-  _editorPosition: {x: 2773, y: 347}
+  _editorPosition: {x: 2450, y: 37}
   _rules: {fileID: 11400000, guid: 383706c016f2e3cd9953b8a5fd2bdfd7, type: 2}
   _excludeObjectPrefixes:
   - river-outlet
@@ -46,6 +46,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.MergeObjectMapNode
   _nodeId: 5d808023-ab6e-4c2e-84ca-d6b988353b97
   _editorPosition: {x: 1838, y: 350}
+--- !u!114 &-6693781523466320157
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 425af46f7708b8a388ff749105a77e32, type: 3}
+  m_Name: BoolInvertNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.BoolInvertNode
+  _nodeId: 3bab117a-ed19-4183-828d-daa02a785e30
+  _editorPosition: {x: 1360, y: 321}
 --- !u!114 &-6657117628486784735
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -92,23 +106,8 @@ MonoBehaviour:
   m_Name: HeightSourceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.HeightSourceNode
   _nodeId: 9e153028-994c-43bd-ab66-200e639bc754
-  _editorPosition: {x: -400, y: 151}
+  _editorPosition: {x: 50, y: 26}
   _noiseSettings: {fileID: 11400000, guid: 3dc2da72d9b24f1e0a3b993cb9f44a13, type: 2}
---- !u!114 &-3964688717336489773
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 363daa2e2947cf2dd98450cc0d555bf3, type: 3}
-  m_Name: SharedSettingsNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.SharedSettingsNode
-  _nodeId: 98b48c8b-ade4-45c6-8b23-0009c6855cf5
-  _editorPosition: {x: -400, y: -50}
-  _settings: {fileID: 11400000, guid: de6891e3535a0753ba37103d6e8bc936, type: 2}
 --- !u!114 &-3083299416676339975
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -122,7 +121,7 @@ MonoBehaviour:
   m_Name: MaskNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.MaskNode
   _nodeId: 031ba7c8-f341-41a4-858d-af68db64bb33
-  _editorPosition: {x: 900, y: 400}
+  _editorPosition: {x: 1250, y: 26}
   _comparison: 2
   _threshold: 0.3
   _upperThreshold: 0.7
@@ -139,7 +138,7 @@ MonoBehaviour:
   m_Name: ObjectTileExclusionNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectTileExclusionNode
   _nodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
-  _editorPosition: {x: 2351, y: 224}
+  _editorPosition: {x: 2150, y: 26}
   _rules:
   - TargetTileId: water
     OnlyIfNearWater: 0
@@ -199,7 +198,7 @@ MonoBehaviour:
   m_Name: ForestClusterNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ForestClusterNode
   _nodeId: 807f8f86-7df5-488b-b37f-28335b92a380
-  _editorPosition: {x: 1200, y: 100}
+  _editorPosition: {x: 1550, y: 23.5}
   _densityNoise: {fileID: 11400000, guid: 3dc2da72d9b24f1e0a3b993cb9f44a13, type: 2}
   _densityThreshold: 0.4
   _minHeight: 0.23
@@ -239,9 +238,9 @@ MonoBehaviour:
   - {fileID: 9041462927370201531}
   - {fileID: -2093333369695154509}
   - {fileID: -8338458835910421542}
-  - {fileID: -3964688717336489773}
   - {fileID: 3449561521929793199}
   - {fileID: 8073196480034848754}
+  - {fileID: -6693781523466320157}
   _connections:
   - _sourceNodeId: 9e153028-994c-43bd-ab66-200e639bc754
     _sourcePortIndex: 0
@@ -255,22 +254,10 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: 142239be-0529-4bbe-b745-44e82de7a5c7
     _targetPortIndex: 0
-  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-    _sourcePortIndex: 0
-    _targetNodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
-    _targetPortIndex: 0
   - _sourceNodeId: 142239be-0529-4bbe-b745-44e82de7a5c7
     _sourcePortIndex: 0
     _targetNodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
     _targetPortIndex: 1
-  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-    _sourcePortIndex: 0
-    _targetNodeId: 031ba7c8-f341-41a4-858d-af68db64bb33
-    _targetPortIndex: 0
-  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-    _sourcePortIndex: 0
-    _targetNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
-    _targetPortIndex: 0
   - _sourceNodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
     _sourcePortIndex: 0
     _targetNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
@@ -279,14 +266,6 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
     _targetPortIndex: 2
-  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-    _sourcePortIndex: 0
-    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
-    _targetPortIndex: 2
-  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-    _sourcePortIndex: 0
-    _targetNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-    _targetPortIndex: 1
   - _sourceNodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
     _sourcePortIndex: 0
     _targetNodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
@@ -303,14 +282,6 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: e4d3e321-ff97-4a18-895b-b5f2a2d70d0c
     _targetPortIndex: 0
-  - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-    _sourcePortIndex: 0
-    _targetNodeId: b3057065-7169-46ba-8089-8572f7e79dd5
-    _targetPortIndex: 0
-  - _sourceNodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
-    _sourcePortIndex: 1
-    _targetNodeId: b3057065-7169-46ba-8089-8572f7e79dd5
-    _targetPortIndex: 1
   - _sourceNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
     _sourcePortIndex: 0
     _targetNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
@@ -327,6 +298,38 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: b3057065-7169-46ba-8089-8572f7e79dd5
     _targetPortIndex: 2
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
+    _targetPortIndex: 0
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: 031ba7c8-f341-41a4-858d-af68db64bb33
+    _targetPortIndex: 0
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: 807f8f86-7df5-488b-b37f-28335b92a380
+    _targetPortIndex: 0
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
+    _targetPortIndex: 1
+  - _sourceNodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
+    _sourcePortIndex: 0
+    _targetNodeId: b3057065-7169-46ba-8089-8572f7e79dd5
+    _targetPortIndex: 0
+  - _sourceNodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
+    _sourcePortIndex: 0
+    _targetNodeId: 92e70dd0-ba61-4eee-b683-4995630e2c71
+    _targetPortIndex: 2
+  - _sourceNodeId: 031ba7c8-f341-41a4-858d-af68db64bb33
+    _sourcePortIndex: 0
+    _targetNodeId: 3bab117a-ed19-4183-828d-daa02a785e30
+    _targetPortIndex: 0
+  - _sourceNodeId: 3bab117a-ed19-4183-828d-daa02a785e30
+    _sourcePortIndex: 0
+    _targetNodeId: b3057065-7169-46ba-8089-8572f7e79dd5
+    _targetPortIndex: 1
   _version: 1
   _sharedSettings:
     _mapWidth: 0
@@ -344,7 +347,7 @@ MonoBehaviour:
   m_Name: ObjectAutoTileNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectAutoTileNode
   _nodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
-  _editorPosition: {x: 2062, y: 363}
+  _editorPosition: {x: 1850, y: 45.5}
   _rules: {fileID: 11400000, guid: 383706c016f2e3cd9953b8a5fd2bdfd7, type: 2}
   _excludeObjectPrefixes:
   - river-outlet
@@ -381,7 +384,7 @@ MonoBehaviour:
   m_Name: ErosionNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ErosionNode
   _nodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-  _editorPosition: {x: 100, y: 150}
+  _editorPosition: {x: 650, y: 26}
   _erosionRate: 0.02
   _iterations: 20
   _talusAngle: 0.03
@@ -398,7 +401,7 @@ MonoBehaviour:
   m_Name: SingleTileLayerNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SingleTileLayerNode
   _nodeId: e4d3e321-ff97-4a18-895b-b5f2a2d70d0c
-  _editorPosition: {x: 2543, y: -228}
+  _editorPosition: {x: 2150, y: -272}
   _tileId: water
   _tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
   _resolutionScale: 0.2
@@ -423,7 +426,7 @@ MonoBehaviour:
   m_Name: BiomeResolverNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.BiomeResolverNode
   _nodeId: 142239be-0529-4bbe-b745-44e82de7a5c7
-  _editorPosition: {x: 502, y: 30}
+  _editorPosition: {x: 950, y: -250}
   _biomesSettings: {fileID: 11400000, guid: 61667c86198a4161b96bd05257abedf0, type: 2}
 --- !u!114 &7416864558252163659
 MonoBehaviour:
@@ -438,7 +441,7 @@ MonoBehaviour:
   m_Name: SmoothNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.SmoothNode
   _nodeId: 1c667af2-fa83-4a75-9106-844fdfe3c0c3
-  _editorPosition: {x: -150, y: 151}
+  _editorPosition: {x: 350, y: 26}
   _radius: 2
   _iterations: 4
 --- !u!114 &8073196480034848754
@@ -454,7 +457,7 @@ MonoBehaviour:
   m_Name: SingleTileLayerNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SingleTileLayerNode
   _nodeId: b3057065-7169-46ba-8089-8572f7e79dd5
-  _editorPosition: {x: 2523, y: -63}
+  _editorPosition: {x: 2750, y: -368}
   _tileId: grass
   _tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
   _resolutionScale: 0.2
@@ -480,7 +483,7 @@ MonoBehaviour:
   m_Name: ConstraintPolishNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ConstraintPolishNode
   _nodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-  _editorPosition: {x: 1897, y: 57}
+  _editorPosition: {x: 1850, y: -269.5}
   _wfcSettings: {fileID: 11400000, guid: fea7d1c6ea24608b2b4e75e082c67e84, type: 2}
 --- !u!114 &9153540141703597084
 MonoBehaviour:
@@ -495,7 +498,7 @@ MonoBehaviour:
   m_Name: LakeGenerationNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.LakeGenerationNode
   _nodeId: 74cb2170-07ff-4b9d-a3ab-492ec69b119a
-  _editorPosition: {x: 900, y: 100}
+  _editorPosition: {x: 1250, y: -250}
   _waterLevel: 0.3
   _minLakeSize: 4
   _onlyGenerateOnLand: 1
