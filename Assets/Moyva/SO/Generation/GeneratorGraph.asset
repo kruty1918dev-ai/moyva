@@ -27,7 +27,7 @@ MonoBehaviour:
   m_Name: ObjectAutoTileNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectAutoTileNode
   _nodeId: f8037355-f623-42ca-9e97-528c6a5f6a73
-  _editorPosition: {x: 2450, y: 37}
+  _editorPosition: {x: 2450, y: 79.5}
   _rules: {fileID: 11400000, guid: 383706c016f2e3cd9953b8a5fd2bdfd7, type: 2}
   _excludeObjectPrefixes:
   - river-outlet
@@ -59,7 +59,7 @@ MonoBehaviour:
   m_Name: BoolInvertNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.BoolInvertNode
   _nodeId: 3bab117a-ed19-4183-828d-daa02a785e30
-  _editorPosition: {x: 1360, y: 321}
+  _editorPosition: {x: 2450, y: -303.5}
 --- !u!114 &-6657117628486784735
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -138,7 +138,7 @@ MonoBehaviour:
   m_Name: ObjectTileExclusionNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectTileExclusionNode
   _nodeId: 7926ca62-e9ea-4949-87b9-bc08fd553b66
-  _editorPosition: {x: 2150, y: 26}
+  _editorPosition: {x: 2150, y: 47.25}
   _rules:
   - TargetTileId: water
     OnlyIfNearWater: 0
@@ -198,7 +198,7 @@ MonoBehaviour:
   m_Name: ForestClusterNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ForestClusterNode
   _nodeId: 807f8f86-7df5-488b-b37f-28335b92a380
-  _editorPosition: {x: 1550, y: 23.5}
+  _editorPosition: {x: 1550, y: 44.75}
   _densityNoise: {fileID: 11400000, guid: 3dc2da72d9b24f1e0a3b993cb9f44a13, type: 2}
   _densityThreshold: 0.4
   _minHeight: 0.23
@@ -347,7 +347,7 @@ MonoBehaviour:
   m_Name: ObjectAutoTileNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ObjectAutoTileNode
   _nodeId: 77e94bf8-84b2-4f86-9a53-92e8964a6234
-  _editorPosition: {x: 1850, y: 45.5}
+  _editorPosition: {x: 1850, y: 66.75}
   _rules: {fileID: 11400000, guid: 383706c016f2e3cd9953b8a5fd2bdfd7, type: 2}
   _excludeObjectPrefixes:
   - river-outlet
@@ -401,7 +401,7 @@ MonoBehaviour:
   m_Name: SingleTileLayerNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SingleTileLayerNode
   _nodeId: e4d3e321-ff97-4a18-895b-b5f2a2d70d0c
-  _editorPosition: {x: 2150, y: -272}
+  _editorPosition: {x: 2150, y: -293.25}
   _tileId: water
   _tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
   _resolutionScale: 0.2
@@ -483,7 +483,7 @@ MonoBehaviour:
   m_Name: ConstraintPolishNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ConstraintPolishNode
   _nodeId: bd505d7d-3e6e-4251-8a77-1e1c5c887b16
-  _editorPosition: {x: 1850, y: -269.5}
+  _editorPosition: {x: 1850, y: -290.75}
   _wfcSettings: {fileID: 11400000, guid: fea7d1c6ea24608b2b4e75e082c67e84, type: 2}
 --- !u!114 &9153540141703597084
 MonoBehaviour:
