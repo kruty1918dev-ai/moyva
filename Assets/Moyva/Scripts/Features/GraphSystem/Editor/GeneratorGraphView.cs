@@ -708,7 +708,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             base.BuildContextualMenu(evt);
 
             var createGraphPos = this.ChangeCoordinatesTo(contentViewContainer, evt.localMousePosition);
-            AppendCreateContextMenu(evt, createGraphPos);
+            evt.menu.AppendAction("Create Node...", _ =>
+            {
+                if (_isReadOnly)
+                    return;
+
+                var screenPos = GUIUtility.GUIToScreenPoint(evt.mousePosition);
+                SearchWindow.Open(new SearchWindowContext(screenPos), _searchProvider);
+            }, _ => _isReadOnly
+                ? DropdownMenuAction.Status.Disabled
+                : DropdownMenuAction.Status.Normal);
+
+            evt.menu.AppendAction("Create Group", _ =>
+            {
+                CreateGroupAtPosition(createGraphPos);
+            }, _ => _isReadOnly
+                ? DropdownMenuAction.Status.Disabled
+                : DropdownMenuAction.Status.Normal);
 
             evt.menu.AppendSeparator();
             evt.menu.AppendAction("Вставити ноду з тексту", _ =>
@@ -723,52 +739,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 : DropdownMenuAction.Status.Normal);
 
         }
-
-        private void AppendCreateContextMenu(ContextualMenuPopulateEvent evt, Vector2 graphPosition)
-        {
-            evt.menu.AppendAction("Створити/Групу", _ =>
-            {
-                CreateGroupAtPosition(graphPosition);
-            }, _ => _isReadOnly
-                ? DropdownMenuAction.Status.Disabled
-                : DropdownMenuAction.Status.Normal);
-
-            var nodeTypes = TypeCache.GetTypesDerivedFrom<NodeBase>()
-                .Where(t => !t.IsAbstract && !t.IsGenericType)
-                .Where(t => !string.Equals(t.Name, "SharedSettingsNode", StringComparison.Ordinal))
-                .Where(t => !string.Equals(t.Name, "RoutePointNode", StringComparison.Ordinal));
-
-            var grouped = new SortedDictionary<string, List<(string Title, Type Type)>>();
-            foreach (var type in nodeTypes)
-            {
-                var attr = type.GetCustomAttribute<NodeInfoAttribute>();
-                string category = attr?.Category ?? "Інше";
-                string title = attr?.Title ?? ObjectNames.NicifyVariableName(type.Name);
-
-                if (!grouped.TryGetValue(category, out var list))
-                {
-                    list = new List<(string Title, Type Type)>();
-                    grouped[category] = list;
-                }
-
-                list.Add((title, type));
-            }
-
-            foreach (var pair in grouped)
-            {
-                foreach (var node in pair.Value.OrderBy(x => x.Title))
-                {
-                    string path = $"Створити/Ноду/{pair.Key}/{node.Title}";
-                    evt.menu.AppendAction(path, _ =>
-                    {
-                        CreateNode(node.Type, graphPosition);
-                    }, _ => _isReadOnly
-                        ? DropdownMenuAction.Status.Disabled
-                        : DropdownMenuAction.Status.Normal);
-                }
-            }
-        }
-
         private void CreateGroupAtPosition(Vector2 graphPosition)
         {
             if (_isReadOnly) return;
