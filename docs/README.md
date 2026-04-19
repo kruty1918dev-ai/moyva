@@ -2,97 +2,138 @@
 
 Онлайн-версія: [kruty1918dev-ai.github.io/moyva](https://kruty1918dev-ai.github.io/moyva/#home)
 
-## Точка входу
+## Що таке Moyva
 
-- [Модульний індекс документації](modules/README.md)
-- [Стандарти](standarts/TDD.md)
-- [Legacy документація систем](systems/)
+Moyva - це покрокова 2D-стратегія про розбудову та виживання королівства.
+Гравець керує розвитком поселень, логістикою ресурсів, будівництвом, безпекою територій і поступовим формуванням власної історії кампанії.
 
-## Коротко про проєкт
+Ключова ідея гри:
+- не лише бої, а повний цикл життя світу;
+- генерація унікальної мапи (рельєф, ріки, POI, дороги, ресурси);
+- стратегічні рішення у мирі та в кризі (дефіцит, сезонність, смертність, оборона, розширення);
+- подієва взаємодія між системами через сигнали та модульну архітектуру.
 
-Moyva - покрокова стратегія на Unity 2D з DI (Zenject), сигналами через SignalBus, модульною архітектурою API/Runtime та окремими editor/runtime інструментами.
+## Поточний фокус проєкту
 
-## Ієрархія модулів
+Проєкт уже містить повний технічний каркас стратегії:
+- процедурна генерація світу (Graph System + ноди + WFC);
+- базові бойово-геймплейні системи (Grid, Units, Pathfinding, Interactions, Construction, Fog of War);
+- економічний контур (runtime + designer + валідація + API для UI/інтеграцій);
+- мультиплеєрний каркас (session manager, sync, fallback, host migration);
+- календар і тики симуляції;
+- save/load пайплайн;
+- модульна документація + tooling для дизайнерів.
 
-<details>
-<summary>Core система</summary>
+## Архітектурна суть
 
-- [Core Index](modules/core/README.md)
-- [Bootstrap](modules/core/bootstrap/README.md)
-- [Signals](modules/core/signals/README.md)
-- [Initialization Order](modules/core/initialization-order/README.md)
-- [Save System](modules/core/save-system/README.md)
+- Unity 2D + C#
+- Zenject для DI
+- SignalBus для подій між модулями
+- Package-by-feature (API/Runtime/Editor)
+- asmdef-модулі для ізоляції залежностей
+- Editor-інструменти для налаштування без hardcode в runtime
 
-</details>
+## Карта систем (актуальна)
 
-<details>
-<summary>World система</summary>
+### 1) Головний вхід
+- [Про проєкт Moyva](README.md)
 
-- [World Index](modules/world/README.md)
-- [Grid](modules/world/grid/README.md)
-- [Objects Map](modules/world/objects-map/README.md)
-- [Visuals](modules/world/visuals/README.md)
-- [Fog Of War](modules/world/fog-of-war/README.md)
-- [Camera](modules/world/camera/README.md)
+### 2) Швидкий старт і туторіали
+- [Швидкий старт](systems/graph-system/quickstart.md)
+- [Ініціалізація сцени](systems/bootstrap.md)
+- [Порядок ініціалізації](systems/initialization-order.md)
+- [Туторіали](systems/construction/walls-setup-guide.md)
 
-</details>
+### 3) Генерація світу
+- [Generator Pipeline](systems/generator.md)
+- [Graph System](systems/graph-system/README.md)
+- [API та власні ноди](systems/graph-system/api-reference.md)
+- [Довідник нодів](systems/graph-system/nodes-generators.md)
 
-<details>
-<summary>Gameplay система</summary>
+### 4) Ігрові системи
+- [Grid](systems/grid.md)
+- [Objects Map](systems/objects-map.md)
+- [Visuals](systems/visuals.md)
+- [Animations](systems/animations.md)
+- [Camera](systems/camera.md)
+- [Interactions](systems/interactions.md)
+- [Units](systems/units.md)
+- [Pathfinding](systems/pathfinding.md)
+- [Game Mode](systems/game-mode.md)
+- [World Creation UI](systems/world-creation/README.md)
 
-- [Gameplay Index](modules/gameplay/README.md)
-- [Units](modules/gameplay/units/README.md)
-- [Interactions](modules/gameplay/interactions/README.md)
-- [Pathfinding](modules/gameplay/pathfinding/README.md)
-- [Game Mode](modules/gameplay/game-mode/README.md)
-- [Construction](modules/gameplay/construction/README.md)
-- [Wall System](modules/gameplay/wall-system/README.md)
-- [Resolver](modules/gameplay/resolver/README.md)
-- [Object Picker](modules/gameplay/object-picker/README.md)
-- [Economy (legacy systems docs)](systems/economy/README.md)
+### 5) Будівництво
+- [Construction - огляд](systems/construction.md)
+- [ConstructionService](systems/construction/service.md)
+- [BuildingRegistry](systems/construction/registry.md)
+- [Construction UI](systems/construction/ui.md)
+- [WallPlacement](systems/construction/wall-placement.md)
 
-</details>
+### 6) Fog of War
+- [Fog of War - огляд](systems/fog-of-war/README.md)
+- [Архітектура](systems/fog-of-war/architecture.md)
+- [Алгоритм видимості](systems/fog-of-war/visibility-algorithm.md)
+- [Texture Pipeline](systems/fog-of-war/texture-pipeline.md)
+- [Інтеграція і тести](systems/fog-of-war/testing.md)
 
-<details>
-<summary>Tooling система</summary>
+### 7) Save/Load
+- [SaveSystem - огляд](systems/save-system/README.md)
 
-- [Tooling Index](modules/tooling/README.md)
-- [Resolver Editor](modules/tooling/resolver-editor/README.md)
-- [Registry Hub](modules/tooling/registry-hub/README.md)
-- [Registries](modules/tooling/registries/README.md)
-- [Save System Designer](modules/tooling/save-system-designer/README.md)
-- [Economy Designer (legacy systems docs)](systems/economy/economy-designer.md)
+### 8) Сигнальна шина
+- [Signals - огляд](systems/signals/README.md)
+- [Сигнали будівництва](systems/signals/building-placed.md)
+- [Сигнали режимів гри](systems/signals/game-mode-changed.md)
+- [Сигнали юнітів](systems/signals/unit-moved.md)
 
-</details>
+### 9) Економіка
+- [Economy - огляд](systems/economy/README.md)
+- [Economy Designer](systems/economy/economy-designer.md)
+- [Economy API](systems/economy/economy-api-tab.md)
+- [Каталог інтерфейсів](systems/economy/economy-interface-catalog.md)
+- [Top 100 питань](systems/economy/economy-top-100-qa.md)
 
-<details>
-<summary>Generation система</summary>
+### 10) Мультиплеєр
+- [Multiplayer - огляд](systems/multiplayer/README.md)
+- [Архітектура](systems/multiplayer/architecture.md)
+- [Синхронізація команд](systems/multiplayer/game-sync.md)
+- [Host Migration](systems/multiplayer/host-migration.md)
+- [Top 100 питань](systems/multiplayer/multiplayer-top-100-qa.md)
 
-- [Generation Index](modules/generation/README.md)
-- [Generator Pipeline](modules/generation/generator/README.md)
-- [Graph System](modules/generation/graph-system/README.md)
-- [Auto Tile Naming](modules/generation/auto-tile-naming/README.md)
+### 11) Календар
+- [Calendar - огляд](systems/calendar/README.md)
+- [Архітектура](systems/calendar/architecture.md)
+- [Інтеграція з Multiplayer](systems/calendar/multiplayer-integration.md)
 
-</details>
+### 12) Bot AI
+- [BotAI - огляд](systems/bot-ai/README.md)
+- [BotBrain](systems/bot-ai/brain.md)
 
-## Окремий практичний гайд
+### 13) Стандарти і модульні індекси
+- [Модульний індекс](modules/README.md)
+- [TDD стандарт](standarts/TDD.md)
 
-- [Гайд: створення нової колекції в Resolver](modules/gameplay/resolver/create-collection-guide.md)
-- [Гайд: Economy Tutorials](systems/economy/tutorials.md)
+## Суть ігрового циклу
 
-## Єдиний формат для всіх модулів
+У типовому сценарії гравець:
+1. Генерує карту і стартує сесію.
+2. Досліджує мапу, ставить ключові споруди, розгортає економіку.
+3. Керує населенням, робітниками, запасами, логістикою і ризиками.
+4. Реагує на події світу (дефіцит, сезонні зміни, втрати, туман війни).
+5. Розвиває оборону й армію, утримує стабільність поселень.
+6. За потреби грає в мультиплеєрі з синхронізацією стану і reconnect flow.
 
-Кожен модуль має однакову структуру:
+## Для кого ця документація
 
-- README.md (індекс модуля)
-- overview.md
-- architecture.md
-- data-model.md
-- workflow.md
-- api-contracts.md
-- integration.md
-- examples.md
-- create-collection-guide.md (де це застосовно)
+- Для gameplay-програмістів: API, сигнали, інтеграційні контракти.
+- Для технічних дизайнерів: Economy/Calendar/Registry/Config Hub інструменти.
+- Для QA і тест-інженерів: системні гайди, сценарії, точки валідації.
 
-У великих розділах використано collapsible-блоки для зменшення візуального шуму.
+## Формат документації
+
+Документація підтримує 2 взаємодоповнюючі структури:
+- systems/* - практична системна документація для швидкої навігації;
+- modules/* - глибока модульна структура (overview/architecture/data-model/workflow/api-contracts/integration/examples).
+
+Якщо потрібен швидкий старт - починайте з systems.
+Якщо потрібне глибоке впровадження в модуль - переходьте в modules.
 

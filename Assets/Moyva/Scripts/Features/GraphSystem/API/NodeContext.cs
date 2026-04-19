@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public Vector2Int MapSize { get; set; }
 
         private readonly Dictionary<Type, object> _services = new();
+        private long _nodeIterations;
 
         public NodeContext(int seed, CancellationToken cancellation = default,
             IProgress<float> progress = null)
@@ -42,6 +43,30 @@ namespace Kruty1918.Moyva.GraphSystem.API
             }
             service = default;
             return false;
+        }
+
+        public void CountIteration(int amount = 1)
+        {
+            if (amount <= 0) return;
+            _nodeIterations += amount;
+        }
+
+        public void ResetNodeProfiling()
+        {
+            _nodeIterations = 0;
+        }
+
+        public long ConsumeNodeIterations()
+        {
+            long value = _nodeIterations;
+            _nodeIterations = 0;
+            return value;
+        }
+
+        public void CopyServicesTo(NodeContext other)
+        {
+            foreach (var kv in _services)
+                other._services[kv.Key] = kv.Value;
         }
 
         public System.Random CreateRandom() => new(Seed);

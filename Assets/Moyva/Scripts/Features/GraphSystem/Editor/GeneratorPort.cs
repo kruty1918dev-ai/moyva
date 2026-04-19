@@ -89,6 +89,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return new Color(0.5f, 0.9f, 0.5f);   // Light green
             if (type == typeof(Vector2Int))
                 return new Color(0.8f, 0.4f, 0.8f);   // Purple
+            if (type == typeof(object))
+                return new Color(0.95f, 0.95f, 0.95f); // Any/wildcard
 
             return new Color(0.8f, 0.8f, 0.8f);        // Default
         }
@@ -102,6 +104,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (type == typeof(int)) return "int";
             if (type == typeof(float)) return "float";
             if (type == typeof(Vector2Int)) return "Vector2Int";
+            if (type == typeof(object)) return "Any";
             return type.Name;
         }
     }

@@ -20,8 +20,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int width = heightMap.GetLength(0);
             int height = heightMap.GetLength(1);
 
-            // Працюємо з копією або прямо з поточною мапою
+            // Якщо вхідної мапи немає/розмір не збігається — працюємо з порожньою,
+            // але далі гарантуємо заповнення через DefaultTileID.
             string[,] resultBiomes = currentMap;
+            if (resultBiomes == null ||
+                resultBiomes.GetLength(0) != width ||
+                resultBiomes.GetLength(1) != height)
+            {
+                resultBiomes = new string[width, height];
+            }
+
+            string defaultTile = GetSafeDefaultTile();
 
             float[,] moistureMap = GenerateMoistureMap(width, height);
 
@@ -34,14 +43,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                     string selectedTile = SelectBiome(h, m);
 
-                    // КЛЮЧОВИЙ МОМЕНТ:
-                    // Якщо SelectBiome повернув назву — міняємо тайл.
-                    // Якщо повернув null — ми ВЗАГАЛІ не чіпаємо resultBiomes[x, y],
-                    // там залишається те, що було записано раніше VirtualHeightMapGenerator-ом.
                     if (!string.IsNullOrEmpty(selectedTile))
-                    {
                         resultBiomes[x, y] = selectedTile;
-                    }
+                    else if (string.IsNullOrEmpty(resultBiomes[x, y]))
+                        resultBiomes[x, y] = defaultTile;
                 }
             }
 
@@ -60,8 +65,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     return biome.TileID;
                 }
             }
-            return null; // Повертаємо null, щоб нічого не змінювати в існуючій мапі
+            return null;
         }
+
+        private string GetSafeDefaultTile()
+        {
+            if (_settings == null || string.IsNullOrWhiteSpace(_settings.DefaultTileID))
+                return "grass";
+
+            return _settings.DefaultTileID;
+        }
+
         private float[,] GenerateMoistureMap(int width, int height)
         {
             float[,] map = new float[width, height];

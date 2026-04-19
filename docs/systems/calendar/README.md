@@ -1,6 +1,6 @@
 # Calendar — Огляд системи
 
-← [Назад до README](../../../README.md)
+← [Назад до README](../../README.md)
 
 ---
 

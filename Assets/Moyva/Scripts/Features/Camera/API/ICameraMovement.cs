@@ -6,5 +6,10 @@ namespace Kruty1918.Moyva.Camera.API
     {
         void MoveCamera(Vector3 direction);
         void ForceMoveCameraToPosition(Vector3 position);
+
+        /// <summary>
+        /// Миттєво телепортує камеру в позицію без жодної плавності.
+        /// </summary>
+        void TeleportCamera(Vector3 position);
     }
 }

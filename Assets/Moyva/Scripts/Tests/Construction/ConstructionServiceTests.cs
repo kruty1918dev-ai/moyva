@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.ObjectsMap.Runtime;
@@ -113,6 +114,11 @@ namespace Kruty1918.Moyva.Tests.Construction
             Container.BindInterfacesAndSelfTo<ObjectsMapService>().AsSingle().NonLazy();
             Container.Bind<IFogOfWarService>().To<FakeFogOfWarService>().AsSingle();
             Container.Bind<IWallPlacementService>().To<FakeWallPlacementService>().AsSingle();
+
+            var regSO = ScriptableObject.CreateInstance<BuildingRegistrySO>();
+            Container.Bind<IBuildingRegistry>().FromInstance(regSO).AsSingle();
+            Container.BindInstance(0).WithId("minSpacing");
+            Container.BindInstance(0).WithId("townHallBuildRadius");
 
             var constructionServiceType = typeof(IConstructionService).Assembly
                 .GetType("Kruty1918.Moyva.Construction.Runtime.ConstructionService");
@@ -362,6 +368,7 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             _service.ToggleDemolishMode();
             _service.TryDemolishAt(pos);
+            _service.Confirm();
 
             Assert.IsFalse(_objectsMap.IsOccupied(pos));
         }
@@ -391,6 +398,7 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             _service.ToggleDemolishMode();
             _service.TryDemolishAt(pos);
+            _service.Confirm();
 
             Assert.AreEqual(1, fired.Count);
             Assert.AreEqual("market", fired[0].BuildingId);
@@ -405,7 +413,7 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             _service.ToggleDemolishMode();
             Assert.IsTrue(_service.TryDemolishAt(pos));
-            Assert.IsFalse(_service.TryDemolishAt(pos)); // повторний виклик — false
+            Assert.IsTrue(_service.TryDemolishAt(pos)); // повторний виклик скасовує відмітку
         }
 
         // ─── Допоміжні методи ────────────────────────────────────────────────

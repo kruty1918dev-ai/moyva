@@ -20,9 +20,14 @@
 - Assets/Moyva/Scripts/Features/Economy/API/EconomyCaravanTemplate.cs
 - Assets/Moyva/Scripts/Features/Economy/API/EconomyAiRuleProfile.cs
 - Assets/Moyva/Scripts/Features/Economy/API/EconomyDatabaseSO.cs
+- Assets/Moyva/Scripts/Features/Economy/API/EconomyRulesConfigSO.cs
 
 ### Runtime
 - Assets/Moyva/Scripts/Features/Economy/Runtime/EconomySchema.cs
+- Assets/Moyva/Scripts/Features/Economy/Runtime/EconomyMarketPricingService.cs
+- Assets/Moyva/Scripts/Features/Economy/Runtime/EconomyComfortAndMortalityService.cs
+- Assets/Moyva/Scripts/Features/Economy/Runtime/EconomyConsumptionService.cs
+- Assets/Moyva/Scripts/Features/Economy/Runtime/EconomySettlementLifecycleService.cs
 
 ### Editor
 - Assets/Moyva/Scripts/Features/Economy/Editor/EconomyDesignerWindow.cs
@@ -167,12 +172,35 @@
 - `ProductionProfiles`
 - `CaravanTemplates`
 - `AiRuleProfiles`
+- `RulesConfig`
 
 Контракт:
 - це єдина агрегуюча точка для інструмента;
+- `RulesConfig` має бути призначений для роботи повного Economy Hub;
 - `SchemaVersion` має бути сумісний з `EconomySchema.CurrentVersion`.
 
-### 3.11 EconomySchema
+### 3.11 EconomyRulesConfigSO
+
+Призначення:
+- централізований runtime-конфіг усіх правил економіки в одному asset.
+
+Групи налаштувань:
+- Settlement
+- Population
+- Workforce
+- Production
+- Storage
+- Caravan
+- Market
+- Consumption
+- Mortality
+- Building
+- AI Extensibility
+
+Контракт:
+- усі критичні економічні коефіцієнти мають задаватися тут, а не хардкодом у runtime.
+
+### 3.12 EconomySchema
 
 Константи:
 - `InitialVersion = 1`

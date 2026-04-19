@@ -64,6 +64,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 foreach (var rule in _rulesByPriority)
                 {
+                    if (string.IsNullOrWhiteSpace(rule.TileID) || string.IsNullOrWhiteSpace(rule.TileCentralID))
+                    {
+                        Debug.LogWarning("[WFCService] Skip rule with empty TileID/TileCentralID.");
+                        continue;
+                    }
+
                     // Якщо результат == центр — нічого не зміниться
                     if (rule.TileID == rule.TileCentralID)
                         continue;
@@ -180,6 +186,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int height,
             Dictionary<string, HashSet<Vector2Int>> tilePositions)
         {
+            if (string.IsNullOrWhiteSpace(rule.TileCentralID) || string.IsNullOrWhiteSpace(rule.TileID))
+                return false;
+
             bool changedAny = false;
 
             while (true)
@@ -204,7 +213,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     string oldTile = biomeMap[pos.x, pos.y];
                     biomeMap[pos.x, pos.y] = rule.TileID;
 
-                    if (tilePositions.TryGetValue(oldTile, out var oldSet))
+                    if (!string.IsNullOrWhiteSpace(oldTile)
+                        && tilePositions.TryGetValue(oldTile, out var oldSet))
                         oldSet.Remove(pos);
 
                     if (!tilePositions.TryGetValue(rule.TileID, out var newSet))
@@ -229,6 +239,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 for (int y = 1; y < height - 1; y++)
                 {
                     string id = map[x, y];
+                    if (string.IsNullOrWhiteSpace(id))
+                        continue;
+
                     if (!index.TryGetValue(id, out var set))
                     {
                         set = new HashSet<Vector2Int>();

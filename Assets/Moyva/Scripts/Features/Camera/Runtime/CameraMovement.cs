@@ -59,9 +59,13 @@ namespace Kruty1918.Moyva.Camera.Runtime
             // Встановлюємо нову ціль і блокуємо звичайний рух на заданий час
             _targetPosition = position;
             _forceBlockTimer = ForceBlockDuration;
+        }
 
-            // Якщо ти хочеш, щоб камера переміщалася МИТТЄВО (без плавності), розкоментуй цей рядок:
-            // _camera.transform.position = position; 
+        public void TeleportCamera(Vector3 position)
+        {
+            _targetPosition = position;
+            _currentVelocity = Vector3.zero;
+            _camera.transform.position = position;
         }
 
         public void LateTick()

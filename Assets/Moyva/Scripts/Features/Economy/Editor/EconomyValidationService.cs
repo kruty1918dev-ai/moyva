@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Economy.API;
+using Kruty1918.Moyva.Editor.Shared;
 
 namespace Kruty1918.Moyva.Economy.Editor
 {
     public sealed class EconomyValidationService
     {
-        public IReadOnlyList<EconomyValidationIssue> Validate(EconomyDatabaseSO database)
+        public IReadOnlyList<EconomyValidationIssue> Validate(EconomyDatabaseSO database, BuildingRegistrySO buildingRegistry = null)
         {
             var issues = new List<EconomyValidationIssue>();
             if (database == null)
@@ -21,8 +24,62 @@ namespace Kruty1918.Moyva.Economy.Editor
             ValidateWarehousePolicies(database, issues);
             ValidateProduction(database, issues);
             ValidateCaravans(database, issues);
+            ValidateRulesConfig(database, issues);
+            ValidateBuildingModules(buildingRegistry, database.RulesConfig?.Building, issues);
 
             return issues;
+        }
+
+        public IReadOnlyList<EconomyValidationIssue> ValidateBuildingModules(BuildingRegistrySO buildingRegistry)
+        {
+            var issues = new List<EconomyValidationIssue>();
+            ValidateBuildingModules(buildingRegistry, null, issues);
+            return issues;
+        }
+
+        public IReadOnlyList<EconomyValidationIssue> ValidateBuildingModules(BuildingDefinition definition, int fallbackIndex = -1, EconomyBuildingRules rules = null)
+        {
+            var issues = new List<EconomyValidationIssue>();
+            AppendBuildingModuleIssues(definition, fallbackIndex, issues, null, rules);
+            return issues;
+        }
+
+        private static void ValidateBuildingModules(BuildingRegistrySO buildingRegistry, EconomyBuildingRules rules, List<EconomyValidationIssue> issues)
+        {
+            if (buildingRegistry == null || buildingRegistry.Buildings == null)
+                return;
+
+            for (int i = 0; i < buildingRegistry.Buildings.Length; i++)
+                AppendBuildingModuleIssues(buildingRegistry.Buildings[i], i, issues, buildingRegistry, rules);
+        }
+
+        private static void AppendBuildingModuleIssues(
+            BuildingDefinition definition,
+            int fallbackIndex,
+            List<EconomyValidationIssue> issues,
+            BuildingRegistrySO context = null,
+            EconomyBuildingRules rules = null)
+        {
+            if (definition == null)
+                return;
+
+            var moduleIssues = BuildingModuleEditorShared.GetFilteredIssues(definition, rules);
+            for (int j = 0; j < moduleIssues.Count; j++)
+            {
+                var issue = moduleIssues[j];
+                if (issue == null)
+                    continue;
+
+                var severity = issue.Severity == BuildingValidationSeverity.Error
+                    ? EconomyValidationSeverity.Error
+                    : EconomyValidationSeverity.Warning;
+
+                string buildingId = string.IsNullOrWhiteSpace(definition.Id) ? $"<building:{fallbackIndex}>" : definition.Id;
+                issues.Add(new EconomyValidationIssue(
+                    severity,
+                    $"Building '{buildingId}': [{issue.Code}] {issue.Message}",
+                    context));
+            }
         }
 
         private static void ValidateResources(EconomyDatabaseSO database, List<EconomyValidationIssue> issues)
@@ -121,6 +178,40 @@ namespace Kruty1918.Moyva.Economy.Editor
                 if (caravan.Capacity <= 0)
                     issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, $"Caravan template '{id}' has invalid Capacity ({caravan.Capacity}).", caravan));
             }
+        }
+
+        private static void ValidateRulesConfig(EconomyDatabaseSO database, List<EconomyValidationIssue> issues)
+        {
+            var rules = database.RulesConfig;
+            if (rules == null)
+            {
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Economy rules config is not assigned.", database));
+                return;
+            }
+
+            if (rules.Settlement.MaxSettlements <= 0)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: MaxSettlements must be > 0.", rules));
+
+            if (rules.Settlement.MinTownHallDistance <= 0)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: MinTownHallDistance must be > 0.", rules));
+
+            if (rules.Population.NewResidentsArrivalIntervalTurns <= 0)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: NewResidentsArrivalIntervalTurns must be > 0.", rules));
+
+            if (rules.Caravan.MaxCaravansPerSettlement <= 0)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: MaxCaravansPerSettlement must be > 0.", rules));
+
+            if (rules.Market.TargetStock <= 0f)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: Market TargetStock must be > 0.", rules));
+
+            if (rules.Market.ReferenceTradeVolume <= 0f)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: Market ReferenceTradeVolume must be > 0.", rules));
+
+            if (rules.Market.MinPriceMultiplier <= 0f || rules.Market.MaxPriceMultiplier <= 0f)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: Market multipliers must be > 0.", rules));
+
+            if (rules.Market.MaxPriceMultiplier < rules.Market.MinPriceMultiplier)
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, "Rules: MaxPriceMultiplier cannot be lower than MinPriceMultiplier.", rules));
         }
 
         private static string Normalize(string value) => (value ?? string.Empty).Trim();

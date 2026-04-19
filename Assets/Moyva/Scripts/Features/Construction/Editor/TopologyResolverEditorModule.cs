@@ -295,10 +295,11 @@ namespace Kruty1918.Moyva.Construction.Editor
 
             if (expanded)
             {
+                var availableBuildingIds = CollectBuildingIds(so);
                 for (int i = 0; i < variantsProp.arraySize; i++)
                 {
                     var variant = variantsProp.GetArrayElementAtIndex(i);
-                    DrawExistingVariantRow(variant, variantsProp, i);
+                    DrawExistingVariantRow(variant, variantsProp, i, availableBuildingIds);
                 }
 
                 DrawAddVariantBlock(so, collectionId, caseType, defaultWallId, variantsProp);
@@ -307,12 +308,17 @@ namespace Kruty1918.Moyva.Construction.Editor
             EditorGUILayout.EndVertical();
         }
 
-        private static void DrawExistingVariantRow(SerializedProperty variantProp, SerializedProperty variants, int index)
+        private static void DrawExistingVariantRow(
+            SerializedProperty variantProp,
+            SerializedProperty variants,
+            int index,
+            IReadOnlyList<string> availableIds)
         {
             EditorGUILayout.BeginHorizontal();
-            variantProp.stringValue = EditorGUILayout.TextField(
+            variantProp.stringValue = DrawIdPopup(
                 new GUIContent("Variant ID", "ID, який резолвер може повернути для цього типу"),
-                variantProp.stringValue);
+                variantProp.stringValue,
+                availableIds);
 
             if (GUILayout.Button(new GUIContent("-", "Видалити варіацію"), GUILayout.Width(22f)))
             {
@@ -487,6 +493,66 @@ namespace Kruty1918.Moyva.Construction.Editor
             }
 
             return false;
+        }
+
+        private static List<string> CollectBuildingIds(SerializedObject so)
+        {
+            var ids = new List<string>();
+            var buildings = so?.FindProperty("Buildings");
+            if (buildings == null)
+                return ids;
+
+            for (int i = 0; i < buildings.arraySize; i++)
+            {
+                string id = buildings.GetArrayElementAtIndex(i).FindPropertyRelative("Id")?.stringValue;
+                if (!string.IsNullOrWhiteSpace(id) && !ids.Contains(id))
+                    ids.Add(id.Trim());
+            }
+
+            ids.Sort(StringComparer.Ordinal);
+            return ids;
+        }
+
+        private static string DrawIdPopup(GUIContent label, string currentId, IReadOnlyList<string> knownIds)
+        {
+            currentId ??= string.Empty;
+
+            var values = new List<string> { string.Empty };
+            if (knownIds != null)
+            {
+                for (int i = 0; i < knownIds.Count; i++)
+                {
+                    string id = knownIds[i];
+                    if (!string.IsNullOrWhiteSpace(id) && !values.Contains(id))
+                        values.Add(id);
+                }
+            }
+
+            bool hasMissingCurrent = !string.IsNullOrWhiteSpace(currentId) && !values.Contains(currentId);
+            if (hasMissingCurrent)
+                values.Add(currentId);
+
+            string[] optionValues = values.ToArray();
+            string[] optionLabels = new string[optionValues.Length];
+            for (int i = 0; i < optionValues.Length; i++)
+            {
+                string value = optionValues[i];
+                if (string.IsNullOrEmpty(value))
+                    optionLabels[i] = "<none>";
+                else if (hasMissingCurrent && value == currentId)
+                    optionLabels[i] = $"{value} (missing)";
+                else
+                    optionLabels[i] = value;
+            }
+
+            int currentIndex = Array.IndexOf(optionValues, currentId);
+            if (currentIndex < 0) currentIndex = 0;
+
+            int selectedIndex = EditorGUILayout.Popup(label, currentIndex, optionLabels);
+            if (selectedIndex < 0 || selectedIndex >= optionValues.Length)
+                return currentId;
+
+            return optionValues[selectedIndex];
         }
 
         private static string BuildCaseKey(string collectionId, TopologyCaseType caseType)

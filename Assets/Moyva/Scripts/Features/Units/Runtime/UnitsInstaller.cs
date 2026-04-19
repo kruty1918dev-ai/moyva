@@ -23,9 +23,17 @@ namespace Kruty1918.Moyva.Units.Runtime
             Container.BindInterfacesAndSelfTo<UnitMovementService>()
                 .AsSingle();
 
-                Container.Bind<IUnitClassConfig>()
-                    .To<UnitClassConfigService>()
-                    .AsSingle();
+            Container.Bind<IUnitClassConfig>()
+                .To<UnitClassConfigService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<UnitWorldInfoPresenter>()
+                .AsSingle()
+                .NonLazy();
+
+            Container.BindInterfacesAndSelfTo<UnitSelectionVisualService>()
+                .AsSingle()
+                .NonLazy();
         }
     }
 }

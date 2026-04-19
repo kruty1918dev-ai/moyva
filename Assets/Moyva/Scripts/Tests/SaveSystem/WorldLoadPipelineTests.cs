@@ -16,6 +16,14 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
     [TestFixture]
     public class WorldLoadPipelineTests : ZenjectUnitTestFixture
     {
+        private sealed class FakeMapObjectRegistry : IMapObjectRegistryService
+        {
+            public bool TryGetDefinition(string id, out MapObjectDefinition definition)
+            {
+                definition = null;
+                return false;
+            }
+        }
         private sealed class FakeGridService : IGridService
         {
             private readonly string[,] _grid;
@@ -131,6 +139,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             Zenject.SignalBusInstaller.Install(Container);
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<WorldBuiltSignal>();
+            Container.DeclareSignal<WorldGeneratedDataSignal>();
         }
 
         public override void Teardown()
@@ -148,7 +157,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
         public void LoadSavedWorld_BuildsWorld_BeforeUnitsAreRestored()
         {
             _signalBus = Container.Resolve<SignalBus>();
-
+    
             var tileRegistry = ScriptableObject.CreateInstance<TileRegistrySO>();
             _createdUnityObjects.Add(tileRegistry);
             SetTileDefinitions(tileRegistry, "grass", "river");
@@ -161,7 +170,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             var container = new DiContainer();
             container.Inject(tileRegistry);
 
-            var instantiator = new MapVisualInstantiator(tileRegistry, null, null, null, null, grid, dataGenerator, container, _signalBus);
+            var instantiator = new MapVisualInstantiator(tileRegistry, new FakeMapObjectRegistry(), null, null, null, null, grid, dataGenerator, container, _signalBus, null, null);
             instantiator.Initialize();
 
             var sourceWorld = new GeneratedWorldData
@@ -191,7 +200,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             var freshGrid = new FakeGridService(2, 2);
             var freshGenerator = new FakeMapDataGenerator();
             var freshContainer = new DiContainer();
-            var freshInstantiator = new MapVisualInstantiator(tileRegistry, null, null, null, null, freshGrid, freshGenerator, freshContainer, _signalBus);
+            var freshInstantiator = new MapVisualInstantiator(tileRegistry, new FakeMapObjectRegistry(), null, null, null, null, freshGrid, freshGenerator, freshContainer, _signalBus, null, null);
             freshInstantiator.Initialize();
 
             var loadWorldModule = new GeneratedWorldSaveModule(freshInstantiator);

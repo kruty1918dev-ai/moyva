@@ -81,7 +81,8 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 var sourcePort = sourceOutputs[conn.SourcePortIndex];
                 var targetPort = targetInputs[conn.TargetPortIndex];
 
-                if (!targetPort.ValueType.IsAssignableFrom(sourcePort.ValueType))
+                bool isWildcard = sourcePort.ValueType == typeof(object) || targetPort.ValueType == typeof(object);
+                if (!isWildcard && !targetPort.ValueType.IsAssignableFrom(sourcePort.ValueType))
                 {
                     errors.Add(new ValidationError(target.NodeId,
                         $"Type mismatch: '{source.Title}'.{sourcePort.Name} ({sourcePort.ValueType.Name}) → '{target.Title}'.{targetPort.Name} ({targetPort.ValueType.Name})."));
@@ -92,15 +93,29 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
         private void ValidateRequiredInputs(GraphAsset graph, List<ValidationError> errors)
         {
             var connectedInputs = new HashSet<string>();
+            var connectedNodeIds = new HashSet<string>();
             foreach (var conn in graph.Connections)
+            {
                 connectedInputs.Add($"{conn.TargetNodeId}:{conn.TargetPortIndex}");
+                connectedNodeIds.Add(conn.SourceNodeId);
+                connectedNodeIds.Add(conn.TargetNodeId);
+            }
 
             foreach (var node in graph.Nodes)
             {
                 if (node == null) continue;
+
+                // Isolated node (no incoming and no outgoing connections) is treated as unused,
+                // not as an invalid graph state.
+                if (!connectedNodeIds.Contains(node.NodeId))
+                    continue;
+
                 var inputs = node.Inputs;
                 for (int i = 0; i < inputs.Length; i++)
                 {
+                    if (IsOptionalInput(inputs[i].Name))
+                        continue;
+
                     string key = $"{node.NodeId}:{i}";
                     if (!connectedInputs.Contains(key))
                     {
@@ -110,6 +125,15 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     }
                 }
             }
+        }
+
+        private static bool IsOptionalInput(string portName)
+        {
+            if (string.IsNullOrWhiteSpace(portName))
+                return false;
+
+            return portName.IndexOf("optional", System.StringComparison.OrdinalIgnoreCase) >= 0
+                || portName.IndexOf("опцій", System.StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }
