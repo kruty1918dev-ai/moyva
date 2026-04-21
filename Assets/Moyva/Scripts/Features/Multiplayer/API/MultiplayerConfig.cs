@@ -56,7 +56,7 @@ namespace Kruty1918.Moyva.Multiplayer.Config
         public static MultiplayerConfig Default() =>
             new MultiplayerConfig(
                 schemaVersion: CurrentSchemaVersion,
-                providerType: NetworkProviderType.Offline,
+                providerType: NetworkProviderType.Relay,
                 defaultSessionRules: SessionRules.Default(),
                 strictParticipantLock: false,
                 enforceConfigConsistency: true,

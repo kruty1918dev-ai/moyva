@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Config;
+using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
 
 namespace Kruty1918.Moyva.Multiplayer.Core
 {
     /// <summary>
-    /// Orchestrates session lifecycle using injected abstractions.
-    /// Handles participant departure, host migration and bot fallback automatically
-    /// by subscribing to <see cref="INetworkProvider.PeerDisconnected"/>.
+    /// Orchestrates session lifecycle. In online mode it composes a UGS Lobby
+    /// (room discovery / player list) with an <see cref="INetworkProvider"/>
+    /// (Relay transport) by storing the Relay join code in lobby data.
+    /// Participants are synced from the lobby's player list so identities
+    /// are always the authoritative <c>PlayerId</c>.
     /// </summary>
-    public sealed class SessionManager : ISessionManager
+    public sealed class SessionManager : ISessionManager, IDisposable
     {
         private const string SoloSessionPrefix = "solo-local";
         private static readonly SessionRules SoloFallbackRules = new SessionRules(
@@ -26,6 +29,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             strictParticipantLock: false);
 
         private readonly INetworkProvider _network;
+        private readonly ILobbyService _lobby;
         private readonly IParticipantPolicyService _participantPolicy;
         private readonly IWorldConsistencyService _consistency;
         private readonly IWorldSnapshotStore _snapshotStore;
@@ -38,12 +42,20 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private readonly List<Participant> _participants = new List<Participant>();
         private MultiplayerConfig _config;
         private string _currentSessionId;
+        private string _currentLobbyId;
+        private string _currentLobbyCode;
         private SessionRules _currentRules;
+        private bool _isHost;
+        private string _localPlayerId;
 
         public IReadOnlyList<Participant> Participants => _participants;
 
+        /// <summary>Current lobby join code (visible to UI / shareable).</summary>
+        public string CurrentLobbyCode => _currentLobbyCode;
+
         public SessionManager(
             INetworkProvider network,
+            ILobbyService lobby,
             IParticipantPolicyService participantPolicy,
             IWorldConsistencyService consistency,
             IWorldSnapshotStore snapshotStore,
@@ -54,6 +66,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             IParticipantFallbackService participantFallback)
         {
             _network             = network             ?? throw new ArgumentNullException(nameof(network));
+            _lobby               = lobby               ?? throw new ArgumentNullException(nameof(lobby));
             _participantPolicy   = participantPolicy   ?? throw new ArgumentNullException(nameof(participantPolicy));
             _consistency         = consistency         ?? throw new ArgumentNullException(nameof(consistency));
             _snapshotStore       = snapshotStore       ?? throw new ArgumentNullException(nameof(snapshotStore));
@@ -63,120 +76,252 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _hostMigration       = hostMigration       ?? throw new ArgumentNullException(nameof(hostMigration));
             _participantFallback = participantFallback ?? throw new ArgumentNullException(nameof(participantFallback));
 
+            _network.PeerConnected    += OnPeerConnected;
             _network.PeerDisconnected += OnPeerDisconnected;
+            _lobby.LobbyUpdated       += OnLobbyUpdated;
+            _lobby.KickedFromLobby    += OnKickedFromLobby;
         }
+
+        public void Dispose()
+        {
+            _network.PeerConnected    -= OnPeerConnected;
+            _network.PeerDisconnected -= OnPeerDisconnected;
+            _lobby.LobbyUpdated       -= OnLobbyUpdated;
+            _lobby.KickedFromLobby    -= OnKickedFromLobby;
+        }
+
+        // ── Session API ───────────────────────────────────────────────────────────
 
         public async Task<bool> CreateOrJoinSessionAsync(SessionConnectOptions options, CancellationToken ct = default)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
 
             _config = _configStore.Load();
-            var normalizedOptions = NormalizeOptions(options);
-            _logger.Info($"CreateOrJoinSession: room={normalizedOptions.RoomId}, create={normalizedOptions.CreateIfNotExists}");
+            var opts = NormalizeOptions(options);
+            _localPlayerId = opts.LocalIdentity.PlayerId;
 
-            // Config consistency check
+            // Pure-offline / solo path
+            if (_config.ProviderType == NetworkProviderType.Offline)
+            {
+                return StartOfflineSolo(opts);
+            }
+
+            // Config consistency
             if (_config.EnforceConfigConsistency)
             {
                 uint localChecksum = ComputeConfigChecksum(_config);
-                if (normalizedOptions.ConfigChecksum != 0 && normalizedOptions.ConfigChecksum != localChecksum)
+                if (opts.ConfigChecksum != 0 && opts.ConfigChecksum != localChecksum)
                 {
-                    _logger.Warn($"Config checksum mismatch: local={localChecksum:X8}, remote={normalizedOptions.ConfigChecksum:X8}");
+                    _logger.Warn($"Config checksum mismatch: local={localChecksum:X8}, remote={opts.ConfigChecksum:X8}");
                     _failurePolicy.HandleRecoverable(FailureCategory.ConfigMismatch, "Config checksums differ.");
                     return false;
                 }
             }
 
-            // Participant policy check (host joining their own session)
-            WorldSnapshot snapshot = _snapshotStore.Exists(normalizedOptions.RoomId)
-                ? _snapshotStore.Load(normalizedOptions.RoomId)
-                : null;
-
-            if (!_participantPolicy.CanJoin(normalizedOptions.LocalIdentity, _participants, normalizedOptions.Rules, snapshot))
+            // Local participant policy
+            WorldSnapshot snapshot = _snapshotStore.Exists(opts.RoomId) ? _snapshotStore.Load(opts.RoomId) : null;
+            if (!_participantPolicy.CanJoin(opts.LocalIdentity, _participants, opts.Rules, snapshot))
             {
-                _failurePolicy.HandleRecoverable(FailureCategory.ParticipantRejected, $"Participant {normalizedOptions.LocalIdentity.PlayerId} rejected.");
+                _failurePolicy.HandleRecoverable(FailureCategory.ParticipantRejected, $"Participant {opts.LocalIdentity.PlayerId} rejected.");
                 return false;
             }
 
-            // Network operation
-            SessionResult result;
-            if (normalizedOptions.CreateIfNotExists)
+            try
             {
-                result = await _network.HostSessionAsync(normalizedOptions.RoomId, ct);
+                if (opts.CreateIfNotExists)
+                    return await HostFlowAsync(opts, ct);
+
+                return await JoinFlowAsync(opts, ct);
             }
-            else
+            catch (Exception e)
             {
-                result = await _network.JoinSessionAsync(normalizedOptions.RoomId, ct);
+                _logger.Error($"CreateOrJoinSession failed: {e.Message}");
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, e.Message);
+                await SafeCleanupAsync();
+                return false;
             }
-
-            if (!result.Success)
-            {
-                _logger.Warn($"Network operation failed: {result.ErrorMessage}. Trying offline solo fallback.");
-                if (!TryStartOfflineSolo(normalizedOptions))
-                {
-                    _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, result.ErrorMessage);
-                    return false;
-                }
-
-                return true;
-            }
-
-            _currentSessionId = result.SessionId;
-            _currentRules = normalizedOptions.Rules;
-            var localParticipant = new Participant(normalizedOptions.LocalIdentity, isBot: false, isHost: normalizedOptions.CreateIfNotExists);
-            _participants.Add(localParticipant);
-
-            _logger.Info($"Session established: {_currentSessionId}, host={normalizedOptions.CreateIfNotExists}");
-            return true;
         }
 
         public async Task LeaveSessionAsync(CancellationToken ct = default)
         {
             _logger.Info($"Leaving session: {_currentSessionId}");
-            _network.PeerDisconnected -= OnPeerDisconnected;
-            await _network.LeaveSessionAsync(ct);
-            _participants.Clear();
-            _currentSessionId = null;
-            _currentRules = null;
+            await SafeCleanupAsync(ct);
         }
 
-        // ── Migration & Fallback ───────────────────────────────────────────────
+        // ── Host / Join flows ─────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Called when a remote peer disconnects.
-        /// Removes the departing participant, triggers host migration if the host left,
-        /// and optionally adds a bot fallback when the session rules allow it.
-        /// </summary>
+        private async Task<bool> HostFlowAsync(SessionConnectOptions opts, CancellationToken ct)
+        {
+            _logger.Info($"Host flow: room='{opts.RoomId}' max={opts.Rules.MaxParticipants}");
+
+            var createOpts = new CreateRoomOptions(opts.RoomId, opts.Rules.MaxParticipants, isPrivate: false,
+                displayName: opts.LocalIdentity.Nickname);
+
+            var lobby = await _lobby.CreateRoomAsync(createOpts, ct);
+            if (lobby == null)
+            {
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Failed to create lobby.");
+                return false;
+            }
+
+            _currentLobbyId = lobby.LobbyId;
+            _currentLobbyCode = lobby.LobbyCode;
+            _isHost = true;
+
+            var hostResult = await _network.HostSessionAsync(lobby.LobbyId, ct);
+            if (!hostResult.Success)
+            {
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, hostResult.ErrorMessage);
+                await SafeCleanupAsync();
+                return false;
+            }
+
+            // Relay join code → lobby data so clients can discover it.
+            await _lobby.SetRelayJoinCodeAsync(hostResult.SessionId, ct);
+
+            _currentSessionId = hostResult.SessionId;
+            _currentRules = opts.Rules;
+
+            UpsertLocalParticipant(opts.LocalIdentity, isHost: true);
+            _logger.Info($"Session hosted. LobbyCode={_currentLobbyCode} RelayCode={_currentSessionId}");
+            return true;
+        }
+
+        private async Task<bool> JoinFlowAsync(SessionConnectOptions opts, CancellationToken ct)
+        {
+            _logger.Info($"Join flow: lobbyCode='{opts.RoomId}'");
+
+            var lobby = await _lobby.JoinByCodeAsync(opts.RoomId, opts.LocalIdentity.Nickname, ct);
+            if (lobby == null)
+            {
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Failed to join lobby.");
+                return false;
+            }
+
+            _currentLobbyId = lobby.LobbyId;
+            _currentLobbyCode = lobby.LobbyCode;
+            _isHost = false;
+
+            // Wait for relay code to become available (host publishes it asynchronously).
+            string relayCode = await WaitForRelayCodeAsync(TimeSpan.FromSeconds(15), ct);
+            if (string.IsNullOrEmpty(relayCode))
+            {
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Relay code not published by host.");
+                await SafeCleanupAsync();
+                return false;
+            }
+
+            var joinResult = await _network.JoinSessionAsync(relayCode, ct);
+            if (!joinResult.Success)
+            {
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, joinResult.ErrorMessage);
+                await SafeCleanupAsync();
+                return false;
+            }
+
+            _currentSessionId = joinResult.SessionId;
+            _currentRules = opts.Rules;
+
+            UpsertLocalParticipant(opts.LocalIdentity, isHost: false);
+            _logger.Info($"Session joined. Lobby={_currentLobbyCode}");
+            return true;
+        }
+
+        private async Task<string> WaitForRelayCodeAsync(TimeSpan timeout, CancellationToken ct)
+        {
+            var deadline = DateTime.UtcNow.Add(timeout);
+            while (DateTime.UtcNow < deadline)
+            {
+                if (ct.IsCancellationRequested) return null;
+
+                var snap = _lobby.Current;
+                if (snap != null && !string.IsNullOrEmpty(snap.RelayJoinCode))
+                    return snap.RelayJoinCode;
+
+                try { await Task.Delay(500, ct); }
+                catch (OperationCanceledException) { return null; }
+            }
+            return null;
+        }
+
+        // ── Participant sync ──────────────────────────────────────────────────────
+
+        private void UpsertLocalParticipant(ParticipantIdentity identity, bool isHost)
+        {
+            var existing = _participants.Find(p => p.Identity.PlayerId == identity.PlayerId);
+            if (existing == null)
+                _participants.Add(new Participant(identity, isBot: false, isHost));
+        }
+
+        private void OnLobbyUpdated(LobbyRoom snapshot)
+        {
+            if (snapshot == null) return;
+
+            // Add missing remote participants from the lobby's player list.
+            foreach (var p in snapshot.Players)
+            {
+                if (string.IsNullOrEmpty(p.PlayerId)) continue;
+                if (_participants.Exists(x => x.Identity.PlayerId == p.PlayerId)) continue;
+
+                var identity = new ParticipantIdentity(p.PlayerId, p.DisplayName);
+                _participants.Add(new Participant(identity, isBot: false, isHost: p.IsHost));
+                _logger.Info($"[Lobby] Participant added: {p.PlayerId} ({p.DisplayName})");
+            }
+
+            // Remove participants no longer in the lobby.
+            for (int i = _participants.Count - 1; i >= 0; i--)
+            {
+                var p = _participants[i];
+                bool stillInLobby = false;
+                for (int j = 0; j < snapshot.Players.Count; j++)
+                {
+                    if (snapshot.Players[j].PlayerId == p.Identity.PlayerId) { stillInLobby = true; break; }
+                }
+                if (!stillInLobby)
+                {
+                    _participants.RemoveAt(i);
+                    _logger.Info($"[Lobby] Participant removed: {p.Identity.PlayerId}");
+                }
+            }
+        }
+
+        private void OnKickedFromLobby(string reason)
+        {
+            _logger.Warn($"Kicked from lobby: {reason}");
+            _ = SafeCleanupAsync();
+        }
+
+        private void OnPeerConnected(string peerId)
+        {
+            if (string.IsNullOrEmpty(peerId) || peerId == _localPlayerId) return;
+            _logger.Info($"[Net] Peer connected: {peerId}");
+            // Lobby update will fill identity; nothing to add here unless missing.
+        }
+
         private void OnPeerDisconnected(string peerId)
         {
+            if (string.IsNullOrEmpty(peerId)) return;
+
             var leaving = _participants.Find(p => p.Identity.PlayerId == peerId);
             if (leaving == null)
             {
-                _logger.Warn($"OnPeerDisconnected: unknown peer '{peerId}' — ignoring.");
+                _logger.Warn($"OnPeerDisconnected: unknown peer '{peerId}' - ignoring.");
                 return;
             }
 
             _participants.Remove(leaving);
-            _logger.Info($"Participant '{peerId}' left the session. Remaining: {_participants.Count}");
+            _logger.Info($"Participant '{peerId}' left. Remaining: {_participants.Count}");
 
-            // ── Host migration ────────────────────────────────────────────────
             if (leaving.IsHost && _participants.Count > 0)
             {
-                var newHost = _hostMigration.ChooseNewHost(_participants);
-                if (newHost != null)
-                {
-                    int idx = _participants.FindIndex(p => p.Identity.PlayerId == newHost.Identity.PlayerId);
-                    if (idx >= 0)
-                        _participants[idx] = newHost;
-
-                    _logger.Info($"Host migrated to '{newHost.Identity.PlayerId}'.");
-                }
-                else
-                {
-                    _logger.Warn("No valid host candidate found after host migration.");
-                }
+                // MVP policy: host left → session ends.
+                _logger.Warn("Host disconnected. Ending session.");
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Host disconnected.");
+                _ = SafeCleanupAsync();
+                return;
             }
 
-            // ── Bot fallback ──────────────────────────────────────────────────
+            // Bot fallback (non-host)
             var rules = _currentRules ?? SoloFallbackRules;
             var fallback = _participantFallback.GetFallback(leaving.Identity, _participants, rules);
             if (fallback != null)
@@ -186,11 +331,34 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             }
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
+        // ── Cleanup & helpers ─────────────────────────────────────────────────────
+
+        private async Task SafeCleanupAsync(CancellationToken ct = default)
+        {
+            try { await _network.LeaveSessionAsync(ct); } catch (Exception e) { _logger.Warn($"Net leave: {e.Message}"); }
+            try { await _lobby.LeaveAsync(ct); } catch (Exception e) { _logger.Warn($"Lobby leave: {e.Message}"); }
+
+            _participants.Clear();
+            _currentSessionId = null;
+            _currentLobbyId = null;
+            _currentLobbyCode = null;
+            _currentRules = null;
+            _isHost = false;
+        }
+
+        private bool StartOfflineSolo(SessionConnectOptions opts)
+        {
+            var roomId = $"{SoloSessionPrefix}-{Guid.NewGuid():N}";
+            _participants.Clear();
+            _currentSessionId = roomId;
+            _currentRules = opts.Rules ?? SoloFallbackRules;
+            _participants.Add(new Participant(opts.LocalIdentity, isBot: false, isHost: true));
+            _logger.Info($"Offline solo session '{roomId}' started.");
+            return true;
+        }
 
         internal static uint ComputeConfigChecksum(MultiplayerConfig config)
         {
-            // FNV-1a 32-bit hash over key config fields.
             const uint FnvOffsetBasis = 2166136261u;
             const uint FnvPrime = 16777619u;
             unchecked
@@ -208,53 +376,18 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
         private SessionConnectOptions NormalizeOptions(SessionConnectOptions options)
         {
-            var hasRoomId = !string.IsNullOrWhiteSpace(options.RoomId);
             var localIdentity = options.LocalIdentity ?? new ParticipantIdentity("local-player", "Local Player");
             var rules = options.Rules ?? _config.DefaultSessionRules;
-
-            if (hasRoomId)
-            {
-                return new SessionConnectOptions(
-                    localIdentity,
-                    options.RoomId,
-                    options.CreateIfNotExists,
-                    rules,
-                    options.ConfigChecksum);
-            }
-
-            var soloRoomId = BuildSoloRoomId();
-            _logger.Warn($"RoomId is empty. Starting offline-compatible solo fallback session '{soloRoomId}'.");
+            var roomId = string.IsNullOrWhiteSpace(options.RoomId)
+                ? $"room-{Guid.NewGuid():N}".Substring(0, 12)
+                : options.RoomId.Trim();
 
             return new SessionConnectOptions(
                 localIdentity,
-                soloRoomId,
-                createIfNotExists: true,
-                rules: SoloFallbackRules,
-                configChecksum: 0);
-        }
-
-        private bool TryStartOfflineSolo(SessionConnectOptions normalizedOptions)
-        {
-            try
-            {
-                var roomId = BuildSoloRoomId();
-                _participants.Clear();
-                _currentSessionId = roomId;
-                _currentRules = SoloFallbackRules;
-                _participants.Add(new Participant(normalizedOptions.LocalIdentity, isBot: false, isHost: true));
-                _logger.Warn($"Session fallback activated: local single-player session '{roomId}'.");
-                return true;
-            }
-            catch (Exception e)
-            {
-                _logger.Error($"Failed to start local fallback session: {e.Message}");
-                return false;
-            }
-        }
-
-        private static string BuildSoloRoomId()
-        {
-            return $"{SoloSessionPrefix}-{Guid.NewGuid():N}";
+                roomId,
+                options.CreateIfNotExists,
+                rules,
+                options.ConfigChecksum);
         }
     }
 }

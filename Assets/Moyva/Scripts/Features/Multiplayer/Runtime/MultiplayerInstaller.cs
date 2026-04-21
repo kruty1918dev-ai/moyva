@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
 using UnityEngine;
@@ -15,17 +16,22 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     {
         public override void InstallBindings()
         {
+            Install(Container);
+        }
+
+        public static void Install(DiContainer container)
+        {
             // Логування
-            Container.Bind<IMultiplayerLogger>()
+            container.Bind<IMultiplayerLogger>()
                 .To<UnityMultiplayerLogger>()
                 .AsSingle();
 
             // Конфігурація
-            Container.Bind<IConfigStore>()
+            container.Bind<IConfigStore>()
                 .To<BinaryConfigStore>()
                 .AsSingle();
 
-            Container.Bind<MultiplayerConfig>()
+            container.Bind<MultiplayerConfig>()
                 .FromMethod(ctx =>
                 {
                     var store = ctx.Container.Resolve<IConfigStore>();
@@ -34,7 +40,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .AsSingle();
 
             // Мережевий провайдер
-            Container.Bind<INetworkProvider>()
+            container.Bind<INetworkProvider>()
                 .FromMethod(ctx =>
                 {
                     var config = ctx.Container.Resolve<MultiplayerConfig>();
@@ -43,50 +49,67 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 })
                 .AsSingle();
 
+            // Lobby-сервіс (UGS Lobby, якщо пакет встановлений; інакше офлайн-заглушка).
+            container.Bind<ILobbyService>()
+                .FromMethod(ctx =>
+                {
+                    var config = ctx.Container.Resolve<MultiplayerConfig>();
+                    var logger = ctx.Container.Resolve<IMultiplayerLogger>();
+                    if (config.ProviderType == NetworkProviderType.Offline)
+                        return new OfflineLobbyService(logger);
+                    return new UgsLobbyService(logger);
+                })
+                .AsSingle();
+
             // Сховище знімків світу
-            Container.Bind<IWorldSnapshotStore>()
+            container.Bind<IWorldSnapshotStore>()
                 .To<InMemoryWorldSnapshotStore>()
                 .AsSingle();
 
             // Обробка відмов
-            Container.Bind<IFailureHandlingPolicy>()
+            container.Bind<IFailureHandlingPolicy>()
                 .To<SimpleFailureHandlingPolicy>()
                 .AsSingle();
 
             // Основні сервіси
-            Container.Bind<ISessionManager>()
+            container.Bind<ISessionManager>()
                 .To<SessionManager>()
                 .AsSingle();
 
-            Container.Bind<IParticipantPolicyService>()
+            container.Bind<IParticipantPolicyService>()
                 .To<ParticipantPolicyService>()
                 .AsSingle();
 
-            Container.Bind<IWorldConsistencyService>()
+            container.Bind<IWorldConsistencyService>()
                 .To<WorldConsistencyService>()
                 .AsSingle();
 
             // Міграція хоста та клонування світу
-            Container.Bind<IHostMigrationService>()
+            container.Bind<IHostMigrationService>()
                 .To<HostMigrationService>()
                 .AsSingle();
 
-            Container.Bind<IWorldCloneService>()
+            container.Bind<IWorldCloneService>()
                 .To<WorldCloneService>()
                 .AsSingle();
 
             // Учасники та конфігурація
-            Container.Bind<IParticipantFallbackService>()
+            container.Bind<IParticipantFallbackService>()
                 .To<ParticipantFallbackService>()
                 .AsSingle();
 
-            Container.Bind<IConfigSyncService>()
+            container.Bind<IConfigSyncService>()
                 .To<ConfigSyncService>()
                 .AsSingle();
 
             // Синхронізація ігрових команд
-            Container.Bind<IGameCommandSyncService>()
+            container.Bind<IGameCommandSyncService>()
                 .To<GameCommandSyncService>()
+                .AsSingle();
+
+            // Identity-сервіс (UGS Auth коли доступно, інакше device id).
+            container.Bind<IMultiplayerIdentityService>()
+                .To<MultiplayerIdentityService>()
                 .AsSingle();
         }
     }
