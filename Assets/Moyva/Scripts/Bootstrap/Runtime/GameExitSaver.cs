@@ -29,14 +29,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void OnApplicationQuitting()
         {
-            if (!SavePlayModeOptions.AutoSaveEnabled)
+            if (!GameLaunchContext.IsAutoSaveEnabled())
             {
                 Debug.Log("[GameExitSaver] Auto Save вимкнено — збереження при виході пропущено.");
                 return;
             }
 
+            int slot = GameLaunchContext.SaveSlot;
             Debug.Log("[GameExitSaver] Автозбереження при виході...");
-            _saveService.Save(0);
+            _saveService.Save(slot);
             Debug.Log("[GameExitSaver] Автозбереження завершено.");
         }
     }

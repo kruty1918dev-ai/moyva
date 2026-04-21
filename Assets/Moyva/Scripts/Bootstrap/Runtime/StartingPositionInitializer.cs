@@ -60,7 +60,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             // Якщо є збереження і автозавантаження ввімкнено —
             // туман відновить FogOfWarSaveModule, не перезаписуємо.
-            if (SavePlayModeOptions.AutoLoadEnabled && _saveService.HasSave(0))
+            int slot = GameLaunchContext.SaveSlot;
+            if (GameLaunchContext.IsAutoLoadEnabled() && _saveService.HasSave(slot))
                 return;
 
             var startPos = PickStartingPosition(signal.Width, signal.Height);
