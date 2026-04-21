@@ -35,7 +35,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IBotDifficultySettings   _settings;
 
         [InjectOptional]
-        private IFogOfWarServiceRegistry _fogRegistry;
+        private IFogOfWarServiceRegistry _fogRegistry = null;
 
         // CancellationTokenSource per unit to cancel previous orders
         private readonly Dictionary<string, CancellationTokenSource> _activeMoves = new();
