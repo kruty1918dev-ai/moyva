@@ -73,6 +73,13 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             }
         }
 
+        private void Start()
+        {
+            // На випадок якщо інші системи (Flow/Animator) вже активували root-панель,
+            // синхронізуємо локальний стан контролера з фактичним станом сцени.
+            SyncActiveRootFromScene();
+        }
+
         // ─────────────────────────────────────────────────────────────────
         // Public navigation API (викликається кнопками з Inspector через UnityEvent)
         // ─────────────────────────────────────────────────────────────────
@@ -129,6 +136,13 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             }
 
             if (_activeRoot != null) _activeRoot.SetActive(false);
+
+            // Прибрати можливий дріфт стану, коли root-панель була активована
+            // зовнішнім кодом, але _activeRoot ще null.
+            foreach (var b in rootButtons)
+                if (b.RootPanel != null)
+                    b.RootPanel.SetActive(false);
+
             _activeRoot = null;
 
             foreach (var b in rootButtons)
@@ -158,6 +172,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (rootPanel == null) return;
 
+            // Якщо root вже активна у сцені, але контролер ще не синхронізований,
+            // вважаємо її поточною активною панеллю.
+            if (_activeRoot == null && rootPanel.activeSelf)
+                _activeRoot = rootPanel;
+
             // Клік по активній кореневій → закрити все
             if (_activeRoot == rootPanel)
             {
@@ -174,6 +193,23 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             foreach (var b in rootButtons)
                 if (b.Indicator != null)
                     b.Indicator.SetActive(b.RootPanel == rootPanel);
+        }
+
+        private void SyncActiveRootFromScene()
+        {
+            _activeRoot = null;
+            foreach (var b in rootButtons)
+            {
+                if (b.RootPanel != null && b.RootPanel.activeSelf)
+                {
+                    _activeRoot = b.RootPanel;
+                    break;
+                }
+            }
+
+            foreach (var b in rootButtons)
+                if (b.Indicator != null)
+                    b.Indicator.SetActive(b.RootPanel == _activeRoot);
         }
 
         private void OnExitClicked()

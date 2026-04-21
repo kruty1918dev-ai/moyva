@@ -1,6 +1,7 @@
 using System;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.UI;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
@@ -64,6 +65,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             // Показуємо оверлей завантаження.
+            GameLaunchContext.ConfigureMenuNewGame();
             _rootView?.ApplyPanelState(HomeMenuPanel.Loading);
             _rootView?.LoadingOverlay?.SetProgress(0f, "Підготовка світу…");
 

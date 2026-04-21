@@ -22,7 +22,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (confirmButton != null) confirmButton.onClick.AddListener(HandleConfirm);
             if (cancelButton  != null) cancelButton.onClick.AddListener(HandleCancel);
-            gameObject.SetActive(false);
         }
 
         private void OnDestroy()

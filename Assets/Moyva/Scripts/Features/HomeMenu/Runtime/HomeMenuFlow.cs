@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private IAudioSettingsService _audio;
         private ISceneLoadService _sceneLoader;
         private SignalBus _signalBus;
+        private HomeMenuNavigationController _navigation;
 
         private HomeMenuPanel _currentPanel = HomeMenuPanel.Loading;
 
@@ -50,10 +51,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void Initialize()
         {
             if (rootView == null)
+                rootView = FindFirstObjectByType<HomeMenuRootView>();
+
+            if (rootView == null)
             {
                 Debug.LogError($"[{nameof(HomeMenuFlow)}] rootView не призначено.", this);
                 return;
             }
+
+            _navigation = FindFirstObjectByType<HomeMenuNavigationController>();
 
             // Крок 1. Завантажуємо аудіо-налаштування, щоб UI показував коректні значення.
             _audio.Load();
@@ -136,6 +142,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             rootView.LoadingOverlay?.SetProgress(1f, "Готово");
             SetPanel(HomeMenuPanel.Main);
+
+            // Не відкриваємо Play/Bot гілки автоматично на старті.
+            _navigation?.CloseAll();
+
             _signalBus.TryFire(new HomeMenuReadySignal());
         }
 

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Text;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.UI;
 using UnityEngine;
@@ -37,13 +39,29 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [Tooltip("Компонент SceneLoadService (MonoBehaviour) на сцені.")]
         [SerializeField] private SceneLoadService sceneLoader;
 
+        [Tooltip("Контролер Create/Join/List для мультиплеєрної частини меню.")]
+        [SerializeField] private MultiplayerMenuPanelController multiplayerMenuController;
+
         public override void InstallBindings()
         {
-            if (config == null || socialLinks == null || audioBindings == null ||
-                rootView == null || flow == null || sceneLoader == null)
+            var errors = new List<string>();
+
+            // ── Конфігураційні SO ─────────────────────────────────────────
+            if (config == null)        errors.Add("Поле 'config' (HomeMenuConfigSO) не призначено.");
+            if (socialLinks == null)   errors.Add("Поле 'socialLinks' (SocialLinksConfigSO) не призначено.");
+            if (audioBindings == null) errors.Add("Поле 'audioBindings' (AudioMixerBindingsSO) не призначено.");
+
+            // ── Сценові компоненти (авто-пошук + створення де можливо) ───
+            EnsureSceneReferences(errors);
+
+            if (errors.Count > 0)
             {
-                Debug.LogError($"[{nameof(HomeMenuInstaller)}] Не всі поля інсталера заповнені. " +
-                               "Перевір інспектор.", this);
+                var sb = new StringBuilder();
+                sb.Append('[').Append(nameof(HomeMenuInstaller)).Append("] Сцену HomeMenu налаштовано некоректно. ")
+                  .Append("Список проблем (").Append(errors.Count).AppendLine("):");
+                for (int i = 0; i < errors.Count; i++)
+                    sb.Append("  ").Append(i + 1).Append(". ").AppendLine(errors[i]);
+                Debug.LogError(sb.ToString(), this);
                 return;
             }
 
@@ -83,6 +101,56 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.DeclareSignal<HomeMenuStartRequestedSignal>().OptionalSubscriber();
             Container.DeclareSignal<HomeMenuQuitRequestedSignal>().OptionalSubscriber();
             Container.DeclareSignal<UserDataClearedSignal>().OptionalSubscriber();
+        }
+
+        private void EnsureSceneReferences(List<string> errors)
+        {
+            // HomeMenuRootView: критично для WorldLaunchService. НЕ створюється авто —
+            // вимагає серіалізованих посилань на панелі/оверлеї з ієрархії сцени.
+            if (rootView == null)
+                rootView = Object.FindFirstObjectByType<HomeMenuRootView>();
+            if (rootView == null)
+                errors.Add("На сцені відсутній компонент HomeMenuRootView. " +
+                           "Додай його до кореневого GameObject UI меню та признач посилання на панелі (Main/WorldCreation/Settings) і оверлеї (Loading/Confirm).");
+
+            // SceneLoadService: MonoBehaviour без серіалізованих UI-полів — безпечно створити.
+            if (sceneLoader == null)
+            {
+                sceneLoader = Object.FindFirstObjectByType<SceneLoadService>();
+                if (sceneLoader == null)
+                {
+                    var loaderGo = new GameObject("SceneLoadService");
+                    sceneLoader = loaderGo.AddComponent<SceneLoadService>();
+                }
+            }
+
+            // HomeMenuFlow: MonoBehaviour без обов'язкових серіалізованих полів — безпечно створити.
+            if (flow == null)
+            {
+                flow = Object.FindFirstObjectByType<HomeMenuFlow>();
+                if (flow == null)
+                {
+                    var flowGo = new GameObject("HomeMenuFlow");
+                    flow = flowGo.AddComponent<HomeMenuFlow>();
+                }
+            }
+
+            // MultiplayerMenuPanelController: auto-find + fallback create.
+            if (multiplayerMenuController == null)
+            {
+                multiplayerMenuController = Object.FindFirstObjectByType<MultiplayerMenuPanelController>();
+                if (multiplayerMenuController == null)
+                {
+                    var host = Object.FindFirstObjectByType<HomeMenuNavigationController>();
+                    if (host != null)
+                        multiplayerMenuController = host.gameObject.AddComponent<MultiplayerMenuPanelController>();
+                    else
+                    {
+                        var controllerGo = new GameObject("MultiplayerMenuPanelController");
+                        multiplayerMenuController = controllerGo.AddComponent<MultiplayerMenuPanelController>();
+                    }
+                }
+            }
         }
     }
 }
