@@ -156,9 +156,95 @@ namespace Kruty1918.Moyva.WorldCreation.UI
                 return;
             }
 
+            AutoWireMissingReferences();
+
             BindButtons();
             BindInputs();
             PopulateFromConfig(_service.CurrentConfig);
+        }
+
+        private void AutoWireMissingReferences()
+        {
+            worldNameField ??= FindByName<TMP_InputField>("Input_W_Name");
+            seedField ??= FindByName<TMP_InputField>("Input_W_Seed");
+            randomSeedButton ??= FindByName<Button>("NextBtn");
+            sizePresetDropdown ??= FindByName<TMP_Dropdown>("DD_W_Size");
+            customSizeGroup ??= FindByName<Transform>("Row_W_CustomSize")?.gameObject;
+            customWidthField ??= FindByName<TMP_InputField>("Input_W_Width");
+            customHeightField ??= FindByName<TMP_InputField>("Input_W_Height");
+            mapTypeDropdown ??= FindByName<TMP_Dropdown>("DD_W_MapType");
+            difficultyDropdown ??= FindByName<TMP_Dropdown>("DD_W_Difficulty");
+
+            enableBotsToggle ??= FindToggleInRow("Row_W_Bots");
+            botSettingsGroup ??= FindByName<Transform>("Row_W_BotSettings")?.gameObject;
+            humanPlayerCountSlider ??= FindByName<Slider>("Slider_W_Humans");
+            humanPlayerCountLabel ??= FindValueLabelFor("Slider_W_Humans");
+            botCountSlider ??= FindByName<Slider>("Slider_W_Bots");
+            botCountLabel ??= FindValueLabelFor("Slider_W_Bots");
+
+            startingGoldField ??= FindByName<TMP_InputField>("Input_W_Gold");
+            startingFoodField ??= FindByName<TMP_InputField>("Input_W_Food");
+            forestDensitySlider ??= FindByName<Slider>("Slider_W_Forest");
+            mountainDensitySlider ??= FindByName<Slider>("Slider_W_Mountain");
+            waterDensitySlider ??= FindByName<Slider>("Slider_W_Water");
+            villageDensitySlider ??= FindByName<Slider>("Slider_W_Village");
+
+            generateRiversToggle ??= FindToggleInRow("Row_W_Rivers");
+            generateBiomesToggle ??= FindToggleInRow("Row_W_Biomes");
+            applyWFCToggle ??= FindToggleInRow("Row_W_WFC");
+
+            createWorldButton ??= FindByName<Button>("StartBtn");
+            cancelButton ??= FindByName<Button>("CancelBtn");
+            resetDefaultsButton ??= FindByName<Button>("ResetDefaultsBtn");
+            validationErrorText ??= FindByName<TMP_Text>("ValidationError");
+        }
+
+        private T FindByName<T>(string objectName) where T : Component
+        {
+            if (string.IsNullOrWhiteSpace(objectName))
+                return null;
+
+            var root = transform;
+            if (root.name == objectName)
+                return root.GetComponent<T>();
+
+            var allChildren = root.GetComponentsInChildren<Transform>(true);
+            foreach (var child in allChildren)
+            {
+                if (child.name != objectName)
+                    continue;
+
+                var component = child.GetComponent<T>();
+                if (component != null)
+                    return component;
+            }
+
+            return null;
+        }
+
+        private Toggle FindToggleInRow(string rowObjectName)
+        {
+            var row = FindByName<Transform>(rowObjectName);
+            return row != null ? row.GetComponentInChildren<Toggle>(true) : null;
+        }
+
+        private TMP_Text FindValueLabelFor(string sliderObjectName)
+        {
+            var slider = FindByName<Slider>(sliderObjectName);
+            if (slider == null)
+                return null;
+
+            var parent = slider.transform.parent;
+            if (parent == null)
+                return null;
+
+            foreach (var text in parent.GetComponentsInChildren<TMP_Text>(true))
+            {
+                if (text != null && text.name == "Val")
+                    return text;
+            }
+
+            return null;
         }
 
         /// <summary>Викликається Zenject при знищенні. Відписує всі слухачі.</summary>
@@ -275,7 +361,7 @@ namespace Kruty1918.Moyva.WorldCreation.UI
 
             RefreshSliderLabels(cfg.HumanPlayerCount, cfg.BotCount);
             RefreshCustomSizeVisibility(cfg.SizePreset);
-            RefreshBotSettingsVisibility(cfg.EnableBots);
+            // RefreshBotSettingsVisibility(cfg.EnableBots);
             ClearValidationError();
 
             _isPopulating = false;

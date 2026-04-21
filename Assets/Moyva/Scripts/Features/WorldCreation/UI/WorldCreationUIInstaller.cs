@@ -26,9 +26,13 @@ namespace Kruty1918.Moyva.WorldCreation.UI
         public override void InstallBindings()
         {
             if (uiController == null)
+                uiController = Object.FindFirstObjectByType<WorldCreationUIController>();
+
+            if (uiController == null)
             {
-                Debug.LogWarning("[WorldCreationUIInstaller] Поле 'uiController' не призначено. " +
-                                 "Перетягни WorldCreationUIController у поле цього інсталера.");
+                Debug.LogError("[WorldCreationUIInstaller] На сцені відсутній компонент WorldCreationUIController. " +
+                               "Додай його до кореневого GameObject панелі створення світу та перетягни у поле " +
+                               "'uiController' цього інсталера, або розмісти на сцені — інсталер знайде автоматично.", this);
                 return;
             }
 
