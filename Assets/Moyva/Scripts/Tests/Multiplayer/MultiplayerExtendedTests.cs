@@ -406,9 +406,9 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         }
 
         [Test]
-        public void Default_ProviderType_IsOffline()
+        public void Default_ProviderType_IsRelay()
         {
-            Assert.AreEqual(NetworkProviderType.Offline, MultiplayerConfig.Default().ProviderType);
+            Assert.AreEqual(NetworkProviderType.Relay, MultiplayerConfig.Default().ProviderType);
         }
 
         [Test]
