@@ -2,8 +2,11 @@
   <Project Path="Zenject.csproj" />
   <Project Path="Zenject-IntegrationTests-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Animations.csproj" />
+  <Project Path="Unity.Networking.Transport.EditorTests.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
   <Project Path="Zenject-ReflectionBaking-Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
+  <Project Path="Unity.Networking.Transport.RuntimeTests.csproj" />
   <Project Path="Kruty1918.Moyva.Interactions.API.csproj" />
   <Project Path="Zenject-UnitTests-Editor.csproj" />
   <Project Path="Zenject-Editor.csproj" />
@@ -14,12 +17,13 @@
   <Project Path="Kruty1918.Moyva.Construction.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Faction.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.csproj" />
-  <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.HomeMenu.csproj" />
+  <Project Path="Unity.Networking.Transport.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.BotAI.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.SaveSystem.csproj" />
+  <Project Path="Unity.Networking.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Pathfinding.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.csproj" />
