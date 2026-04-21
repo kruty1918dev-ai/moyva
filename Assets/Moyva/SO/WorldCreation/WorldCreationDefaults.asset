@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df4901908174671f69f13e6fce18173b, type: 3}
+  m_Name: WorldCreationDefaults
+  m_EditorClassIdentifier: Kruty1918.Moyva.WorldCreation.API::Kruty1918.Moyva.WorldCreation.API.WorldCreationDefaultsSO
+  DefaultWorldName: Novyi svit
+  DefaultSizePreset: 1
+  DefaultCustomWidth: 64
+  DefaultCustomHeight: 64
+  DefaultMapType: 0
+  DefaultDifficulty: 1
+  DefaultEnableBots: 1
+  DefaultHumanPlayerCount: 1
+  DefaultBotCount: 1
+  DefaultStartingGold: 200
+  DefaultStartingFood: 100
+  DefaultForestDensity: 0.4
+  DefaultMountainDensity: 0.3
+  DefaultWaterDensity: 0.25
+  DefaultVillageDensity: 0.2
+  DefaultGenerateRivers: 1
+  DefaultGenerateBiomes: 1
+  DefaultApplyWFC: 1
