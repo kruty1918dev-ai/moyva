@@ -43,6 +43,7 @@
   <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />
   <Project Path="Kruty1918.Moyva.WorldCreation.csproj" />
   <Project Path="Kruty1918.Moyva.Camera.csproj" />
+  <Project Path="Kruty1918.Moyva.HomeMenu.csproj" />
   <Project Path="Kruty1918.Moyva.GameMode.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Units.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
@@ -55,7 +56,6 @@
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
   <Project Path="Kruty1918.Moyva.Bootstrap.csproj" />
-  <Project Path="Kruty1918.Moyva.HomeMenu.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.GameMode.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Units.Editor.csproj" />

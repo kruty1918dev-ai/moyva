@@ -1,5 +1,5 @@
 using Kruty1918.Moyva.HomeMenu.API;
-using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Runtime;
 using Zenject;
 
@@ -13,35 +13,31 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     {
         public override void InstallBindings()
         {
-            Install(Container);
-        }
+          // Навігація між меню
+            Container.Bind<INavigation>()
+                .To<HomeMenuNavigation>()
+                .AsSingle();
 
-        public static void Install(DiContainer container)
-        {
-            // // Навігація між меню
-            // container.Bind<INavigation>()
-            //     .To<HomeMenuNavigation>()
-            //     .AsSingle();
+            // Завантажувач оверлеїв (показує індикатор завантаження поверх меню)
+            Container.Bind<IOverlayLoader>()
+                .To<HomeMenuOverlayLoader>()
+                .AsSingle();
 
-            // // Завантажувач оверлеїв (показує індикатор завантаження поверх меню)
-            // container.Bind<IOverlayLoader>()
-            //     .To<HomeMenuOverlayLoader>()
-            //     .AsSingle();
-        }
-    }
+            // UI-компоненти домашнього меню, що знаходяться в ієрархії сцени.
+            Container.Bind<OverlayPanelLoader>()
+                .FromComponentInHierarchy(includeInactive: true)
+                .AsSingle();
 
-    internal class HomeMenuInitializer : IInitializable
-    {
-        private readonly IMultiplayerState _multiplayerState;
+            Container.BindInterfacesTo<NavigationPanel>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
 
-        internal HomeMenuInitializer(IMultiplayerState multiplayerState)
-        {
-            _multiplayerState = multiplayerState;
-        }   
+            Container.Bind<NavigationButton>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
 
-        public void Initialize()
-        {
-            
+            Container.BindInterfacesAndSelfTo<HomeMenuInitializer>()
+                .AsSingle();
         }
     }
 }

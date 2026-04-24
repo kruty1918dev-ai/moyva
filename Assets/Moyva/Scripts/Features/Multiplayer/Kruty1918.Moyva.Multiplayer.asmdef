@@ -2,7 +2,9 @@
     "name": "Kruty1918.Moyva.Multiplayer",
     "rootNamespace": "Kruty1918.Moyva.Multiplayer",
     "references": [
-        "Zenject"
+        "Zenject",
+        "Unity.Services.Core",
+        "Unity.Services.Authentication"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

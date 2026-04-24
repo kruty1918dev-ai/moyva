@@ -1112,6 +1112,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 63657609}
   m_CullTransparentMesh: 1
+--- !u!1 &71750127
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 71750128}
+  - component: {fileID: 71750129}
+  m_Layer: 5
+  m_Name: Loading
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &71750128
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 71750127}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 766107100}
+  m_Father: {fileID: 1372784659}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &71750129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 71750127}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4104bb28c9bb7e520859160bf0c11306, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.LoadingOverlayView
+  _overlayRoot: {fileID: 766107099}
 --- !u!1 &71759575
 GameObject:
   m_ObjectHideFlags: 0
@@ -3686,9 +3736,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 1
-  target: {fileID: 275840565}
 --- !u!114 &233092236
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6438,9 +6485,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 4
-  target: {fileID: 0}
 --- !u!114 &329567562
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11605,9 +11649,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 4
-  target: {fileID: 0}
 --- !u!114 &601570572
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12158,8 +12199,6 @@ GameObject:
   m_Component:
   - component: {fileID: 610174633}
   - component: {fileID: 610174634}
-  - component: {fileID: 900610174635001}
-  - component: {fileID: 900610174635002}
   m_Layer: 0
   m_Name: HomeMenuInstaller
   m_TagString: Untagged
@@ -12194,13 +12233,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6b0100000000000000001, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.Runtime.HomeMenuInstaller
-  config: {fileID: 11400000, guid: a1b2c3d4e5f6e0010000000000000001, type: 2}
-  socialLinks: {fileID: 11400000, guid: a1b2c3d4e5f6e0020000000000000001, type: 2}
-  audioBindings: {fileID: 11400000, guid: a1b2c3d4e5f6e0030000000000000001, type: 2}
-  rootView: {fileID: 900112882761001}
-  flow: {fileID: 900610174635001}
-  sceneLoader: {fileID: 900610174635002}
-  multiplayerMenuController: {fileID: 9001643596097001}
 --- !u!1 &611114560
 GameObject:
   m_ObjectHideFlags: 0
@@ -13818,9 +13850,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 2
-  target: {fileID: 0}
 --- !u!114 &684164730
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14792,9 +14821,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 1
-  target: {fileID: 275840565}
 --- !u!114 &709592908
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16324,7 +16350,6 @@ GameObject:
   - component: {fileID: 766107100}
   - component: {fileID: 766107102}
   - component: {fileID: 766107101}
-  - component: {fileID: 900766107103001}
   m_Layer: 5
   m_Name: LoadingOverlay
   m_TagString: Untagged
@@ -16339,13 +16364,13 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 766107099}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1304836324}
-  m_Father: {fileID: 1372784659}
+  m_Father: {fileID: 71750128}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -17534,9 +17559,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 1
-  target: {fileID: 275840565}
 --- !u!114 &827738556
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17671,9 +17693,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 4
-  target: {fileID: 0}
 --- !u!114 &829916993
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20496,9 +20515,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 2
-  target: {fileID: 0}
 --- !u!114 &969977531
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22884,9 +22900,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 2
-  target: {fileID: 0}
 --- !u!114 &1145700844
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23565,9 +23578,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 2
-  target: {fileID: 0}
 --- !u!114 &1155678254
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25059,9 +25069,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 2
-  target: {fileID: 0}
 --- !u!114 &1225398773
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27976,9 +27983,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 4
-  target: {fileID: 0}
 --- !u!114 &1340395200
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28665,8 +28669,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10b53916c6fb15ae5ad489cc7428a410, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.HomeMenuPanelAnimator
-  fadeDuration: 0.22
-  bindings: []
 --- !u!114 &1372784655
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28679,20 +28681,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e0c102594ee10795a0bcc39723e339b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.HomeMenuNavigationController
-  rootButtons:
-  - Button: {fileID: 429876362}
-    RootPanel: {fileID: 1427730700}
-    Indicator: {fileID: 1663554643}
-  - Button: {fileID: 1827957272}
-    RootPanel: {fileID: 1157967419}
-    Indicator: {fileID: 2081648133}
-  exitButton: {fileID: 708577330}
-  exitConfirmDialog: {fileID: 1975971332}
-  exitDialogTitle: "\u0412\u0438\u0439\u0442\u0438 \u0437 \u0433\u0440\u0438"
-  exitDialogMessage: "\u0412\u0438 \u0432\u043F\u0435\u0432\u043D\u0435\u043D\u0456,
-    \u0449\u043E \u0445\u043E\u0447\u0435\u0442\u0435 \u0432\u0438\u0439\u0442\u0438?"
-  animator: {fileID: 1372784654}
-  gameplaySceneName: Gamplay_Scene
 --- !u!114 &1372784656
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28769,10 +28757,10 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 678375839}
-  - {fileID: 766107100}
   - {fileID: 248693420}
   - {fileID: 1128827610}
   - {fileID: 1975971333}
+  - {fileID: 71750128}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -29108,9 +29096,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 0
-  target: {fileID: 1643596093}
 --- !u!114 &1391855614
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -29616,9 +29601,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 3
-  target: {fileID: 0}
 --- !u!114 &1415812546
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -30593,9 +30575,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 0
-  target: {fileID: 1280243279}
 --- !u!114 &1461487379
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31141,9 +31120,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 2
-  target: {fileID: 0}
 --- !u!114 &1486479230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32472,9 +32448,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 0
-  target: {fileID: 1604616897}
 --- !u!114 &1549643407
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -41840,10 +41813,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6c0020000000000000001, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.ConfirmDialogView
-  titleLabel: {fileID: 33793681}
-  messageLabel: {fileID: 288545020}
-  confirmButton: {fileID: 604988763}
-  cancelButton: {fileID: 254606366}
 --- !u!224 &1975971333
 RectTransform:
   m_ObjectHideFlags: 0
@@ -43186,9 +43155,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 0
-  target: {fileID: 653502588}
 --- !u!114 &2021469315
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -44772,9 +44738,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 4
-  target: {fileID: 0}
 --- !u!114 &2093891337
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45910,9 +45873,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 0
-  target: {fileID: 2047718046}
 --- !u!114 &2126115990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46213,9 +46173,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 2
-  target: {fileID: 0}
 --- !u!114 &2143226274
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46489,9 +46446,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  navigation: {fileID: 1372784655}
-  action: 0
-  target: {fileID: 1052124901}
 --- !u!114 &2144015530
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46742,12 +46696,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6c0030000000000000001, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.HomeMenuRootView
-  mainPanel: {fileID: 1427730700}
-  worldCreationPanel: {fileID: 275840565}
-  settingsPanel: {fileID: 1157967419}
-  loadingOverlay: {fileID: 900766107103001}
-  confirmDialog: {fileID: 1975971332}
-  panelAnimator: {fileID: 1372784654}
 --- !u!114 &900275840567001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46788,46 +46736,6 @@ MonoBehaviour:
   cancelButton: {fileID: 254606366}
   resetDefaultsButton: {fileID: 1316308753}
   validationErrorText: {fileID: 0}
---- !u!114 &900610174635001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 610174632}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6b0080000000000000001, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.Runtime.HomeMenuFlow
-  rootView: {fileID: 900112882761001}
---- !u!114 &900610174635002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 610174632}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6b0070000000000000001, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.Runtime.SceneLoadService
---- !u!114 &900766107103001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 766107099}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6c0010000000000000001, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.LoadingOverlayView
-  progressBar: {fileID: 0}
-  statusLabel: {fileID: 1397338777}
-  percentLabel: {fileID: 0}
 --- !u!114 &9001643596097001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46840,16 +46748,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f53b3a3cc2248b6b8f3a0dc2d4b5e21, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MultiplayerMenuPanelController
-  createRoomPanel: {fileID: 1280243279}
-  joinRoomPanel: {fileID: 653502588}
-  roomNameInput: {fileID: 426847399}
-  roomPasswordInput: {fileID: 1220543353}
-  joinCodeInput: {fileID: 2017947655}
-  maxPlayersSlider: {fileID: 1242340289}
-  maxPlayersValueLabel: {fileID: 1724119628}
-  createNextButton: {fileID: 827738556}
-  joinByCodeButton: {fileID: 829916993}
-  roomsListContent: {fileID: 2144829846}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

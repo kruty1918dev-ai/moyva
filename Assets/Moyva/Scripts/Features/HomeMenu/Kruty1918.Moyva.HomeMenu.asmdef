@@ -9,7 +9,9 @@
         "Kruty1918.Moyva.WorldCreation",
         "Kruty1918.Moyva.WorldCreation.API",
         "Kruty1918.Moyva.WorldCreation.UI",
-        "Unity.TextMeshPro"
+        "Unity.TextMeshPro",
+        "Unity.Services.Core",
+        "Unity.Services.Authentication"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

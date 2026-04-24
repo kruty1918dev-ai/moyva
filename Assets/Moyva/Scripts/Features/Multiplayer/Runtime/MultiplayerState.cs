@@ -1,9 +1,10 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Networking;
-#if MOYVA_UGS_RELAY || MOYVA_UGS_LOBBY
+using UnityEngine;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
-#endif
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
 {
@@ -11,22 +12,58 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     {
         public MultiplayerConnectionState ConnectionState => BuildCurrentState();
 
-        public void UpdateConnectionState(bool isUnityServicesInitialized, bool isAuthenticated, bool isConnecting, bool isConnected, float connectionProgress)
+        public Task WaitUntilReadyAsync(CancellationToken ct = default)
         {
-            _manualState = new MultiplayerConnectionState(
-                isUnityServicesInitialized,
-                isAuthenticated,
-                isConnecting,
-                isConnected,
-                connectionProgress);
+            return WaitUntilReadyAsync(null, ct);
+        }
+
+        public async Task WaitUntilReadyAsync(IProgress<float> progress, CancellationToken ct = default)
+        {
+            var timeout = TimeSpan.FromSeconds(10);
+            var deadline = DateTime.UtcNow + timeout;
+
+            while (!ConnectionState.IsConnected)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                await EnsureAuthenticationAsync(ct);
+
+                progress?.Report(ConnectionState.ConnectionProgress);
+
+                if (DateTime.UtcNow > deadline)
+                {
+                    var message = $"[MultiplayerState] Initialization timeout after {timeout.TotalSeconds} seconds.";
+                    Debug.LogError(message);
+                    throw new TimeoutException(message);
+                }
+
+                await Task.Delay(100, ct);
+            }
+
+            progress?.Report(1f);
+        }
+
+        private static async Task EnsureAuthenticationAsync(CancellationToken ct = default)
+        {
+            try
+            {
+                if (UnityServices.State != ServicesInitializationState.Initialized)
+                    await UnityServices.InitializeAsync();
+
+                if (!AuthenticationService.Instance.IsSignedIn)
+                    await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"[MultiplayerState] Authentication initialization failed: {exception.Message}");
+            }
         }
 
         private MultiplayerConnectionState BuildCurrentState()
         {
-#if MOYVA_UGS_RELAY || MOYVA_UGS_LOBBY
             var unityInitialized = UnityServices.State == ServicesInitializationState.Initialized;
             var unityInitializing = UnityServices.State == ServicesInitializationState.Initializing;
-            var authenticated = AuthenticationService.Instance.IsSignedIn;
+            var authenticated = unityInitialized && AuthenticationService.Instance.IsSignedIn;
 
             var isConnecting = unityInitializing || (unityInitialized && !authenticated);
             var isConnected = unityInitialized && authenticated;
@@ -42,11 +79,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 isConnecting,
                 isConnected,
                 progress);
-#else
-            return new MultiplayerConnectionState(true, true, false, true, 1f);
-#endif
         }
-
-        private MultiplayerConnectionState _manualState;
     }
 }

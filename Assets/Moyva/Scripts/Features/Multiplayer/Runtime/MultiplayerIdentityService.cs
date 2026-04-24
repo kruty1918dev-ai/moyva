@@ -3,10 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Core;
 using UnityEngine;
-#if MOYVA_UGS_RELAY || MOYVA_UGS_LOBBY
 using Unity.Services.Authentication;
 using Unity.Services.Core;
-#endif
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
 {
@@ -37,7 +35,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 ? (string.IsNullOrWhiteSpace(Environment.UserName) ? "Player" : Environment.UserName)
                 : preferredNickname.Trim();
 
-#if MOYVA_UGS_RELAY || MOYVA_UGS_LOBBY
             try
             {
                 if (UnityServices.State != ServicesInitializationState.Initialized)
@@ -54,9 +51,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 _logger?.Warn($"[Identity] UGS sign-in failed: {e.Message}. Falling back to device id.");
             }
-#else
-            await Task.CompletedTask;
-#endif
 
             string fallback = SystemInfo.deviceUniqueIdentifier;
             if (string.IsNullOrWhiteSpace(fallback) || fallback == SystemInfo.unsupportedIdentifier)
