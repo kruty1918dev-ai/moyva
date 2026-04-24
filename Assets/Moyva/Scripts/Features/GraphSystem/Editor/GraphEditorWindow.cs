@@ -37,6 +37,15 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private NodeBase _selectedNode;
         private UnityEditor.Editor _selectedNodeEditor;
 
+        private enum InspectorTab { Settings = 0, Preview = 1 }
+        [SerializeField] private InspectorTab _activeInspectorTab = InspectorTab.Preview;
+        private VisualElement _inspectorTabsHeader;
+        private VisualElement _tabSettingsContent;
+        private VisualElement _tabPreviewContent;
+        private Button _tabSettingsButton;
+        private Button _tabPreviewButton;
+        [SerializeField] private bool _isMultiSelection;
+
         // Survives domain reload / play mode transition
         [SerializeField] private string _graphAssetGuid;
         private GraphAsset _graphAsset;
@@ -195,7 +204,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 }
             };
 
-            var nodeHeaderRow = new VisualElement
+            var tabHeaderRow = new VisualElement
             {
                 style =
                 {
@@ -208,27 +217,36 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _nodeInspectorToggleButton = new Button(ToggleNodeInspectorSection)
             {
                 text = _isNodeInspectorExpanded ? "▼" : "▶",
-                tooltip = "Згорнути або розгорнути секцію Node Inspector."
+                tooltip = "Згорнути або розгорнути секцію інспектора."
             };
             _nodeInspectorToggleButton.style.width = 22;
             _nodeInspectorToggleButton.style.minWidth = 22;
             _nodeInspectorToggleButton.style.height = 20;
             _nodeInspectorToggleButton.style.marginRight = 4;
-            nodeHeaderRow.Add(_nodeInspectorToggleButton);
+            tabHeaderRow.Add(_nodeInspectorToggleButton);
 
-            var nodeHeader = new Label("Node Inspector")
+            _tabSettingsButton = new Button(() => SetInspectorTab(InspectorTab.Settings))
             {
-                style =
-                {
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    flexGrow = 1
-                }
+                text = "Налаштування",
+                tooltip = "Показати налаштування прев'ю та сервісів."
             };
-            nodeHeaderRow.Add(nodeHeader);
-            _rightPanel.Add(nodeHeaderRow);
+            _tabSettingsButton.style.flexGrow = 1;
+            _tabSettingsButton.style.marginRight = 4;
+            tabHeaderRow.Add(_tabSettingsButton);
+
+            _tabPreviewButton = new Button(() => SetInspectorTab(InspectorTab.Preview))
+            {
+                text = "Прев'ю",
+                tooltip = "Показати дані вибраної ноди."
+            };
+            _tabPreviewButton.style.flexGrow = 1;
+            tabHeaderRow.Add(_tabPreviewButton);
 
             _nodeInspectorSection = new VisualElement();
+            _nodeInspectorSection.Add(tabHeaderRow);
 
+            // Preview tab (shows node data)
+            _tabPreviewContent = new VisualElement();
             _nodeInspectorGui = new IMGUIContainer(DrawSelectedNodeInspector)
             {
                 style =
@@ -236,8 +254,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     marginBottom = 10
                 }
             };
-            _nodeInspectorSection.Add(_nodeInspectorGui);
-            _rightPanel.Add(_nodeInspectorSection);
+            _tabPreviewContent.Add(_nodeInspectorGui);
+            _nodeInspectorSection.Add(_tabPreviewContent);
 
             _nodeInspectorDivider = new VisualElement
             {
@@ -248,23 +266,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     backgroundColor = new Color(0.25f, 0.25f, 0.25f)
                 }
             };
-            _rightPanel.Add(_nodeInspectorDivider);
+            _nodeInspectorSection.Add(_nodeInspectorDivider);
 
-            var settingsHeader = new Label("Graph Settings")
-            {
-                style =
-                {
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    marginBottom = 4
-                }
-            };
-            _rightPanel.Add(settingsHeader);
-
+            // Settings tab (shows EditorPreviewSettings)
+            _tabSettingsContent = new VisualElement();
             _graphSettingsGui = new IMGUIContainer(DrawGraphSettingsInspector);
-            _rightPanel.Add(_graphSettingsGui);
+            _tabSettingsContent.Add(_graphSettingsGui);
+            _nodeInspectorSection.Add(_tabSettingsContent);
+
+            _rightPanel.Add(_nodeInspectorSection);
 
             _contentContainer.Add(_rightPanel);
             SetInspectorVisible(_isInspectorVisible);
+            UpdateInspectorTabVisibility();
             UpdateNodeInspectorSectionVisibility();
         }
 
@@ -927,6 +941,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _previewHeatmap = settings.previewHeatmap;
             _isInspectorVisible = settings.isInspectorVisible;
             _isNodeInspectorExpanded = settings.isNodeInspectorExpanded;
+            _activeInspectorTab = (InspectorTab)Mathf.Clamp(settings.inspectorTabIndex, 0, 1);
         }
 
         private void SaveWindowSettings()
@@ -951,6 +966,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             settings.previewHeatmap = _previewHeatmap;
             settings.isInspectorVisible = _isInspectorVisible;
             settings.isNodeInspectorExpanded = _isNodeInspectorExpanded;
+            settings.inspectorTabIndex = (int)_activeInspectorTab;
 
             EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssets();
@@ -1106,10 +1122,34 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             if (_graphView == null) return;
 
+            int count = _graphView.GetSelectedNodeCount();
+            if (count == 0)
+            {
+                if (_selectedNode != null || _isMultiSelection)
+                {
+                    _isMultiSelection = false;
+                    SetSelectedNode(null);
+                    RefreshInspectorPanel();
+                }
+                return;
+            }
+
+            if (count > 1)
+            {
+                if (!_isMultiSelection || _selectedNode != null)
+                {
+                    _isMultiSelection = true;
+                    SetSelectedNode(null);
+                    RefreshInspectorPanel();
+                }
+                return;
+            }
+
             var selected = _graphView.GetPrimarySelectedNodeData();
-            if (ReferenceEquals(selected, _selectedNode))
+            if (ReferenceEquals(selected, _selectedNode) && !_isMultiSelection)
                 return;
 
+            _isMultiSelection = false;
             SetSelectedNode(selected);
             RefreshInspectorPanel();
         }
@@ -1142,7 +1182,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             if (_selectedNode == null)
             {
-                EditorGUILayout.HelpBox("Виберіть ноду в графі, щоб редагувати її параметри.", MessageType.Info);
+                if (_isMultiSelection)
+                {
+                    EditorGUILayout.HelpBox("Множинний вибір не підтримується. Оберіть одну ноду.", MessageType.Info);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("Виберіть ноду в графі, щоб переглянути її дані.", MessageType.Info);
+                }
                 return;
             }
 
@@ -1273,6 +1320,40 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 _nodeInspectorDivider.style.display = _isNodeInspectorExpanded
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
+        }
+
+        private void SetInspectorTab(InspectorTab tab)
+        {
+            if (_activeInspectorTab == tab) return;
+            _activeInspectorTab = tab;
+            UpdateInspectorTabVisibility();
+            SaveWindowSettings();
+        }
+
+        private void UpdateInspectorTabVisibility()
+        {
+            if (_tabSettingsContent != null)
+                _tabSettingsContent.style.display = _activeInspectorTab == InspectorTab.Settings
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+
+            if (_tabPreviewContent != null)
+                _tabPreviewContent.style.display = _activeInspectorTab == InspectorTab.Preview
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+
+            if (_tabSettingsButton != null)
+                _tabSettingsButton.style.unityFontStyleAndWeight = _activeInspectorTab == InspectorTab.Settings
+                    ? FontStyle.Bold
+                    : FontStyle.Normal;
+
+            if (_tabPreviewButton != null)
+                _tabPreviewButton.style.unityFontStyleAndWeight = _activeInspectorTab == InspectorTab.Preview
+                    ? FontStyle.Bold
+                    : FontStyle.Normal;
+
+            _nodeInspectorGui?.MarkDirtyRepaint();
+            _graphSettingsGui?.MarkDirtyRepaint();
         }
 
         private void DrawSerializedObjectWithoutScript(SerializedObject serializedObject)

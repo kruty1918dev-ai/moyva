@@ -20,6 +20,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         public bool autoRunOnChange = true;
         public int previewResolution = 1; // 0=64,1=128,2=full
         public bool previewHeatmap = false;
+        public int inspectorTabIndex = 0;
 
         public bool isInspectorVisible = true;
         public bool isNodeInspectorExpanded = true;
