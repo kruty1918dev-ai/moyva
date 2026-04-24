@@ -12,20 +12,54 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     {
         private readonly IMultiplayerState _multiplayerState;
         private readonly IOverlayLoader _overlayLoader;
+        private readonly IConfirmationService _confirmationService;
 
         internal HomeMenuInitializer(
             IMultiplayerState multiplayerState,
-            [Zenject.InjectOptional] IOverlayLoader overlayLoader = null)
+            [InjectOptional] IConfirmationService confirmation = null,
+            [InjectOptional] IOverlayLoader overlayLoader = null)
         {
             _multiplayerState = multiplayerState;
             _overlayLoader = overlayLoader;
+            _confirmationService = confirmation;
         }
 
         public void Initialize()
         {
-            if (_overlayLoader == null)
+            if (_overlayLoader == null || _confirmationService == null)
+            {
+                LogErrorWithPrefix("OverlayLoader or ConfirmationService is not available. HomeMenuInitializer cannot function properly.");
                 return;
+            }
 
+            if (Application.internetReachability != NetworkReachability.NotReachable)
+            {
+                StartMultiplayerInitialization();
+            }
+            else
+            {
+                ShowOfflineDialogPanel();
+            }
+        }
+
+        private void ShowOfflineDialogPanel()
+        {
+            _confirmationService.Show(new ConfirmationRequest
+            {
+                LabelText = "Офлайн режим",
+                MessageText = "Мультиплеєрні сервіси недоступні. Ви будете грати в офлайн режимі без можливості взаємодії з іншими гравцями. Бажаєте продовжити?",
+                OnConfirm = () => LogWithPrefix("Player acknowledged offline mode."),
+                OnCancel = () =>
+                {
+                    LogWithPrefix("Player cancelled the offline mode dialog.");
+                    Application.Quit();
+                }
+            });
+            LogWithPrefix("Multiplayer services are not available. Showing offline mode dialog.");
+        }
+
+        private void StartMultiplayerInitialization()
+        {
             var state = _multiplayerState.ConnectionState;
             string prefix = "[HomeMenuInitializer]";
 
@@ -52,9 +86,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 });
 
                 await _multiplayerState.WaitUntilReadyAsync(progressReporter);
-                    var last = overlayResult?.Progress ?? 0f;
-                    overlayResult?.SetLoading(false, last);
-                    _overlayLoader.StopOverlay(true);
+                var last = overlayResult?.Progress ?? 0f;
+                overlayResult?.SetLoading(false, last);
+                _overlayLoader.StopOverlay(true);
 
                 string userId = GetAuthenticatedUserId();
                 Debug.Log($"{prefix} Multiplayer ready. Authenticated user id: {userId}.");
@@ -81,6 +115,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return AuthenticationService.Instance.PlayerId ?? "unknown";
             }
             return "unknown";
+        }
+
+        private void LogWithPrefix(string msg)
+        {
+            Debug.Log($"[HomeMenuInitializer] {msg}");
+        }
+
+        private void LogErrorWithPrefix(string msg)
+        {
+            Debug.LogError($"[HomeMenuInitializer] {msg}");
         }
     }
 }
