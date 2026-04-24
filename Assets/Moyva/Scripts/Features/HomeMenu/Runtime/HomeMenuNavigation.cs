@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.HomeMenu.UI;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
@@ -9,16 +10,55 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     internal class HomeMenuNavigation : INavigation
     {
         private readonly Stack<string> _menuStack = new Stack<string>();
+        private readonly Dictionary<string, INavigationPanel> _panelsByName = new Dictionary<string, INavigationPanel>(StringComparer.Ordinal);
+        private readonly Stack<string> _closedStack = new Stack<string>();
 
         public string CurrentMenu => _menuStack.Count > 0 ? _menuStack.Peek() : string.Empty;
+
+        public HomeMenuNavigation(INavigationPanel[] panels)
+        {
+            if (panels == null) return;
+
+            foreach (var p in panels)
+            {
+                if (p == null) continue;
+
+                var name = p.MenuName ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(name))
+                {
+                    if (p is MonoBehaviour mb)
+                        name = mb.gameObject.name;
+                }
+
+                if (string.IsNullOrWhiteSpace(name))
+                    continue;
+
+                if (!_panelsByName.ContainsKey(name))
+                    _panelsByName.Add(name, p);
+                else
+                    LogWarning($"Duplicate panel name '{name}' detected; ignoring duplicate.");
+            }
+        }
 
         public void Open(string menuName)
         {
             if (string.IsNullOrWhiteSpace(menuName))
                 return;
 
+            if (!_panelsByName.TryGetValue(menuName, out var panel))
+            {
+                LogWarning($"Panel '{menuName}' not found.");
+                return;
+            }
+            // Close currently opened panel (if any) and push it to closed history
+            CloseLast();
+
+            // When explicitly opening a named menu, remove it from closed history to avoid duplicates
+            RemoveFromClosedHistory(menuName);
+
             _menuStack.Push(menuName);
-            Debug.Log($"[HomeMenuNavigation] Opened menu '{menuName}'.");
+            panel.Open();
+            LogInfo($"Opened menu '{menuName}'.");
         }
 
         public void Close(string menuName)
@@ -30,7 +70,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
 
             _menuStack.Pop();
-            Debug.Log($"[HomeMenuNavigation] Closed menu '{menuName}'.");
+            if (_panelsByName.TryGetValue(menuName, out var panel))
+                panel.Close();
+            else
+                LogWarning($"Panel '{menuName}' not found when closing.");
+
+            _closedStack.Push(menuName);
+
+            LogInfo($"Closed menu '{menuName}'.");
         }
 
         public async Task CloseIf(string menuName, Func<Task<bool>> condition)
@@ -41,7 +88,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (await condition().ConfigureAwait(false))
             {
                 _menuStack.Pop();
-                Debug.Log($"[HomeMenuNavigation] Conditionally closed menu '{menuName}'.");
+                if (_panelsByName.TryGetValue(menuName, out var panel))
+                    panel.Close();
+                else
+                    LogWarning($"Panel '{menuName}' not found when conditional closing.");
+
+                _closedStack.Push(menuName);
+
+                LogInfo($"Conditionally closed menu '{menuName}'.");
             }
         }
 
@@ -59,7 +113,67 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
 
             var menuName = _menuStack.Pop();
-            Debug.Log($"[HomeMenuNavigation] Closed last menu '{menuName}'.");
+            if (_panelsByName.TryGetValue(menuName, out var panel))
+                panel.Close();
+            else
+                LogWarning($"Panel '{menuName}' not found when closing last.");
+
+            _closedStack.Push(menuName);
+
+            LogInfo($"Closed last menu '{menuName}'.");
+        }
+
+        public void OpenLast()
+        {
+            if (_closedStack.Count == 0)
+            {
+                LogWarning("No closed menus to reopen.");
+                return;
+            }
+
+            var menuName = _closedStack.Pop();
+            if (!_panelsByName.TryGetValue(menuName, out var panel))
+            {
+                LogWarning($"Panel '{menuName}' not found when reopening last.");
+                return;
+            }
+
+            _menuStack.Push(menuName);
+            panel.Open();
+            LogInfo($"Reopened last closed menu '{menuName}'.");
+        }
+
+        private void RemoveFromClosedHistory(string menuName)
+        {
+            if (_closedStack.Count == 0) return;
+
+            var temp = new Stack<string>();
+            while (_closedStack.Count > 0)
+            {
+                var m = _closedStack.Pop();
+                if (m != menuName)
+                    temp.Push(m);
+            }
+
+            while (temp.Count > 0)
+                _closedStack.Push(temp.Pop());
+        }
+
+
+        // --- Logging helpers ---
+        private void LogInfo(string message)
+        {
+            Debug.Log($"[HomeMenuNavigation] {message}");
+        }
+
+        private void LogWarning(string message)
+        {
+            Debug.LogWarning($"[HomeMenuNavigation] {message}");
+        }
+
+        private void LogError(string message)
+        {
+            Debug.LogError($"[HomeMenuNavigation] {message}");
         }
     }
 }

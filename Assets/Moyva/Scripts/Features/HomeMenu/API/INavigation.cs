@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.HomeMenu.API
         void Close(string menuName);
         Task CloseIf(string menuName, Func<Task<bool>> condition);
         void Open(string menuName);
+        void OpenLast();
         Task OpenIfAsync(string menuName, Func<Task<bool>> condition);
 
         void CloseLast();

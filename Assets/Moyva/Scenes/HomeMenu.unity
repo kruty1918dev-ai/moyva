@@ -4775,6 +4775,7 @@ GameObject:
   - component: {fileID: 275840568}
   - component: {fileID: 275840567}
   - component: {fileID: 900275840567001}
+  - component: {fileID: 900275840567002}
   m_Layer: 5
   m_Name: WorldSetupPanel
   m_TagString: Untagged
@@ -8217,6 +8218,7 @@ GameObject:
   - component: {fileID: 429876360}
   - component: {fileID: 429876359}
   - component: {fileID: 429876362}
+  - component: {fileID: 429876363}
   m_Layer: 5
   m_Name: SideBtn_Play
   m_TagString: Untagged
@@ -8347,6 +8349,21 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &429876363
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 429876357}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: PlayModePanel
+  _menuToClose: 
+  _openLast: 0
 --- !u!1 &431089925
 GameObject:
   m_ObjectHideFlags: 0
@@ -11215,8 +11232,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -342}
-  m_SizeDelta: {x: 1702.209, y: 28}
+  m_AnchoredPosition: {x: 844.1139, y: -342}
+  m_SizeDelta: {x: 1688.2278, y: 28}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &584446779
 MonoBehaviour:
@@ -12919,8 +12936,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -390}
-  m_SizeDelta: {x: 1702.209, y: 48}
+  m_AnchoredPosition: {x: 844.1139, y: -390}
+  m_SizeDelta: {x: 1688.2278, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &640722397
 MonoBehaviour:
@@ -13319,6 +13336,7 @@ GameObject:
   - component: {fileID: 653502589}
   - component: {fileID: 653502591}
   - component: {fileID: 653502590}
+  - component: {fileID: 653502592}
   m_Layer: 5
   m_Name: JoinRoomPanel
   m_TagString: Untagged
@@ -13387,6 +13405,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 653502588}
   m_CullTransparentMesh: 1
+--- !u!114 &653502592
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 653502588}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 120e3f1826522dedd8fadca5a24bec9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationPanel
+  _menuName: JoinRoomPanel
 --- !u!1 &656317981
 GameObject:
   m_ObjectHideFlags: 0
@@ -13812,7 +13843,7 @@ GameObject:
   - component: {fileID: 684164732}
   - component: {fileID: 684164731}
   - component: {fileID: 684164730}
-  - component: {fileID: 684164729}
+  - component: {fileID: 684164733}
   m_Layer: 5
   m_Name: BackBtn
   m_TagString: Untagged
@@ -13840,18 +13871,6 @@ RectTransform:
   m_AnchoredPosition: {x: 421.55225, y: -32}
   m_SizeDelta: {x: 843.1045, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &684164729
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 684164727}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &684164730
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13934,6 +13953,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 684164727}
   m_CullTransparentMesh: 1
+--- !u!114 &684164733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 684164727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: 
+  _menuToClose: 
+  _openLast: 1
 --- !u!1 &684286548
 GameObject:
   m_ObjectHideFlags: 0
@@ -14823,10 +14857,10 @@ RectTransform:
   - {fileID: 993900777}
   m_Father: {fileID: 697504889}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1280.6567, y: -32}
-  m_SizeDelta: {x: 843.1045, y: 64}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &709592907
 MonoBehaviour:
@@ -16576,8 +16610,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -506}
-  m_SizeDelta: {x: 1702.209, y: 48}
+  m_AnchoredPosition: {x: 844.1139, y: -506}
+  m_SizeDelta: {x: 1688.2278, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &774959243
 MonoBehaviour:
@@ -20494,7 +20528,7 @@ GameObject:
   - component: {fileID: 969977533}
   - component: {fileID: 969977532}
   - component: {fileID: 969977531}
-  - component: {fileID: 969977530}
+  - component: {fileID: 969977534}
   m_Layer: 5
   m_Name: BackBtn
   m_TagString: Untagged
@@ -20522,18 +20556,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &969977530
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 969977528}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &969977531
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20616,6 +20638,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 969977528}
   m_CullTransparentMesh: 1
+--- !u!114 &969977534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 969977528}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: 
+  _menuToClose: 
+  _openLast: 1
 --- !u!1 &976452950
 GameObject:
   m_ObjectHideFlags: 0
@@ -21387,8 +21424,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -120}
-  m_SizeDelta: {x: 1702.209, y: 48}
+  m_AnchoredPosition: {x: 844.1139, y: -120}
+  m_SizeDelta: {x: 1688.2278, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1002458396
 MonoBehaviour:
@@ -21627,6 +21664,7 @@ GameObject:
   - component: {fileID: 1052124902}
   - component: {fileID: 1052124904}
   - component: {fileID: 1052124903}
+  - component: {fileID: 1052124905}
   m_Layer: 5
   m_Name: ContinuePanel
   m_TagString: Untagged
@@ -21695,6 +21733,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1052124901}
   m_CullTransparentMesh: 1
+--- !u!114 &1052124905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1052124901}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 120e3f1826522dedd8fadca5a24bec9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationPanel
+  _menuName: ContinuePanel
 --- !u!1 &1059733035
 GameObject:
   m_ObjectHideFlags: 0
@@ -22879,7 +22930,7 @@ GameObject:
   - component: {fileID: 1145700846}
   - component: {fileID: 1145700845}
   - component: {fileID: 1145700844}
-  - component: {fileID: 1145700843}
+  - component: {fileID: 1145700847}
   m_Layer: 5
   m_Name: BackBtn
   m_TagString: Untagged
@@ -22907,18 +22958,6 @@ RectTransform:
   m_AnchoredPosition: {x: 421.55225, y: -32}
   m_SizeDelta: {x: 843.1045, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1145700843
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1145700841}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &1145700844
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23001,6 +23040,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1145700841}
   m_CullTransparentMesh: 1
+--- !u!114 &1145700847
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1145700841}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: 
+  _menuToClose: 
+  _openLast: 1
 --- !u!1 &1147083825
 GameObject:
   m_ObjectHideFlags: 0
@@ -23557,7 +23611,7 @@ GameObject:
   - component: {fileID: 1155678256}
   - component: {fileID: 1155678255}
   - component: {fileID: 1155678254}
-  - component: {fileID: 1155678253}
+  - component: {fileID: 1155678257}
   m_Layer: 5
   m_Name: BackBtn
   m_TagString: Untagged
@@ -23585,18 +23639,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1155678253
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1155678251}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &1155678254
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -23679,6 +23721,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1155678251}
   m_CullTransparentMesh: 1
+--- !u!114 &1155678257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1155678251}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: 
+  _menuToClose: 
+  _openLast: 1
 --- !u!1 &1157967419
 GameObject:
   m_ObjectHideFlags: 0
@@ -23690,6 +23747,7 @@ GameObject:
   - component: {fileID: 1157967422}
   - component: {fileID: 1157967421}
   - component: {fileID: 1157967420}
+  - component: {fileID: 1157967423}
   m_Layer: 5
   m_Name: SettingsPanel
   m_TagString: Untagged
@@ -23758,6 +23816,19 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1157967423
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1157967419}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 120e3f1826522dedd8fadca5a24bec9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationPanel
+  _menuName: SettingsPanel
 --- !u!1 &1159566735
 GameObject:
   m_ObjectHideFlags: 0
@@ -24622,8 +24693,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -564}
-  m_SizeDelta: {x: 1702.209, y: 48}
+  m_AnchoredPosition: {x: 844.1139, y: -564}
+  m_SizeDelta: {x: 1688.2278, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1197990849
 MonoBehaviour:
@@ -25102,7 +25173,7 @@ GameObject:
   - component: {fileID: 1225398775}
   - component: {fileID: 1225398774}
   - component: {fileID: 1225398773}
-  - component: {fileID: 1225398772}
+  - component: {fileID: 1225398776}
   m_Layer: 5
   m_Name: BackBtn
   m_TagString: Untagged
@@ -25130,18 +25201,6 @@ RectTransform:
   m_AnchoredPosition: {x: 421.55225, y: -32}
   m_SizeDelta: {x: 843.1045, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1225398772
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1225398770}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &1225398773
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -25224,6 +25283,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1225398770}
   m_CullTransparentMesh: 1
+--- !u!114 &1225398776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1225398770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: 
+  _menuToClose: 
+  _openLast: 1
 --- !u!1 &1233861983
 GameObject:
   m_ObjectHideFlags: 0
@@ -25295,8 +25369,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -780}
-  m_SizeDelta: {x: 1702.209, y: 28}
+  m_AnchoredPosition: {x: 844.1139, y: -780}
+  m_SizeDelta: {x: 1688.2278, y: 28}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1239161187
 MonoBehaviour:
@@ -26521,8 +26595,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -236}
-  m_SizeDelta: {x: 1702.209, y: 48}
+  m_AnchoredPosition: {x: 844.1139, y: -236}
+  m_SizeDelta: {x: 1688.2278, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1277470006
 MonoBehaviour:
@@ -26555,6 +26629,7 @@ GameObject:
   - component: {fileID: 1280243280}
   - component: {fileID: 1280243282}
   - component: {fileID: 1280243281}
+  - component: {fileID: 1280243283}
   m_Layer: 5
   m_Name: CreateRoomPanel
   m_TagString: Untagged
@@ -26623,6 +26698,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1280243279}
   m_CullTransparentMesh: 1
+--- !u!114 &1280243283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1280243279}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 120e3f1826522dedd8fadca5a24bec9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationPanel
+  _menuName: CreateRoomPanel
 --- !u!1 &1287199495
 GameObject:
   m_ObjectHideFlags: 0
@@ -26934,8 +27022,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -910}
-  m_SizeDelta: {x: 1702.209, y: 64}
+  m_AnchoredPosition: {x: 844.1139, y: -910}
+  m_SizeDelta: {x: 1688.2278, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1290484279
 MonoBehaviour:
@@ -27766,8 +27854,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -836}
-  m_SizeDelta: {x: 1702.209, y: 64}
+  m_AnchoredPosition: {x: 844.1139, y: -836}
+  m_SizeDelta: {x: 1688.2278, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1316308752
 MonoBehaviour:
@@ -27981,8 +28069,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -294}
-  m_SizeDelta: {x: 1702.209, y: 48}
+  m_AnchoredPosition: {x: 844.1139, y: -294}
+  m_SizeDelta: {x: 1688.2278, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1333748760
 MonoBehaviour:
@@ -29101,7 +29189,7 @@ GameObject:
   - component: {fileID: 1391855616}
   - component: {fileID: 1391855615}
   - component: {fileID: 1391855614}
-  - component: {fileID: 1391855613}
+  - component: {fileID: 1391855617}
   m_Layer: 5
   m_Name: Card_Multiplayer
   m_TagString: Untagged
@@ -29128,21 +29216,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 697.47424, y: -384}
+  m_AnchoredPosition: {x: 662.1139, y: -384}
   m_SizeDelta: {x: 340, y: 240}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1391855613
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1391855611}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &1391855614
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -29225,6 +29301,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1391855611}
   m_CullTransparentMesh: 1
+--- !u!114 &1391855617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1391855611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: MultiplayerPanel
+  _menuToClose: 
+  _openLast: 0
 --- !u!1 &1393020174
 GameObject:
   m_ObjectHideFlags: 0
@@ -29608,7 +29699,7 @@ GameObject:
   - component: {fileID: 1415812548}
   - component: {fileID: 1415812547}
   - component: {fileID: 1415812546}
-  - component: {fileID: 1415812545}
+  - component: {fileID: 1415812549}
   m_Layer: 5
   m_Name: BackBtn
   m_TagString: Untagged
@@ -29633,21 +29724,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -32}
-  m_SizeDelta: {x: 1702.209, y: 64}
+  m_AnchoredPosition: {x: 844.1139, y: -32}
+  m_SizeDelta: {x: 1688.2278, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1415812545
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1415812543}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &1415812546
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -29730,6 +29809,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1415812543}
   m_CullTransparentMesh: 1
+--- !u!114 &1415812549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1415812543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: 
+  _menuToClose: 
+  _openLast: 1
 --- !u!1 &1418592882
 GameObject:
   m_ObjectHideFlags: 0
@@ -30167,6 +30261,7 @@ GameObject:
   - component: {fileID: 1427730701}
   - component: {fileID: 1427730703}
   - component: {fileID: 1427730702}
+  - component: {fileID: 1427730704}
   m_Layer: 5
   m_Name: PlayModePanel
   m_TagString: Untagged
@@ -30234,6 +30329,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1427730700}
   m_CullTransparentMesh: 1
+--- !u!114 &1427730704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1427730700}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 120e3f1826522dedd8fadca5a24bec9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationPanel
+  _menuName: PlayModePanel
 --- !u!1 &1427746250
 GameObject:
   m_ObjectHideFlags: 0
@@ -31127,7 +31235,7 @@ GameObject:
   - component: {fileID: 1486479232}
   - component: {fileID: 1486479231}
   - component: {fileID: 1486479230}
-  - component: {fileID: 1486479229}
+  - component: {fileID: 1486479233}
   m_Layer: 5
   m_Name: BackBtn
   m_TagString: Untagged
@@ -31155,18 +31263,6 @@ RectTransform:
   m_AnchoredPosition: {x: 851.1045, y: -32}
   m_SizeDelta: {x: 1702.209, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1486479229
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1486479227}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &1486479230
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31249,6 +31345,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1486479227}
   m_CullTransparentMesh: 1
+--- !u!114 &1486479233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1486479227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: 
+  _menuToClose: 
+  _openLast: 1
 --- !u!1 &1487205405
 GameObject:
   m_ObjectHideFlags: 0
@@ -32163,8 +32274,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -612}
-  m_SizeDelta: {x: 1702.209, y: 28}
+  m_AnchoredPosition: {x: 844.1139, y: -612}
+  m_SizeDelta: {x: 1688.2278, y: 28}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1532565104
 MonoBehaviour:
@@ -32453,7 +32564,7 @@ GameObject:
   - component: {fileID: 1549643409}
   - component: {fileID: 1549643408}
   - component: {fileID: 1549643407}
-  - component: {fileID: 1549643406}
+  - component: {fileID: 1549643410}
   m_Layer: 5
   m_Name: Card_Bot
   m_TagString: Untagged
@@ -32480,21 +32591,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1061.4742, y: -120}
+  m_AnchoredPosition: {x: 1026.1139, y: -120}
   m_SizeDelta: {x: 340, y: 240}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1549643406
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1549643404}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &1549643407
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32577,6 +32676,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1549643404}
   m_CullTransparentMesh: 1
+--- !u!114 &1549643410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1549643404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: BotPanel
+  _menuToClose: 
+  _openLast: 0
 --- !u!1 &1551087869
 GameObject:
   m_ObjectHideFlags: 0
@@ -32889,7 +33003,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 148}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1554567083
 MonoBehaviour:
@@ -33533,8 +33647,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -178}
-  m_SizeDelta: {x: 1702.209, y: 48}
+  m_AnchoredPosition: {x: 844.1139, y: -178}
+  m_SizeDelta: {x: 1688.2278, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1579706709
 MonoBehaviour:
@@ -33627,8 +33741,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -14}
-  m_SizeDelta: {x: 1702.209, y: 28}
+  m_AnchoredPosition: {x: 844.1139, y: -14}
+  m_SizeDelta: {x: 1688.2278, y: 28}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1582101205
 MonoBehaviour:
@@ -34114,10 +34228,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1554567082}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -138}
-  m_SizeDelta: {x: 1702.209, y: 20}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1603579854
 MonoBehaviour:
@@ -34150,6 +34264,7 @@ GameObject:
   - component: {fileID: 1604616898}
   - component: {fileID: 1604616900}
   - component: {fileID: 1604616899}
+  - component: {fileID: 1604616901}
   m_Layer: 5
   m_Name: BotPanel
   m_TagString: Untagged
@@ -34218,6 +34333,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1604616897}
   m_CullTransparentMesh: 1
+--- !u!114 &1604616901
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1604616897}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 120e3f1826522dedd8fadca5a24bec9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationPanel
+  _menuName: BotPanel
 --- !u!1 &1609980688
 GameObject:
   m_ObjectHideFlags: 0
@@ -34846,7 +34974,7 @@ GameObject:
   - component: {fileID: 1643596094}
   - component: {fileID: 1643596096}
   - component: {fileID: 1643596095}
-  - component: {fileID: 9001643596097001}
+  - component: {fileID: 1643596097}
   m_Layer: 5
   m_Name: MultiplayerPanel
   m_TagString: Untagged
@@ -34915,6 +35043,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1643596093}
   m_CullTransparentMesh: 1
+--- !u!114 &1643596097
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1643596093}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 120e3f1826522dedd8fadca5a24bec9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationPanel
+  _menuName: MultiplayerPanel
 --- !u!1 &1645209321
 GameObject:
   m_ObjectHideFlags: 0
@@ -38380,10 +38521,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1554567082}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -78}
-  m_SizeDelta: {x: 1702.209, y: 80}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1792878999
 MonoBehaviour:
@@ -38923,6 +39064,7 @@ GameObject:
   - component: {fileID: 1827957270}
   - component: {fileID: 1827957269}
   - component: {fileID: 1827957272}
+  - component: {fileID: 1827957273}
   m_Layer: 5
   m_Name: SideBtn_Settings
   m_TagString: Untagged
@@ -39053,6 +39195,21 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1827957273
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1827957267}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: SettingsPanel
+  _menuToClose: 
+  _openLast: 0
 --- !u!1 &1828203842
 GameObject:
   m_ObjectHideFlags: 0
@@ -39298,10 +39455,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1554567082}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -14}
-  m_SizeDelta: {x: 1702.209, y: 28}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 28}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1831413410
 MonoBehaviour:
@@ -41310,8 +41467,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -448}
-  m_SizeDelta: {x: 1702.209, y: 48}
+  m_AnchoredPosition: {x: 844.1139, y: -448}
+  m_SizeDelta: {x: 1688.2278, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1951968885
 MonoBehaviour:
@@ -41643,8 +41800,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -62}
-  m_SizeDelta: {x: 1702.209, y: 48}
+  m_AnchoredPosition: {x: 844.1139, y: -62}
+  m_SizeDelta: {x: 1688.2278, y: 48}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1965499000
 MonoBehaviour:
@@ -43685,8 +43842,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 851.1045, y: -696}
-  m_SizeDelta: {x: 1702.209, y: 120}
+  m_AnchoredPosition: {x: 844.1139, y: -696}
+  m_SizeDelta: {x: 1688.2278, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2041793099
 MonoBehaviour:
@@ -43998,13 +44155,14 @@ GameObject:
   - component: {fileID: 2047718047}
   - component: {fileID: 2047718049}
   - component: {fileID: 2047718048}
+  - component: {fileID: 2047718050}
   m_Layer: 5
   m_Name: SoloPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2047718047
 RectTransform:
   m_ObjectHideFlags: 0
@@ -44066,6 +44224,19 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2047718046}
   m_CullTransparentMesh: 1
+--- !u!114 &2047718050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2047718046}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 120e3f1826522dedd8fadca5a24bec9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationPanel
+  _menuName: SoloPanel
 --- !u!1 &2051864499
 GameObject:
   m_ObjectHideFlags: 0
@@ -45865,7 +46036,7 @@ GameObject:
   - component: {fileID: 2126115992}
   - component: {fileID: 2126115991}
   - component: {fileID: 2126115990}
-  - component: {fileID: 2126115989}
+  - component: {fileID: 2126115993}
   m_Layer: 5
   m_Name: Card_Solo
   m_TagString: Untagged
@@ -45892,21 +46063,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 697.47424, y: -120}
+  m_AnchoredPosition: {x: 662.1139, y: -120}
   m_SizeDelta: {x: 340, y: 240}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &2126115989
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2126115987}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &2126115990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45989,6 +46148,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2126115987}
   m_CullTransparentMesh: 1
+--- !u!114 &2126115993
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2126115987}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: SoloPanel
+  _menuToClose: 
+  _openLast: 0
 --- !u!1 &2132070403
 GameObject:
   m_ObjectHideFlags: 0
@@ -46169,7 +46343,7 @@ GameObject:
   - component: {fileID: 2143226274}
   - component: {fileID: 2143226273}
   m_Layer: 5
-  m_Name: BackBtn
+  m_Name: "\u0421"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -46190,10 +46364,10 @@ RectTransform:
   - {fileID: 74850651}
   m_Father: {fileID: 697504889}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 421.55225, y: -32}
-  m_SizeDelta: {x: 843.1045, y: 64}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2143226273
 MonoBehaviour:
@@ -46438,7 +46612,7 @@ GameObject:
   - component: {fileID: 2144015532}
   - component: {fileID: 2144015531}
   - component: {fileID: 2144015530}
-  - component: {fileID: 2144015529}
+  - component: {fileID: 2144015533}
   m_Layer: 5
   m_Name: Card_Continue
   m_TagString: Untagged
@@ -46465,21 +46639,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1061.4742, y: -384}
+  m_AnchoredPosition: {x: 1026.1139, y: -384}
   m_SizeDelta: {x: 340, y: 240}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &2144015529
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2144015527}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82a3965ea63f28d77a9293b8cf9c53da, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
 --- !u!114 &2144015530
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46562,6 +46724,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2144015527}
   m_CullTransparentMesh: 1
+--- !u!114 &2144015533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2144015527}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationButton
+  _menuToOpen: ContinuePanel
+  _menuToClose: 
+  _openLast: 0
 --- !u!1 &2144829845
 GameObject:
   m_ObjectHideFlags: 0
@@ -46770,18 +46947,19 @@ MonoBehaviour:
   cancelButton: {fileID: 254606366}
   resetDefaultsButton: {fileID: 1316308753}
   validationErrorText: {fileID: 0}
---- !u!114 &9001643596097001
+--- !u!114 &900275840567002
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1643596093}
+  m_GameObject: {fileID: 275840565}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6f53b3a3cc2248b6b8f3a0dc2d4b5e21, type: 3}
+  m_Script: {fileID: 11500000, guid: 120e3f1826522dedd8fadca5a24bec9c, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MultiplayerMenuPanelController
+  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.NavigationPanel
+  _menuName: WorldSetupPanel
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
