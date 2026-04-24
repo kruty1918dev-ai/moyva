@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e1dc81b1d85eb5a585bdd434e14191d, type: 3}
+  m_Name: GraphEditorWindowSettings
+  m_EditorClassIdentifier: Kruty1918.Moyva.GraphSystem.Editor::Kruty1918.Moyva.GraphSystem.Editor.GraphEditorWindowSettings
+  graphAssetGuid: e728959edc09a5fea829221821058070
+  previewSettingsGuid: c62e79ed759acdaa7a7d728e019a4cf7
+  graphAsset: {fileID: 11400000, guid: e728959edc09a5fea829221821058070, type: 2}
+  previewSettings: {fileID: 11400000, guid: c62e79ed759acdaa7a7d728e019a4cf7, type: 2}
+  previewWidth: 64
+  previewHeight: 64
+  showInlinePreviews: 1
+  autoRunOnChange: 1
+  previewResolution: 1
+  previewHeatmap: 0
+  inspectorTabIndex: 0
+  isInspectorVisible: 1
+  isNodeInspectorExpanded: 1
