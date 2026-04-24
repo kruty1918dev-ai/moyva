@@ -42,6 +42,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         [SerializeField] private string _previewSettingsGuid;
         private EditorPreviewSettings _previewSettings;
 
+        private const string SettingsAssetPath = "Assets/Moyva/Scripts/Features/GraphSystem/Editor/GraphEditorWindowSettings.asset";
+        private GraphEditorWindowSettings _windowSettings;
+
         // Inline map size override (used when no EditorPreviewSettings assigned)
         [SerializeField] private int _previewWidth = 64;
         [SerializeField] private int _previewHeight = 64;
@@ -69,6 +72,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void OnEnable()
         {
+            LoadWindowSettings();
             ConstructGraphView();
             ConstructToolbar();
             ConstructStatusBar();
@@ -87,6 +91,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void OnDisable()
         {
+            SaveWindowSettings();
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
 
@@ -287,7 +292,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             assetField.RegisterValueChangedCallback(evt =>
             {
                 if (evt.newValue is GraphAsset asset)
+                {
                     LoadGraph(asset);
+                    SaveWindowSettings();
+                }
             });
             toolbar.Add(assetField);
 
@@ -314,6 +322,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 {
                     _previewSettingsGuid = null;
                 }
+                SaveWindowSettings();
             });
             toolbar.Add(settingsField);
 
@@ -831,6 +840,103 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (string.IsNullOrEmpty(path)) return;
 
             _previewSettings = AssetDatabase.LoadAssetAtPath<EditorPreviewSettings>(path);
+        }
+
+        private void LoadWindowSettings()
+        {
+            var settings = AssetDatabase.LoadAssetAtPath<GraphEditorWindowSettings>(SettingsAssetPath);
+            if (settings == null)
+            {
+                _windowSettings = null;
+                return;
+            }
+
+            _windowSettings = settings;
+            // Prefer direct references stored in the settings asset. Fall back to GUIDs for backward compatibility.
+            if (settings.graphAsset != null)
+            {
+                _graphAsset = settings.graphAsset;
+                var path = AssetDatabase.GetAssetPath(_graphAsset);
+                _graphAssetGuid = string.IsNullOrEmpty(path) ? null : AssetDatabase.AssetPathToGUID(path);
+            }
+            else if (!string.IsNullOrEmpty(settings.graphAssetGuid))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(settings.graphAssetGuid);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var asset = AssetDatabase.LoadAssetAtPath<GraphAsset>(path);
+                    if (asset != null)
+                        _graphAsset = asset;
+                    else
+                    {
+                        Debug.LogWarning("[GraphEditorWindow] Saved GraphAsset not found; clearing saved reference in settings.");
+                        settings.graphAssetGuid = null;
+                        EditorUtility.SetDirty(settings);
+                        AssetDatabase.SaveAssets();
+                    }
+                }
+            }
+
+            if (settings.previewSettings != null)
+            {
+                _previewSettings = settings.previewSettings;
+                var path = AssetDatabase.GetAssetPath(_previewSettings);
+                _previewSettingsGuid = string.IsNullOrEmpty(path) ? null : AssetDatabase.AssetPathToGUID(path);
+            }
+            else if (!string.IsNullOrEmpty(settings.previewSettingsGuid))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(settings.previewSettingsGuid);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var p = AssetDatabase.LoadAssetAtPath<EditorPreviewSettings>(path);
+                    if (p != null)
+                        _previewSettings = p;
+                    else
+                    {
+                        Debug.LogWarning("[GraphEditorWindow] Saved EditorPreviewSettings not found; clearing saved reference in settings.");
+                        settings.previewSettingsGuid = null;
+                        EditorUtility.SetDirty(settings);
+                        AssetDatabase.SaveAssets();
+                    }
+                }
+            }
+
+            _previewWidth = Mathf.Max(4, settings.previewWidth);
+            _previewHeight = Mathf.Max(4, settings.previewHeight);
+            _showInlinePreviews = settings.showInlinePreviews;
+            _autoRunOnChange = settings.autoRunOnChange;
+            _previewResolution = Mathf.Clamp(settings.previewResolution, 0, 2);
+            _previewHeatmap = settings.previewHeatmap;
+            _isInspectorVisible = settings.isInspectorVisible;
+            _isNodeInspectorExpanded = settings.isNodeInspectorExpanded;
+        }
+
+        private void SaveWindowSettings()
+        {
+            GraphEditorWindowSettings settings = AssetDatabase.LoadAssetAtPath<GraphEditorWindowSettings>(SettingsAssetPath);
+            if (settings == null)
+            {
+                settings = ScriptableObject.CreateInstance<GraphEditorWindowSettings>();
+                AssetDatabase.CreateAsset(settings, SettingsAssetPath);
+            }
+            // Save both direct references and GUIDs for backward compatibility
+            settings.graphAsset = _graphAsset;
+            settings.graphAssetGuid = _graphAssetGuid ?? "";
+
+            settings.previewSettings = _previewSettings;
+            settings.previewSettingsGuid = _previewSettingsGuid ?? "";
+            settings.previewWidth = _previewWidth;
+            settings.previewHeight = _previewHeight;
+            settings.showInlinePreviews = _showInlinePreviews;
+            settings.autoRunOnChange = _autoRunOnChange;
+            settings.previewResolution = _previewResolution;
+            settings.previewHeatmap = _previewHeatmap;
+            settings.isInspectorVisible = _isInspectorVisible;
+            settings.isNodeInspectorExpanded = _isNodeInspectorExpanded;
+
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssets();
+            _windowSettings = settings;
         }
 
         private void HighlightExecutionResults(GraphExecutionResult result)
