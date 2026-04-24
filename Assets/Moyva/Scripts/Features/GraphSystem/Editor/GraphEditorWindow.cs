@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
@@ -701,24 +704,33 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            var context = new NodeContext(
-                seed: UnityEngine.Random.Range(0, int.MaxValue),
-                cancellation: CancellationToken.None);
-            context.MapSize = new Vector2Int(mapW, mapH);
 
-            // Register shared settings
-            if (sharedSettings != null)
-                context.RegisterService(sharedSettings);
+            // Compute deterministic seed from graph asset + preview settings + runtime options
+            int seed = ComputeDeterministicSeed(mapW, mapH);
+            _statusLabel.text = $"Running graph... (seed {seed})";
 
-            // Register generator services with fallbacks
-            RegisterEditorServices(context);
+            // Save previous Unity random state and set deterministic seed for UnityEngine.Random
+            var prevRandomState = UnityEngine.Random.state;
+            UnityEngine.Random.InitState(seed);
 
-            // Register layer data list so SingleTileLayerNode can populate it
-            var layerDataList = new List<WorldLayerData>();
-            context.RegisterService(layerDataList);
+            try
+            {
+                var context = new NodeContext(seed, CancellationToken.None);
+                context.MapSize = new Vector2Int(mapW, mapH);
 
-            var runner = new GraphRunner();
-            var result = runner.Execute(_graphAsset, context);
+                // Register shared settings
+                if (sharedSettings != null)
+                    context.RegisterService(sharedSettings);
+
+                // Register generator services with fallbacks
+                RegisterEditorServices(context);
+
+                // Register layer data list so SingleTileLayerNode can populate it
+                var layerDataList = new List<WorldLayerData>();
+                context.RegisterService(layerDataList);
+
+                var runner = new GraphRunner();
+                var result = runner.Execute(_graphAsset, context);
             int previewSize = ResolvePreviewSize(mapW, mapH);
             _graphView?.UpdateNodePreviews(result, _previewSettings, layerDataList, previewSize, _previewHeatmap);
             GraphPreviewWindow.RequestRepaint();
@@ -759,6 +771,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 _statusLabel.text = $"✗ Run failed at node {result.ErrorNodeId}: {result.ErrorMessage}";
                 Debug.LogError($"[GraphRunner] Execution failed: {result.ErrorMessage}");
+            }
+
+            }
+            finally
+            {
+                UnityEngine.Random.state = prevRandomState;
             }
 
             _isRunningGraph = false;
@@ -937,6 +955,109 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssets();
             _windowSettings = settings;
+        }
+
+        private int ComputeDeterministicSeed(int mapW, int mapH)
+        {
+            try
+            {
+                using (var md5 = MD5.Create())
+                using (var ms = new MemoryStream())
+                {
+                    // Include graph asset file bytes when available
+                    if (_graphAsset != null)
+                    {
+                        var path = AssetDatabase.GetAssetPath(_graphAsset);
+                        if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                        {
+                            var b = File.ReadAllBytes(path);
+                            ms.Write(b, 0, b.Length);
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(_graphAssetGuid))
+                    {
+                        var path = AssetDatabase.GUIDToAssetPath(_graphAssetGuid);
+                        if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                        {
+                            var b = File.ReadAllBytes(path);
+                            ms.Write(b, 0, b.Length);
+                        }
+                    }
+
+                    // Include preview settings asset bytes when available
+                    if (_previewSettings != null)
+                    {
+                        var ppath = AssetDatabase.GetAssetPath(_previewSettings);
+                        if (!string.IsNullOrEmpty(ppath) && File.Exists(ppath))
+                        {
+                            var pb = File.ReadAllBytes(ppath);
+                            ms.Write(pb, 0, pb.Length);
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(_previewSettingsGuid))
+                    {
+                        var ppath = AssetDatabase.GUIDToAssetPath(_previewSettingsGuid);
+                        if (!string.IsNullOrEmpty(ppath) && File.Exists(ppath))
+                        {
+                            var pb = File.ReadAllBytes(ppath);
+                            ms.Write(pb, 0, pb.Length);
+                        }
+                    }
+
+                    // Append runtime preview parameters
+                    var meta = $":{mapW}:{mapH}:{_previewWidth}:{_previewHeight}:{_previewResolution}:{_previewHeatmap}:{_showInlinePreviews}:{_autoRunOnChange}";
+                    var metaBytes = Encoding.UTF8.GetBytes(meta);
+                    ms.Write(metaBytes, 0, metaBytes.Length);
+
+                    // Include referenced ScriptableObjects from nodes (e.g., DataNoiseSettings, WFCDataSettings)
+                    if (_graphAsset != null && _graphAsset.Nodes != null)
+                    {
+                        foreach (var node in _graphAsset.Nodes)
+                        {
+                            if (node == null) continue;
+                            try
+                            {
+                                var serialized = new UnityEditor.SerializedObject(node);
+                                var prop = serialized.GetIterator();
+                                bool enter = true;
+                                while (prop.NextVisible(enter))
+                                {
+                                    enter = false;
+                                    if (prop.propertyType == UnityEditor.SerializedPropertyType.ObjectReference)
+                                    {
+                                        var o = prop.objectReferenceValue;
+                                        if (o == null) continue;
+                                        var ap = AssetDatabase.GetAssetPath(o);
+                                        if (!string.IsNullOrEmpty(ap) && File.Exists(ap))
+                                        {
+                                            var db = File.ReadAllBytes(ap);
+                                            ms.Write(db, 0, db.Length);
+                                        }
+                                        else
+                                        {
+                                            var nameb = Encoding.UTF8.GetBytes(o.name ?? "");
+                                            ms.Write(nameb, 0, nameb.Length);
+                                        }
+                                    }
+                                }
+                            }
+                            catch
+                            {
+                                // ignore serialization issues for safety
+                            }
+                        }
+                    }
+
+                    var hash = md5.ComputeHash(ms.ToArray());
+                    int seed = BitConverter.ToInt32(hash, 0) & 0x7FFFFFFF;
+                    return seed;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[GraphEditorWindow] Failed to compute deterministic seed: {ex.Message}");
+                return (int)(Environment.TickCount & 0x7FFFFFFF);
+            }
         }
 
         private void HighlightExecutionResults(GraphExecutionResult result)
