@@ -384,7 +384,7 @@ MonoBehaviour:
   m_Name: ErosionNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ErosionNode
   _nodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-  _editorPosition: {x: 650, y: 26}
+  _editorPosition: {x: 644, y: 26}
   _erosionRate: 0.02
   _iterations: 20
   _talusAngle: 0.03
