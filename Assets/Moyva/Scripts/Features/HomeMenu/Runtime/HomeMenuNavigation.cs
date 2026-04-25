@@ -50,6 +50,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 LogWarning($"Panel '{menuName}' not found.");
                 return;
             }
+            // If requested menu is already open, do nothing.
+            if (_menuStack.Count > 0 && _menuStack.Peek() == menuName)
+            {
+                LogInfo($"Menu '{menuName}' already open.");
+                return;
+            }
             // Close currently opened panel (if any) and push it to closed history
             CloseLast();
 
@@ -131,16 +137,37 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
-            var menuName = _closedStack.Pop();
-            if (!_panelsByName.TryGetValue(menuName, out var panel))
+            // Try to reopen the most-recently closed panel that still exists.
+            while (_closedStack.Count > 0)
             {
-                LogWarning($"Panel '{menuName}' not found when reopening last.");
+                var menuName = _closedStack.Pop();
+                if (!_panelsByName.TryGetValue(menuName, out var panel))
+                {
+                    LogWarning($"Panel '{menuName}' not found when reopening last; skipping.");
+                    continue;
+                }
+
+                // Close currently opened panel (if any) and push it to closed history
+                if (_menuStack.Count > 0)
+                {
+                    var current = _menuStack.Pop();
+                    if (_panelsByName.TryGetValue(current, out var currentPanel))
+                        currentPanel.Close();
+                    else
+                        LogWarning($"Panel '{current}' not found when closing current.");
+
+                    _closedStack.Push(current);
+                    LogInfo($"Closed current menu '{current}' before reopening.");
+                }
+
+                // Open the target panel
+                _menuStack.Push(menuName);
+                panel.Open();
+                LogInfo($"Reopened last closed menu '{menuName}'.");
                 return;
             }
 
-            _menuStack.Push(menuName);
-            panel.Open();
-            LogInfo($"Reopened last closed menu '{menuName}'.");
+            LogWarning("No valid closed menus to reopen.");
         }
 
         private void RemoveFromClosedHistory(string menuName)
