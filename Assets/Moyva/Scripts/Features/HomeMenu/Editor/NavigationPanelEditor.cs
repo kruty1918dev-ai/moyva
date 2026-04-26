@@ -12,11 +12,34 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
 
         private void OnEnable()
         {
+            // Avoid creating SerializedObject when any target is null (can happen if a component was removed)
+            if (targets == null || targets.Length == 0)
+                return;
+
+            for (int i = 0; i < targets.Length; i++)
+            {
+                if (targets[i] == null)
+                    return;
+            }
+
             _menuNameProp = serializedObject.FindProperty("_menuName");
         }
 
         public override void OnInspectorGUI()
         {
+            // Ensure targets are valid before touching serializedObject
+            if (targets == null || targets.Length == 0)
+                return;
+
+            for (int i = 0; i < targets.Length; i++)
+            {
+                if (targets[i] == null)
+                {
+                    EditorGUILayout.HelpBox("One or more target objects are missing or destroyed; select a valid object.", MessageType.Warning);
+                    return;
+                }
+            }
+
             serializedObject.Update();
 
             DrawDefaultInspector();

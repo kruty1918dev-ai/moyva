@@ -42,8 +42,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Debug.Log($"[HomeMenuOverlayLoader] Show overlay {progressValue:0.##}{_currentSuffix} ({_currentValue}/{_currentMax})");
 
             OverlayLoaderResult result = null;
+            // Use an async waiter instead of blocking GetResult() to avoid thread-pool blocking.
             result = OverlayLoaderResult.Start(
-                () => _overlayCompletionSource.Task.GetAwaiter().GetResult(),
+                async () => await _overlayCompletionSource.Task.ConfigureAwait(false),
                 null,
                 ex => { StopLoading(result); Debug.LogError($"[HomeMenuOverlayLoader] Overlay failed: {ex.Message}"); }
             );

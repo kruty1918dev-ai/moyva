@@ -1,10 +1,12 @@
 using System;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using UnityEngine;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Zenject;
+using Kruty1918.Moyva.Multiplayer.Core;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
@@ -13,15 +15,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private readonly IMultiplayerState _multiplayerState;
         private readonly IOverlayLoader _overlayLoader;
         private readonly IConfirmationService _confirmationService;
+        private readonly Kruty1918.Moyva.Shared.Connectivity.IConnectivityService _connectivityService;
 
         internal HomeMenuInitializer(
-            IMultiplayerState multiplayerState,
+            [InjectOptional] IMultiplayerState multiplayerState = null,
             [InjectOptional] IConfirmationService confirmation = null,
-            [InjectOptional] IOverlayLoader overlayLoader = null)
+            [InjectOptional] IOverlayLoader overlayLoader = null,
+            [InjectOptional] Kruty1918.Moyva.Shared.Connectivity.IConnectivityService connectivityService = null)
         {
             _multiplayerState = multiplayerState;
             _overlayLoader = overlayLoader;
             _confirmationService = confirmation;
+            _connectivityService = connectivityService;
         }
 
         public void Initialize()
@@ -32,7 +37,23 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
-            if (Application.internetReachability != NetworkReachability.NotReachable)
+            // Start async initialization without blocking the main thread.
+            _ = InitializeAsync();
+        }
+
+        private async Task InitializeAsync()
+        {
+            bool hasInternet = false;
+            try
+            {
+                hasInternet = await InternetChecker.HasInternetAsync();
+            }
+            catch (Exception ex)
+            {
+                LogWithPrefix($"Internet check failed: {ex.Message}");
+            }
+
+            if (hasInternet && _multiplayerState != null)
             {
                 StartMultiplayerInitialization();
             }

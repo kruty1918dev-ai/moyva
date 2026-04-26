@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.HomeMenu.Runtime;
 
 namespace Kruty1918.Moyva.HomeMenu.API
 {
@@ -85,7 +86,7 @@ namespace Kruty1918.Moyva.HomeMenu.API
         }
     }
 
-    public class OverlayLoaderResult : Task
+    public class OverlayLoaderResult
     {
         public static OverlayLoaderResult Current { get; private set; }
         public static event Action<OverlayLoaderResult> CurrentChanged;
@@ -96,56 +97,37 @@ namespace Kruty1918.Moyva.HomeMenu.API
         public Action OnSuccess { get; set; }
         public Action<Exception> OnError { get; set; }
 
-        public OverlayLoaderResult(Action action) : base(action)
+        private Task _task;
+
+        private OverlayLoaderResult()
         {
         }
 
-        public OverlayLoaderResult(Action action, CancellationToken cancellationToken) : base(action, cancellationToken)
+        /// <summary>
+        /// Start an async overlay task. The returned <see cref="OverlayLoaderResult"/> does not block threads;
+        /// it tracks the provided async action and will invoke OnSuccess/OnError when it completes.
+        /// </summary>
+        public static OverlayLoaderResult Start(Func<Task> asyncAction, Action onSuccess = null, Action<Exception> onError = null)
         {
-        }
-
-        public OverlayLoaderResult(Action action, TaskCreationOptions creationOptions) : base(action, creationOptions)
-        {
-        }
-
-        public OverlayLoaderResult(Action<object> action, object state) : base(action, state)
-        {
-        }
-
-        public OverlayLoaderResult(Action action, CancellationToken cancellationToken, TaskCreationOptions creationOptions) : base(action, cancellationToken, creationOptions)
-        {
-        }
-
-        public OverlayLoaderResult(Action<object> action, object state, CancellationToken cancellationToken) : base(action, state, cancellationToken)
-        {
-        }
-
-        public OverlayLoaderResult(Action<object> action, object state, TaskCreationOptions creationOptions) : base(action, state, creationOptions)
-        {
-        }
-
-        public OverlayLoaderResult(Action<object> action, object state, CancellationToken cancellationToken, TaskCreationOptions creationOptions) : base(action, state, cancellationToken, creationOptions)
-        {
-        }
-
-        public static OverlayLoaderResult Start(Action action, Action onSuccess = null, Action<Exception> onError = null)
-        {
-            var result = new OverlayLoaderResult(action)
+            var result = new OverlayLoaderResult
             {
                 OnSuccess = onSuccess,
                 OnError = onError
             };
 
-            // Do not broadcast CurrentChanged here — the result has not yet
-            // been set to a loading state. Broadcast only when SetLoading is called.
-            result.Start();
-            result.ContinueWith(t =>
+            // Run the provided async action on the thread-pool and observe completion.
+            result._task = Task.Run(async () =>
+            {
+                await asyncAction().ConfigureAwait(false);
+            });
+
+            result._task.ContinueWith(t =>
             {
                 if (t.IsFaulted)
-                    result.OnError?.Invoke(t.Exception.InnerException ?? t.Exception);
+                    MainThreadDispatcher.Enqueue(() => result.OnError?.Invoke(t.Exception.InnerException ?? t.Exception));
                 else
-                    result.OnSuccess?.Invoke();
-            });
+                    MainThreadDispatcher.Enqueue(() => result.OnSuccess?.Invoke());
+            }, TaskScheduler.Default);
 
             return result;
         }

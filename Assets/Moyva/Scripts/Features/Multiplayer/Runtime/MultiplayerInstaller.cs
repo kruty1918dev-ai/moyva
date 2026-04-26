@@ -1,3 +1,5 @@
+using System;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
@@ -14,13 +16,28 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// </summary>
     public sealed class MultiplayerInstaller : MonoInstaller
     {
-        public override void InstallBindings()
+        public override async void InstallBindings()
         {
-            Install(Container);
+            await Install(Container);
         }
 
-        public static void Install(DiContainer container)
+        public static async Task Install(DiContainer container)
         {
+            var hasInternet = false;
+            try
+            {
+                hasInternet = await InternetChecker.HasInternetAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[MultiplayerInstaller] Internet check failed: {ex.Message}");
+            }
+
+            if (!hasInternet)
+            {
+                Debug.Log("[MultiplayerInstaller] Internet is not reachable. Installing offline providers where appropriate.");
+            }
+
             // Логування
             container.Bind<IMultiplayerLogger>()
                 .To<UnityMultiplayerLogger>()
@@ -35,7 +52,22 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .FromMethod(ctx =>
                 {
                     var store = ctx.Container.Resolve<IConfigStore>();
-                    return store.Exists() ? store.Load() : MultiplayerConfig.Default();
+                    var cfg = store.Exists() ? store.Load() : MultiplayerConfig.Default();
+                    if (!hasInternet)
+                    {
+                        // Force offline provider when network is unavailable to avoid creating relay/ws providers
+                        return new MultiplayerConfig(
+                            cfg.SchemaVersion,
+                            NetworkProviderType.Offline,
+                            cfg.DefaultSessionRules,
+                            cfg.StrictParticipantLock,
+                            cfg.EnforceConfigConsistency,
+                            cfg.MatchmakingEnabled,
+                            cfg.RelaySettings,
+                            cfg.WebSocketSettings,
+                            cfg.FallbackProviderType);
+                    }
+                    return cfg;
                 })
                 .AsSingle();
 
@@ -112,9 +144,18 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .To<MultiplayerIdentityService>()
                 .AsSingle();
 
-            container.Bind<IMultiplayerState>()
-                .To<MultiplayerState>()
-                .AsSingle();
+            if (hasInternet)
+            {
+                container.Bind<IMultiplayerState>()
+                    .To<MultiplayerState>()
+                    .AsSingle();
+            }
+            else
+            {
+                container.Bind<IMultiplayerState>()
+                    .To<OfflineMultiplayerState>()
+                    .AsSingle();
+            }
         }
     }
 }
