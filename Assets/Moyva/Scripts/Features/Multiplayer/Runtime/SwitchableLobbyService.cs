@@ -100,7 +100,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         public void Dispose()
         {
-            try { _inner?.Dispose(); } catch { }
+            try
+            {
+                if (_inner is IDisposable d) d.Dispose();
+            }
+            catch { }
         }
     }
 }

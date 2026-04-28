@@ -376,7 +376,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 private Task SendViaLanAsync(string targetPeerId, byte[] payload, CancellationToken ct)
                 {
-                    if (_driver == null || !_driver.IsCreated)
+                    if (!_driver.IsCreated)
                     {
                         _logger.Warn("[Lan] SendMessage ignored: driver is not created.");
                         return Task.CompletedTask;
