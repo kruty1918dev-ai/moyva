@@ -147,4 +147,55 @@ namespace Kruty1918.Moyva.HomeMenu.API
         void ForeceHide();
         bool TryGetReqest(out ConfirmationRequest? request);
     }
+
+    public interface IBotPanelService
+    {
+
+    }
+
+    public enum GameMode
+    {
+        Solo,
+        LAN,
+        Multiplayer,
+        Bot
+    }
+
+    public interface ISelectedGameModeService
+    {
+        GameMode SelectedGameMode { get; }
+        void SetSelectedGameMode(GameMode mode);
+
+        event Action<GameMode> OnSelectedGameModeChanged;
+    }
+
+    public interface IContinuePanelService
+    {
+
+    }
+
+    public interface ICreateRoomPanelService
+    {
+
+    }
+
+    public interface IJoinRoomPanelService
+    {
+
+    }
+
+    public interface IMultiplayerPanelService
+    {
+
+    }
+
+    public interface ISoloPanelService
+    {
+
+    }
+
+    public interface IWorldCreationPanelService
+    {
+
+    }
 }

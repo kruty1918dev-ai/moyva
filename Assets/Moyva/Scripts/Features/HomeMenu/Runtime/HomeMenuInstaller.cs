@@ -53,6 +53,60 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             // Сервіси 
             Container.BindInterfacesAndSelfTo<ConformationService>()
             .AsSingle();
+
+            // View controllers (from scene hierarchy)
+            Container.BindInterfacesTo<BotViewController>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
+            Container.BindInterfacesTo<ContinueViewController>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
+            Container.BindInterfacesTo<CreateRoomViewController>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
+            Container.BindInterfacesTo<JoinRoomViewController>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
+            Container.BindInterfacesTo<MultiplayerViewController>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
+            Container.BindInterfacesTo<SoloViewController>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
+            Container.BindInterfacesTo<WorldSetupViewController>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
+            // Panel services (logic layer)
+            Container.BindInterfacesAndSelfTo<ContinuePanelService>()
+                .AsSingle();
+
+            // Default settings for bot panel (bound as instance so Zenject can inject struct)
+            Container.BindInstance(new BotDefaultSettings
+            {
+                Difficulty = BotDifficulty.Medium,
+                Strategy = BotStrategy.Random,
+                BotCount = 1,
+                AllowBotCheating = false
+            }).AsSingle();
+
+            Container.BindInterfacesAndSelfTo<BotPanelService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<SelectedGameModeService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<CreateRoomPanelService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<JoinRoomPanelService>()
+                .AsSingle();
         }
     }
 }

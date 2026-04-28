@@ -7,6 +7,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 {
     public static class InternetChecker
     {
+        private const string Prefix = "[InternetChecker]";
         /// <summary>
         /// Checks internet availability by attempting HTTP requests to reliable endpoints.
         /// Retries multiple times before returning false to account for transient connectivity.
@@ -25,34 +26,52 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
             try
             {
+                Debug.Log($"{Prefix} HasInternetAsync start (attempts={attempts}, timeoutSeconds={timeoutSeconds})");
                 using (var client = new HttpClient())
                 {
                     client.Timeout = TimeSpan.FromSeconds(Math.Max(1, timeoutSeconds));
 
                     for (int attempt = 0; attempt < Math.Max(1, attempts); attempt++)
                     {
+                        Debug.Log($"{Prefix} Attempt {attempt + 1}/{Math.Max(1, attempts)}");
                         foreach (var url in urls)
                         {
                             try
                             {
+                                Debug.Log($"{Prefix} Trying {url}");
                                 using (var response = await client.GetAsync(url))
                                 {
                                     if (response.IsSuccessStatusCode)
                                     {
+                                        Debug.Log($"{Prefix} Success {url} status={(int)response.StatusCode}");
                                         return true;
+                                    }
+                                    else
+                                    {
+                                        Debug.Log($"{Prefix} Non-success status from {url}: {(int)response.StatusCode}");
                                     }
                                 }
                             }
-                            catch { /* ignore and try next url */ }
+                            catch (Exception ex)
+                            {
+                                Debug.Log($"{Prefix} Request to {url} failed: {ex.Message}");
+                            }
                         }
 
                         if (attempt < attempts - 1)
+                        {
+                            Debug.Log($"{Prefix} Attempt {attempt + 1} failed, retrying after delay...");
                             await Task.Delay(500);
+                        }
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.LogError($"{Prefix} Probe failed: {ex.Message}");
+            }
 
+            Debug.Log($"{Prefix} HasInternetAsync finished: no successful responses");
             return false;
         }
     }

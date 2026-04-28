@@ -5,7 +5,10 @@ using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
+using System.Threading.Tasks;
 using UnityEngine;
+using Unity.Services.Core;
+using Unity.Services.Authentication;
 using Zenject;
 
 namespace Kruty1918.Moyva.Multiplayer.Runtime
@@ -16,27 +19,75 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// </summary>
     public sealed class MultiplayerInstaller : MonoInstaller
     {
+        private const string Prefix = "[MultiplayerInstaller]";
         public override async void InstallBindings()
         {
+            Debug.Log($"{Prefix} InstallBindings start.");
             await Install(Container);
+            Debug.Log($"{Prefix} InstallBindings end.");
         }
 
         public static async Task Install(DiContainer container)
         {
+            Debug.Log("[MultiplayerInstaller] Install start.");
             var hasInternet = false;
             try
             {
-                hasInternet = await InternetChecker.HasInternetAsync();
+                Debug.Log($"{Prefix} Probing Unity Services initialization (timeout 6s)");
+                var initTask = UnityServices.InitializeAsync();
+                var initTimeout = Task.Delay(TimeSpan.FromSeconds(6));
+                var initCompleted = await Task.WhenAny(initTask, initTimeout);
+
+                if (initCompleted == initTask)
+                {
+                    Debug.Log($"{Prefix} UnityServices.InitializeAsync completed.");
+                    try
+                    {
+                        // Try quick anonymous sign-in if not already signed in
+                        if (!AuthenticationService.Instance.IsSignedIn)
+                        {
+                            Debug.Log($"{Prefix} Attempting anonymous sign-in (timeout 6s)");
+                            var signInTask = AuthenticationService.Instance.SignInAnonymouslyAsync();
+                            var signInCompleted = await Task.WhenAny(signInTask, Task.Delay(TimeSpan.FromSeconds(6)));
+                            if (signInCompleted == signInTask && AuthenticationService.Instance.IsSignedIn)
+                            {
+                                Debug.Log($"{Prefix} Anonymous sign-in succeeded.");
+                                hasInternet = true;
+                            }
+                            else
+                            {
+                                Debug.Log($"{Prefix} Anonymous sign-in timed out or failed.");
+                            }
+                        }
+                        else
+                        {
+                            Debug.Log($"{Prefix} Already signed in.");
+                            hasInternet = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"{Prefix} Exception during sign-in check: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Debug.Log($"{Prefix} UnityServices.InitializeAsync timed out.");
+                }
+
+                if (!hasInternet)
+                {
+                    Debug.Log($"{Prefix} Falling back to HTTP-based InternetChecker probe.");
+                    try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); } catch (Exception ex) { Debug.LogError($"{Prefix} HTTP probe failed: {ex.Message}"); hasInternet = false; }
+                }
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[MultiplayerInstaller] Internet check failed: {ex.Message}");
+                Debug.LogWarning($"{Prefix} Connectivity probe failed: {ex.Message}");
+                try { hasInternet = await InternetChecker.HasInternetAsync(3, 3); } catch (Exception innerEx) { Debug.LogError($"{Prefix} HTTP probe fallback failed: {innerEx.Message}"); hasInternet = false; }
             }
 
-            if (!hasInternet)
-            {
-                Debug.Log("[MultiplayerInstaller] Internet is not reachable. Installing offline providers where appropriate.");
-            }
+            Debug.Log($"{Prefix} Connectivity probe result: hasInternet={hasInternet}");
 
             // Логування
             container.Bind<IMultiplayerLogger>()
