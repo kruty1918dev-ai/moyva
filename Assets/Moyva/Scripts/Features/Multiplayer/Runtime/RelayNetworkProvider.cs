@@ -26,6 +26,7 @@ using UnityEngine;
 #if MOYVA_UGS_RELAY
 using Unity.Collections;
 using Unity.Networking.Transport;
+using UtpDataStreamReader = Unity.Networking.Transport.DataStreamReader;
 using Unity.Networking.Transport.Relay;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
@@ -366,7 +367,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
         }
 
-        private void HandleFrame(NetworkConnection source, DataStreamReader stream, bool isHostSide)
+        private void HandleFrame(NetworkConnection source, UtpDataStreamReader stream, bool isHostSide)
         {
             if (!TryReadFrame(stream, out byte type, out byte[] body))
             {
@@ -486,7 +487,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             _driver.EndSend(writer);
         }
 
-        private static bool TryReadFrame(DataStreamReader stream, out byte type, out byte[] body)
+        private static bool TryReadFrame(UtpDataStreamReader stream, out byte type, out byte[] body)
         {
             type = 0; body = null;
             if (stream.Length < 3) return false;

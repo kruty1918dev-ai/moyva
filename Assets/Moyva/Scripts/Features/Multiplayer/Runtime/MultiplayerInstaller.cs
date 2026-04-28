@@ -122,26 +122,24 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 })
                 .AsSingle();
 
-            // Мережевий провайдер
+            // Switchable network provider (single DI entry point that can switch implementations at runtime)
+            container.Bind<SwitchableNetworkProvider>()
+                .AsSingle()
+                .NonLazy();
+
+            // Bind INetworkProvider to the switchable wrapper so existing code remains unchanged
             container.Bind<INetworkProvider>()
-                .FromMethod(ctx =>
-                {
-                    var config = ctx.Container.Resolve<MultiplayerConfig>();
-                    var logger = ctx.Container.Resolve<IMultiplayerLogger>();
-                    return NetworkProviderFactory.Create(config, logger);
-                })
+                .FromMethod(ctx => ctx.Container.Resolve<SwitchableNetworkProvider>())
                 .AsSingle();
 
-            // Lobby-сервіс (UGS Lobby, якщо пакет встановлений; інакше офлайн-заглушка).
+            // Switchable lobby service
+            container.Bind<SwitchableLobbyService>()
+                .AsSingle()
+                .NonLazy();
+
+            // Bind ILobbyService to the switchable wrapper
             container.Bind<ILobbyService>()
-                .FromMethod(ctx =>
-                {
-                    var config = ctx.Container.Resolve<MultiplayerConfig>();
-                    var logger = ctx.Container.Resolve<IMultiplayerLogger>();
-                    if (config.ProviderType == NetworkProviderType.Offline)
-                        return new OfflineLobbyService(logger);
-                    return new UgsLobbyService(logger);
-                })
+                .FromMethod(ctx => ctx.Container.Resolve<SwitchableLobbyService>())
                 .AsSingle();
 
             // Сховище знімків світу
@@ -207,6 +205,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .To<OfflineMultiplayerState>()
                     .AsSingle();
             }
+
+            // NetworkModeController: orchestrates runtime switching and auto-probing
+            container.Bind<NetworkModeController>()
+                .AsSingle();
         }
     }
 }
