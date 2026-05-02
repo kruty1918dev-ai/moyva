@@ -1,4 +1,5 @@
 using System;
+using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
@@ -11,5 +12,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         bool IsPublic { get; set; }
         int MaxPlayers { get; set; }
         event Action OnButtonNextClicked;
+        Button NextButton { get; }
     }
 }

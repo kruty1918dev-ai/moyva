@@ -15,18 +15,29 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         public event Action OnCreateRoomClicked;
         public event Action OnJoinRoomClicked;
+        private bool _bound;
 
-  public void Initialize()
+        public void Initialize()
         {
-            Awake();
+            Bind();
         }
 
         private void Awake()
         {
+            Bind();
+        }
+
+        private void Bind()
+        {
+            if (_bound)
+                return;
+
             if (_createRoomButton != null)
                 _createRoomButton.onClick.AddListener(HandleCreateRoomClicked);
             if (_joinRoomButton != null)
                 _joinRoomButton.onClick.AddListener(HandleJoinRoomClicked);
+
+            _bound = true;
         }
 
         private void OnDestroy()
@@ -35,6 +46,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 _createRoomButton.onClick.RemoveListener(HandleCreateRoomClicked);
             if (_joinRoomButton != null)
                 _joinRoomButton.onClick.RemoveListener(HandleJoinRoomClicked);
+
+            _bound = false;
         }
 
         private void HandleCreateRoomClicked()

@@ -18,15 +18,33 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         [SerializeField] private GameObject _panel;
 
         private ConfirmationRequest? _request;
+        private static readonly bool VerboseLogging = false;
 
         public Action OnConfirme { get; set; }
         public Action OnCancled { get; set; }
 
         private void Awake()
         {
-            _okButton.onClick.AddListener(OnButtonOK);
-            _cancleButton.onClick.AddListener(OnButtonCancled);
+            if (_okButton != null)
+            {
+                _okButton.onClick.RemoveListener(OnButtonOK);
+                _okButton.onClick.AddListener(OnButtonOK);
+            }
+
+            if (_cancleButton != null)
+            {
+                _cancleButton.onClick.RemoveListener(OnButtonCancled);
+                _cancleButton.onClick.AddListener(OnButtonCancled);
+            }
             Refresh();
+        }
+
+        private void OnDestroy()
+        {
+            if (_okButton != null)
+                _okButton.onClick.RemoveListener(OnButtonOK);
+            if (_cancleButton != null)
+                _cancleButton.onClick.RemoveListener(OnButtonCancled);
         }
 
         #region API
@@ -66,7 +84,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private void OpenOrClose(bool open)
         {
-            _panel.SetActive(open);
+            if (_panel != null)
+                _panel.SetActive(open);
             LogWithSufix($"Open or close. State is: {open}");
         }
 
@@ -104,21 +123,29 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (TryGetReqest(out ConfirmationRequest? request))
             {
-                _labelText.text = request.Value.LabelText;
-                _msgText.text = request.Value.MessageText;
+                if (_labelText != null)
+                    _labelText.text = request.Value.LabelText;
+                if (_msgText != null)
+                    _msgText.text = request.Value.MessageText;
 
-                _okButton.interactable = true;
-                _cancleButton.interactable = true;
+                if (_okButton != null)
+                    _okButton.interactable = true;
+                if (_cancleButton != null)
+                    _cancleButton.interactable = true;
 
                 LogWithSufix("Panel was refreshed with new request.");
             }
             else
             {
-                _labelText.text = string.Empty;
-                _msgText.text = string.Empty;
+                if (_labelText != null)
+                    _labelText.text = string.Empty;
+                if (_msgText != null)
+                    _msgText.text = string.Empty;
 
-                _okButton.interactable = false;
-                _cancleButton.interactable = false;
+                if (_okButton != null)
+                    _okButton.interactable = false;
+                if (_cancleButton != null)
+                    _cancleButton.interactable = false;
 
                 LogWithSufix("Panel was refreshed, but request was null. Label was cleared.");
             }
@@ -127,6 +154,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         #region Log
         private void LogWithSufix(string msg)
         {
+            if (!VerboseLogging)
+                return;
+
             Debug.Log($"[ConfirmationPanel] {msg}");
         }
         #endregion

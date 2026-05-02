@@ -31,6 +31,12 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             _button.onClick.AddListener(OnButtonClicked);
         }
 
+        private void OnDestroy()
+        {
+            if (_button != null)
+                _button.onClick.RemoveListener(OnButtonClicked);
+        }
+
         protected virtual void OnButtonClicked()
         {
             RaiseOnClicked(new ConfirmationRequest

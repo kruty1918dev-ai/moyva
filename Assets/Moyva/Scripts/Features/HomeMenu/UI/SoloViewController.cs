@@ -11,22 +11,35 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         [SerializeField] private Button _nextButton;
 
         public event Action OnButtonNextClicked;
+        private bool _bound;
 
         public void Initialize()
         {
-            Awake();
+            Bind();
         }
 
         private void Awake()
         {
+            Bind();
+        }
+
+        private void Bind()
+        {
+            if (_bound)
+                return;
+
             if (_nextButton != null)
                 _nextButton.onClick.AddListener(HandleNextClicked);
+
+            _bound = true;
         }
 
         private void OnDestroy()
         {
             if (_nextButton != null)
                 _nextButton.onClick.RemoveListener(HandleNextClicked);
+
+            _bound = false;
         }
 
         private void HandleNextClicked()

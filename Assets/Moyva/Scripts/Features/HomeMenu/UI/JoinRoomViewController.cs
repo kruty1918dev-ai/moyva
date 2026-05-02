@@ -19,22 +19,32 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         public event Action OnJoinCodeChanged;
         public event Action OnListRoomsRefresh;
+        public event Action<RoomInfo> OnRoomSelected;
 
-        // Track spawned room items by join code
+        // Track spawned room items by provider-aware display key
         private readonly Dictionary<string, RoomItemViewComponent> _spawned = new Dictionary<string, RoomItemViewComponent>(StringComparer.Ordinal);
         private readonly Dictionary<string, RoomInfo> _roomInfos = new Dictionary<string, RoomInfo>(StringComparer.Ordinal);
         private UnityEngine.Events.UnityAction _refreshButtonAction;
+        private bool _bound;
 
         public string JoinCode { get; set; }
         public Button JoinToRoomButton { get => _joinRoomButton; set => _joinRoomButton = value; }
 
         public void Initialize()
         {
-            Awake();
+            Bind();
         }
 
         void Awake()
         {
+            Bind();
+        }
+
+        private void Bind()
+        {
+            if (_bound)
+                return;
+
             if (_joinCodeInput != null)
             {
                 _joinCodeInput.onValueChanged.AddListener(OnJoinCodeEdited);
@@ -56,7 +66,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_roomPrefab == null)
                 Debug.LogWarning("[JoinRoomViewController] _roomPrefab is not assigned.");
 
-                
+            _bound = true;
         }
 
         private void OnDestroy()
@@ -65,6 +75,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 _joinCodeInput.onValueChanged.RemoveListener(OnJoinCodeEdited);
             if (_refreshButton != null && _refreshButtonAction != null)
                 _refreshButton.onClick.RemoveListener(_refreshButtonAction);
+
+            _bound = false;
         }
 
         private void OnJoinCodeEdited(string value)
@@ -77,28 +89,53 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (_roomPrefab == null || _roomsContainer == null) return;
 
-            var key = room.JoinCode ?? room.RoomName ?? Guid.NewGuid().ToString();
+            var key = BuildRoomKey(room);
 
             if (_spawned.TryGetValue(key, out var existing) && existing != null)
             {
                 _roomInfos[key] = room;
-                existing.Initialize(room, r => OnRoomSelected(r));
+                existing.Initialize(room, r => HandleRoomSelected(r));
                 return;
             }
 
             var instance = Instantiate(_roomPrefab, _roomsContainer);
-            instance.name = $"room-{key}";
-            instance.Initialize(room, r => OnRoomSelected(r));
+            instance.name = $"room-{ToSafeGameObjectName(key)}";
+            instance.Initialize(room, r => HandleRoomSelected(r));
             _spawned[key] = instance;
             _roomInfos[key] = room;
         }
 
-        private void OnRoomSelected(RoomInfo room)
+        private void HandleRoomSelected(RoomInfo room)
         {
-            JoinCode = room.JoinCode;
+            JoinCode = room.HasJoinCode ? room.JoinCode : string.Empty;
             if (_joinCodeInput != null)
-                _joinCodeInput.SetTextWithoutNotify(room.JoinCode ?? string.Empty);
+                _joinCodeInput.SetTextWithoutNotify(JoinCode);
             OnJoinCodeChanged?.Invoke();
+            OnRoomSelected?.Invoke(room);
+        }
+
+        private static string BuildRoomKey(RoomInfo room)
+        {
+            var displayKey = room.DisplayKey;
+            if (string.IsNullOrWhiteSpace(displayKey))
+                displayKey = $"{room.RoomName}:{room.MaxPlayers}";
+
+            return $"{room.ProviderType}:{displayKey}";
+        }
+
+        private static string ToSafeGameObjectName(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return Guid.NewGuid().ToString("N");
+
+            var chars = value.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                if (!char.IsLetterOrDigit(chars[i]) && chars[i] != '-' && chars[i] != '_')
+                    chars[i] = '-';
+            }
+
+            return new string(chars);
         }
 
         public void ClearRoomList()
@@ -108,7 +145,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_roomsContainer == null) return;
             for (int i = _roomsContainer.childCount - 1; i >= 0; i--)
             {
-                Destroy(_roomsContainer.GetChild(i).gameObject);
+                var child = _roomsContainer.GetChild(i).gameObject;
+                child.SetActive(false);
+                Destroy(child);
             }
         }
 

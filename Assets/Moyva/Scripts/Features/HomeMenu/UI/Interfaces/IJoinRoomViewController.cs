@@ -12,7 +12,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         void AddRoomToList(RoomInfo room);
         void ClearRoomList();
         void RefreshRoomList();
-        event Action OnJoinCodeChanged; 
+        event Action OnJoinCodeChanged;
         event Action OnListRoomsRefresh;
+        event Action<RoomInfo> OnRoomSelected;
     }
 }

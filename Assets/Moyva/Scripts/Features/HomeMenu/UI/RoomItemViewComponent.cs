@@ -2,6 +2,7 @@ using System;
 using Kruty1918.Moyva.HomeMenu.API;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
@@ -10,8 +11,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
     {
         [SerializeField] private TextMeshProUGUI _labelText;
         [SerializeField] private Button _selectButton;
+        [Tooltip("Іконка замка — вмикається для кімнат з паролем.")]
+        [SerializeField] private GameObject _lockIcon;
 
         private RoomInfo _roomInfo;
+    private UnityAction _selectAction;
 
         public void Initialize(RoomInfo roomInfo, Action<RoomInfo> onSelect)
         {
@@ -19,15 +23,28 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             if (_labelText != null)
             {
-                var id = !string.IsNullOrEmpty(roomInfo.RoomName) ? roomInfo.RoomName : (roomInfo.JoinCode ?? "—");
-                _labelText.text = $"Кімната #{id} ({roomInfo.CurrentPlayers}/{roomInfo.MaxPlayers})";
+                var roomName = string.IsNullOrWhiteSpace(roomInfo.RoomName) ? "Без назви" : roomInfo.RoomName.Trim();
+                _labelText.text = $"{roomName}\n{roomInfo.CurrentPlayers}/{roomInfo.MaxPlayers} - {roomInfo.ProviderLabel}";
             }
+
+            if (_lockIcon != null)
+                _lockIcon.SetActive(roomInfo.HasPassword);
 
             if (_selectButton != null)
             {
-                _selectButton.onClick.RemoveAllListeners();
-                _selectButton.onClick.AddListener(() => onSelect?.Invoke(_roomInfo));
+                if (_selectAction != null)
+                    _selectButton.onClick.RemoveListener(_selectAction);
+
+                _selectAction = () => onSelect?.Invoke(_roomInfo);
+                _selectButton.onClick.AddListener(_selectAction);
+                _selectButton.interactable = roomInfo.IsJoinable;
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (_selectButton != null && _selectAction != null)
+                _selectButton.onClick.RemoveListener(_selectAction);
         }
     }
 }

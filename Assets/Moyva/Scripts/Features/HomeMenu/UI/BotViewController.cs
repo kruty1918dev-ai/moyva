@@ -20,6 +20,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private BotStrategy _strategy = BotStrategy.Random;
         private int _botCount = 1;
         private bool _allowBotCheating = false;
+        private bool _bound;
 
         public BotDifficulty Difficulty
         {
@@ -68,6 +69,19 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         public event Action OnButtonNextClicked;
         private void Awake()
         {
+            Bind();
+        }
+
+        public void Initialize()
+        {
+            Bind();
+        }
+
+        private void Bind()
+        {
+            if (_bound)
+                return;
+
             if (_difficultyDropdown != null)
                 _difficultyDropdown.onValueChanged.AddListener(OnDifficultyChanged);
             if (_strategyDropdown != null)
@@ -79,6 +93,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_nextButton != null)
                 _nextButton.onClick.AddListener(OnNextClicked);
 
+            _bound = true;
             Refresh();
         }
 
@@ -94,6 +109,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 _allowCheatingToggle.onValueChanged.RemoveListener(OnAllowCheatingChanged);
             if (_nextButton != null)
                 _nextButton.onClick.RemoveListener(OnNextClicked);
+
+            _bound = false;
         }
 
         private void OnDifficultyChanged(int value)
@@ -119,11 +136,6 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private void OnNextClicked()
         {
             OnButtonNextClicked?.Invoke();
-        }
-
-        public void Initialize()
-        {
-            Awake();
         }
 
         public void Refresh()

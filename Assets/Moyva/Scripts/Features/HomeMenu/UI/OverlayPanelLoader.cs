@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private Coroutine _progressCoroutine;
         private Coroutine _hideWatchdogCoroutine;
         private static int _instanceCount;
+        private static readonly bool VerboseLogging = false;
 
         private void Awake()
         {
@@ -95,13 +96,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             {
                 t += Time.deltaTime;
                 _displayedProgress = Mathf.Lerp(start, target, Mathf.Clamp01(t / _animationDuration));
-                LogWithSufix($"Animate Process.. Time: {t}, Progress: {_displayedProgress}");
                 yield return null;
             }
             _displayedProgress = target;
             LogWithSufix($"Animate Process completed. Progress: {_displayedProgress}");
             _progressCoroutine = null;
-            StartCoroutine(CloseAndHide());
         }
 
         private IEnumerator CloseAndHide()
@@ -174,6 +173,9 @@ LogWithSufix("Start the close process");
 
         private void LogWithSufix(string msg)
         {
+            if (!VerboseLogging)
+                return;
+
             Debug.Log($"[OverlayPanelLoader] {msg}");
         }
     }
