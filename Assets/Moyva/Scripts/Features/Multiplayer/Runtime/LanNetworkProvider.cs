@@ -4,11 +4,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Config;
+using Kruty1918.Moyva.Multiplayer.Runtime;
 using System.Net;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Unity.Collections;
 using Unity.Networking.Transport;
-using UtpDataStreamReader = Unity.Networking.Transport.DataStreamReader;
+using UtpDataStreamReader = Unity.Collections.DataStreamReader;
 
 namespace Kruty1918.Moyva.Multiplayer.Networking
 {
@@ -97,7 +98,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     try
                     {
-                        _localPeerId = Environment.MachineName ?? $"host-{Guid.NewGuid():N}";
+                        _localPeerId = BuildLocalPeerId();
 
                         await ShutdownTransportAsync();
 
@@ -105,7 +106,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         _driver = NetworkDriver.Create(netSettings);
                         _serverConnections = new NativeList<NetworkConnection>(Math.Max(4, 4), Allocator.Persistent);
 
-                        var endpoint = NetworkEndPoint.AnyIpv4.WithPort((ushort)LanLobbyService.DefaultPort);
+                        var endpoint = NetworkEndpoint.AnyIpv4.WithPort((ushort)LanLobbyService.DefaultPort);
                         if (_driver.Bind(endpoint) != 0)
                             return SessionResult.Fail("LAN host bind failed.");
 
@@ -140,16 +141,18 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         var ip = parts[1];
                         if (!ushort.TryParse(parts[2], out var port)) return SessionResult.Fail("Invalid LAN port.");
 
+                        _localPeerId = BuildLocalPeerId();
+
                         await ShutdownTransportAsync();
 
                         var netSettings = new NetworkSettings();
                         _driver = NetworkDriver.Create(netSettings);
 
-                        var ep = default(NetworkEndPoint);
-                        if (!NetworkEndPoint.TryParse(ip, port, out ep))
+                        var ep = default(NetworkEndpoint);
+                        if (!NetworkEndpoint.TryParse(ip, port, out ep))
                         {
                             // Fallback: try parse via DNS
-                            ep = NetworkEndPoint.AnyIpv4.WithPort(port);
+                            ep = NetworkEndpoint.AnyIpv4.WithPort(port);
                         }
 
                         _serverConnection = _driver.Connect(ep);
@@ -456,6 +459,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     Buffer.BlockCopy(BitConverter.GetBytes((uint)1), 0, body, 0, 4);
                     if (idBytes.Length > 0) Buffer.BlockCopy(idBytes, 0, body, 4, idBytes.Length);
                     return WrapFrame(FrameHello, body);
+                }
+
+                private static string BuildLocalPeerId()
+                {
+                    var machineName = string.IsNullOrWhiteSpace(Environment.MachineName) ? "local" : Environment.MachineName;
+                    return MultiplayerClientScope.IsDefault ? machineName : $"{machineName}-{MultiplayerClientScope.ScopeId}";
                 }
 
                 private static byte[] BuildIdentityFrame(string peerId)

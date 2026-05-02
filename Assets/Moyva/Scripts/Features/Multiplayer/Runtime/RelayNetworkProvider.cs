@@ -18,20 +18,20 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Multiplayer.Runtime;
 using UnityEngine;
 #if MOYVA_UGS_RELAY
 using Unity.Collections;
 using Unity.Networking.Transport;
-using UtpDataStreamReader = Unity.Networking.Transport.DataStreamReader;
+using UtpDataStreamReader = Unity.Collections.DataStreamReader;
 using Unity.Networking.Transport.Relay;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
-using Unity.Services.Relay;
-using Unity.Services.Relay.Models;
 #endif
 
 namespace Kruty1918.Moyva.Multiplayer.Networking
@@ -41,6 +41,18 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// </summary>
     public sealed class RelayNetworkProvider : INetworkProvider
     {
+        public static bool IsRuntimeAvailable
+        {
+            get
+            {
+#if MOYVA_UGS_RELAY
+                return true;
+#else
+                return false;
+#endif
+            }
+        }
+
         public const uint ProtocolVersion = 1;
         private const byte FrameHello = 1;
         private const byte FrameIdentity = 2;
@@ -55,8 +67,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private readonly IMultiplayerLogger _logger;
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
 
+    #pragma warning disable CS0067
         public event Action<string> PeerConnected;
         public event Action<string> PeerDisconnected;
+    #pragma warning restore CS0067
         public IObservable<NetworkMessage> Messages => new MessageObservable(_observers);
 
         public RelayNetworkProvider(RelayProviderSettings settings, IMultiplayerLogger logger)
@@ -125,14 +139,17 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 await ShutdownTransportAsync();
 
-                var allocation = await RelayService.Instance
-                    .CreateAllocationAsync(_settings.MaxConnections,
-                        string.IsNullOrEmpty(_settings.Region) ? null : _settings.Region);
+                var relayService = ResolveRelayServiceInstance();
+                var allocation = await CreateAllocationAsync(
+                    relayService,
+                    _settings.MaxConnections,
+                    string.IsNullOrEmpty(_settings.Region) ? null : _settings.Region);
 
-                var joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+                var allocationId = GetPropertyValue<Guid>(allocation, "AllocationId");
+                var joinCode = await GetJoinCodeAsync(relayService, allocationId);
                 _logger.Info($"[Relay] Hosted allocation. Join code: {joinCode}");
 
-                var relayServerData = new RelayServerData(allocation, RelayConnectionType);
+                var relayServerData = BuildRelayServerData(allocation, RelayConnectionType, isHostAllocation: true);
                 var netSettings = new NetworkSettings();
                 netSettings.WithRelayParameters(ref relayServerData);
 
@@ -170,9 +187,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 await ShutdownTransportAsync();
 
-                var joinAllocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
+                var relayService = ResolveRelayServiceInstance();
+                var joinAllocation = await JoinAllocationAsync(relayService, joinCode);
 
-                var relayServerData = new RelayServerData(joinAllocation, RelayConnectionType);
+                var relayServerData = BuildRelayServerData(joinAllocation, RelayConnectionType, isHostAllocation: false);
                 var netSettings = new NetworkSettings();
                 netSettings.WithRelayParameters(ref relayServerData);
 
@@ -263,11 +281,159 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 _logger.Info("[Relay] Unity Services initialized.");
             }
 
+            MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded(_logger);
+
             if (!AuthenticationService.Instance.IsSignedIn)
             {
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
                 _logger.Info("[Relay] Signed in anonymously.");
             }
+        }
+
+        private static object ResolveRelayServiceInstance()
+        {
+            var relayServiceType =
+                Type.GetType("Unity.Services.Relay.RelayService, Unity.Services.Relay")
+                ?? Type.GetType("Unity.Services.Relay.RelayService, Unity.Services.Multiplayer");
+
+            if (relayServiceType == null)
+                throw new InvalidOperationException("RelayService type is not available in loaded assemblies.");
+
+            var instance = relayServiceType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+            if (instance == null)
+                throw new InvalidOperationException("RelayService.Instance is null.");
+
+            return instance;
+        }
+
+        private static async Task<object> CreateAllocationAsync(object relayService, int maxConnections, string region)
+        {
+            return await InvokeRelayMethodAsync(relayService, "CreateAllocationAsync", maxConnections, region);
+        }
+
+        private static async Task<string> GetJoinCodeAsync(object relayService, Guid allocationId)
+        {
+            var result = await InvokeRelayMethodAsync(relayService, "GetJoinCodeAsync", allocationId);
+            return result as string ?? throw new InvalidOperationException("Relay GetJoinCodeAsync returned null.");
+        }
+
+        private static async Task<object> JoinAllocationAsync(object relayService, string joinCode)
+        {
+            return await InvokeRelayMethodAsync(relayService, "JoinAllocationAsync", joinCode);
+        }
+
+        private static async Task<object> InvokeRelayMethodAsync(object relayService, string methodName, params object[] args)
+        {
+            if (relayService == null)
+                throw new ArgumentNullException(nameof(relayService));
+
+            var methods = relayService.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance);
+            MethodInfo method = null;
+            foreach (var candidate in methods)
+            {
+                if (!string.Equals(candidate.Name, methodName, StringComparison.Ordinal))
+                    continue;
+
+                var parameters = candidate.GetParameters();
+                if (parameters.Length != args.Length)
+                    continue;
+
+                var compatible = true;
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    var arg = args[i];
+                    if (arg == null)
+                        continue;
+
+                    if (!parameters[i].ParameterType.IsInstanceOfType(arg)
+                        && parameters[i].ParameterType != arg.GetType())
+                    {
+                        compatible = false;
+                        break;
+                    }
+                }
+
+                if (compatible)
+                {
+                    method = candidate;
+                    break;
+                }
+            }
+
+            if (method == null)
+                throw new MissingMethodException(relayService.GetType().FullName, methodName);
+
+            var invoked = method.Invoke(relayService, args);
+            if (invoked is not Task task)
+                throw new InvalidOperationException($"{methodName} did not return Task.");
+
+            await task.ConfigureAwait(false);
+
+            var taskType = task.GetType();
+            if (taskType.IsGenericType)
+                return taskType.GetProperty("Result")?.GetValue(task);
+
+            return null;
+        }
+
+        private static RelayServerData BuildRelayServerData(object allocation, string connectionType, bool isHostAllocation)
+        {
+            var endpoints = GetPropertyValue<System.Collections.IEnumerable>(allocation, "ServerEndpoints");
+            object selectedEndpoint = null;
+            object firstEndpoint = null;
+            foreach (var endpoint in endpoints)
+            {
+                firstEndpoint ??= endpoint;
+                var endpointType = GetPropertyValue<string>(endpoint, "ConnectionType");
+                if (string.Equals(endpointType, connectionType, StringComparison.OrdinalIgnoreCase))
+                {
+                    selectedEndpoint = endpoint;
+                    break;
+                }
+            }
+
+            selectedEndpoint ??= firstEndpoint;
+            if (selectedEndpoint == null)
+                throw new InvalidOperationException("Relay allocation does not contain server endpoints.");
+
+            var host = GetPropertyValue<string>(selectedEndpoint, "Host");
+            var port = Convert.ToUInt16(GetPropertyValue<int>(selectedEndpoint, "Port"));
+            var secure = GetPropertyValue<bool>(selectedEndpoint, "Secure");
+
+            var allocationIdBytes = GetPropertyValue<byte[]>(allocation, "AllocationIdBytes");
+            var connectionData = GetPropertyValue<byte[]>(allocation, "ConnectionData");
+            var key = GetPropertyValue<byte[]>(allocation, "Key");
+            var hostConnectionData = isHostAllocation
+                ? connectionData
+                : GetPropertyValue<byte[]>(allocation, "HostConnectionData");
+
+            return new RelayServerData(
+                host,
+                port,
+                allocationIdBytes,
+                connectionData,
+                hostConnectionData,
+                key,
+                secure);
+        }
+
+        private static T GetPropertyValue<T>(object source, string propertyName)
+        {
+            if (source == null)
+                throw new ArgumentNullException(nameof(source));
+
+            var property = source.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+            if (property == null)
+                throw new MissingMemberException(source.GetType().FullName, propertyName);
+
+            var value = property.GetValue(source);
+            if (value is T typed)
+                return typed;
+
+            if (value == null)
+                throw new InvalidOperationException($"Property {propertyName} is null on {source.GetType().FullName}.");
+
+            return (T)Convert.ChangeType(value, typeof(T));
         }
 
         private void StartPumpLoop(CancellationToken externalCt)

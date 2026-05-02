@@ -50,6 +50,12 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
         public IReadOnlyList<Participant> Participants => _participants;
 
+            /// <summary>PlayerId of the local participant (or empty when unknown).</summary>
+            public string LocalPlayerId => _localPlayerId;
+
+            /// <summary>True when the local participant is the host of the current session.</summary>
+            public bool IsLocalPlayerHost => _isHost;
+
         /// <summary>Current lobby join code (visible to UI / shareable).</summary>
         public string CurrentLobbyCode => _currentLobbyCode;
 

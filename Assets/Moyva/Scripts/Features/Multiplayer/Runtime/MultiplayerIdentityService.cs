@@ -40,6 +40,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 if (UnityServices.State != ServicesInitializationState.Initialized)
                     await UnityServices.InitializeAsync();
 
+                MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded(_logger);
+
                 if (!AuthenticationService.Instance.IsSignedIn)
                     await AuthenticationService.Instance.SignInAnonymouslyAsync();
 
@@ -55,6 +57,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             string fallback = SystemInfo.deviceUniqueIdentifier;
             if (string.IsNullOrWhiteSpace(fallback) || fallback == SystemInfo.unsupportedIdentifier)
                 fallback = $"local-{Guid.NewGuid():N}";
+
+            if (!MultiplayerClientScope.IsDefault)
+                fallback = $"{fallback}-{MultiplayerClientScope.ScopeId}";
 
             return new ParticipantIdentity(fallback, nickname);
         }
