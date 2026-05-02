@@ -64,6 +64,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     Debug.Log($"{Prefix} UnityServices.InitializeAsync completed. State={UnityServices.State}");
                 }
 
+                MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
+
                 if (!AuthenticationService.Instance.IsSignedIn)
                 {
                     Debug.Log($"{Prefix} Not signed in — calling SignInAnonymouslyAsync()");
