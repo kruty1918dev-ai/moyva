@@ -1,25 +1,22 @@
 // UgsLobbyService — Unity Gaming Services Lobby backend.
 //
 // SETUP:
-//   1. Install package  com.unity.services.lobbies  via Package Manager.
-//   2. Add the scripting define  MOYVA_UGS_LOBBY  in  Player Settings -> Scripting Define Symbols.
-//   3. Enable Lobby + Authentication + Relay in the Unity Dashboard.
+//   1. Install package com.unity.services.multiplayer via Package Manager (contains Lobbies).
+//   2. Enable Lobby + Authentication + Relay in the Unity Dashboard.
 //
-// Without MOYVA_UGS_LOBBY the service compiles as a no-op stub and every call
-// returns a graceful failure (null / empty), so higher layers can fall back.
+// Note: if the Lobbies package is not installed the service may behave as a no-op.
 
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Multiplayer.Runtime;
 using UnityEngine;
-#if MOYVA_UGS_LOBBY
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
-#endif
 
 namespace Kruty1918.Moyva.Multiplayer.Lobbies
 {
@@ -30,79 +27,210 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
     public sealed class UgsLobbyService : ILobbyService, IDisposable
     {
         private const string RelayCodeDataKey = "relayJoinCode";
+        private const string ProjectDataKey = "moyvaProject";
+        private const string ProjectDataValue = "moyva";
+        private const string ProviderDataKey = "moyvaProvider";
+        private const string ProviderDataValue = "relay";
+        private const string PasswordHashDataKey = "moyvaPasswordHash";
         private const float HeartbeatSeconds = 15f;
-        private const float PollSeconds = 1.5f;
+        private const float PollSeconds = 5f;
+        private const float PollBackoffSeconds = 20f;
 
         private readonly IMultiplayerLogger _logger;
+        private readonly SemaphoreSlim _operationLock = new SemaphoreSlim(1, 1);
         private LobbyRoom _current;
+        private LobbyState _state = LobbyState.Closed;
         private bool _isHost;
         private CancellationTokenSource _loopCts;
 
+        private static readonly object ServicesReadyLock = new object();
+        private static Task _servicesReadyTask;
+        private static Task _signInTask;
+
         public LobbyRoom Current => _current;
+        public LobbyState State => _state;
 
         public event Action<LobbyRoom> LobbyUpdated;
         public event Action<string> KickedFromLobby;
+        public event Action<LobbyState> StateChanged;
 
         public UgsLobbyService(IMultiplayerLogger logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-#if MOYVA_UGS_LOBBY
         private Lobby _lobby;
 
         public async Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, CancellationToken ct = default)
         {
             await EnsureServicesReadyAsync();
 
-            var createOptions = new CreateLobbyOptions
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            await _operationLock.WaitAsync(ct);
+            try
             {
-                IsPrivate = options.IsPrivate,
-                Player = BuildLocalPlayer(options.DisplayName),
-                Data = new Dictionary<string, DataObject>
+                if (_lobby != null && _current != null)
                 {
-                    { RelayCodeDataKey, new DataObject(DataObject.VisibilityOptions.Member, string.Empty) },
+                    _logger.Warn($"[UgsLobby] CreateRoomAsync ignored because local player is already in lobby '{_current.Name}' id={_current.LobbyId}.");
+                    return _current;
                 }
-            };
 
-            _lobby = await LobbyService.Instance.CreateLobbyAsync(options.Name, options.MaxPlayers, createOptions);
-            _isHost = true;
-            _current = Project(_lobby);
-            LobbyUpdated?.Invoke(_current);
+                var createOptions = new CreateLobbyOptions
+                {
+                    IsPrivate = options.IsPrivate,
+                    Player = BuildLocalPlayer(options.DisplayName),
+                    Data = new Dictionary<string, DataObject>
+                    {
+                        { RelayCodeDataKey, new DataObject(DataObject.VisibilityOptions.Member, string.Empty) },
+                        { ProjectDataKey, new DataObject(DataObject.VisibilityOptions.Public, ProjectDataValue, DataObject.IndexOptions.S1) },
+                        { ProviderDataKey, new DataObject(DataObject.VisibilityOptions.Public, ProviderDataValue, DataObject.IndexOptions.S2) },
+                        { PasswordHashDataKey, new DataObject(DataObject.VisibilityOptions.Public, LobbyPasswordHasher.Hash(options.Password)) },
+                    }
+                };
 
-            StartLoops();
-            _logger.Info($"[UgsLobby] Created '{options.Name}' id={_lobby.Id} code={_lobby.LobbyCode}");
-            return _current;
+                if (LobbyService.Instance == null)
+                    throw new InvalidOperationException("[UgsLobby] Unity Lobbies LobbyService instance is unavailable; make sure the Unity Services Lobbies package is present and initialized.");
+
+                try
+                {
+                    _lobby = await LobbyService.Instance.CreateLobbyAsync(options.Name, options.MaxPlayers, createOptions);
+                }
+                catch (Exception e)
+                {
+                    _logger.Warn($"[UgsLobby] CreateLobbyAsync failed: {e}");
+                    if (e is NullReferenceException)
+                        _logger.Warn("[UgsLobby] CreateLobbyAsync null reference during UGS lobby creation.");
+                    throw;
+                }
+                if (_lobby == null)
+                {
+                    _logger.Warn("[UgsLobby] CreateLobbyAsync returned null.");
+                    return null;
+                }
+
+                _isHost = true;
+                _current = Project(_lobby);
+                LobbyUpdated?.Invoke(_current);
+                PublishState(_current.State);
+
+                StartLoops();
+                _logger.Info($"[UgsLobby] Created '{options.Name}' id={_lobby.Id} code={_lobby.LobbyCode}");
+                return _current;
+            }
+            finally
+            {
+                _operationLock.Release();
+            }
         }
 
         public async Task<LobbyRoom> JoinByCodeAsync(string lobbyCode, string displayName, CancellationToken ct = default)
         {
             await EnsureServicesReadyAsync();
 
-            var opts = new JoinLobbyByCodeOptions { Player = BuildLocalPlayer(displayName) };
-            _lobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCode, opts);
-            _isHost = false;
-            _current = Project(_lobby);
-            LobbyUpdated?.Invoke(_current);
+            await _operationLock.WaitAsync(ct);
+            try
+            {
+                if (_current != null && string.Equals(_current.LobbyCode, lobbyCode, StringComparison.OrdinalIgnoreCase))
+                    return _current;
 
-            StartLoops();
-            _logger.Info($"[UgsLobby] Joined by code '{lobbyCode}' id={_lobby.Id}");
-            return _current;
+                var opts = new JoinLobbyByCodeOptions { Player = BuildLocalPlayer(displayName) };
+                if (LobbyService.Instance == null)
+                    throw new InvalidOperationException("[UgsLobby] Unity Lobbies LobbyService instance is unavailable; make sure the Unity Services Lobbies package is present and initialized.");
+
+                try
+                {
+                    _lobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCode, opts);
+                }
+                catch (LobbyServiceException e) when (e.Reason == LobbyExceptionReason.Conflict || e.Reason == LobbyExceptionReason.LobbyConflict)
+                {
+                    _logger.Warn($"[UgsLobby] JoinByCodeAsync: already member of lobby '{lobbyCode}'; returning current lobby.");
+                    if (_current != null)
+                        return _current;
+
+                    if (_lobby != null)
+                    {
+                        _current = Project(_lobby);
+                        return _current;
+                    }
+
+                    throw;
+                }
+
+                if (_lobby == null)
+                {
+                    _logger.Warn("[UgsLobby] JoinLobbyByCodeAsync returned null.");
+                    return null;
+                }
+
+                _isHost = false;
+                _current = Project(_lobby);
+                LobbyUpdated?.Invoke(_current);
+                PublishState(_current.State);
+
+                StartLoops();
+                _logger.Info($"[UgsLobby] Joined by code '{lobbyCode}' id={_lobby.Id}");
+                return _current;
+            }
+            finally
+            {
+                _operationLock.Release();
+            }
+        }
+
+        public async Task<LobbyRoom> JoinByCodeWithPasswordAsync(string lobbyCode, string displayName, string password, CancellationToken ct = default)
+        {
+            // Спершу приєднуємось, потім звіряємо хеш паролю з даних кімнати.
+            // У разі невідповідності — виходимо з лобі та кидаємо WrongPasswordException.
+            var room = await JoinByCodeAsync(lobbyCode, displayName, ct).ConfigureAwait(false);
+            if (room == null)
+                return null;
+
+            if (room.HasPassword && !LobbyPasswordHasher.Verify(password, room.PasswordHash))
+            {
+                _logger.Warn($"[UgsLobby] JoinByCodeWithPasswordAsync: невірний пароль для '{lobbyCode}'.");
+                try { await LeaveAsync(ct).ConfigureAwait(false); } catch { }
+                throw new WrongPasswordException();
+            }
+
+            return room;
         }
 
         public async Task<LobbyRoom> JoinByIdAsync(string lobbyId, string displayName, CancellationToken ct = default)
         {
             await EnsureServicesReadyAsync();
 
-            var opts = new JoinLobbyByIdOptions { Player = BuildLocalPlayer(displayName) };
-            _lobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, opts);
-            _isHost = false;
-            _current = Project(_lobby);
-            LobbyUpdated?.Invoke(_current);
+            await _operationLock.WaitAsync(ct);
+            try
+            {
+                if (_current != null && string.Equals(_current.LobbyId, lobbyId, StringComparison.Ordinal))
+                    return _current;
 
-            StartLoops();
-            _logger.Info($"[UgsLobby] Joined by id '{lobbyId}'");
-            return _current;
+                var opts = new JoinLobbyByIdOptions { Player = BuildLocalPlayer(displayName) };
+                if (LobbyService.Instance == null)
+                    throw new InvalidOperationException("[UgsLobby] Unity Lobbies LobbyService instance is unavailable; make sure the Unity Services Lobbies package is present and initialized.");
+
+                _lobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, opts);
+                if (_lobby == null)
+                {
+                    _logger.Warn("[UgsLobby] JoinLobbyByIdAsync returned null.");
+                    return null;
+                }
+
+                _isHost = false;
+                _current = Project(_lobby);
+                LobbyUpdated?.Invoke(_current);
+                PublishState(_current.State);
+
+                StartLoops();
+                _logger.Info($"[UgsLobby] Joined by id '{lobbyId}'");
+                return _current;
+            }
+            finally
+            {
+                _operationLock.Release();
+            }
         }
 
         public async Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)
@@ -116,14 +244,35 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     new QueryFilter(QueryFilter.FieldOptions.AvailableSlots, "0", QueryFilter.OpOptions.GT),
                     new QueryFilter(QueryFilter.FieldOptions.IsLocked, "0", QueryFilter.OpOptions.EQ),
+                    new QueryFilter(QueryFilter.FieldOptions.S1, ProjectDataValue, QueryFilter.OpOptions.EQ),
+                    new QueryFilter(QueryFilter.FieldOptions.S2, ProviderDataValue, QueryFilter.OpOptions.EQ),
                 }
             };
 
-            var result = await LobbyService.Instance.QueryLobbiesAsync(query);
-            var list = new List<LobbyRoom>(result.Results.Count);
-            foreach (var l in result.Results)
-                list.Add(Project(l));
-            return list;
+            try
+            {
+                var result = await LobbyService.Instance.QueryLobbiesAsync(query);
+                var list = new List<LobbyRoom>(result.Results.Count);
+                foreach (var l in result.Results)
+                {
+                    if (!IsMoyvaRelayLobby(l))
+                        continue;
+
+                    list.Add(Project(l));
+                }
+
+                return list;
+            }
+            catch (LobbyServiceException e) when (e.Message != null && e.Message.Contains("Too Many Requests"))
+            {
+                _logger.Warn("[UgsLobby] QueryRoomsAsync rate limited, returning empty room list.");
+                return Array.Empty<LobbyRoom>();
+            }
+            catch (Exception e)
+            {
+                _logger.Warn($"[UgsLobby] QueryRoomsAsync failed: {e.Message}");
+                return Array.Empty<LobbyRoom>();
+            }
         }
 
         public async Task LeaveAsync(CancellationToken ct = default)
@@ -147,13 +296,20 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 _lobby = null;
                 _current = null;
                 _isHost = false;
+                PublishState(LobbyState.Closed);
             }
         }
 
         public async Task KickAsync(string playerId, CancellationToken ct = default)
         {
-            if (_lobby == null || !_isHost) return;
+            if (_lobby == null || !_isHost || string.IsNullOrWhiteSpace(playerId)) return;
+
             await LobbyService.Instance.RemovePlayerAsync(_lobby.Id, playerId);
+            ct.ThrowIfCancellationRequested();
+
+            _lobby = await LobbyService.Instance.GetLobbyAsync(_lobby.Id);
+            _current = Project(_lobby);
+            LobbyUpdated?.Invoke(_current);
         }
 
         public async Task SetRelayJoinCodeAsync(string relayJoinCode, CancellationToken ct = default)
@@ -171,6 +327,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             _lobby = await LobbyService.Instance.UpdateLobbyAsync(_lobby.Id, updateOpts);
             _current = Project(_lobby);
             LobbyUpdated?.Invoke(_current);
+            PublishState(_current.State);
         }
 
         public async Task LockAsync(bool locked, CancellationToken ct = default)
@@ -180,21 +337,113 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             _lobby = await LobbyService.Instance.UpdateLobbyAsync(_lobby.Id, opts);
             _current = Project(_lobby);
             LobbyUpdated?.Invoke(_current);
+            PublishState(locked ? LobbyState.Started : LobbyState.Open);
         }
 
         // ── Internals ────────────────────────────────────────────────────────
 
         private static async Task EnsureServicesReadyAsync()
         {
-            if (UnityServices.State != ServicesInitializationState.Initialized)
-                await UnityServices.InitializeAsync();
+            if (_servicesReadyTask == null || !_servicesReadyTask.IsCompletedSuccessfully)
+            {
+                lock (ServicesReadyLock)
+                {
+                    if (_servicesReadyTask == null || !_servicesReadyTask.IsCompletedSuccessfully)
+                    {
+                        _servicesReadyTask = InitializeServicesAsync();
+                    }
+                }
+            }
 
-            if (!AuthenticationService.Instance.IsSignedIn)
+            await _servicesReadyTask;
+
+            if (AuthenticationService.Instance == null)
+                throw new InvalidOperationException("[UgsLobby] AuthenticationService instance is unavailable after Unity Services initialization.");
+
+            MultiplayerClientScope.ApplyAuthenticationProfileIfNeeded();
+
+            if (AuthenticationService.Instance.IsSignedIn)
+                return;
+
+            if (_signInTask == null || !_signInTask.IsCompletedSuccessfully)
+            {
+                lock (ServicesReadyLock)
+                {
+                    if (_signInTask == null || !_signInTask.IsCompletedSuccessfully)
+                    {
+                        _signInTask = SignInAnonymouslyOnceAsync();
+                    }
+                }
+            }
+
+            await _signInTask;
+
+            if (!AuthenticationService.Instance.IsSignedIn || string.IsNullOrEmpty(AuthenticationService.Instance.PlayerId))
+            {
+                throw new InvalidOperationException("[UgsLobby] Authentication failed after sign-in; PlayerId is unavailable.");
+            }
+        }
+
+        private static async Task InitializeServicesAsync()
+        {
+            if (UnityServices.State == ServicesInitializationState.Initialized)
+                return;
+
+            await UnityServices.InitializeAsync();
+        }
+
+        private static async Task SignInAnonymouslyOnceAsync()
+        {
+            if (AuthenticationService.Instance == null)
+                throw new InvalidOperationException("[UgsLobby] AuthenticationService instance is unavailable during sign-in.");
+
+            try
+            {
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
+            }
+            catch (AuthenticationException e) when (e.ErrorCode == AuthenticationErrorCodes.ClientInvalidUserState)
+            {
+                if (AuthenticationService.Instance.IsSignedIn)
+                    return;
+
+                await WaitForSignInCompletionAsync();
+
+                if (AuthenticationService.Instance.IsSignedIn)
+                    return;
+
+                throw;
+            }
+        }
+
+        private static async Task WaitForSignInCompletionAsync()
+        {
+            const int pollingDelayMs = 100;
+            const int timeoutMs = 5000;
+            var waitedMs = 0;
+
+            while (waitedMs < timeoutMs)
+            {
+                if (AuthenticationService.Instance.IsSignedIn)
+                    return;
+
+                await Task.Delay(pollingDelayMs);
+                waitedMs += pollingDelayMs;
+            }
+
+            if (!AuthenticationService.Instance.IsSignedIn || string.IsNullOrEmpty(AuthenticationService.Instance.PlayerId))
+            {
+                throw new InvalidOperationException("[UgsLobby] Authentication failed: user is not signed in or PlayerId is unavailable.");
+            }
         }
 
         private static Player BuildLocalPlayer(string displayName)
         {
+            if (AuthenticationService.Instance == null)
+                throw new InvalidOperationException("[UgsLobby] AuthenticationService instance is unavailable.");
+
+            if (!AuthenticationService.Instance.IsSignedIn || string.IsNullOrEmpty(AuthenticationService.Instance.PlayerId))
+                throw new InvalidOperationException("[UgsLobby] Cannot build local player: authentication is not completed or PlayerId is missing.");
+
             return new Player(
                 id: AuthenticationService.Instance.PlayerId,
                 data: new Dictionary<string, PlayerDataObject>
@@ -205,9 +454,16 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         private static LobbyRoom Project(Lobby l)
         {
+            if (l == null)
+                return new LobbyRoom(string.Empty, string.Empty, string.Empty, 0, false, string.Empty, string.Empty, new List<LobbyPlayer>());
+
             string relayCode = string.Empty;
             if (l.Data != null && l.Data.TryGetValue(RelayCodeDataKey, out var dataObj) && dataObj != null)
                 relayCode = dataObj.Value ?? string.Empty;
+
+            string passwordHash = string.Empty;
+            if (l.Data != null && l.Data.TryGetValue(PasswordHashDataKey, out var pwdObj) && pwdObj != null)
+                passwordHash = pwdObj.Value ?? string.Empty;
 
             var players = new List<LobbyPlayer>(l.Players?.Count ?? 0);
             if (l.Players != null)
@@ -221,8 +477,32 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
             }
 
+            var state = l.IsLocked ? LobbyState.Started : LobbyState.Open;
             return new LobbyRoom(l.Id, l.LobbyCode, l.Name, l.MaxPlayers, l.IsPrivate,
-                l.HostId, relayCode, players);
+                l.HostId, relayCode, players, passwordHash, state);
+        }
+
+        private void PublishState(LobbyState state)
+        {
+            if (_state == state) return;
+            _state = state;
+            StateChanged?.Invoke(state);
+        }
+
+        private static bool IsMoyvaRelayLobby(Lobby lobby)
+        {
+            if (lobby?.Data == null)
+                return false;
+
+            return HasDataValue(lobby, ProjectDataKey, ProjectDataValue) &&
+                   HasDataValue(lobby, ProviderDataKey, ProviderDataValue);
+        }
+
+        private static bool HasDataValue(Lobby lobby, string key, string expectedValue)
+        {
+            return lobby.Data.TryGetValue(key, out var dataObject) &&
+                   dataObject != null &&
+                   string.Equals(dataObject.Value, expectedValue, StringComparison.Ordinal);
         }
 
         private void StartLoops()
@@ -274,6 +554,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         _lobby = refreshed;
                         _current = Project(_lobby);
                         LobbyUpdated?.Invoke(_current);
+                        PublishState(_current.State);
 
                         bool stillIn = false;
                         string myId = AuthenticationService.Instance.PlayerId;
@@ -288,6 +569,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                             StopLoops();
                             _lobby = null;
                             _current = null;
+                            PublishState(LobbyState.Closed);
                             return;
                         }
                     }
@@ -299,11 +581,16 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     StopLoops();
                     _lobby = null;
                     _current = null;
+                    PublishState(LobbyState.Closed);
                     return;
                 }
                 catch (Exception e)
                 {
                     _logger.Warn($"[UgsLobby] Poll failed: {e.Message}");
+                    var delaySeconds = e.Message.Contains("Too Many Requests") ? PollBackoffSeconds : PollSeconds;
+                    try { await Task.Delay(TimeSpan.FromSeconds(delaySeconds), ct); }
+                    catch (OperationCanceledException) { return; }
+                    continue;
                 }
 
                 try { await Task.Delay(TimeSpan.FromSeconds(PollSeconds), ct); }
@@ -311,34 +598,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             }
         }
 
-        public void Dispose() => StopLoops();
-#else
-        // ── Stub: compiles without the UGS Lobby package ─────────────────────
-
-        public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, CancellationToken ct = default)
+        public void Dispose()
         {
-            _logger.Warn("[UgsLobby] com.unity.services.lobbies not installed. Enable MOYVA_UGS_LOBBY.");
-            return Task.FromResult<LobbyRoom>(null);
+            StopLoops();
+            _operationLock.Dispose();
         }
-
-        public Task<LobbyRoom> JoinByCodeAsync(string lobbyCode, string displayName, CancellationToken ct = default)
-            => Task.FromResult<LobbyRoom>(null);
-
-        public Task<LobbyRoom> JoinByIdAsync(string lobbyId, string displayName, CancellationToken ct = default)
-            => Task.FromResult<LobbyRoom>(null);
-
-        public Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)
-        {
-            IReadOnlyList<LobbyRoom> empty = Array.Empty<LobbyRoom>();
-            return Task.FromResult(empty);
-        }
-
-        public Task LeaveAsync(CancellationToken ct = default) => Task.CompletedTask;
-        public Task KickAsync(string playerId, CancellationToken ct = default) => Task.CompletedTask;
-        public Task SetRelayJoinCodeAsync(string relayJoinCode, CancellationToken ct = default) => Task.CompletedTask;
-        public Task LockAsync(bool locked, CancellationToken ct = default) => Task.CompletedTask;
-
-        public void Dispose() { }
-#endif
     }
 }

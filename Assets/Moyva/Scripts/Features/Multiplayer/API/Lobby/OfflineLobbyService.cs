@@ -8,18 +8,23 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 {
     /// <summary>
     /// In-memory, single-process stub used when the UGS Lobby SDK is not available
-    /// (e.g. the <c>MOYVA_UGS_LOBBY</c> scripting define is not set), or for tests.
+    /// (e.g. the UGS Lobbies package is not installed), or for tests.
     /// All operations succeed locally so that <see cref="Core.SessionManager"/> can run.
     /// </summary>
     public sealed class OfflineLobbyService : ILobbyService
     {
         private readonly IMultiplayerLogger _logger;
         private LobbyRoom _current;
+        private LobbyState _state = LobbyState.Closed;
 
         public LobbyRoom Current => _current;
+        public LobbyState State => _state;
 
         public event Action<LobbyRoom> LobbyUpdated;
+#pragma warning disable CS0067
         public event Action<string> KickedFromLobby;
+#pragma warning restore CS0067
+        public event Action<LobbyState> StateChanged;
 
         public OfflineLobbyService(IMultiplayerLogger logger = null)
         {
@@ -42,6 +47,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             _logger?.Info($"[OfflineLobby] Created room '{options.Name}' code={code}");
             LobbyUpdated?.Invoke(_current);
+            PublishState(LobbyState.Open);
             return Task.FromResult(_current);
         }
 
@@ -55,6 +61,12 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             return Task.FromResult<LobbyRoom>(null);
         }
 
+        public Task<LobbyRoom> JoinByCodeWithPasswordAsync(string lobbyCode, string displayName, string password, CancellationToken ct = default)
+        {
+            // Offline-режим не підтримує приєднання до віддалених кімнат.
+            return Task.FromResult<LobbyRoom>(null);
+        }
+
         public Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)
         {
             IReadOnlyList<LobbyRoom> empty = Array.Empty<LobbyRoom>();
@@ -64,6 +76,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public Task LeaveAsync(CancellationToken ct = default)
         {
             _current = null;
+            PublishState(LobbyState.Closed);
             return Task.CompletedTask;
         }
 
@@ -79,14 +92,22 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             _current = new LobbyRoom(
                 _current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
-                _current.IsPrivate, _current.HostPlayerId, relayJoinCode, _current.Players);
+                _current.IsPrivate, _current.HostPlayerId, relayJoinCode, _current.Players, _current.PasswordHash, _current.State);
             LobbyUpdated?.Invoke(_current);
             return Task.CompletedTask;
         }
 
         public Task LockAsync(bool locked, CancellationToken ct = default)
         {
+            PublishState(locked ? LobbyState.Started : LobbyState.Open);
             return Task.CompletedTask;
+        }
+
+        private void PublishState(LobbyState state)
+        {
+            if (_state == state) return;
+            _state = state;
+            StateChanged?.Invoke(state);
         }
     }
 }
