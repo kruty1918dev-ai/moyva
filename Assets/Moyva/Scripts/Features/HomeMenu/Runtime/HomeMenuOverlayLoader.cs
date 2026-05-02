@@ -51,7 +51,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _currentResult = result;
             result.SetLoading(true, progressValue);
-            _panel?.SetLoading(true, progressValue);
             return result;
         }
 
@@ -69,7 +68,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 : Mathf.Clamp01(_currentValue / _currentMax) * 100f;
 
             _currentResult.SetLoading(true, progressValue);
-            _panel?.SetLoading(true, progressValue);
         }
 
         public void StopOverlay(bool forceImmediate = false)
@@ -88,7 +86,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             var lastProgress = result.Progress;
             result.SetLoading(false, lastProgress);
-            _panel?.SetLoading(false, lastProgress);
             if (forceImmediate)
             {
                 _panel?.ForceHide();

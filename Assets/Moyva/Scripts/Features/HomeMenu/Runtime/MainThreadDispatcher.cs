@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
@@ -53,6 +54,29 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (action == null) return;
             _actions.Enqueue(action);
+        }
+
+        public static Task EnqueueAsync(Action action)
+        {
+            if (action == null)
+                return Task.CompletedTask;
+
+            var completion = new TaskCompletionSource<bool>();
+            Enqueue(() =>
+            {
+                try
+                {
+                    action();
+                    completion.TrySetResult(true);
+                }
+                catch (Exception ex)
+                {
+                    completion.TrySetException(ex);
+                    throw;
+                }
+            });
+
+            return completion.Task;
         }
     }
 }

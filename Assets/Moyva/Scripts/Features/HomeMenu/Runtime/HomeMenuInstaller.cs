@@ -1,6 +1,8 @@
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.HomeMenu.Runtime.Services;
 using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Runtime;
+using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
@@ -11,8 +13,20 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     /// </summary>
     public sealed class HomeMenuInstaller : MonoInstaller
     {
+        [SerializeField] private string _lobbyPanelName = "LobbyPanel";
+        [SerializeField] private string _joinRoomPanelName = "JoinRoomPanel";
+        [SerializeField] private string _kickPlayerPanelName = "KickPlayerPanel";
+        [SerializeField] private string _infoPanelName = "InfoPanel";
+        [SerializeField] private string _multiplayerTypePanelName = "SelectMultiplayerType";
+        [SerializeField] private AudioMixerBindingsSO _audioMixerBindings;
+        [Header("Navigation")]
+        [Tooltip("Names of panels that require confirmation when the player navigates back from them.")]
+        [SerializeField] private string[] _confirmOnBackMenuNames = new string[0];
+
         public override void InstallBindings()
         {
+            HomeMenuRuntimeUiFactory.EnsureRequiredPanels(_infoPanelName);
+
             // Навігація між меню
             Container.Bind<INavigation>()
                 .To<HomeMenuNavigation>()
@@ -46,13 +60,27 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .FromComponentsInHierarchy(includeInactive: true)
                 .AsCached();
 
+            Container.Bind<JoinRoomOpenButton>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
+            Container.BindInterfacesTo<PlayerNameTextComponent>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
             Container.BindInterfacesAndSelfTo<IConfirmationButton>()
-             .FromComponentsInHierarchy(includeInactive: true)  
+             .FromComponentsInHierarchy(includeInactive: true)
                 .AsCached();
 
             // Сервіси 
             Container.BindInterfacesAndSelfTo<ConformationService>()
             .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<LocalGameSettingsService>()
+                .AsSingle();
+
+            if (_audioMixerBindings != null)
+                Container.BindInstance(_audioMixerBindings).AsSingle();
 
             // View controllers (from scene hierarchy)
             Container.BindInterfacesTo<BotViewController>()
@@ -67,11 +95,37 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .FromComponentsInHierarchy(includeInactive: true)
                 .AsCached();
 
+            Container.BindInterfacesTo<LobbyPanelViewController>()
+                .FromComponentInHierarchy(includeInactive: true)
+                .AsCached();
+
+            Container.BindInterfacesTo<KickPlayerPanelViewController>()
+                .FromComponentInHierarchy(includeInactive: true)
+                .AsCached();
+
             Container.BindInterfacesTo<JoinRoomViewController>()
                 .FromComponentsInHierarchy(includeInactive: true)
                 .AsCached();
 
+            // ── Інформаційна панель (модальне OK-повідомлення)
+            Container.BindInterfacesTo<InfoPanelViewController>()
+                .FromComponentInHierarchy(includeInactive: true)
+                .AsSingle();
+
+            // ── Панель введення пароля для приватних кімнат
+            Container.BindInterfacesTo<PasswordPanelViewController>()
+                .FromComponentInHierarchy(includeInactive: true)
+                .AsSingle();
+
+            Container.BindInterfacesTo<GameSettingsViewController>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
             Container.BindInterfacesTo<MultiplayerViewController>()
+                .FromComponentsInHierarchy(includeInactive: true)
+                .AsCached();
+
+            Container.BindInterfacesTo<MultiplayerModeViewController>()
                 .FromComponentsInHierarchy(includeInactive: true)
                 .AsCached();
 
@@ -106,6 +160,63 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<JoinRoomPanelService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<MultiplayerModePanelService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<MultiplayerMenuModeService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<LobbyPanelService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<KickPlayerPanelService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<GameplaySession>()
+                .AsSingle();
+
+            Container.BindInterfacesTo<MenuApi>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<GameStartListenerService>()
+                .AsSingle();
+
+            // Сервіс інформаційної панелі (черга OK-повідомлень).
+            Container.BindInterfacesAndSelfTo<InfoPanelService>()
+                .AsSingle();
+
+            // Сервіс запиту пароля для приватних кімнат.
+            Container.BindInterfacesAndSelfTo<PasswordPanelService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<GameSettingsPanelService>()
+                .AsSingle();
+
+            Container.BindInstance(_lobbyPanelName)
+                .WithId("LobbyPanelName");
+
+            Container.BindInstance(_joinRoomPanelName)
+                .WithId("JoinRoomPanelName");
+
+            Container.BindInstance(_kickPlayerPanelName)
+                .WithId("KickPlayerPanelName");
+
+            Container.BindInstance(_infoPanelName)
+                .WithId("InfoPanelName");
+
+            Container.BindInstance(_multiplayerTypePanelName)
+                .WithId("MultiplayerTypePanelName");
+
+            // Сторожовий сервіс інтернет-з'єднання — викидає на fallback-панель при втраті мережі в onlineRelay/WS режимах.
+            Container.BindInterfacesAndSelfTo<ConnectivityWatchdogService>()
+                .AsSingle();
+
+            // Bind confirm-on-back menu names so HomeMenuNavigation can ask for confirmation.
+            Container.BindInstance(_confirmOnBackMenuNames).AsSingle();
+
+            Container.BindInterfacesAndSelfTo<WorldCreationPanelService>()
                 .AsSingle();
         }
     }
