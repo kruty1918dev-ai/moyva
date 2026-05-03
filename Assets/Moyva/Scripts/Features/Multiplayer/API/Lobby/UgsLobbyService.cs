@@ -532,6 +532,12 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 {
                     await LobbyService.Instance.SendHeartbeatPingAsync(_lobby.Id);
                 }
+                catch (LobbyServiceException e) when (IsUnauthorized(e))
+                {
+                    _logger.Warn("[UgsLobby] Heartbeat unauthorized. Closing local lobby state.");
+                    CloseLobbyState("unauthorized");
+                    return;
+                }
                 catch (Exception e)
                 {
                     _logger.Warn($"[UgsLobby] Heartbeat failed: {e.Message}");
@@ -584,6 +590,12 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     PublishState(LobbyState.Closed);
                     return;
                 }
+                catch (LobbyServiceException e) when (IsUnauthorized(e))
+                {
+                    _logger.Warn("[UgsLobby] Poll unauthorized. Closing local lobby state.");
+                    CloseLobbyState("unauthorized");
+                    return;
+                }
                 catch (Exception e)
                 {
                     _logger.Warn($"[UgsLobby] Poll failed: {e.Message}");
@@ -596,6 +608,26 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 try { await Task.Delay(TimeSpan.FromSeconds(PollSeconds), ct); }
                 catch (OperationCanceledException) { return; }
             }
+        }
+
+        private void CloseLobbyState(string reason)
+        {
+            StopLoops();
+            _lobby = null;
+            _current = null;
+            _isHost = false;
+            KickedFromLobby?.Invoke(reason);
+            PublishState(LobbyState.Closed);
+        }
+
+        private static bool IsUnauthorized(LobbyServiceException exception)
+        {
+            if (exception == null)
+                return false;
+
+            var message = exception.Message ?? string.Empty;
+            return message.Contains("401", StringComparison.OrdinalIgnoreCase) ||
+                   message.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase);
         }
 
         public void Dispose()

@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// Wrapper that stays DI-bound and can switch the underlying INetworkProvider at runtime.
     /// Preserves subscriber lists and forwards events/messages.
     /// </summary>
-    public sealed class SwitchableNetworkProvider : INetworkProvider
+    public sealed class SwitchableNetworkProvider : INetworkProvider, IDisposable
     {
         private readonly MultiplayerConfig _config;
         private readonly IMultiplayerLogger _logger;
@@ -71,6 +71,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 try { await _inner.LeaveSessionAsync(ct).ConfigureAwait(false); }
                 catch (Exception e) { _logger.Warn($"[Switchable] Leave failed: {e.Message}"); }
 
+                DisposeProvider(_inner);
                 UnhookInner(_inner);
                 var next = NetworkProviderFactory.CreateByType(type, _config, _logger);
                 _inner = next;
@@ -92,6 +93,22 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         public Task SendMessageAsync(string targetPeerId, byte[] payload, CancellationToken ct = default)
             => _inner.SendMessageAsync(targetPeerId, payload, ct);
+
+        public void Dispose()
+        {
+            UnhookInner(_inner);
+            DisposeProvider(_inner);
+            _switchLock.Dispose();
+        }
+
+        private static void DisposeProvider(INetworkProvider provider)
+        {
+            if (provider is IDisposable disposable)
+            {
+                try { disposable.Dispose(); }
+                catch { }
+            }
+        }
 
         private sealed class ForwardObserver : IObserver<NetworkMessage>
         {

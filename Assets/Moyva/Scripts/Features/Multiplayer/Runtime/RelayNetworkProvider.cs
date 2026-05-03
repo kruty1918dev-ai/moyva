@@ -39,7 +39,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// <summary>
     /// Unity Relay backend — cloud NAT traversal via UGS Relay + Unity Transport.
     /// </summary>
-    public sealed class RelayNetworkProvider : INetworkProvider
+    public sealed class RelayNetworkProvider : INetworkProvider, IDisposable
     {
         public static bool IsRuntimeAvailable
         {
@@ -158,10 +158,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     Math.Max(_settings.MaxConnections, 4), Allocator.Persistent);
 
                 if (_driver.Bind(NetworkEndpoint.AnyIpv4) != 0)
-                    return SessionResult.Fail("Relay host bind failed.");
+                    return await FailAndShutdownAsync("Relay host bind failed.");
 
                 if (_driver.Listen() != 0)
-                    return SessionResult.Fail("Relay host listen failed.");
+                    return await FailAndShutdownAsync("Relay host listen failed.");
 
                 _isHost = true;
                 StartPumpLoop(ct);
@@ -170,6 +170,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
             catch (Exception e)
             {
+                await SafeShutdownAfterFailureAsync();
                 _logger.Error($"[Relay] HostAsync failed: {e.Message}");
                 return SessionResult.Fail(e.Message);
             }
@@ -197,11 +198,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 _driver = NetworkDriver.Create(netSettings);
 
                 if (_driver.Bind(NetworkEndpoint.AnyIpv4) != 0)
-                    return SessionResult.Fail("Relay client bind failed.");
+                    return await FailAndShutdownAsync("Relay client bind failed.");
 
                 _serverConnection = _driver.Connect();
                 if (!_serverConnection.IsCreated)
-                    return SessionResult.Fail("Relay client connect request failed.");
+                    return await FailAndShutdownAsync("Relay client connect request failed.");
 
                 _isHost = false;
                 StartPumpLoop(ct);
@@ -209,8 +210,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 var deadline = DateTime.UtcNow.AddMilliseconds(HandshakeTimeoutMs);
                 while (!_hostHelloReceived)
                 {
-                    if (ct.IsCancellationRequested) return SessionResult.Fail("Join cancelled.");
-                    if (DateTime.UtcNow > deadline) return SessionResult.Fail("Relay handshake timeout.");
+                    if (ct.IsCancellationRequested) return await FailAndShutdownAsync("Join cancelled.");
+                    if (DateTime.UtcNow > deadline) return await FailAndShutdownAsync("Relay handshake timeout.");
                     await Task.Delay(50, ct);
                 }
 
@@ -219,10 +220,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
             catch (OperationCanceledException)
             {
+                await SafeShutdownAfterFailureAsync();
                 return SessionResult.Fail("Join cancelled.");
             }
             catch (Exception e)
             {
+                await SafeShutdownAfterFailureAsync();
                 _logger.Error($"[Relay] JoinAsync failed: {e.Message}");
                 return SessionResult.Fail(e.Message);
             }
@@ -234,6 +237,25 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             await ShutdownTransportAsync();
             if (!string.IsNullOrEmpty(localId))
                 PeerDisconnected?.Invoke(localId);
+        }
+
+        private async Task<SessionResult> FailAndShutdownAsync(string message)
+        {
+            await SafeShutdownAfterFailureAsync();
+            return SessionResult.Fail(message);
+        }
+
+        private async Task SafeShutdownAfterFailureAsync()
+        {
+            try
+            {
+                await ShutdownTransportAsync();
+            }
+            catch (Exception shutdownError)
+            {
+                _logger.Warn($"[Relay] Shutdown after failure also failed: {shutdownError.Message}");
+                CleanupTransportImmediate();
+            }
         }
 
         private Task SendViaRelayAsync(string targetPeerId, byte[] payload, CancellationToken ct)
@@ -806,18 +828,71 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     _driver.Disconnect(_serverConnection);
                 }
 
-                _driver.ScheduleUpdate().Complete();
+                try
+                {
+                    _driver.ScheduleUpdate().Complete();
+                }
+                catch (Exception e)
+                {
+                    _logger.Warn($"[Relay] Final transport update failed during shutdown: {e.Message}");
+                }
+
                 _driver.Dispose();
             }
 
             if (_serverConnections.IsCreated)
                 _serverConnections.Dispose();
 
+            _driver = default;
             _serverConnection = default;
             _connectionPlayerIds.Clear();
             _hostHelloReceived = false;
             _hostPeerId = null;
             _isHost = false;
+        }
+
+        private void CleanupTransportImmediate()
+        {
+            try
+            {
+                _pumpCts?.Cancel();
+            }
+            catch { }
+
+            try
+            {
+                _pumpCts?.Dispose();
+            }
+            catch { }
+
+            _pumpCts = null;
+            _pumpTask = null;
+
+            try
+            {
+                if (_driver.IsCreated)
+                    _driver.Dispose();
+            }
+            catch { }
+
+            try
+            {
+                if (_serverConnections.IsCreated)
+                    _serverConnections.Dispose();
+            }
+            catch { }
+
+            _driver = default;
+            _serverConnection = default;
+            _connectionPlayerIds.Clear();
+            _hostHelloReceived = false;
+            _hostPeerId = null;
+            _isHost = false;
+        }
+
+        public void Dispose()
+        {
+            CleanupTransportImmediate();
         }
 #endif
 
