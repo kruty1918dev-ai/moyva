@@ -42,6 +42,9 @@ namespace Kruty1918.Moyva.Bootstrap
 
             // Ініціалізатор запуску: перевіряє наявність сейву і завантажує його.
             // Має ініціалізуватись після усіх сервісів.
+            Container.BindInterfacesTo<DirectGameplayLaunchModeInitializer>().AsSingle().NonLazy();
+            Container.BindExecutionOrder<DirectGameplayLaunchModeInitializer>(90);
+
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
             Container.BindExecutionOrder<TestUnitSpawner>(100);
 

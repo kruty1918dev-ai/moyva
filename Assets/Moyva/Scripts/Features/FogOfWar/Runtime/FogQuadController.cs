@@ -13,9 +13,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         [SerializeField] private FogOfWarSettings _settings;
 
-        [InjectOptional] private IFogOfWarService   _fogService;
-        [InjectOptional] private IFogTextureUpdater _textureUpdater;
-        [InjectOptional] private IGridService       _gridService;
+        [InjectOptional] private IFogOfWarService   _fogService = null;
+        [InjectOptional] private IFogTextureUpdater _textureUpdater = null;
+        [InjectOptional] private IGridService       _gridService = null;
 
         private Material _mat;
 

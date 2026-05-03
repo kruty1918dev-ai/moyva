@@ -18,4 +18,25 @@ MonoBehaviour:
     MaxHeight: 0.1
   - TileID: grass
     MinHeight: 0.1
+    MaxHeight: 0.2
+  - TileID: water
+    MinHeight: 0.2
+    MaxHeight: 0.3
+  - TileID: grass
+    MinHeight: 0.3
+    MaxHeight: 0.5
+  - TileID: water
+    MinHeight: 0.5
+    MaxHeight: 0.6
+  - TileID: forest-sparse
+    MinHeight: 0.6
+    MaxHeight: 0.8
+  - TileID: water
+    MinHeight: 0.8
+    MaxHeight: 0.9
+  - TileID: forest-dense
+    MinHeight: 0.9
+    MaxHeight: 0.95
+  - TileID: water
+    MinHeight: 0.95
     MaxHeight: 1

@@ -45,7 +45,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
-            return ExecuteAsync(inputs, context).GetAwaiter().GetResult();
+            // Run the async implementation on a background thread to avoid
+            // blocking the Unity main thread or causing deadlocks when the
+            // async implementation uses awaits that capture context.
+            return Task.Run(async () => await ExecuteAsync(inputs, context).ConfigureAwait(false)).GetAwaiter().GetResult();
         }
 
         public Task<NodeOutput> ExecuteAsync(object[] inputs, NodeContext context)

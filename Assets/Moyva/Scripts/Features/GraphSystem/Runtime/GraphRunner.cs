@@ -37,10 +37,16 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 try
                 {
                     if (node is IAsyncNode asyncNode)
-                        output = asyncNode.ExecuteAsync(inputs, context)
-                            .GetAwaiter().GetResult();
+                    {
+                        // Execute async node on the thread-pool to avoid capturing the
+                        // Unity synchronization context and potential deadlocks when
+                        // calling from synchronous code on the main thread.
+                        output = Task.Run(async () => await asyncNode.ExecuteAsync(inputs, context).ConfigureAwait(false)).GetAwaiter().GetResult();
+                    }
                     else
+                    {
                         output = node.Execute(inputs, context);
+                    }
                 }
                 catch (Exception ex)
                 {

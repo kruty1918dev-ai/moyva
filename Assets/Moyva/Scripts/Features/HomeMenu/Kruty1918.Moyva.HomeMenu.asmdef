@@ -1,0 +1,27 @@
+{
+    "name": "Kruty1918.Moyva.HomeMenu",
+    "rootNamespace": "Kruty1918.Moyva.HomeMenu",
+    "references": [
+        "Zenject",
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.SaveSystem",
+        "Kruty1918.Moyva.Multiplayer",
+        "Kruty1918.Moyva.GameMode",
+        "Kruty1918.Moyva.Shared",
+        "Kruty1918.Moyva.WorldCreation",
+        "Kruty1918.Moyva.WorldCreation.API",
+        "Kruty1918.Moyva.WorldCreation.UI",
+        "Unity.TextMeshPro",
+        "Unity.Services.Core",
+        "Unity.Services.Authentication"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
