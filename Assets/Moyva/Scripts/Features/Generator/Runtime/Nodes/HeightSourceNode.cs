@@ -12,11 +12,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
     [NodeInfo("Height Source", "Generators", "Генерує початкову карту висот із noise settings. Це стартова точка більшості графів генерації, від якої далі будуються біоми, вода, річки, ліси та інші шари світу.")]
     public sealed class HeightSourceNode : NodeBase
     {
+        [SerializeField] private DataNoiseSettings _noiseSettings;
        
         public override string Title => "Height Source";
         public override string Category => "Generators";
-
-        private NoiseSettings noiseSettings;
 
         public override PortDefinition[] Inputs => new[]
         {
@@ -31,14 +30,36 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
-            if (inputs[1] == null)
+            int seed = ResolveSeed(inputs, context);
+            var noiseProvider = context.GetService<INoiseProvider>();
+
+            if (inputs.Length > 1 && inputs[1] is NoiseSettings inputNoiseSettings)
+            {
+                var heightMap = noiseProvider.GenerateNoiseMap(inputNoiseSettings, context.MapSize.x, context.MapSize.y, seed);
+                return NodeOutput.Success(heightMap);
+            }
+
+            if (_noiseSettings == null)
                 return NodeOutput.Error("NoiseSettings not assigned.");
 
-            noiseSettings = (NoiseSettings)inputs[1];
-            var noiseProvider = context.GetService<INoiseProvider>();
-            var heightMap = noiseProvider.GenerateNoiseMap(noiseSettings, context.MapSize.x, context.MapSize.y, (int)inputs[0]);
+            var legacyNoiseSettings = new NoiseSettings(
+                Mathf.Max(0.0001f, _noiseSettings.Scale),
+                Mathf.Max(1, _noiseSettings.Octaves),
+                _noiseSettings.Persistance,
+                Mathf.Max(1f, _noiseSettings.Lacunarity),
+                _noiseSettings.Offset);
 
-            return NodeOutput.Success(heightMap);
+            var legacyHeightMap = noiseProvider.GenerateNoiseMap(legacyNoiseSettings, context.MapSize.x, context.MapSize.y, seed);
+
+            return NodeOutput.Success(legacyHeightMap);
+        }
+
+        private int ResolveSeed(object[] inputs, NodeContext context)
+        {
+            if (inputs.Length > 0 && inputs[0] is int inputSeed)
+                return inputSeed;
+
+            return context.Seed;
         }
     }
 }

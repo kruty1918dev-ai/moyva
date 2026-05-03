@@ -31,8 +31,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             new ScatterLayer { ObjectId = "rock-small", MinHeight = 0.5f, MaxHeight = 0.7f, Density = 0.2f, ClusterStrength = 0.2f },
             new ScatterLayer { ObjectId = "flower", MinHeight = 0.25f, MaxHeight = 0.4f, Density = 0.1f, ClusterStrength = 0.1f }
         };
-        [Tooltip("Seed випадковості для всіх шарів цієї ноди. Дає змогу отримувати відтворюваний розподіл об'єктів між перегенераціями.")]
-        [SerializeField] private int _seed = 42;
         [Tooltip("Якщо увімкнено, нода не буде ставити нові об'єкти в клітинки, де вже є щось у вхідному ObjectMap. Це захищає важливі об'єкти від випадкового перезапису.")]
         [SerializeField] private bool _avoidExistingObjects = true;
 
@@ -68,13 +66,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (_layers == null || _layers.Length == 0)
                 return NodeOutput.Success(result);
 
-            var rng = new System.Random(_seed);
+            var rng = context.CreateRandom($"{NodeId}:MultiLayerScatter");
 
             // Generate cluster noise per layer
             var clusterMaps = new float[_layers.Length][,];
             for (int i = 0; i < _layers.Length; i++)
             {
-                clusterMaps[i] = GenerateClusterNoise(w, h, _seed + i * 13);
+                int layerSeed = GlobalSeed.Combine(context.Seed, GlobalSeed.StableHash($"{NodeId}:MultiLayerScatter:Cluster:{i}"));
+                clusterMaps[i] = GenerateClusterNoise(w, h, layerSeed);
             }
 
             for (int x = 0; x < w; x++)

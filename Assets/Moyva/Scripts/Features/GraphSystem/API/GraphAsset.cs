@@ -53,6 +53,18 @@ namespace Kruty1918.Moyva.GraphSystem.API
 #if UNITY_EDITOR
         public NodeBase AddNode(Type nodeType)
         {
+            if (nodeType != null && Attribute.IsDefined(nodeType, typeof(UniqueNodeAttribute)))
+            {
+                for (int i = 0; i < _nodes.Count; i++)
+                {
+                    if (_nodes[i] != null && _nodes[i].GetType() == nodeType)
+                    {
+                        Debug.LogWarning($"Graph already contains unique node '{nodeType.Name}'.");
+                        return null;
+                    }
+                }
+            }
+
             var node = CreateInstance(nodeType) as NodeBase;
             if (node == null) return null;
 
@@ -108,6 +120,33 @@ namespace Kruty1918.Moyva.GraphSystem.API
             }
 
             return removed;
+        }
+
+        public void ReorderNodes(IReadOnlyList<NodeBase> orderedNodes)
+        {
+            if (orderedNodes == null || orderedNodes.Count == 0)
+                return;
+
+            var ordered = new List<NodeBase>(_nodes.Count);
+            var seen = new HashSet<NodeBase>();
+
+            for (int index = 0; index < orderedNodes.Count; index++)
+            {
+                var node = orderedNodes[index];
+                if (node != null && _nodes.Contains(node) && seen.Add(node))
+                    ordered.Add(node);
+            }
+
+            for (int index = 0; index < _nodes.Count; index++)
+            {
+                var node = _nodes[index];
+                if (node != null && seen.Add(node))
+                    ordered.Add(node);
+            }
+
+            _nodes.Clear();
+            _nodes.AddRange(ordered);
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         /// <summary>

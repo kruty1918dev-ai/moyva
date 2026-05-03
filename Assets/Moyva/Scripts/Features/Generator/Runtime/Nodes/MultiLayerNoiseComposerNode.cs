@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Multi-Layer Noise Composer", "Processing", "Композитор багатошарових шумів з підтримкою clamp/remap/blend/warp/invert.")]
+    [NodeInfo("Multi-Layer Noise Composer", "Noise", "Композитор багатошарових шумів з підтримкою clamp/remap/blend/warp/invert.")]
     public sealed class MultiLayerNoiseComposerNode : NodeBase
     {
         [SerializeField, Range(0f, 1f)] private float _perlinWeight = 1f;
@@ -20,7 +20,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [SerializeField] private Vector2 _remap = new(0f, 1f);
 
         public override string Title => "Multi-Layer Noise Composer";
-        public override string Category => "Processing";
+        public override string Category => "Noise";
 
         public override PortDefinition[] Inputs => new[]
         {

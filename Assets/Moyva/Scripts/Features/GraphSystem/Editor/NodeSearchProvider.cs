@@ -27,7 +27,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var nodeTypes = TypeCache.GetTypesDerivedFrom<NodeBase>()
                 .Where(t => !t.IsAbstract && !t.IsGenericType)
                 .Where(t => !string.Equals(t.Name, "SharedSettingsNode", StringComparison.Ordinal))
-                .Where(t => !string.Equals(t.Name, "RoutePointNode", StringComparison.Ordinal));
+                .Where(t => !string.Equals(t.Name, "RoutePointNode", StringComparison.Ordinal))
+                .Where(t => !IsUnavailableUniqueNode(t));
 
             var categories = new SortedDictionary<string, List<(string title, Type type)>>();
 
@@ -118,6 +119,18 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (instance != null)
                     DestroyImmediate(instance);
             }
+        }
+
+        private bool IsUnavailableUniqueNode(Type nodeType)
+        {
+            if (nodeType == null || !Attribute.IsDefined(nodeType, typeof(UniqueNodeAttribute)))
+                return false;
+
+            var graph = _graphView?.GraphAsset;
+            if (graph?.Nodes == null)
+                return false;
+
+            return graph.Nodes.Any(node => node != null && node.GetType() == nodeType);
         }
 
         private static string BuildExampleLine(PortDefinition[] inputs, PortDefinition[] outputs)

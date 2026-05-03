@@ -28,8 +28,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [SerializeField, TileId] private string _sparseForestTile = "forest-sparse";
         [Tooltip("Поріг, вище якого ліс вважається густим. Нижчі значення дають більше dense-ділянок, вищі залишають більше рідколісся.")]
         [SerializeField, Range(0f, 1f)] private float _denseThreshold = 0.65f;
-        [Tooltip("Seed випадковості для вибору дерев і fallback-шуму. Дає змогу відтворювати однакове розміщення лісових об'єктів.")]
-        [SerializeField] private int _seed = 42;
 
         [Header("Tree Clustering")]
         [Tooltip("Мінімальна кількість сусідніх лісових клітин (8-напрямків), щоб у клітині взагалі можна було ставити дерево. Чим вище значення, тим компактніші кластери.")]
@@ -75,12 +73,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             }
             else
             {
-                densityMap = GenerateSimpleNoise(w, h, _seed);
+                int fallbackSeed = GlobalSeed.Combine(context.Seed, GlobalSeed.StableHash($"{NodeId}:ForestDensity"));
+                densityMap = GenerateSimpleNoise(w, h, fallbackSeed);
             }
 
             var resultBiome = (string[,])biomeMap.Clone();
             var objectMap = new string[w, h];
-            var rng = new System.Random(_seed);
+            var rng = context.CreateRandom($"{NodeId}:ForestCluster");
             var forestCandidates = new bool[w, h];
             var densityAtCell = new float[w, h];
 

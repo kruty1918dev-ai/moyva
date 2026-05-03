@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -30,6 +31,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var cameFrom = new Dictionary<Vector2Int, Vector2Int>();
             var gScore = new Dictionary<Vector2Int, float> { [start] = 0 };
             var fScore = new Dictionary<Vector2Int, float> { [start] = Heuristic(start, end) };
+            var rng = GlobalSeed.CreateRandom($"RiverPathfinder:{start.x}:{start.y}:{end.x}:{end.y}:{width}:{height}");
 
             while (openSet.Count > 0)
             {
@@ -62,7 +64,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         }
                     }
 
-                    float meanderNoise = Random.Range(0f, MeanderStrength);
+                    float meanderNoise = (float)rng.NextDouble() * MeanderStrength;
                     float tentG = gScore[current] + 1f + heightCost + reuseCost + meanderNoise;
 
                     if (tentG < GetVal(gScore, next))

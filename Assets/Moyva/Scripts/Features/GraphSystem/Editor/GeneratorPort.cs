@@ -85,6 +85,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return new Color(0.7f, 0.7f, 0.7f);   // Gray — scalars
             if (type == typeof(float))
                 return new Color(0.5f, 0.9f, 0.5f);   // Light green
+            if (type == typeof(bool))
+                return new Color(1.0f, 0.85f, 0.2f);  // Amber — booleans
+            if (type == typeof(string))
+                return new Color(0.95f, 0.55f, 0.9f); // Pink — strings
             if (type == typeof(Vector2Int))
                 return new Color(0.8f, 0.4f, 0.8f);   // Purple
             if (type == typeof(object))
@@ -101,6 +105,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (type == typeof(int[,])) return "IntMap";
             if (type == typeof(int)) return "int";
             if (type == typeof(float)) return "float";
+            if (type == typeof(bool)) return "bool";
+            if (type == typeof(string)) return "string";
             if (type == typeof(Vector2Int)) return "Vector2Int";
             if (type == typeof(object)) return "Any";
             return type.Name;

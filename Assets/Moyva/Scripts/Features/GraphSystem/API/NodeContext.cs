@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
             IProgress<float> progress = null)
         {
             Seed = seed;
+            GlobalSeed.Set(seed);
             Cancellation = cancellation;
             Progress = progress;
         }
@@ -70,6 +71,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
         }
 
         public System.Random CreateRandom() => new(Seed);
-        public System.Random CreateRandom(int salt) => new(Seed ^ salt);
+        public System.Random CreateRandom(int salt) => new(GlobalSeed.Combine(Seed, salt));
+        public System.Random CreateRandom(string salt) => new(GlobalSeed.Combine(Seed, GlobalSeed.StableHash(salt)));
     }
 }

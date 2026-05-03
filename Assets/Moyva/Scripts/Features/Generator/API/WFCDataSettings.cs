@@ -73,5 +73,8 @@ namespace Kruty1918.Moyva.Generator.API
             "lake",
             "river"
         };
+
+        [Tooltip("Tile ID, яким WFC заповнює зовнішній контур мапи. Для архіпелагів це може бути ocean-deep, для старих графів — water.")]
+        [TileId] public string BorderWaterTileId = "water";
     }
 }

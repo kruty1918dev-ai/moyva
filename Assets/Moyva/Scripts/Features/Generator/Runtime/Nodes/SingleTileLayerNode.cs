@@ -108,10 +108,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (string.IsNullOrEmpty(_tileId))
                 return NodeOutput.Error("TileId is not set.");
 
-            if (_tileRegistry == null)
+            var tileRegistry = _tileRegistry;
+            if (tileRegistry == null)
+                context.TryGetService(out tileRegistry);
+
+            if (tileRegistry == null)
                 return NodeOutput.Error("TileRegistrySO is not assigned.");
 
-            var sprite = FindSpriteForTile(_tileId);
+            var sprite = FindSpriteForTile(_tileId, tileRegistry);
+            if (sprite == null && _tileRegistry != null && context.TryGetService<TileRegistrySO>(out var contextTileRegistry) && contextTileRegistry != _tileRegistry)
+                sprite = FindSpriteForTile(_tileId, contextTileRegistry);
 
             WorldLayerData layerData;
             if (sprite == null)
@@ -146,9 +152,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         // ── Private helpers ──────────────────────────────────────────────────
 
-        private Sprite FindSpriteForTile(string tileId)
+        private static Sprite FindSpriteForTile(string tileId, TileRegistrySO tileRegistry)
         {
-            foreach (var def in _tileRegistry.Definitions)
+            foreach (var def in tileRegistry.Definitions)
             {
                 if (!string.Equals(def.Id, tileId, StringComparison.Ordinal))
                     continue;

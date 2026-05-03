@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.GraphSystem.Editor::Kruty1918.Moyva.GraphSystem.Editor.EditorPreviewSettings
   _previewWidth: 64
   _previewHeight: 64
-  _noiseSettings: {fileID: 11400000, guid: b52c6a6864aaac144b8a37c6cccf1366, type: 2}
-  _heightMapSettings: {fileID: 11400000, guid: 38d9ef7cf403ac740b72b4ab909febbb, type: 2}
-  _biomesSettings: {fileID: 11400000, guid: c305e5bb3e9ea5947b96ce9b03612bcb, type: 2}
-  _wfcDataSettings: {fileID: 0}
-  _tileRegistry: {fileID: 11400000, guid: bc77e778b9a26da4abebea25d37293b9, type: 2}
-  _mapObjectRegistry: {fileID: 0}
-  _buildingRegistry: {fileID: 0}
+  _noiseSettings: {fileID: 11400000, guid: 3dc2da72d9b24f1e0a3b993cb9f44a13, type: 2}
+  _heightMapSettings: {fileID: 11400000, guid: 7858e000ef64a05ce8383f19fce7752c, type: 2}
+  _biomesSettings: {fileID: 11400000, guid: 653880f128a105210b7ab2057472065d, type: 2}
+  _wfcDataSettings: {fileID: 11400000, guid: 43b54663d84457518923e06a607badc7, type: 2}
+  _tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
+  _mapObjectRegistry: {fileID: 11400000, guid: 1aa3411356147585fb2c8534e5b707b8, type: 2}
+  _buildingRegistry: {fileID: 11400000, guid: 10b50407045da99758fd720b41437642, type: 2}

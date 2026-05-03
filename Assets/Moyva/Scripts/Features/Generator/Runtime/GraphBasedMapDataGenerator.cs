@@ -57,6 +57,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Action<string[,], string[,], float[,], string[,]> onComplete)
         {
             int generationSeed = GetSeedFromGraph();
+            GlobalSeed.Set(generationSeed);
             var previousRandomState = UnityEngine.Random.state;
             UnityEngine.Random.InitState(generationSeed);
 
@@ -353,7 +354,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private int GetSeedFromGraph()
         {
             if (_graphAsset?.Nodes == null)
-                return 42;
+                return GlobalSeed.DefaultSeed;
 
             foreach (var node in _graphAsset.Nodes)
             {
@@ -362,7 +363,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     return seedProvider.Seed;
             }
 
-            return 42;
+            return GlobalSeed.DefaultSeed;
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -39,8 +40,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         // Інтерфейс тепер має повертати IEnumerator або використовувати Callbacks
         public void GenerateMapData(int width, int height, Action<string[,], string[,], float[,], string[,]> onComplete)
         {
+            GlobalSeed.Set(_noiseSettings != null ? _noiseSettings.Seed : GlobalSeed.DefaultSeed);
             var previousRandomState = UnityEngine.Random.state;
-            UnityEngine.Random.InitState(_noiseSettings.Seed);
+            UnityEngine.Random.InitState(GlobalSeed.Current);
 
             try
             {

@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.API;
 using System;
 using UnityEngine;
 
@@ -7,16 +8,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
     [NodeInfo("Seed Settings", "Generators", "Налаштування сіду")]
     [HidePreview]
-    public sealed class SeedNode : NodeBase
+    [UniqueNode]
+    public sealed class SeedNode : NodeBase, ISeedProvider
     {       
         [SerializeField]
-        [InlineEditable("seed")]
-        private int seed = 0;
-        
-        [SerializeField]
-        [InlineEditable("isRandomSeed")]
-        private bool isRandomSeed = true;
-        private static System.Random rng = new System.Random();
+        [InlineEditable("Seed")]
+        private int seed = GlobalSeed.DefaultSeed;
+
+        public int Seed => seed;
+
         public override string Title => "Seed Settings";
         public override string Category => "Generators";
 
@@ -29,17 +29,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
-            if (isRandomSeed)
-            {
-                seed = GetRandomSeed();
-            }
-
+            GlobalSeed.Set(seed);
             return NodeOutput.Success(seed);
-        }
-
-        private int GetRandomSeed()
-        {
-            return rng.Next(int.MinValue, int.MaxValue);
         }
     }
 }

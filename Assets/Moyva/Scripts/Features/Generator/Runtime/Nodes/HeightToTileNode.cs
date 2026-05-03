@@ -32,13 +32,44 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (_heightMapSettings == null)
                 return NodeOutput.Error("HeightMapSettings not assigned.");
 
-            var generator = context.GetService<IVirtualHeightMapGenerator>();
-            string[,] result = null;
-            generator.GenerateVirtualHeightMap(heightMap, r => result = r);
+            string[,] result = GenerateFromLocalSettings(heightMap);
 
             return result != null
                 ? NodeOutput.Success(result)
                 : NodeOutput.Error("VirtualHeightMapGenerator returned null.");
+        }
+
+        private string[,] GenerateFromLocalSettings(float[,] heightMap)
+        {
+            int width = heightMap.GetLength(0);
+            int height = heightMap.GetLength(1);
+            var result = new string[width, height];
+            var layers = _heightMapSettings.HeightLayers;
+
+            if (layers == null || layers.Length == 0)
+                return result;
+
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    float heightValue = heightMap[x, y];
+                    for (int layerIndex = 0; layerIndex < layers.Length; layerIndex++)
+                    {
+                        var layer = layers[layerIndex];
+                        if (heightValue >= layer.MinHeight && heightValue <= layer.MaxHeight)
+                        {
+                            result[x, y] = layer.TileID;
+                            break;
+                        }
+                    }
+
+                    if (string.IsNullOrEmpty(result[x, y]))
+                        result[x, y] = layers[^1].TileID;
+                }
+            }
+
+            return result;
         }
     }
 }

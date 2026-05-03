@@ -10,10 +10,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private const int DefaultSize = 128;
 
         /// <summary>
-        /// Кеш спрайтових кольорів за tile ID.
-        /// Заповнюється один раз при першому зверненні, живе до перезавантаження домену.
+        /// Кеш усередненого кольору спрайта за tile ID (fallback коли текстура нечитаєма).
         /// </summary>
         private static Dictionary<string, Color> _spriteColorCache;
+        /// <summary>
+        /// Кеш реальних піксельних даних спрайта за tile ID.
+        /// </summary>
+        private static Dictionary<string, (Color[] px, int w, int h)> _spritePxCache;
         private static TileRegistrySO _cachedRegistry;
 
         public static Texture2D TryBuild(
@@ -203,17 +206,43 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var tex = CreateTexture(tw, th);
             for (int y = 0; y < th; y++)
             {
-                int sy = y * sh / th;
+                // Floating-point tile coordinate in source space
+                float tileYf = (float)y * sh / th;
+                int sy = Mathf.Clamp((int)tileYf, 0, sh - 1);
+                // UV within the tile (0..1)
+                float vWithin = tileYf - sy;
+
                 for (int x = 0; x < tw; x++)
                 {
-                    int sx = x * sw / tw;
+                    float tileXf = (float)x * sw / tw;
+                    int sx = Mathf.Clamp((int)tileXf, 0, sw - 1);
+                    float uWithin = tileXf - sx;
+
                     var tileId = source[sx, sy];
 
                     Color c;
                     if (string.IsNullOrEmpty(tileId))
+                    {
                         c = Color.black;
-                    else if (!_spriteColorCache.TryGetValue(tileId, out c))
-                        c = StringToColor(tileId); // fallback
+                    }
+                    else if (_spritePxCache != null && _spritePxCache.TryGetValue(tileId, out var pd))
+                    {
+                        // Sample actual sprite pixel using within-tile UV
+                        int spx = Mathf.Clamp((int)(uWithin * pd.w), 0, pd.w - 1);
+                        int spy = Mathf.Clamp((int)(vWithin * pd.h), 0, pd.h - 1);
+                        c = pd.px[spy * pd.w + spx];
+                        // Blend transparent sprite pixels with averaged fallback color
+                        if (c.a < 0.05f && _spriteColorCache.TryGetValue(tileId, out var avg))
+                            c = avg;
+                    }
+                    else if (_spriteColorCache != null && _spriteColorCache.TryGetValue(tileId, out c))
+                    {
+                        // Fallback: averaged color (texture not readable)
+                    }
+                    else
+                    {
+                        c = StringToColor(tileId);
+                    }
 
                     tex.SetPixel(x, y, c);
                 }
@@ -230,6 +259,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             _cachedRegistry = registry;
             _spriteColorCache = new Dictionary<string, Color>();
+            _spritePxCache = new Dictionary<string, (Color[], int, int)>();
 
             if (registry == null || registry.Definitions == null) return;
 
@@ -252,10 +282,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                     Color[] pixels = sprite.texture.GetPixels(srcX, srcY, srcW, srcH);
                     _spriteColorCache[def.Id] = AverageColor(pixels);
+                    _spritePxCache[def.Id] = (pixels, srcW, srcH);
                 }
                 catch
                 {
-                    // Texture not readable — use tint color
+                    // Texture not readable — use tint color as fallback
                     _spriteColorCache[def.Id] = sr.color;
                 }
             }

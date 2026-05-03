@@ -2360,7 +2360,71 @@ MonoBehaviour:
   _wfcDataSettings: {fileID: 11400000, guid: fea7d1c6ea24608b2b4e75e082c67e84, type: 2}
   _mapObjectRegistry: {fileID: 11400000, guid: 1aa3411356147585fb2c8534e5b707b8, type: 2}
   _useGraphGenerator: 1
-  _graphAsset: {fileID: 11400000, guid: e728959edc09a5fea829221821058070, type: 2}
+  _graphAsset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
+  _waterLayerMaterialSettings:
+    _preset: 1
+    _mipBias: 0
+    _zoomLodStrength: 1
+    _useContourAlpha: 0
+    _useSceneEdge: 1
+    _useDepthEdge: 1
+    _useShoreDepth: 1
+    _contourColor: {r: 0.78, g: 0.92, b: 1, a: 1}
+    _contourWidth: 1
+    _contourThreshold: 0.01
+    _contourSharpness: 18
+    _contourOpacity: 1
+    _lineThreshold: 0.04
+    _lineThickness: 0.9
+    _lineSoftness: 0.01
+    _useVoronoiOverlay: 1
+    _voronoiColor: {r: 0.78, g: 0.9, b: 1, a: 1}
+    _voronoiScale: 36
+    _voronoiLineWidth: 0.04
+    _voronoiSoftness: 0.04
+    _voronoiOpacity: 0.12
+    _voronoiJitter: 0.6
+    _voronoiSpeed: 0.2
+    _voronoiFlowDir: {x: 1, y: 0.35, z: 0, w: 0}
+    _useMultiBand: 0
+    _contourColorMid: {r: 0.6, g: 0.85, b: 1, a: 0.6}
+    _contourColorOuter: {r: 0.4, g: 0.75, b: 1, a: 0.3}
+    _bandWidthMid: 2
+    _bandWidthOuter: 4
+    _useDitherContour: 1
+    _ditherStrength: 0.25
+    _sceneEdgeWidth: 1
+    _sceneEdgeThreshold: 0.03
+    _sceneEdgeSharpness: 10
+    _sceneEdgeOpacity: 1
+    _shoreDepthDistance: 1.5
+    _shoreEdgeWidth: 0.08
+    _usePixelNoise: 1
+    _usePixelScroll: 0
+    _pixelSize: 1
+    _pixelAspect: {x: 1, y: 1}
+    _pixelMinSize: 1
+    _noiseScale: 8
+    _noiseSpeed: 6
+    _noiseStrength: 0.002
+    _colorSteps: 8
+    _contourSteps: 2
+    _scrollDir: {x: 1, y: 0.3, z: 0, w: 0}
+    _scrollSpeed: 2
+    _usePixelRipple: 0
+    _rippleFreq: 10
+    _rippleSpeed: 3
+    _rippleAmp: 0.005
+    _usePixelHighlights: 0
+    _highlightDitherThreshold: 0.85
+    _highlightIntensity: 0.6
+    _useColorBleed: 0
+    _bleedStrength: 0.25
+    _bleedWidth: 1.5
+    _useSpecularEdge: 0
+    _specEdgeThreshold: 0.7
+    _specEdgeIntensity: 0.8
+    _specEdgeColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &820743902
 GameObject:
   m_ObjectHideFlags: 0
