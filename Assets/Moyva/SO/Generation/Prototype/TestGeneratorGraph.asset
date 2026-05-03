@@ -14,24 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SeedNode
   _nodeId: 0e244104-f5c0-46dd-9310-026029a2b3d9
   _editorPosition: {x: -122, y: -8}
-  seed: 802860292
+  seed: -1244067256
   isRandomSeed: 1
---- !u!114 &-3743344069470685114
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 889d4cbf6fe180ead968533c394389c0, type: 3}
-  m_Name: SmoothNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
-  _nodeId: f21866ab-537a-4889-bec5-d2bc44554aa9
-  _editorPosition: {x: 537, y: 220}
-  _radius: 5
-  _iterations: 8
 --- !u!114 &-609753921142276548
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -62,8 +46,6 @@ MonoBehaviour:
   - {fileID: -7207838343501215377}
   - {fileID: -609753921142276548}
   - {fileID: 2733130157158313261}
-  - {fileID: -3743344069470685114}
-  - {fileID: 4536998997438838829}
   _connections:
   - _sourceNodeId: 0e244104-f5c0-46dd-9310-026029a2b3d9
     _sourcePortIndex: 0
@@ -73,14 +55,6 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
     _targetPortIndex: 1
-  - _sourceNodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
-    _sourcePortIndex: 0
-    _targetNodeId: f21866ab-537a-4889-bec5-d2bc44554aa9
-    _targetPortIndex: 0
-  - _sourceNodeId: f21866ab-537a-4889-bec5-d2bc44554aa9
-    _sourcePortIndex: 0
-    _targetNodeId: db021144-3727-4e8a-b77f-451e5f176817
-    _targetPortIndex: 0
   _version: 1
   _sharedSettings:
     _mapWidth: 0
@@ -104,18 +78,3 @@ MonoBehaviour:
   persistance: 0.5
   lacunarity: 2
   Offset: {x: 0, y: 0}
---- !u!114 &4536998997438838829
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1d0c2c35e1ab2c2f3bb025a759ae64b4, type: 3}
-  m_Name: BiomeResolverNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.BiomeResolverNode
-  _nodeId: db021144-3727-4e8a-b77f-451e5f176817
-  _editorPosition: {x: 828, y: 220}
-  _biomesSettings: {fileID: 11400000, guid: c305e5bb3e9ea5947b96ce9b03612bcb, type: 2}
