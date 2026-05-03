@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [SerializeField] private string _infoPanelName = "InfoPanel";
         [SerializeField] private string _multiplayerTypePanelName = "SelectMultiplayerType";
         [SerializeField] private AudioMixerBindingsSO _audioMixerBindings;
+        [SerializeField] private HomeMenuConfigSO _config;
         [Header("Navigation")]
         [Tooltip("Names of panels that require confirmation when the player navigates back from them.")]
         [SerializeField] private string[] _confirmOnBackMenuNames = new string[0];
@@ -81,6 +82,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (_audioMixerBindings != null)
                 Container.BindInstance(_audioMixerBindings).AsSingle();
+
+            var config = _config != null ? _config : ScriptableObject.CreateInstance<HomeMenuConfigSO>();
+            Container.BindInstance(config).AsSingle().IfNotBound();
 
             // View controllers (from scene hierarchy)
             Container.BindInterfacesTo<BotViewController>()
@@ -178,6 +182,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .AsSingle();
 
             Container.BindInterfacesTo<MenuApi>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<HomeMenuGameStarter>()
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<GameStartListenerService>()

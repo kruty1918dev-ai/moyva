@@ -7,5 +7,9 @@ namespace Kruty1918.Moyva.HomeMenu.API
         // If forceImmediate == true, the implementation should hide the overlay immediately
         // (skip delayed animation) to guarantee the panel is closed when initialization completes.
         void StopOverlay(bool forceImmediate = false);
+        // Lock prevents StopOverlay from hiding the overlay (e.g. during game launch).
+        // Each LockOverlay call must be matched by one UnlockOverlay call.
+        void LockOverlay();
+        void UnlockOverlay();
     }
 }

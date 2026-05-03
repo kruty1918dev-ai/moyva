@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.UI;
@@ -8,6 +9,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     internal class HomeMenuOverlayLoader : IOverlayLoader
     {
+        private int _lockCount;
         private float _currentValue;
         private float _currentMax = 100f;
         private string _currentSuffix = "%";
@@ -72,11 +74,29 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         public void StopOverlay(bool forceImmediate = false)
         {
+            if (_lockCount > 0)
+            {
+                Debug.Log("[HomeMenuOverlayLoader] StopOverlay ignored (overlay is locked).");
+                return;
+            }
+
             Debug.Log("[HomeMenuOverlayLoader] StopOverlay called.");
             _overlayCompletionSource?.TrySetResult(true);
             StopLoading(_currentResult, forceImmediate);
             _currentResult = null;
             _overlayCompletionSource = null;
+        }
+
+        public void LockOverlay()
+        {
+            _lockCount++;
+            Debug.Log($"[HomeMenuOverlayLoader] Overlay locked (count={_lockCount}).");
+        }
+
+        public void UnlockOverlay()
+        {
+            _lockCount = Math.Max(0, _lockCount - 1);
+            Debug.Log($"[HomeMenuOverlayLoader] Overlay unlocked (count={_lockCount}).");
         }
 
         private void StopLoading(OverlayLoaderResult result, bool forceImmediate = false)
@@ -88,13 +108,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             result.SetLoading(false, lastProgress);
             if (forceImmediate)
             {
-                _panel?.ForceHide();
+                if (_panel != null) _panel.ForceHide();
                 Debug.Log("[HomeMenuOverlayLoader] Overlay ready. Forced panel hide.");
             }
             else
             {
-                // ensure panel actually hides after a short timeout as a fallback
-                _panel?.EnsureHiddenAfterDelay(2f);
+                if (_panel != null) _panel.EnsureHiddenAfterDelay(2f);
                 Debug.Log("[HomeMenuOverlayLoader] Overlay ready. Requested panel hide.");
             }
         }
