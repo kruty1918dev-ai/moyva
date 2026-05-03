@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         public BinaryConfigStore(string filePath = null)
         {
-            _filePath = filePath ?? Path.Combine(Application.persistentDataPath, "multiplayer_config.dat");
+            _filePath = filePath ?? Path.Combine(Application.persistentDataPath, MultiplayerClientScope.BuildScopedFileName("multiplayer_config.dat"));
         }
 
         public bool Exists() => File.Exists(_filePath);

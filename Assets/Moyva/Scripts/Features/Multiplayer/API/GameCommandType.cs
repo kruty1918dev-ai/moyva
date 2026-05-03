@@ -8,5 +8,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         BuildingDemolish = 3,
         UnitSpawn        = 4,
         GameStateChange  = 5,
+        StartGame        = 6,
+        EndTurn          = 7,
     }
 }

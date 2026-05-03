@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// the wrapper automatically promotes the fallback and retries the same operation.
     /// Subsequent calls go directly to the fallback until <see cref="Reset"/> is called.
     /// </summary>
-    public sealed class FallbackNetworkProvider : INetworkProvider
+    public sealed class FallbackNetworkProvider : INetworkProvider, IDisposable
     {
         private readonly INetworkProvider _primary;
         private readonly INetworkProvider _fallback;
@@ -123,6 +123,21 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             _usingFallback = false;
             SubscribeTo(_primary);
             _logger.Info("[Fallback] Reset — will try primary provider again.");
+        }
+
+        public void Dispose()
+        {
+            _activeSub?.Dispose();
+
+            if (_primary is IDisposable primaryDisposable)
+            {
+                try { primaryDisposable.Dispose(); } catch { }
+            }
+
+            if (_fallback is IDisposable fallbackDisposable)
+            {
+                try { fallbackDisposable.Dispose(); } catch { }
+            }
         }
 
         // ── Message forwarding ─────────────────────────────────────────────────────

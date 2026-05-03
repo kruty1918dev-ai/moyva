@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
 using Kruty1918.Moyva.Multiplayer.Runtime;
@@ -75,6 +76,82 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             public bool Exists() => true;
         }
 
+        private sealed class FakeLobbyService : ILobbyService
+        {
+            private readonly Dictionary<string, LobbyRoom> _roomsByCode = new Dictionary<string, LobbyRoom>();
+            public LobbyRoom Current { get; private set; }
+            public LobbyState State { get; private set; } = LobbyState.Closed;
+            public event Action<LobbyRoom> LobbyUpdated;
+            public event Action<string> KickedFromLobby { add { } remove { } }
+            public event Action<LobbyState> StateChanged;
+
+            public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, System.Threading.CancellationToken ct = default)
+            {
+                var lobbyId = Guid.NewGuid().ToString("N");
+                var code = lobbyId.Substring(0, 6).ToUpperInvariant();
+                var hostId = "host";
+                var room = new LobbyRoom(
+                    lobbyId,
+                    code,
+                    options.Name,
+                    options.MaxPlayers,
+                    options.IsPrivate,
+                    hostId,
+                    string.Empty,
+                    new List<LobbyPlayer> { new LobbyPlayer(hostId, options.DisplayName, true) });
+                _roomsByCode[code] = room;
+                Current = room;
+                PublishState(LobbyState.Open);
+                LobbyUpdated?.Invoke(room);
+                return Task.FromResult(room);
+            }
+
+            public Task<LobbyRoom> JoinByCodeAsync(string lobbyCode, string displayName, System.Threading.CancellationToken ct = default)
+            {
+                if (_roomsByCode.TryGetValue(lobbyCode, out var room))
+                {
+                    Current = room;
+                    PublishState(LobbyState.Open);
+                    LobbyUpdated?.Invoke(room);
+                    return Task.FromResult(room);
+                }
+
+                var joinedRoom = new LobbyRoom(
+                    "join-" + lobbyCode,
+                    lobbyCode,
+                    lobbyCode,
+                    4,
+                    false,
+                    "host",
+                    lobbyCode,
+                    new List<LobbyPlayer>());
+                Current = joinedRoom;
+                PublishState(LobbyState.Open);
+                LobbyUpdated?.Invoke(joinedRoom);
+                return Task.FromResult<LobbyRoom>(joinedRoom);
+            }
+
+            public Task<LobbyRoom> JoinByIdAsync(string lobbyId, string displayName, System.Threading.CancellationToken ct = default)
+                => Task.FromResult(Current);
+            public Task<LobbyRoom> JoinByCodeWithPasswordAsync(string lobbyCode, string displayName, string password, System.Threading.CancellationToken ct = default)
+                => JoinByCodeAsync(lobbyCode, displayName, ct);
+            public Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(System.Threading.CancellationToken ct = default)
+                => Task.FromResult<IReadOnlyList<LobbyRoom>>(Array.Empty<LobbyRoom>());
+            public Task LeaveAsync(System.Threading.CancellationToken ct = default) { Current = null; PublishState(LobbyState.Closed); return Task.CompletedTask; }
+            public Task KickAsync(string playerId, System.Threading.CancellationToken ct = default) => Task.CompletedTask;
+            public Task SetRelayJoinCodeAsync(string relayJoinCode, System.Threading.CancellationToken ct = default) => Task.CompletedTask;
+            public Task LockAsync(bool locked, System.Threading.CancellationToken ct = default) { PublishState(locked ? LobbyState.Started : LobbyState.Open); return Task.CompletedTask; }
+
+            private void PublishState(LobbyState state)
+            {
+                if (State == state)
+                    return;
+
+                State = state;
+                StateChanged?.Invoke(state);
+            }
+        }
+
         private sealed class FakeHostMigrationService : IHostMigrationService
         {
             public Participant ChooseNewHost(System.Collections.Generic.IReadOnlyList<Participant> remaining)
@@ -106,8 +183,9 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             var netProvider = network ?? new OfflineNetworkProvider();
             var hostMigration = new FakeHostMigrationService();
             var participantFallback = new FakeParticipantFallbackService();
+            var lobby = new FakeLobbyService();
 
-            return new SessionManager(netProvider, participantPolicy, consistencyService, snapStore, cfgStore, logger, failPolicy, hostMigration, participantFallback);
+            return new SessionManager(netProvider, lobby, participantPolicy, consistencyService, snapStore, cfgStore, logger, failPolicy, hostMigration, participantFallback);
         }
 
         private SessionConnectOptions MakeOptions(string roomId = "room-1", bool create = true)
@@ -285,6 +363,82 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             public bool Exists() => true;
         }
 
+        private sealed class FakeLobbyService : ILobbyService
+        {
+            private readonly Dictionary<string, LobbyRoom> _roomsByCode = new Dictionary<string, LobbyRoom>();
+            public LobbyRoom Current { get; private set; }
+            public LobbyState State { get; private set; } = LobbyState.Closed;
+            public event Action<LobbyRoom> LobbyUpdated;
+            public event Action<string> KickedFromLobby { add { } remove { } }
+            public event Action<LobbyState> StateChanged;
+
+            public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, System.Threading.CancellationToken ct = default)
+            {
+                var lobbyId = Guid.NewGuid().ToString("N");
+                var code = lobbyId.Substring(0, 6).ToUpperInvariant();
+                var hostId = "host";
+                var room = new LobbyRoom(
+                    lobbyId,
+                    code,
+                    options.Name,
+                    options.MaxPlayers,
+                    options.IsPrivate,
+                    hostId,
+                    string.Empty,
+                    new List<LobbyPlayer> { new LobbyPlayer(hostId, options.DisplayName, true) });
+                _roomsByCode[code] = room;
+                Current = room;
+                PublishState(LobbyState.Open);
+                LobbyUpdated?.Invoke(room);
+                return Task.FromResult(room);
+            }
+
+            public Task<LobbyRoom> JoinByCodeAsync(string lobbyCode, string displayName, System.Threading.CancellationToken ct = default)
+            {
+                if (_roomsByCode.TryGetValue(lobbyCode, out var room))
+                {
+                    Current = room;
+                    PublishState(LobbyState.Open);
+                    LobbyUpdated?.Invoke(room);
+                    return Task.FromResult(room);
+                }
+
+                var joinedRoom = new LobbyRoom(
+                    "join-" + lobbyCode,
+                    lobbyCode,
+                    lobbyCode,
+                    4,
+                    false,
+                    "host",
+                    lobbyCode,
+                    new List<LobbyPlayer>());
+                Current = joinedRoom;
+                PublishState(LobbyState.Open);
+                LobbyUpdated?.Invoke(joinedRoom);
+                return Task.FromResult<LobbyRoom>(joinedRoom);
+            }
+
+            public Task<LobbyRoom> JoinByIdAsync(string lobbyId, string displayName, System.Threading.CancellationToken ct = default)
+                => Task.FromResult(Current);
+            public Task<LobbyRoom> JoinByCodeWithPasswordAsync(string lobbyCode, string displayName, string password, System.Threading.CancellationToken ct = default)
+                => JoinByCodeAsync(lobbyCode, displayName, ct);
+            public Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(System.Threading.CancellationToken ct = default)
+                => Task.FromResult<IReadOnlyList<LobbyRoom>>(Array.Empty<LobbyRoom>());
+            public Task LeaveAsync(System.Threading.CancellationToken ct = default) { Current = null; PublishState(LobbyState.Closed); return Task.CompletedTask; }
+            public Task KickAsync(string playerId, System.Threading.CancellationToken ct = default) => Task.CompletedTask;
+            public Task SetRelayJoinCodeAsync(string relayJoinCode, System.Threading.CancellationToken ct = default) => Task.CompletedTask;
+            public Task LockAsync(bool locked, System.Threading.CancellationToken ct = default) { PublishState(locked ? LobbyState.Started : LobbyState.Open); return Task.CompletedTask; }
+
+            private void PublishState(LobbyState state)
+            {
+                if (State == state)
+                    return;
+
+                State = state;
+                StateChanged?.Invoke(state);
+            }
+        }
+
         private sealed class FakeHostMigrationService : IHostMigrationService
         {
             private readonly IMultiplayerLogger _logger;
@@ -347,9 +501,10 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             var consistencyService = new WorldConsistencyService(logger);
             var hostMigration = new FakeHostMigrationService(logger);
             var participantFallback = new ConfigurableParticipantFallbackService(forceDisableFallback: !allowBotFallback);
+            var lobby = new FakeLobbyService();
 
             var manager = new SessionManager(
-                net, participantPolicy, consistencyService, snapStore, cfgStore,
+                net, lobby, participantPolicy, consistencyService, snapStore, cfgStore,
                 logger, failPolicy, hostMigration, participantFallback);
 
             return (manager, net, logger);

@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.Tests.Construction
     {
         private sealed class FakeRegistry : IBuildingRegistry
         {
-            public BuildingDefinition[] BuildingsSource;
+            public BuildingDefinition[] BuildingsSource = null;
             public WallCollectionDefinition Collection;
 
             public BuildingDefinition[] GetAll() => BuildingsSource;

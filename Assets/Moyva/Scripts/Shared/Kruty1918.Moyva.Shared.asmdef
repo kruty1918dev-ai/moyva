@@ -1,0 +1,17 @@
+{
+    "name": "Kruty1918.Moyva.Shared",
+    "rootNamespace": "Kruty1918.Moyva.Shared",
+    "references": [
+        "Zenject",
+        "Kruty1918.Moyva.Multiplayer"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
