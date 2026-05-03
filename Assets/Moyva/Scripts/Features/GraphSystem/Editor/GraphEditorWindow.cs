@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
@@ -34,6 +37,15 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private NodeBase _selectedNode;
         private UnityEditor.Editor _selectedNodeEditor;
 
+        private enum InspectorTab { Settings = 0, Preview = 1 }
+        [SerializeField] private InspectorTab _activeInspectorTab = InspectorTab.Preview;
+        private VisualElement _inspectorTabsHeader;
+        private VisualElement _tabSettingsContent;
+        private VisualElement _tabPreviewContent;
+        private Button _tabSettingsButton;
+        private Button _tabPreviewButton;
+        [SerializeField] private bool _isMultiSelection;
+
         // Survives domain reload / play mode transition
         [SerializeField] private string _graphAssetGuid;
         private GraphAsset _graphAsset;
@@ -41,6 +53,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         // Editor Preview Settings
         [SerializeField] private string _previewSettingsGuid;
         private EditorPreviewSettings _previewSettings;
+
+        private const string SettingsAssetPath = "Assets/Moyva/Scripts/Features/GraphSystem/Editor/GraphEditorWindowSettings.asset";
+        private GraphEditorWindowSettings _windowSettings;
 
         // Inline map size override (used when no EditorPreviewSettings assigned)
         [SerializeField] private int _previewWidth = 64;
@@ -69,6 +84,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void OnEnable()
         {
+            LoadWindowSettings();
             ConstructGraphView();
             ConstructToolbar();
             ConstructStatusBar();
@@ -87,6 +103,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void OnDisable()
         {
+            SaveWindowSettings();
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
 
@@ -187,7 +204,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 }
             };
 
-            var nodeHeaderRow = new VisualElement
+            var tabHeaderRow = new VisualElement
             {
                 style =
                 {
@@ -200,27 +217,36 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _nodeInspectorToggleButton = new Button(ToggleNodeInspectorSection)
             {
                 text = _isNodeInspectorExpanded ? "▼" : "▶",
-                tooltip = "Згорнути або розгорнути секцію Node Inspector."
+                tooltip = "Згорнути або розгорнути секцію інспектора."
             };
             _nodeInspectorToggleButton.style.width = 22;
             _nodeInspectorToggleButton.style.minWidth = 22;
             _nodeInspectorToggleButton.style.height = 20;
             _nodeInspectorToggleButton.style.marginRight = 4;
-            nodeHeaderRow.Add(_nodeInspectorToggleButton);
+            tabHeaderRow.Add(_nodeInspectorToggleButton);
 
-            var nodeHeader = new Label("Node Inspector")
+            _tabSettingsButton = new Button(() => SetInspectorTab(InspectorTab.Settings))
             {
-                style =
-                {
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    flexGrow = 1
-                }
+                text = "Налаштування",
+                tooltip = "Показати налаштування прев'ю та сервісів."
             };
-            nodeHeaderRow.Add(nodeHeader);
-            _rightPanel.Add(nodeHeaderRow);
+            _tabSettingsButton.style.flexGrow = 1;
+            _tabSettingsButton.style.marginRight = 4;
+            tabHeaderRow.Add(_tabSettingsButton);
+
+            _tabPreviewButton = new Button(() => SetInspectorTab(InspectorTab.Preview))
+            {
+                text = "Прев'ю",
+                tooltip = "Показати дані вибраної ноди."
+            };
+            _tabPreviewButton.style.flexGrow = 1;
+            tabHeaderRow.Add(_tabPreviewButton);
 
             _nodeInspectorSection = new VisualElement();
+            _nodeInspectorSection.Add(tabHeaderRow);
 
+            // Preview tab (shows node data)
+            _tabPreviewContent = new VisualElement();
             _nodeInspectorGui = new IMGUIContainer(DrawSelectedNodeInspector)
             {
                 style =
@@ -228,8 +254,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     marginBottom = 10
                 }
             };
-            _nodeInspectorSection.Add(_nodeInspectorGui);
-            _rightPanel.Add(_nodeInspectorSection);
+            _tabPreviewContent.Add(_nodeInspectorGui);
+            _nodeInspectorSection.Add(_tabPreviewContent);
 
             _nodeInspectorDivider = new VisualElement
             {
@@ -240,23 +266,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     backgroundColor = new Color(0.25f, 0.25f, 0.25f)
                 }
             };
-            _rightPanel.Add(_nodeInspectorDivider);
+            _nodeInspectorSection.Add(_nodeInspectorDivider);
 
-            var settingsHeader = new Label("Graph Settings")
-            {
-                style =
-                {
-                    unityFontStyleAndWeight = FontStyle.Bold,
-                    marginBottom = 4
-                }
-            };
-            _rightPanel.Add(settingsHeader);
-
+            // Settings tab (shows EditorPreviewSettings)
+            _tabSettingsContent = new VisualElement();
             _graphSettingsGui = new IMGUIContainer(DrawGraphSettingsInspector);
-            _rightPanel.Add(_graphSettingsGui);
+            _tabSettingsContent.Add(_graphSettingsGui);
+            _nodeInspectorSection.Add(_tabSettingsContent);
+
+            _rightPanel.Add(_nodeInspectorSection);
 
             _contentContainer.Add(_rightPanel);
             SetInspectorVisible(_isInspectorVisible);
+            UpdateInspectorTabVisibility();
             UpdateNodeInspectorSectionVisibility();
         }
 
@@ -287,7 +309,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             assetField.RegisterValueChangedCallback(evt =>
             {
                 if (evt.newValue is GraphAsset asset)
+                {
                     LoadGraph(asset);
+                    SaveWindowSettings();
+                }
             });
             toolbar.Add(assetField);
 
@@ -314,6 +339,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 {
                     _previewSettingsGuid = null;
                 }
+                SaveWindowSettings();
             });
             toolbar.Add(settingsField);
 
@@ -692,24 +718,33 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            var context = new NodeContext(
-                seed: UnityEngine.Random.Range(0, int.MaxValue),
-                cancellation: CancellationToken.None);
-            context.MapSize = new Vector2Int(mapW, mapH);
 
-            // Register shared settings
-            if (sharedSettings != null)
-                context.RegisterService(sharedSettings);
+            // Compute deterministic seed from graph asset + preview settings + runtime options
+            int seed = ComputeDeterministicSeed(mapW, mapH);
+            _statusLabel.text = $"Running graph... (seed {seed})";
 
-            // Register generator services with fallbacks
-            RegisterEditorServices(context);
+            // Save previous Unity random state and set deterministic seed for UnityEngine.Random
+            var prevRandomState = UnityEngine.Random.state;
+            UnityEngine.Random.InitState(seed);
 
-            // Register layer data list so SingleTileLayerNode can populate it
-            var layerDataList = new List<WorldLayerData>();
-            context.RegisterService(layerDataList);
+            try
+            {
+                var context = new NodeContext(seed, CancellationToken.None);
+                context.MapSize = new Vector2Int(mapW, mapH);
 
-            var runner = new GraphRunner();
-            var result = runner.Execute(_graphAsset, context);
+                // Register shared settings
+                if (sharedSettings != null)
+                    context.RegisterService(sharedSettings);
+
+                // Register generator services with fallbacks
+                RegisterEditorServices(context);
+
+                // Register layer data list so SingleTileLayerNode can populate it
+                var layerDataList = new List<WorldLayerData>();
+                context.RegisterService(layerDataList);
+
+                var runner = new GraphRunner();
+                var result = runner.Execute(_graphAsset, context);
             int previewSize = ResolvePreviewSize(mapW, mapH);
             _graphView?.UpdateNodePreviews(result, _previewSettings, layerDataList, previewSize, _previewHeatmap);
             GraphPreviewWindow.RequestRepaint();
@@ -750,6 +785,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 _statusLabel.text = $"✗ Run failed at node {result.ErrorNodeId}: {result.ErrorMessage}";
                 Debug.LogError($"[GraphRunner] Execution failed: {result.ErrorMessage}");
+            }
+
+            }
+            finally
+            {
+                UnityEngine.Random.state = prevRandomState;
             }
 
             _isRunningGraph = false;
@@ -833,6 +874,208 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _previewSettings = AssetDatabase.LoadAssetAtPath<EditorPreviewSettings>(path);
         }
 
+        private void LoadWindowSettings()
+        {
+            var settings = AssetDatabase.LoadAssetAtPath<GraphEditorWindowSettings>(SettingsAssetPath);
+            if (settings == null)
+            {
+                _windowSettings = null;
+                return;
+            }
+
+            _windowSettings = settings;
+            // Prefer direct references stored in the settings asset. Fall back to GUIDs for backward compatibility.
+            if (settings.graphAsset != null)
+            {
+                _graphAsset = settings.graphAsset;
+                var path = AssetDatabase.GetAssetPath(_graphAsset);
+                _graphAssetGuid = string.IsNullOrEmpty(path) ? null : AssetDatabase.AssetPathToGUID(path);
+            }
+            else if (!string.IsNullOrEmpty(settings.graphAssetGuid))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(settings.graphAssetGuid);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var asset = AssetDatabase.LoadAssetAtPath<GraphAsset>(path);
+                    if (asset != null)
+                        _graphAsset = asset;
+                    else
+                    {
+                        Debug.LogWarning("[GraphEditorWindow] Saved GraphAsset not found; clearing saved reference in settings.");
+                        settings.graphAssetGuid = null;
+                        EditorUtility.SetDirty(settings);
+                        AssetDatabase.SaveAssets();
+                    }
+                }
+            }
+
+            if (settings.previewSettings != null)
+            {
+                _previewSettings = settings.previewSettings;
+                var path = AssetDatabase.GetAssetPath(_previewSettings);
+                _previewSettingsGuid = string.IsNullOrEmpty(path) ? null : AssetDatabase.AssetPathToGUID(path);
+            }
+            else if (!string.IsNullOrEmpty(settings.previewSettingsGuid))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(settings.previewSettingsGuid);
+                if (!string.IsNullOrEmpty(path))
+                {
+                    var p = AssetDatabase.LoadAssetAtPath<EditorPreviewSettings>(path);
+                    if (p != null)
+                        _previewSettings = p;
+                    else
+                    {
+                        Debug.LogWarning("[GraphEditorWindow] Saved EditorPreviewSettings not found; clearing saved reference in settings.");
+                        settings.previewSettingsGuid = null;
+                        EditorUtility.SetDirty(settings);
+                        AssetDatabase.SaveAssets();
+                    }
+                }
+            }
+
+            _previewWidth = Mathf.Max(4, settings.previewWidth);
+            _previewHeight = Mathf.Max(4, settings.previewHeight);
+            _showInlinePreviews = settings.showInlinePreviews;
+            _autoRunOnChange = settings.autoRunOnChange;
+            _previewResolution = Mathf.Clamp(settings.previewResolution, 0, 2);
+            _previewHeatmap = settings.previewHeatmap;
+            _isInspectorVisible = settings.isInspectorVisible;
+            _isNodeInspectorExpanded = settings.isNodeInspectorExpanded;
+            _activeInspectorTab = (InspectorTab)Mathf.Clamp(settings.inspectorTabIndex, 0, 1);
+        }
+
+        private void SaveWindowSettings()
+        {
+            GraphEditorWindowSettings settings = AssetDatabase.LoadAssetAtPath<GraphEditorWindowSettings>(SettingsAssetPath);
+            if (settings == null)
+            {
+                settings = ScriptableObject.CreateInstance<GraphEditorWindowSettings>();
+                AssetDatabase.CreateAsset(settings, SettingsAssetPath);
+            }
+            // Save both direct references and GUIDs for backward compatibility
+            settings.graphAsset = _graphAsset;
+            settings.graphAssetGuid = _graphAssetGuid ?? "";
+
+            settings.previewSettings = _previewSettings;
+            settings.previewSettingsGuid = _previewSettingsGuid ?? "";
+            settings.previewWidth = _previewWidth;
+            settings.previewHeight = _previewHeight;
+            settings.showInlinePreviews = _showInlinePreviews;
+            settings.autoRunOnChange = _autoRunOnChange;
+            settings.previewResolution = _previewResolution;
+            settings.previewHeatmap = _previewHeatmap;
+            settings.isInspectorVisible = _isInspectorVisible;
+            settings.isNodeInspectorExpanded = _isNodeInspectorExpanded;
+            settings.inspectorTabIndex = (int)_activeInspectorTab;
+
+            EditorUtility.SetDirty(settings);
+            AssetDatabase.SaveAssets();
+            _windowSettings = settings;
+        }
+
+        private int ComputeDeterministicSeed(int mapW, int mapH)
+        {
+            try
+            {
+                using (var md5 = MD5.Create())
+                using (var ms = new MemoryStream())
+                {
+                    // Include graph asset file bytes when available
+                    if (_graphAsset != null)
+                    {
+                        var path = AssetDatabase.GetAssetPath(_graphAsset);
+                        if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                        {
+                            var b = File.ReadAllBytes(path);
+                            ms.Write(b, 0, b.Length);
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(_graphAssetGuid))
+                    {
+                        var path = AssetDatabase.GUIDToAssetPath(_graphAssetGuid);
+                        if (!string.IsNullOrEmpty(path) && File.Exists(path))
+                        {
+                            var b = File.ReadAllBytes(path);
+                            ms.Write(b, 0, b.Length);
+                        }
+                    }
+
+                    // Include preview settings asset bytes when available
+                    if (_previewSettings != null)
+                    {
+                        var ppath = AssetDatabase.GetAssetPath(_previewSettings);
+                        if (!string.IsNullOrEmpty(ppath) && File.Exists(ppath))
+                        {
+                            var pb = File.ReadAllBytes(ppath);
+                            ms.Write(pb, 0, pb.Length);
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(_previewSettingsGuid))
+                    {
+                        var ppath = AssetDatabase.GUIDToAssetPath(_previewSettingsGuid);
+                        if (!string.IsNullOrEmpty(ppath) && File.Exists(ppath))
+                        {
+                            var pb = File.ReadAllBytes(ppath);
+                            ms.Write(pb, 0, pb.Length);
+                        }
+                    }
+
+                    // Append runtime preview parameters
+                    var meta = $":{mapW}:{mapH}:{_previewWidth}:{_previewHeight}:{_previewResolution}:{_previewHeatmap}:{_showInlinePreviews}:{_autoRunOnChange}";
+                    var metaBytes = Encoding.UTF8.GetBytes(meta);
+                    ms.Write(metaBytes, 0, metaBytes.Length);
+
+                    // Include referenced ScriptableObjects from nodes (e.g., DataNoiseSettings, WFCDataSettings)
+                    if (_graphAsset != null && _graphAsset.Nodes != null)
+                    {
+                        foreach (var node in _graphAsset.Nodes)
+                        {
+                            if (node == null) continue;
+                            try
+                            {
+                                var serialized = new UnityEditor.SerializedObject(node);
+                                var prop = serialized.GetIterator();
+                                bool enter = true;
+                                while (prop.NextVisible(enter))
+                                {
+                                    enter = false;
+                                    if (prop.propertyType == UnityEditor.SerializedPropertyType.ObjectReference)
+                                    {
+                                        var o = prop.objectReferenceValue;
+                                        if (o == null) continue;
+                                        var ap = AssetDatabase.GetAssetPath(o);
+                                        if (!string.IsNullOrEmpty(ap) && File.Exists(ap))
+                                        {
+                                            var db = File.ReadAllBytes(ap);
+                                            ms.Write(db, 0, db.Length);
+                                        }
+                                        else
+                                        {
+                                            var nameb = Encoding.UTF8.GetBytes(o.name ?? "");
+                                            ms.Write(nameb, 0, nameb.Length);
+                                        }
+                                    }
+                                }
+                            }
+                            catch
+                            {
+                                // ignore serialization issues for safety
+                            }
+                        }
+                    }
+
+                    var hash = md5.ComputeHash(ms.ToArray());
+                    int seed = BitConverter.ToInt32(hash, 0) & 0x7FFFFFFF;
+                    return seed;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[GraphEditorWindow] Failed to compute deterministic seed: {ex.Message}");
+                return (int)(Environment.TickCount & 0x7FFFFFFF);
+            }
+        }
+
         private void HighlightExecutionResults(GraphExecutionResult result)
         {
             if (_graphView == null) return;
@@ -879,10 +1122,34 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             if (_graphView == null) return;
 
+            int count = _graphView.GetSelectedNodeCount();
+            if (count == 0)
+            {
+                if (_selectedNode != null || _isMultiSelection)
+                {
+                    _isMultiSelection = false;
+                    SetSelectedNode(null);
+                    RefreshInspectorPanel();
+                }
+                return;
+            }
+
+            if (count > 1)
+            {
+                if (!_isMultiSelection || _selectedNode != null)
+                {
+                    _isMultiSelection = true;
+                    SetSelectedNode(null);
+                    RefreshInspectorPanel();
+                }
+                return;
+            }
+
             var selected = _graphView.GetPrimarySelectedNodeData();
-            if (ReferenceEquals(selected, _selectedNode))
+            if (ReferenceEquals(selected, _selectedNode) && !_isMultiSelection)
                 return;
 
+            _isMultiSelection = false;
             SetSelectedNode(selected);
             RefreshInspectorPanel();
         }
@@ -915,7 +1182,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             if (_selectedNode == null)
             {
-                EditorGUILayout.HelpBox("Виберіть ноду в графі, щоб редагувати її параметри.", MessageType.Info);
+                if (_isMultiSelection)
+                {
+                    EditorGUILayout.HelpBox("Множинний вибір не підтримується. Оберіть одну ноду.", MessageType.Info);
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("Виберіть ноду в графі, щоб переглянути її дані.", MessageType.Info);
+                }
                 return;
             }
 
@@ -1046,6 +1320,40 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 _nodeInspectorDivider.style.display = _isNodeInspectorExpanded
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
+        }
+
+        private void SetInspectorTab(InspectorTab tab)
+        {
+            if (_activeInspectorTab == tab) return;
+            _activeInspectorTab = tab;
+            UpdateInspectorTabVisibility();
+            SaveWindowSettings();
+        }
+
+        private void UpdateInspectorTabVisibility()
+        {
+            if (_tabSettingsContent != null)
+                _tabSettingsContent.style.display = _activeInspectorTab == InspectorTab.Settings
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+
+            if (_tabPreviewContent != null)
+                _tabPreviewContent.style.display = _activeInspectorTab == InspectorTab.Preview
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+
+            if (_tabSettingsButton != null)
+                _tabSettingsButton.style.unityFontStyleAndWeight = _activeInspectorTab == InspectorTab.Settings
+                    ? FontStyle.Bold
+                    : FontStyle.Normal;
+
+            if (_tabPreviewButton != null)
+                _tabPreviewButton.style.unityFontStyleAndWeight = _activeInspectorTab == InspectorTab.Preview
+                    ? FontStyle.Bold
+                    : FontStyle.Normal;
+
+            _nodeInspectorGui?.MarkDirtyRepaint();
+            _graphSettingsGui?.MarkDirtyRepaint();
         }
 
         private void DrawSerializedObjectWithoutScript(SerializedObject serializedObject)

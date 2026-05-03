@@ -484,6 +484,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return selection.OfType<GeneratorNodeView>().FirstOrDefault()?.NodeData;
         }
 
+        internal int GetSelectedNodeCount()
+        {
+            return selection.OfType<GeneratorNodeView>().Count();
+        }
+
         internal void OpenPreviewWindowForNode(GeneratorNodeView nodeView)
         {
             if (nodeView != null)
