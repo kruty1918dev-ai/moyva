@@ -26,8 +26,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private IMGUIContainer _nodeInspectorGui;
         private IMGUIContainer _graphSettingsGui;
         [SerializeField] private bool _isInspectorVisible = true;
-        [SerializeField] private bool _isNodeInspectorExpanded = true;
-        private Button _nodeInspectorToggleButton;
+      
         private VisualElement _nodeInspectorSection;
         private VisualElement _nodeInspectorDivider;
 
@@ -214,20 +213,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 }
             };
 
-            _nodeInspectorToggleButton = new Button(ToggleNodeInspectorSection)
-            {
-                text = _isNodeInspectorExpanded ? "▼" : "▶",
-                tooltip = "Згорнути або розгорнути секцію інспектора."
-            };
-            _nodeInspectorToggleButton.style.width = 22;
-            _nodeInspectorToggleButton.style.minWidth = 22;
-            _nodeInspectorToggleButton.style.height = 20;
-            _nodeInspectorToggleButton.style.marginRight = 4;
-            tabHeaderRow.Add(_nodeInspectorToggleButton);
-
             _tabSettingsButton = new Button(() => SetInspectorTab(InspectorTab.Settings))
             {
-                text = "Налаштування",
+                text = "Base Settings",
                 tooltip = "Показати налаштування прев'ю та сервісів."
             };
             _tabSettingsButton.style.flexGrow = 1;
@@ -236,7 +224,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             _tabPreviewButton = new Button(() => SetInspectorTab(InspectorTab.Preview))
             {
-                text = "Прев'ю",
+                text = "Node Settings",
                 tooltip = "Показати дані вибраної ноди."
             };
             _tabPreviewButton.style.flexGrow = 1;
@@ -279,7 +267,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _contentContainer.Add(_rightPanel);
             SetInspectorVisible(_isInspectorVisible);
             UpdateInspectorTabVisibility();
-            UpdateNodeInspectorSectionVisibility();
         }
 
         private void ConstructToolbar()
@@ -940,7 +927,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _previewResolution = Mathf.Clamp(settings.previewResolution, 0, 2);
             _previewHeatmap = settings.previewHeatmap;
             _isInspectorVisible = settings.isInspectorVisible;
-            _isNodeInspectorExpanded = settings.isNodeInspectorExpanded;
             _activeInspectorTab = (InspectorTab)Mathf.Clamp(settings.inspectorTabIndex, 0, 1);
         }
 
@@ -965,7 +951,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             settings.previewResolution = _previewResolution;
             settings.previewHeatmap = _previewHeatmap;
             settings.isInspectorVisible = _isInspectorVisible;
-            settings.isNodeInspectorExpanded = _isNodeInspectorExpanded;
             settings.inspectorTabIndex = (int)_activeInspectorTab;
 
             EditorUtility.SetDirty(settings);
@@ -1298,28 +1283,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_rightPanel == null) return;
 
             _rightPanel.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-        }
-
-        private void ToggleNodeInspectorSection()
-        {
-            _isNodeInspectorExpanded = !_isNodeInspectorExpanded;
-            UpdateNodeInspectorSectionVisibility();
-        }
-
-        private void UpdateNodeInspectorSectionVisibility()
-        {
-            if (_nodeInspectorToggleButton != null)
-                _nodeInspectorToggleButton.text = _isNodeInspectorExpanded ? "▼" : "▶";
-
-            if (_nodeInspectorSection != null)
-                _nodeInspectorSection.style.display = _isNodeInspectorExpanded
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
-
-            if (_nodeInspectorDivider != null)
-                _nodeInspectorDivider.style.display = _isNodeInspectorExpanded
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
         }
 
         private void SetInspectorTab(InspectorTab tab)

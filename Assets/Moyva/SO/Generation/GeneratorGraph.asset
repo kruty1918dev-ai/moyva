@@ -384,7 +384,7 @@ MonoBehaviour:
   m_Name: ErosionNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Nodes.ErosionNode
   _nodeId: d077ed18-df30-41e0-98d2-e2c651b15a71
-  _editorPosition: {x: 644, y: 26}
+  _editorPosition: {x: 650, y: 26}
   _erosionRate: 0.02
   _iterations: 20
   _talusAngle: 0.03
@@ -401,7 +401,7 @@ MonoBehaviour:
   m_Name: SingleTileLayerNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SingleTileLayerNode
   _nodeId: e4d3e321-ff97-4a18-895b-b5f2a2d70d0c
-  _editorPosition: {x: 2150, y: -293.25}
+  _editorPosition: {x: 2159, y: -381}
   _tileId: water
   _tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
   _resolutionScale: 0.2

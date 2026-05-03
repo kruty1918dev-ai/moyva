@@ -14,12 +14,15 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
     {
         public NodeBase NodeData { get; }
         public bool IsRoutePoint { get; }
+        private readonly bool _isPreviewHidden;
         public string HoverTooltipText { get; set; }
         public Texture2D PreviewTexture => _previewTexture;
         public string PreviewStatus => _previewLabel?.text;
 
         private readonly List<GeneratorPort> _inputPorts = new();
         private readonly List<GeneratorPort> _outputPorts = new();
+        private readonly List<Label> _outputValueLabels = new();
+        private readonly VisualElement _outputValuesContainer;
         private readonly VisualElement _previewContainer;
         private readonly Image _previewImage;
         private readonly Label _previewLabel;
@@ -40,6 +43,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             title = nodeData.Title;
+
+            _isPreviewHidden = Attribute.IsDefined(nodeData.GetType(), typeof(HidePreviewAttribute));
 
             var nodeInfo = Attribute.GetCustomAttribute(nodeData.GetType(), typeof(NodeInfoAttribute)) as NodeInfoAttribute;
             HoverTooltipText = BuildDetailedTooltip(nodeData, nodeInfo);
@@ -135,6 +140,22 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _previewContainer.Add(_previewImage);
             extensionContainer.Add(_previewContainer);
 
+            // Container for simple output values shown under the node
+            _outputValuesContainer = new VisualElement
+            {
+                style =
+                {
+                    marginTop = 6,
+                    paddingLeft = 4,
+                    paddingRight = 4,
+                    flexDirection = FlexDirection.Column
+                }
+            };
+            extensionContainer.Add(_outputValuesContainer);
+
+            // Inline editable fields (marked with [InlineEditable])
+            CreateInlineEditors(nodeData);
+
             _previewImage.RegisterCallback<MouseDownEvent>(evt =>
             {
                 if (evt.button == 0 && evt.clickCount == 2)
@@ -163,6 +184,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             if (defs == null) return;
 
+            if (direction == PortDirection.Output)
+                _outputValueLabels.Clear();
+
             var graphDir = direction == PortDirection.Input
                 ? Direction.Input : Direction.Output;
             var capacity = direction == PortDirection.Input
@@ -174,9 +198,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var port = GeneratorPort.Create(def, i, graphDir, capacity);
 
                 if (direction == PortDirection.Input)
+                {
                     inputContainer.Add(port);
+                }
                 else
+                {
                     outputContainer.Add(port);
+                }
 
                 list.Add(port);
             }
@@ -187,6 +215,69 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         public GeneratorPort GetOutputPort(int index) =>
             index >= 0 && index < _outputPorts.Count ? _outputPorts[index] : null;
+
+        public int OutputCount => _outputPorts.Count;
+
+        public void SetOutputValueText(int portIndex, string text)
+        {
+            if (portIndex < 0 || portIndex >= _outputValueLabels.Count) return;
+            _outputValueLabels[portIndex].text = string.IsNullOrEmpty(text) ? "-" : text;
+        }
+
+        public void SetOutputValues(object[] outputs)
+        {
+            if (_outputValuesContainer == null) return;
+            _outputValuesContainer.Clear();
+
+            if (outputs == null || outputs.Length == 0)
+            {
+                _outputValuesContainer.style.display = DisplayStyle.None;
+                return;
+            }
+
+            _outputValuesContainer.style.display = DisplayStyle.Flex;
+
+            for (int i = 0; i < outputs.Length; i++)
+            {
+                var v = outputs[i];
+                string text = FormatSimpleValue(v);
+
+                Color textColor = Color.white;
+                if (i < _outputPorts.Count)
+                    textColor = _outputPorts[i].portColor;
+
+                var lbl = new Label(text)
+                {
+                    style =
+                    {
+                        color = textColor,
+                        fontSize = 11,
+                        unityTextAlign = TextAnchor.MiddleLeft,
+                        marginTop = 2,
+                        marginBottom = 2
+                    }
+                };
+
+                _outputValuesContainer.Add(lbl);
+            }
+        }
+
+        private static string FormatSimpleValue(object v)
+        {
+            if (v == null) return "-";
+            if (v is string s) return s;
+            if (v is int or long or short or byte) return v.ToString();
+            if (v is float f) return f.ToString("0.###");
+            if (v is double d) return d.ToString("0.###");
+            if (v is Texture2D) return "Texture2D";
+            if (v is Array a)
+            {
+                if (a.Rank == 1) return $"{a.GetType().GetElementType()?.Name}[{a.Length}]";
+                if (a.Rank == 2) return $"{a.GetType().GetElementType()?.Name}[{a.GetLength(0)}x{a.GetLength(1)}]";
+                return $"{a.GetType().GetElementType()?.Name}[{a.Length}]";
+            }
+            return $"<{v.GetType().Name}>";
+        }
 
         public void SetPreview(Texture2D texture, string statusText, bool ownsTexture)
         {
@@ -214,8 +305,57 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         public void SetPreviewVisible(bool visible)
         {
             if (_previewContainer == null) return;
+            if (_isPreviewHidden)
+            {
+                _previewContainer.style.display = DisplayStyle.None;
+                RefreshExpandedState();
+                return;
+            }
+
             _previewContainer.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
             RefreshExpandedState();
+        }
+
+        private void CreateInlineEditors(NodeBase nodeData)
+        {
+            var type = nodeData.GetType();
+            var fields = type.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+            bool added = false;
+
+            foreach (var field in fields)
+            {
+                var attr = Attribute.GetCustomAttribute(field, typeof(InlineEditableAttribute)) as InlineEditableAttribute;
+                if (attr == null) continue;
+
+                var so = new SerializedObject(nodeData);
+                var prop = so.FindProperty(field.Name);
+                if (prop == null) continue;
+
+                var label = string.IsNullOrEmpty(attr.Label) ? ObjectNames.NicifyVariableName(field.Name) : attr.Label;
+                
+                var container = new IMGUIContainer(() =>
+                {
+                    so.Update();
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.PropertyField(prop, new GUIContent(label), true);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        so.ApplyModifiedProperties();
+                        EditorUtility.SetDirty(nodeData);
+                    }
+                })
+                {
+                    style = { marginTop = 4 }
+                };
+
+                extensionContainer.Add(container);
+                added = true;
+            }
+
+            if (!added)
+            {
+                // nothing to show
+            }
         }
 
         #region Route Point compact view

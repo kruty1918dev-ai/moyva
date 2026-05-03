@@ -10,19 +10,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
     /// Реалізує ISeedProvider для безпечного доступу до seed без рефлексії.
     /// </summary>
     [NodeInfo("Height Source", "Generators", "Генерує початкову карту висот із noise settings. Це стартова точка більшості графів генерації, від якої далі будуються біоми, вода, річки, ліси та інші шари світу.")]
-    public sealed class HeightSourceNode : NodeBase, ISeedProvider
+    public sealed class HeightSourceNode : NodeBase
     {
-        [Header("Noise Settings")]
-        [Tooltip("Налаштування шуму, з якого буде побудована карта висот. Від цього asset залежить загальний характер рельєфу: великі форми, деталізація, seed і масштаб.")]
-        [SerializeField] private DataNoiseSettings _noiseSettings;
-
+       
         public override string Title => "Height Source";
         public override string Category => "Generators";
 
-        /// <summary>Seed генерації з поточних noise settings (0 якщо settings відсутні).</summary>
-        public int Seed => _noiseSettings != null ? _noiseSettings.Seed : 0;
+        private NoiseSettings noiseSettings;
 
-        public override PortDefinition[] Inputs => Array.Empty<PortDefinition>();
+        public override PortDefinition[] Inputs => new[]
+        {
+            PortDefinition.Input<int>("Seed"),
+            PortDefinition.Input<NoiseSettings>("NoiseSettings")
+        };
 
         public override PortDefinition[] Outputs => new[]
         {
@@ -31,12 +31,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
-            if (_noiseSettings == null)
-                return NodeOutput.Error("DataNoiseSettings not assigned.");
+            if (inputs[1] == null)
+                return NodeOutput.Error("NoiseSettings not assigned.");
 
+            noiseSettings = (NoiseSettings)inputs[1];
             var noiseProvider = context.GetService<INoiseProvider>();
-            var heightMap = noiseProvider.GenerateNoiseMap(
-                _noiseSettings, context.MapSize.x, context.MapSize.y);
+            var heightMap = noiseProvider.GenerateNoiseMap(noiseSettings, context.MapSize.x, context.MapSize.y, (int)inputs[0]);
 
             return NodeOutput.Success(heightMap);
         }

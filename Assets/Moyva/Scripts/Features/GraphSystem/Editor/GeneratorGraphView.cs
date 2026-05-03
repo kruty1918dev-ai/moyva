@@ -530,10 +530,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (node == null) continue;
                 if (!viewById.TryGetValue(node.NodeId, out var nodeView)) continue;
 
+                var outputsAll = result.GetOutputs(node.NodeId);
+                bool hidePreviewForNode = Attribute.IsDefined(node.GetType(), typeof(Kruty1918.Moyva.GraphSystem.API.HidePreviewAttribute));
+
                 // ── OutputNode: composite preview ──
                 if (node is OutputNode)
                 {
-                    var outputs = result.GetOutputs(node.NodeId);
+                    var outputs = outputsAll;
                     string[,] biomeMap = null;
                     string[,] objectMap = null;
                     float[,] heightMap = null;
@@ -547,14 +550,42 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         if (outputs.Length > 3) buildingMap = outputs[3] as string[,];
                     }
 
-                    var composite = CompositePreviewBuilder.Build(
-                        layerData, biomeMap, objectMap, heightMap, buildingMap,
-                        tileRegistry,
-                        settings?.MapObjectRegistry,
-                        settings?.BuildingRegistry);
+                    if (!hidePreviewForNode)
+                    {
+                        var composite = CompositePreviewBuilder.Build(
+                            layerData, biomeMap, objectMap, heightMap, buildingMap,
+                            tileRegistry,
+                            settings?.MapObjectRegistry,
+                            settings?.BuildingRegistry);
 
-                    nodeView.SetPreview(composite, "Composite preview", ownsTexture: true);
-                    nodeView.SetPreviewVisible(_inlinePreviewsVisible);
+                        nodeView.SetPreview(composite, "Composite preview", ownsTexture: true);
+                        nodeView.SetPreviewVisible(_inlinePreviewsVisible);
+                    }
+                    else
+                    {
+                        nodeView.ClearPreview();
+                        nodeView.SetPreviewVisible(false);
+                    }
+
+
+                    // update output labels
+                    for (int i = 0; i < nodeView.OutputCount; i++)
+                    {
+                        string text = "-";
+                        if (outputs != null && i < outputs.Length)
+                        {
+                            var v = outputs[i];
+                            if (v == null) text = "-";
+                            else if (v is int || v is float || v is string) text = v.ToString();
+                            else if (v is Array) text = $"<{v.GetType().GetElementType()?.Name}[]>";
+                            else text = $"<{v.GetType().Name}>";
+                        }
+                        nodeView.SetOutputValueText(i, text);
+                    }
+
+                    // update compact values under node
+                    nodeView.SetOutputValues(outputs);
+
                     continue;
                 }
 
@@ -563,32 +594,55 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 bool ownsPreview = false;
                 string status = null;
 
-                if (node is IPreviewableNode previewable)
+                if (!hidePreviewForNode)
                 {
-                    preview = previewable.GeneratePreview(previewSize, previewSize);
-                    if (preview != null)
-                        status = "Node preview";
+                    if (node is IPreviewableNode previewable)
+                    {
+                        preview = previewable.GeneratePreview(previewSize, previewSize);
+                        if (preview != null)
+                            status = "Node preview";
+                    }
+
+                    if (preview == null)
+                    {
+                        var previewOutputs = SelectPreferredPreviewOutputs(node, outputsAll);
+
+                        preview = NodePreviewTextureFactory.TryBuild(
+                            previewOutputs,
+                            previewSize,
+                            previewSize,
+                            out ownsPreview,
+                            out status,
+                            tileRegistry,
+                            heatmap);
+                    }
+
+                    nodeView.SetPreview(preview, status, ownsPreview);
+                    nodeView.SetPreviewVisible(_inlinePreviewsVisible);
+                }
+                else
+                {
+                    nodeView.ClearPreview();
+                    nodeView.SetPreviewVisible(false);
                 }
 
-                if (preview == null)
+                // update output labels
+                for (int i = 0; i < nodeView.OutputCount; i++)
                 {
-                    var outputs = result.GetOutputs(node.NodeId);
-
-                    // Для lake/water/mask-вузлів показуємо саме bool-mask, а не перший (часто BiomeMap) вихід.
-                    outputs = SelectPreferredPreviewOutputs(node, outputs);
-
-                    preview = NodePreviewTextureFactory.TryBuild(
-                        outputs,
-                        previewSize,
-                        previewSize,
-                        out ownsPreview,
-                        out status,
-                        tileRegistry,
-                        heatmap);
+                    string text = "-";
+                    if (outputsAll != null && i < outputsAll.Length)
+                    {
+                        var v = outputsAll[i];
+                        if (v == null) text = "-";
+                        else if (v is int || v is float || v is string) text = v.ToString();
+                        else if (v is Array) text = $"<{v.GetType().GetElementType()?.Name}[]>";
+                        else text = $"<{v.GetType().Name}>";
+                    }
+                    nodeView.SetOutputValueText(i, text);
                 }
 
-                nodeView.SetPreview(preview, status, ownsPreview);
-                nodeView.SetPreviewVisible(_inlinePreviewsVisible);
+                // update compact values under node
+                nodeView.SetOutputValues(outputsAll);
             }
         }
 

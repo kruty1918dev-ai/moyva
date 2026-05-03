@@ -23,6 +23,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         public int inspectorTabIndex = 0;
 
         public bool isInspectorVisible = true;
-        public bool isNodeInspectorExpanded = true;
+    
     }
 }

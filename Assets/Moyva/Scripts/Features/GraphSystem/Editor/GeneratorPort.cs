@@ -17,12 +17,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
         }
 
-        public static GeneratorPort Create(PortDefinition def, int index,
-            Direction direction, Capacity capacity)
+        public static GeneratorPort Create(PortDefinition def, int index, Direction direction, Capacity capacity)
         {
             var listener = new DefaultEdgeConnectorListener();
-            var port = new GeneratorPort(Orientation.Horizontal, direction,
-                capacity, def.ValueType)
+            var port = new GeneratorPort(Orientation.Horizontal, direction, capacity, def.ValueType)
             {
                 PortIndex = index,
                 PortValueType = def.ValueType,
