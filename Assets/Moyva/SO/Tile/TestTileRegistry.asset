@@ -13,30 +13,579 @@ MonoBehaviour:
   m_Name: TestTileRegistry
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.API.TileRegistrySO
   _definitions:
-  - _id: grass-0
+  - _id: grass-tile-001
     _movementCost: 1
-    _visualPrefab: {fileID: 2079171536331275902, guid: 20d9df8d09a99e7428c94eb0af2aa55b, type: 3}
-  - _id: grass-texture-1
+    _visualPrefab: {fileID: 2680998980662229933, guid: fc3f8a453dc75f242a13f8efe21956e7, type: 3}
+  - _id: texture-grass-tile-001
     _movementCost: 1
-    _visualPrefab: {fileID: 469779390375810233, guid: 487ed1937cb0a4f4aa67faff5a8d80f0, type: 3}
-  - _id: grass-texture-2
+    _visualPrefab: {fileID: 5174547079742124275, guid: d585bc2f8e1620f48b08f1fa4f3811b9, type: 3}
+  - _id: texture-grass-tile-002
     _movementCost: 1
-    _visualPrefab: {fileID: 5591140230544767676, guid: c176055bf26a6844198fd58f21bb4ea5, type: 3}
-  - _id: grass-texture-3
+    _visualPrefab: {fileID: 6542893024198414015, guid: 3734e76d1536cf047aacfa9bdb7b790d, type: 3}
+  - _id: texture-grass-tile-003
     _movementCost: 1
-    _visualPrefab: {fileID: 6660420770946111153, guid: 7fe1b793afafd1647b7e924c9a04dd67, type: 3}
-  - _id: grass-texture-4
+    _visualPrefab: {fileID: 7653098045854199164, guid: d103606814081f44f899d0e8f0a555a1, type: 3}
+  - _id: texture-grass-tile-004
     _movementCost: 1
-    _visualPrefab: {fileID: 280926206809948414, guid: c0fa49f3daf02ce4e8df58d9efef7801, type: 3}
-  - _id: grass-texture-5
+    _visualPrefab: {fileID: 5093274277124847595, guid: 1934540faecf07648adc57a69d9a23d0, type: 3}
+  - _id: texture-grass-tile-005
     _movementCost: 1
-    _visualPrefab: {fileID: 4236100025498809516, guid: 08e1406944e4a1f4f8aed1da8af0202d, type: 3}
-  - _id: grass-texture-6
+    _visualPrefab: {fileID: 1406488201505327831, guid: 27d99b06fdcfaeb4b9343b2b9a264d32, type: 3}
+  - _id: texture-grass-tile-006
     _movementCost: 1
-    _visualPrefab: {fileID: 2990856432453498538, guid: 9faa41306eef2f941aa077d978da2579, type: 3}
-  - _id: grass-texture-7
+    _visualPrefab: {fileID: 889711748039786523, guid: 858437600fb6f7941a8c61e5a48f1cef, type: 3}
+  - _id: texture-grass-tile-007
     _movementCost: 1
-    _visualPrefab: {fileID: 6401285593527576061, guid: 2c4c8b7ed328c7447a35127112255d34, type: 3}
-  - _id: grass-texture-8
+    _visualPrefab: {fileID: 492550992111591437, guid: 268293bef8c33dc47b8c5625bd8ead2b, type: 3}
+  - _id: texture-grass-tile-008
     _movementCost: 1
-    _visualPrefab: {fileID: 4465977948369461262, guid: 42fd0ceca49c53e409e7fadd1097085e, type: 3}
+    _visualPrefab: {fileID: 6237752717632887902, guid: eaff9ec43dc15cb44bf647fd31d0d2e7, type: 3}
+  - _id: sand-to-grass-top-end-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4372469631842905885, guid: ae40e19bed92c6444b5261a0cb1443df, type: 3}
+  - _id: sand-to-grass-top-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5224412802286199799, guid: 07d30624a7a99e345a2f372c5508ad49, type: 3}
+  - _id: sand-to-grass-top-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 941230638695561204, guid: 03bab146ecd23394d86bba5697ee7550, type: 3}
+  - _id: sand-to-grass-top-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7298113401016775202, guid: c0e028b46d89d8741951008e79e698ec, type: 3}
+  - _id: sand-to-grass-top-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 654514546023555222, guid: 174093cdab9ddf24e97cb45750322902, type: 3}
+  - _id: sand-to-grass-top-left-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 3618063328429026765, guid: 4b9a012c07bb8e54580b8041ce98207a, type: 3}
+  - _id: sand-to-grass-top-middle-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 3358893004357791381, guid: a3b2d1784a43d394c84f22564b3b28f2, type: 3}
+  - _id: sand-to-grass-top-right-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 795803242506239363, guid: e49a37333fe0d604cb136acb6a27cf50, type: 3}
+  - _id: sand-to-grass-top-middle-left-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4097010353123050508, guid: cb3fb94f832fd4348a446722fe2184df, type: 3}
+  - _id: sand-to-grass-top-middle-right-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7581306157518091729, guid: 402616f0e90314a49bcf0fdc2817db3c, type: 3}
+  - _id: sand-to-grass-top-end-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 1135210677410000601, guid: d1119e34a18ec284bbac8cc4d3e3ac6e, type: 3}
+  - _id: sand-to-grass-top-left-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 6552308154386995562, guid: 31e4b053871218c4db3c56e545aeaf69, type: 3}
+  - _id: sand-to-grass-top-middle-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 3425900925495790155, guid: 908c8cfa19e9a2f4683b0fe80456b424, type: 3}
+  - _id: sand-to-grass-top-right-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 7224121603931134036, guid: b64c9ed1f311a9947b2411f90fd148a0, type: 3}
+  - _id: sand-to-grass-top-corners-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 8436757319751195568, guid: 0d01ad99b9ddea74cbd66111cbcdf105, type: 3}
+  - _id: sand-to-grass-top-left-tile-004
+    _movementCost: 1
+    _visualPrefab: {fileID: 7179292665483497168, guid: eb4ee0478c93e424188cbd07d292eb62, type: 3}
+  - _id: sand-to-grass-top-middle-tile-004
+    _movementCost: 1
+    _visualPrefab: {fileID: 5035370713622637156, guid: fcc015187ac2d444a801912dd8884e2f, type: 3}
+  - _id: sand-to-grass-top-right-tile-004
+    _movementCost: 1
+    _visualPrefab: {fileID: 4283945695096645705, guid: ff63b5f86c2a7b2408a7f9dde9549425, type: 3}
+  - _id: sand-to-grass-top-middle-left-corner-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 149352438044915066, guid: a88b32dfde6e52144b719b521a849272, type: 3}
+  - _id: sand-to-grass-top-middle-right-corner-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 8904296205969230661, guid: fac98a0e40bf90248b252992c57dc19c, type: 3}
+  - _id: sand-to-grass-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3244624840252668479, guid: e7c73fbb202c1b24da7bc880a4cd74a8, type: 3}
+  - _id: sand-to-grass-middle-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 5386968827390818743, guid: f44e6d95961c78c44857e88202fbcec3, type: 3}
+  - _id: sand-to-grass-middle-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 910966970377446237, guid: 4c03f15c5cb210b4d86becca3ded34a1, type: 3}
+  - _id: sand-to-grass-middle-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 8144922422758464746, guid: 5c7bb5ee144a60e48b5e1f57f3af4f2b, type: 3}
+  - _id: sand-to-grass-middle-left-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5996007500608627517, guid: 7df2fa4dc2b4a72419841c277df90b8b, type: 3}
+  - _id: sand-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8656177849464206108, guid: bf91a34517383fb49b1ab795ae34b59d, type: 3}
+  - _id: sand-to-grass-middle-right-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5495819270255939307, guid: 4c6fdf8bf20fb7c4d8c7520dc57b9ff8, type: 3}
+  - _id: sand-to-grass-middle-tile-004
+    _movementCost: 1
+    _visualPrefab: {fileID: 6325051421056957991, guid: fc508324c03150c4c869c2566dbcb9cf, type: 3}
+  - _id: sand-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 1181542786163962797, guid: 0ff68684e9dc0ba409f771d7452e1e2a, type: 3}
+  - _id: sand-to-grass-middle-tile-005
+    _movementCost: 1
+    _visualPrefab: {fileID: 1588859712071089542, guid: 52f5a6df3d70199448e56a501732b4d9, type: 3}
+  - _id: sand-to-grass-middle-left-down-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8584773847636941461, guid: dae4fc98d228a34438ae562251eff04e, type: 3}
+  - _id: sand-to-grass-middle-right-down-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3271185035528481628, guid: 6b33a18b261c38f4bae6ac8c3b21cb1c, type: 3}
+  - _id: sand-to-grass-middle-tile-006
+    _movementCost: 1
+    _visualPrefab: {fileID: 2597645195137040643, guid: 3385b50e5b45f0649bb5ef6754c8eb09, type: 3}
+  - _id: sand-to-grass-middle-tile-007
+    _movementCost: 1
+    _visualPrefab: {fileID: 2846522228149233200, guid: 191bd04b802c11d4a8809dbb900fd773, type: 3}
+  - _id: sand-to-grass-middle-tile-008
+    _movementCost: 1
+    _visualPrefab: {fileID: 508861778910193731, guid: 55ad15b029c1d2848b8688be947d0926, type: 3}
+  - _id: sand-to-grass-middle-tile-009
+    _movementCost: 1
+    _visualPrefab: {fileID: 2554571285990884251, guid: 253cffdbfb5ccb54389924f59dddc4b8, type: 3}
+  - _id: sand-to-grass-middle-left-corners-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 3295572384894279467, guid: 33fa8b8ad384db943941bf89ffb3c579, type: 3}
+  - _id: sand-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 4146391515631429722, guid: fba05ac4d5bd6b34e922c63c1238ec99, type: 3}
+  - _id: sand-to-grass-middle-right-corners-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 9116999537489260809, guid: ab600d93146515c49a1ea105db8e5a2a, type: 3}
+  - _id: sand-to-grass-middle-tile-010
+    _movementCost: 1
+    _visualPrefab: {fileID: 6274867803321517086, guid: 01ecf41398dfc28468ad95964d3db830, type: 3}
+  - _id: sand-to-grass-middle-tile-011
+    _movementCost: 1
+    _visualPrefab: {fileID: 5551675689479124830, guid: 70a5fccf0b158fc478444a82305acefd, type: 3}
+  - _id: sand-to-grass-middle-left-down-corner-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 5777980703626470522, guid: 79cd920e5fa46964587c05021651d9b8, type: 3}
+  - _id: sand-to-grass-middle-right-down-corner-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 716420007958644967, guid: 4c7eebbc454c34140a4285187b01e511, type: 3}
+  - _id: sand-to-grass-down-end-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5636566492159050800, guid: 339499df5ee548941821d3a763301cf9, type: 3}
+  - _id: sand-to-grass-down-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3922645177746074446, guid: e91e33b649417ff45acc2eae661b1634, type: 3}
+  - _id: sand-to-grass-down-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7096035275009942576, guid: 4d62f3f33921f8e45af2e4557bb9cc0a, type: 3}
+  - _id: sand-to-grass-down-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 6491842851725315089, guid: 706e996f906a36548bfa209df84da9cc, type: 3}
+  - _id: sand-to-grass-middle-down-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7860709186451751971, guid: a6438950e9c2823408bf7b3cff710d0e, type: 3}
+  - _id: sand-to-grass-down-left-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 6599080200642321020, guid: 60892be5282d0bb42ad75aa318197794, type: 3}
+  - _id: sand-to-grass-down-middle-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 97991559224914619, guid: e52fce2ecf454164a90db4a99a70e002, type: 3}
+  - _id: sand-to-grass-down-right-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 4801916524295546654, guid: a7709753df5b47f4b9cfefd6ec2153f4, type: 3}
+  - _id: sand-to-grass-middle-diagonal-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4468068229058090034, guid: 1802f47f54539224e81d27331495159f, type: 3}
+  - _id: sand-to-grass-middle-diagonal-corners-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 5555252975964239272, guid: 5ca8860992b743c4b879b8cf62e417c1, type: 3}
+  - _id: sand-to-grass-down-end-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 999680975475285905, guid: 12ff8031ef2f10149affc52c8f128ec2, type: 3}
+  - _id: sand-to-grass-down-left-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 655688283745363807, guid: 03879e61578b3704fa1115492908b167, type: 3}
+  - _id: sand-to-grass-down-middle-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 7978758468233363599, guid: 71d967a73de30744e88e2f6035d1aae0, type: 3}
+  - _id: sand-to-grass-down-right-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 4758414395409240148, guid: dd909ca5daa18534f87972765c633f6b, type: 3}
+  - _id: sand-to-grass-middle-down-corners-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 1871994643826400140, guid: 966c9de82387a284d88a80890fdef578, type: 3}
+  - _id: sand-to-grass-down-left-tile-004
+    _movementCost: 1
+    _visualPrefab: {fileID: 4436183819600037305, guid: 0275bfcee8ba0ab44bc2a73453968273, type: 3}
+  - _id: sand-to-grass-down-middle-tile-004
+    _movementCost: 1
+    _visualPrefab: {fileID: 4091919012770386577, guid: 14772fb9bdd581447a291708a1ef3e74, type: 3}
+  - _id: sand-to-grass-down-right-tile-004
+    _movementCost: 1
+    _visualPrefab: {fileID: 1299296669598806528, guid: 85422e7f299d1034bb55200c2f6c4a57, type: 3}
+  - _id: sand-to-grass-middle-diagonal-corners-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 5949068808413550090, guid: de0bb643d82b2d642923b27059407a56, type: 3}
+  - _id: sand-to-grass-middle-diagonal-corners-tile-004
+    _movementCost: 1
+    _visualPrefab: {fileID: 5847675249604350740, guid: 307499de3de343d4aa656afb1f7fa164, type: 3}
+  - _id: sand-to-grass-middle-tile-012
+    _movementCost: 1
+    _visualPrefab: {fileID: 461659255578409638, guid: ac3d5e1288bf04a4282c3e4f20231f9e, type: 3}
+  - _id: sand-to-grass-left-end-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 9125726087509223910, guid: c38edd6ca01cd924d9af773b248fada5, type: 3}
+  - _id: sand-to-grass-middle-tile-013
+    _movementCost: 1
+    _visualPrefab: {fileID: 4604121935253849701, guid: 32ddec48e01742f439802273092756ca, type: 3}
+  - _id: sand-to-grass-right-end-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3576145811745323324, guid: b5aafb85f2270b94baca89070c6baac0, type: 3}
+  - _id: sand-to-grass-middle-tile-014
+    _movementCost: 1
+    _visualPrefab: {fileID: 3633401714709823644, guid: 3b769c628ba404145b38dd1239001b85, type: 3}
+  - _id: sand-to-grass-left-end-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 1645941051843639771, guid: 7fc4ab9cd011546418e5e309e4df34b1, type: 3}
+  - _id: sand-to-grass-middle-tile-015
+    _movementCost: 1
+    _visualPrefab: {fileID: 4110502546148677766, guid: a40065c3211d04f4c8186b262f2317c0, type: 3}
+  - _id: sand-to-grass-right-end-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 3374619847767135248, guid: b8652d4d1d892df4483764cf606ed507, type: 3}
+  - _id: stone-hill-top-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5410025859290603014, guid: 8740f3d761d3aad4688d4990e4ab8b92, type: 3}
+  - _id: stone-hill-top-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2024937330830930193, guid: 582dd51908159114d982fe1b3a53f5c5, type: 3}
+  - _id: stone-hill-top-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 6495588113326914491, guid: 3283a38ff86d60547a7cfee82e4d0020, type: 3}
+  - _id: stone-hill-top-left-inner-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7442036506742536829, guid: ea8ac05365c342e438f7d5638a9b14d2, type: 3}
+  - _id: stone-hill-top-right-inner-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4041052561470759315, guid: 490ed1020b7b5b44093e30beedadece5, type: 3}
+  - _id: stone-hill-top-left-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 6570778253217502314, guid: a8fc8c25fa6715243a138468e475b488, type: 3}
+  - _id: stone-hill-top-middle-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 8385666394676573960, guid: 3fcca6b83298ec449912418d699ee56d, type: 3}
+  - _id: stone-hill-top-right-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 2572808861404570386, guid: 109487896c059db47a3eaa1adf489faa, type: 3}
+  - _id: stone-hill-top-left-inner-corner-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 5571511734918055908, guid: ed18a0a711138784aabc9675fdec5f4e, type: 3}
+  - _id: stone-hill-top-right-inner-corner-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 289608340704930841, guid: 98ad9506e383ec441b71d07dba5ba416, type: 3}
+  - _id: stone-hill-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2384874367348932451, guid: 994ce1e08860ad44cae3045faca7d58a, type: 3}
+  - _id: stone-hill-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5939572560747729176, guid: 7ffb3b84308be1f498894ac7e85daa84, type: 3}
+  - _id: stone-hill-down-left-inner-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5125564611038466764, guid: 27f30d8da7be7704ab2b1f1a80409b38, type: 3}
+  - _id: stone-hill-down-right-inner-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3045042461654820487, guid: 7e7078f4f4d808242bcebae987f7ff10, type: 3}
+  - _id: stone-hill-left-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 5034980109956288020, guid: 0a3f1cb2a0612ad4196fbf6afca74c0a, type: 3}
+  - _id: stone-hill-right-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 3927224428360738579, guid: 9a273e0295c952a489079427734dbac5, type: 3}
+  - _id: stone-hill-down-left-inner-corner-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 8014433247059347383, guid: 47cacb89ad423ff4db023fd107d584b2, type: 3}
+  - _id: stone-hill-down-right-inner-corner-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 5260450607569359327, guid: 1c0592ec8fad4c2468f43301198311ff, type: 3}
+  - _id: stone-hill-down-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3937541368606234260, guid: 9b9ff0e932288e64ab1f04ba4cc92575, type: 3}
+  - _id: stone-hill-down-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 178533749310443018, guid: 34b247ee5420bc546a5908771c8b0f1c, type: 3}
+  - _id: stone-hill-down-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3523975607957699629, guid: 67dff3187865f9642b6a4122f27c4f9d, type: 3}
+  - _id: stone-hill-down-left-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 731028720540998254, guid: fc090802c206ae94693b21fe8d942520, type: 3}
+  - _id: stone-hill-down-middle-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 2638894580236132764, guid: af2d182dd7566b840804a0b3a6349ba3, type: 3}
+  - _id: stone-hill-down-right-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 7275181255478190052, guid: 0a7c74f74366de74d953112d748ec992, type: 3}
+  - _id: stone-hill-left-diagonal-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 438145173514583080, guid: 8d68e24a17691d8469c52349daf699e1, type: 3}
+  - _id: stone-hill-right-diagonal-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2222991831298519841, guid: 49d6347dd4e3ec0458d22701e0bd840c, type: 3}
+  - _id: stone-hill-left-diagonal-corners-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 8561443324749846702, guid: e696d814526e3f34e90b0a84826189f1, type: 3}
+  - _id: stone-hill-right-diagonal-corners-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 6047468666608827172, guid: c0457357fa7c58941a32208c08e75a68, type: 3}
+  - _id: stone-hill-top-stairs-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7272565306391686703, guid: 3cef96ff9e59b934d94c77b9af2a7163, type: 3}
+  - _id: stone-hill-top-stairs-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 824790567951215783, guid: 52449896983bd33428c5fb4d389e7dbb, type: 3}
+  - _id: stone-hill-left-stairs-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8014855263655232645, guid: 664ef3744ae23704389e4e1ba8e79903, type: 3}
+  - _id: stone-hill-left-stairs-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 8303560724864644040, guid: 25a5f81f56953ee44bfecc8625a5a196, type: 3}
+  - _id: stone-hill-right-stairs-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7740245857341128638, guid: f4f61afa5866d524d8f79e086cc4dd63, type: 3}
+  - _id: stone-hill-right-stairs-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 4318820798857343670, guid: 59d1d5a9195cead4db33667ab06efdb1, type: 3}
+  - _id: stone-hill-down-stairs-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2735376728650599135, guid: 49916ac526725214ba070c30481952f4, type: 3}
+  - _id: stone-hill-down-stairs-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 8652731487226855501, guid: 05e46b90e9c8ebf4185907aa9fe2ff3f, type: 3}
+  - _id: stone-hill-top-road-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3648683388896071098, guid: 28b51701b9291b44e9dea4ede91cb70a, type: 3}
+  - _id: stone-hill-left-road-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8341506538805041023, guid: 1d1e975d35cb34b4e88d9117416add5e, type: 3}
+  - _id: stone-hill-right-road-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 938751401124326742, guid: 57dc5ed36c2131741b447311ae5ff90f, type: 3}
+  - _id: stone-hill-down-road-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 6691491353753107640, guid: 1c3b586057f9139458002806bd4bc792, type: 3}
+  - _id: grass-ditch-top-end-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3665458289699947176, guid: 85b0a32bb2170e440900a8afc83df9d0, type: 3}
+  - _id: grass-ditch-top-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2150823426952244856, guid: 6de63ab6eb0a63243806c87e05297d4b, type: 3}
+  - _id: grass-ditch-top-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7481127951450471711, guid: 9760160b2245e564ea79f41a678eb1fd, type: 3}
+  - _id: grass-ditch-top-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4712163052196497726, guid: 3c3d85c0191854749a56b7d347900fa2, type: 3}
+  - _id: grass-ditch-middle-top-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 861957613034317937, guid: 17832a19f90b85d4f9b7e75aa29a82c0, type: 3}
+  - _id: grass-ditch-vertical-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8036730323478445650, guid: f1621d96a511ce44aba100473ea55646, type: 3}
+  - _id: grass-ditch-vertical-middle-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 4880360109990289221, guid: 52810515f6753a5408d21c0dace5cb97, type: 3}
+  - _id: grass-ditch-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4831940195822427918, guid: e1289d4620c10ce41a0ca9d017748eb2, type: 3}
+  - _id: grass-ditch-vertical-middle-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 4244167675146715900, guid: fa6db16ce29ac904c97f7b6a8155a0e0, type: 3}
+  - _id: grass-ditch-middle-left-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3213782176877695696, guid: 3911d9b6cd7c4cf4a8b2a45835c5e827, type: 3}
+  - _id: grass-ditch-middle-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 4386391504452711267, guid: cf8aa41745491e84291a4ea7cb73b0c6, type: 3}
+  - _id: grass-ditch-middle-right-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 9123496337824784590, guid: 48bf5871c7d754d4ca4cbf72c159022d, type: 3}
+  - _id: grass-ditch-down-end-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 6822214225851454106, guid: db9374a558bd0c4488ab35a5e69e46e4, type: 3}
+  - _id: grass-ditch-down-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5292286537928542648, guid: 139101180cf1c304da175bfab6104d1e, type: 3}
+  - _id: grass-ditch-down-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 520210610453618771, guid: 63285a5e074bb6d42ae79d28158cf780, type: 3}
+  - _id: grass-ditch-down-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4819998736290410934, guid: e962d53d6ae280d48bb3262c576623e5, type: 3}
+  - _id: grass-ditch-middle-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 4419687997890914823, guid: 25f9610409423894ba942f5319391e5e, type: 3}
+  - _id: grass-ditch-left-end-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 1805021648639239792, guid: 6caa7959bf3b3c7488edb63908c40dbf, type: 3}
+  - _id: grass-ditch-horizontal-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5806502547183488472, guid: 91e3be488f013924e977729d9657e327, type: 3}
+  - _id: grass-ditch-right-end-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 1226840645323980032, guid: 672ba948032eada4491ff177e05f666b, type: 3}
+  - _id: grass-ditch-middle-down-corners-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5122016433756665594, guid: 5fb1bc23450130d408e751f5ff94e82c, type: 3}
+  - _id: grass-coast-top-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 1443878925379244194, guid: 9d63cbca32a0b0745b308b6c5d866cff, type: 3}
+  - _id: grass-coast-top-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 603855828210582468, guid: d0423971630f3c543930778a2194e5ed, type: 3}
+  - _id: grass-coast-top-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4057833868645771702, guid: bcacbe5df8c50944189a10a0c6d1e614, type: 3}
+  - _id: grass-coast-top-left-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4276048738069943229, guid: e846a72a9ea5b09489b8f8b616c4c21b, type: 3}
+  - _id: grass-coast-top-right-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5041901718063405938, guid: 2100a5c2ae02e7840bc14ad034bedf50, type: 3}
+  - _id: grass-coast-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4543670961727197965, guid: ef28926aa06bc324abfbb7ad1cf46a75, type: 3}
+  - _id: water-middle-depth-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 9197432726090922796, guid: e5db0b0dbefbab641b5ec45787c1cffe, type: 3}
+  - _id: grass-coast-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8203238116250168079, guid: d3e240d64e4e69d4c81a760ce7e4c720, type: 3}
+  - _id: grass-coast-down-left-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8490716599391347654, guid: f47b1c64d319b0641950f2958c690a55, type: 3}
+  - _id: grass-coast-down-right-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5974272166638858764, guid: 659ecb1467ff16e4fb4c53ebfda0dae1, type: 3}
+  - _id: grass-coast-down-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 6104147911925903919, guid: ef6e1912cc7316f4f93b916931973f1b, type: 3}
+  - _id: grass-coast-down-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3838848985416218403, guid: d6ee218dd75cee54391c33b955d2e096, type: 3}
+  - _id: grass-coast-down-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8843299326333799233, guid: 406204f5107dcac45b509aa93f45d786, type: 3}
+  - _id: sand-coast-top-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 1208327688107951468, guid: 600e404ca48148646a220f71eb1bb898, type: 3}
+  - _id: sand-coast-top-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5666333495852899623, guid: c7dd7fd3163097d4ca9ef0f9e965d36f, type: 3}
+  - _id: sand-coast-top-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8026716846400549614, guid: a7e1b745f46c8fd46a7462f4c7107e5a, type: 3}
+  - _id: sand-coast-top-left-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5106347833433770820, guid: 1d38bbc1a6bbf8f4692f3e27c8a66c29, type: 3}
+  - _id: sand-coast-top-right-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5768361142790755569, guid: da244917436edff45b1c7fdf5ca59ca4, type: 3}
+  - _id: sand-coast-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 9014229134849913126, guid: 309de44c50fac4d45918478668da9256, type: 3}
+  - _id: water-shoal-depth-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 1029532166024854157, guid: c5f700218c39da048b98e8769cfed620, type: 3}
+  - _id: sand-coast-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5596651147222595714, guid: cac5ccbdda5fc074fb59111214ce1878, type: 3}
+  - _id: sand-coast-down-left-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5016236995402878324, guid: 4d212fd84281f6b48af0921ef8441776, type: 3}
+  - _id: sand-coast-down-right-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3692882429360919982, guid: 99d048a5f7009d9469f3df6fbe3b3d97, type: 3}
+  - _id: sand-coast-down-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3153905877035203641, guid: b4bbc204b30add04f927bb3069af34d6, type: 3}
+  - _id: sand-coast-down-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 463206849185305108, guid: 98b2f6018b5fabe4db04d0518e173b93, type: 3}
+  - _id: sand-coast-down-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 6228035762749681458, guid: 7722a021ed668774997d7d764a7f60bb, type: 3}
+  - _id: water-middle-depth-to-shoal-top-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2913314530069564155, guid: 9591926f628e82e41a7098898c4d7878, type: 3}
+  - _id: water-middle-depth-to-shoal-top-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2087813260810114708, guid: 084f495b018e831428f212137163729c, type: 3}
+  - _id: water-middle-depth-to-shoal-top-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2290675193045822602, guid: 2acd896aff0a5e444bb484212e905156, type: 3}
+  - _id: water-middle-depth-to-shoal-top-left-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 600844573679965026, guid: bd69f8c5bf61aed4da7aa99796911d3e, type: 3}
+  - _id: water-middle-depth-to-shoal-top-right-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 213707205562423269, guid: 99a6815530ee0ef4db1035039daec3aa, type: 3}
+  - _id: water-middle-depth-to-shoal-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2024297660646032656, guid: e9301c54b4cfc4c4d819270bacfe6649, type: 3}
+  - _id: water-middle-depth-to-shoal-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4931668311585729858, guid: f820440180c545b4aad82bd154be4b23, type: 3}
+  - _id: water-middle-depth-to-shoal-down-left-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3281451553324108632, guid: a3217a1735a901b45b5d7f789fc9ec90, type: 3}
+  - _id: water-middle-depth-to-shoal-down-right-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 714156987787070970, guid: 60b0a6516b564e149800c85ec062f827, type: 3}
+  - _id: water-middle-depth-to-shoal-down-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 821028824537946227, guid: 01da10fef12f2404fb64b853dc2fbaad, type: 3}
+  - _id: water-middle-depth-to-shoal-down-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 6306576187030525437, guid: b2c3b335b67a1564483686c7dd556085, type: 3}
+  - _id: water-middle-depth-to-shoal-down-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7466711328276558737, guid: 7609924fc9d200a4da2b65305ecd1243, type: 3}
+  - _id: water-deep-depth-to-middle-top-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 318717581506146427, guid: 59c550c6483fb774cb60cbf6e5582096, type: 3}
+  - _id: water-deep-depth-to-middle-top-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4306948394615118454, guid: 01635c2f8cdf3554793b8cab3eefc970, type: 3}
+  - _id: water-deep-depth-to-middle-top-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4903360447409597631, guid: 1ed5e8fe1ab916d40b0bcfcada302181, type: 3}
+  - _id: water-deep-depth-to-middle-top-left-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4742952879219921372, guid: 9c0a9dfe5c424094184a4871c5d974e9, type: 3}
+  - _id: water-deep-depth-to-middle-top-right-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3958461795157234395, guid: 6926424490290684598a3153b176139a, type: 3}
+  - _id: water-deep-depth-to-middle-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8814175737159397647, guid: 7afd397174f81894fb44526ac0bdea79, type: 3}
+  - _id: water-deep-depth-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5741990419922707053, guid: 5aefd161106546242a5998eac16003cc, type: 3}
+  - _id: water-deep-depth-to-middle-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 9214791630331311834, guid: 4d5721eb674825840a1ea39a83dee73c, type: 3}
+  - _id: water-deep-depth-to-middle-down-left-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 6619627647930012721, guid: b01abc4669d7f604eab6304a292d1d3e, type: 3}
+  - _id: water-deep-depth-to-middle-down-right-corner-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3710023196020745945, guid: 29d1c17b750a8ce4fa2b635e56afa251, type: 3}
+  - _id: water-deep-depth-to-middle-down-left-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3114099340114191839, guid: de7f6bfff818aa54698db8b6b711b9c7, type: 3}
+  - _id: water-deep-depth-to-middle-down-middle-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7173982184974221923, guid: 84aada8db63c6664d88175564b4babc9, type: 3}
+  - _id: water-deep-depth-to-middle-down-right-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2162454649381707191, guid: f87ee601ab849f04faeb3954b9ce017a, type: 3}
