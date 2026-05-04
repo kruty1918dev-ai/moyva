@@ -589,3 +589,15 @@ MonoBehaviour:
   - _id: water-deep-depth-to-middle-down-right-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 2162454649381707191, guid: f87ee601ab849f04faeb3954b9ce017a, type: 3}
+  - _id: water-middle-depth-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 5741990419922707053, guid: e95889946fc1f58e8ada2e14ffe5990e, type: 3}
+  - _id: water-middle-depth-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 5741990419922707053, guid: 0c8dcf0fed0c0f612a446e4e4e3a4adb, type: 3}
+  - _id: water-deep-depth-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 5741990419922707053, guid: e95889946fc1f58e8ada2e14ffe5990e, type: 3}
+  - _id: water-deep-depth-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 5741990419922707053, guid: 0c8dcf0fed0c0f612a446e4e4e3a4adb, type: 3}

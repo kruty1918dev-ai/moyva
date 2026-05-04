@@ -30,6 +30,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private Texture2D _previewTexture;
         private bool _ownsPreviewTexture;
 
+        // Raw output data — використовується у Preview Window для відображення висоти при наведенні
+        public float[,]  PreviewFloatMap { get; private set; }
+        public string[,] PreviewTileMap  { get; private set; }
+
+        public void SetPreviewRawMaps(float[,] floatMap, string[,] tileMap)
+        {
+            PreviewFloatMap = floatMap;
+            PreviewTileMap  = tileMap;
+        }
+
         public GeneratorNodeView(NodeBase nodeData)
         {
             NodeData = nodeData;

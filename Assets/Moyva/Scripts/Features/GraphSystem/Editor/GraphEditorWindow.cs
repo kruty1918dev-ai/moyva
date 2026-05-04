@@ -803,6 +803,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return false;
         }
 
+        internal bool TryGetBestRawMaps(out float[,] floatMap, out string[,] tileMap)
+        {
+            if (_graphView != null)
+                return _graphView.TryGetBestRawMaps(out floatMap, out tileMap);
+
+            floatMap = null;
+            tileMap  = null;
+            return false;
+        }
+
         /// <summary>
         /// Реєструє сервіси генератора з EditorPreviewSettings.
         /// Кожен сервіс реєструється опціонально — якщо ScriptableObject не задано,

@@ -89,19 +89,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             GetSize(source, requestedWidth, requestedHeight, out var tw, out var th, out var sw, out var sh);
 
-            float min = float.MaxValue;
-            float max = float.MinValue;
-            for (int x = 0; x < sw; x++)
-            {
-                for (int y = 0; y < sh; y++)
-                {
-                    float value = source[x, y];
-                    if (value < min) min = value;
-                    if (value > max) max = value;
-                }
-            }
-
-            float span = Mathf.Max(0.0001f, max - min);
             var tex = CreateTexture(tw, th);
             for (int y = 0; y < th; y++)
             {
@@ -109,7 +96,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 for (int x = 0; x < tw; x++)
                 {
                     int sx = x * sw / tw;
-                    float t = Mathf.Clamp01((source[sx, sy] - min) / span);
+                    float t = Mathf.Clamp01(source[sx, sy]);
                     tex.SetPixel(x, y, heatmap ? EvaluateHeatColor(t) : new Color(t, t, t, 1f));
                 }
             }

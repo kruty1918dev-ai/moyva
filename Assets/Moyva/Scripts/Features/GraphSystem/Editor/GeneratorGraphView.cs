@@ -453,6 +453,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 view.SetPreviewVisible(visible);
         }
 
+        internal bool TryGetBestRawMaps(out float[,] floatMap, out string[,] tileMap)
+        {
+            floatMap = null;
+            tileMap  = null;
+
+            GeneratorNodeView source =
+                selection.OfType<GeneratorNodeView>().FirstOrDefault(v => v.PreviewTexture != null)
+                ?? nodes.OfType<GeneratorNodeView>().FirstOrDefault(v => v.NodeData is OutputNode && v.PreviewTexture != null)
+                ?? nodes.OfType<GeneratorNodeView>().FirstOrDefault(v => v.PreviewTexture != null);
+
+            if (source == null) return false;
+
+            floatMap = source.PreviewFloatMap;
+            tileMap  = source.PreviewTileMap;
+            return floatMap != null || tileMap != null;
+        }
+
         internal bool TryGetBestPreview(out Texture2D previewTexture, out string status)
         {
             // 1) Selected node preview
@@ -631,6 +648,21 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                     nodeView.SetPreview(preview, status, ownsPreview);
                     nodeView.SetPreviewVisible(_inlinePreviewsVisible);
+
+                    // Зберігаємо raw-дані для hover-підказки у Preview Window
+                    {
+                        float[,]  rawFloat = null;
+                        string[,] rawTile  = null;
+                        if (outputsAll != null)
+                        {
+                            foreach (var o in outputsAll)
+                            {
+                                if (rawFloat == null && o is float[,] fm)  rawFloat = fm;
+                                if (rawTile  == null && o is string[,] tm) rawTile  = tm;
+                            }
+                        }
+                        nodeView.SetPreviewRawMaps(rawFloat, rawTile);
+                    }
                 }
                 else
                 {

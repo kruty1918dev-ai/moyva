@@ -13,27 +13,18 @@ MonoBehaviour:
   m_Name: ArchipelagoHeightLayers
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.HeightMapSettings
   HeightLayers:
-  - TileID: water
+  - TileID: water-deep-depth-tile-001
     MinHeight: 0
-    MaxHeight: 0.2
-  - TileID: water
-    MinHeight: 0.2
-    MaxHeight: 0.3
-  - TileID: beach
-    MinHeight: 0.3
-    MaxHeight: 0.36
-  - TileID: lowland
-    MinHeight: 0.36
-    MaxHeight: 0.48
-  - TileID: grass
-    MinHeight: 0.48
-    MaxHeight: 0.6
-  - TileID: hill
-    MinHeight: 0.6
-    MaxHeight: 0.72
-  - TileID: mountain
-    MinHeight: 0.72
-    MaxHeight: 0.86
-  - TileID: snow
-    MinHeight: 0.86
+    MaxHeight: 0.18
+  - TileID: water-deep-depth-tile-002
+    MinHeight: 0.18
+    MaxHeight: 0.27
+  - TileID: water-deep-depth-tile-003
+    MinHeight: 0.27
+    MaxHeight: 0.35
+  - TileID: sand-tile-003
+    MinHeight: 0.35
+    MaxHeight: 0.4
+  - TileID: grass-tile-001
+    MinHeight: 0.4
     MaxHeight: 1
