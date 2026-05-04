@@ -46,7 +46,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             var densityMap = new float[w, h];
             var outBiome = (string[,])biome.Clone();
 
-            var rng = context.CreateRandom(0x41c9);
+            var rng = context.CreateRandom();
             var centers = new List<Vector2Int>();
 
             for (int i = 0; i < _targetCities; i++)

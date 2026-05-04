@@ -1,5 +1,22 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8820800396615703428
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e2523f701ac02af79efd1c8c58149aa, type: 3}
+  m_Name: ConstraintPolishNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ConstraintPolishNode
+  _nodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
+  _editorPosition: {x: 8834, y: 165}
+  _wfcSettings: {fileID: 11400000, guid: 43b54663d84457518923e06a607badc7, type: 2}
+  _applyOnlyOnFlags: 0
+  _targetFlagIds: []
 --- !u!114 &-7769505736633475151
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -13,7 +30,7 @@ MonoBehaviour:
   m_Name: FloatFunctionMapNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FloatFunctionMapNode
   _nodeId: 59f0ae9f-c6ea-4cd4-8147-d646fbcdf625
-  _editorPosition: {x: 1970, y: -337}
+  _editorPosition: {x: 1550, y: 280}
   _expression: circle(u,v,0.5,0.5,0.25,0.01)
   _clamp01: 1
 --- !u!114 &-7599073612490096189
@@ -29,7 +46,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: 1a6d81eb-eb8d-4a8c-abad-92660bc28ee4
-  _editorPosition: {x: 1618, y: 26}
+  _editorPosition: {x: 1550, y: -228}
   _levels: 8
   _sharpness: 0.85
 --- !u!114 &-7409379143267765993
@@ -45,7 +62,7 @@ MonoBehaviour:
   m_Name: NoiseCombinerNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: 8af0b282-57d9-42d9-a335-1c4198b38e30
-  _editorPosition: {x: 4494, y: 391}
+  _editorPosition: {x: 3650, y: 9.5}
   _mode: 4
   _blend: 1
 --- !u!114 &-7207838343501215377
@@ -61,8 +78,8 @@ MonoBehaviour:
   m_Name: SeedNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SeedNode
   _nodeId: 0e244104-f5c0-46dd-9310-026029a2b3d9
-  _editorPosition: {x: 10, y: -378}
-  seed: 1918
+  _editorPosition: {x: 50, y: -239}
+  seed: -825213812
 --- !u!114 &-7093961151670886474
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -76,7 +93,7 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: 288d4828-4945-44f5-87e3-e1bdec61bb33
-  _editorPosition: {x: 1970, y: 312}
+  _editorPosition: {x: 1850, y: -261}
   _mode: 1
   _blend: 0.28
 --- !u!114 &-7006120254574055992
@@ -92,7 +109,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: 9ba9b516-5739-4772-ae2f-35bc112e7109
-  _editorPosition: {x: 6603, y: 225}
+  _editorPosition: {x: 5450, y: 20.5}
   _levels: 14
   _sharpness: 0.46
 --- !u!114 &-6746020804870992798
@@ -108,7 +125,7 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 89354a03-2206-4374-98c4-6f8db20974cf
-  _editorPosition: {x: 8410, y: 902}
+  _editorPosition: {x: 7250, y: 20.5}
   _rangeMin: 0.89
   _rangeMax: 1
   _offset: 0.77
@@ -125,7 +142,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: 66515f94-b08b-4302-a210-af40b9e96a12
-  _editorPosition: {x: 9257, y: 1130}
+  _editorPosition: {x: 7850, y: 20.5}
   _levels: 9
   _sharpness: 1
 --- !u!114 &-5853983609756329095
@@ -141,7 +158,7 @@ MonoBehaviour:
   m_Name: NoiseMaskClipNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseMaskClipNode
   _nodeId: adde43b0-619f-458f-a5a7-42e6c4a33923
-  _editorPosition: {x: 4145, y: 514}
+  _editorPosition: {x: 3350, y: 9.5}
   _mode: 0
   _threshold: 0.579
   _feather: 0.443
@@ -161,14 +178,13 @@ MonoBehaviour:
   m_Name: FBMNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FBMNoiseNode
   _nodeId: 56d1402f-ebd2-4dc2-ba9b-329576427497
-  _editorPosition: {x: 3814, y: 839}
+  _editorPosition: {x: 3050, y: -239}
   _baseNoise: 0
   _scale: 0.03
   _octaves: 5
   _lacunarity: 2
   _persistence: 0.5
   _offset: {x: 0, y: 0}
-  _seedOffset: 911
 --- !u!114 &-5411809260674129069
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -182,7 +198,7 @@ MonoBehaviour:
   m_Name: OutputNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.OutputNode
   _nodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
-  _editorPosition: {x: 10522, y: 936}
+  _editorPosition: {x: 9233, y: -101}
 --- !u!114 &-4760769970211019525
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -203,7 +219,6 @@ MonoBehaviour:
   _lacunarity: 2.1
   _persistence: 0.48
   _offset: {x: 0, y: 0}
-  _seedOffset: 1918
 --- !u!114 &-4519408706656541247
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -217,7 +232,7 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 259d66d6-cfc3-428d-b77e-efce4545fd67
-  _editorPosition: {x: 7983, y: 891}
+  _editorPosition: {x: 6950, y: 20.5}
   _rangeMin: 0.693
   _rangeMax: 1
   _offset: 0.17
@@ -234,14 +249,13 @@ MonoBehaviour:
   m_Name: FBMNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FBMNoiseNode
   _nodeId: e8293c6e-0d0c-4644-8304-b7fdf687c116
-  _editorPosition: {x: 2612, y: 507}
+  _editorPosition: {x: 2150, y: 26}
   _baseNoise: 1
   _scale: 0.05
   _octaves: 7
   _lacunarity: 3.02
   _persistence: 0.218
   _offset: {x: 0, y: 0}
-  _seedOffset: 975
 --- !u!114 &-4206215162816268745
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -255,7 +269,7 @@ MonoBehaviour:
   m_Name: HeightToTileNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightToTileNode
   _nodeId: 467bcbda-5453-485f-8b81-d39ae9667410
-  _editorPosition: {x: 10136, y: 773}
+  _editorPosition: {x: 8450, y: 20.5}
   _heightMapSettings: {fileID: 11400000, guid: 7858e000ef64a05ce8383f19fce7752c, type: 2}
 --- !u!114 &-3743344069470685114
 MonoBehaviour:
@@ -270,7 +284,7 @@ MonoBehaviour:
   m_Name: SmoothNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
   _nodeId: f21866ab-537a-4889-bec5-d2bc44554aa9
-  _editorPosition: {x: 950, y: 26}
+  _editorPosition: {x: 950, y: 142}
   _radius: 2
   _iterations: 1
 --- !u!114 &-3313793592195755713
@@ -286,11 +300,10 @@ MonoBehaviour:
   m_Name: WorleyNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.WorleyNoiseNode
   _nodeId: 44739471-bf51-413f-b539-e51ab177c413
-  _editorPosition: {x: 950, y: 443}
+  _editorPosition: {x: 950, y: -366}
   _scale: 0.01
   _cellDensity: 2
   _offset: {x: 0, y: 0}
-  _seedOffset: 241
 --- !u!114 &-3144723192743257266
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -304,7 +317,7 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 8856842e-73ae-4e3b-a2e8-f56baed54c78
-  _editorPosition: {x: 7388, y: 598}
+  _editorPosition: {x: 6350, y: 20.5}
   _rangeMin: 0.15
   _rangeMax: 0.3
   _offset: 0.2
@@ -321,7 +334,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: af3e9d7e-3a8b-47f1-a802-ae6926f3dff6
-  _editorPosition: {x: 5217, y: 112}
+  _editorPosition: {x: 4250, y: 20.5}
   _levels: 20
   _sharpness: 0.186
 --- !u!114 &-2721669523466837572
@@ -337,7 +350,7 @@ MonoBehaviour:
   m_Name: RiverLineMaskNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RiverLineMaskNode
   _nodeId: 5fefacf4-7a42-4374-a56d-4fe90bc1c3bc
-  _editorPosition: {x: 5903, y: 167}
+  _editorPosition: {x: 4850, y: 20.5}
   _startX: 0.851
   _startY: 0.15
   _endX: 0.171
@@ -345,7 +358,6 @@ MonoBehaviour:
   _resistanceScale: 20
   _straightness: 10
   _wandering: 2.39
-  _seed: 128
   _lineWidth: 7.4
   _coreFraction: 0.279
   _riverValue: 0.02
@@ -364,7 +376,7 @@ MonoBehaviour:
   m_Name: RiverLineMaskNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RiverLineMaskNode
   _nodeId: 9ad1726d-bf37-457b-9132-e77dfe9bd41a
-  _editorPosition: {x: 5569, y: 89}
+  _editorPosition: {x: 4550, y: 20.5}
   _startX: 1
   _startY: 0.948
   _endX: 0.286
@@ -372,7 +384,6 @@ MonoBehaviour:
   _resistanceScale: 20
   _straightness: 2.63
   _wandering: 1.82
-  _seed: 40
   _lineWidth: 5.26
   _coreFraction: 0.379
   _riverValue: 0.015
@@ -391,14 +402,13 @@ MonoBehaviour:
   m_Name: FBMNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FBMNoiseNode
   _nodeId: 86415b26-03b0-4398-8ed6-cb56fda784cb
-  _editorPosition: {x: 950, y: 746}
+  _editorPosition: {x: 950, y: -112}
   _baseNoise: 1
   _scale: 0.015
   _octaves: 5
   _lacunarity: 2.1
   _persistence: 0.48
   _offset: {x: 0, y: 0}
-  _seedOffset: 1918
 --- !u!114 &-1209323856053931236
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -412,7 +422,7 @@ MonoBehaviour:
   m_Name: RiverLineMaskNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RiverLineMaskNode
   _nodeId: 89be3f4e-7863-4696-8f7e-23ecc1ecc286
-  _editorPosition: {x: 3428, y: 317}
+  _editorPosition: {x: 2750, y: 15}
   _startX: 0.85
   _startY: 0.193
   _endX: 0
@@ -420,7 +430,6 @@ MonoBehaviour:
   _resistanceScale: 20
   _straightness: 0
   _wandering: 5
-  _seed: 40
   _lineWidth: 4.4
   _coreFraction: 0
   _riverValue: 0.007
@@ -454,7 +463,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: 5d5146a6-5995-46e3-b53a-8b51cf898eef
-  _editorPosition: {x: 1256, y: 443}
+  _editorPosition: {x: 1250, y: -366}
   _levels: 20
   _sharpness: 0.4
 --- !u!114 &11400000
@@ -512,15 +521,12 @@ MonoBehaviour:
   - {fileID: 7577903736279346792}
   - {fileID: -6392009196884656065}
   - {fileID: 2501766192128923427}
+  - {fileID: -8820800396615703428}
   _connections:
-  - _sourceNodeId: 0e244104-f5c0-46dd-9310-026029a2b3d9
-    _sourcePortIndex: 0
-    _targetNodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
-    _targetPortIndex: 0
   - _sourceNodeId: e85324de-9519-4605-9c2d-49e7b25ef12d
     _sourcePortIndex: 0
     _targetNodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
-    _targetPortIndex: 1
+    _targetPortIndex: 0
   - _sourceNodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
     _sourcePortIndex: 0
     _targetNodeId: ab061f13-7325-448f-8f2c-f0bbfdd9ca46
@@ -641,10 +647,6 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: 9ba9b516-5739-4772-ae2f-35bc112e7109
     _targetPortIndex: 0
-  - _sourceNodeId: 467bcbda-5453-485f-8b81-d39ae9667410
-    _sourcePortIndex: 0
-    _targetNodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
-    _targetPortIndex: 0
   - _sourceNodeId: 9ba9b516-5739-4772-ae2f-35bc112e7109
     _sourcePortIndex: 0
     _targetNodeId: 0cbcb361-fa63-47a9-bfb2-4bfc93021dbf
@@ -689,6 +691,18 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
     _targetPortIndex: 2
+  - _sourceNodeId: 467bcbda-5453-485f-8b81-d39ae9667410
+    _sourcePortIndex: 0
+    _targetNodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
+    _targetPortIndex: 0
+  - _sourceNodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
+    _sourcePortIndex: 0
+    _targetNodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
+    _targetPortIndex: 0
+  - _sourceNodeId: bea424ea-1696-4030-8e83-3f2edc882f13
+    _sourcePortIndex: 0
+    _targetNodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
+    _targetPortIndex: 1
   _version: 1
   _sharedSettings:
     _mapWidth: 0
@@ -706,7 +720,7 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 913e9e44-cb47-4814-ace0-031f11fa692a
-  _editorPosition: {x: 7629, y: 837}
+  _editorPosition: {x: 6650, y: 20.5}
   _rangeMin: 0.1
   _rangeMax: 0.15
   _offset: 0.06
@@ -723,10 +737,9 @@ MonoBehaviour:
   m_Name: SimplexNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SimplexNoiseNode
   _nodeId: 426b4f00-8a29-4603-86c5-270f8e671dcc
-  _editorPosition: {x: 1970, y: -67}
+  _editorPosition: {x: 1550, y: 26}
   _scale: 0.02
   _offset: {x: 0, y: 0}
-  _seedOffset: 118
 --- !u!114 &886040793377285265
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -740,7 +753,7 @@ MonoBehaviour:
   m_Name: ErosionNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode
   _nodeId: 872d7182-2aa0-49a3-9472-6b08ba0948db
-  _editorPosition: {x: 6261, y: 225}
+  _editorPosition: {x: 5150, y: 20.5}
   _erosionRate: 0.0342
   _iterations: 26
   _talusAngle: 0.017
@@ -757,7 +770,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: b7e9f373-b06c-42c0-9b3f-9b84bb8ee759
-  _editorPosition: {x: 1256, y: 746}
+  _editorPosition: {x: 1250, y: -112}
   _levels: 20
   _sharpness: 0.4
 --- !u!114 &2501766192128923427
@@ -773,7 +786,7 @@ MonoBehaviour:
   m_Name: SmoothNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
   _nodeId: bea424ea-1696-4030-8e83-3f2edc882f13
-  _editorPosition: {x: 9589, y: 1117}
+  _editorPosition: {x: 8150, y: 20.5}
   _radius: 2
   _iterations: 1
 --- !u!114 &2733130157158313261
@@ -789,7 +802,7 @@ MonoBehaviour:
   m_Name: BaseNoiseSettings
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.BaseNoiseSettings
   _nodeId: e85324de-9519-4605-9c2d-49e7b25ef12d
-  _editorPosition: {x: -71, y: -126}
+  _editorPosition: {x: 50, y: 15}
   scale: 42
   octaves: 5
   persistance: 0.48
@@ -808,7 +821,7 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: 329496d3-ca21-4c21-9edf-07e1b366c410
-  _editorPosition: {x: 2291, y: -229}
+  _editorPosition: {x: 1850, y: 15}
   _mode: 1
   _blend: 0.28
 --- !u!114 &4164959059326272848
@@ -824,7 +837,7 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: 9567f25d-a1f6-4dbb-9848-d3fe4be644e9
-  _editorPosition: {x: 1553, y: 602}
+  _editorPosition: {x: 1550, y: -504}
   _mode: 1
   _blend: 0.28
 --- !u!114 &4979626303478776744
@@ -840,7 +853,7 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: 254cfbbb-9e73-4e7f-98a5-82da19fbe308
-  _editorPosition: {x: 3011, y: 268}
+  _editorPosition: {x: 2450, y: 4}
   _mode: 1
   _blend: 0.28
 --- !u!114 &5621360656782093542
@@ -856,7 +869,7 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: ab061f13-7325-448f-8f2c-f0bbfdd9ca46
-  _editorPosition: {x: 648, y: 13}
+  _editorPosition: {x: 650, y: 131}
   _mode: 4
   _blend: 0.28
 --- !u!114 &5727250273993377633
@@ -880,7 +893,6 @@ MonoBehaviour:
   _resistanceScale: 8
   _straightness: 1
   _wandering: 1
-  _seed: 0
   _lineWidth: 1.25
   _coreFraction: 0.2
   _riverValue: 0
@@ -899,7 +911,7 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: ce031f35-60cc-49e1-833b-1ca7a75d58c4
-  _editorPosition: {x: 2627, y: 104}
+  _editorPosition: {x: 2150, y: -250}
   _mode: 3
   _blend: 0.541
 --- !u!114 &6294478164426517049
@@ -915,7 +927,7 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 0cbcb361-fa63-47a9-bfb2-4bfc93021dbf
-  _editorPosition: {x: 6954, y: 287}
+  _editorPosition: {x: 5750, y: 21}
   _rangeMin: 0.03
   _rangeMax: 1
   _offset: 0.1
@@ -932,7 +944,7 @@ MonoBehaviour:
   m_Name: SmoothNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
   _nodeId: 051bc3fe-9422-47e9-b954-98af6a1564f9
-  _editorPosition: {x: 8805, y: 1079}
+  _editorPosition: {x: 7550, y: 20.5}
   _radius: 2
   _iterations: 1
 --- !u!114 &8054288255610037144
@@ -956,7 +968,6 @@ MonoBehaviour:
   _resistanceScale: 8
   _straightness: 1
   _wandering: 1
-  _seed: 0
   _lineWidth: 0.168
   _coreFraction: 0.487
   _riverValue: 0
@@ -975,7 +986,7 @@ MonoBehaviour:
   m_Name: NoiseCombinerNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: f65ab291-0760-4617-8778-f56a7509b8f3
-  _editorPosition: {x: 4841, y: 208}
+  _editorPosition: {x: 3950, y: 9.5}
   _mode: 0
   _blend: 0.186
 --- !u!114 &8567441479768155749
@@ -991,7 +1002,7 @@ MonoBehaviour:
   m_Name: ErosionNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode
   _nodeId: 7c34b3c9-6582-4fbf-a046-ed061eaea80e
-  _editorPosition: {x: 1250, y: 26}
+  _editorPosition: {x: 1250, y: 142}
   _erosionRate: 0.012
   _iterations: 8
   _talusAngle: 0.035
@@ -1008,7 +1019,7 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 2188b8a1-a353-4e01-b987-34a10bc728f4
-  _editorPosition: {x: 7266, y: 309}
+  _editorPosition: {x: 6050, y: 20.5}
   _rangeMin: 0.3
   _rangeMax: 1
   _offset: 0.31
@@ -1025,7 +1036,7 @@ MonoBehaviour:
   m_Name: RiverLineMaskNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RiverLineMaskNode
   _nodeId: 8a2c6836-4722-48f3-a512-dc3e7235cf91
-  _editorPosition: {x: 3774, y: 317}
+  _editorPosition: {x: 3050, y: 15}
   _startX: 0.85
   _startY: 0.193
   _endX: 0.553
@@ -1033,7 +1044,6 @@ MonoBehaviour:
   _resistanceScale: 19.1
   _straightness: 6.53
   _wandering: 5
-  _seed: 40
   _lineWidth: 9.04
   _coreFraction: 0.844
   _riverValue: 0.067

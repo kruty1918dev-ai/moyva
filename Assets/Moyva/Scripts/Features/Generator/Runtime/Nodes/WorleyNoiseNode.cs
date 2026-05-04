@@ -10,7 +10,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [SerializeField, Min(0.0001f)] private float _scale = 0.03f;
         [SerializeField, Min(0.1f)] private float _cellDensity = 3f;
         [SerializeField] private Vector2 _offset;
-        [SerializeField] private int _seedOffset = 241;
 
         public override string Title => "Worley Noise";
         public override string Category => "Noise";
@@ -21,7 +20,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         {
             int w = Mathf.Max(1, context.MapSize.x);
             int h = Mathf.Max(1, context.MapSize.y);
-            int seed = GlobalSeed.Combine(context.Seed, _seedOffset);
+            int seed = context.Seed;
             var map = new float[w, h];
 
             for (int x = 0; x < w; x++)

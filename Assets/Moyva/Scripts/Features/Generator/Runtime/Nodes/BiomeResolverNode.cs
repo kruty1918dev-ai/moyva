@@ -94,7 +94,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         {
             var map = new float[width, height];
             float scale = Mathf.Max(0.0001f, _biomesSettings.MoistureScale);
-            var rng = context.CreateRandom($"{NodeId}:BiomeMoisture");
+            var rng = context.CreateRandom();
             float offsetX = (float)rng.NextDouble() * 9999f;
             float offsetY = (float)rng.NextDouble() * 9999f;
 

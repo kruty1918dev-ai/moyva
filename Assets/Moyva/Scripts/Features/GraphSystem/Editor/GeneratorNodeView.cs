@@ -62,6 +62,15 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             // Style
             AddToClassList("generator-node");
+            if (Attribute.IsDefined(nodeData.GetType(), typeof(StaticGraphNodeAttribute)))
+            {
+                capabilities &= ~Capabilities.Deletable;
+                capabilities &= ~Capabilities.Copiable;
+                capabilities &= ~Capabilities.Movable;
+                capabilities &= ~Capabilities.Groupable;
+                AddToClassList("static-generator-node");
+            }
+
             style.width = 280;
             style.minWidth = 280;
             style.maxWidth = 280;

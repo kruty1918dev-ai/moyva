@@ -51,8 +51,14 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 c.SourceNodeId == nodeId || c.TargetNodeId == nodeId);
 
 #if UNITY_EDITOR
-        public NodeBase AddNode(Type nodeType)
+        public NodeBase AddNode(Type nodeType, bool allowStaticGraphNode = false)
         {
+            if (!allowStaticGraphNode && nodeType != null && Attribute.IsDefined(nodeType, typeof(StaticGraphNodeAttribute)))
+            {
+                Debug.LogWarning($"Static graph node '{nodeType.Name}' is managed automatically and cannot be added manually.");
+                return null;
+            }
+
             if (nodeType != null && Attribute.IsDefined(nodeType, typeof(UniqueNodeAttribute)))
             {
                 for (int i = 0; i < _nodes.Count; i++)
@@ -77,10 +83,18 @@ namespace Kruty1918.Moyva.GraphSystem.API
             return node;
         }
 
-        public T AddNode<T>() where T : NodeBase => AddNode(typeof(T)) as T;
+        public T AddNode<T>(bool allowStaticGraphNode = false) where T : NodeBase => AddNode(typeof(T), allowStaticGraphNode) as T;
 
         public void RemoveNode(NodeBase node)
         {
+            if (node == null) return;
+
+            if (Attribute.IsDefined(node.GetType(), typeof(StaticGraphNodeAttribute)))
+            {
+                Debug.LogWarning($"Static graph node '{node.Title}' is required and cannot be removed.");
+                return;
+            }
+
             RemoveConnectionsForNode(node.NodeId);
             _nodes.Remove(node);
 

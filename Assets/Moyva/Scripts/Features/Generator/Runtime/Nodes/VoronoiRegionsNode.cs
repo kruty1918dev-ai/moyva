@@ -33,7 +33,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (width <= 0 || height <= 0)
                 return NodeOutput.Error("Map dimensions must be positive. Set Shared Settings map size.");
 
-            var rng = context.CreateRandom($"{NodeId}:VoronoiRegions");
+            var rng = context.CreateRandom();
             var seeds = new Vector2Int[_regionCount];
             for (int i = 0; i < _regionCount; i++)
                 seeds[i] = new Vector2Int(rng.Next(width), rng.Next(height));

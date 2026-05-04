@@ -48,7 +48,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (width <= 0 || height <= 0)
                 return NodeOutput.Error("Cannot determine map size. Provide Mask or MapWidth+MapHeight.");
 
-            var rng = context.CreateRandom($"{NodeId}:RandomScatter");
+            var rng = context.CreateRandom();
             var result = new string[width, height];
 
             for (int x = 0; x < width; x++)

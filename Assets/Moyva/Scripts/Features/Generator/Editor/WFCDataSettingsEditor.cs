@@ -54,6 +54,9 @@ namespace Kruty1918.Moyva.Generator.Editor
             var unknownIds = new HashSet<string>();
             foreach (var id in usedIds)
             {
+                if (IsVirtualTileId(settings, id))
+                    continue;
+
                 if (!knownIds.Contains(id))
                     unknownIds.Add(id);
             }
@@ -72,12 +75,12 @@ namespace Kruty1918.Moyva.Generator.Editor
                 }
             }
 
-            DrawMissingPrefabSection(registry, usedIds);
+            DrawMissingPrefabSection(registry, usedIds, settings);
         }
 
-        private void DrawMissingPrefabSection(TileRegistrySO registry, HashSet<string> usedIds)
+        private void DrawMissingPrefabSection(TileRegistrySO registry, HashSet<string> usedIds, WFCDataSettings settings)
         {
-            var missingPrefabIds = CollectMissingPrefabIds(registry, usedIds);
+            var missingPrefabIds = CollectMissingPrefabIds(registry, usedIds, settings);
             if (missingPrefabIds.Count == 0)
             {
                 EditorGUILayout.HelpBox("Усі ID, які використовує WFC, мають prefab.", MessageType.Info);
@@ -152,7 +155,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             return usedIds;
         }
 
-        private static List<string> CollectMissingPrefabIds(TileRegistrySO registry, HashSet<string> usedIds)
+        private static List<string> CollectMissingPrefabIds(TileRegistrySO registry, HashSet<string> usedIds, WFCDataSettings settings)
         {
             var list = new List<string>();
             if (registry.Definitions == null) return list;
@@ -166,12 +169,36 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             foreach (var id in usedIds)
             {
+                if (IsVirtualTileId(settings, id))
+                    continue;
+
                 if (known.TryGetValue(id, out var def) && def.VisualPrefab == null)
                     list.Add(id);
             }
 
             list.Sort();
             return list;
+        }
+
+        private static bool IsVirtualTileId(WFCDataSettings settings, string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return false;
+
+            string trimmed = id.Trim();
+            if (trimmed.StartsWith("flag:", System.StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (settings?.VirtualTileIds == null)
+                return false;
+
+            for (int i = 0; i < settings.VirtualTileIds.Length; i++)
+            {
+                if (string.Equals(trimmed, settings.VirtualTileIds[i]?.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
 
         private static void CreateMissingIds(TileRegistrySO registry, HashSet<string> unknownIds)

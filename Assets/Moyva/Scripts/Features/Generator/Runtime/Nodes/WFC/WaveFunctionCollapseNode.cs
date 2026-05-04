@@ -16,8 +16,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
         [SerializeField] private bool _periodicInput;
         [Tooltip("Чи має вихідна карта циклічно зшиватися по краях. Це важливо для безшовних текстур або топологічно замкнених карт.")]
         [SerializeField] private bool _periodicOutput;
-        [Tooltip("Соль для WFC-потоку. Фінальний seed завжди походить від Seed Settings ноди.")]
-        [SerializeField] private int _seedOffset = 0;
         [Tooltip("Максимальна кількість спроб побудувати валідний результат до визнання генерації невдалою. Більше значення підвищує шанс успіху на складних патернах.")]
         [SerializeField, Range(1, 50)] private int _maxAttempts = 10;
 
@@ -56,7 +54,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
 
             int outW = _outputWidth > 0 ? _outputWidth : context.MapSize.x;
             int outH = _outputHeight > 0 ? _outputHeight : context.MapSize.y;
-            int seed = GlobalSeed.Combine(context.Seed, GlobalSeed.Combine(_seedOffset, GlobalSeed.StableHash(NodeId)));
+            int seed = context.Seed;
 
             var settings = new WFCAlgorithm.WFCSettings
             {

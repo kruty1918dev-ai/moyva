@@ -904,6 +904,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             if (asset == null) return;
 
+            GraphStaticNodeUtility.EnsureStaticNodes(asset);
             _graphAsset.RepairMissingNodeConnections();
             _graphAsset.RemoveNullNodes();
             FlattenLegacyRoutePoints();
@@ -972,6 +973,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return change;
             }
 
+            change.elementsToRemove?.RemoveAll(IsProtectedStaticElement);
+            change.movedElements?.RemoveAll(IsProtectedStaticElement);
+
             // Handle removed elements
             if (change.elementsToRemove != null)
             {
@@ -1037,6 +1041,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             return change;
         }
+
+        private static bool IsProtectedStaticElement(GraphElement element) =>
+            element is GeneratorNodeView nodeView && GraphStaticNodeUtility.IsStaticGraphNode(nodeView.NodeData);
 
         private void RemoveEdgeFromAsset(Edge edge)
         {
@@ -1117,6 +1124,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 if (element is GeneratorNodeView nodeView)
                 {
+                    if (GraphStaticNodeUtility.IsStaticGraphNode(nodeView.NodeData))
+                        continue;
+
                     var rect = nodeView.GetPosition();
                     _copyBuffer.Add(new CopiedNodeData
                     {

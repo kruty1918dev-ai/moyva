@@ -1,0 +1,102 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Generator.Runtime.Nodes;
+using Kruty1918.Moyva.GraphSystem.API;
+using UnityEditor;
+using UnityEngine;
+
+namespace Kruty1918.Moyva.GraphSystem.Editor
+{
+    internal static class GraphStaticNodeUtility
+    {
+        internal static bool IsStaticGraphNode(Type nodeType) =>
+            nodeType != null && Attribute.IsDefined(nodeType, typeof(StaticGraphNodeAttribute));
+
+        internal static bool IsStaticGraphNode(NodeBase node) =>
+            node != null && IsStaticGraphNode(node.GetType());
+
+        internal static bool EnsureStaticNodes(GraphAsset graphAsset)
+        {
+            if (graphAsset == null)
+                return false;
+
+            bool changed = false;
+            var nodeTypes = TypeCache.GetTypesDerivedFrom<NodeBase>()
+                .Where(type => !type.IsAbstract && !type.IsGenericType)
+                .Where(IsStaticGraphNode)
+                .OrderBy(type => type.Name)
+                .ToArray();
+
+            for (int i = 0; i < nodeTypes.Length; i++)
+            {
+                var nodeType = nodeTypes[i];
+                bool exists = graphAsset.Nodes.Any(node => node != null && node.GetType() == nodeType);
+                if (exists)
+                    continue;
+
+                var node = graphAsset.AddNode(nodeType, allowStaticGraphNode: true);
+                if (node == null)
+                    continue;
+
+                node.EditorPosition = new Vector2(50f, -360f - i * 120f);
+                changed = true;
+            }
+
+            changed |= MigrateLegacySeedConnections(graphAsset);
+
+            if (changed)
+                EditorUtility.SetDirty(graphAsset);
+
+            return changed;
+        }
+
+        internal static bool MigrateLegacySeedConnections(GraphAsset graphAsset)
+        {
+            if (graphAsset?.Nodes == null || graphAsset.Connections == null)
+                return false;
+
+            var seedNodeIds = new HashSet<string>(graphAsset.Nodes
+                .Where(node => node is ISeedProvider)
+                .Select(node => node.NodeId));
+
+            var heightSourceNodeIds = new HashSet<string>(graphAsset.Nodes
+                .Where(node => node is HeightSourceNode)
+                .Select(node => node.NodeId));
+
+            if (seedNodeIds.Count == 0 && heightSourceNodeIds.Count == 0)
+                return false;
+
+            bool changed = false;
+            var connections = graphAsset.Connections.ToList();
+            for (int i = 0; i < connections.Count; i++)
+            {
+                var connection = connections[i];
+                bool touchesSeed = seedNodeIds.Contains(connection.SourceNodeId)
+                    || seedNodeIds.Contains(connection.TargetNodeId);
+
+                if (touchesSeed)
+                {
+                    graphAsset.RemoveConnection(connection);
+                    changed = true;
+                    continue;
+                }
+
+                if (heightSourceNodeIds.Contains(connection.TargetNodeId)
+                    && connection.TargetPortIndex == 1)
+                {
+                    graphAsset.RemoveConnection(connection);
+                    graphAsset.AddConnection(
+                        connection.SourceNodeId,
+                        connection.SourcePortIndex,
+                        connection.TargetNodeId,
+                        0);
+                    changed = true;
+                }
+            }
+
+            return changed;
+        }
+    }
+}

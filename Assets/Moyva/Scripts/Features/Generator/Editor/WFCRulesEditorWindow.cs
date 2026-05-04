@@ -22,6 +22,8 @@ namespace Kruty1918.Moyva.Generator.Editor
         private bool _priorityDescending = true;
         private bool _waterLikeIdsBufferInitialized;
         private string _waterLikeIdsBuffer = string.Empty;
+        private bool _virtualTileIdsBufferInitialized;
+        private string _virtualTileIdsBuffer = string.Empty;
 
         public static void OpenWindow(WFCDataSettings settings)
         {
@@ -35,6 +37,7 @@ namespace Kruty1918.Moyva.Generator.Editor
         {
             LoadAvailableTileIDs();
             _waterLikeIdsBufferInitialized = false;
+            _virtualTileIdsBufferInitialized = false;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
         }
 
@@ -66,9 +69,27 @@ namespace Kruty1918.Moyva.Generator.Editor
                                 _tileSprites[def.Id] = spriteRenderer.sprite;
                         }
                     }
-                    _availableTileIDs.Sort();
                 }
             }
+
+            if (_wfcDataSettings?.VirtualTileIds != null)
+            {
+                foreach (var virtualId in _wfcDataSettings.VirtualTileIds)
+                {
+                    if (string.IsNullOrWhiteSpace(virtualId))
+                        continue;
+
+                    if (!_availableTileIDs.Contains(virtualId))
+                        _availableTileIDs.Add(virtualId);
+                }
+            }
+
+            _availableTileIDs = _availableTileIDs
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Select(id => id.Trim())
+                .Distinct()
+                .OrderBy(id => id)
+                .ToList();
         }
 
         private void OnGUI()
@@ -216,6 +237,12 @@ namespace Kruty1918.Moyva.Generator.Editor
                 _waterLikeIdsBufferInitialized = true;
             }
 
+            if (!_virtualTileIdsBufferInitialized)
+            {
+                _virtualTileIdsBuffer = JoinIdsAllowEmpty(_wfcDataSettings.VirtualTileIds);
+                _virtualTileIdsBufferInitialized = true;
+            }
+
             EditorGUI.BeginChangeCheck();
             int passCount = Mathf.Max(1, EditorGUILayout.IntField(
                 new GUIContent("Кількість проходів",
@@ -248,6 +275,13 @@ namespace Kruty1918.Moyva.Generator.Editor
                 EditorStyles.miniLabel);
             string waterLikeInput = EditorGUILayout.TextArea(_waterLikeIdsBuffer, GUILayout.MinHeight(48));
 
+            EditorGUILayout.Space(6);
+            EditorGUILayout.LabelField(
+                new GUIContent("Virtual / Flag IDs",
+                    "Віртуальні ID для WFC, які не мають існувати в TileRegistry. Наприклад: flag:road, flag:river, marker:bridge."),
+                EditorStyles.miniLabel);
+            string virtualTileIdsInput = EditorGUILayout.TextArea(_virtualTileIdsBuffer, GUILayout.MinHeight(38));
+
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(_wfcDataSettings, "Edit WFC Global Settings");
@@ -257,8 +291,11 @@ namespace Kruty1918.Moyva.Generator.Editor
                 _wfcDataSettings.NearWaterRadius = nearWaterRadius;
                 _wfcDataSettings.IncludeDiagonalsForNearWater = includeDiagonals;
                 _waterLikeIdsBuffer = waterLikeInput;
+                _virtualTileIdsBuffer = virtualTileIdsInput;
                 _wfcDataSettings.WaterLikeTileIds = ParseIds(_waterLikeIdsBuffer);
+                _wfcDataSettings.VirtualTileIds = ParseIdsAllowEmpty(_virtualTileIdsBuffer);
                 EditorUtility.SetDirty(_wfcDataSettings);
+                LoadAvailableTileIDs();
             }
 
             if (GUILayout.Button(new GUIContent(
@@ -282,6 +319,12 @@ namespace Kruty1918.Moyva.Generator.Editor
             return string.Join(", ", ids.Where(i => !string.IsNullOrWhiteSpace(i)).Select(i => i.Trim()));
         }
 
+        private static string JoinIdsAllowEmpty(string[] ids)
+        {
+            if (ids == null || ids.Length == 0) return string.Empty;
+            return string.Join(", ", ids.Where(i => !string.IsNullOrWhiteSpace(i)).Select(i => i.Trim()));
+        }
+
         private static string[] ParseIds(string source)
         {
             if (string.IsNullOrWhiteSpace(source))
@@ -295,6 +338,19 @@ namespace Kruty1918.Moyva.Generator.Editor
                 .ToArray();
 
             return result.Length == 0 ? new[] { "water" } : result;
+        }
+
+        private static string[] ParseIdsAllowEmpty(string source)
+        {
+            if (string.IsNullOrWhiteSpace(source))
+                return System.Array.Empty<string>();
+
+            return source
+                .Split(new[] { ',', '\n', '\r', ';' }, System.StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => x.Trim())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct()
+                .ToArray();
         }
 
         private void RebuildRuleOrder()

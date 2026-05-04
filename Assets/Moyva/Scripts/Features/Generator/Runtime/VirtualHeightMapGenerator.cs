@@ -1,27 +1,24 @@
 using System;
-using System.Collections;
-using System.Linq;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal sealed class VirtualHeightMapGenerator : IVirtualHeightMapGenerator
     {
-        private readonly HeightLayer[] _sortedLayers;
+        private readonly HeightLayer[] _layers;
 
         public VirtualHeightMapGenerator(HeightMapSettings heightMapSettings)
         {
             if (heightMapSettings == null || heightMapSettings.HeightLayers == null || heightMapSettings.HeightLayers.Length == 0)
             {
                 Debug.LogError("[VirtualHeightMapGenerator] Settings or Layers are missing!");
-                _sortedLayers = Array.Empty<HeightLayer>();
+                _layers = Array.Empty<HeightLayer>();
                 return;
             }
 
-            _sortedLayers = heightMapSettings.HeightLayers
-                .OrderBy(l => l.MaxHeight)
-                .ToArray();
+            _layers = heightMapSettings.HeightLayers;
         }
 
         /// <summary>
@@ -33,35 +30,24 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int height = heightMap.GetLength(1);
             string[,] virtualMap = new string[width, height];
 
-            if (_sortedLayers.Length == 0)
+            if (_layers.Length == 0)
             {
                 onComplete?.Invoke(virtualMap);
                 return;
             }
 
+            int seed = GlobalSeed.Current;
+
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    virtualMap[x, y] = ResolveTileID(heightMap[x, y]);
+                    virtualMap[x, y] = HeightLayerTileSelector.ResolveTileId(_layers, heightMap[x, y], x, y, seed);
                 }
             }
 
             // Повертаємо результат через Callback
             onComplete?.Invoke(virtualMap);
-        }
-
-        private string ResolveTileID(float height)
-        {
-            for (int i = 0; i < _sortedLayers.Length; i++)
-            {
-                if (height <= _sortedLayers[i].MaxHeight)
-                {
-                    return _sortedLayers[i].TileID;
-                }
-            }
-
-            return _sortedLayers.Length > 0 ? _sortedLayers[^1].TileID : null;
         }
     }
 }

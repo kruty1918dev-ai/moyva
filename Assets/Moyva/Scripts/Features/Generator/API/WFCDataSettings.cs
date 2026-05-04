@@ -43,6 +43,9 @@ namespace Kruty1918.Moyva.Generator.API
     {
         [Header("Ruleset")]
         public List<WFCTileRule> TileRules;
+        
+        [Tooltip("Віртуальні ID для правил WFC, які не зобов'язані існувати в TileRegistry. Зручно для прапорців на кшталт flag:road, flag:river, marker:poi.")]
+        public string[] VirtualTileIds;
 
         [Header("Polishing Settings")]
         [Tooltip("Скільки ітерацій полірування пройти")]

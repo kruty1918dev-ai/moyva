@@ -36,6 +36,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [Tooltip("Степінь підсилення ймовірності дерева у щільних ділянках. >1 концентрує дерева у ядрах кластерів, <1 робить покриття рівномірнішим.")]
         [SerializeField, Range(0.5f, 4f)] private float _treeDensityExponent = 1.8f;
 
+        [Header("Fallback Density Noise")]
+        [SerializeField, Min(0.0001f)] private float _fallbackDensityScale = 0.08f;
+        [SerializeField, Range(1, 8)] private int _fallbackDensityOctaves = 1;
+        [SerializeField, Min(1f)] private float _fallbackDensityLacunarity = 2f;
+        [SerializeField, Range(0.01f, 1f)] private float _fallbackDensityPersistence = 0.5f;
+
         public override string Title => "Forest Cluster";
         public override string Category => "Features";
 
@@ -73,13 +79,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             }
             else
             {
-                int fallbackSeed = GlobalSeed.Combine(context.Seed, GlobalSeed.StableHash($"{NodeId}:ForestDensity"));
-                densityMap = GenerateSimpleNoise(w, h, fallbackSeed);
+                densityMap = GenerateSimpleNoise(
+                    w,
+                    h,
+                    context.Seed,
+                    _fallbackDensityScale,
+                    _fallbackDensityOctaves,
+                    _fallbackDensityLacunarity,
+                    _fallbackDensityPersistence);
             }
 
             var resultBiome = (string[,])biomeMap.Clone();
             var objectMap = new string[w, h];
-            var rng = context.CreateRandom($"{NodeId}:ForestCluster");
+            var rng = context.CreateRandom();
             var forestCandidates = new bool[w, h];
             var densityAtCell = new float[w, h];
 
@@ -162,20 +174,43 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             return count;
         }
 
-        private static float[,] GenerateSimpleNoise(int w, int h, int seed)
+        private static float[,] GenerateSimpleNoise(
+            int w,
+            int h,
+            int seed,
+            float scale,
+            int octaves,
+            float lacunarity,
+            float persistence)
         {
             var result = new float[w, h];
             float offsetX = seed * 0.7f;
             float offsetY = seed * 1.3f;
-            float scale = 0.08f;
+            scale = Mathf.Max(0.0001f, scale);
+            octaves = Mathf.Max(1, octaves);
+            lacunarity = Mathf.Max(1f, lacunarity);
+            persistence = Mathf.Clamp01(persistence);
 
             for (int x = 0; x < w; x++)
             {
                 for (int y = 0; y < h; y++)
                 {
-                    float nx = x * scale + offsetX;
-                    float ny = y * scale + offsetY;
-                    result[x, y] = Mathf.PerlinNoise(nx, ny);
+                    float amplitude = 1f;
+                    float frequency = 1f;
+                    float value = 0f;
+                    float amplitudeSum = 0f;
+
+                    for (int octave = 0; octave < octaves; octave++)
+                    {
+                        float nx = x * scale * frequency + offsetX;
+                        float ny = y * scale * frequency + offsetY;
+                        value += Mathf.PerlinNoise(nx, ny) * amplitude;
+                        amplitudeSum += amplitude;
+                        amplitude *= persistence;
+                        frequency *= lacunarity;
+                    }
+
+                    result[x, y] = amplitudeSum > 0f ? Mathf.Clamp01(value / amplitudeSum) : 0f;
                 }
             }
             return result;
