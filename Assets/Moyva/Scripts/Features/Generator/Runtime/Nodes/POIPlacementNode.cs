@@ -49,9 +49,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             new POIRule { Type = POIType.Village, ObjectId = "village", Count = 4,
                 MinHeight = 0.3f, MaxHeight = 0.55f, MinDistanceFromOthers = 10, NearWater = true }
         };
-        [Tooltip("Seed випадковості для сортування та вибору позицій. Дозволяє відтворювати однакове розташування POI при незмінних вхідних даних.")]
-        [SerializeField] private int _seed = 42;
-
         public override string Title => "POI Placement";
         public override string Category => "Features";
 
@@ -90,7 +87,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             int[,] waterDist = waterMask != null ? ComputeDistanceField(waterMask, w, h) : null;
 
             var placedPOIs = new List<Vector2Int>();
-            var rng = new System.Random(_seed);
+            var rng = context.CreateRandom($"{NodeId}:POIPlacement");
             int poiId = 1;
 
             if (_rules == null) return NodeOutput.Success(buildingMap, poiMap);

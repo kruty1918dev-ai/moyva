@@ -99,20 +99,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             // не лишаємо canvas чорним — підставляємо fallback з biome/height.
             if (!anyLayerDrawn && biomeMap != null && tileRegistry != null)
             {
-                // Фолбек: якщо шарів немає, малюємо біоми як кольорову карту
-                var colorCache = BuildTileSpriteColorCache(tileRegistry);
+                // Фолбек: якщо текстурні шари недоступні, малюємо реальні спрайти тайлів із TileRegistry.
+                var spriteCache = BuildTileSpriteCache(tileRegistry);
                 for (int y = 0; y < mapH; y++)
                 {
                     for (int x = 0; x < mapW; x++)
                     {
                         var tileId = biomeMap[x, y];
-                        Color c;
                         if (string.IsNullOrEmpty(tileId))
-                            c = Color.black;
-                        else if (!colorCache.TryGetValue(tileId, out c))
-                            c = HashColor(tileId);
+                        {
+                            FillTileRect(canvas, texW, x, y, ppt, Color.black);
+                            continue;
+                        }
 
-                        FillTileRect(canvas, texW, x, y, ppt, c);
+                        if (spriteCache.TryGetValue(tileId, out var spriteData))
+                            StampSprite(canvas, texW, texH, x, y, ppt, spriteData);
+                        else
+                            FillTileRect(canvas, texW, x, y, ppt, HashColor(tileId));
                     }
                 }
             }
@@ -386,9 +389,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
         }
 
-        private static Dictionary<string, Color> BuildTileSpriteColorCache(TileRegistrySO registry)
+        private static Dictionary<string, SpritePixelData> BuildTileSpriteCache(TileRegistrySO registry)
         {
-            var cache = new Dictionary<string, Color>();
+            var cache = new Dictionary<string, SpritePixelData>();
             if (registry?.Definitions == null) return cache;
 
             foreach (var def in registry.Definitions)
@@ -399,20 +402,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
                 if (sr == null || sr.sprite == null) continue;
 
-                try
-                {
-                    var rect = sr.sprite.textureRect;
-                    int x = (int)rect.x, y = (int)rect.y;
-                    int w = Mathf.Max(1, (int)rect.width);
-                    int h = Mathf.Max(1, (int)rect.height);
-                    Color[] pixels = sr.sprite.texture.GetPixels(x, y, w, h);
-                    cache[def.Id] = AverageOpaqueColor(pixels);
-                }
-                catch
-                {
-                    cache[def.Id] = sr.color;
-                }
+                cache[def.Id] = GetSpritePixels(sr.sprite, sr.color);
             }
+
             return cache;
         }
 

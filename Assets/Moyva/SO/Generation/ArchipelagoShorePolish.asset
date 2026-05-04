@@ -1,0 +1,265 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 219d3ec8208a69f76b7901e5d84a4c13, type: 3}
+  m_Name: ArchipelagoShorePolish
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.WFCDataSettings
+  TileRules:
+  - TileID: ocean-shallow
+    TileCentralID: ocean-deep
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - beach
+      - lowland
+      - grass
+      - forest-sparse
+      - forest-dense
+      - hill
+      - mountain
+      - snow
+    Priority: 120
+    MatchThreshold: 1
+  - TileID: ocean-shallow
+    TileCentralID: ocean-deep
+    Constraints:
+    - Direction: 2
+      AllowedNeighbors:
+      - beach
+      - lowland
+      - grass
+      - forest-sparse
+      - forest-dense
+      - hill
+      - mountain
+      - snow
+    Priority: 120
+    MatchThreshold: 1
+  - TileID: ocean-shallow
+    TileCentralID: ocean-deep
+    Constraints:
+    - Direction: 4
+      AllowedNeighbors:
+      - beach
+      - lowland
+      - grass
+      - forest-sparse
+      - forest-dense
+      - hill
+      - mountain
+      - snow
+    Priority: 120
+    MatchThreshold: 1
+  - TileID: ocean-shallow
+    TileCentralID: ocean-deep
+    Constraints:
+    - Direction: 6
+      AllowedNeighbors:
+      - beach
+      - lowland
+      - grass
+      - forest-sparse
+      - forest-dense
+      - hill
+      - mountain
+      - snow
+    Priority: 120
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: lowland
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 100
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: lowland
+    Constraints:
+    - Direction: 2
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 100
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: lowland
+    Constraints:
+    - Direction: 4
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 100
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: lowland
+    Constraints:
+    - Direction: 6
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 100
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: grass
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 95
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: grass
+    Constraints:
+    - Direction: 2
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 95
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: grass
+    Constraints:
+    - Direction: 4
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 95
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: grass
+    Constraints:
+    - Direction: 6
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 95
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: forest-sparse
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 90
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: forest-sparse
+    Constraints:
+    - Direction: 2
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 90
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: forest-sparse
+    Constraints:
+    - Direction: 4
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 90
+    MatchThreshold: 1
+  - TileID: beach
+    TileCentralID: forest-sparse
+    Constraints:
+    - Direction: 6
+      AllowedNeighbors:
+      - ocean-deep
+      - ocean-shallow
+    Priority: 90
+    MatchThreshold: 1
+  - TileID: lowland
+    TileCentralID: hill
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - beach
+      - ocean-shallow
+    Priority: 80
+    MatchThreshold: 1
+  - TileID: lowland
+    TileCentralID: hill
+    Constraints:
+    - Direction: 2
+      AllowedNeighbors:
+      - beach
+      - ocean-shallow
+    Priority: 80
+    MatchThreshold: 1
+  - TileID: lowland
+    TileCentralID: hill
+    Constraints:
+    - Direction: 4
+      AllowedNeighbors:
+      - beach
+      - ocean-shallow
+    Priority: 80
+    MatchThreshold: 1
+  - TileID: lowland
+    TileCentralID: hill
+    Constraints:
+    - Direction: 6
+      AllowedNeighbors:
+      - beach
+      - ocean-shallow
+    Priority: 80
+    MatchThreshold: 1
+  - TileID: hill
+    TileCentralID: mountain
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - beach
+      - ocean-shallow
+    Priority: 70
+    MatchThreshold: 1
+  - TileID: hill
+    TileCentralID: mountain
+    Constraints:
+    - Direction: 2
+      AllowedNeighbors:
+      - beach
+      - ocean-shallow
+    Priority: 70
+    MatchThreshold: 1
+  - TileID: hill
+    TileCentralID: mountain
+    Constraints:
+    - Direction: 4
+      AllowedNeighbors:
+      - beach
+      - ocean-shallow
+    Priority: 70
+    MatchThreshold: 1
+  - TileID: hill
+    TileCentralID: mountain
+    Constraints:
+    - Direction: 6
+      AllowedNeighbors:
+      - beach
+      - ocean-shallow
+    Priority: 70
+    MatchThreshold: 1
+  PassCount: 2
+  ForceTileNearWaterBand: 1
+  NearWaterTileId: beach
+  NearWaterRadius: 1
+  IncludeDiagonalsForNearWater: 1
+  WaterLikeTileIds:
+  - water
+  - ocean-deep
+  - ocean-shallow
+  BorderWaterTileId: ocean-deep

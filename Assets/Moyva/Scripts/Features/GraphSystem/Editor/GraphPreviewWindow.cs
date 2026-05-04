@@ -19,6 +19,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private bool _compareMode;
         private float _compareSplit = 0.5f;
 
+        // Hover info
+        private float[,]  _lastFloatMap;
+        private string[,] _lastTileMap;
+        private Vector2   _mouseInWindow;
+        private Rect      _lastDrawRect;    // де намальована текстура у window-space
+
         public static void Open(GraphEditorWindow owner)
         {
             var window = GetWindow<GraphPreviewWindow>("Graph Preview");
@@ -46,6 +52,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void OnGUI()
         {
+            // Відстежуємо позицію миші (layout+repaint event)
+            if (Event.current.type == EventType.MouseMove || Event.current.type == EventType.Repaint)
+                _mouseInWindow = Event.current.mousePosition;
+
             EditorGUILayout.Space(6);
 
             using (new EditorGUILayout.HorizontalScope())
@@ -101,6 +111,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             _lastTexture = tex;
             _lastStatus = string.IsNullOrEmpty(status) ? "Preview" : status;
+
+            // Отримуємо raw-дані для hover-підказки
+            _owner.TryGetBestRawMaps(out _lastFloatMap, out _lastTileMap);
 
             EditorGUILayout.LabelField(_lastStatus, EditorStyles.boldLabel);
             EditorGUILayout.Space(4);
@@ -160,6 +173,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 _pan += evt.delta;
                 evt.Use();
             }
+
+            // Перемальовуємо при русі миші для оновлення hover-підказки
+            if (evt.type == EventType.MouseMove)
+                Repaint();
         }
 
         private void DrawZoomablePreview(Rect viewport, Texture2D texture)
@@ -180,6 +197,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 drawRect.x = viewport.x + (viewport.width - drawRect.width) * 0.5f;
                 drawRect.y = viewport.y + (viewport.height - drawRect.height) * 0.5f;
             }
+
+            _lastDrawRect = drawRect;
 
             GUI.BeginClip(viewport);
             var localRect = new Rect(
@@ -211,6 +230,81 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             GUI.Label(
                 new Rect(viewport.x + 8f, viewport.y + 8f, 220f, 20f),
                 $"Zoom: {_zoom:F2}x  |  Drag: middle mouse");
+
+            // ── Hover overlay: показуємо координати та значення пікселя ──
+            DrawHoverOverlay(viewport, texture);
+        }
+
+        private void DrawHoverOverlay(Rect viewport, Texture2D texture)
+        {
+            if (!viewport.Contains(_mouseInWindow)) return;
+
+            // Перетворюємо позицію миші в координати текстури
+            float relX = (_mouseInWindow.x - _lastDrawRect.x) / Mathf.Max(1f, _lastDrawRect.width);
+            float relY = (_mouseInWindow.y - _lastDrawRect.y) / Mathf.Max(1f, _lastDrawRect.height);
+
+            if (relX < 0f || relX > 1f || relY < 0f || relY > 1f) return;
+
+            int texW = texture.width;
+            int texH = texture.height;
+
+            int px = Mathf.Clamp(Mathf.FloorToInt(relX * texW), 0, texW - 1);
+            int py = Mathf.Clamp(Mathf.FloorToInt(relY * texH), 0, texH - 1);
+
+            // GUI.DrawTexture відображає y=0 текстури внизу екрану,
+            // тому relY=0 (верх екрану) відповідає y=texH-1 у SetPixel-координатах.
+            // Фліпуємо Y щоб отримати правильний рядок карти.
+            int pyFlipped = texH - 1 - py;
+
+            string valueText;
+
+            if (_lastFloatMap != null)
+            {
+                int mapW = _lastFloatMap.GetLength(0);
+                int mapH = _lastFloatMap.GetLength(1);
+
+                int mx = Mathf.Clamp(Mathf.FloorToInt((float)px / texW * mapW), 0, mapW - 1);
+                int my = Mathf.Clamp(Mathf.FloorToInt((float)pyFlipped / texH * mapH), 0, mapH - 1);
+
+                float val = _lastFloatMap[mx, my];
+                valueText = $"Height: {val:F4}  |  [{mx}, {my}]";
+            }
+            else if (_lastTileMap != null)
+            {
+                int mapW = _lastTileMap.GetLength(0);
+                int mapH = _lastTileMap.GetLength(1);
+
+                int mx = Mathf.Clamp(Mathf.FloorToInt((float)px / texW * mapW), 0, mapW - 1);
+                int my = Mathf.Clamp(Mathf.FloorToInt((float)pyFlipped / texH * mapH), 0, mapH - 1);
+
+                string tile = _lastTileMap[mx, my];
+                valueText = $"Tile: {tile ?? "—"}  |  [{mx}, {my}]";
+            }
+            else
+            {
+                valueText = $"[{px}, {py}]";
+            }
+
+            // Малюємо підказку поруч з курсором
+            var style = new GUIStyle(EditorStyles.label)
+            {
+                normal   = { textColor = Color.white },
+                fontSize = 11,
+                padding  = new RectOffset(6, 6, 3, 3)
+            };
+
+            var content = new GUIContent(valueText);
+            var size    = style.CalcSize(content);
+            float tipX  = _mouseInWindow.x + 14f;
+            float tipY  = _mouseInWindow.y - size.y - 4f;
+
+            // Не виходимо за межі вікна
+            if (tipX + size.x > position.width - 4f) tipX = _mouseInWindow.x - size.x - 14f;
+            if (tipY < viewport.y)                    tipY = _mouseInWindow.y + 14f;
+
+            var bgRect = new Rect(tipX - 2f, tipY - 2f, size.x + 4f, size.y + 4f);
+            EditorGUI.DrawRect(bgRect, new Color(0f, 0f, 0f, 0.78f));
+            GUI.Label(new Rect(tipX, tipY, size.x, size.y), content, style);
         }
     }
 }

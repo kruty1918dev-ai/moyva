@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8198709037a537fa9b727dd08b59b9b1, type: 3}
+  m_Name: ArchipelagoHeightLayers
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.HeightMapSettings
+  HeightLayers:
+  - TileID: water-deep-depth-tile-001
+    MinHeight: 0
+    MaxHeight: 0.18
+  - TileID: water-deep-depth-tile-002
+    MinHeight: 0.18
+    MaxHeight: 0.27
+  - TileID: water-deep-depth-tile-003
+    MinHeight: 0.27
+    MaxHeight: 0.35
+  - TileID: sand-tile-003
+    MinHeight: 0.35
+    MaxHeight: 0.4
+  - TileID: grass-tile-001
+    MinHeight: 0.4
+    MaxHeight: 1

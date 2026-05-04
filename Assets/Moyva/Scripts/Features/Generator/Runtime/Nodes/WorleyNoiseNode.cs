@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Worley Noise", "Generators", "Генерує Worley/Voronoi-подібний noise для клітинної структури.")]
+    [NodeInfo("Worley Noise", "Noise", "Генерує Worley/Voronoi-подібний noise для клітинної структури.")]
     public sealed class WorleyNoiseNode : NodeBase
     {
         [SerializeField, Min(0.0001f)] private float _scale = 0.03f;
@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [SerializeField] private int _seedOffset = 241;
 
         public override string Title => "Worley Noise";
-        public override string Category => "Generators";
+        public override string Category => "Noise";
         public override PortDefinition[] Inputs => System.Array.Empty<PortDefinition>();
         public override PortDefinition[] Outputs => new[] { PortDefinition.Output<float[,]>("Noise") };
 
@@ -21,7 +21,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         {
             int w = Mathf.Max(1, context.MapSize.x);
             int h = Mathf.Max(1, context.MapSize.y);
-            int seed = context.Seed ^ _seedOffset;
+            int seed = GlobalSeed.Combine(context.Seed, _seedOffset);
             var map = new float[w, h];
 
             for (int x = 0; x < w; x++)

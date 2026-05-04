@@ -19,7 +19,7 @@ MonoBehaviour:
   previewWidth: 64
   previewHeight: 64
   showInlinePreviews: 1
-  autoRunOnChange: 0
+  autoRunOnChange: 1
   previewResolution: 1
   previewHeatmap: 0
   inspectorTabIndex: 1

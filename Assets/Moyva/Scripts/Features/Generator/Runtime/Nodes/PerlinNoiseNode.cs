@@ -4,14 +4,14 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Perlin Noise", "Generators", "Генерує карту шуму Perlin у діапазоні 0..1.")]
+    [NodeInfo("Perlin Noise", "Noise", "Генерує карту шуму Perlin у діапазоні 0..1.")]
     public sealed class PerlinNoiseNode : NodeBase
     {
         [SerializeField, Min(0.0001f)] private float _scale = 0.05f;
         [SerializeField] private Vector2 _offset;
 
         public override string Title => "Perlin Noise";
-        public override string Category => "Generators";
+        public override string Category => "Noise";
         public override PortDefinition[] Inputs => System.Array.Empty<PortDefinition>();
         public override PortDefinition[] Outputs => new[] { PortDefinition.Output<float[,]>("Noise") };
 

@@ -67,6 +67,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private double _nextAutoRunAt;
         private bool _isRunningGraph;
 
+        private readonly Dictionary<string, bool> _inlineObjectFoldouts = new();
+        private readonly Dictionary<string, UnityEditor.Editor> _inlineObjectEditors = new();
+
         [MenuItem("Moyva/Graph Editor")]
         public static void Open()
         {
@@ -105,6 +108,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             SaveWindowSettings();
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+
+            foreach (var editor in _inlineObjectEditors.Values)
+            {
+                if (editor != null)
+                    DestroyImmediate(editor);
+            }
+            _inlineObjectEditors.Clear();
 
             if (_graphView != null)
                 _graphView.GraphChanged -= OnGraphChanged;
@@ -706,8 +716,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
 
-            // Compute deterministic seed from graph asset + preview settings + runtime options
-            int seed = ComputeDeterministicSeed(mapW, mapH);
+            int seed = GetSeedFromGraph();
+            GlobalSeed.Set(seed);
             _statusLabel.text = $"Running graph... (seed {seed})";
 
             // Save previous Unity random state and set deterministic seed for UnityEngine.Random
@@ -793,6 +803,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return false;
         }
 
+        internal bool TryGetBestRawMaps(out float[,] floatMap, out string[,] tileMap)
+        {
+            if (_graphView != null)
+                return _graphView.TryGetBestRawMaps(out floatMap, out tileMap);
+
+            floatMap = null;
+            tileMap  = null;
+            return false;
+        }
+
         /// <summary>
         /// Реєструє сервіси генератора з EditorPreviewSettings.
         /// Кожен сервіс реєструється опціонально — якщо ScriptableObject не задано,
@@ -835,6 +855,18 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             // IRiverPathfinder — не потребує залежностей
             context.RegisterService<IRiverPathfinder>(new RiverPathfinder());
             Debug.Log("[EditorPreview] ✓ IRiverPathfinder registered.");
+
+            var tileRegistry = _previewSettings?.TileRegistry;
+            if (tileRegistry != null)
+            {
+                context.RegisterService(tileRegistry);
+                Debug.Log("[EditorPreview] ✓ TileRegistrySO registered.");
+            }
+            else
+            {
+                Debug.LogWarning("[EditorPreview] ⚠ TileRegistrySO not assigned in EditorPreviewSettings. " +
+                    "SingleTileLayerNode sprite fallback will not be available.");
+            }
 
             // IWFCService — потребує WFCDataSettings
             var wfcSettings = _previewSettings?.WFCDataSettings;
@@ -1059,6 +1091,20 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 Debug.LogWarning($"[GraphEditorWindow] Failed to compute deterministic seed: {ex.Message}");
                 return (int)(Environment.TickCount & 0x7FFFFFFF);
             }
+        }
+
+        private int GetSeedFromGraph()
+        {
+            if (_graphAsset?.Nodes == null)
+                return GlobalSeed.DefaultSeed;
+
+            foreach (var node in _graphAsset.Nodes)
+            {
+                if (node is ISeedProvider seedProvider)
+                    return seedProvider.Seed;
+            }
+
+            return GlobalSeed.DefaultSeed;
         }
 
         private void HighlightExecutionResults(GraphExecutionResult result)
@@ -1341,6 +1387,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var label = BuildPropertyLabel(property);
                 EditorGUILayout.PropertyField(property, label, true);
 
+                DrawInlineObjectReferenceControls(serializedObject, property);
+
                 var fieldRect = GUILayoutUtility.GetLastRect();
                 if (!string.IsNullOrEmpty(tooltip) && fieldRect.Contains(Event.current.mousePosition))
                     hoveredTooltip = tooltip;
@@ -1351,6 +1399,56 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             DrawInspectorHoverTooltip(hoveredTooltip);
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawInlineObjectReferenceControls(SerializedObject ownerSerializedObject, SerializedProperty property)
+        {
+            if (property.propertyType != SerializedPropertyType.ObjectReference)
+                return;
+
+            var referencedObject = property.objectReferenceValue;
+            if (referencedObject == null)
+                return;
+
+            string key = $"{ownerSerializedObject.targetObject.GetInstanceID()}:{property.propertyPath}";
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(14f);
+
+                if (GUILayout.Button("Ping", EditorStyles.miniButton, GUILayout.Width(52f)))
+                    EditorGUIUtility.PingObject(referencedObject);
+
+                if (GUILayout.Button("Select", EditorStyles.miniButton, GUILayout.Width(52f)))
+                    Selection.activeObject = referencedObject;
+
+                if (GUILayout.Button("Open", EditorStyles.miniButton, GUILayout.Width(52f)))
+                    AssetDatabase.OpenAsset(referencedObject);
+            }
+
+            if (referencedObject is not ScriptableObject scriptableObject)
+                return;
+
+            _inlineObjectFoldouts.TryGetValue(key, out bool expanded);
+            expanded = EditorGUILayout.Foldout(expanded, $"Inline: {property.displayName}", true);
+            _inlineObjectFoldouts[key] = expanded;
+            if (!expanded)
+                return;
+
+            if (!_inlineObjectEditors.TryGetValue(key, out var nestedEditor)
+                || nestedEditor == null
+                || nestedEditor.target != scriptableObject)
+            {
+                if (nestedEditor != null)
+                    DestroyImmediate(nestedEditor);
+
+                nestedEditor = UnityEditor.Editor.CreateEditor(scriptableObject);
+                _inlineObjectEditors[key] = nestedEditor;
+            }
+
+            EditorGUI.indentLevel++;
+            nestedEditor.OnInspectorGUI();
+            EditorGUI.indentLevel--;
         }
 
         private static GUIContent BuildPropertyLabel(SerializedProperty property)

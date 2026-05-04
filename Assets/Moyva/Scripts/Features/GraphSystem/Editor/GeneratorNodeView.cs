@@ -30,6 +30,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private Texture2D _previewTexture;
         private bool _ownsPreviewTexture;
 
+        // Raw output data — використовується у Preview Window для відображення висоти при наведенні
+        public float[,]  PreviewFloatMap { get; private set; }
+        public string[,] PreviewTileMap  { get; private set; }
+
+        public void SetPreviewRawMaps(float[,] floatMap, string[,] tileMap)
+        {
+            PreviewFloatMap = floatMap;
+            PreviewTileMap  = tileMap;
+        }
+
         public GeneratorNodeView(NodeBase nodeData)
         {
             NodeData = nodeData;
@@ -52,13 +62,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             // Style
             AddToClassList("generator-node");
-            style.width = 220;
-            style.minWidth = 220;
-            style.maxWidth = 220;
+            style.width = 280;
+            style.minWidth = 280;
+            style.maxWidth = 280;
 
             // Position
             var pos = nodeData.EditorPosition;
-            SetPosition(new Rect(pos.x, pos.y, 220, 0));
+            SetPosition(new Rect(pos.x, pos.y, 280, 0));
 
             // Category badge
             var badge = new Label(nodeData.Category)

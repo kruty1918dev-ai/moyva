@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
+using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -11,7 +12,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             float[,] noiseMap = new float[width, height];
 
             // Генерація випадкових офсетів для кожної октави, щоб мапа була різною при зміні Seed
-            System.Random prng = new System.Random(settings.Seed);
+            System.Random prng = GlobalSeed.CreateRandom(settings != null ? settings.name : nameof(DataNoiseSettings));
             Vector2[] octaveOffsets = new Vector2[settings.Octaves];
             for (int i = 0; i < settings.Octaves; i++)
             {

@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             PortDefinition.Input<string[,]>("BiomeMap"),
             PortDefinition.Input<string[,]>("ObjectMap"),
             PortDefinition.Input<float[,]>("HeightMap"),
-            PortDefinition.Input<string[,]>("BuildingMap")
+            PortDefinition.Input<string[,]>("BuildingMap (optional)")
         };
 
         public override PortDefinition[] Outputs => Array.Empty<PortDefinition>();

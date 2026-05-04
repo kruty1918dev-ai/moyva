@@ -62,8 +62,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             else
             {
                 fertility = new float[w, h];
-                float offsetX = 123.4f;
-                float offsetY = 567.8f;
+                var rng = context.CreateRandom($"{NodeId}:FertilityFallback");
+                float offsetX = (float)rng.NextDouble() * 9999f;
+                float offsetY = (float)rng.NextDouble() * 9999f;
                 for (int x = 0; x < w; x++)
                     for (int y = 0; y < h; y++)
                         fertility[x, y] = Mathf.PerlinNoise(x * 0.05f + offsetX, y * 0.05f + offsetY);

@@ -16,6 +16,13 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
         public GraphExecutionResult Execute(GraphAsset graph, NodeContext context)
         {
             var logs = new List<NodeExecutionLog>();
+
+            var uniqueNodeError = ValidateUniqueNodes(graph, logs);
+            if (uniqueNodeError != null)
+                return uniqueNodeError;
+
+            GlobalSeed.Set(context.Seed);
+
             var cache = new Dictionary<string, object[]>();
             var connectionsByTarget = BuildConnectionsByTarget(graph);
 
@@ -78,6 +85,13 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             NodeContext context)
         {
             var logs = new List<NodeExecutionLog>();
+
+            var uniqueNodeError = ValidateUniqueNodes(graph, logs);
+            if (uniqueNodeError != null)
+                return uniqueNodeError;
+
+            GlobalSeed.Set(context.Seed);
+
             var cache = new Dictionary<string, object[]>();
             var connectionsByTarget = BuildConnectionsByTarget(graph);
 
@@ -181,6 +195,35 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             }
 
             return index;
+        }
+
+        private static GraphExecutionResult ValidateUniqueNodes(GraphAsset graph, List<NodeExecutionLog> logs)
+        {
+            if (graph?.Nodes == null)
+                return null;
+
+            var seen = new Dictionary<Type, NodeBase>();
+            foreach (var node in graph.Nodes)
+            {
+                if (node == null)
+                    continue;
+
+                var nodeType = node.GetType();
+                if (!Attribute.IsDefined(nodeType, typeof(UniqueNodeAttribute)))
+                    continue;
+
+                if (!seen.TryGetValue(nodeType, out var firstNode))
+                {
+                    seen[nodeType] = node;
+                    continue;
+                }
+
+                string message = $"Graph contains multiple unique nodes of type '{nodeType.Name}'. Keep only one. First node: {firstNode.NodeId}.";
+                logs.Add(new NodeExecutionLog(node.NodeId, node.Title, NodeStatus.Error, message, 0f));
+                return new GraphExecutionResult(node.NodeId, message, logs);
+            }
+
+            return null;
         }
 
         private static long GetThreadAllocatedBytes()

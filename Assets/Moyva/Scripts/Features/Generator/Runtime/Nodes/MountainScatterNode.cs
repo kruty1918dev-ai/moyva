@@ -29,8 +29,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             new MountainLayer { MinHeight = 0.65f, MaxHeight = 0.75f, ObjectId = "mountain-small", Density = 0.35f },
             new MountainLayer { MinHeight = 0.55f, MaxHeight = 0.65f, ObjectId = "rock", Density = 0.2f }
         };
-        [Tooltip("Seed випадковості для розміщення гірських об'єктів. Дозволяє відтворювати однаковий розподіл між перегенераціями.")]
-        [SerializeField] private int _seed = 42;
         [Tooltip("Якщо увімкнено, нода не ставитиме гірські об'єкти в клітинки, де вже щось є у вхідному ObjectMap. Це запобігає конфліктам із річками, деревами та іншими системами.")]
         [SerializeField] private bool _avoidExistingObjects = true;
 
@@ -63,7 +61,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (_layers == null || _layers.Length == 0)
                 return NodeOutput.Success(result);
 
-            var rng = new System.Random(_seed);
+            var rng = context.CreateRandom($"{NodeId}:MountainScatter");
 
             for (int x = 0; x < w; x++)
             {
