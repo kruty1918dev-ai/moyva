@@ -1,5 +1,27 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8638800109836290894
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9006de4ac354399109373ecc17ebd825, type: 3}
+  m_Name: WaveFunctionCollapseNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.WFC.WaveFunctionCollapseNode
+  _nodeId: f6861245-0e9d-4507-9d6c-ff9ffa0900e4
+  _editorPosition: {x: -589, y: 354}
+  _patternSize: 2
+  _periodicInput: 0
+  _periodicOutput: 0
+  _seed: -1
+  _maxAttempts: 10
+  _outputWidth: 0
+  _outputHeight: 0
+  _lastPreview: {fileID: 0}
 --- !u!114 &-7207838343501215377
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -46,6 +68,7 @@ MonoBehaviour:
   - {fileID: -7207838343501215377}
   - {fileID: -609753921142276548}
   - {fileID: 2733130157158313261}
+  - {fileID: -8638800109836290894}
   _connections:
   - _sourceNodeId: 0e244104-f5c0-46dd-9310-026029a2b3d9
     _sourcePortIndex: 0
