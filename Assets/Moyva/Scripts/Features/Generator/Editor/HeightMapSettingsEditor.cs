@@ -14,6 +14,25 @@ namespace Kruty1918.Moyva.Generator.Editor
         private SerializedProperty _layersProp;
         private bool[] _layerFoldouts = Array.Empty<bool>();
 
+        [Serializable]
+        private sealed class LayerClipboard
+        {
+            public string TileID;
+            public float TileIDChance;
+            public float MinHeight;
+            public float MaxHeight;
+            public WeightedVariantClipboard[] WeightedVariants;
+        }
+
+        [Serializable]
+        private sealed class WeightedVariantClipboard
+        {
+            public string TileID;
+            public float Chance;
+        }
+
+        private static string _layerClipboardJson;
+
         private static readonly Color[] _segmentColors =
         {
             new Color(0.26f, 0.52f, 0.90f), // blue  – main
@@ -37,27 +56,29 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             DrawValidationWarnings((HeightMapSettings)target);
 
-            // Sync foldout array
-            if (_layerFoldouts.Length != _layersProp.arraySize)
-            {
-                var old = _layerFoldouts;
-                _layerFoldouts = new bool[_layersProp.arraySize];
-                Array.Copy(old, _layerFoldouts, Math.Min(old.Length, _layerFoldouts.Length));
-            }
+            EnsureFoldoutsCapacity();
 
             // Header
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Height Layers", EditorStyles.boldLabel);
             GUILayout.FlexibleSpace();
+            using (new EditorGUI.DisabledScope(!HasClipboardLayer()))
+            {
+                if (GUILayout.Button("Paste Layer", GUILayout.Width(90)))
+                {
+                    InsertLayerFromClipboard(_layersProp.arraySize);
+                    EnsureFoldoutsCapacity();
+                    if (_layersProp.arraySize > 0)
+                        _layerFoldouts[_layersProp.arraySize - 1] = true;
+                }
+            }
             if (GUILayout.Button("+ Add Layer", GUILayout.Width(88)))
             {
                 _layersProp.InsertArrayElementAtIndex(_layersProp.arraySize);
                 var elem = _layersProp.GetArrayElementAtIndex(_layersProp.arraySize - 1);
-                elem.FindPropertyRelative("TileID").stringValue = string.Empty;
-                elem.FindPropertyRelative("TileIDChance").floatValue = 1f;
-                elem.FindPropertyRelative("WeightedVariants").ClearArray();
-                var legacy = elem.FindPropertyRelative("VariantTileIDs");
-                if (legacy != null) legacy.ClearArray();
+                ResetLayerToDefaults(elem);
+                EnsureFoldoutsCapacity();
+                _layerFoldouts[_layersProp.arraySize - 1] = true;
             }
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space(2);
@@ -87,6 +108,26 @@ namespace Kruty1918.Moyva.Generator.Editor
                 $"Layer {index}   [{minProp.floatValue:F2} – {maxProp.floatValue:F2}]",
                 true, EditorStyles.foldoutHeader);
             GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Copy", GUILayout.Width(42)))
+            {
+                CopyLayerToClipboard(layerProp);
+            }
+
+            using (new EditorGUI.DisabledScope(!HasClipboardLayer()))
+            {
+                if (GUILayout.Button("Paste", GUILayout.Width(44)))
+                {
+                    PasteClipboardToLayer(layerProp);
+                }
+                if (GUILayout.Button("+P", GUILayout.Width(28)))
+                {
+                    InsertLayerFromClipboard(index + 1);
+                    EnsureFoldoutsCapacity();
+                    if (index + 1 < _layerFoldouts.Length)
+                        _layerFoldouts[index + 1] = true;
+                }
+            }
+
             Color prevBg = GUI.backgroundColor;
             GUI.backgroundColor = new Color(1f, 0.45f, 0.45f);
             if (GUILayout.Button("✕", GUILayout.Width(24)))
@@ -94,6 +135,7 @@ namespace Kruty1918.Moyva.Generator.Editor
                 GUI.backgroundColor = prevBg;
                 _layersProp.DeleteArrayElementAtIndex(index);
                 serializedObject.ApplyModifiedProperties();
+                EnsureFoldoutsCapacity();
                 EditorGUILayout.EndHorizontal();
                 EditorGUILayout.EndVertical();
                 return false;
@@ -118,6 +160,103 @@ namespace Kruty1918.Moyva.Generator.Editor
             EditorGUILayout.EndVertical();
             EditorGUILayout.Space(2);
             return true;
+        }
+
+        private void EnsureFoldoutsCapacity()
+        {
+            if (_layerFoldouts.Length == _layersProp.arraySize)
+                return;
+
+            var old = _layerFoldouts;
+            _layerFoldouts = new bool[_layersProp.arraySize];
+            Array.Copy(old, _layerFoldouts, Math.Min(old.Length, _layerFoldouts.Length));
+        }
+
+        private static void ResetLayerToDefaults(SerializedProperty layerProp)
+        {
+            layerProp.FindPropertyRelative("TileID").stringValue = string.Empty;
+            layerProp.FindPropertyRelative("TileIDChance").floatValue = 1f;
+            layerProp.FindPropertyRelative("MinHeight").floatValue = 0f;
+            layerProp.FindPropertyRelative("MaxHeight").floatValue = 1f;
+
+            var variants = layerProp.FindPropertyRelative("WeightedVariants");
+            variants.ClearArray();
+
+            var legacy = layerProp.FindPropertyRelative("VariantTileIDs");
+            if (legacy != null)
+                legacy.ClearArray();
+        }
+
+        private static bool HasClipboardLayer() => !string.IsNullOrEmpty(_layerClipboardJson);
+
+        private static void CopyLayerToClipboard(SerializedProperty layerProp)
+        {
+            var data = new LayerClipboard
+            {
+                TileID = layerProp.FindPropertyRelative("TileID").stringValue,
+                TileIDChance = layerProp.FindPropertyRelative("TileIDChance").floatValue,
+                MinHeight = layerProp.FindPropertyRelative("MinHeight").floatValue,
+                MaxHeight = layerProp.FindPropertyRelative("MaxHeight").floatValue,
+            };
+
+            var variantsProp = layerProp.FindPropertyRelative("WeightedVariants");
+            data.WeightedVariants = new WeightedVariantClipboard[variantsProp.arraySize];
+            for (int i = 0; i < variantsProp.arraySize; i++)
+            {
+                var v = variantsProp.GetArrayElementAtIndex(i);
+                data.WeightedVariants[i] = new WeightedVariantClipboard
+                {
+                    TileID = v.FindPropertyRelative("TileID").stringValue,
+                    Chance = v.FindPropertyRelative("Chance").floatValue
+                };
+            }
+
+            _layerClipboardJson = JsonUtility.ToJson(data);
+        }
+
+        private static void PasteClipboardToLayer(SerializedProperty layerProp)
+        {
+            if (!HasClipboardLayer())
+                return;
+
+            var data = JsonUtility.FromJson<LayerClipboard>(_layerClipboardJson);
+            if (data == null)
+                return;
+
+            layerProp.FindPropertyRelative("TileID").stringValue = data.TileID ?? string.Empty;
+            layerProp.FindPropertyRelative("TileIDChance").floatValue = Mathf.Clamp01(data.TileIDChance);
+            layerProp.FindPropertyRelative("MinHeight").floatValue = data.MinHeight;
+            layerProp.FindPropertyRelative("MaxHeight").floatValue = data.MaxHeight;
+
+            var variantsProp = layerProp.FindPropertyRelative("WeightedVariants");
+            variantsProp.ClearArray();
+
+            if (data.WeightedVariants != null)
+            {
+                for (int i = 0; i < data.WeightedVariants.Length; i++)
+                {
+                    variantsProp.InsertArrayElementAtIndex(i);
+                    var v = variantsProp.GetArrayElementAtIndex(i);
+                    v.FindPropertyRelative("TileID").stringValue = data.WeightedVariants[i].TileID ?? string.Empty;
+                    v.FindPropertyRelative("Chance").floatValue = Mathf.Clamp01(data.WeightedVariants[i].Chance);
+                }
+            }
+
+            var legacy = layerProp.FindPropertyRelative("VariantTileIDs");
+            if (legacy != null)
+                legacy.ClearArray();
+        }
+
+        private void InsertLayerFromClipboard(int index)
+        {
+            if (!HasClipboardLayer())
+                return;
+
+            int safeIndex = Mathf.Clamp(index, 0, _layersProp.arraySize);
+            _layersProp.InsertArrayElementAtIndex(safeIndex);
+            var layerProp = _layersProp.GetArrayElementAtIndex(safeIndex);
+            ResetLayerToDefaults(layerProp);
+            PasteClipboardToLayer(layerProp);
         }
 
         private void DrawProbabilitySection(SerializedProperty layerProp)

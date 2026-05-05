@@ -41,6 +41,10 @@ namespace Kruty1918.Moyva.Generator.API
     [CreateAssetMenu(menuName = "Moyva/Generator/WFCDataSettings", fileName = "WFCDataSettings")]
     public class WFCDataSettings : ScriptableObject
     {
+        [Header("Tile Registry")]
+        [Tooltip("Реєстр тайлів для WFC. Якщо не вказано — редактор шукає перший TileRegistrySO у проєкті.")]
+        public TileRegistrySO TileRegistry;
+
         [Header("Ruleset")]
         public List<WFCTileRule> TileRules;
         

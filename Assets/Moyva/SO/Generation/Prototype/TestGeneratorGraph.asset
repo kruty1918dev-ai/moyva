@@ -13,10 +13,27 @@ MonoBehaviour:
   m_Name: ConstraintPolishNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ConstraintPolishNode
   _nodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
-  _editorPosition: {x: 8834, y: 165}
+  _editorPosition: {x: 9295, y: 321}
   _wfcSettings: {fileID: 11400000, guid: 43b54663d84457518923e06a607badc7, type: 2}
   _applyOnlyOnFlags: 0
   _targetFlagIds: []
+--- !u!114 &-7803321959616822836
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46f67ce08e63239eea7b7d30347e9bf7, type: 3}
+  m_Name: ErosionNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode
+  _nodeId: 369e331f-73fb-4b5a-a906-09378bb72468
+  _editorPosition: {x: 8165, y: 21}
+  _erosionRate: 0.1
+  _iterations: 33
+  _talusAngle: 0.058
 --- !u!114 &-7769505736633475151
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -142,7 +159,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: 66515f94-b08b-4302-a210-af40b9e96a12
-  _editorPosition: {x: 7850, y: 20.5}
+  _editorPosition: {x: 7850, y: 21}
   _levels: 9
   _sharpness: 1
 --- !u!114 &-5853983609756329095
@@ -198,7 +215,23 @@ MonoBehaviour:
   m_Name: OutputNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.OutputNode
   _nodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
-  _editorPosition: {x: 9233, y: -101}
+  _editorPosition: {x: 9694, y: 55}
+--- !u!114 &-5052904741291767717
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1adac1551616846eea7d1a77db40c558, type: 3}
+  m_Name: TerraceNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
+  _nodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
+  _editorPosition: {x: 8470, y: 21}
+  _levels: 9
+  _sharpness: 1
 --- !u!114 &-4760769970211019525
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -269,7 +302,7 @@ MonoBehaviour:
   m_Name: HeightToTileNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightToTileNode
   _nodeId: 467bcbda-5453-485f-8b81-d39ae9667410
-  _editorPosition: {x: 8450, y: 20.5}
+  _editorPosition: {x: 8952, y: -196}
   _heightMapSettings: {fileID: 11400000, guid: 7858e000ef64a05ce8383f19fce7752c, type: 2}
 --- !u!114 &-3743344069470685114
 MonoBehaviour:
@@ -520,8 +553,9 @@ MonoBehaviour:
   - {fileID: -6746020804870992798}
   - {fileID: 7577903736279346792}
   - {fileID: -6392009196884656065}
-  - {fileID: 2501766192128923427}
   - {fileID: -8820800396615703428}
+  - {fileID: -7803321959616822836}
+  - {fileID: -5052904741291767717}
   _connections:
   - _sourceNodeId: e85324de-9519-4605-9c2d-49e7b25ef12d
     _sourcePortIndex: 0
@@ -679,18 +713,6 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: 66515f94-b08b-4302-a210-af40b9e96a12
     _targetPortIndex: 0
-  - _sourceNodeId: 66515f94-b08b-4302-a210-af40b9e96a12
-    _sourcePortIndex: 0
-    _targetNodeId: bea424ea-1696-4030-8e83-3f2edc882f13
-    _targetPortIndex: 0
-  - _sourceNodeId: bea424ea-1696-4030-8e83-3f2edc882f13
-    _sourcePortIndex: 0
-    _targetNodeId: 467bcbda-5453-485f-8b81-d39ae9667410
-    _targetPortIndex: 0
-  - _sourceNodeId: bea424ea-1696-4030-8e83-3f2edc882f13
-    _sourcePortIndex: 0
-    _targetNodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
-    _targetPortIndex: 2
   - _sourceNodeId: 467bcbda-5453-485f-8b81-d39ae9667410
     _sourcePortIndex: 0
     _targetNodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
@@ -699,10 +721,26 @@ MonoBehaviour:
     _sourcePortIndex: 0
     _targetNodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
     _targetPortIndex: 0
-  - _sourceNodeId: bea424ea-1696-4030-8e83-3f2edc882f13
+  - _sourceNodeId: 66515f94-b08b-4302-a210-af40b9e96a12
+    _sourcePortIndex: 0
+    _targetNodeId: 369e331f-73fb-4b5a-a906-09378bb72468
+    _targetPortIndex: 0
+  - _sourceNodeId: 369e331f-73fb-4b5a-a906-09378bb72468
+    _sourcePortIndex: 0
+    _targetNodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
+    _targetPortIndex: 0
+  - _sourceNodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
     _sourcePortIndex: 0
     _targetNodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
     _targetPortIndex: 1
+  - _sourceNodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
+    _sourcePortIndex: 0
+    _targetNodeId: 467bcbda-5453-485f-8b81-d39ae9667410
+    _targetPortIndex: 0
+  - _sourceNodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
+    _sourcePortIndex: 0
+    _targetNodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
+    _targetPortIndex: 2
   _version: 1
   _sharedSettings:
     _mapWidth: 0
@@ -773,22 +811,6 @@ MonoBehaviour:
   _editorPosition: {x: 1250, y: -112}
   _levels: 20
   _sharpness: 0.4
---- !u!114 &2501766192128923427
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 889d4cbf6fe180ead968533c394389c0, type: 3}
-  m_Name: SmoothNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
-  _nodeId: bea424ea-1696-4030-8e83-3f2edc882f13
-  _editorPosition: {x: 8150, y: 20.5}
-  _radius: 2
-  _iterations: 1
 --- !u!114 &2733130157158313261
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -945,8 +967,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
   _nodeId: 051bc3fe-9422-47e9-b954-98af6a1564f9
   _editorPosition: {x: 7550, y: 20.5}
-  _radius: 2
-  _iterations: 1
+  _radius: 1
+  _iterations: 3
 --- !u!114 &8054288255610037144
 MonoBehaviour:
   m_ObjectHideFlags: 1

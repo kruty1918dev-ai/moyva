@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.Generator.Editor
     public class WFCRulesEditorWindow : EditorWindow
     {
         private WFCDataSettings _wfcDataSettings;
-        private int _selectedRuleIndex = -1;
+        private readonly HashSet<int> _selectedRuleIndices = new HashSet<int>();
 
         private Vector2 _sidebarScroll;
         private Vector2 _mainScroll;
@@ -50,24 +50,28 @@ namespace Kruty1918.Moyva.Generator.Editor
             _availableTileIDs.Clear();
             _tileSprites.Clear();
 
-            string[] guids = AssetDatabase.FindAssets("t:TileRegistrySO");
-            if (guids.Length > 0)
+            TileRegistrySO registry = _wfcDataSettings?.TileRegistry;
+            if (registry == null)
             {
-                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                TileRegistrySO registry = AssetDatabase.LoadAssetAtPath<TileRegistrySO>(path);
-
-                if (registry != null && registry.Definitions != null)
+                string[] guids = AssetDatabase.FindAssets("t:TileRegistrySO");
+                if (guids.Length > 0)
                 {
-                    foreach (var def in registry.Definitions)
+                    string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                    registry = AssetDatabase.LoadAssetAtPath<TileRegistrySO>(path);
+                }
+            }
+
+            if (registry != null && registry.Definitions != null)
+            {
+                foreach (var def in registry.Definitions)
+                {
+                    if (string.IsNullOrEmpty(def.Id)) continue;
+                    _availableTileIDs.Add(def.Id);
+                    if (def.VisualPrefab != null)
                     {
-                        if (string.IsNullOrEmpty(def.Id)) continue;
-                        _availableTileIDs.Add(def.Id);
-                        if (def.VisualPrefab != null)
-                        {
-                            var spriteRenderer = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>();
-                            if (spriteRenderer != null && spriteRenderer.sprite != null)
-                                _tileSprites[def.Id] = spriteRenderer.sprite;
-                        }
+                        var spriteRenderer = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>();
+                        if (spriteRenderer != null && spriteRenderer.sprite != null)
+                            _tileSprites[def.Id] = spriteRenderer.sprite;
                     }
                 }
             }
@@ -150,7 +154,16 @@ namespace Kruty1918.Moyva.Generator.Editor
         private void DrawSidebar()
         {
             EditorGUILayout.BeginVertical("box", GUILayout.Width(250), GUILayout.ExpandHeight(true));
-            GUILayout.Label("Tiles & Rules", EditorStyles.boldLabel);
+            string selLabel = _selectedRuleIndices.Count > 0
+                ? $"Tiles & Rules  ({_selectedRuleIndices.Count} вибрано)"
+                : "Tiles & Rules";
+            GUILayout.Label(selLabel, EditorStyles.boldLabel);
+
+            // Показуємо який реєстр активний
+            if (_wfcDataSettings.TileRegistry != null)
+                EditorGUILayout.HelpBox($"Реєстр: {_wfcDataSettings.TileRegistry.name}", MessageType.None);
+            else
+                EditorGUILayout.HelpBox("Реєстр: авто (перший у проєкті)", MessageType.None);
 
             if (GUILayout.Button("Оновити реєстр", GUILayout.Height(25))) LoadAvailableTileIDs();
 
@@ -176,24 +189,41 @@ namespace Kruty1918.Moyva.Generator.Editor
             {
                 int sourceIndex = _sortedRuleIndices[row];
                 var rule = _wfcDataSettings.TileRules[sourceIndex];
-                GUI.backgroundColor = _selectedRuleIndex == sourceIndex ? Color.cyan : Color.white;
+                bool isSelected = _selectedRuleIndices.Contains(sourceIndex);
+                GUI.backgroundColor = isSelected ? Color.cyan : Color.white;
 
                 EditorGUILayout.BeginHorizontal("box");
                 Rect iconRect = GUILayoutUtility.GetRect(20, 20, GUILayout.Width(20));
                 if (_tileSprites.TryGetValue(rule.TileID, out Sprite s)) DrawSprite(iconRect, s);
 
+                bool multiSelectHeld = Event.current.control || Event.current.command;
                 if (GUILayout.Button($"[{rule.Priority}] {rule.TileID}", EditorStyles.label))
-                    _selectedRuleIndex = sourceIndex;
+                {
+                    if (multiSelectHeld)
+                    {
+                        if (isSelected) _selectedRuleIndices.Remove(sourceIndex);
+                        else _selectedRuleIndices.Add(sourceIndex);
+                    }
+                    else
+                    {
+                        _selectedRuleIndices.Clear();
+                        _selectedRuleIndices.Add(sourceIndex);
+                    }
+                }
 
                 GUI.backgroundColor = Color.red;
                 if (GUILayout.Button("x", GUILayout.Width(20)))
                 {
                     Undo.RecordObject(_wfcDataSettings, "Remove WFC Rule");
                     _wfcDataSettings.TileRules.RemoveAt(sourceIndex);
-                    if (_selectedRuleIndex == sourceIndex)
-                        _selectedRuleIndex = -1;
-                    else if (_selectedRuleIndex > sourceIndex)
-                        _selectedRuleIndex--;
+                    var newSel = new HashSet<int>();
+                    foreach (int si in _selectedRuleIndices)
+                    {
+                        if (si == sourceIndex) continue;
+                        newSel.Add(si > sourceIndex ? si - 1 : si);
+                    }
+                    _selectedRuleIndices.Clear();
+                    foreach (int si in newSel) _selectedRuleIndices.Add(si);
                     EditorUtility.SetDirty(_wfcDataSettings);
                     AssetDatabase.SaveAssets();
                     RebuildRuleOrder();
@@ -208,6 +238,11 @@ namespace Kruty1918.Moyva.Generator.Editor
             }
             EditorGUILayout.EndScrollView();
 
+            if (_selectedRuleIndices.Count > 1)
+                EditorGUILayout.HelpBox($"Вибрано: {_selectedRuleIndices.Count}  |  Ctrl+клік = мультивибір", MessageType.None);
+            else
+                EditorGUILayout.HelpBox("Ctrl+клік = мультивибір", MessageType.None);
+
             GUI.backgroundColor = Color.green;
             if (GUILayout.Button("+ Додати правило", GUILayout.Height(40)))
             {
@@ -216,9 +251,11 @@ namespace Kruty1918.Moyva.Generator.Editor
                 {
                     TileID = "new",
                     TileCentralID = "grass",
-                    Constraints = new List<DirectionalConstraint>() // ГАРАНТОВАНА ІНІЦІАЛІЗАЦІЯ
+                    Constraints = new List<DirectionalConstraint>()
                 });
-                _selectedRuleIndex = _wfcDataSettings.TileRules.Count - 1;
+                int newIdx = _wfcDataSettings.TileRules.Count - 1;
+                _selectedRuleIndices.Clear();
+                _selectedRuleIndices.Add(newIdx);
                 EditorUtility.SetDirty(_wfcDataSettings);
             }
             GUI.backgroundColor = Color.white;
@@ -302,7 +339,8 @@ namespace Kruty1918.Moyva.Generator.Editor
                 "Вибрати ID прибережного тайла",
                 "Відкрити список Tile ID з реєстру та вибрати тайл для смуги біля води."), GUILayout.Height(20)))
             {
-                ShowIDSelector((selectedId) =>
+                Rect r = GUILayoutUtility.GetLastRect();
+                ShowIDSelector(r, _wfcDataSettings.NearWaterTileId, (selectedId) =>
                 {
                     Undo.RecordObject(_wfcDataSettings, "Select Near Water Tile ID");
                     _wfcDataSettings.NearWaterTileId = selectedId;
@@ -386,50 +424,64 @@ namespace Kruty1918.Moyva.Generator.Editor
                 ? _wfcDataSettings.TileRules.OrderByDescending(r => r.Priority).ThenBy(r => r.TileID).ToList()
                 : _wfcDataSettings.TileRules.OrderBy(r => r.Priority).ThenBy(r => r.TileID).ToList();
             _wfcDataSettings.TileRules = sorted;
-            _selectedRuleIndex = -1;
+            _selectedRuleIndices.Clear();
             EditorUtility.SetDirty(_wfcDataSettings);
             AssetDatabase.SaveAssets();
         }
 
         private void DrawMainArea()
         {
-            if (_selectedRuleIndex < 0 || _selectedRuleIndex >= _wfcDataSettings.TileRules.Count) return;
+            var validIndices = new List<int>();
+            foreach (int i in _selectedRuleIndices)
+                if (i >= 0 && i < _wfcDataSettings.TileRules.Count)
+                    validIndices.Add(i);
 
             _mainScroll = EditorGUILayout.BeginScrollView(_mainScroll);
-            WFCTileRule currentRule = _wfcDataSettings.TileRules[_selectedRuleIndex];
 
-            // Перевірка на null для існуючих правил
+            if (validIndices.Count == 0)
+                EditorGUILayout.HelpBox("Правило не вибрано. Натисніть на правило в списку.\nCtrl+клік = мультивибір", MessageType.Info);
+            else if (validIndices.Count == 1)
+                DrawMainAreaSingle(validIndices[0]);
+            else
+                DrawMainAreaMulti(validIndices);
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawMainAreaSingle(int ruleIndex)
+        {
+            WFCTileRule currentRule = _wfcDataSettings.TileRules[ruleIndex];
             if (currentRule.Constraints == null) currentRule.Constraints = new List<DirectionalConstraint>();
 
             EditorGUILayout.BeginVertical("box");
 
-            // Вибір Result ID
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Результат ID:", GUILayout.Width(120));
             if (GUILayout.Button(currentRule.TileID, EditorStyles.popup))
             {
-                ShowIDSelector((selectedId) =>
+                Rect r = GUILayoutUtility.GetLastRect();
+                ShowIDSelector(r, currentRule.TileID, selectedId =>
                 {
                     Undo.RecordObject(_wfcDataSettings, "Change Tile ID");
-                    var r = _wfcDataSettings.TileRules[_selectedRuleIndex];
-                    r.TileID = selectedId;
-                    _wfcDataSettings.TileRules[_selectedRuleIndex] = r;
+                    var rule = _wfcDataSettings.TileRules[ruleIndex];
+                    rule.TileID = selectedId;
+                    _wfcDataSettings.TileRules[ruleIndex] = rule;
                     EditorUtility.SetDirty(_wfcDataSettings);
                 });
             }
             EditorGUILayout.EndHorizontal();
 
-            // Вибір Central ID
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Замінює (Central ID):", GUILayout.Width(120));
             if (GUILayout.Button(currentRule.TileCentralID, EditorStyles.popup))
             {
-                ShowIDSelector((selectedId) =>
+                Rect r = GUILayoutUtility.GetLastRect();
+                ShowIDSelector(r, currentRule.TileCentralID, selectedId =>
                 {
                     Undo.RecordObject(_wfcDataSettings, "Change Central ID");
-                    var r = _wfcDataSettings.TileRules[_selectedRuleIndex];
-                    r.TileCentralID = selectedId;
-                    _wfcDataSettings.TileRules[_selectedRuleIndex] = r;
+                    var rule = _wfcDataSettings.TileRules[ruleIndex];
+                    rule.TileCentralID = selectedId;
+                    _wfcDataSettings.TileRules[ruleIndex] = rule;
                     EditorUtility.SetDirty(_wfcDataSettings);
                 });
             }
@@ -438,45 +490,345 @@ namespace Kruty1918.Moyva.Generator.Editor
             EditorGUI.BeginChangeCheck();
             int newPriority = EditorGUILayout.IntField("Пріоритет:", currentRule.Priority);
             float newThreshold = EditorGUILayout.Slider("Match Threshold:", currentRule.MatchThreshold, 0.5f, 1f);
-
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(_wfcDataSettings, "Edit Rule Properties");
                 currentRule.Priority = newPriority;
                 currentRule.MatchThreshold = newThreshold;
-                _wfcDataSettings.TileRules[_selectedRuleIndex] = currentRule;
+                _wfcDataSettings.TileRules[ruleIndex] = currentRule;
                 EditorUtility.SetDirty(_wfcDataSettings);
             }
             EditorGUILayout.EndVertical();
 
             GUILayout.Space(20);
-            DrawGrid3x3(_selectedRuleIndex);
-
-            EditorGUILayout.EndScrollView();
+            DrawGrid3x3(ruleIndex);
         }
 
-        private void ShowIDSelector(System.Action<string> onSelected)
+        private void DrawMainAreaMulti(List<int> ruleIndices)
         {
-            GenericMenu menu = new GenericMenu();
-            foreach (string id in _availableTileIDs)
+            EditorGUILayout.LabelField($"Редагування {ruleIndices.Count} правил одночасно", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Показані лише спільні значення. Зміни застосовуються до всіх вибраних правил.", MessageType.Info);
+
+            EditorGUILayout.BeginVertical("box");
+
+            // TileID
+            string firstTileId = _wfcDataSettings.TileRules[ruleIndices[0]].TileID;
+            bool tileIdSame    = ruleIndices.All(i => _wfcDataSettings.TileRules[i].TileID == firstTileId);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Результат ID:", GUILayout.Width(120));
+            if (tileIdSame)
             {
-                string currentId = id;
-                GUIContent content;
-
-                // Перевіряємо, чи є спрайт для цього ID
-                if (_tileSprites.TryGetValue(currentId, out Sprite sprite) && sprite != null)
+                if (GUILayout.Button(firstTileId, EditorStyles.popup))
                 {
-                    // Використовуємо текстуру спрайту для відображення іконки в меню
-                    content = new GUIContent(currentId, sprite.texture);
+                    Rect r = GUILayoutUtility.GetLastRect();
+                    ShowIDSelector(r, firstTileId, selectedId =>
+                    {
+                        Undo.RecordObject(_wfcDataSettings, "Change Tile IDs (multi)");
+                        foreach (int i in ruleIndices) { var ru = _wfcDataSettings.TileRules[i]; ru.TileID = selectedId; _wfcDataSettings.TileRules[i] = ru; }
+                        EditorUtility.SetDirty(_wfcDataSettings);
+                    });
                 }
-                else
-                {
-                    content = new GUIContent(currentId);
-                }
-
-                menu.AddItem(content, false, () => onSelected?.Invoke(currentId));
             }
-            menu.ShowAsContext();
+            else
+            {
+                GUI.color = Color.gray; GUILayout.Label("— (різні) —", GUILayout.ExpandWidth(true)); GUI.color = Color.white;
+                if (GUILayout.Button("Призначити всім", GUILayout.Width(120)))
+                {
+                    Rect r = GUILayoutUtility.GetLastRect();
+                    ShowIDSelector(r, firstTileId, selectedId =>
+                    {
+                        Undo.RecordObject(_wfcDataSettings, "Set Tile IDs (multi)");
+                        foreach (int i in ruleIndices) { var ru = _wfcDataSettings.TileRules[i]; ru.TileID = selectedId; _wfcDataSettings.TileRules[i] = ru; }
+                        EditorUtility.SetDirty(_wfcDataSettings);
+                    });
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            // TileCentralID
+            string firstCentral = _wfcDataSettings.TileRules[ruleIndices[0]].TileCentralID;
+            bool centralSame    = ruleIndices.All(i => _wfcDataSettings.TileRules[i].TileCentralID == firstCentral);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Замінює (Central ID):", GUILayout.Width(120));
+            if (centralSame)
+            {
+                if (GUILayout.Button(firstCentral, EditorStyles.popup))
+                {
+                    Rect r = GUILayoutUtility.GetLastRect();
+                    ShowIDSelector(r, firstCentral, selectedId =>
+                    {
+                        Undo.RecordObject(_wfcDataSettings, "Change Central IDs (multi)");
+                        foreach (int i in ruleIndices) { var ru = _wfcDataSettings.TileRules[i]; ru.TileCentralID = selectedId; _wfcDataSettings.TileRules[i] = ru; }
+                        EditorUtility.SetDirty(_wfcDataSettings);
+                    });
+                }
+            }
+            else
+            {
+                GUI.color = Color.gray; GUILayout.Label("— (різні) —", GUILayout.ExpandWidth(true)); GUI.color = Color.white;
+                if (GUILayout.Button("Призначити всім", GUILayout.Width(120)))
+                {
+                    Rect r = GUILayoutUtility.GetLastRect();
+                    ShowIDSelector(r, firstCentral, selectedId =>
+                    {
+                        Undo.RecordObject(_wfcDataSettings, "Set Central IDs (multi)");
+                        foreach (int i in ruleIndices) { var ru = _wfcDataSettings.TileRules[i]; ru.TileCentralID = selectedId; _wfcDataSettings.TileRules[i] = ru; }
+                        EditorUtility.SetDirty(_wfcDataSettings);
+                    });
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            // Priority
+            int firstPriority = _wfcDataSettings.TileRules[ruleIndices[0]].Priority;
+            bool prioritySame = ruleIndices.All(i => _wfcDataSettings.TileRules[i].Priority == firstPriority);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Пріоритет:", GUILayout.Width(120));
+            if (prioritySame)
+            {
+                EditorGUI.BeginChangeCheck();
+                int newP = EditorGUILayout.IntField(firstPriority);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(_wfcDataSettings, "Change Priorities (multi)");
+                    foreach (int i in ruleIndices) { var ru = _wfcDataSettings.TileRules[i]; ru.Priority = newP; _wfcDataSettings.TileRules[i] = ru; }
+                    EditorUtility.SetDirty(_wfcDataSettings);
+                }
+            }
+            else { GUI.color = Color.gray; GUILayout.Label("— (різні) —"); GUI.color = Color.white; }
+            EditorGUILayout.EndHorizontal();
+
+            // MatchThreshold
+            float firstThresh = _wfcDataSettings.TileRules[ruleIndices[0]].MatchThreshold;
+            bool threshSame   = ruleIndices.All(i => _wfcDataSettings.TileRules[i].MatchThreshold == firstThresh);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Match Threshold:", GUILayout.Width(120));
+            if (threshSame)
+            {
+                EditorGUI.BeginChangeCheck();
+                float newT = EditorGUILayout.Slider(firstThresh, 0.5f, 1f);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(_wfcDataSettings, "Change Thresholds (multi)");
+                    foreach (int i in ruleIndices) { var ru = _wfcDataSettings.TileRules[i]; ru.MatchThreshold = newT; _wfcDataSettings.TileRules[i] = ru; }
+                    EditorUtility.SetDirty(_wfcDataSettings);
+                }
+            }
+            else { GUI.color = Color.gray; GUILayout.Label("— (різні) —"); GUI.color = Color.white; }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.EndVertical();
+            GUILayout.Space(20);
+            DrawGrid3x3Multi(ruleIndices);
+        }
+
+        private void DrawGrid3x3Multi(List<int> ruleIndices)
+        {
+            float cellSize = 180f;
+            GUILayoutOption[] cellOptions = { GUILayout.Width(cellSize), GUILayout.Height(cellSize) };
+
+            // Center preview
+            string firstId = _wfcDataSettings.TileRules[ruleIndices[0]].TileID;
+            bool allSame   = ruleIndices.All(i => _wfcDataSettings.TileRules[i].TileID == firstId);
+
+            EditorGUILayout.BeginVertical();
+            for (int row = 0; row < 3; row++)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                for (int col = 0; col < 3; col++)
+                {
+                    if (row == 1 && col == 1)
+                        DrawVisualTile(allSame ? firstId : string.Empty, allSame ? $"ЦЕНТР ({firstId})" : $"ЦЕНТР (різні)", cellOptions);
+                    else
+                    {
+                        Neighborhood8 dir = GetDirFromGrid(row, col);
+                        DrawConstraintCellMulti(ruleIndices, dir, cellOptions);
+                    }
+                }
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.EndHorizontal();
+            }
+            EditorGUILayout.EndVertical();
+        }
+
+        private void DrawConstraintCellMulti(List<int> ruleIndices, Neighborhood8 dir, GUILayoutOption[] options)
+        {
+            EditorGUILayout.BeginVertical("box", options);
+            GUILayout.Label($"{dir.ToString().ToUpper()} (×{ruleIndices.Count})", EditorStyles.centeredGreyMiniLabel);
+
+            // Intersection of neighbors across all selected rules
+            HashSet<string> intersection = null;
+            foreach (int ri in ruleIndices)
+            {
+                var rule = _wfcDataSettings.TileRules[ri];
+                if (rule.Constraints == null) rule.Constraints = new List<DirectionalConstraint>();
+                int cIdx = rule.Constraints.FindIndex(c => c.Direction == dir);
+                var nb = cIdx >= 0 ? rule.Constraints[cIdx].AllowedNeighbors : new List<string>();
+                if (intersection == null) intersection = new HashSet<string>(nb);
+                else intersection.IntersectWith(nb);
+            }
+            var commonNeighbors = intersection != null ? intersection.ToList() : new List<string>();
+
+            float iconSize = 40f;
+            float cellWidth = 180f;
+
+            bool hasAny = HasAnyNeighborAcrossRules(ruleIndices, dir);
+
+            EditorGUILayout.BeginHorizontal();
+            GUI.backgroundColor = Color.green;
+            if (GUILayout.Button("+", GUILayout.Height(20)))
+            {
+                Rect r = GUILayoutUtility.GetLastRect();
+                ShowSelectorMulti(r, ruleIndices, dir);
+            }
+            GUI.backgroundColor = new Color(0.4f, 0.8f, 1f);
+            if (GUILayout.Button("++ за словом", GUILayout.Height(20)))
+            {
+                Rect r = GUILayoutUtility.GetLastRect();
+                ShowBulkSelectorMulti(r, ruleIndices, dir);
+            }
+            EditorGUI.BeginDisabledGroup(!hasAny);
+            GUI.backgroundColor = new Color(1f, 0.4f, 0.4f);
+            if (GUILayout.Button("✕ всі", GUILayout.Height(20), GUILayout.Width(46)))
+            {
+                Undo.RecordObject(_wfcDataSettings, "Clear Neighbors (multi)");
+                foreach (int ri in ruleIndices) UpdateRuleConstraints(ri, dir, new List<string>());
+                GUIUtility.ExitGUI();
+            }
+            EditorGUI.EndDisabledGroup();
+            GUI.backgroundColor = Color.white;
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            float currentX = 0;
+            for (int i = 0; i < commonNeighbors.Count; i++)
+            {
+                if (currentX + iconSize > cellWidth - 10)
+                {
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.BeginHorizontal();
+                    currentX = 0;
+                }
+                string nId = commonNeighbors[i];
+                Rect slotRect = GUILayoutUtility.GetRect(iconSize, iconSize, GUILayout.Width(iconSize), GUILayout.Height(iconSize));
+                GUI.Box(slotRect, "");
+                if (_tileSprites.TryGetValue(nId, out Sprite sp))
+                    DrawSprite(new Rect(slotRect.x + 2, slotRect.y + 2, iconSize - 4, iconSize - 4), sp);
+
+                Rect xRect = new Rect(slotRect.xMax - 14, slotRect.y, 14, 14);
+                GUI.backgroundColor = Color.red;
+                if (GUI.Button(xRect, "x", EditorStyles.miniButton))
+                {
+                    Undo.RecordObject(_wfcDataSettings, "Remove Neighbor (multi)");
+                    foreach (int ri in ruleIndices)
+                    {
+                        var rule = _wfcDataSettings.TileRules[ri];
+                        if (rule.Constraints == null) continue;
+                        int cIdx = rule.Constraints.FindIndex(c => c.Direction == dir);
+                        if (cIdx < 0) continue;
+                        var nb = new List<string>(rule.Constraints[cIdx].AllowedNeighbors);
+                        nb.Remove(nId);
+                        UpdateRuleConstraints(ri, dir, nb);
+                    }
+                    GUIUtility.ExitGUI();
+                }
+                GUI.backgroundColor = Color.white;
+                currentX += iconSize + 2;
+            }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
+
+        private bool HasAnyNeighborAcrossRules(List<int> ruleIndices, Neighborhood8 dir)
+        {
+            foreach (int ri in ruleIndices)
+            {
+                var rule = _wfcDataSettings.TileRules[ri];
+                if (rule.Constraints == null) continue;
+                int cIdx = rule.Constraints.FindIndex(c => c.Direction == dir);
+                if (cIdx >= 0 && rule.Constraints[cIdx].AllowedNeighbors?.Count > 0) return true;
+            }
+            return false;
+        }
+
+        private void ShowSelectorMulti(Rect anchor, List<int> ruleIndices, Neighborhood8 dir)
+        {
+            PopupWindow.Show(anchor, new WFCTilePickerPopup(
+                string.Empty, _availableTileIDs, _tileSprites,
+                selectedId =>
+                {
+                    Undo.RecordObject(_wfcDataSettings, "Add Neighbor (multi)");
+                    foreach (int ri in ruleIndices)
+                    {
+                        var rule = _wfcDataSettings.TileRules[ri];
+                        if (rule.Constraints == null) rule.Constraints = new List<DirectionalConstraint>();
+                        int cIdx = rule.Constraints.FindIndex(c => c.Direction == dir);
+                        var nb = cIdx >= 0 ? new List<string>(rule.Constraints[cIdx].AllowedNeighbors) : new List<string>();
+                        if (!nb.Contains(selectedId)) { nb.Add(selectedId); UpdateRuleConstraints(ri, dir, nb); }
+                    }
+                }));
+        }
+
+        private void ShowBulkSelectorMulti(Rect anchor, List<int> ruleIndices, Neighborhood8 dir)
+        {
+            var union = new HashSet<string>();
+            foreach (int ri in ruleIndices)
+            {
+                var rule = _wfcDataSettings.TileRules[ri];
+                if (rule.Constraints == null) continue;
+                int cIdx = rule.Constraints.FindIndex(c => c.Direction == dir);
+                if (cIdx >= 0 && rule.Constraints[cIdx].AllowedNeighbors != null)
+                    foreach (var id in rule.Constraints[cIdx].AllowedNeighbors) union.Add(id);
+            }
+            PopupWindow.Show(anchor, new WFCBulkAddPopup(
+                _availableTileIDs, _tileSprites, union,
+                addedIds =>
+                {
+                    if (addedIds.Count == 0) return;
+                    Undo.RecordObject(_wfcDataSettings, "Bulk Add Neighbors (multi)");
+                    foreach (int ri in ruleIndices)
+                    {
+                        var rule = _wfcDataSettings.TileRules[ri];
+                        if (rule.Constraints == null) rule.Constraints = new List<DirectionalConstraint>();
+                        int cIdx = rule.Constraints.FindIndex(c => c.Direction == dir);
+                        var nb = cIdx >= 0 ? new List<string>(rule.Constraints[cIdx].AllowedNeighbors) : new List<string>();
+                        foreach (var id in addedIds) if (!nb.Contains(id)) nb.Add(id);
+                        UpdateRuleConstraints(ri, dir, nb);
+                    }
+                }));
+        }
+
+        private void ShowBulkSelector(Rect anchor, int ruleIndex, Neighborhood8 dir)
+        {
+            var rule = _wfcDataSettings.TileRules[ruleIndex];
+            if (rule.Constraints == null) rule.Constraints = new List<DirectionalConstraint>();
+            int cIdx = rule.Constraints.FindIndex(c => c.Direction == dir);
+            var existing = cIdx >= 0 ? new HashSet<string>(rule.Constraints[cIdx].AllowedNeighbors) : new HashSet<string>();
+
+            PopupWindow.Show(anchor, new WFCBulkAddPopup(
+                _availableTileIDs, _tileSprites, existing,
+                addedIds =>
+                {
+                    if (addedIds.Count == 0) return;
+                    Undo.RecordObject(_wfcDataSettings, "Bulk Add Neighbors");
+                    var r2 = _wfcDataSettings.TileRules[ruleIndex];
+                    if (r2.Constraints == null) r2.Constraints = new List<DirectionalConstraint>();
+                    int i2 = r2.Constraints.FindIndex(c => c.Direction == dir);
+                    List<string> neighbors = i2 >= 0
+                        ? new List<string>(r2.Constraints[i2].AllowedNeighbors)
+                        : new List<string>();
+                    foreach (var id in addedIds)
+                        if (!neighbors.Contains(id))
+                            neighbors.Add(id);
+                    UpdateRuleConstraints(ruleIndex, dir, neighbors);
+                }));
+        }
+
+        private void ShowIDSelector(Rect anchor, string current, System.Action<string> onSelected)
+        {
+            PopupWindow.Show(anchor, new WFCTilePickerPopup(
+                current, _availableTileIDs, _tileSprites, onSelected));
         }
 
         private void DrawGrid3x3(int ruleIndex)
@@ -555,13 +907,31 @@ namespace Kruty1918.Moyva.Generator.Editor
             float iconSize = 40f;
             float cellSize = 180f; // Define cellSize here to match DrawGrid3x3
 
-            // Кнопка "+" зверху
+            // Кнопки: + (одиночний) і ++ (масовий)
+            EditorGUILayout.BeginHorizontal();
             GUI.backgroundColor = Color.green;
             if (GUILayout.Button("+", GUILayout.Height(20)))
             {
-                ShowSelector(ruleIndex, dir);
+                Rect r = GUILayoutUtility.GetLastRect();
+                ShowSelector(r, ruleIndex, dir);
             }
+            GUI.backgroundColor = new Color(0.4f, 0.8f, 1f);
+            if (GUILayout.Button("++ за словом", GUILayout.Height(20)))
+            {
+                Rect r = GUILayoutUtility.GetLastRect();
+                ShowBulkSelector(r, ruleIndex, dir);
+            }
+            EditorGUI.BeginDisabledGroup(neighbors.Count == 0);
+            GUI.backgroundColor = new Color(1f, 0.4f, 0.4f);
+            if (GUILayout.Button("✕ всі", GUILayout.Height(20), GUILayout.Width(46)))
+            {
+                Undo.RecordObject(_wfcDataSettings, "Clear Neighbors");
+                UpdateRuleConstraints(ruleIndex, dir, new List<string>());
+                GUIUtility.ExitGUI();
+            }
+            EditorGUI.EndDisabledGroup();
             GUI.backgroundColor = Color.white;
+            EditorGUILayout.EndHorizontal();
 
             // Малюємо список іконок без вкладеного ScrollView для уникнення лагів
             EditorGUILayout.BeginHorizontal();
@@ -626,42 +996,27 @@ namespace Kruty1918.Moyva.Generator.Editor
             EditorUtility.SetDirty(_wfcDataSettings);
         }
 
-        private void ShowSelector(int ruleIndex, Neighborhood8 dir)
+        private void ShowSelector(Rect anchor, int ruleIndex, Neighborhood8 dir)
         {
-            GenericMenu menu = new GenericMenu();
-            foreach (string id in _availableTileIDs)
-            {
-                string currentId = id;
-                GUIContent content;
-
-                if (_tileSprites.TryGetValue(currentId, out Sprite sprite) && sprite != null)
-                {
-                    content = new GUIContent(currentId, sprite.texture);
-                }
-                else
-                {
-                    content = new GUIContent(currentId);
-                }
-
-                menu.AddItem(content, false, () =>
+            PopupWindow.Show(anchor, new WFCTilePickerPopup(
+                string.Empty, _availableTileIDs, _tileSprites,
+                selectedId =>
                 {
                     Undo.RecordObject(_wfcDataSettings, "Add Neighbor");
                     var rule = _wfcDataSettings.TileRules[ruleIndex];
                     if (rule.Constraints == null) rule.Constraints = new List<DirectionalConstraint>();
 
-                    int idx = rule.Constraints.FindIndex(c => c.Direction == dir);
-                    List<string> neighbors = idx >= 0
-                        ? new List<string>(rule.Constraints[idx].AllowedNeighbors)
+                    int cIdx = rule.Constraints.FindIndex(c => c.Direction == dir);
+                    List<string> neighbors = cIdx >= 0
+                        ? new List<string>(rule.Constraints[cIdx].AllowedNeighbors)
                         : new List<string>();
 
-                    if (!neighbors.Contains(currentId))
+                    if (!neighbors.Contains(selectedId))
                     {
-                        neighbors.Add(currentId);
+                        neighbors.Add(selectedId);
                         UpdateRuleConstraints(ruleIndex, dir, neighbors);
                     }
-                });
-            }
-            menu.ShowAsContext();
+                }));
         }
 
         private void DrawSprite(Rect rect, Sprite sprite)
@@ -683,6 +1038,271 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (row == 2 && col == 0) return Neighborhood8.BottomLeft;
             if (row == 2 && col == 1) return Neighborhood8.Bottom;
             return Neighborhood8.BottomRight;
+        }
+
+        // ── Custom tile picker popup ──────────────────────────────────────────
+        private sealed class WFCTilePickerPopup : PopupWindowContent        {
+            private const float PopupWidth  = 480f;
+            private const float PopupHeight = 460f;
+            private const float SearchH     = 22f;
+            private const float RowH        = 40f;
+            private const float IconSize    = 32f;
+            private const float Padding     = 6f;
+            private const string SearchCtrl = "WFCTilePickerSearch";
+
+            private readonly string              _current;
+            private readonly List<string>        _ids;
+            private readonly Dictionary<string, Sprite> _sprites;
+            private readonly System.Action<string> _onSelected;
+
+            private Vector2 _scroll;
+            private string  _search = string.Empty;
+            private bool    _focusSearch = true;
+
+            public WFCTilePickerPopup(
+                string current,
+                List<string> ids,
+                Dictionary<string, Sprite> sprites,
+                System.Action<string> onSelected)
+            {
+                _current    = current;
+                _ids        = ids;
+                _sprites    = sprites;
+                _onSelected = onSelected;
+            }
+
+            public override Vector2 GetWindowSize() => new Vector2(PopupWidth, PopupHeight);
+
+            public override void OnOpen() => _focusSearch = true;
+
+            public override void OnGUI(Rect rect)
+            {
+                // Search field
+                Rect searchRect = new Rect(Padding, Padding, rect.width - Padding * 2f, SearchH);
+                GUI.SetNextControlName(SearchCtrl);
+                EditorGUI.BeginChangeCheck();
+                _search = EditorGUI.TextField(searchRect, _search, EditorStyles.toolbarSearchField);
+                if (EditorGUI.EndChangeCheck()) _scroll = Vector2.zero;
+                if (_focusSearch)
+                {
+                    _focusSearch = false;
+                    EditorGUI.FocusTextInControl(SearchCtrl);
+                }
+
+                // Filter
+                var filtered = new List<string>();
+                if (string.IsNullOrWhiteSpace(_search))
+                {
+                    filtered.AddRange(_ids);
+                }
+                else
+                {
+                    var terms = _search.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var id in _ids)
+                        if (System.Array.TrueForAll(terms, t => id.IndexOf(t, System.StringComparison.OrdinalIgnoreCase) >= 0))
+                            filtered.Add(id);
+                }
+
+                Rect listRect = new Rect(Padding, searchRect.yMax + Padding, rect.width - Padding * 2f,
+                    rect.height - searchRect.yMax - Padding * 2f);
+                Rect content  = new Rect(0f, 0f, listRect.width - 14f,
+                    Mathf.Max(listRect.height, filtered.Count * RowH));
+
+                _scroll = GUI.BeginScrollView(listRect, _scroll, content);
+                for (int i = 0; i < filtered.Count; i++)
+                {
+                    string id = filtered[i];
+                    Rect row = new Rect(0f, i * RowH, content.width, RowH - 1f);
+
+                    bool selected = string.Equals(id, _current, System.StringComparison.Ordinal);
+                    if (selected)
+                        EditorGUI.DrawRect(row, new Color(0.24f, 0.48f, 0.24f, 0.7f));
+                    else if (row.Contains(Event.current.mousePosition))
+                        EditorGUI.DrawRect(row, new Color(1f, 1f, 1f, 0.08f));
+
+                    // Sprite icon
+                    Rect iconRect = new Rect(row.x + 4f, row.y + (RowH - IconSize) * 0.5f, IconSize, IconSize);
+                    if (_sprites.TryGetValue(id, out Sprite spr) && spr != null)
+                    {
+                        var tex = spr.texture;
+                        var sr  = spr.textureRect;
+                        var uv  = new Rect(sr.x / tex.width, sr.y / tex.height, sr.width / tex.width, sr.height / tex.height);
+                        GUI.DrawTextureWithTexCoords(iconRect, tex, uv, true);
+                    }
+                    else
+                    {
+                        GUI.Box(iconRect, "");
+                    }
+
+                    // Label
+                    Rect labelRect = new Rect(iconRect.xMax + 6f, row.y, row.width - iconRect.xMax - 10f, RowH);
+                    GUI.Label(labelRect, id);
+
+                    // Click
+                    if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
+                    {
+                        _onSelected?.Invoke(id);
+                        editorWindow.Close();
+                        Event.current.Use();
+                    }
+                }
+                GUI.EndScrollView();
+            }
+        }
+
+        // ── Bulk add popup ────────────────────────────────────────────────────
+        private sealed class WFCBulkAddPopup : PopupWindowContent
+        {
+            private const float PopupWidth  = 500f;
+            private const float PopupHeight = 520f;
+            private const float SearchH     = 22f;
+            private const float BtnH        = 26f;
+            private const float RowH        = 36f;
+            private const float IconSize    = 28f;
+            private const float Padding     = 6f;
+            private const string SearchCtrl = "WFCBulkSearch";
+
+            private readonly List<string>              _ids;
+            private readonly Dictionary<string, Sprite> _sprites;
+            private readonly HashSet<string>           _existing;
+            private readonly System.Action<List<string>> _onAdd;
+
+            private readonly HashSet<string> _checked = new HashSet<string>();
+            private Vector2 _scroll;
+            private string  _search = string.Empty;
+            private bool    _focusSearch = true;
+
+            public WFCBulkAddPopup(
+                List<string> ids,
+                Dictionary<string, Sprite> sprites,
+                HashSet<string> existing,
+                System.Action<List<string>> onAdd)
+            {
+                _ids      = ids;
+                _sprites  = sprites;
+                _existing = existing;
+                _onAdd    = onAdd;
+            }
+
+            public override Vector2 GetWindowSize() => new Vector2(PopupWidth, PopupHeight);
+            public override void OnOpen() => _focusSearch = true;
+
+            public override void OnGUI(Rect rect)
+            {
+                // ── Пошукове поле ──
+                Rect searchRect = new Rect(Padding, Padding, rect.width - Padding * 2f, SearchH);
+                GUI.SetNextControlName(SearchCtrl);
+                EditorGUI.BeginChangeCheck();
+                _search = EditorGUI.TextField(searchRect, _search, EditorStyles.toolbarSearchField);
+                if (EditorGUI.EndChangeCheck()) _scroll = Vector2.zero;
+                if (_focusSearch) { _focusSearch = false; EditorGUI.FocusTextInControl(SearchCtrl); }
+
+                // ── Фільтр ──
+                var filtered = GetFiltered();
+
+                // ── Кнопки зверху ──
+                float btnY = searchRect.yMax + Padding;
+                Rect selectAllRect = new Rect(Padding, btnY, (rect.width - Padding * 3f) * 0.5f, BtnH);
+                Rect clearRect     = new Rect(selectAllRect.xMax + Padding, btnY, selectAllRect.width, BtnH);
+
+                GUI.backgroundColor = new Color(0.3f, 0.8f, 0.3f);
+                if (GUI.Button(selectAllRect, $"Вибрати всі ({filtered.Count})"))
+                {
+                    foreach (var id in filtered) _checked.Add(id);
+                }
+                GUI.backgroundColor = new Color(0.8f, 0.4f, 0.4f);
+                if (GUI.Button(clearRect, "Зняти всі"))
+                {
+                    _checked.Clear();
+                }
+                GUI.backgroundColor = Color.white;
+
+                // ── Список ──
+                float listTop = btnY + BtnH + Padding;
+                float listH   = rect.height - listTop - BtnH - Padding * 3f;
+                Rect listRect = new Rect(Padding, listTop, rect.width - Padding * 2f, listH);
+                Rect content  = new Rect(0f, 0f, listRect.width - 14f,
+                    Mathf.Max(listH, filtered.Count * RowH));
+
+                _scroll = GUI.BeginScrollView(listRect, _scroll, content);
+                for (int i = 0; i < filtered.Count; i++)
+                {
+                    string id  = filtered[i];
+                    Rect row   = new Rect(0f, i * RowH, content.width, RowH - 1f);
+                    bool chk   = _checked.Contains(id);
+                    bool alrdy = _existing.Contains(id);
+
+                    if (chk)
+                        EditorGUI.DrawRect(row, new Color(0.24f, 0.48f, 0.24f, 0.55f));
+                    else if (alrdy)
+                        EditorGUI.DrawRect(row, new Color(0.4f, 0.4f, 0.0f, 0.3f));
+                    else if (row.Contains(Event.current.mousePosition))
+                        EditorGUI.DrawRect(row, new Color(1f, 1f, 1f, 0.07f));
+
+                    // Checkbox (ліворуч)
+                    Rect chkRect  = new Rect(row.x + 2f, row.y + (RowH - 16f) * 0.5f, 16f, 16f);
+                    bool newChk   = GUI.Toggle(chkRect, chk, GUIContent.none);
+                    if (newChk != chk) { if (newChk) _checked.Add(id); else _checked.Remove(id); }
+
+                    // Іконка
+                    Rect iconRect = new Rect(chkRect.xMax + 4f, row.y + (RowH - IconSize) * 0.5f, IconSize, IconSize);
+                    if (_sprites.TryGetValue(id, out Sprite spr) && spr != null)
+                    {
+                        var tex = spr.texture;
+                        var sr  = spr.textureRect;
+                        var uv  = new Rect(sr.x / tex.width, sr.y / tex.height, sr.width / tex.width, sr.height / tex.height);
+                        GUI.DrawTextureWithTexCoords(iconRect, tex, uv, true);
+                    }
+                    else
+                    {
+                        GUI.Box(iconRect, "");
+                    }
+
+                    // Назва + "(вже є)" якщо дублікат
+                    Rect lblRect = new Rect(iconRect.xMax + 5f, row.y, row.width - iconRect.xMax - 6f, RowH);
+                    string lbl  = alrdy ? $"{id}  (вже є)" : id;
+                    GUI.Label(lblRect, lbl, alrdy ? EditorStyles.miniLabel : EditorStyles.label);
+
+                    // Click рядка = тогл
+                    if (Event.current.type == EventType.MouseDown && row.Contains(Event.current.mousePosition))
+                    {
+                        if (_checked.Contains(id)) _checked.Remove(id); else _checked.Add(id);
+                        Event.current.Use();
+                    }
+                }
+                GUI.EndScrollView();
+
+                // ── Кнопка "Додати" внизу ──
+                int addCount = 0;
+                foreach (var id in _checked) if (!_existing.Contains(id)) addCount++;
+
+                Rect addRect = new Rect(Padding, rect.height - BtnH - Padding, rect.width - Padding * 2f, BtnH);
+                GUI.backgroundColor = addCount > 0 ? new Color(0.2f, 0.7f, 0.2f) : Color.gray;
+                EditorGUI.BeginDisabledGroup(addCount == 0);
+                if (GUI.Button(addRect, $"Додати вибрані ({addCount})"))
+                {
+                    var toAdd = new List<string>();
+                    foreach (var id in _checked)
+                        if (!_existing.Contains(id)) toAdd.Add(id);
+                    _onAdd?.Invoke(toAdd);
+                    editorWindow.Close();
+                }
+                EditorGUI.EndDisabledGroup();
+                GUI.backgroundColor = Color.white;
+            }
+
+            private List<string> GetFiltered()
+            {
+                if (string.IsNullOrWhiteSpace(_search))
+                    return new List<string>(_ids);
+
+                var terms = _search.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+                var result = new List<string>();
+                foreach (var id in _ids)
+                    if (System.Array.TrueForAll(terms, t => id.IndexOf(t, System.StringComparison.OrdinalIgnoreCase) >= 0))
+                        result.Add(id);
+                return result;
+            }
         }
     }
 }
