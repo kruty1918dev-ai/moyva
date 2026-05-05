@@ -1,0 +1,133 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b2a4a7c37b6a7851b4c3fd9f51f3834, type: 3}
+  m_Name: MapObjectRegistry
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.MapObjectRegistrySO
+  _definitions:
+  - _id: green-forest-top-left-object-001
+    _visualPrefab: {fileID: 6101538389291538945, guid: 9ff1c6b899afd854e81e7ea6c0d5dc03, type: 3}
+  - _id: green-forest-top-right-object-001
+    _visualPrefab: {fileID: 1733038244347133946, guid: d654b518a8f94dd40a1a94f6d6780211, type: 3}
+  - _id: green-forest-top-left-object-002
+    _visualPrefab: {fileID: 664748336234793061, guid: 57a5fc36bf3476a42afeeedfe2562d62, type: 3}
+  - _id: green-forest-top-middle-object-002
+    _visualPrefab: {fileID: 7793819192164222426, guid: 6ff14ceb8814ae348b084331fe1fce59, type: 3}
+  - _id: green-forest-top-right-object-002
+    _visualPrefab: {fileID: 4334534645182325674, guid: 272ffe3adfa4db642a7a0c24508f4a33, type: 3}
+  - _id: green-forest-top-left-object-003
+    _visualPrefab: {fileID: 4950074757014157736, guid: 67a39e965ef1f0544972038ec6c99bad, type: 3}
+  - _id: green-forest-top-right-object-003
+    _visualPrefab: {fileID: 4512303660882092426, guid: 8f6420610113605439206a158b910a55, type: 3}
+  - _id: green-tree-object-001
+    _visualPrefab: {fileID: 3927238052799309785, guid: 6f6b1251cecdebd45ac85b0dd8b747da, type: 3}
+  - _id: green-forest-top-left-object-004
+    _visualPrefab: {fileID: 6309869267981942897, guid: 13a2fdb49fd7c714a8b47c143bbe590a, type: 3}
+  - _id: green-forest-top-middle-object-003
+    _visualPrefab: {fileID: 6433234576821063541, guid: e077748e27e383347ac9dd27b9f7d332, type: 3}
+  - _id: green-forest-top-right-object-004
+    _visualPrefab: {fileID: 7773800635030371948, guid: b89c2dad622a09347b877d2244ba7713, type: 3}
+  - _id: green-forest-top-left-object-005
+    _visualPrefab: {fileID: 166115468651318619, guid: b932007e968309b45bbb44fe486fe5c6, type: 3}
+  - _id: green-forest-top-right-object-005
+    _visualPrefab: {fileID: 7498522230187884211, guid: 8a64a8065184d984cb69fbd96d2610c1, type: 3}
+  - _id: green-forest-top-left-object-006
+    _visualPrefab: {fileID: 3937801680473186339, guid: a5c82a63cb800ed409123c98e624f6fd, type: 3}
+  - _id: green-forest-top-right-object-006
+    _visualPrefab: {fileID: 7804676267587070458, guid: a5157c9ff8d96fe4bb612e288163aba6, type: 3}
+  - _id: green-tree-object-002
+    _visualPrefab: {fileID: 5936278851218418940, guid: 023eb4968e8e057439225579cee5949c, type: 3}
+  - _id: green-forest-left-object-001
+    _visualPrefab: {fileID: 9158331993886097986, guid: cf6e92bcba1c4724485683466ddea3ee, type: 3}
+  - _id: green-forest-middle-object-001
+    _visualPrefab: {fileID: 2000580800010984848, guid: c9672a87661d36b4ca8353f63b36adeb, type: 3}
+  - _id: green-forest-right-object-001
+    _visualPrefab: {fileID: 691785529628990808, guid: e5314e883ad88b54ea2faaeff61f85b9, type: 3}
+  - _id: green-forest-left-object-002
+    _visualPrefab: {fileID: 1407461065306204482, guid: 3e1f5cc2caee2964abf46b015758b717, type: 3}
+  - _id: green-forest-right-object-002
+    _visualPrefab: {fileID: 6844589419738304335, guid: b4f34ddd80dee0149a6a84125a0db99f, type: 3}
+  - _id: green-forest-left-object-003
+    _visualPrefab: {fileID: 3256347476173483715, guid: e4295a9a226987f499a5c03db31deaf8, type: 3}
+  - _id: green-forest-right-object-003
+    _visualPrefab: {fileID: 7163772804439538711, guid: ec2472c535e4c3d41b8155baccd66bcc, type: 3}
+  - _id: green-tree-object-003
+    _visualPrefab: {fileID: 6049072913180537460, guid: 66ec5e386572e1044bd37871474839d5, type: 3}
+  - _id: green-forest-left-object-004
+    _visualPrefab: {fileID: 5700157337393732890, guid: b1895f4a2274c474c8d461ed044c36fa, type: 3}
+  - _id: green-forest-middle-object-002
+    _visualPrefab: {fileID: 345499235931613940, guid: 53f8442b923b55743b18b4f3c713dbd4, type: 3}
+  - _id: green-forest-right-object-004
+    _visualPrefab: {fileID: 3719627705892285855, guid: 3884d746fd4d2be4c805d8c1acf2a2d8, type: 3}
+  - _id: green-forest-left-object-005
+    _visualPrefab: {fileID: 6623726864933899256, guid: 94769c9dc96e88e4bb1a1d0790878be9, type: 3}
+  - _id: green-forest-right-object-005
+    _visualPrefab: {fileID: 8880955795338898632, guid: adfcff9f3689f8f4b99aeac451a6df29, type: 3}
+  - _id: green-forest-left-object-006
+    _visualPrefab: {fileID: 2697937233336065613, guid: 0a02ec6ad40b9c74097c279c2b37517c, type: 3}
+  - _id: green-forest-right-object-006
+    _visualPrefab: {fileID: 4913930912848524189, guid: d253a966ffd093649bb08701dcd40b07, type: 3}
+  - _id: green-tree-object-004
+    _visualPrefab: {fileID: 2227409253263757779, guid: e13ae33a1c4e07b4796c0c4da9dfe0fa, type: 3}
+  - _id: green-forest-down-left-object-001
+    _visualPrefab: {fileID: 15846663131727163, guid: 3df2b33c89dcb404cb336c2a4c08d17c, type: 3}
+  - _id: green-forest-down-right-object-001
+    _visualPrefab: {fileID: 3247418722637731743, guid: 103077d9c11428d48a4255ccd783d5d6, type: 3}
+  - _id: green-forest-down-left-object-002
+    _visualPrefab: {fileID: 8724465211921172394, guid: 417664a45af7eac4da727f0b7b474955, type: 3}
+  - _id: green-forest-down-middle-object-001
+    _visualPrefab: {fileID: 4294786439179095706, guid: fe59c98b003452647b4265b68a3836a5, type: 3}
+  - _id: green-forest-down-middle-object-002
+    _visualPrefab: {fileID: 1518475176243343274, guid: f2824e6b6c94b224ab0a5aecd87644ca, type: 3}
+  - _id: green-forest-down-right-object-002
+    _visualPrefab: {fileID: 5256489614003151792, guid: 582ac6a19d6c1d241ace50afeaf31702, type: 3}
+  - _id: green-forest-down-left-object-003
+    _visualPrefab: {fileID: 5815828181382006882, guid: 07fa70487e956414da093e8491757c3e, type: 3}
+  - _id: green-forest-down-right-object-003
+    _visualPrefab: {fileID: 1962092648283508384, guid: cb531792112b08a4b96058da581126b1, type: 3}
+  - _id: green-tree-object-005
+    _visualPrefab: {fileID: 1128239562851633693, guid: 0ffa5347bc006e440a518c0decff5b43, type: 3}
+  - _id: green-forest-down-left-object-004
+    _visualPrefab: {fileID: 2668023926754740709, guid: 3d93106948b770b44881040f84c0ce6c, type: 3}
+  - _id: green-forest-down-middle-object-003
+    _visualPrefab: {fileID: 3032412181908040486, guid: 900607d4d686d0e458362956dc7efe5d, type: 3}
+  - _id: green-forest-down-right-object-004
+    _visualPrefab: {fileID: 8238658293460574500, guid: 95f063f3e5d842f4f8e0d1a467cffa79, type: 3}
+  - _id: green-forest-down-left-object-005
+    _visualPrefab: {fileID: 8000727954649458179, guid: 61c6f154452bf164cb0f287d2f102fe0, type: 3}
+  - _id: green-forest-down-middle-object-004
+    _visualPrefab: {fileID: 6325323719281492034, guid: 2cd962c19822da84aadddc6bbe1825df, type: 3}
+  - _id: green-forest-down-right-object-005
+    _visualPrefab: {fileID: 4795348325801632479, guid: d82af99b390f56244a02b0bd7f1ab14c, type: 3}
+  - _id: green-forest-down-left-object-006
+    _visualPrefab: {fileID: 5118281940764659179, guid: f5571e68bbcfc694996fff64638f64b0, type: 3}
+  - _id: green-forest-down-right-object-006
+    _visualPrefab: {fileID: 3854379777033707988, guid: fee20eae68004184a93132256981fc95, type: 3}
+  - _id: green-tree-object-006
+    _visualPrefab: {fileID: 4642190424593835584, guid: fbcd364c65212bc459994a22e51ef532, type: 3}
+  - _id: palm-tree-object-001
+    _visualPrefab: {fileID: 3761141337601478537, guid: d577053cadfc4294ead2313054a19049, type: 3}
+  - _id: palm-tree-object-002
+    _visualPrefab: {fileID: 1010891097238656744, guid: b7de6940445c9434eb85cc56c58e9444, type: 3}
+  - _id: green-tree-object-007
+    _visualPrefab: {fileID: 7731037750879707015, guid: 7f95da5c910b26641bb61cc8db263759, type: 3}
+  - _id: green-tree-object-008
+    _visualPrefab: {fileID: 3273783515351409119, guid: 66597a88e78cd244a83f62da8a056675, type: 3}
+  - _id: palm-tree-object-003
+    _visualPrefab: {fileID: 8675221335883316037, guid: 22f390a138009184aabdcb6016b86f6f, type: 3}
+  - _id: green-tree-stump-object-001
+    _visualPrefab: {fileID: 3695883313670877591, guid: f6983808e9750ea4d892758f7959ed26, type: 3}
+  - _id: palm-tree-stump-object-001
+    _visualPrefab: {fileID: 3736118700552317784, guid: dc40df1cefde25f47b8c8a6d8ca15b0d, type: 3}
+  - _id: stone-object-001
+    _visualPrefab: {fileID: 1452636942216446570, guid: 30d96fa2ffe76d54fa7c638e092e6604, type: 3}
+  - _id: stone-object-002
+    _visualPrefab: {fileID: 4836699464616695333, guid: a6ade8c5d0e9c8342a5c8c02094c9ac5, type: 3}
