@@ -8,6 +8,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     [RequireComponent(typeof(MeshRenderer))]
     public class FogQuadController : MonoBehaviour
     {
+        private const int MaxIconRects = 64;
         private const int FogOverlaySortingOrder = short.MaxValue;
         private const int FogOverlayRenderQueue = 4000; // Overlay queue
 
@@ -81,37 +82,43 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 }
 
             _mat.SetVector("_FogIconUVRect", new Vector4(0f, 0f, 1f, 1f));
+            _mat.SetFloat("_FogIconRectCount", 1f);
+            _mat.SetVectorArray("_FogIconUVRects", new[] { new Vector4(0f, 0f, 1f, 1f) });
 
             // Fog icon texture (sample exact sprite rect from atlas)
             if (_settings.FogIconSprites != null && _settings.FogIconSprites.Length > 0)
             {
-                // Use first sprite as source icon and pass its UV rect explicitly.
-                Sprite iconSprite = _settings.FogIconSprites[0];
-                Texture2D iconTexture = iconSprite != null ? iconSprite.texture : null;
+                Sprite firstSprite = _settings.FogIconSprites[0];
+                Texture2D iconTexture = firstSprite != null ? firstSprite.texture : null;
                 if (iconTexture != null)
                 {
                     _mat.SetTexture("_FogIconTex", iconTexture);
 
-                    Rect iconRect = iconSprite.textureRect;
+                    var uvRects = new System.Collections.Generic.List<Vector4>(MaxIconRects);
                     float invW = 1f / iconTexture.width;
                     float invH = 1f / iconTexture.height;
-                    Vector4 iconUvRect = new Vector4(
-                        iconRect.x * invW,
-                        iconRect.y * invH,
-                        iconRect.width * invW,
-                        iconRect.height * invH);
-                    _mat.SetVector("_FogIconUVRect", iconUvRect);
+
+                    for (int i = 0; i < _settings.FogIconSprites.Length && uvRects.Count < MaxIconRects; i++)
+                    {
+                        Sprite sprite = _settings.FogIconSprites[i];
+                        if (sprite == null || sprite.texture != iconTexture)
+                            continue;
+
+                        Rect iconRect = sprite.textureRect;
+                        uvRects.Add(new Vector4(
+                            iconRect.x * invW,
+                            iconRect.y * invH,
+                            iconRect.width * invW,
+                            iconRect.height * invH));
+                    }
+
+                    if (uvRects.Count == 0)
+                        uvRects.Add(new Vector4(0f, 0f, 1f, 1f));
+
+                    _mat.SetVector("_FogIconUVRect", uvRects[0]);
+                    _mat.SetVectorArray("_FogIconUVRects", uvRects);
+                    _mat.SetFloat("_FogIconRectCount", uvRects.Count);
                 }
-                
-                // Determine grid size from icon count
-                // Assume square grid: iconCount = gridSize^2
-                int iconCount = _settings.FogIconSprites.Length;
-                int gridSize = Mathf.CeilToInt(Mathf.Sqrt(iconCount));
-                _mat.SetFloat("_IconGridSize", gridSize);
-            }
-            else
-            {
-                _mat.SetFloat("_IconGridSize", 1f);
             }
 
             // Tiling and scaling parameters

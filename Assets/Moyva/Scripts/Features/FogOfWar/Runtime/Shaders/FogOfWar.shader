@@ -7,6 +7,7 @@ Shader "Moyva/FogOfWar"
         _FogIconTex              ("Fog Icon Texture", 2D)              = "white" {}
         _FogTileUVRect           ("Fog Tile UV Rect", Vector)          = (0, 0, 1, 1)
         _FogIconUVRect           ("Fog Icon UV Rect", Vector)          = (0, 0, 1, 1)
+        _FogIconRectCount        ("Fog Icon Rect Count", Float)        = 1
         _UnexploredColor         ("Unexplored Color", Color)           = (0, 0, 0, 1)
         _ExploredColor           ("Explored Color",   Color)           = (0, 0, 0, 0.5)
         _FogTileTiling           ("Fog Tile Tiling", Float)            = 1.0
@@ -50,6 +51,7 @@ Shader "Moyva/FogOfWar"
             SAMPLER(sampler_FogTileTex);
             TEXTURE2D(_FogIconTex);
             SAMPLER(sampler_FogIconTex);
+            float4 _FogIconUVRects[64];
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _FogTex_ST;
@@ -64,6 +66,7 @@ Shader "Moyva/FogOfWar"
                 float _FogTileTiling;
                 float _FogIconScale;
                 float _FogIconIntensity;
+                float _FogIconRectCount;
                 float _UnexploredAlpha;
                 float _ExploredAlpha;
                 float _UseIconAtlas;
@@ -116,14 +119,22 @@ Shader "Moyva/FogOfWar"
 
                 // ─── Sample icon texture with independent icon grid ─────────────
                 float2 iconGridSize = max(1.0.xx, _FogIconGridSize.xy);
+                float2 iconGridCoord = floor(IN.uv * iconGridSize);
                 float2 iconCellFrac = frac(IN.uv * iconGridSize);
+
+                // Pick icon rect sequentially across icon grid.
+                float iconRectCount = max(1.0, _FogIconRectCount);
+                float iconIndexF = fmod(iconGridCoord.x + iconGridCoord.y * iconGridSize.x, iconRectCount);
+                int iconIndex = (int)iconIndexF;
+                iconIndex = clamp(iconIndex, 0, 63);
+                float4 iconUvRect = _FogIconUVRects[iconIndex];
                 
                 // Scale cell fractional to icon size and center within icon cell
                 float2 iconUVInSprite = iconCellFrac * _FogIconScale;
                 iconUVInSprite += float2(0.5 - _FogIconScale * 0.5, 0.5 - _FogIconScale * 0.5);
 
                 // Sample exact sprite rect from atlas texture
-                float2 iconUV = _FogIconUVRect.xy + iconUVInSprite * _FogIconUVRect.zw;
+                float2 iconUV = iconUvRect.xy + iconUVInSprite * iconUvRect.zw;
                 
                 half4 iconSample = SAMPLE_TEXTURE2D(_FogIconTex, sampler_FogIconTex, iconUV);
 
