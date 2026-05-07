@@ -24,8 +24,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
         public Color UnexploredColor = new Color(0f, 0f, 0f, 1f);
         public Color ExploredColor   = new Color(0f, 0f, 0f, 0.5f);
 
-        [Header("Fog Tile Texture")]
-        public Texture2D FogTileTexture;
+            [Header("Fog Tile Sprite")]
+            public Sprite FogTileSprite;
         [Tooltip("Scale for tiling the fog cell texture. Higher = more tiles per cell")]
         [Min(1f)] public float FogTileTiling = 1f;
 

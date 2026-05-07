@@ -58,9 +58,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _mat.SetColor("_UnexploredColor", _settings.UnexploredColor);
             _mat.SetColor("_ExploredColor",   _settings.ExploredColor);
 
-            // Fog tile texture (tiled across fog overlay)
-            if (_settings.FogTileTexture != null)
-                _mat.SetTexture("_FogTileTex", _settings.FogTileTexture);
+                // Fog tile texture (tiled across fog overlay)
+                if (_settings.FogTileSprite != null)
+                {
+                    Texture2D tileTexture = _settings.FogTileSprite.texture;
+                    if (tileTexture != null)
+                        _mat.SetTexture("_FogTileTex", tileTexture);
+                }
 
             // Fog icon texture (atlas of sprite icons)
             if (_settings.FogIconSprites != null && _settings.FogIconSprites.Length > 0)
