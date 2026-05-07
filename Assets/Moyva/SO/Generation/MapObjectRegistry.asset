@@ -19,37 +19,29 @@ MonoBehaviour:
     _visualPrefab: {fileID: 4608864207072105692, guid: 6a6b29fc17c7903caa206b7db9c123c1, type: 3}
   - _id: tree-oak
     _visualPrefab: {fileID: 5752514224038322538, guid: 703ea30507380d53b9e66396536e548f, type: 3}
-  - _id: river
-    _visualPrefab: {fileID: 4520715074708490288, guid: 3cc7b5e1aa5d40676b8b400b1860cd51, type: 3}
-  - _id: river-vertical
-    _visualPrefab: {fileID: 7008181568574344069, guid: 9c6096e2f4ebdf9199f732c4ef0aac67, type: 3}
-  - _id: river-horizontal
-    _visualPrefab: {fileID: 7058350680734723949, guid: 2898de9a908b87872846db040c0550ad, type: 3}
-  - _id: river-corner-ne
-    _visualPrefab: {fileID: 2270867948683214989, guid: 7a3dab106d94bbb00a03bd741aec2405, type: 3}
-  - _id: river-corner-se
-    _visualPrefab: {fileID: 9138255103237274368, guid: d15a1aa305087620e9e8c67d8cd4233a, type: 3}
-  - _id: river-cross
-    _visualPrefab: {fileID: 5572018485327844672, guid: 0deb0df9f5b0b701ebe45c0d49cac976, type: 3}
-  - _id: river-t-south
-    _visualPrefab: {fileID: 1093191665066045148, guid: 170bf76ed1a00cd37b0b8d1709fe41c3, type: 3}
-  - _id: river-t-west
-    _visualPrefab: {fileID: 842114502827755578, guid: 9d14008edfabb64c09edb63d9b1eb9a5, type: 3}
-  - _id: river-t-north
-    _visualPrefab: {fileID: 3952597757060514982, guid: d32fe5093fec3bc1e9bf6cbda76e92cf, type: 3}
-  - _id: river-t-east
-    _visualPrefab: {fileID: 7421876987906078703, guid: 37c511167bdc31fe0aeb4fe3697056eb, type: 3}
-  - _id: river-corner-nw
-    _visualPrefab: {fileID: 312303507944106859, guid: 5e4fc9da058b1176f819c7b22e3625f3, type: 3}
-  - _id: river-corner-sw
-    _visualPrefab: {fileID: 5562894271975161393, guid: 64bbb39d1887241149f06159c3eb91b4, type: 3}
-  - _id: river-outlet
-    _visualPrefab: {fileID: 8706214233737447566, guid: 279ae73000938fc5c871db4efd0ae867, type: 3}
-  - _id: river-outlet-w
-    _visualPrefab: {fileID: 6336470004984713589, guid: d7239f3ac4fe6b6258666b7f1fe2fbfb, type: 3}
-  - _id: river-outlet-s
-    _visualPrefab: {fileID: 1371898745311251316, guid: e5f74babbccc2b1598a0aa22140c1c07, type: 3}
-  - _id: river-outlet-e
-    _visualPrefab: {fileID: 4586773982522401933, guid: 8bb01543988037bf4934fc41862c5acb, type: 3}
-  - _id: river-outlet-n
-    _visualPrefab: {fileID: 4607030508906754675, guid: 3f2a7126cd33e38e19d0296d2ff2d3d7, type: 3}
+  - _id: green-tree-object-001
+    _visualPrefab: {fileID: 3927238052799309785, guid: 6f6b1251cecdebd45ac85b0dd8b747da, type: 3}
+  - _id: green-tree-object-002
+    _visualPrefab: {fileID: 5936278851218418940, guid: 023eb4968e8e057439225579cee5949c, type: 3}
+  - _id: green-tree-object-003
+    _visualPrefab: {fileID: 6049072913180537460, guid: 66ec5e386572e1044bd37871474839d5, type: 3}
+  - _id: green-tree-object-004
+    _visualPrefab: {fileID: 2227409253263757779, guid: e13ae33a1c4e07b4796c0c4da9dfe0fa, type: 3}
+  - _id: green-tree-object-005
+    _visualPrefab: {fileID: 1128239562851633693, guid: 0ffa5347bc006e440a518c0decff5b43, type: 3}
+  - _id: green-tree-object-006
+    _visualPrefab: {fileID: 4642190424593835584, guid: fbcd364c65212bc459994a22e51ef532, type: 3}
+  - _id: green-tree-object-007
+    _visualPrefab: {fileID: 7731037750879707015, guid: 7f95da5c910b26641bb61cc8db263759, type: 3}
+  - _id: green-tree-object-008
+    _visualPrefab: {fileID: 3273783515351409119, guid: 66597a88e78cd244a83f62da8a056675, type: 3}
+  - _id: palm-tree-object-001
+    _visualPrefab: {fileID: 3927238052799309785, guid: 6f6b1251cecdebd45ac85b0dd8b747da, type: 3}
+  - _id: green-tree-stump-object-001
+    _visualPrefab: {fileID: 3695883313670877591, guid: f6983808e9750ea4d892758f7959ed26, type: 3}
+  - _id: palm-tree-object-002
+    _visualPrefab: {fileID: 1010891097238656744, guid: b7de6940445c9434eb85cc56c58e9444, type: 3}
+  - _id: palm-tree-object-003
+    _visualPrefab: {fileID: 8675221335883316037, guid: 22f390a138009184aabdcb6016b86f6f, type: 3}
+  - _id: palm-tree-stump-object-001
+    _visualPrefab: {fileID: 3736118700552317784, guid: dc40df1cefde25f47b8c8a6d8ca15b0d, type: 3}

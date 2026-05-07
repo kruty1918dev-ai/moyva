@@ -253,18 +253,33 @@ MonoBehaviour:
   - _id: sand-to-grass-right-end-tile-002
     _movementCost: 1
     _visualPrefab: {fileID: 3374619847767135248, guid: b8652d4d1d892df4483764cf606ed507, type: 3}
+  - _id: stone-hill-top-left-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 5410025859290603014, guid: 8740f3d761d3aad4688d4990e4ab8b92, type: 3}
   - _id: stone-hill-top-left-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 5410025859290603014, guid: 8740f3d761d3aad4688d4990e4ab8b92, type: 3}
+  - _id: stone-hill-top-middle-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 2024937330830930193, guid: 582dd51908159114d982fe1b3a53f5c5, type: 3}
   - _id: stone-hill-top-middle-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 2024937330830930193, guid: 582dd51908159114d982fe1b3a53f5c5, type: 3}
+  - _id: stone-hill-top-right-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 6495588113326914491, guid: 3283a38ff86d60547a7cfee82e4d0020, type: 3}
   - _id: stone-hill-top-right-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 6495588113326914491, guid: 3283a38ff86d60547a7cfee82e4d0020, type: 3}
+  - _id: stone-hill-top-left-inner-corner-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 7442036506742536829, guid: ea8ac05365c342e438f7d5638a9b14d2, type: 3}
   - _id: stone-hill-top-left-inner-corner-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 7442036506742536829, guid: ea8ac05365c342e438f7d5638a9b14d2, type: 3}
+  - _id: stone-hill-top-right-inner-corner-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 4041052561470759315, guid: 490ed1020b7b5b44093e30beedadece5, type: 3}
   - _id: stone-hill-top-right-inner-corner-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 4041052561470759315, guid: 490ed1020b7b5b44093e30beedadece5, type: 3}
@@ -283,15 +298,27 @@ MonoBehaviour:
   - _id: stone-hill-top-right-inner-corner-tile-002
     _movementCost: 1
     _visualPrefab: {fileID: 289608340704930841, guid: 98ad9506e383ec441b71d07dba5ba416, type: 3}
+  - _id: stone-hill-left-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 2384874367348932451, guid: 994ce1e08860ad44cae3045faca7d58a, type: 3}
   - _id: stone-hill-left-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 2384874367348932451, guid: 994ce1e08860ad44cae3045faca7d58a, type: 3}
+  - _id: stone-hill-right-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 5939572560747729176, guid: 7ffb3b84308be1f498894ac7e85daa84, type: 3}
   - _id: stone-hill-right-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 5939572560747729176, guid: 7ffb3b84308be1f498894ac7e85daa84, type: 3}
+  - _id: stone-hill-down-left-inner-corner-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 5125564611038466764, guid: 27f30d8da7be7704ab2b1f1a80409b38, type: 3}
   - _id: stone-hill-down-left-inner-corner-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 5125564611038466764, guid: 27f30d8da7be7704ab2b1f1a80409b38, type: 3}
+  - _id: stone-hill-down-right-inner-corner-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 3045042461654820487, guid: 7e7078f4f4d808242bcebae987f7ff10, type: 3}
   - _id: stone-hill-down-right-inner-corner-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 3045042461654820487, guid: 7e7078f4f4d808242bcebae987f7ff10, type: 3}
@@ -307,12 +334,21 @@ MonoBehaviour:
   - _id: stone-hill-down-right-inner-corner-tile-002
     _movementCost: 1
     _visualPrefab: {fileID: 5260450607569359327, guid: 1c0592ec8fad4c2468f43301198311ff, type: 3}
+  - _id: stone-hill-down-left-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 3937541368606234260, guid: 9b9ff0e932288e64ab1f04ba4cc92575, type: 3}
   - _id: stone-hill-down-left-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 3937541368606234260, guid: 9b9ff0e932288e64ab1f04ba4cc92575, type: 3}
+  - _id: stone-hill-down-middle-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 178533749310443018, guid: 34b247ee5420bc546a5908771c8b0f1c, type: 3}
   - _id: stone-hill-down-middle-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 178533749310443018, guid: 34b247ee5420bc546a5908771c8b0f1c, type: 3}
+  - _id: stone-hill-down-right-tile-001-copy
+    _movementCost: 1
+    _visualPrefab: {fileID: 3523975607957699629, guid: 67dff3187865f9642b6a4122f27c4f9d, type: 3}
   - _id: stone-hill-down-right-tile-001
     _movementCost: 1
     _visualPrefab: {fileID: 3523975607957699629, guid: 67dff3187865f9642b6a4122f27c4f9d, type: 3}
@@ -619,3 +655,6 @@ MonoBehaviour:
   - _id: grass-tile-level-6-001
     _movementCost: 1
     _visualPrefab: {fileID: 2680998980662229933, guid: 47b18e70c8a3ede7db87d467b84050ab, type: 3}
+  - _id: snow-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3522874279653526203, guid: afa0ca93d13c8c0cfabea28dfa0f8788, type: 3}
