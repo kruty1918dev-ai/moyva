@@ -18,6 +18,7 @@
   <Project Path="Kruty1918.Moyva.Economy.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.BotAI.csproj" />
+  <Project Path="Kruty1918.Moyva.Generator.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Pathfinding.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.Editor.csproj" />
@@ -28,7 +29,6 @@
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Multiplayer.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
-  <Project Path="Kruty1918.Moyva.Generator.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.BotAI.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Kruty1918.Moyva.Signals.csproj" />
