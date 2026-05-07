@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-8820800396615703428
+--- !u!114 &-9211251892593523025
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -9,14 +9,82 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3e2523f701ac02af79efd1c8c58149aa, type: 3}
-  m_Name: ConstraintPolishNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ConstraintPolishNode
-  _nodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
-  _editorPosition: {x: 9295, y: 321}
-  _wfcSettings: {fileID: 11400000, guid: 43b54663d84457518923e06a607badc7, type: 2}
-  _applyOnlyOnFlags: 0
-  _targetFlagIds: []
+  m_Script: {fileID: 11500000, guid: d1785b96189c01f08a6276aa9ff17d5a, type: 3}
+  m_Name: NoiseMaskClipNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseMaskClipNode
+  _nodeId: 912d2f91-c6ca-4838-a722-cd10410c7623
+  _editorPosition: {x: 5612, y: -388}
+  _mode: 0
+  _threshold: 0.571
+  _feather: 0.1
+  _maskPower: 1
+  _invertMask: 0
+  _outsideValue: 0
+--- !u!114 &-8777947796268791510
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bad1d694c02f8c4ca18f963de54528d, type: 3}
+  m_Name: HeightBiasNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
+  _nodeId: a1f040cf-9ece-4552-958d-e1adc85e707d
+  _editorPosition: {x: 8768, y: -278}
+  _rangeMin: 0.357
+  _rangeMax: 1
+  _offset: 1
+--- !u!114 &-8292216903209196142
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88a4114658b9c2784ade7c3ce494a48d, type: 3}
+  m_Name: NoiseCombinerNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
+  _nodeId: d1ad08e7-9553-4801-8e92-fb30ca0e219a
+  _editorPosition: {x: 16181, y: -106}
+  _mode: 0
+  _blend: 0.5
+--- !u!114 &-8251876462140407228
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 889d4cbf6fe180ead968533c394389c0, type: 3}
+  m_Name: SmoothNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
+  _nodeId: a8039a99-41fb-4c80-a412-0f65d1d0a5c2
+  _editorPosition: {x: 9301, y: -278}
+  _radius: 1
+  _iterations: 1
+--- !u!114 &-8100168243295246735
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1adac1551616846eea7d1a77db40c558, type: 3}
+  m_Name: TerraceNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
+  _nodeId: 8f8c4ffd-637d-4245-b5e6-661ac7af16dc
+  _editorPosition: {x: 9827, y: -278}
+  _levels: 3
+  _sharpness: 0.8
 --- !u!114 &-7803321959616822836
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -30,7 +98,7 @@ MonoBehaviour:
   m_Name: ErosionNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode
   _nodeId: 369e331f-73fb-4b5a-a906-09378bb72468
-  _editorPosition: {x: 8165, y: 21}
+  _editorPosition: {x: 14084, y: -73}
   _erosionRate: 0.1
   _iterations: 33
   _talusAngle: 0.058
@@ -47,9 +115,26 @@ MonoBehaviour:
   m_Name: FloatFunctionMapNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FloatFunctionMapNode
   _nodeId: 59f0ae9f-c6ea-4cd4-8147-d646fbcdf625
-  _editorPosition: {x: 1550, y: 280}
+  _editorPosition: {x: 2610, y: 280}
   _expression: circle(u,v,0.5,0.5,0.25,0.01)
   _clamp01: 1
+--- !u!114 &-7640701797065486027
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bad1d694c02f8c4ca18f963de54528d, type: 3}
+  m_Name: HeightBiasNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
+  _nodeId: 68bf1247-5b34-465c-9058-05e65a73eb7f
+  _editorPosition: {x: 10893, y: -278}
+  _rangeMin: 0.8
+  _rangeMax: 1
+  _offset: -0.2
 --- !u!114 &-7599073612490096189
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -63,7 +148,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: 1a6d81eb-eb8d-4a8c-abad-92660bc28ee4
-  _editorPosition: {x: 1550, y: -228}
+  _editorPosition: {x: 2610, y: -228}
   _levels: 8
   _sharpness: 0.85
 --- !u!114 &-7409379143267765993
@@ -79,9 +164,26 @@ MonoBehaviour:
   m_Name: NoiseCombinerNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: 8af0b282-57d9-42d9-a335-1c4198b38e30
-  _editorPosition: {x: 3650, y: 9.5}
+  _editorPosition: {x: 6152, y: 142}
   _mode: 4
   _blend: 1
+--- !u!114 &-7227295359793685790
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bad1d694c02f8c4ca18f963de54528d, type: 3}
+  m_Name: HeightBiasNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
+  _nodeId: 02468eda-d89e-4467-a892-c2818892f47e
+  _editorPosition: {x: 13551, y: 181}
+  _rangeMin: 0
+  _rangeMax: 1
+  _offset: -0.4
 --- !u!114 &-7207838343501215377
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -95,8 +197,8 @@ MonoBehaviour:
   m_Name: SeedNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SeedNode
   _nodeId: 0e244104-f5c0-46dd-9310-026029a2b3d9
-  _editorPosition: {x: 50, y: -239}
-  seed: -825213812
+  _editorPosition: {x: 50, y: 36.828125}
+  seed: -1587285251
 --- !u!114 &-7093961151670886474
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -110,9 +212,101 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: 288d4828-4945-44f5-87e3-e1bdec61bb33
-  _editorPosition: {x: 1850, y: -261}
+  _editorPosition: {x: 3136, y: -261}
   _mode: 1
   _blend: 0.28
+--- !u!114 &-7049729681001785914
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 123550405d5e34af3bc65d57cf8b009f, type: 3}
+  m_Name: HillGeneratorNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HillGeneratorNode
+  _nodeId: 1539611d-d976-4b53-b8b2-6ee1cf1f49ae
+  _editorPosition: {x: 18229, y: -156}
+  _minZoneSize: 20
+  _excludedNeighborTileTypes:
+  - water-deep-depth-tile-001
+  - water-deep-depth-tile-002
+  - water-deep-depth-tile-003
+  - water-deep-depth-to-middle-down-left-corner-tile-001
+  - water-deep-depth-to-middle-down-left-tile-001
+  - water-deep-depth-to-middle-down-middle-tile-001
+  - water-deep-depth-to-middle-down-right-corner-tile-001
+  - water-deep-depth-to-middle-down-right-tile-001
+  - water-deep-depth-to-middle-left-tile-001
+  - water-deep-depth-to-middle-right-tile-001
+  - water-deep-depth-to-middle-top-left-corner-tile-001
+  - water-deep-depth-to-middle-top-left-tile-001
+  - water-deep-depth-to-middle-top-middle-tile-001
+  - water-deep-depth-to-middle-top-right-corner-tile-001
+  - water-deep-depth-to-middle-top-right-tile-001
+  - water-middle-depth-tile-001
+  - water-middle-depth-tile-002
+  - water-middle-depth-tile-003
+  - water-middle-depth-to-shoal-down-left-corner-tile-001
+  - water-middle-depth-to-shoal-down-left-tile-001
+  - water-middle-depth-to-shoal-down-middle-tile-001
+  - water-middle-depth-to-shoal-down-right-corner-tile-001
+  - water-middle-depth-to-shoal-down-right-tile-001
+  - water-middle-depth-to-shoal-left-tile-001
+  - water-middle-depth-to-shoal-right-tile-001
+  - water-middle-depth-to-shoal-top-left-corner-tile-001
+  - water-middle-depth-to-shoal-top-left-tile-001
+  - water-middle-depth-to-shoal-top-middle-tile-001
+  - water-middle-depth-to-shoal-top-right-corner-tile-001
+  - water-middle-depth-to-shoal-top-right-tile-001
+  - water-shoal-depth-tile-001
+  _applyOnlyOnFlags: 0
+  _targetFlagIds: []
+  _levels: 10
+  _useCustomThresholds: 1
+  _levelThresholds:
+  - 0
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  - 0.6
+  - 0.7
+  - 0.8
+  - 0.9
+  _hillTiles:
+  - Direction: 0
+    TileId: stone-hill-down-middle-tile-001
+  - Direction: 1
+    TileId: stone-hill-top-middle-tile-001
+  - Direction: 2
+    TileId: stone-hill-right-tile-001
+  - Direction: 3
+    TileId: stone-hill-left-tile-001
+  - Direction: 4
+    TileId: stone-hill-top-right-tile-001
+  - Direction: 5
+    TileId: stone-hill-top-left-tile-001
+  - Direction: 6
+    TileId: stone-hill-down-right-tile-001
+  - Direction: 7
+    TileId: stone-hill-down-left-tile-001
+  - Direction: 8
+    TileId: stone-hill-top-right-inner-corner-tile-001
+  - Direction: 9
+    TileId: stone-hill-top-left-inner-corner-tile-001
+  - Direction: 10
+    TileId: stone-hill-down-right-inner-corner-tile-001
+  - Direction: 11
+    TileId: stone-hill-down-left-inner-corner-tile-001
+  _useMaskOverride: 0
+  _maskLayerIndices: 00000000
+  _maskOverrideLevels: 3
+  _maskOverrideUseCustomThresholds: 0
+  _maskOverrideThresholds: []
+  _maskOverrideHillTiles: []
 --- !u!114 &-7006120254574055992
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -126,9 +320,41 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: 9ba9b516-5739-4772-ae2f-35bc112e7109
-  _editorPosition: {x: 5450, y: 20.5}
+  _editorPosition: {x: 9301, y: 54}
   _levels: 14
   _sharpness: 0.46
+--- !u!114 &-6888313214010822610
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 889d4cbf6fe180ead968533c394389c0, type: 3}
+  m_Name: SmoothNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
+  _nodeId: e1f176de-3f73-45be-bbb0-d96ecdc4c8ca
+  _editorPosition: {x: 14084, y: -405}
+  _radius: 1
+  _iterations: 1
+--- !u!114 &-6830782862449590209
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90d0020f9e98e97889377d21e10011d8, type: 3}
+  m_Name: SimplexNoiseNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SimplexNoiseNode
+  _nodeId: e2cbd77f-f26a-46ac-968d-653aaec67373
+  _editorPosition: {x: 5612, y: -112}
+  _scale: 0.3
+  _offset: {x: 0, y: 0}
 --- !u!114 &-6746020804870992798
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -142,10 +368,26 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 89354a03-2206-4374-98c4-6f8db20974cf
-  _editorPosition: {x: 7250, y: 20.5}
+  _editorPosition: {x: 12492, y: -90}
   _rangeMin: 0.89
   _rangeMax: 1
-  _offset: 0.77
+  _offset: 1
+--- !u!114 &-6557126198452965455
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 889d4cbf6fe180ead968533c394389c0, type: 3}
+  m_Name: SmoothNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
+  _nodeId: cf2f0b53-e3d3-4551-b1e9-923aa4396bc7
+  _editorPosition: {x: 12492, y: -422}
+  _radius: 1
+  _iterations: 1
 --- !u!114 &-6392009196884656065
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -159,7 +401,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: 66515f94-b08b-4302-a210-af40b9e96a12
-  _editorPosition: {x: 7850, y: 21}
+  _editorPosition: {x: 13551, y: -73}
   _levels: 9
   _sharpness: 1
 --- !u!114 &-5853983609756329095
@@ -175,7 +417,7 @@ MonoBehaviour:
   m_Name: NoiseMaskClipNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseMaskClipNode
   _nodeId: adde43b0-619f-458f-a5a7-42e6c4a33923
-  _editorPosition: {x: 3350, y: 9.5}
+  _editorPosition: {x: 5612, y: 142}
   _mode: 0
   _threshold: 0.579
   _feather: 0.443
@@ -195,7 +437,7 @@ MonoBehaviour:
   m_Name: FBMNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FBMNoiseNode
   _nodeId: 56d1402f-ebd2-4dc2-ba9b-329576427497
-  _editorPosition: {x: 3050, y: -239}
+  _editorPosition: {x: 5128, y: 280}
   _baseNoise: 0
   _scale: 0.03
   _octaves: 5
@@ -215,7 +457,75 @@ MonoBehaviour:
   m_Name: OutputNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.OutputNode
   _nodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
-  _editorPosition: {x: 9694, y: 55}
+  _editorPosition: {x: 21476, y: -70}
+--- !u!114 &-5299912891968429243
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b44fb9f7b2d84f2786d368513672975, type: 3}
+  m_Name: TileMaskNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TileMaskNode
+  _nodeId: 42aac319-142a-494a-9162-e4a77567f67b
+  _editorPosition: {x: 18825, y: -400}
+  _targetTileIds:
+  - stone-hill-down-left-inner-corner-tile-001
+  - stone-hill-down-left-inner-corner-tile-002
+  - stone-hill-down-left-tile-001
+  - stone-hill-down-left-tile-002
+  - stone-hill-down-middle-tile-001
+  - stone-hill-down-middle-tile-002
+  - stone-hill-down-right-inner-corner-tile-001
+  - stone-hill-down-right-inner-corner-tile-002
+  - stone-hill-down-right-tile-001
+  - stone-hill-down-right-tile-002
+  - stone-hill-down-road-tile-001
+  - stone-hill-down-stairs-tile-001
+  - stone-hill-down-stairs-tile-002
+  - stone-hill-left-diagonal-corners-tile-001
+  - stone-hill-left-diagonal-corners-tile-002
+  - stone-hill-left-road-tile-001
+  - stone-hill-left-stairs-tile-001
+  - stone-hill-left-stairs-tile-002
+  - stone-hill-left-tile-001
+  - stone-hill-left-tile-002
+  - stone-hill-right-diagonal-corners-tile-001
+  - stone-hill-right-diagonal-corners-tile-002
+  - stone-hill-right-road-tile-001
+  - stone-hill-right-stairs-tile-001
+  - stone-hill-right-stairs-tile-002
+  - stone-hill-right-tile-001
+  - stone-hill-right-tile-002
+  - stone-hill-top-left-inner-corner-tile-001
+  - stone-hill-top-left-inner-corner-tile-002
+  - stone-hill-top-left-tile-001
+  - stone-hill-top-left-tile-002
+  - stone-hill-top-middle-tile-001
+  - stone-hill-top-middle-tile-002
+  - stone-hill-top-right-inner-corner-tile-001
+  - stone-hill-top-right-inner-corner-tile-002
+  - stone-hill-top-right-tile-001
+  - stone-hill-top-right-tile-002
+  - stone-hill-top-road-tile-001
+  - stone-hill-top-stairs-tile-001
+  - stone-hill-top-stairs-tile-002
+  - grass-coast-down-left-corner-tile-001
+  - grass-coast-down-left-tile-001
+  - grass-coast-down-middle-tile-001
+  - grass-coast-down-right-corner-tile-001
+  - grass-coast-down-right-tile-001
+  - grass-coast-left-tile-001
+  - grass-coast-right-tile-001
+  - grass-coast-top-left-corner-tile-001
+  - grass-coast-top-left-tile-001
+  - grass-coast-top-middle-tile-001
+  - grass-coast-top-right-corner-tile-001
+  - grass-coast-top-right-tile-001
+  _matchByBaseKey: 0
 --- !u!114 &-5052904741291767717
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -229,7 +539,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
-  _editorPosition: {x: 8470, y: 21}
+  _editorPosition: {x: 14610, y: -73}
   _levels: 9
   _sharpness: 1
 --- !u!114 &-4760769970211019525
@@ -245,13 +555,78 @@ MonoBehaviour:
   m_Name: FBMNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FBMNoiseNode
   _nodeId: 5367a78f-623c-43ea-9288-476d6f3560bc
-  _editorPosition: {x: 350, y: 26}
+  _editorPosition: {x: 513, y: 15}
   _baseNoise: 1
   _scale: 0.015
   _octaves: 5
   _lacunarity: 2.1
   _persistence: 0.48
   _offset: {x: 0, y: 0}
+--- !u!114 &-4722531326773881792
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c92027cc52de9a7189b5c4cbf54d1ca0, type: 3}
+  m_Name: WaterNormalizerNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.WaterNormalizerNode
+  _nodeId: 164df983-4d80-4b66-9b0b-d7b55729068b
+  _editorPosition: {x: 16686, y: -134}
+  _waterMinHeight: 0
+  _waterMaxHeight: 0.34052122
+  _waterLevels: 5
+  _deepDistance: 9
+  _levelBlend: 0.6
+  _cleanupIterations: 5
+  _fillNeighborThreshold: 5
+  _removeNeighborThreshold: 3
+  _minWaterBodySize: 32
+  _shoreWidth: 3
+  _shoreTargetHeight: 0.36
+  _shoreBlend: 0.75
+  _shoreMaxSourceHeight: 0.4
+  _smoothRadius: 2
+  _smoothIterations: 2
+--- !u!114 &-4634082612512850134
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88a4114658b9c2784ade7c3ce494a48d, type: 3}
+  m_Name: NoiseCombinerNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
+  _nodeId: 1943bec8-75f4-46d5-a35d-e8203e004a53
+  _editorPosition: {x: 15676, y: -106}
+  _mode: 0
+  _blend: 0.5
+--- !u!114 &-4547956650260222834
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1785b96189c01f08a6276aa9ff17d5a, type: 3}
+  m_Name: NoiseMaskClipNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseMaskClipNode
+  _nodeId: 2d4e70e9-1f6e-43bb-8861-b67e1b19f467
+  _editorPosition: {x: 6657, y: -382.5}
+  _mode: 0
+  _threshold: 0
+  _feather: 0.143
+  _maskPower: 0.6
+  _invertMask: 0
+  _outsideValue: 0.203
 --- !u!114 &-4519408706656541247
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -265,10 +640,27 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 259d66d6-cfc3-428d-b77e-efce4545fd67
-  _editorPosition: {x: 6950, y: 20.5}
+  _editorPosition: {x: 11959, y: 54}
   _rangeMin: 0.693
   _rangeMax: 1
-  _offset: 0.17
+  _offset: 0.58
+--- !u!114 &-4386552749935581112
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0fc19ad7d630b0e078af9e7a49f0df2a, type: 3}
+  m_Name: WorleyNoiseNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.WorleyNoiseNode
+  _nodeId: 84100b71-9c2e-49bf-b455-151fe1e0eaa2
+  _editorPosition: {x: 6152, y: -112}
+  _scale: 0.1
+  _cellDensity: 0.2
+  _offset: {x: 0, y: 0}
 --- !u!114 &-4272696635080539783
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -282,13 +674,56 @@ MonoBehaviour:
   m_Name: FBMNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FBMNoiseNode
   _nodeId: e8293c6e-0d0c-4644-8304-b7fdf687c116
-  _editorPosition: {x: 2150, y: 26}
+  _editorPosition: {x: 3641, y: 26}
   _baseNoise: 1
   _scale: 0.05
   _octaves: 7
   _lacunarity: 3.02
   _persistence: 0.218
   _offset: {x: 0, y: 0}
+--- !u!114 &-4208091121640469985
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1bbf19b4e070494dbc234fb174a7db7, type: 3}
+  m_Name: ForestClusterNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ForestClusterNode
+  _nodeId: 912097e1-1e7b-48c5-8e27-80e98f62d7b4
+  _editorPosition: {x: 20403, y: 15}
+  _densityScale: 0.02
+  _densityOctaves: 7
+  _densityLacunarity: 3
+  _densityPersistence: 0.704
+  _densityOffsetX: 0
+  _densityOffsetY: 0
+  _densityThreshold: 0.157
+  _minHeight: 0.45
+  _maxHeight: 0.8
+  _spawnObjects:
+  - ObjectId: green-tree-object-001
+    Chance: 0.38481057
+    Enabled: 1
+  - ObjectId: green-tree-object-002
+    Chance: 0.26976824
+    Enabled: 1
+  - ObjectId: green-tree-object-003
+    Chance: 0.3454212
+    Enabled: 1
+  _treeObjects:
+  - green-tree-object-001
+  - green-tree-object-002
+  - green-tree-object-003
+  _clusterCoverageMultiplier: 1.79
+  _minClusterNeighborsForObject: 0
+  _objectDensityExponent: 3.02
+  _objectChanceMultiplier: 0.98
+  _previewMode: 3
+  _densityNoise: {fileID: 11400000, guid: b52c6a6864aaac144b8a37c6cccf1366, type: 2}
 --- !u!114 &-4206215162816268745
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -302,8 +737,9 @@ MonoBehaviour:
   m_Name: HeightToTileNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightToTileNode
   _nodeId: 467bcbda-5453-485f-8b81-d39ae9667410
-  _editorPosition: {x: 8952, y: -196}
+  _editorPosition: {x: 17710, y: -117}
   _heightMapSettings: {fileID: 11400000, guid: 7858e000ef64a05ce8383f19fce7752c, type: 2}
+  _maskLayerIndex: 1
 --- !u!114 &-3743344069470685114
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -317,9 +753,33 @@ MonoBehaviour:
   m_Name: SmoothNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
   _nodeId: f21866ab-537a-4889-bec5-d2bc44554aa9
-  _editorPosition: {x: 950, y: 142}
-  _radius: 2
+  _editorPosition: {x: 1558, y: 142}
+  _radius: 1
   _iterations: 1
+--- !u!114 &-3454620676901046213
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7dbaf282ae42cb3978d639f6fe1e2590, type: 3}
+  m_Name: HeightSupplementNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightSupplementNode
+  _nodeId: 8c167a1d-7e5a-4237-85a3-e86cee2fda73
+  _editorPosition: {x: 15136, y: -317}
+  _minHeight: 0
+  _maxHeight: 0.4
+  _noiseMin: 0
+  _noiseMax: 1
+  _noiseTransition: 0.404
+  _peakPower: 3.55
+  _amount: 0.41
+  _rangeTransition: 0.039
+  _smoothRadius: 1
+  _smoothIterations: 0
 --- !u!114 &-3313793592195755713
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -333,7 +793,7 @@ MonoBehaviour:
   m_Name: WorleyNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.WorleyNoiseNode
   _nodeId: 44739471-bf51-413f-b539-e51ab177c413
-  _editorPosition: {x: 950, y: -366}
+  _editorPosition: {x: 1558, y: -366}
   _scale: 0.01
   _cellDensity: 2
   _offset: {x: 0, y: 0}
@@ -350,7 +810,7 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 8856842e-73ae-4e3b-a2e8-f56baed54c78
-  _editorPosition: {x: 6350, y: 20.5}
+  _editorPosition: {x: 10893, y: 54}
   _rangeMin: 0.15
   _rangeMax: 0.3
   _offset: 0.2
@@ -367,7 +827,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: af3e9d7e-3a8b-47f1-a802-ae6926f3dff6
-  _editorPosition: {x: 4250, y: 20.5}
+  _editorPosition: {x: 7197, y: 153}
   _levels: 20
   _sharpness: 0.186
 --- !u!114 &-2721669523466837572
@@ -383,7 +843,7 @@ MonoBehaviour:
   m_Name: RiverLineMaskNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RiverLineMaskNode
   _nodeId: 5fefacf4-7a42-4374-a56d-4fe90bc1c3bc
-  _editorPosition: {x: 4850, y: 20.5}
+  _editorPosition: {x: 8263, y: 59.5}
   _startX: 0.851
   _startY: 0.15
   _endX: 0.171
@@ -409,7 +869,7 @@ MonoBehaviour:
   m_Name: RiverLineMaskNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RiverLineMaskNode
   _nodeId: 9ad1726d-bf37-457b-9132-e77dfe9bd41a
-  _editorPosition: {x: 4550, y: 20.5}
+  _editorPosition: {x: 7723, y: 59.5}
   _startX: 1
   _startY: 0.948
   _endX: 0.286
@@ -435,13 +895,64 @@ MonoBehaviour:
   m_Name: FBMNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FBMNoiseNode
   _nodeId: 86415b26-03b0-4398-8ed6-cb56fda784cb
-  _editorPosition: {x: 950, y: -112}
+  _editorPosition: {x: 1558, y: -112}
   _baseNoise: 1
   _scale: 0.015
   _octaves: 5
   _lacunarity: 2.1
   _persistence: 0.48
   _offset: {x: 0, y: 0}
+--- !u!114 &-1908374693728756493
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90d0020f9e98e97889377d21e10011d8, type: 3}
+  m_Name: SimplexNoiseNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SimplexNoiseNode
+  _nodeId: 3bbd6bbb-9a09-4337-9c49-de149860b98d
+  _editorPosition: {x: 5128, y: -250}
+  _scale: 0.1
+  _offset: {x: 0, y: 0}
+--- !u!114 &-1619652530557461424
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1785b96189c01f08a6276aa9ff17d5a, type: 3}
+  m_Name: NoiseMaskClipNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseMaskClipNode
+  _nodeId: b0f636b6-5fc4-4572-9c1e-6146a55d8d22
+  _editorPosition: {x: 7723, y: -283.5}
+  _mode: 0
+  _threshold: 0
+  _feather: 0.143
+  _maskPower: 0.6
+  _invertMask: 0
+  _outsideValue: 0.203
+--- !u!114 &-1545109392589997236
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87928082b5787abc3bc99c1c70bf7bc7, type: 3}
+  m_Name: StaticGeneratorDataNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.StaticGeneratorDataNode
+  _nodeId: dd5b1d21-0b46-4c41-8d8b-eb3f9ce2d089
+  _editorPosition: {x: 19344, y: 181}
+  _key: hill-levels
 --- !u!114 &-1209323856053931236
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -455,7 +966,7 @@ MonoBehaviour:
   m_Name: RiverLineMaskNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RiverLineMaskNode
   _nodeId: 89be3f4e-7863-4696-8f7e-23ecc1ecc286
-  _editorPosition: {x: 2750, y: 15}
+  _editorPosition: {x: 4651, y: 26}
   _startX: 0.85
   _startY: 0.193
   _endX: 0
@@ -481,8 +992,40 @@ MonoBehaviour:
   m_Name: HeightSourceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightSourceNode
   _nodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
-  _editorPosition: {x: 350, y: -250}
+  _editorPosition: {x: 513, y: -239}
   _noiseSettings: {fileID: 11400000, guid: 29912cd5071f7de84a54c8b3129843ad, type: 2}
+--- !u!114 &-254283224719999227
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1adac1551616846eea7d1a77db40c558, type: 3}
+  m_Name: TerraceNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
+  _nodeId: 466e622f-c86b-4382-9cc6-66dfbaf52d88
+  _editorPosition: {x: 14610, y: 181}
+  _levels: 4
+  _sharpness: 0.8
+--- !u!114 &-49592185407835435
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1adac1551616846eea7d1a77db40c558, type: 3}
+  m_Name: TerraceNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
+  _nodeId: d5cce9e2-3535-4dd8-a03d-83241bd1448d
+  _editorPosition: {x: 14610, y: -405}
+  _levels: 4
+  _sharpness: 1
 --- !u!114 &-10153177973247888
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -496,7 +1039,7 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: 5d5146a6-5995-46e3-b53a-8b51cf898eef
-  _editorPosition: {x: 1250, y: -366}
+  _editorPosition: {x: 2084, y: -366}
   _levels: 20
   _sharpness: 0.4
 --- !u!114 &11400000
@@ -553,194 +1096,580 @@ MonoBehaviour:
   - {fileID: -6746020804870992798}
   - {fileID: 7577903736279346792}
   - {fileID: -6392009196884656065}
-  - {fileID: -8820800396615703428}
   - {fileID: -7803321959616822836}
   - {fileID: -5052904741291767717}
+  - {fileID: -7049729681001785914}
+  - {fileID: 2087458604285308890}
+  - {fileID: 3228831195711350375}
+  - {fileID: 4158882965020795556}
+  - {fileID: -4208091121640469985}
+  - {fileID: -5299912891968429243}
+  - {fileID: 3787663317093198667}
+  - {fileID: 9192881007934247940}
+  - {fileID: 4931683557684430565}
+  - {fileID: 8650237442875914564}
+  - {fileID: -1545109392589997236}
+  - {fileID: 5184746475634813847}
+  - {fileID: -3454620676901046213}
+  - {fileID: 8990053438645268246}
+  - {fileID: -9211251892593523025}
+  - {fileID: -1908374693728756493}
+  - {fileID: -6830782862449590209}
+  - {fileID: 2198955456719905099}
+  - {fileID: -4386552749935581112}
+  - {fileID: -4547956650260222834}
+  - {fileID: 3592810871545583089}
+  - {fileID: 3919949199573172569}
+  - {fileID: -1619652530557461424}
+  - {fileID: 8360314704580163584}
+  - {fileID: -8777947796268791510}
+  - {fileID: -8251876462140407228}
+  - {fileID: -8100168243295246735}
+  - {fileID: 6764534700283112489}
+  - {fileID: -7640701797065486027}
+  - {fileID: 1753510759189482051}
+  - {fileID: 5862215644661956395}
+  - {fileID: 790235730117562859}
+  - {fileID: -6557126198452965455}
+  - {fileID: 5815244193265209030}
+  - {fileID: -6888313214010822610}
+  - {fileID: -49592185407835435}
+  - {fileID: -4634082612512850134}
+  - {fileID: 9060721723587792021}
+  - {fileID: 3735378409952284367}
+  - {fileID: 7465030549378838313}
+  - {fileID: -7227295359793685790}
+  - {fileID: 6633886562336856175}
+  - {fileID: -254283224719999227}
+  - {fileID: -8292216903209196142}
+  - {fileID: -4722531326773881792}
+  - {fileID: 6068598989770685514}
   _connections:
   - _sourceNodeId: e85324de-9519-4605-9c2d-49e7b25ef12d
     _sourcePortIndex: 0
     _targetNodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
     _sourcePortIndex: 0
     _targetNodeId: ab061f13-7325-448f-8f2c-f0bbfdd9ca46
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 5367a78f-623c-43ea-9288-476d6f3560bc
     _sourcePortIndex: 0
     _targetNodeId: ab061f13-7325-448f-8f2c-f0bbfdd9ca46
     _targetPortIndex: 1
+    _sourceElementIndex: 0
   - _sourceNodeId: ab061f13-7325-448f-8f2c-f0bbfdd9ca46
     _sourcePortIndex: 0
     _targetNodeId: f21866ab-537a-4889-bec5-d2bc44554aa9
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: f21866ab-537a-4889-bec5-d2bc44554aa9
     _sourcePortIndex: 0
     _targetNodeId: 7c34b3c9-6582-4fbf-a046-ed061eaea80e
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 7c34b3c9-6582-4fbf-a046-ed061eaea80e
     _sourcePortIndex: 0
     _targetNodeId: 1a6d81eb-eb8d-4a8c-abad-92660bc28ee4
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 44739471-bf51-413f-b539-e51ab177c413
     _sourcePortIndex: 0
     _targetNodeId: 5d5146a6-5995-46e3-b53a-8b51cf898eef
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 86415b26-03b0-4398-8ed6-cb56fda784cb
     _sourcePortIndex: 0
     _targetNodeId: b7e9f373-b06c-42c0-9b3f-9b84bb8ee759
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 5d5146a6-5995-46e3-b53a-8b51cf898eef
     _sourcePortIndex: 0
     _targetNodeId: 9567f25d-a1f6-4dbb-9848-d3fe4be644e9
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: b7e9f373-b06c-42c0-9b3f-9b84bb8ee759
     _sourcePortIndex: 0
     _targetNodeId: 9567f25d-a1f6-4dbb-9848-d3fe4be644e9
     _targetPortIndex: 1
+    _sourceElementIndex: 0
   - _sourceNodeId: 9567f25d-a1f6-4dbb-9848-d3fe4be644e9
     _sourcePortIndex: 0
     _targetNodeId: 288d4828-4945-44f5-87e3-e1bdec61bb33
     _targetPortIndex: 1
+    _sourceElementIndex: 0
   - _sourceNodeId: 1a6d81eb-eb8d-4a8c-abad-92660bc28ee4
     _sourcePortIndex: 0
     _targetNodeId: 288d4828-4945-44f5-87e3-e1bdec61bb33
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 288d4828-4945-44f5-87e3-e1bdec61bb33
     _sourcePortIndex: 0
     _targetNodeId: ce031f35-60cc-49e1-833b-1ca7a75d58c4
     _targetPortIndex: 1
+    _sourceElementIndex: 0
   - _sourceNodeId: 426b4f00-8a29-4603-86c5-270f8e671dcc
     _sourcePortIndex: 0
     _targetNodeId: 329496d3-ca21-4c21-9edf-07e1b366c410
     _targetPortIndex: 1
+    _sourceElementIndex: 0
   - _sourceNodeId: 59f0ae9f-c6ea-4cd4-8147-d646fbcdf625
     _sourcePortIndex: 0
     _targetNodeId: 329496d3-ca21-4c21-9edf-07e1b366c410
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 329496d3-ca21-4c21-9edf-07e1b366c410
     _sourcePortIndex: 0
     _targetNodeId: ce031f35-60cc-49e1-833b-1ca7a75d58c4
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: e8293c6e-0d0c-4644-8304-b7fdf687c116
     _sourcePortIndex: 0
     _targetNodeId: 254cfbbb-9e73-4e7f-98a5-82da19fbe308
     _targetPortIndex: 1
+    _sourceElementIndex: 0
   - _sourceNodeId: ce031f35-60cc-49e1-833b-1ca7a75d58c4
     _sourcePortIndex: 0
     _targetNodeId: 254cfbbb-9e73-4e7f-98a5-82da19fbe308
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 254cfbbb-9e73-4e7f-98a5-82da19fbe308
     _sourcePortIndex: 0
     _targetNodeId: 89be3f4e-7863-4696-8f7e-23ecc1ecc286
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 89be3f4e-7863-4696-8f7e-23ecc1ecc286
     _sourcePortIndex: 0
     _targetNodeId: 8a2c6836-4722-48f3-a512-dc3e7235cf91
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 8a2c6836-4722-48f3-a512-dc3e7235cf91
     _sourcePortIndex: 0
     _targetNodeId: adde43b0-619f-458f-a5a7-42e6c4a33923
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 56d1402f-ebd2-4dc2-ba9b-329576427497
     _sourcePortIndex: 0
     _targetNodeId: adde43b0-619f-458f-a5a7-42e6c4a33923
     _targetPortIndex: 1
+    _sourceElementIndex: 0
   - _sourceNodeId: 8a2c6836-4722-48f3-a512-dc3e7235cf91
     _sourcePortIndex: 0
     _targetNodeId: 8af0b282-57d9-42d9-a335-1c4198b38e30
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: adde43b0-619f-458f-a5a7-42e6c4a33923
     _sourcePortIndex: 1
     _targetNodeId: 8af0b282-57d9-42d9-a335-1c4198b38e30
     _targetPortIndex: 1
+    _sourceElementIndex: 0
   - _sourceNodeId: 8af0b282-57d9-42d9-a335-1c4198b38e30
     _sourcePortIndex: 0
     _targetNodeId: f65ab291-0760-4617-8778-f56a7509b8f3
     _targetPortIndex: 1
+    _sourceElementIndex: 0
   - _sourceNodeId: 8a2c6836-4722-48f3-a512-dc3e7235cf91
     _sourcePortIndex: 0
     _targetNodeId: f65ab291-0760-4617-8778-f56a7509b8f3
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: f65ab291-0760-4617-8778-f56a7509b8f3
     _sourcePortIndex: 0
     _targetNodeId: af3e9d7e-3a8b-47f1-a802-ae6926f3dff6
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: af3e9d7e-3a8b-47f1-a802-ae6926f3dff6
     _sourcePortIndex: 0
     _targetNodeId: 9ad1726d-bf37-457b-9132-e77dfe9bd41a
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 9ad1726d-bf37-457b-9132-e77dfe9bd41a
     _sourcePortIndex: 0
     _targetNodeId: 5fefacf4-7a42-4374-a56d-4fe90bc1c3bc
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 5fefacf4-7a42-4374-a56d-4fe90bc1c3bc
     _sourcePortIndex: 0
     _targetNodeId: 872d7182-2aa0-49a3-9472-6b08ba0948db
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 872d7182-2aa0-49a3-9472-6b08ba0948db
     _sourcePortIndex: 0
     _targetNodeId: 9ba9b516-5739-4772-ae2f-35bc112e7109
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 9ba9b516-5739-4772-ae2f-35bc112e7109
     _sourcePortIndex: 0
     _targetNodeId: 0cbcb361-fa63-47a9-bfb2-4bfc93021dbf
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 0cbcb361-fa63-47a9-bfb2-4bfc93021dbf
     _sourcePortIndex: 0
     _targetNodeId: 2188b8a1-a353-4e01-b987-34a10bc728f4
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 2188b8a1-a353-4e01-b987-34a10bc728f4
     _sourcePortIndex: 0
     _targetNodeId: 8856842e-73ae-4e3b-a2e8-f56baed54c78
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 8856842e-73ae-4e3b-a2e8-f56baed54c78
     _sourcePortIndex: 0
     _targetNodeId: 913e9e44-cb47-4814-ace0-031f11fa692a
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 913e9e44-cb47-4814-ace0-031f11fa692a
     _sourcePortIndex: 0
     _targetNodeId: 259d66d6-cfc3-428d-b77e-efce4545fd67
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 259d66d6-cfc3-428d-b77e-efce4545fd67
     _sourcePortIndex: 0
     _targetNodeId: 89354a03-2206-4374-98c4-6f8db20974cf
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 89354a03-2206-4374-98c4-6f8db20974cf
     _sourcePortIndex: 0
     _targetNodeId: 051bc3fe-9422-47e9-b954-98af6a1564f9
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 051bc3fe-9422-47e9-b954-98af6a1564f9
     _sourcePortIndex: 0
     _targetNodeId: 66515f94-b08b-4302-a210-af40b9e96a12
     _targetPortIndex: 0
-  - _sourceNodeId: 467bcbda-5453-485f-8b81-d39ae9667410
-    _sourcePortIndex: 0
-    _targetNodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
-    _targetPortIndex: 0
-  - _sourceNodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
-    _sourcePortIndex: 0
-    _targetNodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
-    _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 66515f94-b08b-4302-a210-af40b9e96a12
     _sourcePortIndex: 0
     _targetNodeId: 369e331f-73fb-4b5a-a906-09378bb72468
     _targetPortIndex: 0
+    _sourceElementIndex: 0
   - _sourceNodeId: 369e331f-73fb-4b5a-a906-09378bb72468
     _sourcePortIndex: 0
     _targetNodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
     _targetPortIndex: 0
-  - _sourceNodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
+    _sourceElementIndex: 0
+  - _sourceNodeId: 467bcbda-5453-485f-8b81-d39ae9667410
     _sourcePortIndex: 0
-    _targetNodeId: 17786fb2-f9b0-4996-bf7b-b54d0eee7f1a
+    _targetNodeId: 1539611d-d976-4b53-b8b2-6ee1cf1f49ae
     _targetPortIndex: 1
-  - _sourceNodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
+    _sourceElementIndex: 0
+  - _sourceNodeId: 1539611d-d976-4b53-b8b2-6ee1cf1f49ae
+    _sourcePortIndex: 0
+    _targetNodeId: 477574c3-e048-43f3-8e79-2b6cf14f3544
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: 477574c3-e048-43f3-8e79-2b6cf14f3544
+    _sourcePortIndex: 0
+    _targetNodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 52c6fb42-b440-4177-a1c4-1118336f3335
+    _sourcePortIndex: 0
+    _targetNodeId: 477574c3-e048-43f3-8e79-2b6cf14f3544
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 1539611d-d976-4b53-b8b2-6ee1cf1f49ae
+    _sourcePortIndex: 0
+    _targetNodeId: 52c6fb42-b440-4177-a1c4-1118336f3335
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: d65c029a-d71e-4564-a4be-ff2cf572c5b3
     _sourcePortIndex: 0
     _targetNodeId: 467bcbda-5453-485f-8b81-d39ae9667410
     _targetPortIndex: 0
-  - _sourceNodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
+    _sourceElementIndex: 0
+  - _sourceNodeId: d65c029a-d71e-4564-a4be-ff2cf572c5b3
+    _sourcePortIndex: 0
+    _targetNodeId: 1539611d-d976-4b53-b8b2-6ee1cf1f49ae
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: d65c029a-d71e-4564-a4be-ff2cf572c5b3
     _sourcePortIndex: 0
     _targetNodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
     _targetPortIndex: 2
+    _sourceElementIndex: 0
+  - _sourceNodeId: 477574c3-e048-43f3-8e79-2b6cf14f3544
+    _sourcePortIndex: 0
+    _targetNodeId: 912097e1-1e7b-48c5-8e27-80e98f62d7b4
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: d65c029a-d71e-4564-a4be-ff2cf572c5b3
+    _sourcePortIndex: 0
+    _targetNodeId: 912097e1-1e7b-48c5-8e27-80e98f62d7b4
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 52c6fb42-b440-4177-a1c4-1118336f3335
+    _sourcePortIndex: 0
+    _targetNodeId: 8e0c6bdb-dd12-4e03-a948-0157465d34c1
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: 42aac319-142a-494a-9162-e4a77567f67b
+    _sourcePortIndex: 0
+    _targetNodeId: 8e0c6bdb-dd12-4e03-a948-0157465d34c1
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 1539611d-d976-4b53-b8b2-6ee1cf1f49ae
+    _sourcePortIndex: 0
+    _targetNodeId: 42aac319-142a-494a-9162-e4a77567f67b
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 477574c3-e048-43f3-8e79-2b6cf14f3544
+    _sourcePortIndex: 0
+    _targetNodeId: 5fcb2d05-f771-463b-a08f-f7c8fe1c01d2
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: d65c029a-d71e-4564-a4be-ff2cf572c5b3
+    _sourcePortIndex: 0
+    _targetNodeId: 5fcb2d05-f771-463b-a08f-f7c8fe1c01d2
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 5fcb2d05-f771-463b-a08f-f7c8fe1c01d2
+    _sourcePortIndex: 1
+    _targetNodeId: 50148e43-9ac6-473d-9631-3733671a0427
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: 912097e1-1e7b-48c5-8e27-80e98f62d7b4
+    _sourcePortIndex: 1
+    _targetNodeId: 50148e43-9ac6-473d-9631-3733671a0427
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 50148e43-9ac6-473d-9631-3733671a0427
+    _sourcePortIndex: 0
+    _targetNodeId: 920535bf-2582-4bc2-b40b-aceacdb824b2
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: 8e0c6bdb-dd12-4e03-a948-0157465d34c1
+    _sourcePortIndex: 0
+    _targetNodeId: 9021f71c-6672-4d16-b2a5-e7be573af455
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 477574c3-e048-43f3-8e79-2b6cf14f3544
+    _sourcePortIndex: 1
+    _targetNodeId: 9021f71c-6672-4d16-b2a5-e7be573af455
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: 9021f71c-6672-4d16-b2a5-e7be573af455
+    _sourcePortIndex: 0
+    _targetNodeId: 5fcb2d05-f771-463b-a08f-f7c8fe1c01d2
+    _targetPortIndex: 2
+    _sourceElementIndex: 0
+  - _sourceNodeId: 9021f71c-6672-4d16-b2a5-e7be573af455
+    _sourcePortIndex: 0
+    _targetNodeId: 912097e1-1e7b-48c5-8e27-80e98f62d7b4
+    _targetPortIndex: 2
+    _sourceElementIndex: 0
+  - _sourceNodeId: 467bcbda-5453-485f-8b81-d39ae9667410
+    _sourcePortIndex: 2
+    _targetNodeId: 1539611d-d976-4b53-b8b2-6ee1cf1f49ae
+    _targetPortIndex: 4
+    _sourceElementIndex: 0
+  - _sourceNodeId: 1539611d-d976-4b53-b8b2-6ee1cf1f49ae
+    _sourcePortIndex: 2
+    _targetNodeId: 468d7b72-4e0a-4221-b936-c007657526e2
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 468d7b72-4e0a-4221-b936-c007657526e2
+    _sourcePortIndex: 0
+    _targetNodeId: dd5b1d21-0b46-4c41-8d8b-eb3f9ce2d089
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
+    _sourcePortIndex: 0
+    _targetNodeId: 8c167a1d-7e5a-4237-85a3-e86cee2fda73
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 1c3a53cf-1579-44d8-a0ea-b6d16522a413
+    _sourcePortIndex: 0
+    _targetNodeId: 912d2f91-c6ca-4838-a722-cd10410c7623
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: 3bbd6bbb-9a09-4337-9c49-de149860b98d
+    _sourcePortIndex: 0
+    _targetNodeId: 912d2f91-c6ca-4838-a722-cd10410c7623
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 912d2f91-c6ca-4838-a722-cd10410c7623
+    _sourcePortIndex: 1
+    _targetNodeId: 0f78a005-602e-41a4-b901-0bee7fa8fdc9
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: e2cbd77f-f26a-46ac-968d-653aaec67373
+    _sourcePortIndex: 0
+    _targetNodeId: 0f78a005-602e-41a4-b901-0bee7fa8fdc9
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 84100b71-9c2e-49bf-b455-151fe1e0eaa2
+    _sourcePortIndex: 0
+    _targetNodeId: 2d4e70e9-1f6e-43bb-8861-b67e1b19f467
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 0f78a005-602e-41a4-b901-0bee7fa8fdc9
+    _sourcePortIndex: 0
+    _targetNodeId: 2d4e70e9-1f6e-43bb-8861-b67e1b19f467
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: 0f78a005-602e-41a4-b901-0bee7fa8fdc9
+    _sourcePortIndex: 0
+    _targetNodeId: caf7ab25-ff72-4c8f-9967-47f791c0e00d
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: 2d4e70e9-1f6e-43bb-8861-b67e1b19f467
+    _sourcePortIndex: 1
+    _targetNodeId: caf7ab25-ff72-4c8f-9967-47f791c0e00d
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 22dd261c-b01b-4604-b7fd-2ced7499a276
+    _sourcePortIndex: 0
+    _targetNodeId: b0f636b6-5fc4-4572-9c1e-6146a55d8d22
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: caf7ab25-ff72-4c8f-9967-47f791c0e00d
+    _sourcePortIndex: 0
+    _targetNodeId: b0f636b6-5fc4-4572-9c1e-6146a55d8d22
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: caf7ab25-ff72-4c8f-9967-47f791c0e00d
+    _sourcePortIndex: 0
+    _targetNodeId: ad8c2ba2-3186-4e51-8341-315f2a03dd6e
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: b0f636b6-5fc4-4572-9c1e-6146a55d8d22
+    _sourcePortIndex: 1
+    _targetNodeId: ad8c2ba2-3186-4e51-8341-315f2a03dd6e
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: ad8c2ba2-3186-4e51-8341-315f2a03dd6e
+    _sourcePortIndex: 0
+    _targetNodeId: a1f040cf-9ece-4552-958d-e1adc85e707d
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: a1f040cf-9ece-4552-958d-e1adc85e707d
+    _sourcePortIndex: 0
+    _targetNodeId: a8039a99-41fb-4c80-a412-0f65d1d0a5c2
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: a8039a99-41fb-4c80-a412-0f65d1d0a5c2
+    _sourcePortIndex: 0
+    _targetNodeId: 8f8c4ffd-637d-4245-b5e6-661ac7af16dc
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 8f8c4ffd-637d-4245-b5e6-661ac7af16dc
+    _sourcePortIndex: 0
+    _targetNodeId: 0df0e25a-2455-48a3-83ef-16f7898842d2
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 0df0e25a-2455-48a3-83ef-16f7898842d2
+    _sourcePortIndex: 0
+    _targetNodeId: 68bf1247-5b34-465c-9058-05e65a73eb7f
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 68bf1247-5b34-465c-9058-05e65a73eb7f
+    _sourcePortIndex: 0
+    _targetNodeId: f05d6288-d288-4f2b-adb9-6f6ea5487a54
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: f05d6288-d288-4f2b-adb9-6f6ea5487a54
+    _sourcePortIndex: 0
+    _targetNodeId: fb107b52-44fe-439a-8fcd-9b5b0486cbb1
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: fb107b52-44fe-439a-8fcd-9b5b0486cbb1
+    _sourcePortIndex: 0
+    _targetNodeId: cf2f0b53-e3d3-4551-b1e9-923aa4396bc7
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: cf2f0b53-e3d3-4551-b1e9-923aa4396bc7
+    _sourcePortIndex: 0
+    _targetNodeId: fa61bd4f-177f-44a8-b437-a0aefdfb5368
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: fa61bd4f-177f-44a8-b437-a0aefdfb5368
+    _sourcePortIndex: 0
+    _targetNodeId: c66cdec5-f50a-4e28-861e-3d4a1e317112
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: c66cdec5-f50a-4e28-861e-3d4a1e317112
+    _sourcePortIndex: 0
+    _targetNodeId: e1f176de-3f73-45be-bbb0-d96ecdc4c8ca
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: e1f176de-3f73-45be-bbb0-d96ecdc4c8ca
+    _sourcePortIndex: 0
+    _targetNodeId: d5cce9e2-3535-4dd8-a03d-83241bd1448d
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: d5cce9e2-3535-4dd8-a03d-83241bd1448d
+    _sourcePortIndex: 0
+    _targetNodeId: 8c167a1d-7e5a-4237-85a3-e86cee2fda73
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: b02ef304-cc32-408b-9c6b-5861aacb33b7
+    _sourcePortIndex: 0
+    _targetNodeId: b9b914ae-67d5-4114-a192-16163254f887
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 821787d5-0daa-4c44-80ad-00b035853a87
+    _sourcePortIndex: 0
+    _targetNodeId: a03f1091-ad01-4a1a-a5d9-3c089fef5a94
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: a03f1091-ad01-4a1a-a5d9-3c089fef5a94
+    _sourcePortIndex: 0
+    _targetNodeId: 02468eda-d89e-4467-a892-c2818892f47e
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 02468eda-d89e-4467-a892-c2818892f47e
+    _sourcePortIndex: 0
+    _targetNodeId: 1244fc8c-5670-41c0-ac4f-8a72f21b0cbb
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 1244fc8c-5670-41c0-ac4f-8a72f21b0cbb
+    _sourcePortIndex: 0
+    _targetNodeId: 466e622f-c86b-4382-9cc6-66dfbaf52d88
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 466e622f-c86b-4382-9cc6-66dfbaf52d88
+    _sourcePortIndex: 0
+    _targetNodeId: b9b914ae-67d5-4114-a192-16163254f887
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: b9b914ae-67d5-4114-a192-16163254f887
+    _sourcePortIndex: 2
+    _targetNodeId: 1943bec8-75f4-46d5-a35d-e8203e004a53
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: 8c167a1d-7e5a-4237-85a3-e86cee2fda73
+    _sourcePortIndex: 2
+    _targetNodeId: 1943bec8-75f4-46d5-a35d-e8203e004a53
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 8c167a1d-7e5a-4237-85a3-e86cee2fda73
+    _sourcePortIndex: 0
+    _targetNodeId: d1ad08e7-9553-4801-8e92-fb30ca0e219a
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 1943bec8-75f4-46d5-a35d-e8203e004a53
+    _sourcePortIndex: 0
+    _targetNodeId: d1ad08e7-9553-4801-8e92-fb30ca0e219a
+    _targetPortIndex: 1
+    _sourceElementIndex: 0
+  - _sourceNodeId: d1ad08e7-9553-4801-8e92-fb30ca0e219a
+    _sourcePortIndex: 0
+    _targetNodeId: 164df983-4d80-4b66-9b0b-d7b55729068b
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 164df983-4d80-4b66-9b0b-d7b55729068b
+    _sourcePortIndex: 0
+    _targetNodeId: 4a630a5e-1c11-4c9a-9163-2df742d9082b
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
+  - _sourceNodeId: 4a630a5e-1c11-4c9a-9163-2df742d9082b
+    _sourcePortIndex: 0
+    _targetNodeId: d65c029a-d71e-4564-a4be-ff2cf572c5b3
+    _targetPortIndex: 0
+    _sourceElementIndex: 0
   _version: 1
   _sharedSettings:
     _mapWidth: 0
@@ -758,7 +1687,7 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 913e9e44-cb47-4814-ace0-031f11fa692a
-  _editorPosition: {x: 6650, y: 20.5}
+  _editorPosition: {x: 11426, y: 54}
   _rangeMin: 0.1
   _rangeMax: 0.15
   _offset: 0.06
@@ -775,9 +1704,25 @@ MonoBehaviour:
   m_Name: SimplexNoiseNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SimplexNoiseNode
   _nodeId: 426b4f00-8a29-4603-86c5-270f8e671dcc
-  _editorPosition: {x: 1550, y: 26}
+  _editorPosition: {x: 2610, y: 26}
   _scale: 0.02
   _offset: {x: 0, y: 0}
+--- !u!114 &790235730117562859
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1adac1551616846eea7d1a77db40c558, type: 3}
+  m_Name: TerraceNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
+  _nodeId: fa61bd4f-177f-44a8-b437-a0aefdfb5368
+  _editorPosition: {x: 13025, y: -405}
+  _levels: 4
+  _sharpness: 1
 --- !u!114 &886040793377285265
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -791,7 +1736,7 @@ MonoBehaviour:
   m_Name: ErosionNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode
   _nodeId: 872d7182-2aa0-49a3-9472-6b08ba0948db
-  _editorPosition: {x: 5150, y: 20.5}
+  _editorPosition: {x: 8768, y: 54}
   _erosionRate: 0.0342
   _iterations: 26
   _talusAngle: 0.017
@@ -808,9 +1753,86 @@ MonoBehaviour:
   m_Name: TerraceNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
   _nodeId: b7e9f373-b06c-42c0-9b3f-9b84bb8ee759
-  _editorPosition: {x: 1250, y: -112}
+  _editorPosition: {x: 2084, y: -112}
   _levels: 20
   _sharpness: 0.4
+--- !u!114 &1753510759189482051
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bad1d694c02f8c4ca18f963de54528d, type: 3}
+  m_Name: HeightBiasNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
+  _nodeId: f05d6288-d288-4f2b-adb9-6f6ea5487a54
+  _editorPosition: {x: 11426, y: -278}
+  _rangeMin: 0.029
+  _rangeMax: 0.336
+  _offset: 0.3
+--- !u!114 &2087458604285308890
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 246ec3bf0ad6aa8e5a94dfa93664399a, type: 3}
+  m_Name: WaterContourGeneratorNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.WaterContourGeneratorNode
+  _nodeId: 477574c3-e048-43f3-8e79-2b6cf14f3544
+  _editorPosition: {x: 19344, y: -427}
+  _minZoneSize: 0
+  _excludedNeighborTileTypes: []
+  _applyOnlyOnFlags: 0
+  _targetFlagIds: []
+  _contourTiles:
+  - Direction: 0
+    TileId: grass-coast-down-middle-tile-001
+  - Direction: 1
+    TileId: grass-coast-top-middle-tile-001
+  - Direction: 2
+    TileId: grass-coast-right-tile-001
+  - Direction: 3
+    TileId: grass-coast-left-tile-001
+  - Direction: 7
+    TileId: grass-coast-down-left-tile-001
+  - Direction: 5
+    TileId: grass-coast-top-left-tile-001
+  - Direction: 4
+    TileId: grass-coast-top-right-tile-001
+  - Direction: 6
+    TileId: grass-coast-down-right-tile-001
+  - Direction: 9
+    TileId: grass-coast-top-left-corner-tile-001
+  - Direction: 8
+    TileId: grass-coast-top-right-corner-tile-001
+  - Direction: 11
+    TileId: grass-coast-down-left-corner-tile-001
+  - Direction: 10
+    TileId: grass-coast-down-right-corner-tile-001
+  _replaceLandNearWater: 1
+--- !u!114 &2198955456719905099
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88a4114658b9c2784ade7c3ce494a48d, type: 3}
+  m_Name: NoiseCombinerNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
+  _nodeId: 0f78a005-602e-41a4-b901-0bee7fa8fdc9
+  _editorPosition: {x: 6152, y: -388}
+  _mode: 1
+  _blend: 0.5
 --- !u!114 &2733130157158313261
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -824,7 +1846,7 @@ MonoBehaviour:
   m_Name: BaseNoiseSettings
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.BaseNoiseSettings
   _nodeId: e85324de-9519-4605-9c2d-49e7b25ef12d
-  _editorPosition: {x: 50, y: 15}
+  _editorPosition: {x: 50, y: -238.82812}
   scale: 42
   octaves: 5
   persistance: 0.48
@@ -843,9 +1865,143 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: 329496d3-ca21-4c21-9edf-07e1b366c410
-  _editorPosition: {x: 1850, y: 15}
+  _editorPosition: {x: 3136, y: 15}
   _mode: 1
   _blend: 0.28
+--- !u!114 &3228831195711350375
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b44fb9f7b2d84f2786d368513672975, type: 3}
+  m_Name: TileMaskNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TileMaskNode
+  _nodeId: 52c6fb42-b440-4177-a1c4-1118336f3335
+  _editorPosition: {x: 18825, y: -112}
+  _targetTileIds:
+  - water-deep-depth-tile-001
+  - water-deep-depth-tile-002
+  - water-deep-depth-tile-003
+  - water-deep-depth-to-middle-down-left-corner-tile-001
+  - water-deep-depth-to-middle-down-left-tile-001
+  - water-deep-depth-to-middle-down-middle-tile-001
+  - water-deep-depth-to-middle-down-right-corner-tile-001
+  - water-deep-depth-to-middle-down-right-tile-001
+  - water-deep-depth-to-middle-left-tile-001
+  - water-deep-depth-to-middle-right-tile-001
+  - water-deep-depth-to-middle-top-left-corner-tile-001
+  - water-deep-depth-to-middle-top-left-tile-001
+  - water-deep-depth-to-middle-top-middle-tile-001
+  - water-deep-depth-to-middle-top-right-corner-tile-001
+  - water-deep-depth-to-middle-top-right-tile-001
+  - water-middle-depth-tile-001
+  - water-middle-depth-tile-002
+  - water-middle-depth-tile-003
+  - water-middle-depth-to-shoal-down-left-corner-tile-001
+  - water-middle-depth-to-shoal-down-left-tile-001
+  - water-middle-depth-to-shoal-down-middle-tile-001
+  - water-middle-depth-to-shoal-down-right-corner-tile-001
+  - water-middle-depth-to-shoal-down-right-tile-001
+  - water-middle-depth-to-shoal-left-tile-001
+  - water-middle-depth-to-shoal-right-tile-001
+  - water-middle-depth-to-shoal-top-left-corner-tile-001
+  - water-middle-depth-to-shoal-top-left-tile-001
+  - water-middle-depth-to-shoal-top-middle-tile-001
+  - water-middle-depth-to-shoal-top-right-corner-tile-001
+  - water-middle-depth-to-shoal-top-right-tile-001
+  - water-shoal-depth-tile-001
+  _matchByBaseKey: 0
+--- !u!114 &3592810871545583089
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88a4114658b9c2784ade7c3ce494a48d, type: 3}
+  m_Name: NoiseCombinerNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
+  _nodeId: caf7ab25-ff72-4c8f-9967-47f791c0e00d
+  _editorPosition: {x: 7197, y: -377}
+  _mode: 0
+  _blend: 0.371
+--- !u!114 &3735378409952284367
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7dbaf282ae42cb3978d639f6fe1e2590, type: 3}
+  m_Name: HeightSupplementNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightSupplementNode
+  _nodeId: b9b914ae-67d5-4114-a192-16163254f887
+  _editorPosition: {x: 15136, y: 15}
+  _minHeight: 0
+  _maxHeight: 0.3
+  _noiseMin: 0
+  _noiseMax: 1
+  _noiseTransition: 0.05
+  _peakPower: 1
+  _amount: 0.12
+  _rangeTransition: 0.05
+  _smoothRadius: 0
+  _smoothIterations: 0
+--- !u!114 &3787663317093198667
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eae48f92d07cabad0856bb2647274737, type: 3}
+  m_Name: BoolAndNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.BoolAndNode
+  _nodeId: 8e0c6bdb-dd12-4e03-a948-0157465d34c1
+  _editorPosition: {x: 19344, y: -95}
+--- !u!114 &3919949199573172569
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b5b80ed7bbe490d4b69969d4f88e1b6, type: 3}
+  m_Name: PerlinNoiseNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.PerlinNoiseNode
+  _nodeId: 22dd261c-b01b-4604-b7fd-2ced7499a276
+  _editorPosition: {x: 7197, y: -101}
+  _scale: 0.1
+  _offset: {x: 0, y: 0}
+--- !u!114 &4158882965020795556
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01913a164e43d2a8991c163225e2a454, type: 3}
+  m_Name: TerrainSlopeFilterNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerrainSlopeFilterNode
+  _nodeId: d65c029a-d71e-4564-a4be-ff2cf572c5b3
+  _editorPosition: {x: 17198, y: -95}
+  _maxSlopeDelta: 0.06
+  _maxIterations: 64
+  _cardinalOnly: 0
 --- !u!114 &4164959059326272848
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -859,9 +2015,52 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: 9567f25d-a1f6-4dbb-9848-d3fe4be644e9
-  _editorPosition: {x: 1550, y: -504}
+  _editorPosition: {x: 2610, y: -504}
   _mode: 1
   _blend: 0.28
+--- !u!114 &4931683557684430565
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1bbf19b4e070494dbc234fb174a7db7, type: 3}
+  m_Name: ForestClusterNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ForestClusterNode
+  _nodeId: 5fcb2d05-f771-463b-a08f-f7c8fe1c01d2
+  _editorPosition: {x: 20403, y: -283}
+  _densityScale: 0.04
+  _densityOctaves: 7
+  _densityLacunarity: 2
+  _densityPersistence: 0.5
+  _densityOffsetX: 0
+  _densityOffsetY: 0
+  _densityThreshold: 0.055
+  _minHeight: 0.37
+  _maxHeight: 0.4
+  _spawnObjects:
+  - ObjectId: palm-tree-object-002
+    Chance: 0.38481057
+    Enabled: 1
+  - ObjectId: palm-tree-stump-object-001
+    Chance: 0.26976824
+    Enabled: 1
+  - ObjectId: palm-tree-object-003
+    Chance: 0.3454212
+    Enabled: 1
+  _treeObjects:
+  - green-tree-object-001
+  - green-tree-object-002
+  - green-tree-object-003
+  _clusterCoverageMultiplier: 1.62
+  _minClusterNeighborsForObject: 3
+  _objectDensityExponent: 2.95
+  _objectChanceMultiplier: 1.55
+  _previewMode: 3
+  _densityNoise: {fileID: 11400000, guid: b52c6a6864aaac144b8a37c6cccf1366, type: 2}
 --- !u!114 &4979626303478776744
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -875,9 +2074,27 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: 254cfbbb-9e73-4e7f-98a5-82da19fbe308
-  _editorPosition: {x: 2450, y: 4}
+  _editorPosition: {x: 4146, y: 15}
   _mode: 1
   _blend: 0.28
+--- !u!114 &5184746475634813847
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2509e87a6998286aaf053cc4da591c5, type: 3}
+  m_Name: HillLevelTileOverrideNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HillLevelTileOverrideNode
+  _nodeId: 468d7b72-4e0a-4221-b936-c007657526e2
+  _editorPosition: {x: 18825, y: 176}
+  _targetLevel: 0
+  _onlyModifiedTiles: 1
+  _replacementTiles: []
+  _changedHighlightColor: {r: 1, g: 0.15, b: 0.75, a: 1}
 --- !u!114 &5621360656782093542
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -891,7 +2108,7 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: ab061f13-7325-448f-8f2c-f0bbfdd9ca46
-  _editorPosition: {x: 650, y: 131}
+  _editorPosition: {x: 1053, y: 131}
   _mode: 4
   _blend: 0.28
 --- !u!114 &5727250273993377633
@@ -920,6 +2137,23 @@ MonoBehaviour:
   _riverValue: 0
   _edgeSoftness: 0
   _strength: 1
+--- !u!114 &5815244193265209030
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bad1d694c02f8c4ca18f963de54528d, type: 3}
+  m_Name: HeightBiasNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
+  _nodeId: c66cdec5-f50a-4e28-861e-3d4a1e317112
+  _editorPosition: {x: 13551, y: -405}
+  _rangeMin: 0.02
+  _rangeMax: 0.25
+  _offset: 0.3
 --- !u!114 &5847891563002274343
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -933,9 +2167,43 @@ MonoBehaviour:
   m_Name: HeightFBMCombiner
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: ce031f35-60cc-49e1-833b-1ca7a75d58c4
-  _editorPosition: {x: 2150, y: -250}
+  _editorPosition: {x: 3641, y: -250}
   _mode: 3
   _blend: 0.541
+--- !u!114 &5862215644661956395
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bad1d694c02f8c4ca18f963de54528d, type: 3}
+  m_Name: HeightBiasNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
+  _nodeId: fb107b52-44fe-439a-8fcd-9b5b0486cbb1
+  _editorPosition: {x: 11959, y: -278}
+  _rangeMin: 0.8
+  _rangeMax: 1
+  _offset: -0.1
+--- !u!114 &6068598989770685514
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8b3ec494f5553af6a5a1e9d0308eee3, type: 3}
+  m_Name: SteppeMountainBalanceNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SteppeMountainBalanceNode
+  _nodeId: 4a630a5e-1c11-4c9a-9163-2df742d9082b
+  _editorPosition: {x: 17026, y: 359}
+  _mountainCoveragePercent: 60
+  _steppeStartHeight: 0.45
+  _liftCurve: 1
 --- !u!114 &6294478164426517049
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -949,10 +2217,59 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 0cbcb361-fa63-47a9-bfb2-4bfc93021dbf
-  _editorPosition: {x: 5750, y: 21}
+  _editorPosition: {x: 9827, y: 54}
   _rangeMin: 0.03
   _rangeMax: 1
   _offset: 0.1
+--- !u!114 &6633886562336856175
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 889d4cbf6fe180ead968533c394389c0, type: 3}
+  m_Name: SmoothNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
+  _nodeId: 1244fc8c-5670-41c0-ac4f-8a72f21b0cbb
+  _editorPosition: {x: 14084, y: 181}
+  _radius: 1
+  _iterations: 1
+--- !u!114 &6764534700283112489
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46f67ce08e63239eea7b7d30347e9bf7, type: 3}
+  m_Name: ErosionNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode
+  _nodeId: 0df0e25a-2455-48a3-83ef-16f7898842d2
+  _editorPosition: {x: 10360, y: -278}
+  _erosionRate: 0.1
+  _iterations: 32
+  _talusAngle: 0.372
+--- !u!114 &7465030549378838313
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1adac1551616846eea7d1a77db40c558, type: 3}
+  m_Name: TerraceNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode
+  _nodeId: a03f1091-ad01-4a1a-a5d9-3c089fef5a94
+  _editorPosition: {x: 13025, y: 181}
+  _levels: 4
+  _sharpness: 0.8
 --- !u!114 &7577903736279346792
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -966,7 +2283,7 @@ MonoBehaviour:
   m_Name: SmoothNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode
   _nodeId: 051bc3fe-9422-47e9-b954-98af6a1564f9
-  _editorPosition: {x: 7550, y: 20.5}
+  _editorPosition: {x: 13025, y: -73}
   _radius: 1
   _iterations: 3
 --- !u!114 &8054288255610037144
@@ -1008,9 +2325,25 @@ MonoBehaviour:
   m_Name: NoiseCombinerNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
   _nodeId: f65ab291-0760-4617-8778-f56a7509b8f3
-  _editorPosition: {x: 3950, y: 9.5}
+  _editorPosition: {x: 6657, y: 136.5}
   _mode: 0
   _blend: 0.186
+--- !u!114 &8360314704580163584
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88a4114658b9c2784ade7c3ce494a48d, type: 3}
+  m_Name: NoiseCombinerNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode
+  _nodeId: ad8c2ba2-3186-4e51-8341-315f2a03dd6e
+  _editorPosition: {x: 8263, y: -283.5}
+  _mode: 1
+  _blend: 0.5
 --- !u!114 &8567441479768155749
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1024,10 +2357,44 @@ MonoBehaviour:
   m_Name: ErosionNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode
   _nodeId: 7c34b3c9-6582-4fbf-a046-ed061eaea80e
-  _editorPosition: {x: 1250, y: 142}
+  _editorPosition: {x: 2084, y: 142}
   _erosionRate: 0.012
   _iterations: 8
   _talusAngle: 0.035
+--- !u!114 &8650237442875914564
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eae48f92d07cabad0856bb2647274737, type: 3}
+  m_Name: BoolAndNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.BoolAndNode
+  _nodeId: 9021f71c-6672-4d16-b2a5-e7be573af455
+  _editorPosition: {x: 19940, y: 26}
+--- !u!114 &8990053438645268246
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9436357d19d656ee843c3e89ba58cd0, type: 3}
+  m_Name: FBMNoiseNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FBMNoiseNode
+  _nodeId: 1c3a53cf-1579-44d8-a0ea-b6d16522a413
+  _editorPosition: {x: 5128, y: -504}
+  _baseNoise: 0
+  _scale: 0.0006
+  _octaves: 4
+  _lacunarity: 5
+  _persistence: 1
+  _offset: {x: 0, y: 0}
 --- !u!114 &9033739265364555688
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1041,10 +2408,45 @@ MonoBehaviour:
   m_Name: HeightBiasNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightBiasNode
   _nodeId: 2188b8a1-a353-4e01-b987-34a10bc728f4
-  _editorPosition: {x: 6050, y: 20.5}
+  _editorPosition: {x: 10360, y: 54}
   _rangeMin: 0.3
   _rangeMax: 1
-  _offset: 0.31
+  _offset: 1
+--- !u!114 &9060721723587792021
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0250f80c1b8cc5086b71256ecad3bbd6, type: 3}
+  m_Name: IslandNoiseNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.IslandNoiseNode
+  _nodeId: 821787d5-0daa-4c44-80ad-00b035853a87
+  _editorPosition: {x: 12492, y: 164}
+  _islandCount: 20
+  _minRadius: 0.02469753
+  _maxRadius: 0.1878809
+  _sizeBias: 1.76
+  _spacing: 0.488
+  _offset: {x: 0, y: 0}
+  _aspectVariance: 0.55
+  _shoreSoftness: 0.357
+  _falloffPower: 1.25
+  _shoreCutoff: 0.083
+  _coastNoiseScale: 7.5
+  _coastNoiseStrength: 0.135
+  _coastOctaves: 3
+  _detailNoiseScale: 20
+  _detailStrength: 0.22
+  _detailOctaves: 4
+  _heightPower: 1.1
+  _outputMin: 0
+  _outputMax: 1
+  _heightReduction: 0
+  _normalize: 1
 --- !u!114 &9154604647405559816
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1058,7 +2460,7 @@ MonoBehaviour:
   m_Name: RiverLineMaskNode
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RiverLineMaskNode
   _nodeId: 8a2c6836-4722-48f3-a512-dc3e7235cf91
-  _editorPosition: {x: 3050, y: 15}
+  _editorPosition: {x: 5128, y: 26}
   _startX: 0.85
   _startY: 0.193
   _endX: 0.553
@@ -1071,3 +2473,18 @@ MonoBehaviour:
   _riverValue: 0.067
   _edgeSoftness: 1
   _strength: 0.907
+--- !u!114 &9192881007934247940
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81f161bbad48b18679208f7da46d66cd, type: 3}
+  m_Name: MergeObjectMapNode
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.MergeObjectMapNode
+  _nodeId: 50148e43-9ac6-473d-9631-3733671a0427
+  _editorPosition: {x: 20936, y: 26}
+  _conflictPriority: 0

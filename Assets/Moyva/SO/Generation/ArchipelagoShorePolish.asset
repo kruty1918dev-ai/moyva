@@ -83,7 +83,7 @@ MonoBehaviour:
       - texture-grass-tile-006
       - texture-grass-tile-007
       - texture-grass-tile-008
-    Priority: 0
+    Priority: 5
     MatchThreshold: 1
   - TileID: stone-hill-down-right-inner-corner-tile-001
     TileCentralID: grass-tile-level-1-001
@@ -154,7 +154,7 @@ MonoBehaviour:
       - texture-grass-tile-006
       - texture-grass-tile-007
       - texture-grass-tile-008
-    Priority: 0
+    Priority: 5
     MatchThreshold: 1
   - TileID: stone-hill-down-right-tile-001
     TileCentralID: grass-tile-level-1-001
@@ -213,7 +213,7 @@ MonoBehaviour:
     - Direction: 7
       AllowedNeighbors:
       - grass-tile-level-1-001
-    Priority: 0
+    Priority: 3
     MatchThreshold: 1
   - TileID: stone-hill-down-stairs-tile-001
     TileCentralID: grass-tile-level-1-001
@@ -238,7 +238,7 @@ MonoBehaviour:
     - Direction: 0
       AllowedNeighbors:
       - grass-tile-level-1-001
-    Priority: 0
+    Priority: 4
     MatchThreshold: 1
   - TileID: stone-hill-left-tile-001
     TileCentralID: grass-tile-level-1-001
@@ -263,7 +263,7 @@ MonoBehaviour:
     - Direction: 2
       AllowedNeighbors:
       - grass-tile-level-1-001
-    Priority: 0
+    Priority: 4
     MatchThreshold: 1
   - TileID: stone-hill-right-tile-001
     TileCentralID: grass-tile-level-1-001
@@ -296,7 +296,7 @@ MonoBehaviour:
       AllowedNeighbors:
       - stone-hill-right-tile-001
       - stone-hill-down-right-tile-001
-    Priority: 0
+    Priority: 4
     MatchThreshold: 1
   - TileID: stone-hill-top-left-inner-corner-tile-001
     TileCentralID: grass-tile-level-1-001
@@ -327,7 +327,7 @@ MonoBehaviour:
     - Direction: 3
       AllowedNeighbors:
       - grass-tile-level-1-001
-    Priority: 0
+    Priority: 5
     MatchThreshold: 1
   - TileID: stone-hill-top-left-tile-001
     TileCentralID: grass-tile-level-1-001
@@ -386,7 +386,7 @@ MonoBehaviour:
     - Direction: 3
       AllowedNeighbors:
       - grass-tile-level-1-001
-    Priority: 0
+    Priority: 3
     MatchThreshold: 1
   - TileID: stone-hill-top-right-inner-corner-tile-001
     TileCentralID: grass-tile-level-1-001
@@ -417,7 +417,7 @@ MonoBehaviour:
     - Direction: 6
       AllowedNeighbors:
       - grass-tile-level-1-001
-    Priority: 0
+    Priority: 5
     MatchThreshold: 1
   - TileID: stone-hill-top-right-tile-001
     TileCentralID: grass-tile-level-1-001
@@ -482,7 +482,7 @@ MonoBehaviour:
     - Direction: 4
       AllowedNeighbors:
       - grass-tile-level-1-001
-    Priority: 0
+    Priority: 3
     MatchThreshold: 1
   - TileID: stone-hill-top-stairs-tile-001
     TileCentralID: grass-tile-level-1-001
@@ -507,7 +507,7 @@ MonoBehaviour:
     - Direction: 4
       AllowedNeighbors:
       - grass-tile-level-1-001
-    Priority: 0
+    Priority: 4
     MatchThreshold: 1
   VirtualTileIds: []
   PassCount: 2
