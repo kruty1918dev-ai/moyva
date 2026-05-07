@@ -105,12 +105,12 @@ Shader "Moyva/FogOfWar"
                 
                 // Create deterministic pattern from cell coordinates
                 // Use modulo to cycle through icons in a regular pattern
-                float iconIndex = mod(cellCoord.x + cellCoord.y * 2.0, _IconGridSize * _IconGridSize);
+                float iconIndex = fmod(cellCoord.x + cellCoord.y * 2.0, _IconGridSize * _IconGridSize);
                 
                 // Convert icon index to atlas UV coordinates (assuming NxN grid)
                 float gridCols = _IconGridSize;
                 float gridRows = _IconGridSize;
-                float atlasX = mod(iconIndex, gridCols) / gridCols;
+                float atlasX = fmod(iconIndex, gridCols) / gridCols;
                 float atlasY = floor(iconIndex / gridCols) / gridRows;
                 
                 // Cell fractional coordinate (position within cell)
