@@ -57,7 +57,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         NodeStatus.Error, ex.Message, sw.ElapsedMilliseconds,
                         allocOnError,
                         iterOnError));
-                    return new GraphExecutionResult(node.NodeId, ex.Message, logs);
+                    return new GraphExecutionResult(node.NodeId, ex.Message, logs, cache);
                 }
 
                 sw.Stop();
@@ -72,7 +72,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     iterations));
 
                 if (output.Status == NodeStatus.Error)
-                    return new GraphExecutionResult(node.NodeId, output.Message, logs);
+                    return new GraphExecutionResult(node.NodeId, output.Message, logs, cache);
 
                 if (output.Values != null)
                     cache[node.NodeId] = output.Values;
@@ -127,7 +127,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         NodeStatus.Error, ex.Message, sw.ElapsedMilliseconds,
                         allocOnError,
                         iterOnError));
-                    return new GraphExecutionResult(node.NodeId, ex.Message, logs);
+                    return new GraphExecutionResult(node.NodeId, ex.Message, logs, cache);
                 }
 
                 sw.Stop();
@@ -142,7 +142,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     iterations));
 
                 if (output.Status == NodeStatus.Error)
-                    return new GraphExecutionResult(node.NodeId, output.Message, logs);
+                    return new GraphExecutionResult(node.NodeId, output.Message, logs, cache);
 
                 if (output.Values != null)
                     cache[node.NodeId] = output.Values;
@@ -170,11 +170,27 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     && conn.SourcePortIndex < sourceOutputs.Length)
                 {
                     if (conn.TargetPortIndex < inputs.Length)
-                        inputs[conn.TargetPortIndex] = sourceOutputs[conn.SourcePortIndex];
+                    {
+                        var value = sourceOutputs[conn.SourcePortIndex];
+                        var targetType = portDefs[conn.TargetPortIndex].ValueType;
+                        inputs[conn.TargetPortIndex] = SelectConnectionValue(value, targetType, conn.SourceElementIndex);
+                    }
                 }
             }
 
             return inputs;
+        }
+
+        private static object SelectConnectionValue(object value, Type targetType, int sourceElementIndex)
+        {
+            if (value == null || targetType == null)
+                return value;
+            if (targetType.IsInstanceOfType(value) || targetType == typeof(object))
+                return value;
+
+            return PortDefinition.TryGetIndexableValue(value, sourceElementIndex, out var element)
+                ? element
+                : value;
         }
 
         private static Dictionary<string, List<Connection>> BuildConnectionsByTarget(GraphAsset graph)
