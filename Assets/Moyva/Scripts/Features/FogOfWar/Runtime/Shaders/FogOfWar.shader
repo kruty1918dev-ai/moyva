@@ -95,13 +95,18 @@ Shader "Moyva/FogOfWar"
                 float isExplored = step(0.3, fogVal) * (1.0 - isVisible);
                 float isUnexplored = 1.0 - step(0.3, fogVal);
 
-                // ─── Sample tile texture with tiling ────────────────────────────
-                float2 tiledUV = IN.uv * _FogTileTiling;
+                // ─── Build fog-cell coordinates from fog texture resolution ─────
+                // _FogTex_TexelSize.xy = (1/width, 1/height), so inverse gives grid size.
+                float2 fogGridSize = max(1.0.xx, rcp(_FogTex_TexelSize.xy));
+                float2 cellCoord = floor(IN.uv * fogGridSize);
+                float2 cellFrac = frac(IN.uv * fogGridSize);
+
+                // ─── Sample tile texture once per fog cell ───────────────────────
+                // FogTileTiling controls detail inside each cell (1 = one full sprite per cell).
+                float2 tiledUV = cellFrac * _FogTileTiling;
                 half4 tileSample = SAMPLE_TEXTURE2D(_FogTileTex, sampler_FogTileTex, tiledUV);
 
                 // ─── Sample icon texture with cell-based indexing ───────────────
-                // Determine which cell we are in (based on tiling)
-                float2 cellCoord = floor(IN.uv * _FogTileTiling);
                 
                 // Create deterministic pattern from cell coordinates
                 // Use modulo to cycle through icons in a regular pattern
@@ -112,9 +117,6 @@ Shader "Moyva/FogOfWar"
                 float gridRows = _IconGridSize;
                 float atlasX = fmod(iconIndex, gridCols) / gridCols;
                 float atlasY = floor(iconIndex / gridCols) / gridRows;
-                
-                // Cell fractional coordinate (position within cell)
-                float2 cellFrac = frac(IN.uv * _FogTileTiling);
                 
                 // Scale cell fractional to icon size
                 float2 iconUVInAtlas = cellFrac * _FogIconScale;
