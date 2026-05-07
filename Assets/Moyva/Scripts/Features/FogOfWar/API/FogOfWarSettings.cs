@@ -30,8 +30,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Min(1f)] public float FogTileTiling = 1f;
 
         [Header("Fog Icons")]
-        [Tooltip("Array of icon textures to cycle through fog cells in regular pattern")]
-        public Texture2D[] FogIconTextures;
+        [Tooltip("Array of icon sprites to cycle through fog cells in regular pattern")]
+        public Sprite[] FogIconSprites;
         [Tooltip("Icon scale relative to cell size")]
         [Min(0.1f)] public float FogIconScale = 0.5f;
         [Tooltip("If enabled, place icon at cell center; if disabled, distribute across cell")]

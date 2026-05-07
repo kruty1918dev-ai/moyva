@@ -62,15 +62,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_settings.FogTileTexture != null)
                 _mat.SetTexture("_FogTileTex", _settings.FogTileTexture);
 
-            // Fog icon texture (atlas of icons)
-            if (_settings.FogIconTextures != null && _settings.FogIconTextures.Length > 0)
+            // Fog icon texture (atlas of sprite icons)
+            if (_settings.FogIconSprites != null && _settings.FogIconSprites.Length > 0)
             {
-                // For now, use the first icon texture as atlas
-                _mat.SetTexture("_FogIconTex", _settings.FogIconTextures[0]);
+                // Extract texture from first sprite (all sprites should use same atlas texture)
+                Texture2D iconTexture = _settings.FogIconSprites[0].texture;
+                if (iconTexture != null)
+                    _mat.SetTexture("_FogIconTex", iconTexture);
                 
                 // Determine grid size from icon count
                 // Assume square grid: iconCount = gridSize^2
-                int iconCount = _settings.FogIconTextures.Length;
+                int iconCount = _settings.FogIconSprites.Length;
                 int gridSize = Mathf.CeilToInt(Mathf.Sqrt(iconCount));
                 _mat.SetFloat("_IconGridSize", gridSize);
             }
