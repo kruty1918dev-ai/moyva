@@ -5,6 +5,7 @@ Shader "Moyva/FogOfWar"
         _FogTex                  ("Fog Visibility Texture (R8)", 2D)    = "black" {}
         _FogTileTex              ("Fog Tile Texture", 2D)              = "white" {}
         _FogIconTex              ("Fog Icon Texture", 2D)              = "white" {}
+        _FogTileUVRect           ("Fog Tile UV Rect", Vector)          = (0, 0, 1, 1)
         _UnexploredColor         ("Unexplored Color", Color)           = (0, 0, 0, 1)
         _ExploredColor           ("Explored Color",   Color)           = (0, 0, 0, 0.5)
         _FogTileTiling           ("Fog Tile Tiling", Float)            = 1.0
@@ -53,6 +54,7 @@ Shader "Moyva/FogOfWar"
                 float4 _FogTex_TexelSize;
                 float4 _FogTileTex_ST;
                 float4 _FogIconTex_ST;
+                float4 _FogTileUVRect;
                 float4 _UnexploredColor;
                 float4 _ExploredColor;
                 float _FogTileTiling;
@@ -104,8 +106,9 @@ Shader "Moyva/FogOfWar"
 
                 // ─── Sample tile texture once per fog cell ───────────────────────
                 // FogTileTiling controls detail inside each cell (1 = one full sprite per cell).
-                float2 tiledUV = cellFrac * _FogTileTiling;
-                half4 tileSample = SAMPLE_TEXTURE2D(_FogTileTex, sampler_FogTileTex, tiledUV);
+                float2 tiledUV = frac(cellFrac * _FogTileTiling);
+                float2 tileSpriteUV = _FogTileUVRect.xy + tiledUV * _FogTileUVRect.zw;
+                half4 tileSample = SAMPLE_TEXTURE2D(_FogTileTex, sampler_FogTileTex, tileSpriteUV);
 
                 // ─── Sample icon texture with cell-based indexing ───────────────
                 
@@ -136,12 +139,15 @@ Shader "Moyva/FogOfWar"
                 // ─── Apply fog state coloring ────────────────────────────────
                 half4 finalCol;
                 finalCol.rgb = _UnexploredColor.rgb * isUnexplored + _ExploredColor.rgb * isExplored;
+                float fogStateWeight = (isExplored + isUnexplored);
+                float patternAlpha = saturate(blended.a);
                 
                 // Blend with tile texture when not visible
-                finalCol.rgb = lerp(finalCol.rgb, blended.rgb, (isExplored + isUnexplored) * 0.3);
+                finalCol.rgb = lerp(finalCol.rgb, blended.rgb, fogStateWeight * patternAlpha);
 
                 // ─── Apply transparency based on fog state ────────────────────
                 finalCol.a = _UnexploredAlpha * isUnexplored + _ExploredAlpha * isExplored;
+                finalCol.a *= patternAlpha;
                 
                 // Fully transparent if visible
                 finalCol.a *= (1.0 - isVisible);
