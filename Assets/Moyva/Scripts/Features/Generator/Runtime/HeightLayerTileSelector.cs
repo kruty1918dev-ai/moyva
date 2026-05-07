@@ -7,17 +7,31 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         internal static string ResolveTileId(HeightLayer[] layers, float heightValue, int x, int y, int seed)
         {
-            if (layers == null || layers.Length == 0)
+            int layerIndex = ResolveLayerIndex(layers, heightValue);
+            if (layerIndex < 0)
                 return string.Empty;
 
+            return SelectTileId(layers[layerIndex], x, y, seed);
+        }
+
+        internal static int ResolveLayerIndex(HeightLayer[] layers, float heightValue)
+        {
+            if (layers == null || layers.Length == 0)
+                return -1;
+
+            int fallbackIndex = -1;
             for (int layerIndex = 0; layerIndex < layers.Length; layerIndex++)
             {
                 var layer = layers[layerIndex];
+                if (layer == null)
+                    continue;
+
+                fallbackIndex = layerIndex;
                 if (heightValue >= layer.MinHeight && heightValue <= layer.MaxHeight)
-                    return SelectTileId(layer, x, y, seed);
+                    return layerIndex;
             }
 
-            return SelectTileId(layers[^1], x, y, seed);
+            return fallbackIndex;
         }
 
         internal static string SelectTileId(HeightLayer layer, int x, int y, int seed)

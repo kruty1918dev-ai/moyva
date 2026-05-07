@@ -36,6 +36,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IRiverPathfinder _riverPathfinder;
         private readonly IWFCService _wfcService;
         private readonly TileRegistrySO _tileRegistry;
+        private readonly IGeneratorDataRegistry _generatorDataRegistry;
 
         public GraphBasedMapDataGenerator(
             GraphAsset graphAsset,
@@ -45,7 +46,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IBiomeResolver biomeResolver,
             IRiverPathfinder riverPathfinder,
             IWFCService wfcService,
-            [Zenject.InjectOptional] TileRegistrySO tileRegistry = null)
+            [Zenject.InjectOptional] TileRegistrySO tileRegistry = null,
+            [Zenject.InjectOptional] IGeneratorDataRegistry generatorDataRegistry = null)
         {
             _graphAsset = graphAsset;
             _graphRunner = graphRunner;
@@ -55,6 +57,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _riverPathfinder = riverPathfinder;
             _wfcService = wfcService;
             _tileRegistry = tileRegistry;
+            _generatorDataRegistry = generatorDataRegistry;
         }
 
         public void GenerateMapData(int width, int height,
@@ -68,6 +71,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             try
             {
                 LastBiomeMapDerivedFromLayers = false;
+                _generatorDataRegistry?.Clear();
 
                 // Якщо GraphSharedSettings задає розмір мапи — використовуємо його,
                 // щоб розмір плей-моду збігався з розміром превью в редакторі.
@@ -94,6 +98,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     context.RegisterService(_wfcService);
                 if (_tileRegistry != null)
                     context.RegisterService(_tileRegistry);
+                if (_generatorDataRegistry != null)
+                    context.RegisterService(_generatorDataRegistry);
 
                 // Реєструємо GraphSharedSettings
                 if (sharedSettings != null)
