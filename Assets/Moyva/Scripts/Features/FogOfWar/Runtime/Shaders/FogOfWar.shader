@@ -6,6 +6,7 @@ Shader "Moyva/FogOfWar"
         _FogTileTex              ("Fog Tile Texture", 2D)              = "white" {}
         _FogIconTex              ("Fog Icon Texture", 2D)              = "white" {}
         _FogTileUVRect           ("Fog Tile UV Rect", Vector)          = (0, 0, 1, 1)
+        _FogIconUVRect           ("Fog Icon UV Rect", Vector)          = (0, 0, 1, 1)
         _UnexploredColor         ("Unexplored Color", Color)           = (0, 0, 0, 1)
         _ExploredColor           ("Explored Color",   Color)           = (0, 0, 0, 0.5)
         _FogTileTiling           ("Fog Tile Tiling", Float)            = 1.0
@@ -56,6 +57,7 @@ Shader "Moyva/FogOfWar"
                 float4 _FogTileTex_ST;
                 float4 _FogIconTex_ST;
                 float4 _FogTileUVRect;
+                float4 _FogIconUVRect;
                 float4 _FogIconGridSize;
                 float4 _UnexploredColor;
                 float4 _ExploredColor;
@@ -114,25 +116,14 @@ Shader "Moyva/FogOfWar"
 
                 // ─── Sample icon texture with independent icon grid ─────────────
                 float2 iconGridSize = max(1.0.xx, _FogIconGridSize.xy);
-                float2 iconGridCoord = floor(IN.uv * iconGridSize);
                 float2 iconCellFrac = frac(IN.uv * iconGridSize);
+                
+                // Scale cell fractional to icon size and center within icon cell
+                float2 iconUVInSprite = iconCellFrac * _FogIconScale;
+                iconUVInSprite += float2(0.5 - _FogIconScale * 0.5, 0.5 - _FogIconScale * 0.5);
 
-                // Create deterministic sequence from icon-grid coordinates
-                float iconIndex = fmod(iconGridCoord.x + iconGridCoord.y * iconGridSize.x, _IconGridSize * _IconGridSize);
-                
-                // Convert icon index to atlas UV coordinates (assuming NxN grid)
-                float gridCols = _IconGridSize;
-                float gridRows = _IconGridSize;
-                float atlasX = fmod(iconIndex, gridCols) / gridCols;
-                float atlasY = floor(iconIndex / gridCols) / gridRows;
-                
-                // Scale cell fractional to icon size
-                float2 iconUVInAtlas = iconCellFrac * _FogIconScale;
-                iconUVInAtlas += float2(0.5 - _FogIconScale * 0.5, 0.5 - _FogIconScale * 0.5); // center within atlas cell
-                
-                // Scale to atlas cell coordinates
-                float2 iconUV = atlasX + iconUVInAtlas / gridCols;
-                iconUV.y = atlasY + iconUVInAtlas.y / gridRows;
+                // Sample exact sprite rect from atlas texture
+                float2 iconUV = _FogIconUVRect.xy + iconUVInSprite * _FogIconUVRect.zw;
                 
                 half4 iconSample = SAMPLE_TEXTURE2D(_FogIconTex, sampler_FogIconTex, iconUV);
 

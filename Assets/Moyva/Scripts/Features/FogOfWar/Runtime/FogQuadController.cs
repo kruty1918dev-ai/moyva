@@ -80,13 +80,28 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     }
                 }
 
-            // Fog icon texture (atlas of sprite icons)
+            _mat.SetVector("_FogIconUVRect", new Vector4(0f, 0f, 1f, 1f));
+
+            // Fog icon texture (sample exact sprite rect from atlas)
             if (_settings.FogIconSprites != null && _settings.FogIconSprites.Length > 0)
             {
-                // Extract texture from first sprite (all sprites should use same atlas texture)
-                Texture2D iconTexture = _settings.FogIconSprites[0].texture;
+                // Use first sprite as source icon and pass its UV rect explicitly.
+                Sprite iconSprite = _settings.FogIconSprites[0];
+                Texture2D iconTexture = iconSprite != null ? iconSprite.texture : null;
                 if (iconTexture != null)
+                {
                     _mat.SetTexture("_FogIconTex", iconTexture);
+
+                    Rect iconRect = iconSprite.textureRect;
+                    float invW = 1f / iconTexture.width;
+                    float invH = 1f / iconTexture.height;
+                    Vector4 iconUvRect = new Vector4(
+                        iconRect.x * invW,
+                        iconRect.y * invH,
+                        iconRect.width * invW,
+                        iconRect.height * invH);
+                    _mat.SetVector("_FogIconUVRect", iconUvRect);
+                }
                 
                 // Determine grid size from icon count
                 // Assume square grid: iconCount = gridSize^2
