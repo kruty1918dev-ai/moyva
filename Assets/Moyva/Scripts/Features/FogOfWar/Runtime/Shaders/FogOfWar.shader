@@ -128,6 +128,8 @@ Shader "Moyva/FogOfWar"
                 int iconIndex = (int)iconIndexF;
                 iconIndex = clamp(iconIndex, 0, 63);
                 float4 iconUvRect = _FogIconUVRects[iconIndex];
+                if (iconUvRect.z <= 0.0001 || iconUvRect.w <= 0.0001)
+                    iconUvRect = _FogIconUVRect;
                 
                 // Scale cell fractional to icon size and center within icon cell
                 float2 iconUVInSprite = iconCellFrac * _FogIconScale;
