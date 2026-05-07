@@ -110,16 +110,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             GetSize(source, requestedWidth, requestedHeight, out var tw, out var th, out var sw, out var sh);
 
             var tex = CreateTexture(tw, th);
+            Color falseColor = heatmap
+                ? new Color(0.08f, 0.10f, 0.30f, 1f)
+                : new Color(0.10f, 0.12f, 0.16f, 1f);
+            Color trueColor = heatmap
+                ? new Color(1f, 0.2f, 0.2f, 1f)
+                : new Color(0.38f, 0.86f, 0.48f, 1f);
             for (int y = 0; y < th; y++)
             {
                 int sy = y * sh / th;
                 for (int x = 0; x < tw; x++)
                 {
                     int sx = x * sw / tw;
-                    if (heatmap)
-                        tex.SetPixel(x, y, source[sx, sy] ? new Color(1f, 0.2f, 0.2f, 1f) : new Color(0.1f, 0.1f, 0.35f, 1f));
-                    else
-                        tex.SetPixel(x, y, source[sx, sy] ? Color.white : Color.black);
+                    tex.SetPixel(x, y, source[sx, sy] ? trueColor : falseColor);
                 }
             }
 
@@ -267,7 +270,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     int srcW = Mathf.Max(1, (int)srcRect.width);
                     int srcH = Mathf.Max(1, (int)srcRect.height);
 
+                    Color tint = sr.color;
                     Color[] pixels = sprite.texture.GetPixels(srcX, srcY, srcW, srcH);
+                    ApplyTint(pixels, tint);
                     _spriteColorCache[def.Id] = AverageColor(pixels);
                     _spritePxCache[def.Id] = (pixels, srcW, srcH);
                 }
@@ -298,6 +303,15 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (count == 0) return Color.white;
             float n = count;
             return new Color(r / n, g / n, b / n, Mathf.Clamp01(a / n));
+        }
+
+        private static void ApplyTint(Color[] pixels, Color tint)
+        {
+            if (pixels == null || pixels.Length == 0)
+                return;
+
+            for (int i = 0; i < pixels.Length; i++)
+                pixels[i] *= tint;
         }
 
         private static Texture2D CreateTexture(int width, int height)

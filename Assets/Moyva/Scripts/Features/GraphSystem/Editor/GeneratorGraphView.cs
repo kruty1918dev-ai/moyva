@@ -544,6 +544,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             foreach (var view in views)
                 view.ClearPreview();
 
+            RefreshConnectionIndexControls(result);
+
             if (_graphAsset == null || result == null)
                 return;
 
@@ -629,7 +631,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     {
                         preview = previewable.GeneratePreview(previewSize, previewSize);
                         if (preview != null)
+                        {
                             status = "Node preview";
+                            ownsPreview = true;
+                        }
                     }
 
                     if (preview == null)
@@ -870,11 +875,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private bool AreTypesCompatible(GeneratorPort a, GeneratorPort b)
         {
             if (a == null || b == null) return false;
-            if (a.PortValueType == typeof(object) || b.PortValueType == typeof(object))
-                return true;
 
-            return a.PortValueType.IsAssignableFrom(b.PortValueType)
-                || b.PortValueType.IsAssignableFrom(a.PortValueType);
+            var outputPort = a.direction == Direction.Output ? a : b;
+            var inputPort = a.direction == Direction.Input ? a : b;
+
+            return PortDefinition.AreValueTypesCompatible(outputPort.PortValueType, inputPort.PortValueType);
         }
 
         public void SetReadOnly(bool readOnly)
@@ -936,6 +941,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var edge = CreateStyledEdge(outputPort, inputPort);
                 AddElement(edge);
             }
+
+            RefreshConnectionIndexControls();
 
             BringAllNodesToFront();
 
@@ -1010,14 +1017,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     var targetPort = edge.input as GeneratorPort;
                     if (sourcePort == null || targetPort == null) continue;
 
-                    _graphAsset.AddConnection(
+                    var connection = _graphAsset.AddConnection(
                         sourceView.NodeData.NodeId, sourcePort.PortIndex,
                         targetView.NodeData.NodeId, targetPort.PortIndex);
 
                     SetupEdgeVisuals(edge, sourcePort, targetPort);
+                    RefreshConnectionIndexControl(connection);
                 }
                 EditorUtility.SetDirty(_graphAsset);
                 BringAllNodesToFront();
+                RefreshConnectionIndexControls();
                 if (change.edgesToCreate.Count > 0)
                     GraphChanged?.Invoke();
             }
@@ -1069,6 +1078,65 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     break;
                 }
             }
+        }
+
+        private void RefreshConnectionIndexControls(GraphExecutionResult result = null)
+        {
+            foreach (var nodeView in nodes.OfType<GeneratorNodeView>())
+                nodeView.ClearInputElementIndexControls();
+
+            if (_graphAsset == null)
+                return;
+
+            foreach (var connection in _graphAsset.Connections)
+                RefreshConnectionIndexControl(connection, result);
+        }
+
+        private void RefreshConnectionIndexControl(Connection connection, GraphExecutionResult result = null)
+        {
+            if (connection == null || _graphAsset == null)
+                return;
+
+            var source = _graphAsset.GetNodeById(connection.SourceNodeId);
+            var target = _graphAsset.GetNodeById(connection.TargetNodeId);
+            if (source == null || target == null)
+                return;
+            if (connection.SourcePortIndex < 0 || connection.SourcePortIndex >= source.Outputs.Length)
+                return;
+            if (connection.TargetPortIndex < 0 || connection.TargetPortIndex >= target.Inputs.Length)
+                return;
+
+            var sourcePortDef = source.Outputs[connection.SourcePortIndex];
+            var targetPortDef = target.Inputs[connection.TargetPortIndex];
+            if (!PortDefinition.RequiresElementIndexing(sourcePortDef.ValueType, targetPortDef.ValueType))
+                return;
+
+            int elementCount = GetRuntimeElementCount(result, connection);
+            var targetView = nodes.OfType<GeneratorNodeView>()
+                .FirstOrDefault(view => view.NodeData != null && view.NodeData.NodeId == connection.TargetNodeId);
+            var inputPort = targetView?.GetInputPort(connection.TargetPortIndex);
+            if (inputPort == null)
+                return;
+
+            inputPort.SetElementIndexControl(connection.SourceElementIndex, elementCount, newIndex =>
+            {
+                Undo.RecordObject(_graphAsset, "Set Connection Element Index");
+                connection.SetSourceElementIndex(newIndex);
+                EditorUtility.SetDirty(_graphAsset);
+                RefreshConnectionIndexControl(connection, result);
+                GraphChanged?.Invoke();
+            });
+        }
+
+        private static int GetRuntimeElementCount(GraphExecutionResult result, Connection connection)
+        {
+            var outputs = result?.GetOutputs(connection.SourceNodeId);
+            if (outputs == null || connection.SourcePortIndex < 0 || connection.SourcePortIndex >= outputs.Length)
+                return 0;
+
+            return PortDefinition.TryGetIndexableCount(outputs[connection.SourcePortIndex], out int count)
+                ? count
+                : 0;
         }
 
         #region Keyboard Shortcuts
@@ -1266,7 +1334,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         sourceNodeId = conn.SourceNodeId,
                         sourcePortIndex = conn.SourcePortIndex,
                         targetNodeId = conn.TargetNodeId,
-                        targetPortIndex = conn.TargetPortIndex
+                        targetPortIndex = conn.TargetPortIndex,
+                        sourceElementIndex = conn.SourceElementIndex
                     });
                 }
             }
@@ -1427,7 +1496,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                 _graphAsset.AddConnection(
                     newSource, connEntry.sourcePortIndex,
-                    newTarget, connEntry.targetPortIndex);
+                    newTarget, connEntry.targetPortIndex,
+                    connEntry.sourceElementIndex);
 
                 if (!newViews.TryGetValue(newSource, out var sourceView)) continue;
                 if (!newViews.TryGetValue(newTarget, out var targetView)) continue;
@@ -1666,7 +1736,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (!idMap.TryGetValue(connEntry.targetNodeId, out var tgtId)) continue;
 
                 _graphAsset.AddConnection(srcId, connEntry.sourcePortIndex,
-                    tgtId, connEntry.targetPortIndex);
+                    tgtId, connEntry.targetPortIndex,
+                    connEntry.sourceElementIndex);
 
                 if (!allViews.TryGetValue(srcId, out var srcView)) continue;
                 if (!allViews.TryGetValue(tgtId, out var tgtView)) continue;
@@ -2118,12 +2189,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 if (nodeViewMap.TryGetValue(id, out var v))
                 {
-                    nodeW[id] = 220f;
+                    nodeW[id] = v.PreferredWidth;
                     nodeH[id] = EstimateNodeHeight(v);
                 }
                 else
                 {
-                    nodeW[id] = 220f;
+                    nodeW[id] = 280f;
                     nodeH[id] = 160f;
                 }
             }
@@ -2387,7 +2458,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                             incomingConn.SourceNodeId,
                             incomingConn.SourcePortIndex,
                             outgoingConn.TargetNodeId,
-                            outgoingConn.TargetPortIndex);
+                            outgoingConn.TargetPortIndex,
+                            incomingConn.SourceElementIndex);
                     }
                 }
 

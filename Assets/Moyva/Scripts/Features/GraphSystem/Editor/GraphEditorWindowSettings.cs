@@ -23,6 +23,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         public int inspectorTabIndex = 0;
 
         public bool isInspectorVisible = true;
-    
+
+        public Vector3 cameraPosition = Vector3.zero;
+        public Vector3 cameraScale = Vector3.one;
     }
 }

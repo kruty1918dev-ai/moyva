@@ -72,6 +72,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private const string SettingsAssetPath = "Assets/Moyva/Scripts/Features/GraphSystem/Editor/GraphEditorWindowSettings.asset";
         private GraphEditorWindowSettings _windowSettings;
 
+        // Saved camera state (pan + zoom), restored after PopulateGraph
+        private Vector3 _savedCameraPosition = Vector3.zero;
+        private Vector3 _savedCameraScale = Vector3.one;
+
         // Inline map size override (used when no EditorPreviewSettings assigned)
         [SerializeField] private int _previewWidth = 64;
         [SerializeField] private int _previewHeight = 64;
@@ -154,6 +158,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 MigrateLegacySharedSettingsNode(_graphAsset);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
+                RestoreCameraTransform();
                 UpdateStatusBar();
                 return;
             }
@@ -169,8 +174,21 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 _graphAsset = asset;
                 MigrateLegacySharedSettingsNode(_graphAsset);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
+                RestoreCameraTransform();
                 UpdateStatusBar();
             }
+        }
+
+        private void RestoreCameraTransform()
+        {
+            if (_savedCameraScale == Vector3.zero) _savedCameraScale = Vector3.one;
+            var pos = _savedCameraPosition;
+            var scale = _savedCameraScale;
+            // Defer by one frame so the graph view has finished layout
+            rootVisualElement.schedule.Execute(() =>
+            {
+                _graphView?.UpdateViewTransform(pos, scale);
+            });
         }
 
         private void OnPlayModeChanged(PlayModeStateChange state)
@@ -666,7 +684,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _statusLabel.text = $"Saved: {_graphAsset.name}";
         }
 
-        private void RunGraph()
+        private void RunGraph(bool isAutoRun = false)
         {
             if (_isRunningGraph) return;
             _isRunningGraph = true;
@@ -691,16 +709,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 _statusLabel.text = $"✗ Cannot run: {errorCount} validation error(s).";
 
-                var details = new System.Text.StringBuilder();
-                foreach (var err in errors)
-                    details.AppendLine($"  - {err}");
+                if (!isAutoRun)
+                {
+                    var details = new System.Text.StringBuilder();
+                    foreach (var err in errors)
+                        details.AppendLine($"  - {err}");
 
-                Debug.LogWarning($"[GraphRunner] Validation failed with {errorCount} error(s) and {warningCount} warning(s).\n{details}");
+                    Debug.LogWarning($"[GraphRunner] Validation failed with {errorCount} error(s) and {warningCount} warning(s).\n{details}");
+                }
                 _isRunningGraph = false;
                 return;
             }
 
-            if (warningCount > 0)
+            if (warningCount > 0 && !isAutoRun)
             {
                 Debug.LogWarning($"[GraphRunner] Running with {warningCount} validation warning(s).");
 
@@ -806,7 +827,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             else
             {
                 _statusLabel.text = $"✗ Run failed at node {result.ErrorNodeId}: {result.ErrorMessage}";
-                Debug.LogError($"[GraphRunner] Execution failed: {result.ErrorMessage}");
+                if (!isAutoRun)
+                    Debug.LogError($"[GraphRunner] Execution failed: {result.ErrorMessage}");
             }
 
             }
@@ -848,6 +870,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             // INoiseProvider — не потребує залежностей
             context.RegisterService<INoiseProvider>(new NoiseMapGeneratorService());
             Debug.Log("[EditorPreview] ✓ INoiseProvider registered.");
+
+            context.RegisterService<IGeneratorDataRegistry>(new GeneratorDataRegistry());
+            Debug.Log("[EditorPreview] ✓ IGeneratorDataRegistry registered.");
 
             // IVirtualHeightMapGenerator — потребує HeightMapSettings
             var heightSettings = runtimeSettings.HeightMapSettings ?? _previewSettings?.HeightMapSettings;
@@ -1097,6 +1122,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _previewHeatmap = settings.previewHeatmap;
             _isInspectorVisible = settings.isInspectorVisible;
             _activeInspectorTab = (InspectorTab)Mathf.Clamp(settings.inspectorTabIndex, 0, 1);
+            _savedCameraPosition = settings.cameraPosition;
+            _savedCameraScale = settings.cameraScale;
         }
 
         private void SaveWindowSettings()
@@ -1121,6 +1148,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             settings.previewHeatmap = _previewHeatmap;
             settings.isInspectorVisible = _isInspectorVisible;
             settings.inspectorTabIndex = (int)_activeInspectorTab;
+            if (_graphView != null)
+            {
+                var tr = _graphView.contentViewContainer.resolvedStyle.translate;
+                var sc = _graphView.contentViewContainer.resolvedStyle.scale;
+                settings.cameraPosition = new Vector3(tr.x, tr.y, 0f);
+                settings.cameraScale = sc.value;
+            }
 
             EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssets();
@@ -1368,10 +1402,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             EditorGUILayout.LabelField("Type", _selectedNode.GetType().Name);
             EditorGUILayout.Space(4);
 
-            DrawSerializedObjectWithoutScript(new SerializedObject(_selectedNode));
+            EditorGUI.BeginChangeCheck();
+            _selectedNodeEditor.OnInspectorGUI();
+            bool inspectorChanged = EditorGUI.EndChangeCheck();
             bool seedChanged = DrawSeedNodeControls(_selectedNode);
 
-            if (GUI.changed || seedChanged)
+            if (inspectorChanged || seedChanged)
             {
                 EditorUtility.SetDirty(_selectedNode);
                 EditorUtility.SetDirty(_graphAsset);
@@ -1401,6 +1437,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 {
                     _previewSettingsGuid = null;
                 }
+                SaveWindowSettings();
             }
 
             _previewWidth = Mathf.Max(4, EditorGUILayout.IntField("Preview Width", _previewWidth));
@@ -1447,7 +1484,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
 
             _nextAutoRunAt = 0d;
-            RunGraph();
+            RunGraph(true);
         }
 
         private int ResolvePreviewSize(int mapW, int mapH)

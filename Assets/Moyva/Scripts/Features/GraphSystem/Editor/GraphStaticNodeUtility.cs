@@ -87,11 +87,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     && connection.TargetPortIndex == 1)
                 {
                     graphAsset.RemoveConnection(connection);
-                    graphAsset.AddConnection(
+                    var newConnection = graphAsset.AddConnection(
                         connection.SourceNodeId,
                         connection.SourcePortIndex,
                         connection.TargetNodeId,
                         0);
+                    newConnection.SetSourceElementIndex(connection.SourceElementIndex);
                     changed = true;
                 }
             }
