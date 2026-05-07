@@ -209,12 +209,15 @@ Region Count: 5                Region Count: 20
 |---|---|---|---|
 | **Input** 🟢 | HeightMap | `float[,]` | Карта висот |
 | **Output** 🔵 | TileMap | `string[,]` | Карта ID тайлів |
+| **Output** 🟡 | LayerMask | `bool[,]` | `true` там, де висота потрапила у вибраний індекс шару `HeightLayers` |
+| **Output** 🟠 | LayerIndexMap | `int[,]` | Індекс шару `HeightLayers` для кожної клітинки (`-1`, якщо шар не визначено) |
 
 ### Параметри
 
 | Параметр | Тип | Опис |
 |---|---|---|
 | **Height Map Settings** | `HeightMapSettings` (SO) | Масив шарів висоти (HeightLayer[]) |
+| **Mask Layer Index** | `int` | Індекс шару `HeightLayers`, для якого треба отримати `LayerMask` |
 
 ### Як налаштувати `HeightMapSettings`
 
@@ -230,3 +233,11 @@ HeightLayer[]:
 ```
 
 > **Різниця з BiomeResolver:** HeightToTile враховує тільки висоту. BiomeResolver додатково враховує вологість для складніших біомів.
+
+### LayerMask
+
+`LayerMask` дозволяє забрати конкретний висотний рівень як булеву маску. Наприклад, якщо `Mask Layer Index = 3`, то вихід буде `true` тільки в клітинках, де висота потрапила в діапазон `HeightLayers[3]`. Цю маску можна далі подавати в ноди фільтрації, декору, об'єктів або debug preview.
+
+### LayerIndexMap
+
+`LayerIndexMap` повертає індекс шару для кожної клітинки. Це зручно для сценарію `Height To Tile -> Hill Generator`, коли `Hill Generator` використовує override-профіль лише для вибраних індексів шарів (через `LayerIndexMap` або зовнішню `Mask`).

@@ -12,6 +12,7 @@
 |---|---|---|
 | [Sea / Coastline](nodes/sea-coastline.md) | `SeaCoastlineNode.cs` | Морська берегова лінія з трьома зонами |
 | [AutoTile Transitions](nodes/autotile-transitions.md) | `AutoTileTransitionNode.cs` | Автоматичні переходи між тайлами |
+| [Hill Level Tile Override](nodes/hill-level-tile-override.md) | `HillLevelTileOverrideNode.cs` | Замінює hill-тайли на вибраному рівні через `HillLevelData` |
 
 ---
 
@@ -141,3 +142,46 @@ Coast Side: South, coastWidth: 8
 - Дуже корисний **після HeightToTile** — перетворює "блочну" карту в природну
 
 > **Важливо:** Ваші тайли (спрайти/сети) мають містити відповідні варіанти з суфіксами: `grass_cliff_n`, `grass_cliff_ne`, `grass_corner_ne` тощо.
+
+---
+
+## Hill Level Tile Override
+
+**Категорія:** Terrain · **Файл:** `HillLevelTileOverrideNode.cs`
+
+Приймає `HillLevelData` від `Hill Generator`, вибирає один рівень і замінює тільки ті hill-тайли, які генератор реально поставив на цьому рівні. Заміна йде не по голому `TileId`, а по `DirectionId`, тобто зберігається логіка напрямків схилу.
+
+### Порти
+
+| Напрямок | Назва | Тип | Опис |
+|---|---|---|---|
+| **Input** 🟣 | HillLevelData | `HillLevelDataMap` | Дані від `Hill Generator` |
+| **Output** 🟣 | HillLevelData | `HillLevelDataMap` | Оновлені дані після перевизначення тайлів |
+
+### Параметри
+
+| Параметр | Тип | Опис |
+|---|---|---|
+| **Target Level** | `int` | Рівень, на якому треба заміняти hill-тайли |
+| **Only Modified Tiles** | `bool` | Якщо `true`, нода чіпає лише клітинки, які `Hill Generator` реально змінив |
+| **Replacement Tiles** | `HillTileEntry[]` | Новий набір тайлів по напрямках (`North`, `CornerNE`, `InnerCornerSW` тощо) |
+| **Changed Highlight Color** | `Color` | Колір підсвітки в preview для клітинок, змінених цією нодою |
+
+### Як працює
+
+1. Нода читає `HillLevelData`.
+2. Для кожної клітинки перевіряє `Level == Target Level`.
+3. Якщо увімкнено `Only Modified Tiles`, додатково перевіряє `WasModified == true`.
+4. Береться `DirectionId` клітинки і по ньому шукається новий тайл у `Replacement Tiles`.
+5. На виході формується новий `HillLevelDataMap` з оновленими `TileId`.
+
+### Preview
+
+- Базою preview є кольори рівнів, як у `Hill Generator`.
+- Клітинки, які ця нода змінила, підсвічуються окремим кольором `Changed Highlight Color`.
+
+### Типовий сценарій
+
+`Height Source -> Height To Tile -> Hill Generator -> Hill Level Tile Override`
+
+Це зручно, коли `Hill Generator` уже побудував правильну геометрію схилів, але для конкретного рівня ви хочете інший набір декоративних або стилізованих hill-тайлів.
