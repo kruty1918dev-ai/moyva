@@ -102,6 +102,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             // Tiling and scaling parameters
             _mat.SetFloat("_FogTileTiling", _settings.FogTileTiling);
             _mat.SetFloat("_FogIconScale", _settings.FogIconScale);
+            _mat.SetVector("_FogIconGridSize", new Vector4(
+                Mathf.Max(1, _settings.FogIconGridSize.x),
+                Mathf.Max(1, _settings.FogIconGridSize.y),
+                0f,
+                0f));
 
             // Transparency blending
             _mat.SetFloat("_UnexploredAlpha", _settings.UnexploredAlpha);

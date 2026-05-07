@@ -32,6 +32,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Header("Fog Icons")]
         [Tooltip("Array of icon sprites to cycle through fog cells in regular pattern")]
         public Sprite[] FogIconSprites;
+        [Tooltip("Independent icon grid over map (X columns, Y rows). Icons are placed sequentially by this grid, not by tile cells")]
+        public Vector2Int FogIconGridSize = new Vector2Int(10, 10);
         [Tooltip("Icon scale relative to cell size")]
         [Min(0.1f)] public float FogIconScale = 0.5f;
         [Tooltip("If enabled, place icon at cell center; if disabled, distribute across cell")]

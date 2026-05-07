@@ -11,6 +11,7 @@ Shader "Moyva/FogOfWar"
         _FogTileTiling           ("Fog Tile Tiling", Float)            = 1.0
         _FogIconScale            ("Fog Icon Scale", Float)             = 0.5
         _FogIconIntensity        ("Icon Blend Intensity", Float)       = 0.5
+        _FogIconGridSize         ("Icon Grid Size XY", Vector)         = (10, 10, 0, 0)
         _UnexploredAlpha         ("Unexplored Alpha", Range(0, 1))    = 1.0
         _ExploredAlpha           ("Explored Alpha", Range(0, 1))      = 0.5
         _UseIconAtlas            ("Use Icon Atlas (1=yes)", Float)     = 0
@@ -55,6 +56,7 @@ Shader "Moyva/FogOfWar"
                 float4 _FogTileTex_ST;
                 float4 _FogIconTex_ST;
                 float4 _FogTileUVRect;
+                float4 _FogIconGridSize;
                 float4 _UnexploredColor;
                 float4 _ExploredColor;
                 float _FogTileTiling;
@@ -110,11 +112,13 @@ Shader "Moyva/FogOfWar"
                 float2 tileSpriteUV = _FogTileUVRect.xy + tiledUV * _FogTileUVRect.zw;
                 half4 tileSample = SAMPLE_TEXTURE2D(_FogTileTex, sampler_FogTileTex, tileSpriteUV);
 
-                // ─── Sample icon texture with cell-based indexing ───────────────
-                
-                // Create deterministic pattern from cell coordinates
-                // Use modulo to cycle through icons in a regular pattern
-                float iconIndex = fmod(cellCoord.x + cellCoord.y * 2.0, _IconGridSize * _IconGridSize);
+                // ─── Sample icon texture with independent icon grid ─────────────
+                float2 iconGridSize = max(1.0.xx, _FogIconGridSize.xy);
+                float2 iconGridCoord = floor(IN.uv * iconGridSize);
+                float2 iconCellFrac = frac(IN.uv * iconGridSize);
+
+                // Create deterministic sequence from icon-grid coordinates
+                float iconIndex = fmod(iconGridCoord.x + iconGridCoord.y * iconGridSize.x, _IconGridSize * _IconGridSize);
                 
                 // Convert icon index to atlas UV coordinates (assuming NxN grid)
                 float gridCols = _IconGridSize;
@@ -123,7 +127,7 @@ Shader "Moyva/FogOfWar"
                 float atlasY = floor(iconIndex / gridCols) / gridRows;
                 
                 // Scale cell fractional to icon size
-                float2 iconUVInAtlas = cellFrac * _FogIconScale;
+                float2 iconUVInAtlas = iconCellFrac * _FogIconScale;
                 iconUVInAtlas += float2(0.5 - _FogIconScale * 0.5, 0.5 - _FogIconScale * 0.5); // center within atlas cell
                 
                 // Scale to atlas cell coordinates
