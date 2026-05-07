@@ -50,6 +50,7 @@ Shader "Moyva/FogOfWar"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _FogTex_ST;
+                float4 _FogTex_TexelSize;
                 float4 _FogTileTex_ST;
                 float4 _FogIconTex_ST;
                 float4 _UnexploredColor;
