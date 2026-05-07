@@ -43,6 +43,14 @@ namespace Kruty1918.Moyva.GraphSystem.API
             return connection;
         }
 
+        public Connection AddConnection(string sourceNodeId, int sourcePort,
+            string targetNodeId, int targetPort, int sourceElementIndex)
+        {
+            var connection = AddConnection(sourceNodeId, sourcePort, targetNodeId, targetPort);
+            connection.SetSourceElementIndex(sourceElementIndex);
+            return connection;
+        }
+
         public void RemoveConnection(Connection connection) =>
             _connections.Remove(connection);
 
@@ -211,11 +219,12 @@ namespace Kruty1918.Moyva.GraphSystem.API
                     for (int j = 0; j < outgoing.Count; j++)
                     {
                         var target = outgoing[j];
-                        AddConnection(
+                        var newConnection = AddConnection(
                             source.SourceNodeId,
                             source.SourcePortIndex,
                             target.TargetNodeId,
                             target.TargetPortIndex);
+                        newConnection.SetSourceElementIndex(source.SourceElementIndex);
                     }
                 }
 

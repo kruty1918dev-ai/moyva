@@ -29,6 +29,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
         [SerializeField] public int sourcePortIndex;
         [SerializeField] public string targetNodeId;
         [SerializeField] public int targetPortIndex;
+        [SerializeField] public int sourceElementIndex;
     }
 
     /// <summary>
