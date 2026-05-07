@@ -54,8 +54,41 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void ApplySettingsToMaterial()
         {
+            // Fog colors
             _mat.SetColor("_UnexploredColor", _settings.UnexploredColor);
             _mat.SetColor("_ExploredColor",   _settings.ExploredColor);
+
+            // Fog tile texture (tiled across fog overlay)
+            if (_settings.FogTileTexture != null)
+                _mat.SetTexture("_FogTileTex", _settings.FogTileTexture);
+
+            // Fog icon texture (atlas of icons)
+            if (_settings.FogIconTextures != null && _settings.FogIconTextures.Length > 0)
+            {
+                // For now, use the first icon texture as atlas
+                _mat.SetTexture("_FogIconTex", _settings.FogIconTextures[0]);
+                
+                // Determine grid size from icon count
+                // Assume square grid: iconCount = gridSize^2
+                int iconCount = _settings.FogIconTextures.Length;
+                int gridSize = Mathf.CeilToInt(Mathf.Sqrt(iconCount));
+                _mat.SetFloat("_IconGridSize", gridSize);
+            }
+            else
+            {
+                _mat.SetFloat("_IconGridSize", 1f);
+            }
+
+            // Tiling and scaling parameters
+            _mat.SetFloat("_FogTileTiling", _settings.FogTileTiling);
+            _mat.SetFloat("_FogIconScale", _settings.FogIconScale);
+
+            // Transparency blending
+            _mat.SetFloat("_UnexploredAlpha", _settings.UnexploredAlpha);
+            _mat.SetFloat("_ExploredAlpha", _settings.ExploredAlpha);
+            
+            // Icon blend intensity (how much icon blends into fog)
+            _mat.SetFloat("_FogIconIntensity", 0.6f);
         }
 
         private void ApplyOverlayRenderPriority(Renderer renderer)
