@@ -23,5 +23,26 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Header("Fog Colors")]
         public Color UnexploredColor = new Color(0f, 0f, 0f, 1f);
         public Color ExploredColor   = new Color(0f, 0f, 0f, 0.5f);
+
+        [Header("Fog Tile Texture")]
+        public Texture2D FogTileTexture;
+        [Tooltip("Scale for tiling the fog cell texture. Higher = more tiles per cell")]
+        [Min(1f)] public float FogTileTiling = 1f;
+
+        [Header("Fog Icons")]
+        [Tooltip("Array of icon textures to cycle through fog cells in regular pattern")]
+        public Texture2D[] FogIconTextures;
+        [Tooltip("Icon scale relative to cell size")]
+        [Min(0.1f)] public float FogIconScale = 0.5f;
+        [Tooltip("If enabled, place icon at cell center; if disabled, distribute across cell")]
+        public bool CenterIcon = true;
+
+        [Header("Transparency Blending")]
+        [Tooltip("Alpha for fully unexplored fog")]
+        [Range(0f, 1f)] public float UnexploredAlpha = 1f;
+        [Tooltip("Alpha for explored fog")]
+        [Range(0f, 1f)] public float ExploredAlpha = 0.5f;
+        [Tooltip("Visible areas are fully transparent (alpha=0)")]
+        public bool FullyTransparentWhenVisible = true;
     }
 }
