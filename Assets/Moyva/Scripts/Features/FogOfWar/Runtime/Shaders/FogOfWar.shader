@@ -120,11 +120,15 @@ Shader "Moyva/FogOfWar"
                 // ─── Sample icon texture with independent icon grid ─────────────
                 float2 iconGridSize = max(1.0.xx, _FogIconGridSize.xy);
                 float2 iconGridCoord = floor(IN.uv * iconGridSize);
+                float2 iconGridMax = max(0.0.xx, iconGridSize - 1.0.xx);
+                iconGridCoord = clamp(iconGridCoord, 0.0.xx, iconGridMax);
                 float2 iconCellFrac = frac(IN.uv * iconGridSize);
 
-                // Pick icon rect sequentially across icon grid.
+                // Pick icon rect sequentially with mirror symmetry across X/Y axes.
+                float2 symCoord = min(iconGridCoord, iconGridMax - iconGridCoord);
+                float symWidth = floor((iconGridSize.x + 1.0) * 0.5);
                 float iconRectCount = max(1.0, _FogIconRectCount);
-                float iconIndexF = fmod(iconGridCoord.x + iconGridCoord.y * iconGridSize.x, iconRectCount);
+                float iconIndexF = fmod(symCoord.x + symCoord.y * symWidth, iconRectCount);
                 int iconIndex = (int)iconIndexF;
                 iconIndex = clamp(iconIndex, 0, 63);
                 float4 iconUvRect = _FogIconUVRects[iconIndex];
