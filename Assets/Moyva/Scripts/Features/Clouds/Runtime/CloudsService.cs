@@ -122,7 +122,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 float fade = ResolveFade(cloud);
                 ApplyAlpha(cloud, fade);
 
-                if (HasPassedEnd(cloud))
+                if (HasPassedEnd(cloud) || HasDissolved(cloud))
                 {
                     DestroyCloud(cloud);
                     _clouds.RemoveAt(i);
@@ -195,7 +195,8 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 shadowRenderer,
                 Random.Range(_settings.SpeedRange.x, _settings.SpeedRange.y),
                 direction,
-                endX);
+                endX,
+                ResolveLifetime());
         }
 
         private void ApplySorting(SpriteRenderer renderer, int sortingOrder)
@@ -272,7 +273,22 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 : cloud.Root.transform.position.x - cloud.EndX;
             float fadeOutDistance = Mathf.Max(0.001f, cloud.Speed * _settings.FadeDuration);
             float fadeOut = Mathf.Clamp01(remainingDistance / fadeOutDistance);
-            return Mathf.Min(fadeIn, fadeOut);
+            float dissolve = ResolveDissolveFade(cloud);
+            return Mathf.Min(fadeIn, fadeOut, dissolve);
+        }
+
+        private float ResolveDissolveFade(CloudInstance cloud)
+        {
+            if (!_settings.LifetimeDissolveEnabled)
+                return 1f;
+
+            if (cloud.Age <= cloud.Lifetime)
+                return 1f;
+
+            if (_settings.DissolveDuration <= 0f)
+                return 0f;
+
+            return 1f - Mathf.Clamp01((cloud.Age - cloud.Lifetime) / _settings.DissolveDuration);
         }
 
         private void ApplyAlpha(CloudInstance cloud, float fade)
@@ -293,6 +309,16 @@ namespace Kruty1918.Moyva.Clouds.Runtime
         {
             float x = cloud.Root.transform.position.x;
             return cloud.Direction > 0 ? x >= cloud.EndX : x <= cloud.EndX;
+        }
+
+        private bool HasDissolved(CloudInstance cloud)
+        {
+            return _settings.LifetimeDissolveEnabled && cloud.Age >= cloud.Lifetime + _settings.DissolveDuration;
+        }
+
+        private float ResolveLifetime()
+        {
+            return Random.Range(_settings.LifetimeRange.x, _settings.LifetimeRange.y);
         }
 
         private void DestroyCloud(CloudInstance cloud)
@@ -330,6 +356,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             public readonly float Speed;
             public readonly int Direction;
             public readonly float EndX;
+            public readonly float Lifetime;
             public float Age;
 
             public CloudInstance(
@@ -338,7 +365,8 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 SpriteRenderer shadowRenderer,
                 float speed,
                 int direction,
-                float endX)
+                float endX,
+                float lifetime)
             {
                 Root = root;
                 CloudRenderer = cloudRenderer;
@@ -346,6 +374,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 Speed = speed;
                 Direction = direction;
                 EndX = endX;
+                Lifetime = lifetime;
             }
         }
     }

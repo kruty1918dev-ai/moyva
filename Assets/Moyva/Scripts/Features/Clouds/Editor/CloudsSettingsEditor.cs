@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
     public sealed class CloudsSettingsEditor : UnityEditor.Editor
     {
         private const float PreviewSize = 42f;
+        private const float LivePreviewHeight = 170f;
         private const float DropAreaHeight = 48f;
 
         private SerializedProperty _enabledProp;
@@ -24,6 +25,9 @@ namespace Kruty1918.Moyva.Clouds.Editor
         private SerializedProperty _spawnVerticalPaddingProp;
         private SerializedProperty _despawnHorizontalPaddingProp;
         private SerializedProperty _fadeDurationProp;
+        private SerializedProperty _lifetimeDissolveEnabledProp;
+        private SerializedProperty _lifetimeRangeProp;
+        private SerializedProperty _dissolveDurationProp;
         private SerializedProperty _cloudColorProp;
         private SerializedProperty _cloudAlphaProp;
         private SerializedProperty _sortingLayerNameProp;
@@ -38,14 +42,18 @@ namespace Kruty1918.Moyva.Clouds.Editor
         private bool _generalFoldout = true;
         private bool _spritesFoldout = true;
         private bool _movementFoldout = true;
+        private bool _dissolveFoldout = true;
         private bool _viewFoldout = true;
         private bool _shadowsFoldout = true;
         private bool _documentationFoldout = true;
+        private bool _previewFoldout = true;
 
         private GUIStyle _dropAreaStyle;
 
         private void OnEnable()
         {
+            EditorApplication.update += Repaint;
+
             _enabledProp = serializedObject.FindProperty("Enabled");
             _maxActiveCloudsProp = serializedObject.FindProperty("MaxActiveClouds");
             _initialCloudsProp = serializedObject.FindProperty("InitialClouds");
@@ -59,6 +67,9 @@ namespace Kruty1918.Moyva.Clouds.Editor
             _spawnVerticalPaddingProp = serializedObject.FindProperty("SpawnVerticalPadding");
             _despawnHorizontalPaddingProp = serializedObject.FindProperty("DespawnHorizontalPadding");
             _fadeDurationProp = serializedObject.FindProperty("FadeDuration");
+            _lifetimeDissolveEnabledProp = serializedObject.FindProperty("LifetimeDissolveEnabled");
+            _lifetimeRangeProp = serializedObject.FindProperty("LifetimeRange");
+            _dissolveDurationProp = serializedObject.FindProperty("DissolveDuration");
             _cloudColorProp = serializedObject.FindProperty("CloudColor");
             _cloudAlphaProp = serializedObject.FindProperty("CloudAlpha");
             _sortingLayerNameProp = serializedObject.FindProperty("SortingLayerName");
@@ -71,15 +82,22 @@ namespace Kruty1918.Moyva.Clouds.Editor
             _shadowSortingOrderOffsetProp = serializedObject.FindProperty("ShadowSortingOrderOffset");
         }
 
+        private void OnDisable()
+        {
+            EditorApplication.update -= Repaint;
+        }
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
             DrawScriptReference();
             DrawDocumentationSection();
+            DrawLivePreviewSection();
             DrawGeneralSection();
             DrawSpritesSection();
             DrawMovementSection();
+            DrawDissolveSection();
             DrawViewSection();
             DrawShadowsSection();
             DrawValidation();
@@ -106,12 +124,34 @@ namespace Kruty1918.Moyva.Clouds.Editor
             {
                 EditorGUILayout.HelpBox(
                     "Система може одразу розкласти стартові хмаринки в межах камери, а наступні створює за межами камери, рухає тільки горизонтально та плавно прибирає за протилежним краєм. " +
-                    "Кожна хмаринка може мати темнішу копію-тінь із вертикальним зміщенням, щоб у top-down 2D вона виглядала нижче на мапі.",
+                    "За потреби хмаринки можуть додатково розчинятися після заданого часу життя. Кожна хмаринка може мати темнішу копію-тінь із вертикальним зміщенням, щоб у top-down 2D вона виглядала нижче на мапі.",
                     MessageType.None);
                 EditorGUILayout.HelpBox(
                     "Щоб швидко заповнити список, виділіть один або кілька Sprite/Texture у Project і натисніть 'Додати виділені', або перетягніть їх у зону спрайтів. " +
                     "Шанс є вагою вибору, а індикатор показує приблизну частку кожного спрайта серед усіх активних варіантів.",
                     MessageType.None);
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            EditorGUILayout.Space(2f);
+        }
+
+        private void DrawLivePreviewSection()
+        {
+            _previewFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_previewFoldout,
+                new GUIContent("Прев'ю", "Живий перегляд хмари, тіні, прозорості, швидкості та розчинення"));
+
+            if (_previewFoldout)
+            {
+                Sprite sprite = ResolvePreviewSprite();
+                Rect rect = GUILayoutUtility.GetRect(0f, LivePreviewHeight, GUILayout.ExpandWidth(true));
+                DrawLivePreview(rect, sprite);
+                EditorGUILayout.HelpBox(
+                    "Прев'ю оновлюється автоматично. Воно показує відносне розташування тіні, прозорість, напрям руху, швидкість і фазу розчинення за поточними налаштуваннями.",
+                    MessageType.None);
+
+                if (sprite == null)
+                    EditorGUILayout.HelpBox("Додайте хоча б один спрайт хмаринки, щоб побачити реальне прев'ю.", MessageType.Info);
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();
@@ -271,6 +311,173 @@ namespace Kruty1918.Moyva.Clouds.Editor
             EditorGUILayout.Space(2f);
         }
 
+        private void DrawDissolveSection()
+        {
+            _dissolveFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_dissolveFoldout,
+                new GUIContent("Розчинення", "Плавне зникнення хмаринок після часу життя"));
+
+            if (_dissolveFoldout)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_lifetimeDissolveEnabledProp, new GUIContent("Розчиняти з часом", "Якщо увімкнено, хмара після часу життя почне плавно зникати"));
+                using (new EditorGUI.DisabledScope(!_lifetimeDissolveEnabledProp.boolValue))
+                {
+                    EditorGUILayout.PropertyField(_lifetimeRangeProp, new GUIContent("Час життя", "Діапазон секунд до початку розчинення"));
+                    EditorGUILayout.PropertyField(_dissolveDurationProp, new GUIContent("Тривалість розчинення", "Скільки секунд триває плавне зникнення"));
+                }
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            EditorGUILayout.Space(2f);
+        }
+
+        private Sprite ResolvePreviewSprite()
+        {
+            for (int i = 0; i < _cloudSpritesProp.arraySize; i++)
+            {
+                SerializedProperty variant = _cloudSpritesProp.GetArrayElementAtIndex(i);
+                if (variant.FindPropertyRelative("Sprite").objectReferenceValue is Sprite sprite)
+                    return sprite;
+            }
+
+            return null;
+        }
+
+        private void DrawLivePreview(Rect rect, Sprite sprite)
+        {
+            EditorGUI.DrawRect(rect, new Color(0.12f, 0.14f, 0.16f, 1f));
+            DrawPreviewGrid(rect);
+
+            Rect stageRect = new Rect(rect.x + 12f, rect.y + 12f, rect.width - 24f, rect.height - 52f);
+            EditorGUI.DrawRect(stageRect, new Color(0.08f, 0.09f, 0.1f, 1f));
+
+            float speedMid = Mathf.Lerp(_speedRangeProp.vector2Value.x, _speedRangeProp.vector2Value.y, 0.5f);
+            float previewCycle = Mathf.Max(2f, 5f / Mathf.Max(0.05f, speedMid));
+            float normalizedTime = (float)(EditorApplication.timeSinceStartup % previewCycle) / previewCycle;
+            float direction = _leftToRightChanceProp.floatValue >= 0.5f ? 1f : -1f;
+            float x = direction > 0f
+                ? Mathf.Lerp(stageRect.xMin + 28f, stageRect.xMax - 28f, normalizedTime)
+                : Mathf.Lerp(stageRect.xMax - 28f, stageRect.xMin + 28f, normalizedTime);
+            float y = stageRect.center.y - 4f;
+
+            float dissolveFade = ResolvePreviewDissolveFade(normalizedTime);
+            float fade = Mathf.Min(ResolvePreviewEdgeFade(normalizedTime), dissolveFade);
+            float alpha = _cloudAlphaProp.floatValue * fade;
+            float scale = Mathf.Lerp(_scaleRangeProp.vector2Value.x, _scaleRangeProp.vector2Value.y, 0.5f);
+            float spriteSize = Mathf.Clamp(70f * scale, 36f, 128f);
+
+            Vector2 shadowOffset = _shadowOffsetProp.vector2Value * 42f;
+            if (_shadowsEnabledProp.boolValue)
+            {
+                Rect shadowRect = BuildPreviewSpriteRect(x + shadowOffset.x, y - shadowOffset.y, spriteSize * _shadowScaleMultiplierProp.floatValue);
+                Color shadowColor = _shadowColorProp.colorValue;
+                shadowColor.a *= _cloudAlphaProp.floatValue * _shadowAlphaMultiplierProp.floatValue * fade;
+                DrawSpriteTexture(shadowRect, sprite, shadowColor);
+            }
+
+            Color cloudColor = _cloudColorProp.colorValue;
+            cloudColor.a *= alpha;
+            Rect cloudRect = BuildPreviewSpriteRect(x, y, spriteSize);
+            DrawSpriteTexture(cloudRect, sprite, cloudColor);
+
+            DrawPreviewArrow(stageRect, direction);
+            DrawPreviewLabels(rect, speedMid, alpha, dissolveFade, shadowOffset);
+        }
+
+        private static Rect BuildPreviewSpriteRect(float centerX, float centerY, float size)
+        {
+            return new Rect(centerX - size * 0.5f, centerY - size * 0.5f, size, size);
+        }
+
+        private static void DrawPreviewGrid(Rect rect)
+        {
+            Handles.BeginGUI();
+            Color oldColor = Handles.color;
+            Handles.color = new Color(1f, 1f, 1f, 0.05f);
+            for (float x = rect.x; x < rect.xMax; x += 24f)
+                Handles.DrawLine(new Vector3(x, rect.y), new Vector3(x, rect.yMax));
+            for (float y = rect.y; y < rect.yMax; y += 24f)
+                Handles.DrawLine(new Vector3(rect.x, y), new Vector3(rect.xMax, y));
+            Handles.color = oldColor;
+            Handles.EndGUI();
+        }
+
+        private static void DrawSpriteTexture(Rect rect, Sprite sprite, Color color)
+        {
+            Color oldColor = GUI.color;
+            GUI.color = color;
+
+            if (sprite != null && sprite.texture != null)
+            {
+                Rect textureRect = sprite.textureRect;
+                Rect uv = new Rect(
+                    textureRect.x / sprite.texture.width,
+                    textureRect.y / sprite.texture.height,
+                    textureRect.width / sprite.texture.width,
+                    textureRect.height / sprite.texture.height);
+                GUI.DrawTextureWithTexCoords(rect, sprite.texture, uv, alphaBlend: true);
+            }
+            else
+            {
+                EditorGUI.DrawRect(rect, color);
+            }
+
+            GUI.color = oldColor;
+        }
+
+        private static void DrawPreviewArrow(Rect stageRect, float direction)
+        {
+            Handles.BeginGUI();
+            Color oldColor = Handles.color;
+            Handles.color = new Color(0.8f, 0.9f, 1f, 0.5f);
+            float y = stageRect.yMax - 14f;
+            Vector3 from = new Vector3(stageRect.xMin + 18f, y);
+            Vector3 to = new Vector3(stageRect.xMax - 18f, y);
+            if (direction < 0f)
+            {
+                Vector3 temp = from;
+                from = to;
+                to = temp;
+            }
+
+            Handles.DrawLine(from, to);
+            Handles.DrawLine(to, to + new Vector3(-direction * 9f, -5f));
+            Handles.DrawLine(to, to + new Vector3(-direction * 9f, 5f));
+            Handles.color = oldColor;
+            Handles.EndGUI();
+        }
+
+        private void DrawPreviewLabels(Rect rect, float speed, float alpha, float dissolveFade, Vector2 shadowOffset)
+        {
+            Rect labelRect = new Rect(rect.x + 12f, rect.yMax - 34f, rect.width - 24f, 22f);
+            string dissolveText = _lifetimeDissolveEnabledProp.boolValue
+                ? $"розчинення {dissolveFade * 100f:0}%"
+                : "розчинення вимкнено";
+            string text = $"швидкість {speed:0.##} u/s   прозорість {alpha * 100f:0}%   тінь X {shadowOffset.x:0}px Y {shadowOffset.y:0}px   {dissolveText}";
+            EditorGUI.LabelField(labelRect, text, EditorStyles.miniLabel);
+        }
+
+        private float ResolvePreviewEdgeFade(float normalizedTime)
+        {
+            float fadePortion = 0.18f;
+            float fadeIn = Mathf.Clamp01(normalizedTime / fadePortion);
+            float fadeOut = Mathf.Clamp01((1f - normalizedTime) / fadePortion);
+            return Mathf.Min(fadeIn, fadeOut);
+        }
+
+        private float ResolvePreviewDissolveFade(float normalizedTime)
+        {
+            if (!_lifetimeDissolveEnabledProp.boolValue)
+                return 1f;
+
+            float dissolveStart = 0.58f;
+            if (normalizedTime <= dissolveStart)
+                return 1f;
+
+            return 1f - Mathf.Clamp01((normalizedTime - dissolveStart) / Mathf.Max(0.05f, 1f - dissolveStart));
+        }
+
         private void DrawViewSection()
         {
             _viewFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_viewFoldout,
@@ -347,6 +554,11 @@ namespace Kruty1918.Moyva.Clouds.Editor
             if (speedRange.x <= 0f || speedRange.y <= 0f)
             {
                 EditorGUILayout.HelpBox("Швидкість має бути більшою за 0, інакше хмаринки не рухатимуться.", MessageType.Warning);
+            }
+
+            if (_lifetimeDissolveEnabledProp.boolValue && _dissolveDurationProp.floatValue <= 0f)
+            {
+                EditorGUILayout.HelpBox("Розчинення з часом увімкнено, але тривалість 0: хмаринка зникне миттєво після завершення часу життя.", MessageType.Info);
             }
         }
 

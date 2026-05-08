@@ -47,6 +47,16 @@ namespace Kruty1918.Moyva.Clouds.API
         [Tooltip("Тривалість плавної появи та зникнення у секундах.")]
         [Min(0f)] public float FadeDuration = 1.2f;
 
+        [Header("Розчинення")]
+        [Tooltip("Якщо увімкнено, хмаринка після випадкового часу життя починає плавно розчинятися, навіть якщо ще не дійшла до краю екрана.")]
+        public bool LifetimeDissolveEnabled = false;
+
+        [Tooltip("Діапазон часу життя хмаринки до початку розчинення у секундах.")]
+        public Vector2 LifetimeRange = new Vector2(12f, 24f);
+
+        [Tooltip("Скільки секунд хмаринка плавно розчиняється після завершення часу життя.")]
+        [Min(0f)] public float DissolveDuration = 3f;
+
         [Header("Вигляд")]
         [Tooltip("Колір хмаринки. Білий колір зберігає оригінальні кольори спрайта.")]
         public Color CloudColor = Color.white;
@@ -90,6 +100,8 @@ namespace Kruty1918.Moyva.Clouds.API
             SpawnVerticalPadding = Mathf.Max(0f, SpawnVerticalPadding);
             DespawnHorizontalPadding = Mathf.Max(0f, DespawnHorizontalPadding);
             FadeDuration = Mathf.Max(0f, FadeDuration);
+            LifetimeRange = ClampRange(LifetimeRange, 0.01f);
+            DissolveDuration = Mathf.Max(0f, DissolveDuration);
             CloudAlpha = Mathf.Clamp01(CloudAlpha);
             ShadowAlphaMultiplier = Mathf.Clamp01(ShadowAlphaMultiplier);
             ShadowScaleMultiplier = Mathf.Max(0.01f, ShadowScaleMultiplier);
