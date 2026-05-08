@@ -28,6 +28,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private SerializedProperty _fogTileSpriteProp;
         private SerializedProperty _fogTileSpritePixelSizeProp;
         private SerializedProperty _fogTileSizeInCellsProp;
+        private SerializedProperty _fogTileSeamOverlapPixelsProp;
         private SerializedProperty _fogTileTilingProp;
         private SerializedProperty _fogIconSpritesProp;
         private SerializedProperty _fogIconSpritePixelSizeProp;
@@ -61,6 +62,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             _fogTileSpriteProp          = serializedObject.FindProperty("FogTileSprite");
             _fogTileSpritePixelSizeProp = serializedObject.FindProperty("FogTileSpritePixelSize");
             _fogTileSizeInCellsProp     = serializedObject.FindProperty("FogTileSizeInCells");
+            _fogTileSeamOverlapPixelsProp = serializedObject.FindProperty("FogTileSeamOverlapPixels");
             _fogTileTilingProp          = serializedObject.FindProperty("FogTileTiling");
             _fogIconSpritesProp         = serializedObject.FindProperty("FogIconSprites");
             _fogIconSpritePixelSizeProp = serializedObject.FindProperty("FogIconSpritePixelSize");
@@ -245,6 +247,10 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                     new GUIContent("Розмір тайла", "Візуальний footprint одного спрайт-тайла у клітинках мапи. Сітка туману не змінюється: кожна клітинка все одно малює свій спрайт, але значення більше 1 дозволяють йому перекривати сусідів"));
                 DrawTileSizeInCellsValidation();
 
+                EditorGUILayout.PropertyField(_fogTileSeamOverlapPixelsProp,
+                    new GUIContent("Перекриття швів, px", "Додаткове перекриття країв тайла у пікселях спрайта. 1-2 px зазвичай прибирають просвіти на зумі без накопичення альфи"));
+                DrawTileSeamOverlapValidation();
+
                 if (_fogTileSpriteProp.objectReferenceValue == null)
                 {
                     EditorGUILayout.HelpBox(
@@ -407,6 +413,27 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 EditorGUILayout.HelpBox(
                     "Shader композитить перекриття з найближчих клітинок. Значення понад 9 клітинок можуть обрізати далекі краї спрайта.",
                     MessageType.Warning);
+            }
+        }
+
+        private void DrawTileSeamOverlapValidation()
+        {
+            if (_fogTileSeamOverlapPixelsProp == null)
+                return;
+
+            float overlap = _fogTileSeamOverlapPixelsProp.floatValue;
+            if (overlap < 0f)
+            {
+                EditorGUILayout.HelpBox(
+                    "Перекриття швів не може бути від'ємним. Значення буде затиснуто в runtime.",
+                    MessageType.Warning);
+            }
+
+            if (overlap > 4f)
+            {
+                EditorGUILayout.HelpBox(
+                    "Зазвичай достатньо 1-2 px. Великі значення можуть помітно розтягувати край тайла.",
+                    MessageType.Info);
             }
         }
     }

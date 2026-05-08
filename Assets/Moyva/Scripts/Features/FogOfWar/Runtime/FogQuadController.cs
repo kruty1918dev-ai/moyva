@@ -116,6 +116,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Mathf.Max(0.001f, _settings.FogTileSizeInCells.y),
                 0f,
                 0f));
+            _mat.SetFloat("_FogTileSeamOverlapPixels", Mathf.Max(0f, _settings.FogTileSeamOverlapPixels));
             _mat.SetFloat("_FogIconScale", _settings.FogIconScale);
             _mat.SetVector("_FogIconGridSize", new Vector4(
                 Mathf.Max(1, _settings.FogIconGridSize.x),

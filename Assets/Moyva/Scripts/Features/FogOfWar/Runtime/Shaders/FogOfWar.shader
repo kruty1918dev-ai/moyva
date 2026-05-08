@@ -9,6 +9,7 @@ Shader "Moyva/FogOfWar"
         _FogIconUVRect           ("Fog Icon UV Rect", Vector)          = (0, 0, 1, 1)
         _FogTileSpritePixelSize  ("Fog Tile Sprite Pixel Size", Vector)= (16, 16, 0, 0)
         _FogTileSizeInCells      ("Fog Tile Size In Cells", Vector)    = (1, 1, 0, 0)
+        _FogTileSeamOverlapPixels("Fog Tile Seam Overlap Pixels", Float)= 1
         _UnexploredColor         ("Unexplored Color", Color)           = (0, 0, 0, 1)
         _ExploredColor           ("Explored Color",   Color)           = (0, 0, 0, 0.5)
         _FogTileTiling           ("Fog Tile Tiling", Float)            = 1.0
@@ -67,6 +68,7 @@ Shader "Moyva/FogOfWar"
                 float4 _UnexploredColor;
                 float4 _ExploredColor;
                 float _FogTileTiling;
+                float _FogTileSeamOverlapPixels;
                 float _FogIconScale;
                 float _FogIconIntensity;
                 float _UseFogIcons;
@@ -131,6 +133,7 @@ Shader "Moyva/FogOfWar"
                 float2 baseCell = floor(fogCoord);
                 float2 tileSize = max(0.001.xx, _FogTileSizeInCells.xy);
                 float2 tileHalfTexel = 0.5 / max(1.0.xx, _FogTileSpritePixelSize.xy);
+                float2 seamOverlapUV = _FogTileSeamOverlapPixels.xx / max(1.0.xx, _FogTileSpritePixelSize.xy);
                 half4 blended = half4(0.0, 0.0, 0.0, 0.0);
 
                 for (int y = -4; y <= 4; y++)
@@ -142,10 +145,11 @@ Shader "Moyva/FogOfWar"
                                          step(cell.x, fogGridSize.x - 1.0) * step(cell.y, fogGridSize.y - 1.0);
 
                         float2 spriteUVInCells = (fogCoord - (cell + 0.5.xx)) / tileSize + 0.5.xx;
-                        float inside = step(0.0, spriteUVInCells.x) * step(spriteUVInCells.x, 1.0) *
-                                       step(0.0, spriteUVInCells.y) * step(spriteUVInCells.y, 1.0) * inBounds;
+                        float inside = step(-seamOverlapUV.x, spriteUVInCells.x) * step(spriteUVInCells.x, 1.0 + seamOverlapUV.x) *
+                                       step(-seamOverlapUV.y, spriteUVInCells.y) * step(spriteUVInCells.y, 1.0 + seamOverlapUV.y) * inBounds;
 
-                        float2 tiledUV = frac(spriteUVInCells * _FogTileTiling);
+                        float2 clampedSpriteUV = min(saturate(spriteUVInCells), 0.9999.xx);
+                        float2 tiledUV = frac(clampedSpriteUV * _FogTileTiling);
                         tiledUV = lerp(tileHalfTexel, 1.0.xx - tileHalfTexel, tiledUV);
                         float2 tileSpriteUV = _FogTileUVRect.xy + tiledUV * _FogTileUVRect.zw;
                         half4 tileSample = SAMPLE_TEXTURE2D(_FogTileTex, sampler_FogTileTex, tileSpriteUV) * inside;
