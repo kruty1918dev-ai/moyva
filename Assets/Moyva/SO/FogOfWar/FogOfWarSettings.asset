@@ -23,5 +23,36 @@ MonoBehaviour:
   MaxDownhillVisionBonus: 2
   MaxUphillVisionPenalty: 4
   OcclusionSlopeBias: 0.03
-  UnexploredColor: {r: 0, g: 0, b: 0, a: 1}
-  ExploredColor: {r: 0, g: 0, b: 0, a: 0.4627451}
+  UnexploredColor: {r: 1, g: 1, b: 1, a: 1}
+  ExploredColor: {r: 1, g: 1, b: 1, a: 0.4627451}
+  FogTileSprite: {fileID: 1254302609, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
+  FogTileTiling: 1
+  UseBitmaskAutotiling: 1
+  FogBitmaskSprites:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  FogIconSprites:
+  - {fileID: 1304278523823668175, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
+  - {fileID: -1955975525111214421, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
+  - {fileID: 716254519558751959, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
+  - {fileID: 6564136638424821856, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
+  FogIconGridSize: {x: 50, y: 50}
+  FogIconScale: 1
+  CenterIcon: 1
+  UnexploredAlpha: 1
+  ExploredAlpha: 0.5
+  FullyTransparentWhenVisible: 1

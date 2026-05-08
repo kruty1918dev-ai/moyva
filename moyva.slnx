@@ -49,13 +49,13 @@
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
   <Project Path="Kruty1918.Moyva.WorldCreation.API.csproj" />
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
+  <Project Path="Kruty1918.Moyva.FogOfWar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
   <Project Path="Kruty1918.Moyva.Bootstrap.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.GameMode.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Units.Editor.csproj" />
-  <Project Path="Kruty1918.Moyva.FogOfWar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementPlayMode.csproj" />
   <Project Path="Kruty1918.Moyva.GraphSystem.Editor.csproj" />
