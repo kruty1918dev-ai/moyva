@@ -58,7 +58,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
             // Якщо є збереження — не робимо bootstrap
-            if (SavePlayModeOptions.AutoLoadEnabled && _saveService.HasSave(0))
+            int slot = GameLaunchContext.SaveSlot;
+            if (GameLaunchContext.IsAutoLoadEnabled() && _saveService.HasSave(slot))
                 return;
 
             if (!CanRunBootstrapLogic())
