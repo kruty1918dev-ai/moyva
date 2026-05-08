@@ -40,7 +40,6 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Min(0.1f)] public float FogIconScale = 0.5f;
         public int FogIconSeed = 1918;
         [Range(0f, 1f)] public float FogIconDensity = 0.85f;
-        [Range(0f, 0.45f)] public float FogIconJitter = 0.25f;
 
         // ─── Transparency ─────────────────────────────────────────────────────
         [Range(0f, 1f)] public float UnexploredAlpha = 1f;

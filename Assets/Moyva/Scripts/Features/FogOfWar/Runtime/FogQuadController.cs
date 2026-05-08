@@ -115,7 +115,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _mat.SetFloat("_FogIconScale", _settings.FogIconScale);
             _mat.SetFloat("_FogIconSeed", _settings.FogIconSeed);
             _mat.SetFloat("_FogIconDensity", Mathf.Clamp01(_settings.FogIconDensity));
-            _mat.SetFloat("_FogIconJitter", Mathf.Clamp(_settings.FogIconJitter, 0f, 0.45f));
             _mat.SetVector("_FogIconGridSize", new Vector4(
                 Mathf.Max(1, _settings.FogIconGridSize.x),
                 Mathf.Max(1, _settings.FogIconGridSize.y),

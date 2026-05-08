@@ -18,7 +18,6 @@ Shader "Moyva/FogOfWar"
         _FogIconScale            ("Fog Icon Scale", Float)             = 0.5
         _FogIconSeed             ("Fog Icon Seed", Float)              = 1918
         _FogIconDensity          ("Fog Icon Density", Range(0, 1))     = 0.85
-        _FogIconJitter           ("Fog Icon Jitter", Range(0, 0.45))   = 0.25
         _FogIconIntensity        ("Icon Blend Intensity", Float)       = 0.5
         _FogIconGridSize         ("Icon Grid Size XY", Vector)         = (10, 10, 0, 0)
         _UnexploredAlpha         ("Unexplored Alpha", Range(0, 1))    = 1.0
@@ -82,7 +81,6 @@ Shader "Moyva/FogOfWar"
                 float _FogIconScale;
                 float _FogIconSeed;
                 float _FogIconDensity;
-                float _FogIconJitter;
                 float _FogIconIntensity;
                 float _FogIconRectCount;
                 float _UseFogBitmask;
@@ -177,16 +175,19 @@ Shader "Moyva/FogOfWar"
                 float iconRectCount = max(1.0, _FogIconRectCount);
                 float2 seededIconCoord = iconGridCoord + _FogIconSeed.xx;
                 float2 iconRand = Hash22(seededIconCoord);
-                float iconPresence = step(iconRand.x, saturate(_FogIconDensity));
-                float iconIndexF = floor(Hash12(seededIconCoord + 17.17) * iconRectCount);
+                float iconWave = 0.5 + 0.5 * sin(dot(iconGridCoord, float2(0.73, 1.37)) + _FogIconSeed * 0.071);
+                float iconSignal = frac(iconRand.x * 0.65 + iconWave * 0.35);
+                float iconPresence = step(iconSignal, saturate(_FogIconDensity));
+                float iconIndexPattern = iconGridCoord.x * 3.0 + iconGridCoord.y * 5.0 + floor(iconWave * 7.0) + _FogIconSeed;
+                float iconIndexF = fmod(iconIndexPattern, iconRectCount);
                 int iconIndex = (int)iconIndexF;
                 iconIndex = clamp(iconIndex, 0, 63);
                 float4 iconUvRect = _FogIconUVRects[iconIndex];
                 if (iconUvRect.z <= 0.0001 || iconUvRect.w <= 0.0001)
                     iconUvRect = _FogIconUVRect;
                 
-                // Deterministic jitter keeps placement natural but stable for a given seed.
-                float2 iconCenter = 0.5.xx + (iconRand.yx - 0.5.xx) * (_FogIconJitter * 2.0);
+                // Icons stay on the grid; only visibility and variant selection are patterned.
+                float2 iconCenter = 0.5.xx;
                 float2 iconUVInSprite = (iconCellFrac - iconCenter) / max(0.001, _FogIconScale) + 0.5.xx;
                 float iconInside = step(0.0, iconUVInSprite.x) * step(iconUVInSprite.x, 1.0) *
                                    step(0.0, iconUVInSprite.y) * step(iconUVInSprite.y, 1.0);
