@@ -14,5 +14,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         /// <summary>Offline / local — no real networking; used for solo play and testing.</summary>
         Offline = 2
+        ,
+        /// <summary>LAN — local network transport (Netcode for GameObjects or UDP).</summary>
+        Lan = 3
     }
 }

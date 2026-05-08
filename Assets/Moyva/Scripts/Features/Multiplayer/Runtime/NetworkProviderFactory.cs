@@ -36,6 +36,21 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             return new FallbackNetworkProvider(primary, fallback, logger);
         }
 
+        /// <summary>
+        /// Create a provider (or a provider+fallback) for the specified <paramref name="type"/>.
+        /// This is a runtime helper for switchable wrappers.
+        /// </summary>
+        public static INetworkProvider CreateByType(NetworkProviderType type, MultiplayerConfig config, IMultiplayerLogger logger)
+        {
+            var primary = CreateSingle(type, config, logger);
+
+            if (type == NetworkProviderType.Offline || type == config.FallbackProviderType)
+                return primary;
+
+            var fallback = CreateSingle(config.FallbackProviderType, config, logger);
+            return new FallbackNetworkProvider(primary, fallback, logger);
+        }
+
         // ── Internal ───────────────────────────────────────────────────────────────
 
         private static INetworkProvider CreateSingle(
@@ -47,6 +62,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             {
                 NetworkProviderType.Relay     => new RelayNetworkProvider(config.RelaySettings, logger),
                 NetworkProviderType.WebSocket => new WebSocketNetworkProvider(config.WebSocketSettings, logger),
+                NetworkProviderType.Lan      => new LanNetworkProvider(config, logger),
                 _                             => new OfflineNetworkProvider()
             };
         }

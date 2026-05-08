@@ -11,7 +11,8 @@
         "Kruty1918.Moyva.Units",
         "Kruty1918.Moyva.Construction",
         "Kruty1918.Moyva.Multiplayer",
-        "Kruty1918.Moyva.Pathfinding"
+        "Kruty1918.Moyva.Pathfinding",
+        "Kruty1918.Moyva.Shared"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

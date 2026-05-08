@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
 using Kruty1918.Moyva.Multiplayer.Runtime;
@@ -280,6 +281,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             var participantPolicy = new ParticipantPolicyService(logger, snapshotStore);
             var manager = new SessionManager(
                 network,
+                new OfflineLobbyService(logger),
                 participantPolicy,
                 new WorldConsistencyService(logger),
                 snapshotStore,

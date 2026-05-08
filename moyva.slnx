@@ -1,6 +1,7 @@
 ﻿<Solution>
   <Project Path="Zenject.csproj" />
   <Project Path="Zenject-IntegrationTests-Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.HomeMenu.csproj" />
   <Project Path="Kruty1918.Moyva.Animations.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
@@ -29,6 +30,7 @@
   <Project Path="Kruty1918.Moyva.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Multiplayer.csproj" />
+  <Project Path="Kruty1918.Moyva.Shared.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
   <Project Path="Kruty1918.Moyva.BotAI.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
@@ -51,6 +53,7 @@
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
   <Project Path="Kruty1918.Moyva.WorldCreation.API.csproj" />
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
+  <Project Path="Kruty1918.Moyva.HomeMenu.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.FogOfWar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
@@ -67,6 +70,7 @@
   <Project Path="Kruty1918.Moyva.Tests.WorldCreation.csproj" />
   <Project Path="Kruty1918.Moyva.SaveSystem.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.UI.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.HomeMenu.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementIntegration.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Signals.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Grid.csproj" />
