@@ -8,7 +8,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     [RequireComponent(typeof(MeshRenderer))]
     public class FogQuadController : MonoBehaviour
     {
-        private const int MaxIconRects = 64;
         private const int FogOverlaySortingOrder = short.MaxValue;
         private const int FogOverlayRenderQueue = 4000; // Overlay queue
 
@@ -59,7 +58,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _mat.SetColor("_UnexploredColor", _settings.UnexploredColor);
             _mat.SetColor("_ExploredColor",   _settings.ExploredColor);
 
-            _mat.SetVector("_FogTileUVRect", Vector4.zero);
+            _mat.SetVector("_FogTileUVRect", new Vector4(0f, 0f, 1f, 1f));
 
             // Fog tile texture (tiled across fog overlay)
             if (_settings.FogTileSprite != null)
@@ -68,47 +67,46 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 if (tileTexture != null)
                 {
                     _mat.SetTexture("_FogTileTex", tileTexture);
-                    _mat.SetVector("_FogTileUVRect", BuildSpriteUvRect(_settings.FogTileSprite, tileTexture));
+                    _mat.SetVector("_FogTileUVRect", BuildSpriteUvRect(
+                        _settings.FogTileSprite,
+                        tileTexture,
+                        _settings.FogTileSpritePixelSize));
                 }
             }
 
-            _mat.SetVector("_FogIconUVRect", Vector4.zero);
-            _mat.SetFloat("_FogIconRectCount", 0f);
-            _mat.SetVectorArray("_FogIconUVRects", BuildDefaultRectArray(MaxIconRects, Vector4.zero));
+            _mat.SetVector("_FogIconUVRect", new Vector4(0f, 0f, 1f, 1f));
+            _mat.SetFloat("_UseFogIcons", 0f);
 
             // Fog icon texture (sample exact sprite rect from atlas)
             if (_settings.FogIconSprites != null && _settings.FogIconSprites.Length > 0)
             {
-                Texture2D iconTexture = FindFirstSpriteTexture(_settings.FogIconSprites, MaxIconRects);
+                // Use first sprite as source icon and pass its UV rect explicitly.
+                Sprite iconSprite = _settings.FogIconSprites[0];
+                Texture2D iconTexture = iconSprite != null ? iconSprite.texture : null;
                 if (iconTexture != null)
                 {
                     _mat.SetTexture("_FogIconTex", iconTexture);
-
-                    var uvRects = new System.Collections.Generic.List<Vector4>(MaxIconRects);
-
-                    for (int i = 0; i < _settings.FogIconSprites.Length && uvRects.Count < MaxIconRects; i++)
-                    {
-                        Sprite sprite = _settings.FogIconSprites[i];
-                        if (sprite == null || sprite.texture != iconTexture)
-                            continue;
-
-                        uvRects.Add(BuildSpriteUvRect(sprite, iconTexture));
-                    }
-
-                    if (uvRects.Count > 0)
-                    {
-                        _mat.SetVector("_FogIconUVRect", uvRects[0]);
-                        _mat.SetVectorArray("_FogIconUVRects", uvRects);
-                        _mat.SetFloat("_FogIconRectCount", uvRects.Count);
-                    }
+                    _mat.SetVector("_FogIconUVRect", BuildSpriteUvRect(
+                        iconSprite,
+                        iconTexture,
+                        _settings.FogIconSpritePixelSize));
+                    _mat.SetFloat("_UseFogIcons", 1f);
                 }
+                
+                // Determine grid size from icon count
+                // Assume square grid: iconCount = gridSize^2
+                int iconCount = _settings.FogIconSprites.Length;
+                int gridSize = Mathf.CeilToInt(Mathf.Sqrt(iconCount));
+                _mat.SetFloat("_IconGridSize", gridSize);
+            }
+            else
+            {
+                _mat.SetFloat("_IconGridSize", 1f);
             }
 
             // Tiling and scaling parameters
             _mat.SetFloat("_FogTileTiling", _settings.FogTileTiling);
             _mat.SetFloat("_FogIconScale", _settings.FogIconScale);
-            _mat.SetFloat("_FogIconSeed", _settings.FogIconSeed);
-            _mat.SetFloat("_FogIconDensity", Mathf.Clamp01(_settings.FogIconDensity));
             _mat.SetVector("_FogIconGridSize", new Vector4(
                 Mathf.Max(1, _settings.FogIconGridSize.x),
                 Mathf.Max(1, _settings.FogIconGridSize.y),
@@ -123,43 +121,22 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _mat.SetFloat("_FogIconIntensity", 0.6f);
         }
 
-        private static Texture2D FindFirstSpriteTexture(Sprite[] sprites, int maxCount)
-        {
-            if (sprites == null)
-                return null;
-
-            for (int i = 0; i < sprites.Length && i < maxCount; i++)
-            {
-                Sprite sprite = sprites[i];
-                if (sprite != null && sprite.texture != null)
-                    return sprite.texture;
-            }
-
-            return null;
-        }
-
-        private static Vector4 BuildSpriteUvRect(Sprite sprite, Texture2D texture)
+        private static Vector4 BuildSpriteUvRect(Sprite sprite, Texture2D texture, Vector2Int pixelSize)
         {
             if (sprite == null || texture == null)
-                return Vector4.zero;
+                return new Vector4(0f, 0f, 1f, 1f);
 
             Rect textureRect = sprite.textureRect;
+            float width = Mathf.Clamp(Mathf.Max(1, pixelSize.x), 1f, texture.width - textureRect.x);
+            float height = Mathf.Clamp(Mathf.Max(1, pixelSize.y), 1f, texture.height - textureRect.y);
             float invW = 1f / texture.width;
             float invH = 1f / texture.height;
 
             return new Vector4(
                 textureRect.x * invW,
                 textureRect.y * invH,
-                textureRect.width * invW,
-                textureRect.height * invH);
-        }
-
-        private static Vector4[] BuildDefaultRectArray(int count, Vector4 value)
-        {
-            var result = new Vector4[count];
-            for (int i = 0; i < count; i++)
-                result[i] = value;
-            return result;
+                width * invW,
+                height * invH);
         }
 
         private void ApplyOverlayRenderPriority(Renderer renderer)

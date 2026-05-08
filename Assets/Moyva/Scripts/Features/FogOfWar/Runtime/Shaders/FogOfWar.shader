@@ -7,14 +7,12 @@ Shader "Moyva/FogOfWar"
         _FogIconTex              ("Fog Icon Texture", 2D)              = "white" {}
         _FogTileUVRect           ("Fog Tile UV Rect", Vector)          = (0, 0, 1, 1)
         _FogIconUVRect           ("Fog Icon UV Rect", Vector)          = (0, 0, 1, 1)
-        _FogIconRectCount        ("Fog Icon Rect Count", Float)        = 1
         _UnexploredColor         ("Unexplored Color", Color)           = (0, 0, 0, 1)
         _ExploredColor           ("Explored Color",   Color)           = (0, 0, 0, 0.5)
         _FogTileTiling           ("Fog Tile Tiling", Float)            = 1.0
         _FogIconScale            ("Fog Icon Scale", Float)             = 0.5
-        _FogIconSeed             ("Fog Icon Seed", Float)              = 1918
-        _FogIconDensity          ("Fog Icon Density", Range(0, 1))     = 0.85
         _FogIconIntensity        ("Icon Blend Intensity", Float)       = 0.5
+        _UseFogIcons             ("Use Fog Icons", Float)              = 0
         _FogIconGridSize         ("Icon Grid Size XY", Vector)         = (10, 10, 0, 0)
         _UnexploredAlpha         ("Unexplored Alpha", Range(0, 1))    = 1.0
         _ExploredAlpha           ("Explored Alpha", Range(0, 1))      = 0.5
@@ -53,7 +51,6 @@ Shader "Moyva/FogOfWar"
             SAMPLER(sampler_FogTileTex);
             TEXTURE2D(_FogIconTex);
             SAMPLER(sampler_FogIconTex);
-            float4 _FogIconUVRects[64];
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _FogTex_ST;
@@ -67,10 +64,8 @@ Shader "Moyva/FogOfWar"
                 float4 _ExploredColor;
                 float _FogTileTiling;
                 float _FogIconScale;
-                float _FogIconSeed;
-                float _FogIconDensity;
                 float _FogIconIntensity;
-                float _FogIconRectCount;
+                float _UseFogIcons;
                 float _UnexploredAlpha;
                 float _ExploredAlpha;
                 float _UseIconAtlas;
@@ -99,13 +94,6 @@ Shader "Moyva/FogOfWar"
                 return OUT;
             }
 
-            float2 Hash22(float2 p)
-            {
-                float3 p3 = frac(float3(p.xyx) * float3(0.1031, 0.1030, 0.0973));
-                p3 += dot(p3, p3.yzx + 33.33);
-                return frac((p3.xx + p3.yz) * p3.zy);
-            }
-
             half4 frag(Varyings IN) : SV_Target
             {
                 // Sample fog visibility: 0 = unexplored, ~0.5 = explored, 1.0 = visible
@@ -119,6 +107,7 @@ Shader "Moyva/FogOfWar"
                 // ─── Build fog-cell coordinates from fog texture resolution ─────
                 // _FogTex_TexelSize.xy = (1/width, 1/height), so inverse gives grid size.
                 float2 fogGridSize = max(1.0.xx, rcp(_FogTex_TexelSize.xy));
+                float2 cellCoord = floor(IN.uv * fogGridSize);
                 float2 cellFrac = frac(IN.uv * fogGridSize);
 
                 // ─── Sample tile texture once per fog cell ───────────────────────
@@ -129,50 +118,30 @@ Shader "Moyva/FogOfWar"
 
                 // ─── Sample icon texture with independent icon grid ─────────────
                 float2 iconGridSize = max(1.0.xx, _FogIconGridSize.xy);
-                float2 iconGridCoord = floor(IN.uv * iconGridSize);
-                float2 iconGridMax = max(0.0.xx, iconGridSize - 1.0.xx);
-                iconGridCoord = clamp(iconGridCoord, 0.0.xx, iconGridMax);
                 float2 iconCellFrac = frac(IN.uv * iconGridSize);
-
-                float hasIconRects = step(0.5, _FogIconRectCount);
-                float iconRectCount = max(1.0, _FogIconRectCount);
-                float2 seededIconCoord = iconGridCoord + _FogIconSeed.xx;
-                float2 iconRand = Hash22(seededIconCoord);
-                float iconWave = 0.5 + 0.5 * sin(dot(iconGridCoord, float2(0.73, 1.37)) + _FogIconSeed * 0.071);
-                float iconSignal = frac(iconRand.x * 0.65 + iconWave * 0.35);
-                float iconPresence = step(iconSignal, saturate(_FogIconDensity));
-                float iconIndexPattern = iconGridCoord.x * 3.0 + iconGridCoord.y * 5.0 + floor(iconWave * 7.0) + _FogIconSeed;
-                float iconIndexF = fmod(iconIndexPattern, iconRectCount);
-                int iconIndex = (int)iconIndexF;
-                iconIndex = clamp(iconIndex, 0, 63);
-                float4 iconUvRect = _FogIconUVRects[iconIndex];
-                if (iconUvRect.z <= 0.0001 || iconUvRect.w <= 0.0001)
-                    iconUvRect = _FogIconUVRect;
                 
-                // Icons stay on the grid; only visibility and variant selection are patterned.
-                float2 iconCenter = 0.5.xx;
-                float2 iconUVInSprite = (iconCellFrac - iconCenter) / max(0.001, _FogIconScale) + 0.5.xx;
-                float iconInside = step(0.0, iconUVInSprite.x) * step(iconUVInSprite.x, 1.0) *
-                                   step(0.0, iconUVInSprite.y) * step(iconUVInSprite.y, 1.0);
-                iconUVInSprite = saturate(iconUVInSprite);
+                // Scale cell fractional to icon size and center within icon cell
+                float2 iconUVInSprite = iconCellFrac * _FogIconScale;
+                iconUVInSprite += float2(0.5 - _FogIconScale * 0.5, 0.5 - _FogIconScale * 0.5);
 
                 // Sample exact sprite rect from atlas texture
-                float2 iconUV = iconUvRect.xy + iconUVInSprite * iconUvRect.zw;
+                float2 iconUV = _FogIconUVRect.xy + iconUVInSprite * _FogIconUVRect.zw;
                 
                 half4 iconSample = SAMPLE_TEXTURE2D(_FogIconTex, sampler_FogIconTex, iconUV);
-                iconSample *= iconInside * iconPresence;
+                iconSample *= step(0.5, _UseFogIcons);
 
                 // ─── Blend tile and icon ──────────────────────────────────────
                 half4 tileCol = tileSample;
-                half4 blended = lerp(tileCol, iconSample, iconSample.a * _FogIconIntensity * hasIconRects);
+                half4 blended = lerp(tileCol, iconSample, iconSample.a * _FogIconIntensity);
 
-                // ─── Apply fog state tint ───────────────────────────────────
-                // White tint keeps the sprite color unchanged; other colors tint it.
+                // ─── Apply fog state coloring ────────────────────────────────
                 half4 finalCol;
+                finalCol.rgb = _UnexploredColor.rgb * isUnexplored + _ExploredColor.rgb * isExplored;
                 float fogStateWeight = (isExplored + isUnexplored);
-                float3 fogTint = _UnexploredColor.rgb * isUnexplored + _ExploredColor.rgb * isExplored;
                 float patternAlpha = saturate(blended.a);
-                finalCol.rgb = blended.rgb * lerp(1.0.xxx, fogTint, fogStateWeight);
+                
+                // Blend with tile texture when not visible
+                finalCol.rgb = lerp(finalCol.rgb, blended.rgb, fogStateWeight * patternAlpha);
 
                 // ─── Apply transparency based on fog state ────────────────────
                 finalCol.a = _UnexploredAlpha * isUnexplored + _ExploredAlpha * isExplored;
