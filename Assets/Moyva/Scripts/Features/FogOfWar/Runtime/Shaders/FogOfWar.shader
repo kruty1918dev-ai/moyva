@@ -16,6 +16,9 @@ Shader "Moyva/FogOfWar"
         _ExploredColor           ("Explored Color",   Color)           = (0, 0, 0, 0.5)
         _FogTileTiling           ("Fog Tile Tiling", Float)            = 1.0
         _FogIconScale            ("Fog Icon Scale", Float)             = 0.5
+        _FogIconSeed             ("Fog Icon Seed", Float)              = 1918
+        _FogIconDensity          ("Fog Icon Density", Range(0, 1))     = 0.85
+        _FogIconJitter           ("Fog Icon Jitter", Range(0, 0.45))   = 0.25
         _FogIconIntensity        ("Icon Blend Intensity", Float)       = 0.5
         _FogIconGridSize         ("Icon Grid Size XY", Vector)         = (10, 10, 0, 0)
         _UnexploredAlpha         ("Unexplored Alpha", Range(0, 1))    = 1.0
@@ -77,6 +80,9 @@ Shader "Moyva/FogOfWar"
                 float4 _ExploredColor;
                 float _FogTileTiling;
                 float _FogIconScale;
+                float _FogIconSeed;
+                float _FogIconDensity;
+                float _FogIconJitter;
                 float _FogIconIntensity;
                 float _FogIconRectCount;
                 float _UseFogBitmask;
@@ -106,6 +112,20 @@ Shader "Moyva/FogOfWar"
                 OUT.uv = TRANSFORM_TEX(IN.uv, _FogTex);
                 OUT.screenPos = ComputeScreenPos(OUT.positionHCS);
                 return OUT;
+            }
+
+            float Hash12(float2 p)
+            {
+                float3 p3 = frac(float3(p.xyx) * 0.1031);
+                p3 += dot(p3, p3.yzx + 33.33);
+                return frac((p3.x + p3.y) * p3.z);
+            }
+
+            float2 Hash22(float2 p)
+            {
+                float3 p3 = frac(float3(p.xyx) * float3(0.1031, 0.1030, 0.0973));
+                p3 += dot(p3, p3.yzx + 33.33);
+                return frac((p3.xx + p3.yz) * p3.zy);
             }
 
             half4 frag(Varyings IN) : SV_Target
@@ -153,26 +173,30 @@ Shader "Moyva/FogOfWar"
                 iconGridCoord = clamp(iconGridCoord, 0.0.xx, iconGridMax);
                 float2 iconCellFrac = frac(IN.uv * iconGridSize);
 
-                // Pick icon rect sequentially with mirror symmetry across X/Y axes.
-                float2 symCoord = min(iconGridCoord, iconGridMax - iconGridCoord);
-                float symWidth = floor((iconGridSize.x + 1.0) * 0.5);
                 float hasIconRects = step(0.5, _FogIconRectCount);
                 float iconRectCount = max(1.0, _FogIconRectCount);
-                float iconIndexF = fmod(symCoord.x + symCoord.y * symWidth, iconRectCount);
+                float2 seededIconCoord = iconGridCoord + _FogIconSeed.xx;
+                float2 iconRand = Hash22(seededIconCoord);
+                float iconPresence = step(iconRand.x, saturate(_FogIconDensity));
+                float iconIndexF = floor(Hash12(seededIconCoord + 17.17) * iconRectCount);
                 int iconIndex = (int)iconIndexF;
                 iconIndex = clamp(iconIndex, 0, 63);
                 float4 iconUvRect = _FogIconUVRects[iconIndex];
                 if (iconUvRect.z <= 0.0001 || iconUvRect.w <= 0.0001)
                     iconUvRect = _FogIconUVRect;
                 
-                // Scale cell fractional to icon size and center within icon cell
-                float2 iconUVInSprite = iconCellFrac * _FogIconScale;
-                iconUVInSprite += float2(0.5 - _FogIconScale * 0.5, 0.5 - _FogIconScale * 0.5);
+                // Deterministic jitter keeps placement natural but stable for a given seed.
+                float2 iconCenter = 0.5.xx + (iconRand.yx - 0.5.xx) * (_FogIconJitter * 2.0);
+                float2 iconUVInSprite = (iconCellFrac - iconCenter) / max(0.001, _FogIconScale) + 0.5.xx;
+                float iconInside = step(0.0, iconUVInSprite.x) * step(iconUVInSprite.x, 1.0) *
+                                   step(0.0, iconUVInSprite.y) * step(iconUVInSprite.y, 1.0);
+                iconUVInSprite = saturate(iconUVInSprite);
 
                 // Sample exact sprite rect from atlas texture
                 float2 iconUV = iconUvRect.xy + iconUVInSprite * iconUvRect.zw;
                 
                 half4 iconSample = SAMPLE_TEXTURE2D(_FogIconTex, sampler_FogIconTex, iconUV);
+                iconSample *= iconInside * iconPresence;
 
                 // ─── Blend tile and icon ──────────────────────────────────────
                 half4 tileCol = tileSample;

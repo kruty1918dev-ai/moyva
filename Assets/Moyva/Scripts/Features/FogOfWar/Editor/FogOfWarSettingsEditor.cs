@@ -41,6 +41,9 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private SerializedProperty _fogIconSpritesProp;
         private SerializedProperty _fogIconGridSizeProp;
         private SerializedProperty _fogIconScaleProp;
+        private SerializedProperty _fogIconSeedProp;
+        private SerializedProperty _fogIconDensityProp;
+        private SerializedProperty _fogIconJitterProp;
 
         private bool _visionFoldout = true;
         private bool _heightFoldout;
@@ -76,6 +79,9 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             _fogIconSpritesProp         = serializedObject.FindProperty("FogIconSprites");
             _fogIconGridSizeProp        = serializedObject.FindProperty("FogIconGridSize");
             _fogIconScaleProp           = serializedObject.FindProperty("FogIconScale");
+            _fogIconSeedProp            = serializedObject.FindProperty("FogIconSeed");
+            _fogIconDensityProp         = serializedObject.FindProperty("FogIconDensity");
+            _fogIconJitterProp          = serializedObject.FindProperty("FogIconJitter");
         }
 
         public override void OnInspectorGUI()
@@ -433,9 +439,15 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
 
                 EditorGUILayout.Space(6);
                 EditorGUILayout.PropertyField(_fogIconGridSizeProp,
-                    new GUIContent("Сітка іконок", "Незалежна сітка розміщення іконок по всій мапі"));
+                    new GUIContent("Сітка іконок", "Незалежна сітка розміщення іконок по всій мапі. Більша сітка = частіше можуть з'являтися іконки"));
                 EditorGUILayout.PropertyField(_fogIconScaleProp,
                     new GUIContent("Масштаб", "Розмір іконки відносно клітинки туману"));
+                EditorGUILayout.PropertyField(_fogIconSeedProp,
+                    new GUIContent("Seed розкладання", "Число, яке задає стабільний псевдовипадковий візерунок. Однаковий seed = однакова розкладка"));
+                EditorGUILayout.PropertyField(_fogIconDensityProp,
+                    new GUIContent("Щільність", "Ймовірність появи іконки в комірці сітки. 1 = кожна комірка, 0 = іконки вимкнені"));
+                EditorGUILayout.PropertyField(_fogIconJitterProp,
+                    new GUIContent("Зміщення", "Наскільки далеко іконка може відхилятися від центру своєї комірки. Значення стабільне, не змінюється між кадрами"));
 
                 DrawIconValidation();
                 EditorGUILayout.EndVertical();
