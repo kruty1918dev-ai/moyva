@@ -242,7 +242,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 DrawSpritePixelSizeValidation(_fogTileSpriteProp, _fogTileSpritePixelSizeProp, "тайлу");
 
                 EditorGUILayout.PropertyField(_fogTileSizeInCellsProp,
-                    new GUIContent("Розмір тайла", "Візуальний розмір одного спрайт-тайла у клітинках мапи. 1x1 = один спрайт на клітинку, 2x2 = спрайт у два рази більший без збільшення мапи"));
+                    new GUIContent("Розмір тайла", "Візуальний footprint одного спрайт-тайла у клітинках мапи. Сітка туману не змінюється: кожна клітинка все одно малює свій спрайт, але значення більше 1 дозволяють йому перекривати сусідів"));
                 DrawTileSizeInCellsValidation();
 
                 if (_fogTileSpriteProp.objectReferenceValue == null)
@@ -399,6 +399,13 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             {
                 EditorGUILayout.HelpBox(
                     "Розмір тайла у клітинках має бути більшим за 0 по X/Y. Значення буде затиснуто в runtime.",
+                    MessageType.Warning);
+            }
+
+            if (size.x > 9f || size.y > 9f)
+            {
+                EditorGUILayout.HelpBox(
+                    "Shader композитить перекриття з найближчих клітинок. Значення понад 9 клітинок можуть обрізати далекі краї спрайта.",
                     MessageType.Warning);
             }
         }

@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.FogOfWar.API
         public Sprite FogTileSprite;
         [Tooltip("Sprite sample size in pixels, measured from the sprite rect origin inside the texture atlas.")]
         public Vector2Int FogTileSpritePixelSize = new Vector2Int(16, 16);
-        [Tooltip("Visual size of one fog sprite tile in map cells. 1x1 = one sprite per cell, 2x2 = one sprite covers two cells without scaling the map.")]
+        [Tooltip("Visual footprint of one fog sprite tile in map cells. The fog grid does not change: every map cell still draws one sprite, but values above 1 let that sprite overlap neighboring cells.")]
         public Vector2 FogTileSizeInCells = Vector2.one;
         [Tooltip("Scale for tiling the fog cell texture. Higher = more tiles per cell")]
         [Min(1f)] public float FogTileTiling = 1f;

@@ -98,29 +98,63 @@ Shader "Moyva/FogOfWar"
                 return OUT;
             }
 
-            half4 frag(Varyings IN) : SV_Target
+            float4 BuildFogState(float fogVal)
             {
-                // Sample fog visibility: 0 = unexplored, ~0.5 = explored, 1.0 = visible
-                float fogVal = SAMPLE_TEXTURE2D(_FogTex, sampler_FogTex, IN.uv).r;
-
-                // Determine fog state
                 float isVisible = step(0.9, fogVal);
                 float isExplored = step(0.3, fogVal) * (1.0 - isVisible);
                 float isUnexplored = 1.0 - step(0.3, fogVal);
+                return float4(isVisible, isExplored, isUnexplored, isExplored + isUnexplored);
+            }
 
-                // ─── Build fog-cell coordinates from fog texture resolution ─────
-                // _FogTex_TexelSize.xy = (1/width, 1/height), so inverse gives grid size.
+            half4 TintTileByFog(half4 tileSample, float4 fogState)
+            {
+                float3 fogTint = _UnexploredColor.rgb * fogState.z + _ExploredColor.rgb * fogState.y;
+                float tintWeight = fogState.w;
+                float3 tintedRgb = lerp(tileSample.rgb, tileSample.rgb * fogTint, tintWeight);
+                float alpha = (_UnexploredAlpha * fogState.z + _ExploredAlpha * fogState.y) * tileSample.a;
+                alpha *= (1.0 - fogState.x);
+                return half4(tintedRgb, alpha);
+            }
+
+            half4 BlendOver(half4 bottom, half4 top)
+            {
+                half outAlpha = top.a + bottom.a * (1.0 - top.a);
+                half3 outRgb = top.rgb * top.a + bottom.rgb * bottom.a * (1.0 - top.a);
+                outRgb = outAlpha > 0.0001 ? outRgb / outAlpha : half3(0.0, 0.0, 0.0);
+                return half4(outRgb, outAlpha);
+            }
+
+            half4 frag(Varyings IN) : SV_Target
+            {
                 float2 fogGridSize = max(1.0.xx, rcp(_FogTex_TexelSize.xy));
                 float2 fogCoord = IN.uv * fogGridSize;
-
-                // ─── Sample tile texture once per fog cell ───────────────────────
-                // FogTileSizeInCells controls visual sprite size without scaling the map.
-                float2 tileCoord = fogCoord / max(0.001.xx, _FogTileSizeInCells.xy);
-                float2 tiledUV = frac(tileCoord * _FogTileTiling);
+                float2 baseCell = floor(fogCoord);
+                float2 tileSize = max(0.001.xx, _FogTileSizeInCells.xy);
                 float2 tileHalfTexel = 0.5 / max(1.0.xx, _FogTileSpritePixelSize.xy);
-                tiledUV = lerp(tileHalfTexel, 1.0.xx - tileHalfTexel, tiledUV);
-                float2 tileSpriteUV = _FogTileUVRect.xy + tiledUV * _FogTileUVRect.zw;
-                half4 tileSample = SAMPLE_TEXTURE2D(_FogTileTex, sampler_FogTileTex, tileSpriteUV);
+                half4 blended = half4(0.0, 0.0, 0.0, 0.0);
+
+                for (int y = -4; y <= 4; y++)
+                {
+                    for (int x = -4; x <= 4; x++)
+                    {
+                        float2 cell = baseCell + float2(x, y);
+                        float inBounds = step(0.0, cell.x) * step(0.0, cell.y) *
+                                         step(cell.x, fogGridSize.x - 1.0) * step(cell.y, fogGridSize.y - 1.0);
+
+                        float2 spriteUVInCells = (fogCoord - (cell + 0.5.xx)) / tileSize + 0.5.xx;
+                        float inside = step(0.0, spriteUVInCells.x) * step(spriteUVInCells.x, 1.0) *
+                                       step(0.0, spriteUVInCells.y) * step(spriteUVInCells.y, 1.0) * inBounds;
+
+                        float2 tiledUV = frac(spriteUVInCells * _FogTileTiling);
+                        tiledUV = lerp(tileHalfTexel, 1.0.xx - tileHalfTexel, tiledUV);
+                        float2 tileSpriteUV = _FogTileUVRect.xy + tiledUV * _FogTileUVRect.zw;
+                        half4 tileSample = SAMPLE_TEXTURE2D(_FogTileTex, sampler_FogTileTex, tileSpriteUV) * inside;
+
+                        float2 fogSampleUV = (cell + 0.5.xx) / fogGridSize;
+                        float4 fogState = BuildFogState(SAMPLE_TEXTURE2D(_FogTex, sampler_FogTex, fogSampleUV).r);
+                        blended = BlendOver(blended, TintTileByFog(tileSample, fogState));
+                    }
+                }
 
                 // ─── Sample icon texture with independent icon grid ─────────────
                 float2 iconGridSize = max(1.0.xx, _FogIconGridSize.xy);
@@ -135,28 +169,13 @@ Shader "Moyva/FogOfWar"
                 
                 half4 iconSample = SAMPLE_TEXTURE2D(_FogIconTex, sampler_FogIconTex, iconUV);
                 iconSample *= step(0.5, _UseFogIcons);
+                float4 currentFogState = BuildFogState(SAMPLE_TEXTURE2D(_FogTex, sampler_FogTex, IN.uv).r);
+                iconSample.a *= (_UnexploredAlpha * currentFogState.z + _ExploredAlpha * currentFogState.y) * (1.0 - currentFogState.x);
 
                 // ─── Blend tile and icon ──────────────────────────────────────
-                half4 tileCol = tileSample;
-                half4 blended = lerp(tileCol, iconSample, iconSample.a * _FogIconIntensity);
-
-                // ─── Apply fog state coloring ────────────────────────────────
-                half4 finalCol;
-                finalCol.rgb = _UnexploredColor.rgb * isUnexplored + _ExploredColor.rgb * isExplored;
-                float fogStateWeight = (isExplored + isUnexplored);
-                float patternAlpha = saturate(blended.a);
-                
-                // Blend with tile texture when not visible
-                finalCol.rgb = lerp(finalCol.rgb, blended.rgb, fogStateWeight * patternAlpha);
-
-                // ─── Apply transparency based on fog state ────────────────────
-                finalCol.a = _UnexploredAlpha * isUnexplored + _ExploredAlpha * isExplored;
-                finalCol.a *= patternAlpha;
-                
-                // Fully transparent if visible
-                finalCol.a *= (1.0 - isVisible);
-
-                return finalCol;
+                iconSample.a *= _FogIconIntensity;
+                blended = BlendOver(blended, iconSample);
+                return blended;
             }
             ENDHLSL
         }
