@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     public class FogQuadController : MonoBehaviour
     {
         private const int MaxIconRects = 64;
+        private const int MaxBitmaskRects = 16;
         private const int FogOverlaySortingOrder = short.MaxValue;
         private const int FogOverlayRenderQueue = 4000; // Overlay queue
 
@@ -60,6 +61,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _mat.SetColor("_ExploredColor",   _settings.ExploredColor);
 
                 _mat.SetVector("_FogTileUVRect", new Vector4(0f, 0f, 1f, 1f));
+                _mat.SetVector("_FogMaskUVRect", new Vector4(0f, 0f, 1f, 1f));
+                _mat.SetFloat("_UseFogBitmask", 0f);
+                _mat.SetVectorArray("_FogMaskUVRects", BuildDefaultRectArray(MaxBitmaskRects));
 
                 // Fog tile texture (tiled across fog overlay)
                 if (_settings.FogTileSprite != null)
@@ -80,6 +84,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         _mat.SetVector("_FogTileUVRect", uvRect);
                     }
                 }
+
+                ApplyBitmaskSettings();
 
             _mat.SetVector("_FogIconUVRect", new Vector4(0f, 0f, 1f, 1f));
             _mat.SetFloat("_FogIconRectCount", 1f);
@@ -136,6 +142,54 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             
             // Icon blend intensity (how much icon blends into fog)
             _mat.SetFloat("_FogIconIntensity", 0.6f);
+        }
+
+        private void ApplyBitmaskSettings()
+        {
+            if (_settings == null || !_settings.UseBitmaskAutotiling || _settings.FogBitmaskSprites == null)
+                return;
+
+            Sprite fallbackSprite = _settings.FogTileSprite;
+            Texture2D atlasTexture = fallbackSprite != null ? fallbackSprite.texture : null;
+
+            for (int i = 0; i < _settings.FogBitmaskSprites.Length && atlasTexture == null; i++)
+            {
+                Sprite sprite = _settings.FogBitmaskSprites[i];
+                if (sprite != null)
+                    atlasTexture = sprite.texture;
+            }
+
+            if (atlasTexture == null)
+                return;
+
+            _mat.SetTexture("_FogMaskTex", atlasTexture);
+
+            var rects = BuildDefaultRectArray(MaxBitmaskRects);
+            int assignedCount = Mathf.Min(_settings.FogBitmaskSprites.Length, MaxBitmaskRects);
+            float invW = 1f / atlasTexture.width;
+            float invH = 1f / atlasTexture.height;
+
+            for (int i = 0; i < assignedCount; i++)
+            {
+                Sprite sprite = _settings.FogBitmaskSprites[i];
+                if (sprite == null || sprite.texture != atlasTexture)
+                    continue;
+
+                Rect r = sprite.textureRect;
+                rects[i] = new Vector4(r.x * invW, r.y * invH, r.width * invW, r.height * invH);
+            }
+
+            _mat.SetVector("_FogMaskUVRect", rects[0]);
+            _mat.SetVectorArray("_FogMaskUVRects", rects);
+            _mat.SetFloat("_UseFogBitmask", 1f);
+        }
+
+        private static Vector4[] BuildDefaultRectArray(int count)
+        {
+            var result = new Vector4[count];
+            for (int i = 0; i < count; i++)
+                result[i] = new Vector4(0f, 0f, 1f, 1f);
+            return result;
         }
 
         private void ApplyOverlayRenderPriority(Renderer renderer)
