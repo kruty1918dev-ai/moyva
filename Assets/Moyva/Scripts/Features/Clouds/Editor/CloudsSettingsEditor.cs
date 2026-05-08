@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
         private SerializedProperty _enabledProp;
         private SerializedProperty _maxActiveCloudsProp;
         private SerializedProperty _initialCloudsProp;
+        private SerializedProperty _initialCloudsStartInViewProp;
         private SerializedProperty _spawnIntervalRangeProp;
         private SerializedProperty _cloudSpritesProp;
         private SerializedProperty _speedRangeProp;
@@ -48,6 +49,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
             _enabledProp = serializedObject.FindProperty("Enabled");
             _maxActiveCloudsProp = serializedObject.FindProperty("MaxActiveClouds");
             _initialCloudsProp = serializedObject.FindProperty("InitialClouds");
+            _initialCloudsStartInViewProp = serializedObject.FindProperty("InitialCloudsStartInView");
             _spawnIntervalRangeProp = serializedObject.FindProperty("SpawnIntervalRange");
             _cloudSpritesProp = serializedObject.FindProperty("CloudSprites");
             _speedRangeProp = serializedObject.FindProperty("SpeedRange");
@@ -103,7 +105,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
             if (_documentationFoldout)
             {
                 EditorGUILayout.HelpBox(
-                    "Система створює хмаринки за межами камери, рухає їх тільки горизонтально та плавно прибирає за протилежним краєм. " +
+                    "Система може одразу розкласти стартові хмаринки в межах камери, а наступні створює за межами камери, рухає тільки горизонтально та плавно прибирає за протилежним краєм. " +
                     "Кожна хмаринка може мати темнішу копію-тінь із вертикальним зміщенням, щоб у top-down 2D вона виглядала нижче на мапі.",
                     MessageType.None);
                 EditorGUILayout.HelpBox(
@@ -127,6 +129,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
                 EditorGUILayout.PropertyField(_enabledProp, new GUIContent("Увімкнено", "Вмикає або вимикає систему хмаринок"));
                 EditorGUILayout.PropertyField(_maxActiveCloudsProp, new GUIContent("Максимум хмаринок", "Скільки хмаринок може існувати одночасно"));
                 EditorGUILayout.PropertyField(_initialCloudsProp, new GUIContent("На старті", "Скільки хмаринок створити одразу після запуску сцени"));
+                EditorGUILayout.PropertyField(_initialCloudsStartInViewProp, new GUIContent("Одразу в кадрі", "Якщо увімкнено, стартові хмаринки одразу з'являються у видимій зоні камери"));
                 EditorGUILayout.PropertyField(_spawnIntervalRangeProp, new GUIContent("Інтервал спавну", "Діапазон часу між появою нових хмаринок у секундах"));
                 EditorGUI.indentLevel--;
             }
@@ -323,6 +326,21 @@ namespace Kruty1918.Moyva.Clouds.Editor
             if (_initialCloudsProp.intValue > _maxActiveCloudsProp.intValue)
             {
                 EditorGUILayout.HelpBox("Кількість хмаринок на старті не має перевищувати максимум активних хмаринок.", MessageType.Info);
+            }
+
+            if (_maxActiveCloudsProp.intValue <= 0)
+            {
+                EditorGUILayout.HelpBox("Максимум хмаринок дорівнює 0, тому система нічого не створить.", MessageType.Warning);
+            }
+
+            if (_initialCloudsProp.intValue <= 0)
+            {
+                EditorGUILayout.HelpBox("'На старті' дорівнює 0, тому після запуску сцени хмаринок одразу не буде.", MessageType.Info);
+            }
+
+            if (_initialCloudsProp.intValue > 0 && !_initialCloudsStartInViewProp.boolValue)
+            {
+                EditorGUILayout.HelpBox("'Одразу в кадрі' вимкнено: стартові хмаринки створяться за екраном і можуть з'явитися не одразу.", MessageType.Info);
             }
 
             Vector2 speedRange = _speedRangeProp.vector2Value;

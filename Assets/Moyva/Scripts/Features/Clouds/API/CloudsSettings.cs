@@ -15,6 +15,9 @@ namespace Kruty1918.Moyva.Clouds.API
         [Tooltip("Скільки хмаринок створити одразу після запуску системи.")]
         [Min(0)] public int InitialClouds = 3;
 
+        [Tooltip("Якщо увімкнено, стартові хмаринки одразу розкладаються у видимій зоні камери. Якщо вимкнено, вони також стартують за екраном.")]
+        public bool InitialCloudsStartInView = true;
+
         [Tooltip("Діапазон часу між спавнами у секундах.")]
         public Vector2 SpawnIntervalRange = new Vector2(1.5f, 4f);
 

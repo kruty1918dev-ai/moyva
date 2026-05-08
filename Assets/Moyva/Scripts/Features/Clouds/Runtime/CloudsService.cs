@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
         private Transform _root;
         private bool _ownsRoot;
         private float _spawnTimer;
+        private int _pendingInitialClouds;
 
         public int ActiveCloudsCount => _clouds.Count;
 
@@ -33,9 +34,8 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             _root = ResolveRoot();
             ResetSpawnTimer();
 
-            int initialCount = Mathf.Min(_settings.InitialClouds, _settings.MaxActiveClouds);
-            for (int i = 0; i < initialCount; i++)
-                SpawnCloudInternal();
+            _pendingInitialClouds = Mathf.Min(_settings.InitialClouds, _settings.MaxActiveClouds);
+            TrySpawnInitialClouds();
         }
 
         public void Tick()
@@ -49,6 +49,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             if (_camera == null)
                 _camera = UnityEngine.Camera.main;
 
+            TrySpawnInitialClouds();
             TickClouds();
             TickSpawn();
         }
@@ -70,7 +71,21 @@ namespace Kruty1918.Moyva.Clouds.Runtime
 
         public void SpawnCloud()
         {
-            SpawnCloudInternal();
+            SpawnCloudInternal(startInView: false);
+        }
+
+        private void TrySpawnInitialClouds()
+        {
+            if (_pendingInitialClouds <= 0 || _camera == null || _root == null || !HasUsableSprites())
+                return;
+
+            while (_pendingInitialClouds > 0 && _clouds.Count < _settings.MaxActiveClouds)
+            {
+                if (!SpawnCloudInternal(_settings.InitialCloudsStartInView))
+                    return;
+
+                _pendingInitialClouds--;
+            }
         }
 
         private Transform ResolveRoot()
@@ -92,7 +107,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             if (_spawnTimer > 0f)
                 return;
 
-            SpawnCloudInternal();
+            SpawnCloudInternal(startInView: false);
             ResetSpawnTimer();
         }
 
@@ -115,14 +130,14 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             }
         }
 
-        private void SpawnCloudInternal()
+        private bool SpawnCloudInternal(bool startInView)
         {
             if (_camera == null || _root == null || _clouds.Count >= _settings.MaxActiveClouds)
-                return;
+                return false;
 
             Sprite sprite = PickSprite();
             if (sprite == null)
-                return;
+                return false;
 
             CameraBounds bounds = ResolveCameraBounds();
             int direction = Random.value <= _settings.LeftToRightChance ? 1 : -1;
@@ -133,13 +148,20 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 ? bounds.MaxX + _settings.DespawnHorizontalPadding
                 : bounds.MinX - _settings.DespawnHorizontalPadding;
 
+            if (startInView)
+                spawnX = Random.Range(bounds.MinX, bounds.MaxX);
+
             float y = Random.Range(
-                bounds.MinY - _settings.SpawnVerticalPadding,
-                bounds.MaxY + _settings.SpawnVerticalPadding);
+                startInView ? bounds.MinY : bounds.MinY - _settings.SpawnVerticalPadding,
+                startInView ? bounds.MaxY : bounds.MaxY + _settings.SpawnVerticalPadding);
 
             CloudInstance cloud = CreateCloud(sprite, new Vector3(spawnX, y, 0f), direction, endX);
+            if (startInView)
+                cloud.Age = _settings.FadeDuration;
+
             _clouds.Add(cloud);
-            ApplyAlpha(cloud, 0f);
+            ApplyAlpha(cloud, startInView ? 1f : 0f);
+            return true;
         }
 
         private CloudInstance CreateCloud(Sprite sprite, Vector3 position, int direction, float endX)
