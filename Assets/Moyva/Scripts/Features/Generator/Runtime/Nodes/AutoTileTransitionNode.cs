@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
@@ -15,13 +16,27 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [Tooltip("Базові типи тайлів, для яких НЕ виконувати автоперехід. Наприклад: water, grass. Tile ID зберігається без змін.")]
         [SerializeField] private string[] _excludedTileTypes = System.Array.Empty<string>();
 
+        [Header("Flags")]
+        [Tooltip("Якщо увімкнено, автоперехід застосовується лише до клітинок із FlagMap.")]
+        [SerializeField] private bool _applyOnlyOnFlags;
+
+        [Tooltip("Список flag ID, які активують цю ноду. Якщо список порожній — підходить будь-який непорожній flag.")]
+        [SerializeField] private string[] _targetFlagIds = System.Array.Empty<string>();
+
+        [Tooltip("Якщо увімкнено, межі переходу визначаються також по FlagMap: сусід без потрібного flag вважається 'іншим'.")]
+        [SerializeField] private bool _useFlagConnectivity;
+
+        [Tooltip("Якщо увімкнено, сусід вважається сумісним лише коли має той самий flag ID.")]
+        [SerializeField] private bool _requireSameFlagId = true;
+
         public override string Title => "AutoTile Transitions";
         public override string Category => "Terrain";
 
         public override PortDefinition[] Inputs => new[]
         {
             PortDefinition.Input<string[,]>("TileMap"),
-            PortDefinition.Input<float[,]>("HeightMap")
+            PortDefinition.Input<float[,]>("HeightMap"),
+            PortDefinition.Input<string[,]>("FlagMap (optional)")
         };
 
         public override PortDefinition[] Outputs => new[]
@@ -36,6 +51,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 return NodeOutput.Error("TileMap input is required.");
 
             var heightMap = inputs[1] as float[,];
+            var flagMap = inputs.Length > 2 ? inputs[2] as string[,] : null;
+            if ((_applyOnlyOnFlags || _useFlagConnectivity) && flagMap == null)
+                return NodeOutput.Error("FlagMap input is required when flag-based mode is enabled.");
 
             var excluded = new System.Collections.Generic.HashSet<string>(
                 System.StringComparer.OrdinalIgnoreCase);
@@ -46,6 +64,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             int w = tileMap.GetLength(0);
             int h = tileMap.GetLength(1);
             var result = new string[w, h];
+            var targetFlags = FlagMapSelectionUtility.BuildFilterSet(_targetFlagIds);
+
+            if (flagMap != null && (flagMap.GetLength(0) != w || flagMap.GetLength(1) != h))
+                return NodeOutput.Error("TileMap and FlagMap must have the same size.");
 
             // Direction offsets: N, NE, E, SE, S, SW, W, NW
             int[] dx = { 0, 1, 1, 1, 0, -1, -1, -1 };
@@ -57,7 +79,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 for (int y = 0; y < h; y++)
                 {
                     string baseTile = tileMap[x, y] ?? "";
+                    bool flagSelected = FlagMapSelectionUtility.IsSelected(flagMap, x, y, targetFlags);
                     if (string.IsNullOrEmpty(baseTile))
+                    {
+                        result[x, y] = baseTile;
+                        continue;
+                    }
+
+                    if (_applyOnlyOnFlags && !flagSelected)
                     {
                         result[x, y] = baseTile;
                         continue;
@@ -91,7 +120,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                         }
 
                         string neighborTile = tileMap[nx, ny] ?? "";
-                        if (GetBaseTileType(neighborTile) != GetBaseTileType(baseTile))
+                        bool differentTileType = GetBaseTileType(neighborTile) != GetBaseTileType(baseTile);
+                        bool differentFlagConnectivity = false;
+                        if (_useFlagConnectivity && flagSelected)
+                        {
+                            differentFlagConnectivity = !FlagMapSelectionUtility.IsConnected(
+                                flagMap, x, y, nx, ny, targetFlags, _requireSameFlagId);
+                        }
+
+                        if (differentTileType || differentFlagConnectivity)
                             edgeMask |= (1 << d);
                     }
 

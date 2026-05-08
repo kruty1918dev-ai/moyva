@@ -12,13 +12,21 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [Tooltip("Набір правил сумісності тайлів, які будуть застосовані до карти під час полірування. Саме цей asset визначає, які сусідства вважаються правильними або помилковими.")]
         [SerializeField] private WFCDataSettings _wfcSettings;
 
+        [Header("Flags")]
+        [Tooltip("Якщо увімкнено, WFC-полірування застосовується лише до клітинок із FlagMap.")]
+        [SerializeField] private bool _applyOnlyOnFlags;
+
+        [Tooltip("Список flag ID, які дозволяють змінювати клітинку. Якщо список порожній — підходить будь-який непорожній flag.")]
+        [SerializeField] private string[] _targetFlagIds;
+
         public override string Title => "WFC Constraint Polish";
         public override string Category => "WFC";
 
         public override PortDefinition[] Inputs => new[]
         {
             PortDefinition.Input<string[,]>("BiomeMap"),
-            PortDefinition.Input<float[,]>("HeightMap")
+            PortDefinition.Input<float[,]>("HeightMap"),
+            PortDefinition.Input<string[,]>("FlagMap (optional)")
         };
 
         public override PortDefinition[] Outputs => new[]
@@ -30,14 +38,37 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         {
             var biomeMap = inputs[0] as string[,];
             var heightMap = inputs[1] as float[,];
+            var flagMap = inputs.Length > 2 ? inputs[2] as string[,] : null;
             if (biomeMap == null || heightMap == null)
                 return NodeOutput.Error("BiomeMap and HeightMap inputs are required.");
             if (_wfcSettings == null)
                 return NodeOutput.Error("WFCDataSettings not assigned.");
+            if (_applyOnlyOnFlags && flagMap == null)
+                return NodeOutput.Error("FlagMap input is required when flag-based mode is enabled.");
+
+            int w = biomeMap.GetLength(0);
+            int h = biomeMap.GetLength(1);
+            if (heightMap.GetLength(0) != w || heightMap.GetLength(1) != h)
+                return NodeOutput.Error("BiomeMap and HeightMap must have the same size.");
+            if (flagMap != null && (flagMap.GetLength(0) != w || flagMap.GetLength(1) != h))
+                return NodeOutput.Error("BiomeMap and FlagMap must have the same size.");
 
             var result = (string[,])biomeMap.Clone();
             var wfcService = new WFCService(_wfcSettings);
             wfcService.Apply(result, heightMap);
+
+            if (_applyOnlyOnFlags)
+            {
+                var targetFlags = FlagMapSelectionUtility.BuildFilterSet(_targetFlagIds);
+                for (int x = 0; x < w; x++)
+                {
+                    for (int y = 0; y < h; y++)
+                    {
+                        if (!FlagMapSelectionUtility.IsSelected(flagMap, x, y, targetFlags))
+                            result[x, y] = biomeMap[x, y];
+                    }
+                }
+            }
 
             return NodeOutput.Success(result);
         }

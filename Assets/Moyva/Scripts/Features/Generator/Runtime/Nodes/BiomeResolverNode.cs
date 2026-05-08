@@ -41,19 +41,74 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 return NodeOutput.Warning("DataBiomesSettings not assigned. Using BaseTileMap as fallback.",
                     (string[,])baseTileMap.Clone());
 
-            var resolver = context.GetService<IBiomeResolver>();
-            if (resolver == null)
-                return NodeOutput.Warning("IBiomeResolver service is not registered. Using BaseTileMap as fallback.",
-                    (string[,])baseTileMap.Clone());
-
-            string[,] result = null;
-            resolver.ResolveBiomes(heightMap, (string[,])baseTileMap.Clone(),
-                r => result = r);
+            string[,] result = ResolveWithLocalSettings(heightMap, (string[,])baseTileMap.Clone(), context);
 
             return result != null
                 ? NodeOutput.Success(result)
                 : NodeOutput.Warning("BiomeResolver returned null. Using BaseTileMap as fallback.",
                     (string[,])baseTileMap.Clone());
+        }
+
+        private string[,] ResolveWithLocalSettings(float[,] heightMap, string[,] baseTileMap, NodeContext context)
+        {
+            int width = heightMap.GetLength(0);
+            int height = heightMap.GetLength(1);
+            var result = baseTileMap;
+            string defaultTile = string.IsNullOrWhiteSpace(_biomesSettings.DefaultTileID)
+                ? "grass"
+                : _biomesSettings.DefaultTileID;
+            float[,] moistureMap = GenerateMoistureMap(width, height, context);
+
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    string selectedTile = SelectBiome(heightMap[x, y], moistureMap[x, y]);
+
+                    if (!string.IsNullOrEmpty(selectedTile))
+                        result[x, y] = selectedTile;
+                    else if (string.IsNullOrEmpty(result[x, y]))
+                        result[x, y] = defaultTile;
+                }
+            }
+
+            return result;
+        }
+
+        private string SelectBiome(float heightValue, float moisture)
+        {
+            if (_biomesSettings.Biomes == null)
+                return null;
+
+            foreach (var biome in _biomesSettings.Biomes)
+            {
+                if (heightValue >= biome.MinHeight && heightValue <= biome.MaxHeight &&
+                    moisture >= biome.MinMoisture && moisture <= biome.MaxMoisture)
+                    return biome.TileID;
+            }
+
+            return null;
+        }
+
+        private float[,] GenerateMoistureMap(int width, int height, NodeContext context)
+        {
+            var map = new float[width, height];
+            float scale = Mathf.Max(0.0001f, _biomesSettings.MoistureScale);
+            var rng = context.CreateRandom();
+            float offsetX = (float)rng.NextDouble() * 9999f;
+            float offsetY = (float)rng.NextDouble() * 9999f;
+
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    float sampleX = (float)x / width * scale + offsetX;
+                    float sampleY = (float)y / height * scale + offsetY;
+                    map[x, y] = Mathf.PerlinNoise(sampleX, sampleY);
+                }
+            }
+
+            return map;
         }
     }
 }

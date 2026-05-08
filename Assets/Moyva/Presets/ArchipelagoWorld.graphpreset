@@ -1,0 +1,473 @@
+{
+    "preset": {
+        "version": 2,
+        "nodes": [
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.SharedSettingsNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000001",
+                "position": {
+                    "x": -760.0,
+                    "y": -80.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"SharedSettingsNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SharedSettingsNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000001\",\"_editorPosition\":{\"x\":-760.0,\"y\":-80.0},\"_settings\":{\"fileID\":11400000,\"guid\":\"archipelago000000000000000000001\",\"type\":2}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.SeedNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000002",
+                "position": {
+                    "x": -1040.0,
+                    "y": 70.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"SeedNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SeedNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000002\",\"_editorPosition\":{\"x\":-1040.0,\"y\":70.0},\"seed\":1918,\"isRandomSeed\":false}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.BaseNoiseSettings, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000015",
+                "position": {
+                    "x": -1040.0,
+                    "y": 230.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"BaseNoiseSettings\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.BaseNoiseSettings\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000015\",\"_editorPosition\":{\"x\":-1040.0,\"y\":230.0},\"scale\":42.0,\"octaves\":5,\"persistance\":0.4799999892711639,\"lacunarity\":2.0999999046325685,\"Offset\":{\"x\":0.0,\"y\":0.0}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.HeightSourceNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000016",
+                "position": {
+                    "x": -760.0,
+                    "y": 150.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"HeightSourceNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightSourceNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000016\",\"_editorPosition\":{\"x\":-760.0,\"y\":150.0}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.FBMNoiseNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000017",
+                "position": {
+                    "x": -760.0,
+                    "y": 360.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"FBMNoiseNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.FBMNoiseNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000017\",\"_editorPosition\":{\"x\":-760.0,\"y\":360.0},\"_baseNoise\":1,\"_scale\":0.014999999664723873,\"_octaves\":5,\"_lacunarity\":2.0999999046325685,\"_persistence\":0.4799999892711639,\"_offset\":{\"x\":0.0,\"y\":0.0},\"_seedOffset\":1918}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000018",
+                "position": {
+                    "x": -500.0,
+                    "y": 300.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"HeightFBMCombiner\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.NoiseCombinerNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000018\",\"_editorPosition\":{\"x\":-500.0,\"y\":300.0},\"_mode\":4,\"_blend\":0.2800000011920929}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000003",
+                "position": {
+                    "x": -500.0,
+                    "y": 150.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"SmoothNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SmoothNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000003\",\"_editorPosition\":{\"x\":-500.0,\"y\":150.0},\"_radius\":2,\"_iterations\":2}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000004",
+                "position": {
+                    "x": -240.0,
+                    "y": 150.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ErosionNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ErosionNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000004\",\"_editorPosition\":{\"x\":-240.0,\"y\":150.0},\"_erosionRate\":0.012000000104308129,\"_iterations\":8,\"_talusAngle\":0.03500000014901161}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000005",
+                "position": {
+                    "x": 20.0,
+                    "y": 150.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"TerraceNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.TerraceNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000005\",\"_editorPosition\":{\"x\":20.0,\"y\":150.0},\"_levels\":8,\"_sharpness\":0.8500000238418579}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.HeightToTileNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000006",
+                "position": {
+                    "x": 300.0,
+                    "y": 0.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"HeightToTileNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightToTileNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000006\",\"_editorPosition\":{\"x\":300.0,\"y\":0.0},\"_heightMapSettings\":{\"fileID\":11400000,\"guid\":\"archipelago000000000000000000002\",\"type\":2}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.BiomeResolverNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000007",
+                "position": {
+                    "x": 580.0,
+                    "y": 70.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"BiomeResolverNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.BiomeResolverNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000007\",\"_editorPosition\":{\"x\":580.0,\"y\":70.0},\"_biomesSettings\":{\"fileID\":11400000,\"guid\":\"archipelago000000000000000000003\",\"type\":2}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.SeaCoastlineNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000008",
+                "position": {
+                    "x": 860.0,
+                    "y": 90.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"SeaCoastlineNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SeaCoastlineNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000008\",\"_editorPosition\":{\"x\":860.0,\"y\":90.0},\"_coastSide\":6,\"_seaLevel\":0.23999999463558198,\"_coastWidth\":8,\"_seaTile\":\"ocean-deep\",\"_coastTile\":\"ocean-shallow\",\"_beachTile\":\"beach\",\"_noiseInfluence\":0.0}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.LakeGenerationNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000009",
+                "position": {
+                    "x": 1140.0,
+                    "y": 90.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"LakeGenerationNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.LakeGenerationNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000009\",\"_editorPosition\":{\"x\":1140.0,\"y\":90.0},\"_waterLevel\":0.30000001192092898,\"_minLakeSize\":3,\"_onlyGenerateOnLand\":false,\"_deepWaterTile\":\"ocean-deep\",\"_shallowWaterTile\":\"ocean-shallow\",\"_shallowDepth\":0.045000001788139347,\"_shoreTile\":\"beach\"}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.MaskNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-00000000000a",
+                "position": {
+                    "x": 1120.0,
+                    "y": 360.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ForestHeightMask\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.MaskNode\",\"_nodeId\":\"archipelago-0000-0000-0000-00000000000a\",\"_editorPosition\":{\"x\":1120.0,\"y\":360.0},\"_comparison\":2,\"_threshold\":0.3400000035762787,\"_upperThreshold\":0.7200000286102295}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.ForestClusterNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-00000000000b",
+                "position": {
+                    "x": 1420.0,
+                    "y": 90.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ForestClusterNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ForestClusterNode\",\"_nodeId\":\"archipelago-0000-0000-0000-00000000000b\",\"_editorPosition\":{\"x\":1420.0,\"y\":90.0},\"_densityThreshold\":0.3799999952316284,\"_minHeight\":0.3400000035762787,\"_maxHeight\":0.7200000286102295,\"_treeObjects\":[\"tree-oak\",\"tree-pine\",\"bush\"],\"_denseForestTile\":\"forest-dense\",\"_sparseForestTile\":\"forest-sparse\",\"_denseThreshold\":0.5799999833106995,\"_seed\":1918,\"_minForestNeighborsForTree\":2,\"_treeDensityExponent\":1.399999976158142}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.RiverNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-00000000000c",
+                "position": {
+                    "x": 1720.0,
+                    "y": 240.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"RiverNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.RiverNode\",\"_nodeId\":\"archipelago-0000-0000-0000-00000000000c\",\"_editorPosition\":{\"x\":1720.0,\"y\":240.0},\"_baseObjectId\":\"river\",\"_riversCount\":5,\"_usedCellPenalty\":150.0,\"_nearRiverPenalty\":45.0,\"_nearRiverRadius\":1}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.MergeObjectMapNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-00000000000d",
+                "position": {
+                    "x": 2020.0,
+                    "y": 320.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"MergeObjectMapNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.MergeObjectMapNode\",\"_nodeId\":\"archipelago-0000-0000-0000-00000000000d\",\"_editorPosition\":{\"x\":2020.0,\"y\":320.0}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.ConstraintPolishNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-00000000000e",
+                "position": {
+                    "x": 2020.0,
+                    "y": 60.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ConstraintPolishNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ConstraintPolishNode\",\"_nodeId\":\"archipelago-0000-0000-0000-00000000000e\",\"_editorPosition\":{\"x\":2020.0,\"y\":60.0},\"_wfcSettings\":{\"fileID\":11400000,\"guid\":\"archipelago000000000000000000004\",\"type\":2}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectAutoTileNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-00000000000f",
+                "position": {
+                    "x": 2320.0,
+                    "y": 320.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ObjectAutoTileNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectAutoTileNode\",\"_nodeId\":\"archipelago-0000-0000-0000-00000000000f\",\"_editorPosition\":{\"x\":2320.0,\"y\":320.0},\"_rules\":{\"fileID\":11400000,\"guid\":\"archipelago000000000000000000005\",\"type\":2},\"_excludeObjectPrefixes\":[\"river-outlet\"],\"_separator\":45}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectTileExclusionNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000010",
+                "position": {
+                    "x": 2620.0,
+                    "y": 220.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ObjectTileExclusionNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectTileExclusionNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000010\",\"_editorPosition\":{\"x\":2620.0,\"y\":220.0},\"_rules\":[{\"TargetTileId\":\"water\",\"OnlyIfNearWater\":false,\"ExclusionMode\":1,\"ForbiddenObjectIds\":[]},{\"TargetTileId\":\"ocean\",\"OnlyIfNearWater\":false,\"ExclusionMode\":1,\"ForbiddenObjectIds\":[]},{\"TargetTileId\":\"beach\",\"OnlyIfNearWater\":false,\"ExclusionMode\":1,\"ForbiddenObjectIds\":[]},{\"TargetTileId\":\"forest\",\"OnlyIfNearWater\":true,\"ExclusionMode\":2,\"ForbiddenObjectIds\":[\"river\"]},{\"TargetTileId\":\"grass\",\"OnlyIfNearWater\":true,\"ExclusionMode\":2,\"ForbiddenObjectIds\":[\"river\"]},{\"TargetTileId\":\"lowland\",\"OnlyIfNearWater\":true,\"ExclusionMode\":2,\"ForbiddenObjectIds\":[\"river\"]}],\"_matchBaseTileType\":true,\"_matchBaseObjectType\":true,\"_tileSeparator\":45,\"_waterLikeTileIds\":[\"water\",\"ocean-deep\",\"ocean-shallow\"],\"_waterNeighborRadius\":1,\"_includeDiagonalWaterNeighbors\":true}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectAutoTileNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000011",
+                "position": {
+                    "x": 2920.0,
+                    "y": 320.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ObjectAutoTileNodeFinal\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectAutoTileNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000011\",\"_editorPosition\":{\"x\":2920.0,\"y\":320.0},\"_rules\":{\"fileID\":11400000,\"guid\":\"archipelago000000000000000000005\",\"type\":2},\"_excludeObjectPrefixes\":[\"river-outlet\"],\"_separator\":45}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.SingleTileLayerNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000012",
+                "position": {
+                    "x": 2620.0,
+                    "y": -220.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"WaterLayer\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SingleTileLayerNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000012\",\"_editorPosition\":{\"x\":2620.0,\"y\":-220.0},\"_tileId\":\"ocean-deep\",\"_tileRegistry\":{\"fileID\":11400000,\"guid\":\"332cfa21445e1342f9c69617f297cc4a\",\"type\":2},\"_resolutionScale\":0.20000000298023225,\"_filterMode\":0,\"_useMipMaps\":true,\"_textureFormat\":4,\"_layerShaderPath\":\"\",\"_sortingLayerName\":\"Default\",\"_sortingOrder\":0}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.SingleTileLayerNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000013",
+                "position": {
+                    "x": 2920.0,
+                    "y": -80.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"LandLayer\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SingleTileLayerNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000013\",\"_editorPosition\":{\"x\":2920.0,\"y\":-80.0},\"_tileId\":\"grass\",\"_tileRegistry\":{\"fileID\":11400000,\"guid\":\"332cfa21445e1342f9c69617f297cc4a\",\"type\":2},\"_resolutionScale\":0.20000000298023225,\"_filterMode\":0,\"_useMipMaps\":true,\"_textureFormat\":4,\"_layerShaderPath\":\"\",\"_sortingLayerName\":\"Default\",\"_sortingOrder\":1,\"_holeObjectPrefixes\":[\"river\"]}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.OutputNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "archipelago-0000-0000-0000-000000000014",
+                "position": {
+                    "x": 3300.0,
+                    "y": 120.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"OutputNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.OutputNode\",\"_nodeId\":\"archipelago-0000-0000-0000-000000000014\",\"_editorPosition\":{\"x\":3300.0,\"y\":120.0}}}"
+            }
+        ],
+        "connections": [
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000002",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000016",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000015",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000016",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000016",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000018",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000017",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000018",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000018",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000003",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000003",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000004",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000004",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000005",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000005",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000006",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000005",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000007",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000006",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000007",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000005",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000008",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000007",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000008",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000008",
+                "sourcePortIndex": 1,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000009",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000008",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000009",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000008",
+                "sourcePortIndex": 1,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000a",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000008",
+                "sourcePortIndex": 1,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000b",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000009",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000b",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000a",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000b",
+                "targetPortIndex": 2
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000b",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000c",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000008",
+                "sourcePortIndex": 1,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000c",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000b",
+                "sourcePortIndex": 1,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000d",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000c",
+                "sourcePortIndex": 1,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000d",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000c",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000e",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000008",
+                "sourcePortIndex": 1,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000e",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000d",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-00000000000f",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000e",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000010",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000f",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000010",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000010",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000011",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000e",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000012",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000e",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000013",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000009",
+                "sourcePortIndex": 1,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000013",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000011",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000013",
+                "targetPortIndex": 2
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-00000000000e",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000014",
+                "targetPortIndex": 0
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000011",
+                "sourcePortIndex": 0,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000014",
+                "targetPortIndex": 1
+            },
+            {
+                "sourceNodeId": "archipelago-0000-0000-0000-000000000008",
+                "sourcePortIndex": 1,
+                "targetNodeId": "archipelago-0000-0000-0000-000000000014",
+                "targetPortIndex": 2
+            }
+        ],
+        "scriptableObjects": [
+            {
+                "originalGuid": "archipelago000000000000000000001",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.API.SharedGeneratorSettingsSO, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "ArchipelagoSharedSettings",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ArchipelagoSharedSettings\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.SharedGeneratorSettingsSO\",\"_waterLikeTileIds\":[\"water\",\"ocean-deep\",\"ocean-shallow\"],\"_riverBaseObjectId\":\"river\",\"_separator\":45,\"_matchBaseTypes\":true}}"
+            },
+            {
+                "originalGuid": "archipelago000000000000000000002",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.API.HeightMapSettings, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "ArchipelagoHeightLayers",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ArchipelagoHeightLayers\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.HeightMapSettings\",\"HeightLayers\":[{\"TileID\":\"ocean-deep\",\"MinHeight\":0.0,\"MaxHeight\":0.2},{\"TileID\":\"ocean-shallow\",\"MinHeight\":0.2,\"MaxHeight\":0.3},{\"TileID\":\"beach\",\"MinHeight\":0.3,\"MaxHeight\":0.36},{\"TileID\":\"lowland\",\"MinHeight\":0.36,\"MaxHeight\":0.48},{\"TileID\":\"grass\",\"MinHeight\":0.48,\"MaxHeight\":0.6},{\"TileID\":\"hill\",\"MinHeight\":0.6,\"MaxHeight\":0.72},{\"TileID\":\"mountain\",\"MinHeight\":0.72,\"MaxHeight\":0.86},{\"TileID\":\"snow\",\"MinHeight\":0.86,\"MaxHeight\":1.0}]}}"
+            },
+            {
+                "originalGuid": "archipelago000000000000000000003",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.API.DataBiomesSettings, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "ArchipelagoBiomes",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ArchipelagoBiomes\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.DataBiomesSettings\",\"Biomes\":[{\"TileID\":\"ocean-deep\",\"BiomeName\":\"Deep Ocean\",\"MinHeight\":0.0,\"MaxHeight\":0.2,\"MinMoisture\":0.0,\"MaxMoisture\":1.0},{\"TileID\":\"ocean-shallow\",\"BiomeName\":\"Shallow Ocean\",\"MinHeight\":0.2,\"MaxHeight\":0.3,\"MinMoisture\":0.0,\"MaxMoisture\":1.0},{\"TileID\":\"beach\",\"BiomeName\":\"Beach\",\"MinHeight\":0.3,\"MaxHeight\":0.36,\"MinMoisture\":0.0,\"MaxMoisture\":1.0},{\"TileID\":\"lowland\",\"BiomeName\":\"Wet Lowland\",\"MinHeight\":0.36,\"MaxHeight\":0.48,\"MinMoisture\":0.0,\"MaxMoisture\":1.0},{\"TileID\":\"grass\",\"BiomeName\":\"Open Grassland\",\"MinHeight\":0.48,\"MaxHeight\":0.6,\"MinMoisture\":0.0,\"MaxMoisture\":0.68},{\"TileID\":\"forest-sparse\",\"BiomeName\":\"Humid Woodland\",\"MinHeight\":0.48,\"MaxHeight\":0.6,\"MinMoisture\":0.68,\"MaxMoisture\":1.0},{\"TileID\":\"hill\",\"BiomeName\":\"Hills\",\"MinHeight\":0.6,\"MaxHeight\":0.72,\"MinMoisture\":0.0,\"MaxMoisture\":1.0},{\"TileID\":\"mountain\",\"BiomeName\":\"Mountain Ridge\",\"MinHeight\":0.72,\"MaxHeight\":0.86,\"MinMoisture\":0.0,\"MaxMoisture\":1.0},{\"TileID\":\"snow\",\"BiomeName\":\"Snowcap\",\"MinHeight\":0.86,\"MaxHeight\":1.0,\"MinMoisture\":0.0,\"MaxMoisture\":1.0}],\"DefaultTileID\":\"grass\",\"MoistureScale\":3.200000047683716}}"
+            },
+            {
+                "originalGuid": "archipelago000000000000000000004",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.API.WFCDataSettings, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "ArchipelagoShorePolish",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ArchipelagoShorePolish\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.WFCDataSettings\",\"TileRules\":[{\"TileID\":\"ocean-shallow\",\"TileCentralID\":\"ocean-deep\",\"Constraints\":[{\"Direction\":0,\"AllowedNeighbors\":[\"beach\",\"lowland\",\"grass\",\"forest-sparse\",\"forest-dense\",\"hill\",\"mountain\",\"snow\"]}],\"Priority\":120,\"MatchThreshold\":1.0},{\"TileID\":\"ocean-shallow\",\"TileCentralID\":\"ocean-deep\",\"Constraints\":[{\"Direction\":2,\"AllowedNeighbors\":[\"beach\",\"lowland\",\"grass\",\"forest-sparse\",\"forest-dense\",\"hill\",\"mountain\",\"snow\"]}],\"Priority\":120,\"MatchThreshold\":1.0},{\"TileID\":\"ocean-shallow\",\"TileCentralID\":\"ocean-deep\",\"Constraints\":[{\"Direction\":4,\"AllowedNeighbors\":[\"beach\",\"lowland\",\"grass\",\"forest-sparse\",\"forest-dense\",\"hill\",\"mountain\",\"snow\"]}],\"Priority\":120,\"MatchThreshold\":1.0},{\"TileID\":\"ocean-shallow\",\"TileCentralID\":\"ocean-deep\",\"Constraints\":[{\"Direction\":6,\"AllowedNeighbors\":[\"beach\",\"lowland\",\"grass\",\"forest-sparse\",\"forest-dense\",\"hill\",\"mountain\",\"snow\"]}],\"Priority\":120,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"lowland\",\"Constraints\":[{\"Direction\":0,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":100,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"lowland\",\"Constraints\":[{\"Direction\":2,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":100,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"lowland\",\"Constraints\":[{\"Direction\":4,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":100,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"lowland\",\"Constraints\":[{\"Direction\":6,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":100,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"grass\",\"Constraints\":[{\"Direction\":0,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":95,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"grass\",\"Constraints\":[{\"Direction\":2,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":95,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"grass\",\"Constraints\":[{\"Direction\":4,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":95,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"grass\",\"Constraints\":[{\"Direction\":6,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":95,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"forest-sparse\",\"Constraints\":[{\"Direction\":0,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":90,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"forest-sparse\",\"Constraints\":[{\"Direction\":2,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":90,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"forest-sparse\",\"Constraints\":[{\"Direction\":4,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":90,\"MatchThreshold\":1.0},{\"TileID\":\"beach\",\"TileCentralID\":\"forest-sparse\",\"Constraints\":[{\"Direction\":6,\"AllowedNeighbors\":[\"ocean-deep\",\"ocean-shallow\"]}],\"Priority\":90,\"MatchThreshold\":1.0},{\"TileID\":\"lowland\",\"TileCentralID\":\"hill\",\"Constraints\":[{\"Direction\":0,\"AllowedNeighbors\":[\"beach\",\"ocean-shallow\"]}],\"Priority\":80,\"MatchThreshold\":1.0},{\"TileID\":\"lowland\",\"TileCentralID\":\"hill\",\"Constraints\":[{\"Direction\":2,\"AllowedNeighbors\":[\"beach\",\"ocean-shallow\"]}],\"Priority\":80,\"MatchThreshold\":1.0},{\"TileID\":\"lowland\",\"TileCentralID\":\"hill\",\"Constraints\":[{\"Direction\":4,\"AllowedNeighbors\":[\"beach\",\"ocean-shallow\"]}],\"Priority\":80,\"MatchThreshold\":1.0},{\"TileID\":\"lowland\",\"TileCentralID\":\"hill\",\"Constraints\":[{\"Direction\":6,\"AllowedNeighbors\":[\"beach\",\"ocean-shallow\"]}],\"Priority\":80,\"MatchThreshold\":1.0},{\"TileID\":\"hill\",\"TileCentralID\":\"mountain\",\"Constraints\":[{\"Direction\":0,\"AllowedNeighbors\":[\"beach\",\"ocean-shallow\"]}],\"Priority\":70,\"MatchThreshold\":1.0},{\"TileID\":\"hill\",\"TileCentralID\":\"mountain\",\"Constraints\":[{\"Direction\":2,\"AllowedNeighbors\":[\"beach\",\"ocean-shallow\"]}],\"Priority\":70,\"MatchThreshold\":1.0},{\"TileID\":\"hill\",\"TileCentralID\":\"mountain\",\"Constraints\":[{\"Direction\":4,\"AllowedNeighbors\":[\"beach\",\"ocean-shallow\"]}],\"Priority\":70,\"MatchThreshold\":1.0},{\"TileID\":\"hill\",\"TileCentralID\":\"mountain\",\"Constraints\":[{\"Direction\":6,\"AllowedNeighbors\":[\"beach\",\"ocean-shallow\"]}],\"Priority\":70,\"MatchThreshold\":1.0}],\"PassCount\":2,\"ForceTileNearWaterBand\":true,\"NearWaterTileId\":\"beach\",\"NearWaterRadius\":1,\"IncludeDiagonalsForNearWater\":true,\"WaterLikeTileIds\":[\"water\",\"ocean-deep\",\"ocean-shallow\"],\"BorderWaterTileId\":\"ocean-deep\"}}"
+            },
+            {
+                "originalGuid": "archipelago000000000000000000005",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.API.ObjectConnectionRulesSO, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "ArchipelagoRiverObjectRules",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ArchipelagoRiverObjectRules\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.ObjectConnectionRulesSO\",\"Groups\":[{\"BaseObjectId\":\"river\",\"FallbackId\":\"river\",\"Variants\":[{\"NeighborMask\":5,\"VariantId\":\"river-vertical\"},{\"NeighborMask\":10,\"VariantId\":\"river-horizontal\"},{\"NeighborMask\":3,\"VariantId\":\"river-corner-ne\"},{\"NeighborMask\":6,\"VariantId\":\"river-corner-se\"},{\"NeighborMask\":12,\"VariantId\":\"river-corner-sw\"},{\"NeighborMask\":9,\"VariantId\":\"river-corner-nw\"},{\"NeighborMask\":7,\"VariantId\":\"river-t-east\"},{\"NeighborMask\":11,\"VariantId\":\"river-t-north\"},{\"NeighborMask\":13,\"VariantId\":\"river-t-west\"},{\"NeighborMask\":14,\"VariantId\":\"river-t-south\"},{\"NeighborMask\":15,\"VariantId\":\"river-cross\"}]}]}}"
+            },
+            {
+                "originalGuid": "archipelago000000000000000000006",
+                "typeAssemblyQualifiedName": "Kruty1918.Moyva.Grid.API.TileRegistrySO, Kruty1918.Moyva.Grid, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "ArchipelagoTileRegistry",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"ArchipelagoTileRegistry\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.API.TileRegistrySO\",\"_definitions\":[{\"_id\":\"water\",\"_movementCost\":1.0,\"_visualPrefab\":{\"fileID\":1384669653051272897,\"guid\":\"1d32aeffc2c9ab6c8a53853a9910a1f3\",\"type\":3}},{\"_id\":\"ocean-deep\",\"_movementCost\":1.0,\"_visualPrefab\":{\"fileID\":7203100000000001001,\"guid\":\"9b6a0d1f87ee4a99b01b97b46c5d1010\",\"type\":3}},{\"_id\":\"ocean-shallow\",\"_movementCost\":1.0,\"_visualPrefab\":{\"fileID\":7203100000000002001,\"guid\":\"6dcb2a7cf65049ea9b7c67e63b43e271\",\"type\":3}},{\"_id\":\"beach\",\"_movementCost\":1.0,\"_visualPrefab\":{\"fileID\":7203100000000003001,\"guid\":\"1e1d4f94fe6e4932b7d4173f7d25f3a1\",\"type\":3}},{\"_id\":\"lowland\",\"_movementCost\":1.0,\"_visualPrefab\":{\"fileID\":7203100000000004001,\"guid\":\"c9a436dd242048f0ab05a8b97f3d6fb3\",\"type\":3}},{\"_id\":\"grass\",\"_movementCost\":1.0,\"_visualPrefab\":{\"fileID\":8617330532228340915,\"guid\":\"23151ff9b4d8faa368d78bfe81c8e13d\",\"type\":3}},{\"_id\":\"hill\",\"_movementCost\":1.2,\"_visualPrefab\":{\"fileID\":7203100000000005001,\"guid\":\"3ef4f4f119e14ce295c8c512a2a73a98\",\"type\":3}},{\"_id\":\"mountain\",\"_movementCost\":3.0,\"_visualPrefab\":{\"fileID\":7203100000000006001,\"guid\":\"ddc2d68d0f83482c8f50f55eaed1ed53\",\"type\":3}},{\"_id\":\"snow\",\"_movementCost\":2.5,\"_visualPrefab\":{\"fileID\":7203100000000007001,\"guid\":\"58d1c3cafb7a4902a1a138b121f721d0\",\"type\":3}},{\"_id\":\"forest-sparse\",\"_movementCost\":1.5,\"_visualPrefab\":{\"fileID\":6097099620203038976,\"guid\":\"fcee0ae92d400f04a9c13b628e41465f\",\"type\":3}},{\"_id\":\"forest-dense\",\"_movementCost\":2.0,\"_visualPrefab\":{\"fileID\":2574010424079311619,\"guid\":\"d38490c7e15db92efbcd9e52a5042f41\",\"type\":3}}]}}"
+            }
+        ]
+    }
+}

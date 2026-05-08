@@ -9,9 +9,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
     {
         [Header("Smooth Settings")]
         [Tooltip("Радіус усереднення навколо кожної клітинки. Більший радіус сильніше розмиває локальні деталі та робить форми плавнішими.")]
-        [SerializeField, Range(1, 5)] private int _radius = 1;
+        [SerializeField, InlineEditable("_radius"), Range(1, 5)] private int _radius = 1;
         [Tooltip("Кількість повторних проходів згладжування. Кожна ітерація посилює ефект і поступово прибирає різкі переходи.")]
-        [SerializeField, Range(1, 10)] private int _iterations = 1;
+        [SerializeField, InlineEditable("_iterations"), Range(1, 10)] private int _iterations = 1;
 
         public override string Title => "Smooth";
         public override string Category => "Processing";

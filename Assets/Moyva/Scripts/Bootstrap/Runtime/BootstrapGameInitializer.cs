@@ -1,5 +1,6 @@
 using System;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -22,6 +23,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly BootstrapGameSettings _settings;
         private readonly ISaveService _saveService;
         private readonly BootstrapStartingPositionState _startingPositionState;
+
+    #pragma warning disable CS0649
+        [InjectOptional] private ISessionManager _sessionManager;
+    #pragma warning restore CS0649
 
         [Inject]
         public BootstrapGameInitializer(
@@ -55,6 +60,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             // Якщо є збереження — не робимо bootstrap
             int slot = GameLaunchContext.SaveSlot;
             if (GameLaunchContext.IsAutoLoadEnabled() && _saveService.HasSave(slot))
+                return;
+
+            if (!CanRunBootstrapLogic())
                 return;
 
             if (!string.IsNullOrEmpty(_settings.DefaultBuildingId))
@@ -102,6 +110,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     }
                 }
             }
+            return false;
+        }
+
+        private bool CanRunBootstrapLogic()
+        {
+            var participants = _sessionManager?.Participants;
+            if (participants == null || participants.Count == 0)
+                return true;
+
+            for (int index = 0; index < participants.Count; index++)
+            {
+                if (participants[index].IsHost)
+                    return true;
+            }
+
             return false;
         }
     }

@@ -31,10 +31,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             new ScatterLayer { ObjectId = "rock-small", MinHeight = 0.5f, MaxHeight = 0.7f, Density = 0.2f, ClusterStrength = 0.2f },
             new ScatterLayer { ObjectId = "flower", MinHeight = 0.25f, MaxHeight = 0.4f, Density = 0.1f, ClusterStrength = 0.1f }
         };
-        [Tooltip("Seed випадковості для всіх шарів цієї ноди. Дає змогу отримувати відтворюваний розподіл об'єктів між перегенераціями.")]
-        [SerializeField] private int _seed = 42;
         [Tooltip("Якщо увімкнено, нода не буде ставити нові об'єкти в клітинки, де вже є щось у вхідному ObjectMap. Це захищає важливі об'єкти від випадкового перезапису.")]
         [SerializeField] private bool _avoidExistingObjects = true;
+
+        [Header("Cluster Noise")]
+        [SerializeField, Min(0.0001f)] private float _clusterNoiseScale = 0.12f;
+        [SerializeField, Range(1, 8)] private int _clusterOctaves = 3;
+        [SerializeField, Min(1f)] private float _clusterLacunarity = 2f;
+        [SerializeField, Range(0.01f, 1f)] private float _clusterPersistence = 0.5f;
 
         public override string Title => "Multi-Layer Scatter";
         public override string Category => "Features";
@@ -68,13 +72,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (_layers == null || _layers.Length == 0)
                 return NodeOutput.Success(result);
 
-            var rng = new System.Random(_seed);
+            var rng = context.CreateRandom();
 
             // Generate cluster noise per layer
             var clusterMaps = new float[_layers.Length][,];
             for (int i = 0; i < _layers.Length; i++)
             {
-                clusterMaps[i] = GenerateClusterNoise(w, h, _seed + i * 13);
+                clusterMaps[i] = GenerateClusterNoise(
+                    w,
+                    h,
+                    context.Seed,
+                    _clusterNoiseScale,
+                    _clusterOctaves,
+                    _clusterLacunarity,
+                    _clusterPersistence);
             }
 
             for (int x = 0; x < w; x++)
@@ -110,24 +121,43 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             return NodeOutput.Success(result);
         }
 
-        private static float[,] GenerateClusterNoise(int w, int h, int seed)
+        private static float[,] GenerateClusterNoise(
+            int w,
+            int h,
+            int seed,
+            float scale,
+            int octaves,
+            float lacunarity,
+            float persistence)
         {
             var result = new float[w, h];
             float offsetX = seed * 0.73f;
             float offsetY = seed * 1.17f;
-            float scale = 0.12f;
+            scale = Mathf.Max(0.0001f, scale);
+            octaves = Mathf.Max(1, octaves);
+            lacunarity = Mathf.Max(1f, lacunarity);
+            persistence = Mathf.Clamp01(persistence);
 
             for (int x = 0; x < w; x++)
             {
                 for (int y = 0; y < h; y++)
                 {
-                    float nx = x * scale + offsetX;
-                    float ny = y * scale + offsetY;
-                    // Multi-octave for more natural clusters
-                    float v = Mathf.PerlinNoise(nx, ny) * 0.6f
-                            + Mathf.PerlinNoise(nx * 2f, ny * 2f) * 0.3f
-                            + Mathf.PerlinNoise(nx * 4f, ny * 4f) * 0.1f;
-                    result[x, y] = Mathf.Clamp01(v);
+                    float amplitude = 1f;
+                    float frequency = 1f;
+                    float value = 0f;
+                    float amplitudeSum = 0f;
+
+                    for (int octave = 0; octave < octaves; octave++)
+                    {
+                        float nx = x * scale * frequency + offsetX;
+                        float ny = y * scale * frequency + offsetY;
+                        value += Mathf.PerlinNoise(nx, ny) * amplitude;
+                        amplitudeSum += amplitude;
+                        amplitude *= persistence;
+                        frequency *= lacunarity;
+                    }
+
+                    result[x, y] = amplitudeSum > 0f ? Mathf.Clamp01(value / amplitudeSum) : 0f;
                 }
             }
             return result;

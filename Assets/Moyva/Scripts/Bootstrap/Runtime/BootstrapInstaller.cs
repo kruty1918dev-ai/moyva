@@ -55,4 +55,18 @@ namespace Kruty1918.Moyva.Bootstrap
             Container.BindExecutionOrder<StartingPositionInitializer>(101);
         }
     }
+
+    internal sealed class DirectGameplayLaunchModeInitializer : IInitializable
+    {
+        public void Initialize()
+        {
+            if (GameLaunchContext.Mode != GameLaunchMode.Unknown)
+                return;
+
+#if UNITY_EDITOR
+            GameLaunchContext.ConfigureDirectGameplayTest();
+            Debug.Log("[Bootstrap] Direct gameplay start detected -> solo/no-save test mode enabled.");
+#endif
+        }
+    }
 }

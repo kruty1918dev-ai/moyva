@@ -127,7 +127,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _unitVisionRange[unitId] = visionRange;
             _unitPositions[unitId] = position;
 
-            var tiles = _resolver.ComputeVisibleTiles(position, visionRange, _width, _height);
+            var tiles = ComputePixelCircleTiles(position, visionRange);
             _unitVisibleTiles[unitId] = tiles;
 
             foreach (var t in tiles)
@@ -293,6 +293,29 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private bool IsInBounds(Vector2Int pos)
             => pos.x >= 0 && pos.x < _width && pos.y >= 0 && pos.y < _height;
+
+        private IReadOnlyList<Vector2Int> ComputePixelCircleTiles(Vector2Int origin, int radius)
+        {
+            var result = new List<Vector2Int>();
+            int safeRadius = Mathf.Max(0, radius);
+            float radiusWithCellCoverage = safeRadius + 0.5f;
+            float sqrRadius = radiusWithCellCoverage * radiusWithCellCoverage;
+
+            for (int dx = -safeRadius; dx <= safeRadius; dx++)
+            {
+                for (int dy = -safeRadius; dy <= safeRadius; dy++)
+                {
+                    if (dx * dx + dy * dy > sqrRadius)
+                        continue;
+
+                    var tile = new Vector2Int(origin.x + dx, origin.y + dy);
+                    if (IsInBounds(tile))
+                        result.Add(tile);
+                }
+            }
+
+            return result;
+        }
 
         private static bool[,] CloneSnapshot(bool[,] source)
         {

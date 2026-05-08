@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Kruty1918.Moyva.Grid.API;
 using UnityEditor;
 using UnityEngine;
@@ -75,7 +76,7 @@ namespace Kruty1918.Moyva.Grid.Editor
             // Sprite preview
             Sprite sprite = GetSpriteForTileId(currentValue);
             if (sprite != null && sprite.texture != null)
-                DrawSprite(spriteRect, sprite);
+                DrawSprite(spriteRect, sprite, GetColorForTileId(currentValue));
 
             // Error box + create button (ID not found)
             if (!isValid && !string.IsNullOrEmpty(currentValue))
@@ -129,25 +130,32 @@ namespace Kruty1918.Moyva.Grid.Editor
             return currentValue;
         }
 
-        private static void DrawSprite(Rect rect, Sprite sprite)
+        private static void DrawSprite(Rect rect, Sprite sprite, Color color)
         {
             var tex = sprite.texture;
             var sr = sprite.textureRect;
             var uv = new Rect(sr.x / tex.width, sr.y / tex.height, sr.width / tex.width, sr.height / tex.height);
+            Color prevColor = GUI.color;
+            GUI.color = color;
             GUI.DrawTextureWithTexCoords(rect, tex, uv);
+            GUI.color = prevColor;
         }
 
         private sealed class TilePickerPopup : PopupWindowContent
         {
-            private const float PopupWidth = 420f;
-            private const float PopupHeight = 360f;
-            private const float RowHeight = 22f;
-            private const float IconSize = 16f;
+            private const float PopupWidth = 520f;
+            private const float PopupHeight = 500f;
+            private const float SearchHeight = 20f;
+            private const float RowHeight = 44f;
+            private const float IconSize = 36f;
             private const float Padding = 6f;
+            private const string SearchControlName = "TileIdDrawerSearch";
 
             private readonly string _currentValue;
             private readonly Action<string> _onSelected;
             private Vector2 _scroll;
+            private string _search = string.Empty;
+            private bool _focusSearch = true;
 
             public TilePickerPopup(string currentValue, Action<string> onSelected)
             {
@@ -157,11 +165,21 @@ namespace Kruty1918.Moyva.Grid.Editor
 
             public override Vector2 GetWindowSize() => new Vector2(PopupWidth, PopupHeight);
 
+            public override void OnOpen()
+            {
+                _focusSearch = true;
+            }
+
             public override void OnGUI(Rect rect)
             {
-                var ids = GetTileIds();
+                DrawSearchField(rect);
+                var ids = GetFilteredIds();
 
-                Rect noneRect = new Rect(Padding, Padding, rect.width - Padding * 2f, RowHeight);
+                Rect noneRect = new Rect(
+                    Padding,
+                    Padding + SearchHeight + Padding,
+                    rect.width - Padding * 2f,
+                    RowHeight);
                 bool isNoneSelected = string.IsNullOrEmpty(_currentValue);
                 if (isNoneSelected)
                     EditorGUI.DrawRect(noneRect, new Color(0.24f, 0.36f, 0.24f, 0.7f));
@@ -175,11 +193,17 @@ namespace Kruty1918.Moyva.Grid.Editor
 
                 Rect viewRect = new Rect(
                     Padding,
-                    Padding + RowHeight + Padding,
+                    noneRect.yMax + Padding,
                     rect.width - Padding * 2f,
-                    rect.height - (Padding * 3f + RowHeight));
+                    rect.height - noneRect.yMax - Padding * 2f);
 
-                Rect contentRect = new Rect(0f, 0f, viewRect.width - 14f, Mathf.Max(2f, ids.Length * RowHeight));
+                if (ids.Length == 0)
+                {
+                    EditorGUI.HelpBox(viewRect, "Нічого не знайдено", MessageType.Info);
+                    return;
+                }
+
+                Rect contentRect = new Rect(0f, 0f, viewRect.width - 14f, Mathf.Max(viewRect.height, ids.Length * RowHeight));
                 _scroll = GUI.BeginScrollView(viewRect, _scroll, contentRect);
                 for (int i = 0; i < ids.Length; i++)
                 {
@@ -189,11 +213,42 @@ namespace Kruty1918.Moyva.Grid.Editor
                 GUI.EndScrollView();
             }
 
+            private void DrawSearchField(Rect rect)
+            {
+                Rect searchRect = new Rect(Padding, Padding, rect.width - Padding * 2f, SearchHeight);
+
+                GUI.SetNextControlName(SearchControlName);
+                EditorGUI.BeginChangeCheck();
+                _search = EditorGUI.TextField(searchRect, _search, EditorStyles.toolbarSearchField);
+                if (EditorGUI.EndChangeCheck())
+                    _scroll = Vector2.zero;
+
+                if (_focusSearch)
+                {
+                    _focusSearch = false;
+                    EditorGUI.FocusTextInControl(SearchControlName);
+                }
+            }
+
+            private string[] GetFilteredIds()
+            {
+                var ids = GetTileIds();
+                if (string.IsNullOrWhiteSpace(_search))
+                    return ids;
+
+                var terms = _search.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                return ids
+                    .Where(id => terms.All(term => id.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0))
+                    .ToArray();
+            }
+
             private void DrawTileRow(Rect rowRect, string id)
             {
                 bool isSelected = string.Equals(_currentValue, id, StringComparison.Ordinal);
                 if (isSelected)
                     EditorGUI.DrawRect(rowRect, new Color(0.24f, 0.36f, 0.24f, 0.7f));
+                else if (rowRect.Contains(Event.current.mousePosition))
+                    EditorGUI.DrawRect(rowRect, new Color(0.20f, 0.20f, 0.20f, 0.45f));
 
                 if (GUI.Button(rowRect, GUIContent.none, GUIStyle.none))
                 {
@@ -205,10 +260,11 @@ namespace Kruty1918.Moyva.Grid.Editor
                 Rect iconRect = new Rect(rowRect.x + 4f, rowRect.y + (RowHeight - IconSize) * 0.5f, IconSize, IconSize);
                 var sprite = GetSpriteForTileId(id);
                 if (sprite != null && sprite.texture != null)
-                    DrawSprite(iconRect, sprite);
+                    DrawSprite(iconRect, sprite, GetColorForTileId(id));
 
-                Rect labelRect = new Rect(iconRect.xMax + 6f, rowRect.y + 2f, rowRect.width - iconRect.width - 10f, RowHeight - 2f);
-                GUI.Label(labelRect, id, EditorStyles.label);
+                Rect labelRect = new Rect(iconRect.xMax + 8f, rowRect.y, rowRect.width - iconRect.width - 14f, RowHeight);
+                var labelStyle = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleLeft };
+                GUI.Label(labelRect, id, labelStyle);
             }
         }
 
@@ -216,6 +272,7 @@ namespace Kruty1918.Moyva.Grid.Editor
         private static TileRegistrySO _cachedRegistry;
         private static string[] _cachedIds = System.Array.Empty<string>();
         private static readonly Dictionary<string, Sprite> _spriteCache = new();
+        private static readonly Dictionary<string, Color> _spriteColorCache = new();
         private static readonly Dictionary<string, bool> _prefabCache = new();
         private static double _cacheTime;
         private const double CacheTTL = 1.0;
@@ -228,6 +285,7 @@ namespace Kruty1918.Moyva.Grid.Editor
             _cachedRegistry = FindRegistryInternal();
             _cacheTime = now;
             _spriteCache.Clear();
+            _spriteColorCache.Clear();
             _prefabCache.Clear();
 
             if (_cachedRegistry?.Definitions == null)
@@ -246,7 +304,10 @@ namespace Kruty1918.Moyva.Grid.Editor
                 {
                     var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
                     if (sr != null && sr.sprite != null)
+                    {
                         _spriteCache[def.Id] = sr.sprite;
+                        _spriteColorCache[def.Id] = sr.color;
+                    }
                 }
             }
             ids.Sort();
@@ -255,12 +316,92 @@ namespace Kruty1918.Moyva.Grid.Editor
 
         private static void InvalidateCache() => _cacheTime = 0;
 
+        private const string MainTileRegistryPath = "Assets/Moyva/SO/Tile/TileRegistry.asset";
+        private const string GraphEditorWindowSettingsPath = "Assets/Moyva/Scripts/Features/GraphSystem/Editor/GraphEditorWindowSettings.asset";
+        private const string EditorPreviewSettingsPath = "Assets/Moyva/SO/Generation/EditorPreviewSettings.asset";
+        private const string PreferredTileRegistryGuidKey = "Moyva.RegistryHub.TileRegistry.Guid";
+
         private static TileRegistrySO FindRegistryInternal()
         {
+            // Пріоритет 0: реєстр, який користувач явно вибрав у Registry Hub.
+            string preferredGuid = EditorPrefs.GetString(PreferredTileRegistryGuidKey, string.Empty);
+            if (!string.IsNullOrEmpty(preferredGuid))
+            {
+                string preferredPath = AssetDatabase.GUIDToAssetPath(preferredGuid);
+                if (!string.IsNullOrEmpty(preferredPath))
+                {
+                    var preferredRegistry = AssetDatabase.LoadAssetAtPath<TileRegistrySO>(preferredPath);
+                    if (preferredRegistry != null)
+                        return preferredRegistry;
+                }
+            }
+
+            // Пріоритет 1: TileRegistry з Preview Settings, вибраного у Graph Editor settings.
+            if (TryGetRegistryFromGraphWindowSettings(out var registryFromGraphSettings))
+                return registryFromGraphSettings;
+
+            // Пріоритет 2: реєстр з legacy EditorPreviewSettings asset.
+            var previewSettingsObj = AssetDatabase.LoadAssetAtPath<ScriptableObject>(EditorPreviewSettingsPath);
+            if (previewSettingsObj != null)
+            {
+                var so = new SerializedObject(previewSettingsObj);
+                var registryProp = so.FindProperty("_tileRegistry");
+                if (registryProp?.objectReferenceValue is TileRegistrySO registryFromPreview)
+                    return registryFromPreview;
+            }
+
+            // Пріоритет 3: головний реєстр за відомим шляхом
+            var main = AssetDatabase.LoadAssetAtPath<TileRegistrySO>(MainTileRegistryPath);
+            if (main != null) return main;
+
+            // Fallback: шукаємо серед усіх, уникаємо Test/Prototype
             string[] guids = AssetDatabase.FindAssets("t:TileRegistrySO");
             if (guids.Length == 0) return null;
-            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-            return AssetDatabase.LoadAssetAtPath<TileRegistrySO>(path);
+
+            var paths = guids.Select(AssetDatabase.GUIDToAssetPath)
+                .OrderBy(p => p.IndexOf("Test", System.StringComparison.OrdinalIgnoreCase) >= 0 ? 2
+                            : p.IndexOf("Prototype", System.StringComparison.OrdinalIgnoreCase) >= 0 ? 1
+                            : 0)
+                .ToList();
+
+            return AssetDatabase.LoadAssetAtPath<TileRegistrySO>(paths[0]);
+        }
+
+        private static bool TryGetRegistryFromGraphWindowSettings(out TileRegistrySO registry)
+        {
+            registry = null;
+
+            var windowSettingsObj = AssetDatabase.LoadAssetAtPath<ScriptableObject>(GraphEditorWindowSettingsPath);
+            if (windowSettingsObj == null)
+                return false;
+
+            var windowSo = new SerializedObject(windowSettingsObj);
+            ScriptableObject previewSettingsObj = null;
+
+            var previewSettingsProp = windowSo.FindProperty("previewSettings");
+            if (previewSettingsProp?.objectReferenceValue is ScriptableObject directPreviewSettings)
+            {
+                previewSettingsObj = directPreviewSettings;
+            }
+            else
+            {
+                var previewGuidProp = windowSo.FindProperty("previewSettingsGuid");
+                string previewGuid = previewGuidProp?.stringValue;
+                if (!string.IsNullOrEmpty(previewGuid))
+                {
+                    string previewPath = AssetDatabase.GUIDToAssetPath(previewGuid);
+                    if (!string.IsNullOrEmpty(previewPath))
+                        previewSettingsObj = AssetDatabase.LoadAssetAtPath<ScriptableObject>(previewPath);
+                }
+            }
+
+            if (previewSettingsObj == null)
+                return false;
+
+            var previewSo = new SerializedObject(previewSettingsObj);
+            var registryProp = previewSo.FindProperty("_tileRegistry");
+            registry = registryProp?.objectReferenceValue as TileRegistrySO;
+            return true;
         }
 
         private static TileRegistrySO FindRegistry()
@@ -280,6 +421,13 @@ namespace Kruty1918.Moyva.Grid.Editor
             if (string.IsNullOrEmpty(id)) return null;
             EnsureCache();
             return _spriteCache.TryGetValue(id, out var s) ? s : null;
+        }
+
+        private static Color GetColorForTileId(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return Color.white;
+            EnsureCache();
+            return _spriteColorCache.TryGetValue(id, out var color) ? color : Color.white;
         }
 
         private static void CreateTileEntry(string id)

@@ -173,7 +173,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ee27fc8311d8fb8d1a988383c66f90b1, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction.UI::Kruty1918.Moyva.Construction.UI.ConstructionActionBarUI
   confirmButton: {fileID: 441472924}
   cancelButton: {fileID: 1046007494}
@@ -1021,6 +1021,7 @@ Transform:
   - {fileID: 1306218300}
   - {fileID: 275478189}
   - {fileID: 1215295425}
+  - {fileID: 1281916539}
   m_Father: {fileID: 663835483}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &330585543
@@ -1060,7 +1061,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.03137255, g: 0.03137255, b: 0.08235294, a: 0}
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -1160,6 +1161,37 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!1 &334990247
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 334990248}
+  m_Layer: 0
+  m_Name: Clouds
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &334990248
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 334990247}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 47.77912, y: 20.72561, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &380476801
 GameObject:
   m_ObjectHideFlags: 0
@@ -2271,9 +2303,11 @@ MonoBehaviour:
   - {fileID: 1735969942}
   - {fileID: 1877777218}
   - {fileID: 59869031}
+  - {fileID: 1757640777}
   - {fileID: 2100979367}
   - {fileID: 275478190}
   - {fileID: 1215295424}
+  - {fileID: 1281916540}
   _installerPrefabs: []
   _autoRun: 1
   OnPreInstall:
@@ -2359,7 +2393,71 @@ MonoBehaviour:
   _wfcDataSettings: {fileID: 11400000, guid: fea7d1c6ea24608b2b4e75e082c67e84, type: 2}
   _mapObjectRegistry: {fileID: 11400000, guid: 1aa3411356147585fb2c8534e5b707b8, type: 2}
   _useGraphGenerator: 1
-  _graphAsset: {fileID: 11400000, guid: e728959edc09a5fea829221821058070, type: 2}
+  _graphAsset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
+  _waterLayerMaterialSettings:
+    _preset: 1
+    _mipBias: 0
+    _zoomLodStrength: 1
+    _useContourAlpha: 0
+    _useSceneEdge: 1
+    _useDepthEdge: 1
+    _useShoreDepth: 1
+    _contourColor: {r: 0.78, g: 0.92, b: 1, a: 1}
+    _contourWidth: 1
+    _contourThreshold: 0.01
+    _contourSharpness: 18
+    _contourOpacity: 1
+    _lineThreshold: 0.04
+    _lineThickness: 0.9
+    _lineSoftness: 0.01
+    _useVoronoiOverlay: 1
+    _voronoiColor: {r: 0.78, g: 0.9, b: 1, a: 1}
+    _voronoiScale: 36
+    _voronoiLineWidth: 0.04
+    _voronoiSoftness: 0.04
+    _voronoiOpacity: 0.12
+    _voronoiJitter: 0.6
+    _voronoiSpeed: 0.2
+    _voronoiFlowDir: {x: 1, y: 0.35, z: 0, w: 0}
+    _useMultiBand: 0
+    _contourColorMid: {r: 0.6, g: 0.85, b: 1, a: 0.6}
+    _contourColorOuter: {r: 0.4, g: 0.75, b: 1, a: 0.3}
+    _bandWidthMid: 2
+    _bandWidthOuter: 4
+    _useDitherContour: 1
+    _ditherStrength: 0.25
+    _sceneEdgeWidth: 1
+    _sceneEdgeThreshold: 0.03
+    _sceneEdgeSharpness: 10
+    _sceneEdgeOpacity: 1
+    _shoreDepthDistance: 1.5
+    _shoreEdgeWidth: 0.08
+    _usePixelNoise: 1
+    _usePixelScroll: 0
+    _pixelSize: 1
+    _pixelAspect: {x: 1, y: 1}
+    _pixelMinSize: 1
+    _noiseScale: 8
+    _noiseSpeed: 6
+    _noiseStrength: 0.002
+    _colorSteps: 8
+    _contourSteps: 2
+    _scrollDir: {x: 1, y: 0.3, z: 0, w: 0}
+    _scrollSpeed: 2
+    _usePixelRipple: 0
+    _rippleFreq: 10
+    _rippleSpeed: 3
+    _rippleAmp: 0.005
+    _usePixelHighlights: 0
+    _highlightDitherThreshold: 0.85
+    _highlightIntensity: 0.6
+    _useColorBleed: 0
+    _bleedStrength: 0.25
+    _bleedWidth: 1.5
+    _useSpecularEdge: 0
+    _specEdgeThreshold: 0.7
+    _specEdgeIntensity: 0.8
+    _specEdgeColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &820743902
 GameObject:
   m_ObjectHideFlags: 0
@@ -3422,6 +3520,53 @@ Transform:
   m_Children: []
   m_Father: {fileID: 326201343}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1281916538
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1281916539}
+  - component: {fileID: 1281916540}
+  m_Layer: 0
+  m_Name: CloudsInstaller
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1281916539
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1281916538}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 326201343}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1281916540
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1281916538}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5fcb65a2722db9d18a6ae9b25f5433e7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Kruty1918.Moyva.Clouds::Kruty1918.Moyva.Clouds.Runtime.CloudsInstaller
+  _settings: {fileID: 11400000, guid: 1791697a3240b51ddadc7bae72cf33e3, type: 2}
+  _sceneCamera: {fileID: 330585545}
+  _cloudsRoot: {fileID: 334990248}
 --- !u!1 &1287845383
 GameObject:
   m_ObjectHideFlags: 0
@@ -4378,7 +4523,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c1f09faef73347d1aaf365061b67a86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.GridInstaller
-  tileRegistry: {fileID: 11400000, guid: 332cfa21445e1342f9c69617f297cc4a, type: 2}
+  tileRegistry: {fileID: 11400000, guid: bc77e778b9a26da4abebea25d37293b9, type: 2}
   gridWidth: 80
   gridHeight: 80
 --- !u!1 &1537667075
@@ -5978,17 +6123,15 @@ MonoBehaviour:
   _legacyStartingPositionSettings:
     minMarginFromBorder: 5
     relativeMarginFactor: 0.1667
-    innerRadius: 8
+    startMinHeight: 0.35
+    startMaxHeight: 1
+    requireHeightMapForStart: 0
+    revealedCircleRadius: 15
     keepCoreFullyVisible: 1
     coreVisibleRadiusOverride: 0
-    outerRadius: 15
-    outerPadding: 4
-    noiseScale: 0.35
-    noiseOffsetRange: 200
-    outerStartReveal: 0.65
-    outerEndReveal: 0.08
-    outerNoiseMinFactor: 0.35
-    outerNoiseFactor: 0.85
+    multiplayerStartSlots: 4
+    minAStarDistanceBetweenPlayers: 15
+    startCandidateAttempts: 256
     cameraZ: -10
 --- !u!4 &2100979364
 Transform:
@@ -6210,3 +6353,4 @@ SceneRoots:
   - {fileID: 1452124635}
   - {fileID: 1817531251}
   - {fileID: 599193028}
+  - {fileID: 334990248}

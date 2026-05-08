@@ -11,19 +11,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [Header("Voronoi Settings")]
         [Tooltip("Кількість регіональних центрів, навколо яких будуть побудовані області. Більше значення дає дрібнішу сітку регіонів.")]
         [SerializeField, Range(2, 100)] private int _regionCount = 12;
-        [Tooltip("Seed для випадкового розташування центрів регіонів. Дозволяє відтворювати однаковий поділ мапи при повторній генерації.")]
-        [SerializeField] private int _seed;
         [Tooltip("Якщо увімкнено, нода додатково поверне карту відстані до найближчого центру регіону. Це корисний допоміжний шар для побудови меж, ядер регіонів або масок згасання.")]
         [SerializeField] private bool _distanceMap;
 
         public override string Title => "Voronoi Regions";
         public override string Category => "Generators";
 
-        public override PortDefinition[] Inputs => new[]
-        {
-            PortDefinition.Input<int>("MapWidth"),
-            PortDefinition.Input<int>("MapHeight")
-        };
+        public override PortDefinition[] Inputs => Array.Empty<PortDefinition>();
 
         public override PortDefinition[] Outputs => new[]
         {
@@ -33,13 +27,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
-            if (inputs[0] is not int width || inputs[1] is not int height)
-                return NodeOutput.Error("MapWidth and MapHeight inputs are required.");
+            int width = context.MapSize.x;
+            int height = context.MapSize.y;
 
             if (width <= 0 || height <= 0)
-                return NodeOutput.Error("Map dimensions must be positive.");
+                return NodeOutput.Error("Map dimensions must be positive. Set Shared Settings map size.");
 
-            var rng = new System.Random(_seed);
+            var rng = context.CreateRandom();
             var seeds = new Vector2Int[_regionCount];
             for (int i = 0; i < _regionCount; i++)
                 seeds[i] = new Vector2Int(rng.Next(width), rng.Next(height));

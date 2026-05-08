@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
@@ -34,6 +35,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IBiomeResolver _biomeResolver;
         private readonly IRiverPathfinder _riverPathfinder;
         private readonly IWFCService _wfcService;
+        private readonly TileRegistrySO _tileRegistry;
+        private readonly IGeneratorDataRegistry _generatorDataRegistry;
 
         public GraphBasedMapDataGenerator(
             GraphAsset graphAsset,
@@ -42,7 +45,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IVirtualHeightMapGenerator virtualHeightMapGenerator,
             IBiomeResolver biomeResolver,
             IRiverPathfinder riverPathfinder,
-            IWFCService wfcService)
+            IWFCService wfcService,
+            [Zenject.InjectOptional] TileRegistrySO tileRegistry = null,
+            [Zenject.InjectOptional] IGeneratorDataRegistry generatorDataRegistry = null)
         {
             _graphAsset = graphAsset;
             _graphRunner = graphRunner;
@@ -51,18 +56,31 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _biomeResolver = biomeResolver;
             _riverPathfinder = riverPathfinder;
             _wfcService = wfcService;
+            _tileRegistry = tileRegistry;
+            _generatorDataRegistry = generatorDataRegistry;
         }
 
         public void GenerateMapData(int width, int height,
             Action<string[,], string[,], float[,], string[,]> onComplete)
         {
             int generationSeed = GetSeedFromGraph();
+            GlobalSeed.Set(generationSeed);
             var previousRandomState = UnityEngine.Random.state;
             UnityEngine.Random.InitState(generationSeed);
 
             try
             {
                 LastBiomeMapDerivedFromLayers = false;
+                _generatorDataRegistry?.Clear();
+
+                // Якщо GraphSharedSettings задає розмір мапи — використовуємо його,
+                // щоб розмір плей-моду збігався з розміром превью в редакторі.
+                var sharedSettings = _graphAsset?.SharedSettings;
+                if (sharedSettings != null && sharedSettings.HasMapSize)
+                {
+                    width  = sharedSettings.MapWidth;
+                    height = sharedSettings.MapHeight;
+                }
 
                 var context = new NodeContext(generationSeed);
                 context.MapSize = new Vector2Int(width, height);
@@ -78,9 +96,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     context.RegisterService(_riverPathfinder);
                 if (_wfcService != null)
                     context.RegisterService(_wfcService);
+                if (_tileRegistry != null)
+                    context.RegisterService(_tileRegistry);
+                if (_generatorDataRegistry != null)
+                    context.RegisterService(_generatorDataRegistry);
 
                 // Реєструємо GraphSharedSettings
-                var sharedSettings = _graphAsset?.SharedSettings;
                 if (sharedSettings != null)
                 {
                     context.RegisterService(sharedSettings);
@@ -353,7 +374,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private int GetSeedFromGraph()
         {
             if (_graphAsset?.Nodes == null)
-                return 42;
+                return GlobalSeed.DefaultSeed;
 
             foreach (var node in _graphAsset.Nodes)
             {
@@ -362,7 +383,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     return seedProvider.Seed;
             }
 
-            return 42;
+            return GlobalSeed.DefaultSeed;
         }
     }
 }

@@ -13,18 +13,9 @@ MonoBehaviour:
   m_Name: HeightMapSettings 1
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.HeightMapSettings
   HeightLayers:
-  - TileID: water
+  - TileID: grass-texture-1
     MinHeight: 0
     MaxHeight: 0.2
-  - TileID: grass
+  - TileID: grass-0
     MinHeight: 0.2
-    MaxHeight: 0.3
-  - TileID: grass-water-bottom
-    MinHeight: 0.3
-    MaxHeight: 0.4
-  - TileID: grass-water-left
-    MinHeight: 0.4
-    MaxHeight: 0.7
-  - TileID: grass-water-top-right
-    MinHeight: 0.7
     MaxHeight: 1

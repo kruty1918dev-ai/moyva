@@ -58,6 +58,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 			Container.Bind<IMapObjectRegistryService>().To<MapObjectRegistryService>().AsSingle();
 			Container.Bind<IMapObjectVisualRegistryService>().To<MapObjectVisualRegistryService>().AsSingle();
 			Container.Bind<IMapLayerRegistry>().To<MapLayerRegistry>().AsSingle();
+			Container.Bind<IGeneratorDataRegistry>().To<GeneratorDataRegistry>().AsSingle();
 
 			Container.BindInterfacesAndSelfTo<MapVisualInstantiator>().AsSingle();
 			Container.Bind<ISaveModule>().To<GeneratedWorldSaveModule>().AsSingle();

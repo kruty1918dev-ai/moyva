@@ -16,10 +16,10 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IFactionRegistry _factionRegistry;
 
         [InjectOptional]
-        private IFogOfWarServiceRegistry _fogRegistry = null;
+        private IFogOfWarServiceRegistry _fogRegistry;
 
         [InjectOptional]
-        private IFogOfWarService _globalFog = null;
+        private IFogOfWarService _globalFog;
 
         public BotFogInitializer(IFactionRegistry factionRegistry)
         {

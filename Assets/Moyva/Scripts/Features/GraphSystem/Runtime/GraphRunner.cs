@@ -16,6 +16,13 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
         public GraphExecutionResult Execute(GraphAsset graph, NodeContext context)
         {
             var logs = new List<NodeExecutionLog>();
+
+            var uniqueNodeError = ValidateUniqueNodes(graph, logs);
+            if (uniqueNodeError != null)
+                return uniqueNodeError;
+
+            GlobalSeed.Set(context.Seed);
+
             var cache = new Dictionary<string, object[]>();
             var connectionsByTarget = BuildConnectionsByTarget(graph);
 
@@ -37,16 +44,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 try
                 {
                     if (node is IAsyncNode asyncNode)
-                    {
-                        // Execute async node on the thread-pool to avoid capturing the
-                        // Unity synchronization context and potential deadlocks when
-                        // calling from synchronous code on the main thread.
-                        output = Task.Run(async () => await asyncNode.ExecuteAsync(inputs, context).ConfigureAwait(false)).GetAwaiter().GetResult();
-                    }
+                        output = asyncNode.ExecuteAsync(inputs, context)
+                            .GetAwaiter().GetResult();
                     else
-                    {
                         output = node.Execute(inputs, context);
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -56,7 +57,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         NodeStatus.Error, ex.Message, sw.ElapsedMilliseconds,
                         allocOnError,
                         iterOnError));
-                    return new GraphExecutionResult(node.NodeId, ex.Message, logs);
+                    return new GraphExecutionResult(node.NodeId, ex.Message, logs, cache);
                 }
 
                 sw.Stop();
@@ -71,7 +72,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     iterations));
 
                 if (output.Status == NodeStatus.Error)
-                    return new GraphExecutionResult(node.NodeId, output.Message, logs);
+                    return new GraphExecutionResult(node.NodeId, output.Message, logs, cache);
 
                 if (output.Values != null)
                     cache[node.NodeId] = output.Values;
@@ -84,6 +85,13 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             NodeContext context)
         {
             var logs = new List<NodeExecutionLog>();
+
+            var uniqueNodeError = ValidateUniqueNodes(graph, logs);
+            if (uniqueNodeError != null)
+                return uniqueNodeError;
+
+            GlobalSeed.Set(context.Seed);
+
             var cache = new Dictionary<string, object[]>();
             var connectionsByTarget = BuildConnectionsByTarget(graph);
 
@@ -119,7 +127,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         NodeStatus.Error, ex.Message, sw.ElapsedMilliseconds,
                         allocOnError,
                         iterOnError));
-                    return new GraphExecutionResult(node.NodeId, ex.Message, logs);
+                    return new GraphExecutionResult(node.NodeId, ex.Message, logs, cache);
                 }
 
                 sw.Stop();
@@ -134,7 +142,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     iterations));
 
                 if (output.Status == NodeStatus.Error)
-                    return new GraphExecutionResult(node.NodeId, output.Message, logs);
+                    return new GraphExecutionResult(node.NodeId, output.Message, logs, cache);
 
                 if (output.Values != null)
                     cache[node.NodeId] = output.Values;
@@ -162,11 +170,27 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     && conn.SourcePortIndex < sourceOutputs.Length)
                 {
                     if (conn.TargetPortIndex < inputs.Length)
-                        inputs[conn.TargetPortIndex] = sourceOutputs[conn.SourcePortIndex];
+                    {
+                        var value = sourceOutputs[conn.SourcePortIndex];
+                        var targetType = portDefs[conn.TargetPortIndex].ValueType;
+                        inputs[conn.TargetPortIndex] = SelectConnectionValue(value, targetType, conn.SourceElementIndex);
+                    }
                 }
             }
 
             return inputs;
+        }
+
+        private static object SelectConnectionValue(object value, Type targetType, int sourceElementIndex)
+        {
+            if (value == null || targetType == null)
+                return value;
+            if (targetType.IsInstanceOfType(value) || targetType == typeof(object))
+                return value;
+
+            return PortDefinition.TryGetIndexableValue(value, sourceElementIndex, out var element)
+                ? element
+                : value;
         }
 
         private static Dictionary<string, List<Connection>> BuildConnectionsByTarget(GraphAsset graph)
@@ -187,6 +211,35 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             }
 
             return index;
+        }
+
+        private static GraphExecutionResult ValidateUniqueNodes(GraphAsset graph, List<NodeExecutionLog> logs)
+        {
+            if (graph?.Nodes == null)
+                return null;
+
+            var seen = new Dictionary<Type, NodeBase>();
+            foreach (var node in graph.Nodes)
+            {
+                if (node == null)
+                    continue;
+
+                var nodeType = node.GetType();
+                if (!Attribute.IsDefined(nodeType, typeof(UniqueNodeAttribute)))
+                    continue;
+
+                if (!seen.TryGetValue(nodeType, out var firstNode))
+                {
+                    seen[nodeType] = node;
+                    continue;
+                }
+
+                string message = $"Graph contains multiple unique nodes of type '{nodeType.Name}'. Keep only one. First node: {firstNode.NodeId}.";
+                logs.Add(new NodeExecutionLog(node.NodeId, node.Title, NodeStatus.Error, message, 0f));
+                return new GraphExecutionResult(node.NodeId, message, logs);
+            }
+
+            return null;
         }
 
         private static long GetThreadAllocatedBytes()

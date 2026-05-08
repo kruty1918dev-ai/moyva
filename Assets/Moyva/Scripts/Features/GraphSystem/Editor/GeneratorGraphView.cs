@@ -25,6 +25,18 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             public string jsonData;
         }
 
+        [Serializable]
+        private sealed class UnitySerializedNodeWrapper
+        {
+            public UnitySerializedNodeData MonoBehaviour = default;
+        }
+
+        [Serializable]
+        private sealed class UnitySerializedNodeData
+        {
+            public string m_Name = default;
+        }
+
         private GraphAsset _graphAsset;
         private readonly GraphEditorWindow _window;
         private NodeSearchProvider _searchProvider;
@@ -441,6 +453,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 view.SetPreviewVisible(visible);
         }
 
+        internal bool TryGetBestRawMaps(out float[,] floatMap, out string[,] tileMap)
+        {
+            floatMap = null;
+            tileMap  = null;
+
+            GeneratorNodeView source =
+                selection.OfType<GeneratorNodeView>().FirstOrDefault(v => v.PreviewTexture != null)
+                ?? nodes.OfType<GeneratorNodeView>().FirstOrDefault(v => v.NodeData is OutputNode && v.PreviewTexture != null)
+                ?? nodes.OfType<GeneratorNodeView>().FirstOrDefault(v => v.PreviewTexture != null);
+
+            if (source == null) return false;
+
+            floatMap = source.PreviewFloatMap;
+            tileMap  = source.PreviewTileMap;
+            return floatMap != null || tileMap != null;
+        }
+
         internal bool TryGetBestPreview(out Texture2D previewTexture, out string status)
         {
             // 1) Selected node preview
@@ -515,6 +544,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             foreach (var view in views)
                 view.ClearPreview();
 
+            RefreshConnectionIndexControls(result);
+
             if (_graphAsset == null || result == null)
                 return;
 
@@ -530,10 +561,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (node == null) continue;
                 if (!viewById.TryGetValue(node.NodeId, out var nodeView)) continue;
 
+                var outputsAll = result.GetOutputs(node.NodeId);
+                bool hidePreviewForNode = Attribute.IsDefined(node.GetType(), typeof(Kruty1918.Moyva.GraphSystem.API.HidePreviewAttribute));
+
                 // ── OutputNode: composite preview ──
                 if (node is OutputNode)
                 {
-                    var outputs = result.GetOutputs(node.NodeId);
+                    var outputs = outputsAll;
                     string[,] biomeMap = null;
                     string[,] objectMap = null;
                     float[,] heightMap = null;
@@ -547,14 +581,42 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         if (outputs.Length > 3) buildingMap = outputs[3] as string[,];
                     }
 
-                    var composite = CompositePreviewBuilder.Build(
-                        layerData, biomeMap, objectMap, heightMap, buildingMap,
-                        tileRegistry,
-                        settings?.MapObjectRegistry,
-                        settings?.BuildingRegistry);
+                    if (!hidePreviewForNode)
+                    {
+                        var composite = CompositePreviewBuilder.Build(
+                            layerData, biomeMap, objectMap, heightMap, buildingMap,
+                            tileRegistry,
+                            settings?.MapObjectRegistry,
+                            settings?.BuildingRegistry);
 
-                    nodeView.SetPreview(composite, "Composite preview", ownsTexture: true);
-                    nodeView.SetPreviewVisible(_inlinePreviewsVisible);
+                        nodeView.SetPreview(composite, "Composite preview", ownsTexture: true);
+                        nodeView.SetPreviewVisible(_inlinePreviewsVisible);
+                    }
+                    else
+                    {
+                        nodeView.ClearPreview();
+                        nodeView.SetPreviewVisible(false);
+                    }
+
+
+                    // update output labels
+                    for (int i = 0; i < nodeView.OutputCount; i++)
+                    {
+                        string text = "-";
+                        if (outputs != null && i < outputs.Length)
+                        {
+                            var v = outputs[i];
+                            if (v == null) text = "-";
+                            else if (v is int || v is float || v is string) text = v.ToString();
+                            else if (v is Array) text = $"<{v.GetType().GetElementType()?.Name}[]>";
+                            else text = $"<{v.GetType().Name}>";
+                        }
+                        nodeView.SetOutputValueText(i, text);
+                    }
+
+                    // update compact values under node
+                    nodeView.SetOutputValues(outputs);
+
                     continue;
                 }
 
@@ -563,32 +625,73 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 bool ownsPreview = false;
                 string status = null;
 
-                if (node is IPreviewableNode previewable)
+                if (!hidePreviewForNode)
                 {
-                    preview = previewable.GeneratePreview(previewSize, previewSize);
-                    if (preview != null)
-                        status = "Node preview";
+                    if (node is IPreviewableNode previewable)
+                    {
+                        preview = previewable.GeneratePreview(previewSize, previewSize);
+                        if (preview != null)
+                        {
+                            status = "Node preview";
+                            ownsPreview = true;
+                        }
+                    }
+
+                    if (preview == null)
+                    {
+                        var previewOutputs = SelectPreferredPreviewOutputs(node, outputsAll);
+
+                        preview = NodePreviewTextureFactory.TryBuild(
+                            previewOutputs,
+                            previewSize,
+                            previewSize,
+                            out ownsPreview,
+                            out status,
+                            tileRegistry,
+                            heatmap);
+                    }
+
+                    nodeView.SetPreview(preview, status, ownsPreview);
+                    nodeView.SetPreviewVisible(_inlinePreviewsVisible);
+
+                    // Зберігаємо raw-дані для hover-підказки у Preview Window
+                    {
+                        float[,]  rawFloat = null;
+                        string[,] rawTile  = null;
+                        if (outputsAll != null)
+                        {
+                            foreach (var o in outputsAll)
+                            {
+                                if (rawFloat == null && o is float[,] fm)  rawFloat = fm;
+                                if (rawTile  == null && o is string[,] tm) rawTile  = tm;
+                            }
+                        }
+                        nodeView.SetPreviewRawMaps(rawFloat, rawTile);
+                    }
+                }
+                else
+                {
+                    nodeView.ClearPreview();
+                    nodeView.SetPreviewVisible(false);
                 }
 
-                if (preview == null)
+                // update output labels
+                for (int i = 0; i < nodeView.OutputCount; i++)
                 {
-                    var outputs = result.GetOutputs(node.NodeId);
-
-                    // Для lake/water/mask-вузлів показуємо саме bool-mask, а не перший (часто BiomeMap) вихід.
-                    outputs = SelectPreferredPreviewOutputs(node, outputs);
-
-                    preview = NodePreviewTextureFactory.TryBuild(
-                        outputs,
-                        previewSize,
-                        previewSize,
-                        out ownsPreview,
-                        out status,
-                        tileRegistry,
-                        heatmap);
+                    string text = "-";
+                    if (outputsAll != null && i < outputsAll.Length)
+                    {
+                        var v = outputsAll[i];
+                        if (v == null) text = "-";
+                        else if (v is int || v is float || v is string) text = v.ToString();
+                        else if (v is Array) text = $"<{v.GetType().GetElementType()?.Name}[]>";
+                        else text = $"<{v.GetType().Name}>";
+                    }
+                    nodeView.SetOutputValueText(i, text);
                 }
 
-                nodeView.SetPreview(preview, status, ownsPreview);
-                nodeView.SetPreviewVisible(_inlinePreviewsVisible);
+                // update compact values under node
+                nodeView.SetOutputValues(outputsAll);
             }
         }
 
@@ -772,11 +875,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private bool AreTypesCompatible(GeneratorPort a, GeneratorPort b)
         {
             if (a == null || b == null) return false;
-            if (a.PortValueType == typeof(object) || b.PortValueType == typeof(object))
-                return true;
 
-            return a.PortValueType.IsAssignableFrom(b.PortValueType)
-                || b.PortValueType.IsAssignableFrom(a.PortValueType);
+            var outputPort = a.direction == Direction.Output ? a : b;
+            var inputPort = a.direction == Direction.Input ? a : b;
+
+            return PortDefinition.AreValueTypesCompatible(outputPort.PortValueType, inputPort.PortValueType);
         }
 
         public void SetReadOnly(bool readOnly)
@@ -806,6 +909,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             if (asset == null) return;
 
+            GraphStaticNodeUtility.EnsureStaticNodes(asset);
             _graphAsset.RepairMissingNodeConnections();
             _graphAsset.RemoveNullNodes();
             FlattenLegacyRoutePoints();
@@ -837,6 +941,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var edge = CreateStyledEdge(outputPort, inputPort);
                 AddElement(edge);
             }
+
+            RefreshConnectionIndexControls();
 
             BringAllNodesToFront();
 
@@ -874,6 +980,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return change;
             }
 
+            change.elementsToRemove?.RemoveAll(IsProtectedStaticElement);
+            change.movedElements?.RemoveAll(IsProtectedStaticElement);
+
             // Handle removed elements
             if (change.elementsToRemove != null)
             {
@@ -908,14 +1017,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     var targetPort = edge.input as GeneratorPort;
                     if (sourcePort == null || targetPort == null) continue;
 
-                    _graphAsset.AddConnection(
+                    var connection = _graphAsset.AddConnection(
                         sourceView.NodeData.NodeId, sourcePort.PortIndex,
                         targetView.NodeData.NodeId, targetPort.PortIndex);
 
                     SetupEdgeVisuals(edge, sourcePort, targetPort);
+                    RefreshConnectionIndexControl(connection);
                 }
                 EditorUtility.SetDirty(_graphAsset);
                 BringAllNodesToFront();
+                RefreshConnectionIndexControls();
                 if (change.edgesToCreate.Count > 0)
                     GraphChanged?.Invoke();
             }
@@ -939,6 +1050,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             return change;
         }
+
+        private static bool IsProtectedStaticElement(GraphElement element) =>
+            element is GeneratorNodeView nodeView && GraphStaticNodeUtility.IsStaticGraphNode(nodeView.NodeData);
 
         private void RemoveEdgeFromAsset(Edge edge)
         {
@@ -964,6 +1078,65 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     break;
                 }
             }
+        }
+
+        private void RefreshConnectionIndexControls(GraphExecutionResult result = null)
+        {
+            foreach (var nodeView in nodes.OfType<GeneratorNodeView>())
+                nodeView.ClearInputElementIndexControls();
+
+            if (_graphAsset == null)
+                return;
+
+            foreach (var connection in _graphAsset.Connections)
+                RefreshConnectionIndexControl(connection, result);
+        }
+
+        private void RefreshConnectionIndexControl(Connection connection, GraphExecutionResult result = null)
+        {
+            if (connection == null || _graphAsset == null)
+                return;
+
+            var source = _graphAsset.GetNodeById(connection.SourceNodeId);
+            var target = _graphAsset.GetNodeById(connection.TargetNodeId);
+            if (source == null || target == null)
+                return;
+            if (connection.SourcePortIndex < 0 || connection.SourcePortIndex >= source.Outputs.Length)
+                return;
+            if (connection.TargetPortIndex < 0 || connection.TargetPortIndex >= target.Inputs.Length)
+                return;
+
+            var sourcePortDef = source.Outputs[connection.SourcePortIndex];
+            var targetPortDef = target.Inputs[connection.TargetPortIndex];
+            if (!PortDefinition.RequiresElementIndexing(sourcePortDef.ValueType, targetPortDef.ValueType))
+                return;
+
+            int elementCount = GetRuntimeElementCount(result, connection);
+            var targetView = nodes.OfType<GeneratorNodeView>()
+                .FirstOrDefault(view => view.NodeData != null && view.NodeData.NodeId == connection.TargetNodeId);
+            var inputPort = targetView?.GetInputPort(connection.TargetPortIndex);
+            if (inputPort == null)
+                return;
+
+            inputPort.SetElementIndexControl(connection.SourceElementIndex, elementCount, newIndex =>
+            {
+                Undo.RecordObject(_graphAsset, "Set Connection Element Index");
+                connection.SetSourceElementIndex(newIndex);
+                EditorUtility.SetDirty(_graphAsset);
+                RefreshConnectionIndexControl(connection, result);
+                GraphChanged?.Invoke();
+            });
+        }
+
+        private static int GetRuntimeElementCount(GraphExecutionResult result, Connection connection)
+        {
+            var outputs = result?.GetOutputs(connection.SourceNodeId);
+            if (outputs == null || connection.SourcePortIndex < 0 || connection.SourcePortIndex >= outputs.Length)
+                return 0;
+
+            return PortDefinition.TryGetIndexableCount(outputs[connection.SourcePortIndex], out int count)
+                ? count
+                : 0;
         }
 
         #region Keyboard Shortcuts
@@ -1019,6 +1192,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 if (element is GeneratorNodeView nodeView)
                 {
+                    if (GraphStaticNodeUtility.IsStaticGraphNode(nodeView.NodeData))
+                        continue;
+
                     var rect = nodeView.GetPosition();
                     _copyBuffer.Add(new CopiedNodeData
                     {
@@ -1158,7 +1334,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         sourceNodeId = conn.SourceNodeId,
                         sourcePortIndex = conn.SourcePortIndex,
                         targetNodeId = conn.TargetNodeId,
-                        targetPortIndex = conn.TargetPortIndex
+                        targetPortIndex = conn.TargetPortIndex,
+                        sourceElementIndex = conn.SourceElementIndex
                     });
                 }
             }
@@ -1259,6 +1436,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 soCreated = CreateSOsFromPreset(preset.scriptableObjects, soMap);
             }
+            else if (hasEmbeddedSOs)
+            {
+                BuildExistingSOMapFromPreset(preset.scriptableObjects, soMap);
+            }
 
             var idMap = new Dictionary<string, string>();
             var newViews = new Dictionary<string, GeneratorNodeView>();
@@ -1279,13 +1460,18 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var node = _graphAsset.AddNode(nodeType);
                 if (node == null) { skipped++; continue; }
 
-                string newId = Guid.NewGuid().ToString();
-                idMap[entry.originalNodeId] = newId;
+                string newId = string.IsNullOrWhiteSpace(entry.originalNodeId)
+                    ? Guid.NewGuid().ToString()
+                    : entry.originalNodeId;
+                string presetNodeId = string.IsNullOrWhiteSpace(entry.originalNodeId)
+                    ? newId
+                    : entry.originalNodeId;
+                idMap[presetNodeId] = newId;
                 node.NodeId = newId;
                 node.EditorPosition = entry.position;
 
                 // Restore serialized field values
-                EditorJsonUtility.FromJsonOverwrite(entry.jsonData, node);
+                RestoreNodeFromPresetEntry(node, entry, soMap);
                 node.NodeId = newId;
                 node.EditorPosition = entry.position;
 
@@ -1310,7 +1496,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                 _graphAsset.AddConnection(
                     newSource, connEntry.sourcePortIndex,
-                    newTarget, connEntry.targetPortIndex);
+                    newTarget, connEntry.targetPortIndex,
+                    connEntry.sourceElementIndex);
 
                 if (!newViews.TryGetValue(newSource, out var sourceView)) continue;
                 if (!newViews.TryGetValue(newTarget, out var targetView)) continue;
@@ -1341,32 +1528,88 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 EditorUtility.DisplayDialog("Попередження імпорту", msg, "OK");
         }
 
+        private static string GetPresetNodeObjectName(NodePresetEntry entry)
+        {
+            if (entry == null || string.IsNullOrWhiteSpace(entry.jsonData))
+                return null;
+
+            try
+            {
+                var wrapper = JsonUtility.FromJson<UnitySerializedNodeWrapper>(entry.jsonData);
+                string objectName = wrapper?.MonoBehaviour?.m_Name;
+                return string.IsNullOrWhiteSpace(objectName) ? null : objectName;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static string BuildNodeNameKey(string typeName, string objectName) =>
+            $"{typeName}\n{objectName}";
+
+        private static void AddNodeLookup(Dictionary<string, List<NodeBase>> lookup, string key, NodeBase node)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return;
+
+            if (!lookup.TryGetValue(key, out var list))
+            {
+                list = new List<NodeBase>();
+                lookup[key] = list;
+            }
+
+            list.Add(node);
+        }
+
+        private static NodeBase TakeUnusedCandidate(List<NodeBase> candidates, HashSet<NodeBase> usedNodes)
+        {
+            if (candidates == null)
+                return null;
+
+            for (int index = 0; index < candidates.Count; index++)
+            {
+                var candidate = candidates[index];
+                if (candidate == null || usedNodes.Contains(candidate))
+                    continue;
+
+                candidates.RemoveAt(index);
+                return candidate;
+            }
+
+            return null;
+        }
+
         /// <summary>
-        /// Merge preset into existing graph: match nodes by type, update data, add missing, rebuild connections.
+        /// Merge preset into existing graph: match nodes, update data, remove stale nodes, rebuild connections.
         /// </summary>
         private void MergePresetIntoGraph(GraphPreset preset)
         {
             Undo.RecordObject(_graphAsset, "Merge Graph Preset");
 
-            // Build a pool of existing nodes grouped by type (for 1:1 matching)
+            var existingById = new Dictionary<string, NodeBase>();
             var existingByType = new Dictionary<string, List<NodeBase>>();
+            var existingByTypeAndName = new Dictionary<string, List<NodeBase>>();
+
             foreach (var node in _graphAsset.Nodes)
             {
                 if (node == null) continue;
                 string typeName = node.GetType().AssemblyQualifiedName;
-                if (!existingByType.TryGetValue(typeName, out var list))
-                {
-                    list = new List<NodeBase>();
-                    existingByType[typeName] = list;
-                }
-                list.Add(node);
+                existingById[node.NodeId] = node;
+                AddNodeLookup(existingByType, typeName, node);
+                AddNodeLookup(existingByTypeAndName, BuildNodeNameKey(typeName, node.name), node);
             }
 
             // Map: preset originalNodeId → actual nodeId in graph
             var idMap = new Dictionary<string, string>();
             var allViews = new Dictionary<string, GeneratorNodeView>();
+            var usedNodes = new HashSet<NodeBase>();
+            var orderedNodes = new List<NodeBase>();
 
-            int updated = 0, added = 0, skipped = 0;
+            var soMap = new Dictionary<string, ScriptableObject>();
+            int soCreated = CreateMissingSOsFromPreset(preset.scriptableObjects, soMap);
+
+            int updated = 0, added = 0, skipped = 0, removedStale = 0;
 
             foreach (var entry in preset.nodes)
             {
@@ -1381,23 +1624,43 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 string typeName = entry.nodeTypeAssemblyQualifiedName;
                 NodeBase matched = null;
 
-                // Try to match an existing node of the same type
-                if (existingByType.TryGetValue(typeName, out var candidates) && candidates.Count > 0)
+                if (!string.IsNullOrWhiteSpace(entry.originalNodeId)
+                    && existingById.TryGetValue(entry.originalNodeId, out var exactMatch)
+                    && exactMatch != null
+                    && !usedNodes.Contains(exactMatch)
+                    && exactMatch.GetType() == nodeType)
                 {
-                    matched = candidates[0];
-                    candidates.RemoveAt(0);
+                    matched = exactMatch;
+                }
+
+                string presetObjectName = GetPresetNodeObjectName(entry);
+                if (matched == null && !string.IsNullOrWhiteSpace(presetObjectName)
+                    && existingByTypeAndName.TryGetValue(BuildNodeNameKey(typeName, presetObjectName), out var namedCandidates))
+                {
+                    matched = TakeUnusedCandidate(namedCandidates, usedNodes);
+                }
+
+                if (matched == null && existingByType.TryGetValue(typeName, out var typeCandidates))
+                {
+                    matched = TakeUnusedCandidate(typeCandidates, usedNodes);
                 }
 
                 if (matched != null)
                 {
+                    usedNodes.Add(matched);
+
                     // Update existing node — restore field values, keep NodeId
                     string keepId = matched.NodeId;
-                    EditorJsonUtility.FromJsonOverwrite(entry.jsonData, matched);
+                    RestoreNodeFromPresetEntry(matched, entry, soMap);
                     matched.NodeId = keepId;
                     matched.EditorPosition = entry.position;
                     ResolveExistingSOReferences(matched);
 
-                    idMap[entry.originalNodeId] = keepId;
+                    string presetNodeId = string.IsNullOrWhiteSpace(entry.originalNodeId)
+                        ? keepId
+                        : entry.originalNodeId;
+                    idMap[presetNodeId] = keepId;
+                    orderedNodes.Add(matched);
                     updated++;
                 }
                 else
@@ -1406,19 +1669,39 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     var node = _graphAsset.AddNode(nodeType);
                     if (node == null) { skipped++; continue; }
 
-                    string newId = Guid.NewGuid().ToString();
+                    string newId = string.IsNullOrWhiteSpace(entry.originalNodeId) || existingById.ContainsKey(entry.originalNodeId)
+                        ? Guid.NewGuid().ToString()
+                        : entry.originalNodeId;
                     node.NodeId = newId;
                     node.EditorPosition = entry.position;
 
-                    EditorJsonUtility.FromJsonOverwrite(entry.jsonData, node);
+                    RestoreNodeFromPresetEntry(node, entry, soMap);
                     node.NodeId = newId;
                     node.EditorPosition = entry.position;
                     ResolveExistingSOReferences(node);
 
-                    idMap[entry.originalNodeId] = newId;
+                    string presetNodeId = string.IsNullOrWhiteSpace(entry.originalNodeId)
+                        ? newId
+                        : entry.originalNodeId;
+                    idMap[presetNodeId] = newId;
+                    usedNodes.Add(node);
+                    orderedNodes.Add(node);
                     added++;
                 }
             }
+
+            var importedNodeIds = new HashSet<string>(idMap.Values);
+            var staleNodes = _graphAsset.Nodes
+                .Where(node => node != null && !importedNodeIds.Contains(node.NodeId))
+                .ToList();
+
+            foreach (var staleNode in staleNodes)
+            {
+                _graphAsset.RemoveNode(staleNode);
+                removedStale++;
+            }
+
+            _graphAsset.ReorderNodes(orderedNodes);
 
             // Rebuild connections: remove old, add from preset
             graphViewChanged -= OnGraphViewChanged;
@@ -1453,7 +1736,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (!idMap.TryGetValue(connEntry.targetNodeId, out var tgtId)) continue;
 
                 _graphAsset.AddConnection(srcId, connEntry.sourcePortIndex,
-                    tgtId, connEntry.targetPortIndex);
+                    tgtId, connEntry.targetPortIndex,
+                    connEntry.sourceElementIndex);
 
                 if (!allViews.TryGetValue(srcId, out var srcView)) continue;
                 if (!allViews.TryGetValue(tgtId, out var tgtView)) continue;
@@ -1473,6 +1757,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             EditorUtility.SetDirty(_graphAsset);
 
             var msg = $"Модифіковано: оновлено {updated}, додано {added} вузл(ів), {imported} з'єднань";
+            if (removedStale > 0) msg += $", видалено {removedStale} зайвих вузл(ів)";
+            if (soCreated > 0) msg += $", створено {soCreated} SO-ассет(ів)";
             if (skipped > 0) msg += $"\nПропущено {skipped}";
             Debug.Log($"[GraphPreset Merge] {msg}");
 
@@ -1486,6 +1772,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             System.Reflection.BindingFlags.Instance |
             System.Reflection.BindingFlags.NonPublic |
             System.Reflection.BindingFlags.Public;
+
+        private const string DefaultGenerationSOFolder = "Assets/Moyva/SO/Generation";
+        private const string MainTileRegistryPath = "Assets/Moyva/SO/Tile/TileRegistry.asset";
+
+        private static readonly System.Text.RegularExpressions.Regex UnityGuidRegex = new("^[0-9a-fA-F]{32}$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
         /// <summary>Collect all ScriptableObject references from a node into the dictionary (keyed by asset GUID).</summary>
         private static void CollectSOReferences(NodeBase node, Dictionary<string, ScriptableObject> collected)
@@ -1510,9 +1801,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private static int CreateSOsFromPreset(List<ScriptableObjectEntry> entries,
             Dictionary<string, ScriptableObject> soMap)
         {
-            const string soFolder = "Assets/Moyva/SO/Generation";
-            if (!AssetDatabase.IsValidFolder(soFolder))
-                AssetDatabase.CreateFolder("Assets/Moyva/SO", "Generation");
+            EnsureGenerationSOFolder();
 
             int count = 0;
             foreach (var entry in entries)
@@ -1524,6 +1813,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     continue;
                 }
 
+                var existing = FindExistingSOForPresetEntry(entry, soType, exactNameOnly: true);
+                if (existing != null)
+                {
+                    soMap[entry.originalGuid] = existing;
+                    continue;
+                }
+
                 var newSO = ScriptableObject.CreateInstance(soType);
                 newSO.name = entry.assetName;
 
@@ -1532,7 +1828,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 newSO.name = entry.assetName;
 
                 var assetPath = AssetDatabase.GenerateUniqueAssetPath(
-                    $"{soFolder}/{entry.assetName}.asset");
+                    $"{DefaultGenerationSOFolder}/{entry.assetName}.asset");
                 AssetDatabase.CreateAsset(newSO, assetPath);
 
                 soMap[entry.originalGuid] = newSO;
@@ -1541,6 +1837,163 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             return count;
+        }
+
+        private static void BuildExistingSOMapFromPreset(List<ScriptableObjectEntry> entries,
+            Dictionary<string, ScriptableObject> soMap)
+        {
+            if (entries == null) return;
+
+            foreach (var entry in entries)
+            {
+                var soType = Type.GetType(entry.typeAssemblyQualifiedName);
+                if (soType == null) continue;
+
+                var existing = FindExistingSOForPresetEntry(entry, soType, exactNameOnly: false);
+                if (existing != null)
+                    soMap[entry.originalGuid] = existing;
+            }
+        }
+
+        private static int CreateMissingSOsFromPreset(List<ScriptableObjectEntry> entries,
+            Dictionary<string, ScriptableObject> soMap)
+        {
+            if (entries == null || entries.Count == 0) return 0;
+
+            EnsureGenerationSOFolder();
+
+            int count = 0;
+            foreach (var entry in entries)
+            {
+                var soType = Type.GetType(entry.typeAssemblyQualifiedName);
+                if (soType == null)
+                {
+                    Debug.LogWarning($"[GraphPreset] SO type not found: {entry.typeAssemblyQualifiedName}");
+                    continue;
+                }
+
+                var existing = FindExistingSOForPresetEntry(entry, soType, exactNameOnly: true);
+                if (existing != null)
+                {
+                    soMap[entry.originalGuid] = existing;
+                    continue;
+                }
+
+                var newSO = ScriptableObject.CreateInstance(soType);
+                newSO.name = entry.assetName;
+                EditorJsonUtility.FromJsonOverwrite(entry.jsonData, newSO);
+                newSO.name = entry.assetName;
+
+                var assetPath = AssetDatabase.GenerateUniqueAssetPath(
+                    $"{DefaultGenerationSOFolder}/{entry.assetName}.asset");
+                AssetDatabase.CreateAsset(newSO, assetPath);
+
+                soMap[entry.originalGuid] = newSO;
+                count++;
+                Debug.Log($"[GraphPreset] Created SO from preset: {assetPath} (type: {soType.Name})");
+            }
+
+            return count;
+        }
+
+        private static void EnsureGenerationSOFolder()
+        {
+            if (!AssetDatabase.IsValidFolder(DefaultGenerationSOFolder))
+                AssetDatabase.CreateFolder("Assets/Moyva/SO", "Generation");
+        }
+
+        private static ScriptableObject FindExistingSOForPresetEntry(ScriptableObjectEntry entry, Type soType,
+            bool exactNameOnly)
+        {
+            if (UnityGuidRegex.IsMatch(entry.originalGuid ?? string.Empty))
+            {
+                var byGuid = LoadScriptableObjectByGuid(entry.originalGuid, soType);
+                if (byGuid != null)
+                    return byGuid;
+            }
+
+            if (soType == typeof(TileRegistrySO) && !exactNameOnly)
+            {
+                var mainRegistry = AssetDatabase.LoadAssetAtPath(MainTileRegistryPath, soType) as ScriptableObject;
+                if (mainRegistry != null)
+                    return mainRegistry;
+            }
+
+            var guids = AssetDatabase.FindAssets($"t:{soType.Name}");
+            var candidates = guids
+                .Select(guid => AssetDatabase.GUIDToAssetPath(guid))
+                .Where(path => !string.IsNullOrEmpty(path))
+                .OrderBy(path => path.IndexOf("/Prototype/", StringComparison.OrdinalIgnoreCase) >= 0 ? 1 : 0)
+                .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .Select(path => AssetDatabase.LoadAssetAtPath(path, soType) as ScriptableObject)
+                .Where(asset => asset != null)
+                .ToList();
+
+            var exactName = candidates.FirstOrDefault(asset =>
+                string.Equals(asset.name, entry.assetName, StringComparison.Ordinal));
+            if (exactName != null)
+                return exactName;
+
+            return exactNameOnly ? null : candidates.FirstOrDefault();
+        }
+
+        private static void RestoreNodeFromPresetEntry(NodeBase node, NodePresetEntry entry,
+            Dictionary<string, ScriptableObject> soMap)
+        {
+            var jsonData = RemapScriptableObjectGuids(entry.jsonData, soMap);
+            EditorJsonUtility.FromJsonOverwrite(jsonData, node);
+            AssignSerializedSOReferencesFromJson(node, jsonData);
+        }
+
+        private static string RemapScriptableObjectGuids(string jsonData,
+            Dictionary<string, ScriptableObject> soMap)
+        {
+            if (string.IsNullOrEmpty(jsonData) || soMap == null || soMap.Count == 0)
+                return jsonData;
+
+            foreach (var kvp in soMap)
+            {
+                var assetPath = AssetDatabase.GetAssetPath(kvp.Value);
+                if (string.IsNullOrEmpty(assetPath)) continue;
+
+                var guid = AssetDatabase.AssetPathToGUID(assetPath);
+                if (string.IsNullOrEmpty(guid)) continue;
+
+                jsonData = jsonData.Replace($"\"guid\":\"{kvp.Key}\"", $"\"guid\":\"{guid}\"");
+            }
+
+            return jsonData;
+        }
+
+        private static void AssignSerializedSOReferencesFromJson(NodeBase node, string jsonData)
+        {
+            if (string.IsNullOrEmpty(jsonData)) return;
+
+            foreach (var field in node.GetType().GetFields(SOFieldFlags))
+            {
+                if (!IsSerializedSOField(field)) continue;
+
+                var pattern = $"\\\"{System.Text.RegularExpressions.Regex.Escape(field.Name)}\\\"\\s*:\\s*\\{{[^}}]*\\\"guid\\\"\\s*:\\s*\\\"(?<guid>[^\\\"]+)\\\"";
+                var match = System.Text.RegularExpressions.Regex.Match(jsonData, pattern);
+                if (!match.Success) continue;
+
+                var guid = match.Groups["guid"].Value;
+                var asset = LoadScriptableObjectByGuid(guid, field.FieldType);
+                if (asset != null)
+                    field.SetValue(node, asset);
+            }
+        }
+
+        private static ScriptableObject LoadScriptableObjectByGuid(string guid, Type expectedType)
+        {
+            if (!UnityGuidRegex.IsMatch(guid ?? string.Empty))
+                return null;
+
+            var assetPath = AssetDatabase.GUIDToAssetPath(guid);
+            if (string.IsNullOrEmpty(assetPath))
+                return null;
+
+            return AssetDatabase.LoadAssetAtPath(assetPath, expectedType) as ScriptableObject;
         }
 
         /// <summary>Assign SO fields on a node using the guid→SO map (for "create new" mode).</summary>
@@ -1736,12 +2189,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 if (nodeViewMap.TryGetValue(id, out var v))
                 {
-                    nodeW[id] = 220f;
+                    nodeW[id] = v.PreferredWidth;
                     nodeH[id] = EstimateNodeHeight(v);
                 }
                 else
                 {
-                    nodeW[id] = 220f;
+                    nodeW[id] = 280f;
                     nodeH[id] = 160f;
                 }
             }
@@ -2005,7 +2458,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                             incomingConn.SourceNodeId,
                             incomingConn.SourcePortIndex,
                             outgoingConn.TargetNodeId,
-                            outgoingConn.TargetPortIndex);
+                            outgoingConn.TargetPortIndex,
+                            incomingConn.SourceElementIndex);
                     }
                 }
 
