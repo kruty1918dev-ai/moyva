@@ -7,6 +7,7 @@ Shader "Moyva/FogOfWar"
         _FogIconTex              ("Fog Icon Texture", 2D)              = "white" {}
         _FogTileUVRect           ("Fog Tile UV Rect", Vector)          = (0, 0, 1, 1)
         _FogIconUVRect           ("Fog Icon UV Rect", Vector)          = (0, 0, 1, 1)
+        _FogOverlayUvRemap       ("Fog Overlay UV Remap", Vector)      = (1, 1, 0, 0)
         _FogTileSpritePixelSize  ("Fog Tile Sprite Pixel Size", Vector)= (16, 16, 0, 0)
         _FogTileSizeInCells      ("Fog Tile Size In Cells", Vector)    = (1, 1, 0, 0)
         _FogTileSeamOverlapPixels("Fog Tile Seam Overlap Pixels", Float)= 1
@@ -62,6 +63,7 @@ Shader "Moyva/FogOfWar"
                 float4 _FogIconTex_ST;
                 float4 _FogTileUVRect;
                 float4 _FogIconUVRect;
+                float4 _FogOverlayUvRemap;
                 float4 _FogTileSpritePixelSize;
                 float4 _FogTileSizeInCells;
                 float4 _FogIconGridSize;
@@ -128,8 +130,9 @@ Shader "Moyva/FogOfWar"
 
             half4 frag(Varyings IN) : SV_Target
             {
+                float2 mapUV = IN.uv * _FogOverlayUvRemap.xy + _FogOverlayUvRemap.zw;
                 float2 fogGridSize = max(1.0.xx, rcp(_FogTex_TexelSize.xy));
-                float2 fogCoord = IN.uv * fogGridSize;
+                float2 fogCoord = mapUV * fogGridSize;
                 float2 baseCell = floor(fogCoord);
                 float2 tileSize = max(0.001.xx, _FogTileSizeInCells.xy);
                 float2 tileHalfTexel = 0.5 / max(1.0.xx, _FogTileSpritePixelSize.xy);
@@ -162,7 +165,7 @@ Shader "Moyva/FogOfWar"
 
                 // ─── Sample icon texture with independent icon grid ─────────────
                 float2 iconGridSize = max(1.0.xx, _FogIconGridSize.xy);
-                float2 iconCellFrac = frac(IN.uv * iconGridSize);
+                float2 iconCellFrac = frac(mapUV * iconGridSize);
                 
                 // Scale cell fractional to icon size and center within icon cell
                 float2 iconUVInSprite = iconCellFrac * _FogIconScale;
@@ -173,8 +176,10 @@ Shader "Moyva/FogOfWar"
                 
                 half4 iconSample = SAMPLE_TEXTURE2D(_FogIconTex, sampler_FogIconTex, iconUV);
                 iconSample *= step(0.5, _UseFogIcons);
-                float4 currentFogState = BuildFogState(SAMPLE_TEXTURE2D(_FogTex, sampler_FogTex, IN.uv).r);
+                float mapInside = step(0.0, mapUV.x) * step(mapUV.x, 1.0) * step(0.0, mapUV.y) * step(mapUV.y, 1.0);
+                float4 currentFogState = BuildFogState(SAMPLE_TEXTURE2D(_FogTex, sampler_FogTex, saturate(mapUV)).r);
                 iconSample.a *= (_UnexploredAlpha * currentFogState.z + _ExploredAlpha * currentFogState.y) * (1.0 - currentFogState.x);
+                iconSample.a *= mapInside;
 
                 // ─── Blend tile and icon ──────────────────────────────────────
                 iconSample.a *= _FogIconIntensity;

@@ -18,13 +18,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         [InjectOptional] private IGridService       _gridService;
 
         private Material _mat;
+        private int _mapWidth = 10;
+        private int _mapHeight = 10;
 
         private void Start()
         {
             int w = _gridService != null ? _gridService.GridWidth  : 10;
             int h = _gridService != null ? _gridService.GridHeight : 10;
+            _mapWidth = w;
+            _mapHeight = h;
 
-            transform.localScale = new Vector3(w, h, 1f);
+            Vector2 edgePadding = ResolveEdgePaddingInCells();
+            transform.localScale = new Vector3(w + edgePadding.x * 2f, h + edgePadding.y * 2f, 1f);
             transform.position   = new Vector3((w - 1) * 0.5f, (h - 1) * 0.5f, -0.5f);
 
             var mr = GetComponent<MeshRenderer>();
@@ -117,6 +122,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 0f,
                 0f));
             _mat.SetFloat("_FogTileSeamOverlapPixels", Mathf.Max(0f, _settings.FogTileSeamOverlapPixels));
+            ApplyOverlayUvRemap();
             _mat.SetFloat("_FogIconScale", _settings.FogIconScale);
             _mat.SetVector("_FogIconGridSize", new Vector4(
                 Mathf.Max(1, _settings.FogIconGridSize.x),
@@ -148,6 +154,35 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 textureRect.y * invH,
                 width * invW,
                 height * invH);
+        }
+
+        private void ApplyOverlayUvRemap()
+        {
+            Vector2 edgePadding = ResolveEdgePaddingInCells();
+            float width = Mathf.Max(1, _mapWidth);
+            float height = Mathf.Max(1, _mapHeight);
+            _mat.SetVector("_FogOverlayUvRemap", new Vector4(
+                (width + edgePadding.x * 2f) / width,
+                (height + edgePadding.y * 2f) / height,
+                -edgePadding.x / width,
+                -edgePadding.y / height));
+        }
+
+        private Vector2 ResolveEdgePaddingInCells()
+        {
+            if (_settings == null)
+                return Vector2.zero;
+
+            Vector2 spriteSize = new Vector2(
+                Mathf.Max(1, _settings.FogTileSpritePixelSize.x),
+                Mathf.Max(1, _settings.FogTileSpritePixelSize.y));
+            Vector2 tileSize = new Vector2(
+                Mathf.Max(0.001f, _settings.FogTileSizeInCells.x),
+                Mathf.Max(0.001f, _settings.FogTileSizeInCells.y));
+            float paddingPixels = Mathf.Max(0f, _settings.FogMapEdgePaddingPixels);
+            return new Vector2(
+                paddingPixels / spriteSize.x * tileSize.x,
+                paddingPixels / spriteSize.y * tileSize.y);
         }
 
         private void ApplyOverlayRenderPriority(Renderer renderer)

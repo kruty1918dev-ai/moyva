@@ -29,6 +29,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private SerializedProperty _fogTileSpritePixelSizeProp;
         private SerializedProperty _fogTileSizeInCellsProp;
         private SerializedProperty _fogTileSeamOverlapPixelsProp;
+        private SerializedProperty _fogMapEdgePaddingPixelsProp;
         private SerializedProperty _fogTileTilingProp;
         private SerializedProperty _fogIconSpritesProp;
         private SerializedProperty _fogIconSpritePixelSizeProp;
@@ -63,6 +64,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             _fogTileSpritePixelSizeProp = serializedObject.FindProperty("FogTileSpritePixelSize");
             _fogTileSizeInCellsProp     = serializedObject.FindProperty("FogTileSizeInCells");
             _fogTileSeamOverlapPixelsProp = serializedObject.FindProperty("FogTileSeamOverlapPixels");
+            _fogMapEdgePaddingPixelsProp = serializedObject.FindProperty("FogMapEdgePaddingPixels");
             _fogTileTilingProp          = serializedObject.FindProperty("FogTileTiling");
             _fogIconSpritesProp         = serializedObject.FindProperty("FogIconSprites");
             _fogIconSpritePixelSizeProp = serializedObject.FindProperty("FogIconSpritePixelSize");
@@ -251,6 +253,10 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                     new GUIContent("Перекриття швів, px", "Додаткове перекриття країв тайла у пікселях спрайта. 1-2 px зазвичай прибирають просвіти на зумі без накопичення альфи"));
                 DrawTileSeamOverlapValidation();
 
+                EditorGUILayout.PropertyField(_fogMapEdgePaddingPixelsProp,
+                    new GUIContent("Запас краю мапи, px", "Наскільки розширити геометрію туману за зовнішній край мапи, у пікселях спрайта. Прибирає просвіти саме на краю мапи під час зуму"));
+                DrawMapEdgePaddingValidation();
+
                 if (_fogTileSpriteProp.objectReferenceValue == null)
                 {
                     EditorGUILayout.HelpBox(
@@ -433,6 +439,27 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             {
                 EditorGUILayout.HelpBox(
                     "Зазвичай достатньо 1-2 px. Великі значення можуть помітно розтягувати край тайла.",
+                    MessageType.Info);
+            }
+        }
+
+        private void DrawMapEdgePaddingValidation()
+        {
+            if (_fogMapEdgePaddingPixelsProp == null)
+                return;
+
+            float padding = _fogMapEdgePaddingPixelsProp.floatValue;
+            if (padding < 0f)
+            {
+                EditorGUILayout.HelpBox(
+                    "Запас краю мапи не може бути від'ємним. Значення буде затиснуто в runtime.",
+                    MessageType.Warning);
+            }
+
+            if (padding > 8f)
+            {
+                EditorGUILayout.HelpBox(
+                    "Зазвичай достатньо 1-4 px. Великі значення можуть помітно виводити туман за межі мапи.",
                     MessageType.Info);
             }
         }

@@ -32,6 +32,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
         public Vector2 FogTileSizeInCells = Vector2.one;
         [Tooltip("Extra overlap on each fog tile edge in sprite pixels. Helps hide zoom/filtering seams without increasing opacity on overlaps.")]
         [Min(0f)] public float FogTileSeamOverlapPixels = 1f;
+        [Tooltip("Extra fog overlay geometry past the map border, measured in sprite pixels. This hides zoom/rasterization gaps on the outer map edge while fog UVs stay aligned to the real map.")]
+        [Min(0f)] public float FogMapEdgePaddingPixels = 2f;
         [Tooltip("Scale for tiling the fog cell texture. Higher = more tiles per cell")]
         [Min(1f)] public float FogTileTiling = 1f;
 
@@ -60,6 +62,7 @@ namespace Kruty1918.Moyva.FogOfWar.API
             FogTileSpritePixelSize = ClampSpritePixelSize(FogTileSpritePixelSize);
             FogTileSizeInCells = ClampTileSizeInCells(FogTileSizeInCells);
             FogTileSeamOverlapPixels = Mathf.Max(0f, FogTileSeamOverlapPixels);
+            FogMapEdgePaddingPixels = Mathf.Max(0f, FogMapEdgePaddingPixels);
             FogIconSpritePixelSize = ClampSpritePixelSize(FogIconSpritePixelSize);
         }
 
