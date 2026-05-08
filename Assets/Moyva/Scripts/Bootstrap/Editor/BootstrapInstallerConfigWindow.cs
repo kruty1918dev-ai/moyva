@@ -181,20 +181,34 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             }
 
             DrawStartSection(
-                "Start Position",
+                "Стартова позиція",
                 settings,
                 "minMarginFromBorder",
                 "relativeMarginFactor");
 
             DrawStartSection(
-                "Fog Reveal Shape",
+                "Висота стартового тайла",
+                settings,
+                "startMinHeight",
+                "startMaxHeight",
+                "requireHeightMapForStart");
+
+            DrawStartSection(
+                "Форма розкриття туману",
                 settings,
                 "revealedCircleRadius",
                 "keepCoreFullyVisible",
                 "coreVisibleRadiusOverride");
 
             DrawStartSection(
-                "Camera",
+                "Стартові позиції мультиплеєра",
+                settings,
+                "multiplayerStartSlots",
+                "minAStarDistanceBetweenPlayers",
+                "startCandidateAttempts");
+
+            DrawStartSection(
+                "Камера",
                 settings,
                 "cameraZ");
         }
