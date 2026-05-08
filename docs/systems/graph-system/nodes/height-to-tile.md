@@ -14,12 +14,15 @@
 |---|---|---|---|
 | **Input** 🟢 | HeightMap | `float[,]` | Карта висот |
 | **Output** 🔵 | TileMap | `string[,]` | Карта ID тайлів |
+| **Output** 🟡 | LayerMask | `bool[,]` | `true` там, де висота потрапила у шар з індексом `Mask Layer Index` |
+| **Output** 🟠 | LayerIndexMap | `int[,]` | Індекс шару `HeightLayers` для кожної клітинки (`-1`, якщо шар не знайдено) |
 
 ## Параметри
 
 | Параметр | Тип | Опис |
 |---|---|---|
 | **Height Map Settings** | `HeightMapSettings` (SO) | Масив шарів висоти (HeightLayer[]) |
+| **Mask Layer Index** | `int` | Індекс шару `HeightLayers`, для якого формується `LayerMask` |
 
 ## Як налаштувати `HeightMapSettings`
 
@@ -35,3 +38,9 @@ HeightLayer[]:
 ```
 
 > **Різниця з BiomeResolver:** HeightToTile враховує тільки висоту. [BiomeResolver](biome-resolver.md) додатково враховує вологість для складніших біомів.
+
+## Layer outputs
+
+- `LayerMask` зручний для швидкого фільтра по одному шару (наприклад, лише зона `HeightLayers[3]`).
+- `LayerIndexMap` потрібен, коли downstream-нода має працювати з кількома шарами одразу (наприклад, `Hill Generator` з `target layer indices`).
+- Якщо межі шарів налаштовані невалідно і шар для клітинки не знайдено, `LayerIndexMap[x,y] = -1`.

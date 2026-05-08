@@ -12,16 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e1dc81b1d85eb5a585bdd434e14191d, type: 3}
   m_Name: GraphEditorWindowSettings
   m_EditorClassIdentifier: Kruty1918.Moyva.GraphSystem.Editor::Kruty1918.Moyva.GraphSystem.Editor.GraphEditorWindowSettings
-  graphAssetGuid: e728959edc09a5fea829221821058070
-  previewSettingsGuid: c62e79ed759acdaa7a7d728e019a4cf7
-  graphAsset: {fileID: 11400000, guid: e728959edc09a5fea829221821058070, type: 2}
-  previewSettings: {fileID: 11400000, guid: c62e79ed759acdaa7a7d728e019a4cf7, type: 2}
+  graphAssetGuid: b1deed2da6c33de4882d0097ea3ce6d3
+  previewSettingsGuid: 451896f3688b8a541875ea83d926be82
+  graphAsset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
+  previewSettings: {fileID: 11400000, guid: 451896f3688b8a541875ea83d926be82, type: 2}
   previewWidth: 64
   previewHeight: 64
   showInlinePreviews: 1
   autoRunOnChange: 1
   previewResolution: 1
   previewHeatmap: 0
-  inspectorTabIndex: 0
+  inspectorTabIndex: 1
   isInspectorVisible: 1
-  isNodeInspectorExpanded: 1
+  cameraPosition: {x: 0, y: 0, z: 0}
+  cameraScale: {x: 1, y: 1, z: 1}

@@ -890,11 +890,14 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             _isHost = false;
         }
 
+#endif
+
         public void Dispose()
         {
+    #if MOYVA_UGS_RELAY
             CleanupTransportImmediate();
+    #endif
         }
-#endif
 
         private SessionResult UgsNotAvailable()
         {

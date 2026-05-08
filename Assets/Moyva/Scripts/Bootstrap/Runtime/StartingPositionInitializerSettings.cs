@@ -6,7 +6,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     [Serializable]
     public sealed class StartingPositionInitializerSettings
     {
-        [Header("Start Position")]
+        [Header("Стартова позиція")]
         [Tooltip("Мінімальний відступ стартової точки від краю мапи в тайлах.\nБільше значення зменшує шанс старту біля краю і робить старт безпечнішим.")]
         [Min(0)]
         public int minMarginFromBorder = 5;
@@ -15,53 +15,44 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         [Range(0f, 0.45f)]
         public float relativeMarginFactor = 0.1667f;
 
-        [Header("Fog Reveal Shape")]
-        [Tooltip("Радіус ядра стартової зони в тайлах.\nУ ядрі тайли найчастіше відкриваються повністю (без туману).")]
+        [Header("Висота стартового тайла")]
+        [Tooltip("Мінімальна висота тайла, який може бути обраний як стартовий. Використовується HeightMap зі згенерованого світу, щоб старт не потрапляв у воду.")]
+        [Range(0f, 1f)]
+        public float startMinHeight = 0.35f;
+
+        [Tooltip("Максимальна висота тайла, який може бути обраний як стартовий. Дозволяє відсікти надто високі гори або інші небажані зони.")]
+        [Range(0f, 1f)]
+        public float startMaxHeight = 1f;
+
+        [Tooltip("Якщо увімкнено, старт не буде обрано без валідної HeightMap. Якщо вимкнено, за відсутності HeightMap використовується звичайний випадковий fallback.")]
+        public bool requireHeightMapForStart = false;
+
+        [Header("Форма розкриття туману")]
+        [Tooltip("Радіус стартового кола розсіювання туману в тайлах. Усі тайли всередині кола відкриваються рівномірно, без випадкового шуму.")]
         [Min(1)]
-        public int innerRadius = 8;
+        public int revealedCircleRadius = 15;
 
         [Tooltip("Якщо увімкнено, ядро підтримується повністю видимим (без туману)\nчерез службовий стартовий огляд.\nЯкщо вимкнено, ядро буде лише розвіданим і з часом стане сірим без юнітів.")]
         public bool keepCoreFullyVisible = true;
 
-        [Tooltip("Радіус службового стартового огляду.\n0 або менше = використовувати innerRadius.")]
+        [Tooltip("Радіус службового стартового огляду.\n0 або менше = використовувати revealedCircleRadius.")]
         [Min(0)]
         public int coreVisibleRadiusOverride = 0;
 
-        [Tooltip("Зовнішній радіус стартової зони в тайлах.\nМіж innerRadius і outerRadius формується напіврозвідана сіра периферія.")]
+        [Header("Стартові позиції мультиплеєра")]
+        [Tooltip("Скільки стартових позицій резервувати, коли світ генерує хост. Якщо учасників у сесії більше, використовується фактична кількість учасників.")]
         [Min(1)]
-        public int outerRadius = 15;
+        public int multiplayerStartSlots = 4;
 
-        [Tooltip("Додатковий буфер за outerRadius, де алгоритм ще може обробляти тайли.\nДозволяє зробити край зони менш різким і більш природним.")]
-        [Min(0f)]
-        public float outerPadding = 4f;
+        [Tooltip("Мінімальна відстань між стартовими позиціями гравців у тайлах за A* шляхом. Якщо A* не прив'язаний у сцені, використовується fallback за евклідовою відстанню.")]
+        [Min(1)]
+        public int minAStarDistanceBetweenPlayers = 15;
 
-        [Header("Noise")]
-        [Tooltip("Масштаб Perlin-шуму для форми плям розвідки.\nМенше значення = більші плавні плями, більше значення = дрібніша і хаотичніша текстура.")]
-        [Min(0.01f)]
-        public float noiseScale = 0.35f;
+        [Tooltip("Кількість спроб знайти валідну стартову позицію перед fallback. Більше значення корисне для малих або складних мап.")]
+        [Min(1)]
+        public int startCandidateAttempts = 256;
 
-        [Tooltip("Діапазон випадкового зсуву шуму по X/Y на кожен старт гри.\nЧим більше значення, тим менш повторюваний візерунок розкриття туману.")]
-        [Min(0f)]
-        public float noiseOffsetRange = 200f;
-
-        [Header("Reveal Probability")]
-        [Tooltip("Початкова ймовірність розкриття на межі переходу з ядра до периферії.\nКонтролює, наскільки щільно видно тайли одразу за innerRadius.")]
-        [Range(0f, 1f)]
-        public float outerStartReveal = 0.65f;
-
-        [Tooltip("Кінцева ймовірність розкриття на дальньому краю периферії (біля outerRadius).\nМенші значення дають густіший сірий/нерозвіданий край.")]
-        [Range(0f, 1f)]
-        public float outerEndReveal = 0.08f;
-
-        [Tooltip("Мінімальний множник впливу шуму в периферійній зоні.\nПідвищення значення робить периферію більш відкритою навіть у 'темних' ділянках шуму.")]
-        [Range(0f, 2f)]
-        public float outerNoiseMinFactor = 0.35f;
-
-        [Tooltip("Сила внеску шуму в периферії.\nБільші значення підсилюють контраст: поруч будуть і відкриті, і сірі ділянки.")]
-        [Range(0f, 2f)]
-        public float outerNoiseFactor = 0.85f;
-
-        [Header("Camera")]
+        [Header("Камера")]
         [Tooltip("Позиція Z для різкого перенесення камери в стартову точку.\nДля 2D зазвичай -10, щоб камера залишалась на правильній глибині.")]
         public float cameraZ = -10f;
     }

@@ -1,0 +1,522 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 219d3ec8208a69f76b7901e5d84a4c13, type: 3}
+  m_Name: ArchipelagoShorePolish
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.WFCDataSettings
+  TileRegistry: {fileID: 11400000, guid: bc77e778b9a26da4abebea25d37293b9, type: 2}
+  TileRules:
+  - TileID: stone-hill-down-left-inner-corner-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 5
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 2
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 1
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 0
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 6
+      AllowedNeighbors:
+      - stone-hill-down-middle-tile-001
+    - Direction: 4
+      AllowedNeighbors:
+      - stone-hill-left-tile-001
+    - Direction: 3
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 7
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    Priority: 5
+    MatchThreshold: 1
+  - TileID: stone-hill-down-right-inner-corner-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 3
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 0
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 6
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 7
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 4
+      AllowedNeighbors:
+      - stone-hill-right-tile-001
+    - Direction: 2
+      AllowedNeighbors:
+      - stone-hill-down-middle-tile-001
+    - Direction: 5
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 1
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    Priority: 5
+    MatchThreshold: 1
+  - TileID: stone-hill-down-right-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 4
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 3
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 2
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 7
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    Priority: 3
+    MatchThreshold: 1
+  - TileID: stone-hill-down-stairs-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 4
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 0
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    Priority: 4
+    MatchThreshold: 1
+  - TileID: stone-hill-left-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 6
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 2
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    Priority: 4
+    MatchThreshold: 1
+  - TileID: stone-hill-right-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 2
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 6
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 0
+      AllowedNeighbors:
+      - stone-hill-down-right-inner-corner-tile-001
+      - stone-hill-right-tile-001
+    - Direction: 4
+      AllowedNeighbors:
+      - stone-hill-right-tile-001
+      - stone-hill-down-right-tile-001
+    Priority: 4
+    MatchThreshold: 1
+  - TileID: stone-hill-top-left-inner-corner-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 7
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 4
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 2
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 3
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    Priority: 5
+    MatchThreshold: 1
+  - TileID: stone-hill-top-left-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 6
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 7
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 3
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    Priority: 3
+    MatchThreshold: 1
+  - TileID: stone-hill-top-right-inner-corner-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 1
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 5
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 4
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 6
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    Priority: 5
+    MatchThreshold: 1
+  - TileID: stone-hill-top-right-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 2
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 1
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 5
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 6
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    - Direction: 4
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    Priority: 3
+    MatchThreshold: 1
+  - TileID: stone-hill-top-stairs-tile-001
+    TileCentralID: grass-tile-level-1-001
+    Constraints:
+    - Direction: 0
+      AllowedNeighbors:
+      - grass-tile-001
+      - grass-tile-level-1-001
+      - grass-tile-level-2-001
+      - grass-tile-level-3-001
+      - grass-tile-level-4-001
+      - grass-tile-level-5-001
+      - grass-tile-level-6-001
+      - texture-grass-tile-001
+      - texture-grass-tile-002
+      - texture-grass-tile-003
+      - texture-grass-tile-004
+      - texture-grass-tile-005
+      - texture-grass-tile-006
+      - texture-grass-tile-007
+      - texture-grass-tile-008
+    - Direction: 4
+      AllowedNeighbors:
+      - grass-tile-level-1-001
+    Priority: 4
+    MatchThreshold: 1
+  VirtualTileIds: []
+  PassCount: 2
+  ForceTileNearWaterBand: 0
+  NearWaterTileId: beach
+  NearWaterRadius: 1
+  IncludeDiagonalsForNearWater: 0
+  WaterLikeTileIds:
+  - water
+  - ocean-deep
+  - ocean-shallow
+  BorderWaterTileId: ocean-deep

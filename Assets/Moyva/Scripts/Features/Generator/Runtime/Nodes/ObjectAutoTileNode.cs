@@ -19,12 +19,26 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [Tooltip("Роздільник для базового типу Object ID.")]
         [SerializeField] private char _separator = '-';
 
+        [Header("Flags")]
+        [Tooltip("Якщо увімкнено, нода застосовується лише до клітинок, позначених у FlagMap.")]
+        [SerializeField] private bool _applyOnlyOnFlags;
+
+        [Tooltip("Список flag ID, які активують цю ноду. Якщо список порожній — підходить будь-який непорожній flag.")]
+        [SerializeField] private string[] _targetFlagIds;
+
+        [Tooltip("Якщо увімкнено, сусід вважається з'єднаним лише коли він теж має потрібний flag у FlagMap.")]
+        [SerializeField] private bool _useFlagConnectivity;
+
+        [Tooltip("Якщо увімкнено, з'єднання по прапорцях дозволене лише між однаковими flag ID.")]
+        [SerializeField] private bool _requireSameFlagId = true;
+
         public override string Title => "Object AutoTile";
         public override string Category => "Objects";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<string[,]>("ObjectMap")
+            PortDefinition.Input<string[,]>("ObjectMap"),
+            PortDefinition.Input<string[,]>("FlagMap (optional)")
         };
 
         public override PortDefinition[] Outputs => new[]
@@ -42,20 +56,35 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (objectMap == null)
                 return NodeOutput.Error("ObjectMap input is required.");
 
+            var flagMap = inputs.Length > 1 ? inputs[1] as string[,] : null;
+            if ((_applyOnlyOnFlags || _useFlagConnectivity) && flagMap == null)
+                return NodeOutput.Error("FlagMap input is required when flag-based mode is enabled.");
+
             if (_rules == null)
                 return NodeOutput.Success(objectMap);
 
             var excludeSet = BuildExcludeSet();
+            var targetFlags = FlagMapSelectionUtility.BuildFilterSet(_targetFlagIds);
             int w = objectMap.GetLength(0);
             int h = objectMap.GetLength(1);
             var result = new string[w, h];
+
+            if (flagMap != null && (flagMap.GetLength(0) != w || flagMap.GetLength(1) != h))
+                return NodeOutput.Error("ObjectMap and FlagMap must have the same size.");
 
             for (int x = 0; x < w; x++)
             {
                 for (int y = 0; y < h; y++)
                 {
                     string objId = objectMap[x, y];
+                    bool flagSelected = FlagMapSelectionUtility.IsSelected(flagMap, x, y, targetFlags);
                     if (string.IsNullOrEmpty(objId))
+                    {
+                        result[x, y] = objId;
+                        continue;
+                    }
+
+                    if (_applyOnlyOnFlags && !flagSelected)
                     {
                         result[x, y] = objId;
                         continue;
@@ -77,7 +106,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                         if (nx >= 0 && nx < w && ny >= 0 && ny < h)
                         {
                             string neighbor = objectMap[nx, ny];
-                            if (!string.IsNullOrEmpty(neighbor) && GetBaseId(neighbor) == baseId)
+                            bool isConnected = !string.IsNullOrEmpty(neighbor) && GetBaseId(neighbor) == baseId;
+                            if (isConnected && _useFlagConnectivity && flagSelected)
+                            {
+                                isConnected = FlagMapSelectionUtility.IsConnected(
+                                    flagMap, x, y, nx, ny, targetFlags, _requireSameFlagId);
+                            }
+
+                            if (isConnected)
                                 mask |= (1 << d);
                         }
                     }

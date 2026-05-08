@@ -33,7 +33,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
         private sealed class StubSaveProvider : IFogSaveDataProvider
         {
-            public bool[,] SnapshotToLoad = null;
+            public bool[,] SnapshotToLoad;
             public bool[,] LoadExploredData() => SnapshotToLoad;
             public void SaveExploredData(bool[,] e) { }
         }

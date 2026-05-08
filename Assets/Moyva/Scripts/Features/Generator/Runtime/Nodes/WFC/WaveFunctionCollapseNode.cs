@@ -16,8 +16,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
         [SerializeField] private bool _periodicInput;
         [Tooltip("Чи має вихідна карта циклічно зшиватися по краях. Це важливо для безшовних текстур або топологічно замкнених карт.")]
         [SerializeField] private bool _periodicOutput;
-        [Tooltip("Seed генерації WFC. Значення -1 означає використати seed з контексту графа; будь-яке інше число зафіксує результат саме для цієї ноди.")]
-        [SerializeField] private int _seed = -1; // -1 = use context seed
         [Tooltip("Максимальна кількість спроб побудувати валідний результат до визнання генерації невдалою. Більше значення підвищує шанс успіху на складних патернах.")]
         [SerializeField, Range(1, 50)] private int _maxAttempts = 10;
 
@@ -45,10 +43,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
-            // Run the async implementation on a background thread to avoid
-            // blocking the Unity main thread or causing deadlocks when the
-            // async implementation uses awaits that capture context.
-            return Task.Run(async () => await ExecuteAsync(inputs, context).ConfigureAwait(false)).GetAwaiter().GetResult();
+            return ExecuteAsync(inputs, context).GetAwaiter().GetResult();
         }
 
         public Task<NodeOutput> ExecuteAsync(object[] inputs, NodeContext context)
@@ -59,7 +54,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
 
             int outW = _outputWidth > 0 ? _outputWidth : context.MapSize.x;
             int outH = _outputHeight > 0 ? _outputHeight : context.MapSize.y;
-            int seed = _seed >= 0 ? _seed : context.Seed;
+            int seed = context.Seed;
 
             var settings = new WFCAlgorithm.WFCSettings
             {

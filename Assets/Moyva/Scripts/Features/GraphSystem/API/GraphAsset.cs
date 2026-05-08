@@ -43,6 +43,14 @@ namespace Kruty1918.Moyva.GraphSystem.API
             return connection;
         }
 
+        public Connection AddConnection(string sourceNodeId, int sourcePort,
+            string targetNodeId, int targetPort, int sourceElementIndex)
+        {
+            var connection = AddConnection(sourceNodeId, sourcePort, targetNodeId, targetPort);
+            connection.SetSourceElementIndex(sourceElementIndex);
+            return connection;
+        }
+
         public void RemoveConnection(Connection connection) =>
             _connections.Remove(connection);
 
@@ -51,8 +59,26 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 c.SourceNodeId == nodeId || c.TargetNodeId == nodeId);
 
 #if UNITY_EDITOR
-        public NodeBase AddNode(Type nodeType)
+        public NodeBase AddNode(Type nodeType, bool allowStaticGraphNode = false)
         {
+            if (!allowStaticGraphNode && nodeType != null && Attribute.IsDefined(nodeType, typeof(StaticGraphNodeAttribute)))
+            {
+                Debug.LogWarning($"Static graph node '{nodeType.Name}' is managed automatically and cannot be added manually.");
+                return null;
+            }
+
+            if (nodeType != null && Attribute.IsDefined(nodeType, typeof(UniqueNodeAttribute)))
+            {
+                for (int i = 0; i < _nodes.Count; i++)
+                {
+                    if (_nodes[i] != null && _nodes[i].GetType() == nodeType)
+                    {
+                        Debug.LogWarning($"Graph already contains unique node '{nodeType.Name}'.");
+                        return null;
+                    }
+                }
+            }
+
             var node = CreateInstance(nodeType) as NodeBase;
             if (node == null) return null;
 
@@ -65,10 +91,18 @@ namespace Kruty1918.Moyva.GraphSystem.API
             return node;
         }
 
-        public T AddNode<T>() where T : NodeBase => AddNode(typeof(T)) as T;
+        public T AddNode<T>(bool allowStaticGraphNode = false) where T : NodeBase => AddNode(typeof(T), allowStaticGraphNode) as T;
 
         public void RemoveNode(NodeBase node)
         {
+            if (node == null) return;
+
+            if (Attribute.IsDefined(node.GetType(), typeof(StaticGraphNodeAttribute)))
+            {
+                Debug.LogWarning($"Static graph node '{node.Title}' is required and cannot be removed.");
+                return;
+            }
+
             RemoveConnectionsForNode(node.NodeId);
             _nodes.Remove(node);
 
@@ -108,6 +142,33 @@ namespace Kruty1918.Moyva.GraphSystem.API
             }
 
             return removed;
+        }
+
+        public void ReorderNodes(IReadOnlyList<NodeBase> orderedNodes)
+        {
+            if (orderedNodes == null || orderedNodes.Count == 0)
+                return;
+
+            var ordered = new List<NodeBase>(_nodes.Count);
+            var seen = new HashSet<NodeBase>();
+
+            for (int index = 0; index < orderedNodes.Count; index++)
+            {
+                var node = orderedNodes[index];
+                if (node != null && _nodes.Contains(node) && seen.Add(node))
+                    ordered.Add(node);
+            }
+
+            for (int index = 0; index < _nodes.Count; index++)
+            {
+                var node = _nodes[index];
+                if (node != null && seen.Add(node))
+                    ordered.Add(node);
+            }
+
+            _nodes.Clear();
+            _nodes.AddRange(ordered);
+            UnityEditor.EditorUtility.SetDirty(this);
         }
 
         /// <summary>
@@ -158,11 +219,12 @@ namespace Kruty1918.Moyva.GraphSystem.API
                     for (int j = 0; j < outgoing.Count; j++)
                     {
                         var target = outgoing[j];
-                        AddConnection(
+                        var newConnection = AddConnection(
                             source.SourceNodeId,
                             source.SourcePortIndex,
                             target.TargetNodeId,
                             target.TargetPortIndex);
+                        newConnection.SetSourceElementIndex(source.SourceElementIndex);
                     }
                 }
 

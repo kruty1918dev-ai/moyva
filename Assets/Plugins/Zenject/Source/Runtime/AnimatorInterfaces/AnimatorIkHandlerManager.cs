@@ -16,7 +16,7 @@ namespace Zenject
             _handlers = handlers;
         }
 
-        public void OnAnimatorIK(int _)
+        public void OnAnimatorIk()
         {
             foreach (var handler in _handlers)
             {

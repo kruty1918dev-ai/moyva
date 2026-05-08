@@ -37,7 +37,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             int width = biomeMap.GetLength(0);
             int height = biomeMap.GetLength(1);
-            const string WaterID = "water";
+            var waterLikeIds = BuildWaterLikeIdSet(_wfcDataSettings?.WaterLikeTileIds);
+            string borderWaterTileId = ResolveBorderWaterTileId(waterLikeIds);
 
             // ПЕРШИЙ КРОК: Заповнюємо контур водою
             for (int x = 0; x < width; x++)
@@ -46,7 +47,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 {
                     if (x == 0 || x == width - 1 || y == 0 || y == height - 1)
                     {
-                        biomeMap[x, y] = WaterID;
+                        biomeMap[x, y] = borderWaterTileId;
                     }
                 }
             }
@@ -58,7 +59,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var tilePositions = BuildPositionIndex(biomeMap, width, height);
 
             // ТРЕТІЙ КРОК: Ітерація за пріоритетом правил
-            for (int pass = 0; pass < _wfcDataSettings.PassCount; pass++)
+            int passCount = Mathf.Max(1, _wfcDataSettings?.PassCount ?? 0);
+            for (int pass = 0; pass < passCount; pass++)
             {
                 bool anyChanges = false;
 
@@ -142,8 +144,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
             string lowered = normalized.ToLowerInvariant();
             return lowered.Contains("water")
                 || lowered.Contains("sea")
+                || lowered.Contains("ocean")
                 || lowered.Contains("lake")
                 || lowered.Contains("river");
+        }
+
+        private string ResolveBorderWaterTileId(HashSet<string> waterLikeIds)
+        {
+            string configured = _wfcDataSettings?.BorderWaterTileId;
+            if (!string.IsNullOrWhiteSpace(configured))
+                return configured.Trim();
+
+            if (waterLikeIds.Contains("ocean-deep"))
+                return "ocean-deep";
+
+            return "water";
         }
 
         private static bool HasWaterLikeNeighbor(

@@ -9,6 +9,7 @@ using System.Threading;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
+using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.GraphSystem.Runtime;
 using UnityEditor;
@@ -20,14 +21,28 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 {
     public sealed class GraphEditorWindow : EditorWindow
     {
+        private const string GeneratorInstallerTypeName = "Kruty1918.Moyva.Generator.Runtime.GeneratorInstaller";
+        private const string GridInstallerTypeName = "Kruty1918.Moyva.Grid.Runtime.GridInstaller";
+
+        private sealed class RuntimeExecutionSettings
+        {
+            public HeightMapSettings HeightMapSettings;
+            public DataBiomesSettings BiomesSettings;
+            public WFCDataSettings WfcSettings;
+            public TileRegistrySO TileRegistry;
+            public int GridWidth;
+            public int GridHeight;
+            public bool HasGridSize;
+            public string Source;
+        }
+
         private GeneratorGraphView _graphView;
         private VisualElement _contentContainer;
         private ScrollView _rightPanel;
         private IMGUIContainer _nodeInspectorGui;
         private IMGUIContainer _graphSettingsGui;
         [SerializeField] private bool _isInspectorVisible = true;
-        [SerializeField] private bool _isNodeInspectorExpanded = true;
-        private Button _nodeInspectorToggleButton;
+      
         private VisualElement _nodeInspectorSection;
         private VisualElement _nodeInspectorDivider;
 
@@ -57,6 +72,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private const string SettingsAssetPath = "Assets/Moyva/Scripts/Features/GraphSystem/Editor/GraphEditorWindowSettings.asset";
         private GraphEditorWindowSettings _windowSettings;
 
+        // Saved camera state (pan + zoom), restored after PopulateGraph
+        private Vector3 _savedCameraPosition = Vector3.zero;
+        private Vector3 _savedCameraScale = Vector3.one;
+
         // Inline map size override (used when no EditorPreviewSettings assigned)
         [SerializeField] private int _previewWidth = 64;
         [SerializeField] private int _previewHeight = 64;
@@ -67,6 +86,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private double _nextAutoRunAt;
         private bool _isRunningGraph;
+
+        private readonly Dictionary<string, bool> _inlineObjectFoldouts = new();
+        private readonly Dictionary<string, UnityEditor.Editor> _inlineObjectEditors = new();
 
         [MenuItem("Moyva/Graph Editor")]
         public static void Open()
@@ -107,6 +129,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
 
+            foreach (var editor in _inlineObjectEditors.Values)
+            {
+                if (editor != null)
+                    DestroyImmediate(editor);
+            }
+            _inlineObjectEditors.Clear();
+
             if (_graphView != null)
                 _graphView.GraphChanged -= OnGraphChanged;
 
@@ -129,6 +158,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 MigrateLegacySharedSettingsNode(_graphAsset);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
+                RestoreCameraTransform();
                 UpdateStatusBar();
                 return;
             }
@@ -144,8 +174,21 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 _graphAsset = asset;
                 MigrateLegacySharedSettingsNode(_graphAsset);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
+                RestoreCameraTransform();
                 UpdateStatusBar();
             }
+        }
+
+        private void RestoreCameraTransform()
+        {
+            if (_savedCameraScale == Vector3.zero) _savedCameraScale = Vector3.one;
+            var pos = _savedCameraPosition;
+            var scale = _savedCameraScale;
+            // Defer by one frame so the graph view has finished layout
+            rootVisualElement.schedule.Execute(() =>
+            {
+                _graphView?.UpdateViewTransform(pos, scale);
+            });
         }
 
         private void OnPlayModeChanged(PlayModeStateChange state)
@@ -214,20 +257,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 }
             };
 
-            _nodeInspectorToggleButton = new Button(ToggleNodeInspectorSection)
-            {
-                text = _isNodeInspectorExpanded ? "▼" : "▶",
-                tooltip = "Згорнути або розгорнути секцію інспектора."
-            };
-            _nodeInspectorToggleButton.style.width = 22;
-            _nodeInspectorToggleButton.style.minWidth = 22;
-            _nodeInspectorToggleButton.style.height = 20;
-            _nodeInspectorToggleButton.style.marginRight = 4;
-            tabHeaderRow.Add(_nodeInspectorToggleButton);
-
             _tabSettingsButton = new Button(() => SetInspectorTab(InspectorTab.Settings))
             {
-                text = "Налаштування",
+                text = "Base Settings",
                 tooltip = "Показати налаштування прев'ю та сервісів."
             };
             _tabSettingsButton.style.flexGrow = 1;
@@ -236,7 +268,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             _tabPreviewButton = new Button(() => SetInspectorTab(InspectorTab.Preview))
             {
-                text = "Прев'ю",
+                text = "Node Settings",
                 tooltip = "Показати дані вибраної ноди."
             };
             _tabPreviewButton.style.flexGrow = 1;
@@ -279,7 +311,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _contentContainer.Add(_rightPanel);
             SetInspectorVisible(_isInspectorVisible);
             UpdateInspectorTabVisibility();
-            UpdateNodeInspectorSectionVisibility();
         }
 
         private void ConstructToolbar()
@@ -565,6 +596,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             MigrateLegacySharedSettingsNode(_graphAsset);
+            GraphStaticNodeUtility.EnsureStaticNodes(_graphAsset);
             SanitizeGraphAsset(false);
             _graphView.PopulateGraph(asset, EditorApplication.isPlaying);
             _graphView.SetInlinePreviewsVisible(_showInlinePreviews);
@@ -652,7 +684,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _statusLabel.text = $"Saved: {_graphAsset.name}";
         }
 
-        private void RunGraph()
+        private void RunGraph(bool isAutoRun = false)
         {
             if (_isRunningGraph) return;
             _isRunningGraph = true;
@@ -677,16 +709,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 _statusLabel.text = $"✗ Cannot run: {errorCount} validation error(s).";
 
-                var details = new System.Text.StringBuilder();
-                foreach (var err in errors)
-                    details.AppendLine($"  - {err}");
+                if (!isAutoRun)
+                {
+                    var details = new System.Text.StringBuilder();
+                    foreach (var err in errors)
+                        details.AppendLine($"  - {err}");
 
-                Debug.LogWarning($"[GraphRunner] Validation failed with {errorCount} error(s) and {warningCount} warning(s).\n{details}");
+                    Debug.LogWarning($"[GraphRunner] Validation failed with {errorCount} error(s) and {warningCount} warning(s).\n{details}");
+                }
                 _isRunningGraph = false;
                 return;
             }
 
-            if (warningCount > 0)
+            if (warningCount > 0 && !isAutoRun)
             {
                 Debug.LogWarning($"[GraphRunner] Running with {warningCount} validation warning(s).");
 
@@ -701,13 +736,21 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _progressBar.value = 0;
             _statusLabel.text = "Running graph...";
 
-            // Determine map size: PreviewSettings > SharedSettings > inline fields
+            var runtimeSettings = ResolveRuntimeExecutionSettings();
+
+            // Determine map size: Runtime(GridInstaller) > PreviewSettings > SharedSettings > inline fields
             int mapW = _previewWidth;
             int mapH = _previewHeight;
             if (_previewSettings != null)
             {
                 mapW = _previewSettings.PreviewWidth;
                 mapH = _previewSettings.PreviewHeight;
+            }
+
+            if (runtimeSettings.HasGridSize)
+            {
+                mapW = runtimeSettings.GridWidth;
+                mapH = runtimeSettings.GridHeight;
             }
 
             var sharedSettings = _graphAsset.SharedSettings;
@@ -719,8 +762,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
 
-            // Compute deterministic seed from graph asset + preview settings + runtime options
-            int seed = ComputeDeterministicSeed(mapW, mapH);
+            int seed = GetSeedFromGraph();
+            GlobalSeed.Set(seed);
             _statusLabel.text = $"Running graph... (seed {seed})";
 
             // Save previous Unity random state and set deterministic seed for UnityEngine.Random
@@ -737,7 +780,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     context.RegisterService(sharedSettings);
 
                 // Register generator services with fallbacks
-                RegisterEditorServices(context);
+                RegisterEditorServices(context, runtimeSettings);
 
                 // Register layer data list so SingleTileLayerNode can populate it
                 var layerDataList = new List<WorldLayerData>();
@@ -784,7 +827,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             else
             {
                 _statusLabel.text = $"✗ Run failed at node {result.ErrorNodeId}: {result.ErrorMessage}";
-                Debug.LogError($"[GraphRunner] Execution failed: {result.ErrorMessage}");
+                if (!isAutoRun)
+                    Debug.LogError($"[GraphRunner] Execution failed: {result.ErrorMessage}");
             }
 
             }
@@ -806,19 +850,32 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return false;
         }
 
+        internal bool TryGetBestRawMaps(out float[,] floatMap, out string[,] tileMap)
+        {
+            if (_graphView != null)
+                return _graphView.TryGetBestRawMaps(out floatMap, out tileMap);
+
+            floatMap = null;
+            tileMap  = null;
+            return false;
+        }
+
         /// <summary>
         /// Реєструє сервіси генератора з EditorPreviewSettings.
         /// Кожен сервіс реєструється опціонально — якщо ScriptableObject не задано,
         /// лог попереджує, але Run не зупиняється (вузли самі отримають помилку при GetService).
         /// </summary>
-        private void RegisterEditorServices(NodeContext context)
+        private void RegisterEditorServices(NodeContext context, RuntimeExecutionSettings runtimeSettings)
         {
             // INoiseProvider — не потребує залежностей
             context.RegisterService<INoiseProvider>(new NoiseMapGeneratorService());
             Debug.Log("[EditorPreview] ✓ INoiseProvider registered.");
 
+            context.RegisterService<IGeneratorDataRegistry>(new GeneratorDataRegistry());
+            Debug.Log("[EditorPreview] ✓ IGeneratorDataRegistry registered.");
+
             // IVirtualHeightMapGenerator — потребує HeightMapSettings
-            var heightSettings = _previewSettings?.HeightMapSettings;
+            var heightSettings = runtimeSettings.HeightMapSettings ?? _previewSettings?.HeightMapSettings;
             if (heightSettings != null)
             {
                 context.RegisterService<IVirtualHeightMapGenerator>(
@@ -832,7 +889,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             // IBiomeResolver — потребує DataBiomesSettings
-            var biomesSettings = _previewSettings?.BiomesSettings;
+            var biomesSettings = runtimeSettings.BiomesSettings ?? _previewSettings?.BiomesSettings;
             if (biomesSettings != null)
             {
                 context.RegisterService<IBiomeResolver>(
@@ -849,8 +906,20 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             context.RegisterService<IRiverPathfinder>(new RiverPathfinder());
             Debug.Log("[EditorPreview] ✓ IRiverPathfinder registered.");
 
+            var tileRegistry = runtimeSettings.TileRegistry ?? _previewSettings?.TileRegistry;
+            if (tileRegistry != null)
+            {
+                context.RegisterService(tileRegistry);
+                Debug.Log("[EditorPreview] ✓ TileRegistrySO registered.");
+            }
+            else
+            {
+                Debug.LogWarning("[EditorPreview] ⚠ TileRegistrySO not assigned in EditorPreviewSettings. " +
+                    "SingleTileLayerNode sprite fallback will not be available.");
+            }
+
             // IWFCService — потребує WFCDataSettings
-            var wfcSettings = _previewSettings?.WFCDataSettings;
+            var wfcSettings = runtimeSettings.WfcSettings ?? _previewSettings?.WFCDataSettings;
             if (wfcSettings != null)
             {
                 context.RegisterService<IWFCService>(new WFCService(wfcSettings));
@@ -861,6 +930,118 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 Debug.LogWarning("[EditorPreview] ⚠ WFCDataSettings not assigned in EditorPreviewSettings. " +
                     "WFC nodes will fail. Assign it in the Preview Settings asset.");
             }
+
+            if (!string.IsNullOrEmpty(runtimeSettings.Source))
+            {
+                Debug.Log($"[EditorPreview] Runtime-equivalent settings source: {runtimeSettings.Source}");
+            }
+        }
+
+        private RuntimeExecutionSettings ResolveRuntimeExecutionSettings()
+        {
+            var resolved = new RuntimeExecutionSettings();
+            var generatorInstaller = FindGeneratorInstallerForActiveGraph();
+
+            if (generatorInstaller != null)
+            {
+                var so = new SerializedObject(generatorInstaller);
+                resolved.HeightMapSettings = so.FindProperty("_heightMapSettings")?.objectReferenceValue as HeightMapSettings;
+                resolved.BiomesSettings = so.FindProperty("_biomesSettings")?.objectReferenceValue as DataBiomesSettings;
+                resolved.WfcSettings = so.FindProperty("_wfcDataSettings")?.objectReferenceValue as WFCDataSettings;
+                resolved.Source = $"GeneratorInstaller: {generatorInstaller.gameObject.scene.name}/{generatorInstaller.name}";
+            }
+
+            var gridInstaller = FindGridInstallerInSameScene(generatorInstaller);
+            if (gridInstaller != null)
+            {
+                var so = new SerializedObject(gridInstaller);
+                resolved.TileRegistry = so.FindProperty("tileRegistry")?.objectReferenceValue as TileRegistrySO;
+
+                var widthProp = so.FindProperty("gridWidth");
+                var heightProp = so.FindProperty("gridHeight");
+                if (widthProp != null && heightProp != null)
+                {
+                    resolved.GridWidth = Mathf.Max(1, widthProp.intValue);
+                    resolved.GridHeight = Mathf.Max(1, heightProp.intValue);
+                    resolved.HasGridSize = true;
+                }
+
+                if (string.IsNullOrEmpty(resolved.Source))
+                    resolved.Source = $"GridInstaller: {gridInstaller.gameObject.scene.name}/{gridInstaller.name}";
+                else
+                    resolved.Source += $" | GridInstaller: {gridInstaller.gameObject.scene.name}/{gridInstaller.name}";
+            }
+
+            return resolved;
+        }
+
+        private MonoBehaviour FindGeneratorInstallerForActiveGraph()
+        {
+            var all = Resources.FindObjectsOfTypeAll<MonoBehaviour>();
+            foreach (var installer in all)
+            {
+                if (installer == null || installer.GetType().FullName != GeneratorInstallerTypeName)
+                    continue;
+                if (!IsSceneObject(installer))
+                    continue;
+
+                var so = new SerializedObject(installer);
+                var useGraph = so.FindProperty("_useGraphGenerator")?.boolValue ?? false;
+                var graph = so.FindProperty("_graphAsset")?.objectReferenceValue as GraphAsset;
+                if (!useGraph || graph == null)
+                    continue;
+
+                if (_graphAsset == null || graph == _graphAsset)
+                    return installer;
+            }
+
+            return null;
+        }
+
+        private MonoBehaviour FindGridInstallerInSameScene(MonoBehaviour generatorInstaller)
+        {
+            var all = Resources.FindObjectsOfTypeAll<MonoBehaviour>();
+
+            if (generatorInstaller != null)
+            {
+                var targetScene = generatorInstaller.gameObject.scene;
+                foreach (var installer in all)
+                {
+                    if (installer == null || installer.GetType().FullName != GridInstallerTypeName)
+                        continue;
+                    if (!IsSceneObject(installer))
+                        continue;
+                    if (installer.gameObject.scene == targetScene)
+                        return installer;
+                }
+            }
+
+            foreach (var installer in all)
+            {
+                if (installer == null || installer.GetType().FullName != GridInstallerTypeName)
+                    continue;
+                if (IsSceneObject(installer))
+                    return installer;
+            }
+
+            return null;
+        }
+
+        private static bool IsSceneObject(UnityEngine.Object obj)
+        {
+            if (obj == null)
+                return false;
+
+            if (EditorUtility.IsPersistent(obj))
+                return false;
+
+            if (obj is Component component)
+            {
+                var scene = component.gameObject.scene;
+                return scene.IsValid() && scene.isLoaded;
+            }
+
+            return true;
         }
 
         private void RestorePreviewSettings()
@@ -940,8 +1121,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _previewResolution = Mathf.Clamp(settings.previewResolution, 0, 2);
             _previewHeatmap = settings.previewHeatmap;
             _isInspectorVisible = settings.isInspectorVisible;
-            _isNodeInspectorExpanded = settings.isNodeInspectorExpanded;
             _activeInspectorTab = (InspectorTab)Mathf.Clamp(settings.inspectorTabIndex, 0, 1);
+            _savedCameraPosition = settings.cameraPosition;
+            _savedCameraScale = settings.cameraScale;
         }
 
         private void SaveWindowSettings()
@@ -965,8 +1147,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             settings.previewResolution = _previewResolution;
             settings.previewHeatmap = _previewHeatmap;
             settings.isInspectorVisible = _isInspectorVisible;
-            settings.isNodeInspectorExpanded = _isNodeInspectorExpanded;
             settings.inspectorTabIndex = (int)_activeInspectorTab;
+            if (_graphView != null)
+            {
+                var tr = _graphView.contentViewContainer.resolvedStyle.translate;
+                var sc = _graphView.contentViewContainer.resolvedStyle.scale;
+                settings.cameraPosition = new Vector3(tr.x, tr.y, 0f);
+                settings.cameraScale = sc.value;
+            }
 
             EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssets();
@@ -1074,6 +1262,20 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 Debug.LogWarning($"[GraphEditorWindow] Failed to compute deterministic seed: {ex.Message}");
                 return (int)(Environment.TickCount & 0x7FFFFFFF);
             }
+        }
+
+        private int GetSeedFromGraph()
+        {
+            if (_graphAsset?.Nodes == null)
+                return GlobalSeed.DefaultSeed;
+
+            foreach (var node in _graphAsset.Nodes)
+            {
+                if (node is ISeedProvider seedProvider)
+                    return seedProvider.Seed;
+            }
+
+            return GlobalSeed.DefaultSeed;
         }
 
         private void HighlightExecutionResults(GraphExecutionResult result)
@@ -1200,9 +1402,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             EditorGUILayout.LabelField("Type", _selectedNode.GetType().Name);
             EditorGUILayout.Space(4);
 
-            DrawSerializedObjectWithoutScript(new SerializedObject(_selectedNode));
+            EditorGUI.BeginChangeCheck();
+            _selectedNodeEditor.OnInspectorGUI();
+            bool inspectorChanged = EditorGUI.EndChangeCheck();
+            bool seedChanged = DrawSeedNodeControls(_selectedNode);
 
-            if (GUI.changed)
+            if (inspectorChanged || seedChanged)
             {
                 EditorUtility.SetDirty(_selectedNode);
                 EditorUtility.SetDirty(_graphAsset);
@@ -1232,6 +1437,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 {
                     _previewSettingsGuid = null;
                 }
+                SaveWindowSettings();
             }
 
             _previewWidth = Mathf.Max(4, EditorGUILayout.IntField("Preview Width", _previewWidth));
@@ -1278,7 +1484,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
 
             _nextAutoRunAt = 0d;
-            RunGraph();
+            RunGraph(true);
         }
 
         private int ResolvePreviewSize(int mapW, int mapH)
@@ -1298,28 +1504,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_rightPanel == null) return;
 
             _rightPanel.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-        }
-
-        private void ToggleNodeInspectorSection()
-        {
-            _isNodeInspectorExpanded = !_isNodeInspectorExpanded;
-            UpdateNodeInspectorSectionVisibility();
-        }
-
-        private void UpdateNodeInspectorSectionVisibility()
-        {
-            if (_nodeInspectorToggleButton != null)
-                _nodeInspectorToggleButton.text = _isNodeInspectorExpanded ? "▼" : "▶";
-
-            if (_nodeInspectorSection != null)
-                _nodeInspectorSection.style.display = _isNodeInspectorExpanded
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
-
-            if (_nodeInspectorDivider != null)
-                _nodeInspectorDivider.style.display = _isNodeInspectorExpanded
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
         }
 
         private void SetInspectorTab(InspectorTab tab)
@@ -1378,6 +1562,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var label = BuildPropertyLabel(property);
                 EditorGUILayout.PropertyField(property, label, true);
 
+                DrawInlineObjectReferenceControls(serializedObject, property);
+
                 var fieldRect = GUILayoutUtility.GetLastRect();
                 if (!string.IsNullOrEmpty(tooltip) && fieldRect.Contains(Event.current.mousePosition))
                     hoveredTooltip = tooltip;
@@ -1388,6 +1574,91 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             DrawInspectorHoverTooltip(hoveredTooltip);
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        private static bool DrawSeedNodeControls(NodeBase node)
+        {
+            if (node is not ISeedProvider)
+                return false;
+
+            EditorGUILayout.Space(4);
+            if (!GUILayout.Button("Random Seed"))
+                return false;
+
+            var serializedNode = new SerializedObject(node);
+            var seedProperty = serializedNode.FindProperty("seed");
+            if (seedProperty == null)
+                return false;
+
+            Undo.RecordObject(node, "Randomize Seed");
+            serializedNode.Update();
+            seedProperty.intValue = GenerateRandomSeed();
+            serializedNode.ApplyModifiedProperties();
+            EditorUtility.SetDirty(node);
+            GUI.changed = true;
+            return true;
+        }
+
+        private static int GenerateRandomSeed()
+        {
+            int value;
+            do
+            {
+                value = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+            }
+            while (value == 0);
+
+            return value;
+        }
+
+        private void DrawInlineObjectReferenceControls(SerializedObject ownerSerializedObject, SerializedProperty property)
+        {
+            if (property.propertyType != SerializedPropertyType.ObjectReference)
+                return;
+
+            var referencedObject = property.objectReferenceValue;
+            if (referencedObject == null)
+                return;
+
+            string key = $"{ownerSerializedObject.targetObject.GetInstanceID()}:{property.propertyPath}";
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(14f);
+
+                if (GUILayout.Button("Ping", EditorStyles.miniButton, GUILayout.Width(52f)))
+                    EditorGUIUtility.PingObject(referencedObject);
+
+                if (GUILayout.Button("Select", EditorStyles.miniButton, GUILayout.Width(52f)))
+                    Selection.activeObject = referencedObject;
+
+                if (GUILayout.Button("Open", EditorStyles.miniButton, GUILayout.Width(52f)))
+                    AssetDatabase.OpenAsset(referencedObject);
+            }
+
+            if (referencedObject is not ScriptableObject scriptableObject)
+                return;
+
+            _inlineObjectFoldouts.TryGetValue(key, out bool expanded);
+            expanded = EditorGUILayout.Foldout(expanded, $"Inline: {property.displayName}", true);
+            _inlineObjectFoldouts[key] = expanded;
+            if (!expanded)
+                return;
+
+            if (!_inlineObjectEditors.TryGetValue(key, out var nestedEditor)
+                || nestedEditor == null
+                || nestedEditor.target != scriptableObject)
+            {
+                if (nestedEditor != null)
+                    DestroyImmediate(nestedEditor);
+
+                nestedEditor = UnityEditor.Editor.CreateEditor(scriptableObject);
+                _inlineObjectEditors[key] = nestedEditor;
+            }
+
+            EditorGUI.indentLevel++;
+            nestedEditor.OnInspectorGUI();
+            EditorGUI.indentLevel--;
         }
 
         private static GUIContent BuildPropertyLabel(SerializedProperty property)

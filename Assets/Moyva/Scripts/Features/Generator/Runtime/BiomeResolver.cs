@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -80,8 +81,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             float[,] map = new float[width, height];
             float scale = _settings.MoistureScale;
-            float offsetX = UnityEngine.Random.Range(0f, 9999f);
-            float offsetY = UnityEngine.Random.Range(0f, 9999f);
+            var rng = GlobalSeed.CreateRandom();
+            float offsetX = (float)rng.NextDouble() * 9999f;
+            float offsetY = (float)rng.NextDouble() * 9999f;
 
             for (int x = 0; x < width; x++)
             {

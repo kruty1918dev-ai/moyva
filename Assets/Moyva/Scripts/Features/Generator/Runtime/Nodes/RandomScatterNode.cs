@@ -11,8 +11,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [Header("Scatter Settings")]
         [Tooltip("Щільність заповнення клітинок об'єктом. 0 означає майже повну відсутність спавну, 1 — спробу поставити об'єкт у кожну доступну клітинку.")]
         [SerializeField, Range(0f, 1f)] private float _density = 0.1f;
-        [Tooltip("Seed випадковості для відтворюваного розкидання. Однаковий seed з однаковими вхідними даними дасть однаковий результат.")]
-        [SerializeField] private int _seed;
         [Tooltip("ID об'єкта, який буде розкидатися по карті. Має бути присутній у реєстрі об'єктів, інакше генератор не зможе його візуалізувати.")]
         [SerializeField, MapObjectId] private string _objectId = "tree";
 
@@ -50,7 +48,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (width <= 0 || height <= 0)
                 return NodeOutput.Error("Cannot determine map size. Provide Mask or MapWidth+MapHeight.");
 
-            var rng = new System.Random(_seed);
+            var rng = context.CreateRandom();
             var result = new string[width, height];
 
             for (int x = 0; x < width; x++)
