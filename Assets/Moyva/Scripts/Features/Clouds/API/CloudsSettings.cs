@@ -47,6 +47,22 @@ namespace Kruty1918.Moyva.Clouds.API
         [Tooltip("Тривалість плавної появи та зникнення у секундах.")]
         [Min(0f)] public float FadeDuration = 1.2f;
 
+        [Header("Маска мапи")]
+        [Tooltip("Показувати хмаринки тільки всередині меж мапи. Якщо GridService доступний, межі беруться автоматично з розміру мапи.")]
+        public bool MapMaskEnabled = true;
+
+        [Tooltip("Розмір мапи для сцен без GridService. У звичайній ігровій сцені використовується автоматичний розмір з GridService.")]
+        public Vector2 ManualMapSize = new Vector2(32f, 32f);
+
+        [Tooltip("Центр ручних меж мапи для сцен без GridService.")]
+        public Vector2 ManualMapCenter = new Vector2(15.5f, 15.5f);
+
+        [Tooltip("Ширина піксельного входу/виходу хмаринки біля краю маски у world units.")]
+        [Min(0f)] public float MaskEdgeFadeWidth = 1.5f;
+
+        [Tooltip("Кількість ступенів прозорості для піксельного стилю біля краю маски.")]
+        [Min(1)] public int MaskEdgeFadeSteps = 5;
+
         [Header("Розчинення")]
         [Tooltip("Якщо увімкнено, хмаринка після випадкового часу життя починає плавно розчинятися, навіть якщо ще не дійшла до краю екрана.")]
         public bool LifetimeDissolveEnabled = false;
@@ -74,8 +90,14 @@ namespace Kruty1918.Moyva.Clouds.API
         [Tooltip("Створювати темнішу копію хмаринки як тінь.")]
         public bool ShadowsEnabled = true;
 
-        [Tooltip("Зміщення тіні відносно хмаринки у world units. Для top-down 2D зазвичай Y від'ємний, щоб тінь була нижче.")]
+        [Tooltip("Висота хмаринки над землею. Впливає на автоматичне зміщення, масштаб і прозорість тіні.")]
+        [Min(0f)] public float CloudHeight = 2f;
+
+        [Tooltip("Базове зміщення тіні відносно хмаринки у world units.")]
         public Vector2 ShadowOffset = new Vector2(0f, -0.45f);
+
+        [Tooltip("Додаткове зміщення тіні на одну одиницю висоти хмаринки.")]
+        public Vector2 ShadowOffsetPerHeight = new Vector2(0.08f, -0.18f);
 
         [Tooltip("Колір тіні хмаринки.")]
         public Color ShadowColor = new Color(0f, 0f, 0f, 1f);
@@ -85,6 +107,12 @@ namespace Kruty1918.Moyva.Clouds.API
 
         [Tooltip("Множник масштабу тіні відносно хмаринки.")]
         [Min(0.01f)] public float ShadowScaleMultiplier = 1.03f;
+
+        [Tooltip("Додатковий масштаб тіні на одну одиницю висоти хмаринки.")]
+        [Min(0f)] public float ShadowScalePerHeight = 0.04f;
+
+        [Tooltip("Наскільки висота послаблює прозорість тіні. 0 = висота не впливає на прозорість.")]
+        [Min(0f)] public float ShadowAlphaHeightFade = 0.08f;
 
         [Tooltip("Зсув sorting order тіні відносно хмаринки.")]
         public int ShadowSortingOrderOffset = -1;
@@ -100,11 +128,17 @@ namespace Kruty1918.Moyva.Clouds.API
             SpawnVerticalPadding = Mathf.Max(0f, SpawnVerticalPadding);
             DespawnHorizontalPadding = Mathf.Max(0f, DespawnHorizontalPadding);
             FadeDuration = Mathf.Max(0f, FadeDuration);
+            ManualMapSize = new Vector2(Mathf.Max(0.01f, ManualMapSize.x), Mathf.Max(0.01f, ManualMapSize.y));
+            MaskEdgeFadeWidth = Mathf.Max(0f, MaskEdgeFadeWidth);
+            MaskEdgeFadeSteps = Mathf.Max(1, MaskEdgeFadeSteps);
             LifetimeRange = ClampRange(LifetimeRange, 0.01f);
             DissolveDuration = Mathf.Max(0f, DissolveDuration);
             CloudAlpha = Mathf.Clamp01(CloudAlpha);
+            CloudHeight = Mathf.Max(0f, CloudHeight);
             ShadowAlphaMultiplier = Mathf.Clamp01(ShadowAlphaMultiplier);
             ShadowScaleMultiplier = Mathf.Max(0.01f, ShadowScaleMultiplier);
+            ShadowScalePerHeight = Mathf.Max(0f, ShadowScalePerHeight);
+            ShadowAlphaHeightFade = Mathf.Max(0f, ShadowAlphaHeightFade);
 
             if (CloudSprites == null)
                 return;

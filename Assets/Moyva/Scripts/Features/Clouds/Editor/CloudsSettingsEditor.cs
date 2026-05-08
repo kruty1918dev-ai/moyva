@@ -9,8 +9,9 @@ namespace Kruty1918.Moyva.Clouds.Editor
     public sealed class CloudsSettingsEditor : UnityEditor.Editor
     {
         private const float PreviewSize = 42f;
-        private const float LivePreviewHeight = 170f;
+        private const float LivePreviewHeight = 250f;
         private const float DropAreaHeight = 48f;
+        private const int PreviewCloudsCount = 3;
 
         private SerializedProperty _enabledProp;
         private SerializedProperty _maxActiveCloudsProp;
@@ -25,6 +26,11 @@ namespace Kruty1918.Moyva.Clouds.Editor
         private SerializedProperty _spawnVerticalPaddingProp;
         private SerializedProperty _despawnHorizontalPaddingProp;
         private SerializedProperty _fadeDurationProp;
+        private SerializedProperty _mapMaskEnabledProp;
+        private SerializedProperty _manualMapSizeProp;
+        private SerializedProperty _manualMapCenterProp;
+        private SerializedProperty _maskEdgeFadeWidthProp;
+        private SerializedProperty _maskEdgeFadeStepsProp;
         private SerializedProperty _lifetimeDissolveEnabledProp;
         private SerializedProperty _lifetimeRangeProp;
         private SerializedProperty _dissolveDurationProp;
@@ -33,15 +39,20 @@ namespace Kruty1918.Moyva.Clouds.Editor
         private SerializedProperty _sortingLayerNameProp;
         private SerializedProperty _sortingOrderProp;
         private SerializedProperty _shadowsEnabledProp;
+        private SerializedProperty _cloudHeightProp;
         private SerializedProperty _shadowOffsetProp;
+        private SerializedProperty _shadowOffsetPerHeightProp;
         private SerializedProperty _shadowColorProp;
         private SerializedProperty _shadowAlphaMultiplierProp;
         private SerializedProperty _shadowScaleMultiplierProp;
+        private SerializedProperty _shadowScalePerHeightProp;
+        private SerializedProperty _shadowAlphaHeightFadeProp;
         private SerializedProperty _shadowSortingOrderOffsetProp;
 
         private bool _generalFoldout = true;
         private bool _spritesFoldout = true;
         private bool _movementFoldout = true;
+        private bool _mapMaskFoldout = true;
         private bool _dissolveFoldout = true;
         private bool _viewFoldout = true;
         private bool _shadowsFoldout = true;
@@ -67,6 +78,11 @@ namespace Kruty1918.Moyva.Clouds.Editor
             _spawnVerticalPaddingProp = serializedObject.FindProperty("SpawnVerticalPadding");
             _despawnHorizontalPaddingProp = serializedObject.FindProperty("DespawnHorizontalPadding");
             _fadeDurationProp = serializedObject.FindProperty("FadeDuration");
+            _mapMaskEnabledProp = serializedObject.FindProperty("MapMaskEnabled");
+            _manualMapSizeProp = serializedObject.FindProperty("ManualMapSize");
+            _manualMapCenterProp = serializedObject.FindProperty("ManualMapCenter");
+            _maskEdgeFadeWidthProp = serializedObject.FindProperty("MaskEdgeFadeWidth");
+            _maskEdgeFadeStepsProp = serializedObject.FindProperty("MaskEdgeFadeSteps");
             _lifetimeDissolveEnabledProp = serializedObject.FindProperty("LifetimeDissolveEnabled");
             _lifetimeRangeProp = serializedObject.FindProperty("LifetimeRange");
             _dissolveDurationProp = serializedObject.FindProperty("DissolveDuration");
@@ -75,10 +91,14 @@ namespace Kruty1918.Moyva.Clouds.Editor
             _sortingLayerNameProp = serializedObject.FindProperty("SortingLayerName");
             _sortingOrderProp = serializedObject.FindProperty("SortingOrder");
             _shadowsEnabledProp = serializedObject.FindProperty("ShadowsEnabled");
+            _cloudHeightProp = serializedObject.FindProperty("CloudHeight");
             _shadowOffsetProp = serializedObject.FindProperty("ShadowOffset");
+            _shadowOffsetPerHeightProp = serializedObject.FindProperty("ShadowOffsetPerHeight");
             _shadowColorProp = serializedObject.FindProperty("ShadowColor");
             _shadowAlphaMultiplierProp = serializedObject.FindProperty("ShadowAlphaMultiplier");
             _shadowScaleMultiplierProp = serializedObject.FindProperty("ShadowScaleMultiplier");
+            _shadowScalePerHeightProp = serializedObject.FindProperty("ShadowScalePerHeight");
+            _shadowAlphaHeightFadeProp = serializedObject.FindProperty("ShadowAlphaHeightFade");
             _shadowSortingOrderOffsetProp = serializedObject.FindProperty("ShadowSortingOrderOffset");
         }
 
@@ -97,6 +117,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
             DrawGeneralSection();
             DrawSpritesSection();
             DrawMovementSection();
+            DrawMapMaskSection();
             DrawDissolveSection();
             DrawViewSection();
             DrawShadowsSection();
@@ -123,8 +144,9 @@ namespace Kruty1918.Moyva.Clouds.Editor
             if (_documentationFoldout)
             {
                 EditorGUILayout.HelpBox(
-                    "Система може одразу розкласти стартові хмаринки в межах камери, а наступні створює за межами камери, рухає тільки горизонтально та плавно прибирає за протилежним краєм. " +
-                    "За потреби хмаринки можуть додатково розчинятися після заданого часу життя. Кожна хмаринка може мати темнішу копію-тінь із вертикальним зміщенням, щоб у top-down 2D вона виглядала нижче на мапі.",
+                    "Система може одразу розкласти стартові хмаринки у видимій частині мапи, а наступні створює біля краю камери або маски. " +
+                    "Маска мапи не дає хмаринкам показуватися за межами світу, а піксельний край робить вхід і вихід ступінчастим. " +
+                    "Висота хмаринки автоматично впливає на позицію, розмір і прозорість тіні.",
                     MessageType.None);
                 EditorGUILayout.HelpBox(
                     "Щоб швидко заповнити список, виділіть один або кілька Sprite/Texture у Project і натисніть 'Додати виділені', або перетягніть їх у зону спрайтів. " +
@@ -147,7 +169,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
                 Rect rect = GUILayoutUtility.GetRect(0f, LivePreviewHeight, GUILayout.ExpandWidth(true));
                 DrawLivePreview(rect, sprite);
                 EditorGUILayout.HelpBox(
-                    "Прев'ю оновлюється автоматично. Воно показує відносне розташування тіні, прозорість, напрям руху, швидкість і фазу розчинення за поточними налаштуваннями.",
+                    "Прев'ю оновлюється автоматично. Воно показує три хмаринки з різною фазою руху, масштабом, швидкістю, тінню, прозорістю, маскою мапи та розчиненням.",
                     MessageType.None);
 
                 if (sprite == null)
@@ -332,16 +354,51 @@ namespace Kruty1918.Moyva.Clouds.Editor
             EditorGUILayout.Space(2f);
         }
 
+        private void DrawMapMaskSection()
+        {
+            _mapMaskFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_mapMaskFoldout,
+                new GUIContent("Маска мапи", "Обмеження хмаринок межами мапи та піксельний вхід/вихід біля краю"));
+
+            if (_mapMaskFoldout)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_mapMaskEnabledProp, new GUIContent("Увімкнено", "Показувати хмаринки тільки в межах мапи"));
+                using (new EditorGUI.DisabledScope(!_mapMaskEnabledProp.boolValue))
+                {
+                    EditorGUILayout.HelpBox("В ігровій сцені межі беруться з GridService автоматично. Ручні межі потрібні для сцен без GridService або для preview.", MessageType.None);
+                    EditorGUILayout.PropertyField(_manualMapSizeProp, new GUIContent("Ручний розмір", "Розмір маски для сцен без GridService"));
+                    EditorGUILayout.PropertyField(_manualMapCenterProp, new GUIContent("Ручний центр", "Центр маски для сцен без GridService"));
+                    EditorGUILayout.PropertyField(_maskEdgeFadeWidthProp, new GUIContent("Ширина краю", "Скільки world units займає піксельний вхід/вихід біля маски"));
+                    EditorGUILayout.PropertyField(_maskEdgeFadeStepsProp, new GUIContent("Піксельні кроки", "Кількість ступенів прозорості на краю маски"));
+                }
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            EditorGUILayout.Space(2f);
+        }
+
         private Sprite ResolvePreviewSprite()
         {
+            return ResolvePreviewSprite(0);
+        }
+
+        private Sprite ResolvePreviewSprite(int offset)
+        {
+            int usableIndex = 0;
             for (int i = 0; i < _cloudSpritesProp.arraySize; i++)
             {
                 SerializedProperty variant = _cloudSpritesProp.GetArrayElementAtIndex(i);
                 if (variant.FindPropertyRelative("Sprite").objectReferenceValue is Sprite sprite)
-                    return sprite;
+                {
+                    if (usableIndex == offset)
+                        return sprite;
+
+                    usableIndex++;
+                }
             }
 
-            return null;
+            return offset > 0 ? ResolvePreviewSprite(0) : null;
         }
 
         private void DrawLivePreview(Rect rect, Sprite sprite)
@@ -351,38 +408,54 @@ namespace Kruty1918.Moyva.Clouds.Editor
 
             Rect stageRect = new Rect(rect.x + 12f, rect.y + 12f, rect.width - 24f, rect.height - 52f);
             EditorGUI.DrawRect(stageRect, new Color(0.08f, 0.09f, 0.1f, 1f));
+            Rect maskRect = _mapMaskEnabledProp.boolValue
+                ? new Rect(stageRect.x + 28f, stageRect.y + 18f, stageRect.width - 56f, stageRect.height - 36f)
+                : stageRect;
+
+            DrawPreviewMask(stageRect, maskRect);
 
             float speedMid = Mathf.Lerp(_speedRangeProp.vector2Value.x, _speedRangeProp.vector2Value.y, 0.5f);
             float previewCycle = Mathf.Max(2f, 5f / Mathf.Max(0.05f, speedMid));
             float normalizedTime = (float)(EditorApplication.timeSinceStartup % previewCycle) / previewCycle;
-            float direction = _leftToRightChanceProp.floatValue >= 0.5f ? 1f : -1f;
+
+            GUI.BeginGroup(maskRect);
+            Rect localMaskRect = new Rect(0f, 0f, maskRect.width, maskRect.height);
+            for (int i = 0; i < PreviewCloudsCount; i++)
+                DrawPreviewCloud(localMaskRect, normalizedTime, i);
+            GUI.EndGroup();
+
+            DrawPreviewArrow(stageRect, _leftToRightChanceProp.floatValue >= 0.5f ? 1f : -1f);
+            DrawPreviewLabels(rect, speedMid, ResolvePreviewShadowOffset());
+        }
+
+        private void DrawPreviewCloud(Rect maskRect, float baseTime, int index)
+        {
+            Sprite sprite = ResolvePreviewSprite(index);
+            float phase = Mathf.Repeat(baseTime + index * 0.32f, 1f);
+            float direction = index == 1 ? -1f : 1f;
             float x = direction > 0f
-                ? Mathf.Lerp(stageRect.xMin + 28f, stageRect.xMax - 28f, normalizedTime)
-                : Mathf.Lerp(stageRect.xMax - 28f, stageRect.xMin + 28f, normalizedTime);
-            float y = stageRect.center.y - 4f;
-
-            float dissolveFade = ResolvePreviewDissolveFade(normalizedTime);
-            float fade = Mathf.Min(ResolvePreviewEdgeFade(normalizedTime), dissolveFade);
+                ? Mathf.Lerp(-36f, maskRect.width + 36f, phase)
+                : Mathf.Lerp(maskRect.width + 36f, -36f, phase);
+            float row = (index + 1f) / (PreviewCloudsCount + 1f);
+            float y = Mathf.Lerp(maskRect.yMin + 24f, maskRect.yMax - 24f, row);
+            float scale = Mathf.Lerp(_scaleRangeProp.vector2Value.x, _scaleRangeProp.vector2Value.y, index / (PreviewCloudsCount - 1f));
+            float spriteSize = Mathf.Clamp(64f * scale, 34f, 128f);
+            float dissolveFade = ResolvePreviewDissolveFade(phase);
+            float fade = Mathf.Min(ResolvePreviewEdgeFade(phase), ResolvePreviewMaskEdgeFade(maskRect, x, y, spriteSize), dissolveFade);
             float alpha = _cloudAlphaProp.floatValue * fade;
-            float scale = Mathf.Lerp(_scaleRangeProp.vector2Value.x, _scaleRangeProp.vector2Value.y, 0.5f);
-            float spriteSize = Mathf.Clamp(70f * scale, 36f, 128f);
 
-            Vector2 shadowOffset = _shadowOffsetProp.vector2Value * 42f;
+            Vector2 shadowOffset = ResolvePreviewShadowOffset();
             if (_shadowsEnabledProp.boolValue)
             {
-                Rect shadowRect = BuildPreviewSpriteRect(x + shadowOffset.x, y - shadowOffset.y, spriteSize * _shadowScaleMultiplierProp.floatValue);
+                Rect shadowRect = BuildPreviewSpriteRect(x + shadowOffset.x, y - shadowOffset.y, spriteSize * ResolvePreviewShadowScale());
                 Color shadowColor = _shadowColorProp.colorValue;
-                shadowColor.a *= _cloudAlphaProp.floatValue * _shadowAlphaMultiplierProp.floatValue * fade;
+                shadowColor.a *= _cloudAlphaProp.floatValue * ResolvePreviewShadowAlpha() * fade;
                 DrawSpriteTexture(shadowRect, sprite, shadowColor);
             }
 
             Color cloudColor = _cloudColorProp.colorValue;
             cloudColor.a *= alpha;
-            Rect cloudRect = BuildPreviewSpriteRect(x, y, spriteSize);
-            DrawSpriteTexture(cloudRect, sprite, cloudColor);
-
-            DrawPreviewArrow(stageRect, direction);
-            DrawPreviewLabels(rect, speedMid, alpha, dissolveFade, shadowOffset);
+            DrawSpriteTexture(BuildPreviewSpriteRect(x, y, spriteSize), sprite, cloudColor);
         }
 
         private static Rect BuildPreviewSpriteRect(float centerX, float centerY, float size)
@@ -401,6 +474,38 @@ namespace Kruty1918.Moyva.Clouds.Editor
                 Handles.DrawLine(new Vector3(rect.x, y), new Vector3(rect.xMax, y));
             Handles.color = oldColor;
             Handles.EndGUI();
+        }
+
+        private void DrawPreviewMask(Rect stageRect, Rect maskRect)
+        {
+            if (!_mapMaskEnabledProp.boolValue)
+                return;
+
+            EditorGUI.DrawRect(maskRect, new Color(0.1f, 0.13f, 0.14f, 1f));
+            Handles.BeginGUI();
+            Color oldColor = Handles.color;
+            Handles.color = new Color(0.7f, 0.95f, 1f, 0.55f);
+            Handles.DrawAAPolyLine(2f,
+                new Vector3(maskRect.xMin, maskRect.yMin),
+                new Vector3(maskRect.xMax, maskRect.yMin),
+                new Vector3(maskRect.xMax, maskRect.yMax),
+                new Vector3(maskRect.xMin, maskRect.yMax),
+                new Vector3(maskRect.xMin, maskRect.yMin));
+            Handles.color = oldColor;
+            Handles.EndGUI();
+
+            DrawPixelMaskEdge(maskRect, true);
+            DrawPixelMaskEdge(maskRect, false);
+        }
+
+        private static void DrawPixelMaskEdge(Rect maskRect, bool left)
+        {
+            float x = left ? maskRect.xMin : maskRect.xMax - 10f;
+            for (int i = 0; i < 8; i++)
+            {
+                float alpha = (i % 2 == 0) ? 0.22f : 0.08f;
+                EditorGUI.DrawRect(new Rect(x, maskRect.yMin + i * 12f, 10f, 8f), new Color(0.8f, 0.95f, 1f, alpha));
+            }
         }
 
         private static void DrawSpriteTexture(Rect rect, Sprite sprite, Color color)
@@ -448,14 +553,46 @@ namespace Kruty1918.Moyva.Clouds.Editor
             Handles.EndGUI();
         }
 
-        private void DrawPreviewLabels(Rect rect, float speed, float alpha, float dissolveFade, Vector2 shadowOffset)
+        private void DrawPreviewLabels(Rect rect, float speed, Vector2 shadowOffset)
         {
             Rect labelRect = new Rect(rect.x + 12f, rect.yMax - 34f, rect.width - 24f, 22f);
             string dissolveText = _lifetimeDissolveEnabledProp.boolValue
-                ? $"розчинення {dissolveFade * 100f:0}%"
+                ? "розчинення увімкнено"
                 : "розчинення вимкнено";
-            string text = $"швидкість {speed:0.##} u/s   прозорість {alpha * 100f:0}%   тінь X {shadowOffset.x:0}px Y {shadowOffset.y:0}px   {dissolveText}";
+            string maskText = _mapMaskEnabledProp.boolValue ? "маска мапи увімкнена" : "маска вимкнена";
+            string text = $"3 хмаринки   швидкість ~{speed:0.##} u/s   висота {_cloudHeightProp.floatValue:0.##}   тінь X {shadowOffset.x:0}px Y {shadowOffset.y:0}px   {maskText}   {dissolveText}";
             EditorGUI.LabelField(labelRect, text, EditorStyles.miniLabel);
+        }
+
+        private float ResolvePreviewMaskEdgeFade(Rect maskRect, float x, float y, float spriteSize)
+        {
+            if (!_mapMaskEnabledProp.boolValue || _maskEdgeFadeWidthProp.floatValue <= 0f)
+                return 1f;
+
+            float width = Mathf.Max(1f, _maskEdgeFadeWidthProp.floatValue * 32f);
+            float half = spriteSize * 0.5f;
+            float left = Mathf.Clamp01((x + half - maskRect.xMin) / width);
+            float right = Mathf.Clamp01((maskRect.xMax - (x - half)) / width);
+            float bottom = Mathf.Clamp01((y + half - maskRect.yMin) / width);
+            float top = Mathf.Clamp01((maskRect.yMax - (y - half)) / width);
+            float fade = Mathf.Min(left, right, bottom, top);
+            int steps = Mathf.Max(1, _maskEdgeFadeStepsProp.intValue);
+            return Mathf.Floor(fade * steps) / steps;
+        }
+
+        private Vector2 ResolvePreviewShadowOffset()
+        {
+            return (_shadowOffsetProp.vector2Value + _shadowOffsetPerHeightProp.vector2Value * _cloudHeightProp.floatValue) * 42f;
+        }
+
+        private float ResolvePreviewShadowScale()
+        {
+            return Mathf.Max(0.01f, _shadowScaleMultiplierProp.floatValue + _shadowScalePerHeightProp.floatValue * _cloudHeightProp.floatValue);
+        }
+
+        private float ResolvePreviewShadowAlpha()
+        {
+            return Mathf.Clamp01(_shadowAlphaMultiplierProp.floatValue / (1f + _cloudHeightProp.floatValue * _shadowAlphaHeightFadeProp.floatValue));
         }
 
         private float ResolvePreviewEdgeFade(float normalizedTime)
@@ -508,10 +645,14 @@ namespace Kruty1918.Moyva.Clouds.Editor
                 EditorGUILayout.PropertyField(_shadowsEnabledProp, new GUIContent("Увімкнено", "Створювати темнішу копію як тінь"));
                 using (new EditorGUI.DisabledScope(!_shadowsEnabledProp.boolValue))
                 {
-                    EditorGUILayout.PropertyField(_shadowOffsetProp, new GUIContent("Offset тіні", "Зміщення тіні відносно хмаринки. Y < 0 виглядає нижче на top-down мапі"));
+                    EditorGUILayout.PropertyField(_cloudHeightProp, new GUIContent("Висота хмари", "Висота над землею, від якої автоматично рахується тінь"));
+                    EditorGUILayout.PropertyField(_shadowOffsetProp, new GUIContent("Базовий offset", "Базове зміщення тіні відносно хмаринки"));
+                    EditorGUILayout.PropertyField(_shadowOffsetPerHeightProp, new GUIContent("Offset на висоту", "Додаткове зміщення тіні на одну одиницю висоти"));
                     EditorGUILayout.PropertyField(_shadowColorProp, new GUIContent("Колір тіні", "Колір темнішої копії"));
-                    EditorGUILayout.PropertyField(_shadowAlphaMultiplierProp, new GUIContent("Прозорість тіні", "Множник прозорості відносно хмаринки"));
-                    EditorGUILayout.PropertyField(_shadowScaleMultiplierProp, new GUIContent("Масштаб тіні", "Множник масштабу тіні"));
+                    EditorGUILayout.PropertyField(_shadowAlphaMultiplierProp, new GUIContent("Базова прозорість", "Множник прозорості відносно хмаринки"));
+                    EditorGUILayout.PropertyField(_shadowAlphaHeightFadeProp, new GUIContent("Ослаблення висотою", "Наскільки висота робить тінь слабшою"));
+                    EditorGUILayout.PropertyField(_shadowScaleMultiplierProp, new GUIContent("Базовий масштаб", "Базовий множник масштабу тіні"));
+                    EditorGUILayout.PropertyField(_shadowScalePerHeightProp, new GUIContent("Масштаб на висоту", "Додатковий масштаб тіні на одну одиницю висоти"));
                     EditorGUILayout.PropertyField(_shadowSortingOrderOffsetProp, new GUIContent("Зсув сортування", "Зсув sorting order тіні відносно хмаринки"));
                 }
                 EditorGUI.indentLevel--;
