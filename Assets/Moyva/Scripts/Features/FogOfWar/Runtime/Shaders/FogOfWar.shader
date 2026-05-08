@@ -3,11 +3,15 @@ Shader "Moyva/FogOfWar"
     Properties
     {
         _FogTex                  ("Fog Visibility Texture (R8)", 2D)    = "black" {}
+        _FogMaskIndexTex         ("Fog Mask Index Texture (R8)", 2D)    = "black" {}
         _FogTileTex              ("Fog Tile Texture", 2D)              = "white" {}
+        _FogMaskTex              ("Fog Mask Texture", 2D)              = "white" {}
         _FogIconTex              ("Fog Icon Texture", 2D)              = "white" {}
         _FogTileUVRect           ("Fog Tile UV Rect", Vector)          = (0, 0, 1, 1)
+        _FogMaskUVRect           ("Fog Mask UV Rect", Vector)          = (0, 0, 1, 1)
         _FogIconUVRect           ("Fog Icon UV Rect", Vector)          = (0, 0, 1, 1)
         _FogIconRectCount        ("Fog Icon Rect Count", Float)        = 1
+        _UseFogBitmask           ("Use Fog Bitmask", Float)            = 0
         _UnexploredColor         ("Unexplored Color", Color)           = (0, 0, 0, 1)
         _ExploredColor           ("Explored Color",   Color)           = (0, 0, 0, 0.5)
         _FogTileTiling           ("Fog Tile Tiling", Float)            = 1.0
@@ -47,18 +51,26 @@ Shader "Moyva/FogOfWar"
 
             TEXTURE2D(_FogTex);
             SAMPLER(sampler_FogTex);
+            TEXTURE2D(_FogMaskIndexTex);
+            SAMPLER(sampler_FogMaskIndexTex);
             TEXTURE2D(_FogTileTex);
             SAMPLER(sampler_FogTileTex);
+            TEXTURE2D(_FogMaskTex);
+            SAMPLER(sampler_FogMaskTex);
             TEXTURE2D(_FogIconTex);
             SAMPLER(sampler_FogIconTex);
+            float4 _FogMaskUVRects[16];
             float4 _FogIconUVRects[64];
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _FogTex_ST;
                 float4 _FogTex_TexelSize;
+                float4 _FogMaskIndexTex_ST;
                 float4 _FogTileTex_ST;
+                float4 _FogMaskTex_ST;
                 float4 _FogIconTex_ST;
                 float4 _FogTileUVRect;
+                float4 _FogMaskUVRect;
                 float4 _FogIconUVRect;
                 float4 _FogIconGridSize;
                 float4 _UnexploredColor;
@@ -67,6 +79,7 @@ Shader "Moyva/FogOfWar"
                 float _FogIconScale;
                 float _FogIconIntensity;
                 float _FogIconRectCount;
+                float _UseFogBitmask;
                 float _UnexploredAlpha;
                 float _ExploredAlpha;
                 float _UseIconAtlas;
@@ -116,6 +129,22 @@ Shader "Moyva/FogOfWar"
                 float2 tiledUV = frac(cellFrac * _FogTileTiling);
                 float2 tileSpriteUV = _FogTileUVRect.xy + tiledUV * _FogTileUVRect.zw;
                 half4 tileSample = SAMPLE_TEXTURE2D(_FogTileTex, sampler_FogTileTex, tileSpriteUV);
+
+                // ─── Sample bitmask sprite variant (0..15) from mask index texture ─
+                float maskIndexNorm = SAMPLE_TEXTURE2D(_FogMaskIndexTex, sampler_FogMaskIndexTex, IN.uv).r;
+                float maskIndexF = floor(maskIndexNorm * 255.0 + 0.5);
+                int maskIndex = (int)fmod(maskIndexF, 16.0);
+                maskIndex = clamp(maskIndex, 0, 15);
+
+                float4 maskUvRect = _FogMaskUVRects[maskIndex];
+                if (maskUvRect.z <= 0.0001 || maskUvRect.w <= 0.0001)
+                    maskUvRect = _FogMaskUVRect;
+
+                float2 maskSpriteUV = maskUvRect.xy + tiledUV * maskUvRect.zw;
+                half4 maskSample = SAMPLE_TEXTURE2D(_FogMaskTex, sampler_FogMaskTex, maskSpriteUV);
+
+                float useMask = step(0.5, _UseFogBitmask);
+                tileSample = lerp(tileSample, maskSample, useMask);
 
                 // ─── Sample icon texture with independent icon grid ─────────────
                 float2 iconGridSize = max(1.0.xx, _FogIconGridSize.xy);
