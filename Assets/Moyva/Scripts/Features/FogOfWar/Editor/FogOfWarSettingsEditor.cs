@@ -7,17 +7,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
     [CustomEditor(typeof(FogOfWarSettings))]
     public sealed class FogOfWarSettingsEditor : UnityEditor.Editor
     {
-        private const int BitmaskCount = 16;
-        private const float SmallPreviewSize = 50f;
         private const float LargePreviewSize = 64f;
-
-        private static readonly string[] BitmaskSlotNames =
-        {
-            "Без сусідів", "Північ", "Схід", "Пн + Сх",
-            "Південь", "Пн + Пд", "Сх + Пд", "Пн + Сх + Пд",
-            "Захід", "Пн + Зх", "Сх + Зх", "Пн + Сх + Зх",
-            "Пд + Зх", "Пн + Пд + Зх", "Сх + Пд + Зх", "Усі сусіди",
-        };
 
         private SerializedProperty _defaultVisionRangeProp;
         private SerializedProperty _minVisionRangeProp;
@@ -36,8 +26,6 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private SerializedProperty _exploredAlphaProp;
         private SerializedProperty _fogTileSpriteProp;
         private SerializedProperty _fogTileTilingProp;
-        private SerializedProperty _useBitmaskAutotilingProp;
-        private SerializedProperty _fogBitmaskSpritesProp;
         private SerializedProperty _fogIconSpritesProp;
         private SerializedProperty _fogIconGridSizeProp;
         private SerializedProperty _fogIconScaleProp;
@@ -47,12 +35,10 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private bool _visionFoldout = true;
         private bool _heightFoldout;
         private bool _appearanceFoldout = true;
-        private bool _bitmaskFoldout = true;
         private bool _iconsFoldout = true;
 
         private GUIStyle _panelStyle;
         private GUIStyle _filledSlotStyle;
-        private GUIStyle _emptySlotStyle;
 
         private void OnEnable()
         {
@@ -73,8 +59,6 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             _exploredAlphaProp          = serializedObject.FindProperty("ExploredAlpha");
             _fogTileSpriteProp          = serializedObject.FindProperty("FogTileSprite");
             _fogTileTilingProp          = serializedObject.FindProperty("FogTileTiling");
-            _useBitmaskAutotilingProp   = serializedObject.FindProperty("UseBitmaskAutotiling");
-            _fogBitmaskSpritesProp      = serializedObject.FindProperty("FogBitmaskSprites");
             _fogIconSpritesProp         = serializedObject.FindProperty("FogIconSprites");
             _fogIconGridSizeProp        = serializedObject.FindProperty("FogIconGridSize");
             _fogIconScaleProp           = serializedObject.FindProperty("FogIconScale");
@@ -92,7 +76,6 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             DrawVisionSection();
             DrawHeightVisionSection();
             DrawAppearanceSection();
-            DrawBitmaskSection();
             DrawIconsSection();
 
             serializedObject.ApplyModifiedProperties();
@@ -111,12 +94,6 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 padding = new RectOffset(5, 5, 5, 5),
                 margin = new RectOffset(2, 2, 2, 2),
             };
-
-            _emptySlotStyle ??= new GUIStyle(EditorStyles.helpBox)
-            {
-                padding = new RectOffset(5, 5, 5, 5),
-                margin = new RectOffset(2, 2, 2, 2),
-            };
         }
 
         private void DrawScriptReference()
@@ -130,14 +107,12 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
 
         private void DrawSummaryPanel()
         {
-            int masks = CountAssignedSprites(_fogBitmaskSpritesProp, BitmaskCount);
             int icons = CountAssignedSprites(_fogIconSpritesProp, _fogIconSpritesProp.arraySize);
 
             EditorGUILayout.BeginVertical(_panelStyle);
             EditorGUILayout.LabelField("Стан туману", EditorStyles.boldLabel);
             EditorGUILayout.LabelField("Розмір тайлу", $"{FogOfWarSettings.FogTilePixelSize}x{FogOfWarSettings.FogTilePixelSize} px");
             EditorGUILayout.LabelField("Базовий тайл", _fogTileSpriteProp.objectReferenceValue != null ? "призначено" : "немає");
-            EditorGUILayout.LabelField("Бітмаска", _useBitmaskAutotilingProp.boolValue ? $"увімкнено, {masks}/{BitmaskCount} слотів" : "вимкнено");
             EditorGUILayout.LabelField("Іконки", icons > 0 ? $"{icons} активних" : "не використовуються");
             EditorGUILayout.EndVertical();
         }
@@ -265,164 +240,6 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             color.a = alpha;
             EditorGUI.DrawRect(rect, color);
             EditorGUILayout.EndVertical();
-        }
-
-        private void DrawBitmaskSection()
-        {
-            _bitmaskFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_bitmaskFoldout,
-                new GUIContent("Бітова маска країв", $"16 спрайтів {FogOfWarSettings.FogTilePixelSize}x{FogOfWarSettings.FogTilePixelSize} px для автотайлінгу за сусідами: Пн=1, Сх=2, Пд=4, Зх=8"));
-
-            if (_bitmaskFoldout)
-            {
-                EnsureBitmaskArraySize();
-                EditorGUILayout.BeginVertical(_panelStyle);
-
-                EditorGUILayout.PropertyField(_useBitmaskAutotilingProp,
-                    new GUIContent("Увімкнути автотайлінг", "Клітинка туману обирає спрайт за кодом сусідніх туманних клітинок"));
-
-                EditorGUILayout.HelpBox(
-                    $"Один тайл туману = {FogOfWarSettings.FogTilePixelSize}x{FogOfWarSettings.FogTilePixelSize} px. Код слоту: Пн=1, Сх=2, Пд=4, Зх=8. Наприклад #3 = Пн + Сх, #15 = усі сусіди.",
-                    MessageType.None);
-
-                DrawBitmaskToolbar();
-                DrawBitmaskGrid();
-                DrawBitmaskValidation();
-
-                EditorGUILayout.EndVertical();
-            }
-
-            EditorGUILayout.EndFoldoutHeaderGroup();
-        }
-
-        private void DrawBitmaskToolbar()
-        {
-            EditorGUILayout.BeginHorizontal();
-
-            using (new EditorGUI.DisabledScope(_fogTileSpriteProp.objectReferenceValue == null))
-            {
-                if (GUILayout.Button(new GUIContent("Заповнити порожні тайлом", "Скопіювати базовий тайл в усі порожні слоти маски")))
-                    FillEmptyBitmaskSlotsWithTile();
-            }
-
-            if (GUILayout.Button(new GUIContent("Очистити маски", "Прибрати всі 16 спрайтів бітової маски")))
-                ClearBitmaskSlots();
-
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.Space(4);
-        }
-
-        private void DrawBitmaskGrid()
-        {
-            int assigned = CountAssignedSprites(_fogBitmaskSpritesProp, BitmaskCount);
-            EditorGUILayout.LabelField($"Налаштовано {assigned}/{BitmaskCount} слотів", EditorStyles.miniBoldLabel);
-
-            for (int row = 0; row < 4; row++)
-            {
-                EditorGUILayout.BeginHorizontal();
-                for (int col = 0; col < 4; col++)
-                {
-                    int index = row * 4 + col;
-                    SerializedProperty slot = _fogBitmaskSpritesProp.GetArrayElementAtIndex(index);
-                    bool empty = slot.objectReferenceValue == null;
-
-                    EditorGUILayout.BeginVertical(empty ? _emptySlotStyle : _filledSlotStyle, GUILayout.Width(72));
-                    EditorGUILayout.LabelField(new GUIContent($"#{index}", GetBitmaskTooltip(index)), EditorStyles.centeredGreyMiniLabel, GUILayout.Width(64));
-                    DrawCompass(index);
-
-                    slot.objectReferenceValue = EditorGUILayout.ObjectField(
-                        slot.objectReferenceValue,
-                        typeof(Sprite),
-                        false,
-                        GUILayout.Width(SmallPreviewSize),
-                        GUILayout.Height(SmallPreviewSize));
-
-                    EditorGUILayout.LabelField(BitmaskSlotNames[index], EditorStyles.centeredGreyMiniLabel, GUILayout.Width(64));
-                    EditorGUILayout.EndVertical();
-                }
-                EditorGUILayout.EndHorizontal();
-            }
-        }
-
-        private static void DrawCompass(int mask)
-        {
-            string north = (mask & 1) != 0 ? "Пн" : "--";
-            string east = (mask & 2) != 0 ? "Сх" : "--";
-            string south = (mask & 4) != 0 ? "Пд" : "--";
-            string west = (mask & 8) != 0 ? "Зх" : "--";
-
-            EditorGUILayout.LabelField(north, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(64));
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Label(west, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(32));
-            GUILayout.Label(east, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(32));
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.LabelField(south, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(64));
-        }
-
-        private static string GetBitmaskTooltip(int mask)
-        {
-            return $"Сусіди туману: {BitmaskSlotNames[mask]}. Бінарний код: {System.Convert.ToString(mask, 2).PadLeft(4, '0')}";
-        }
-
-        private void DrawBitmaskValidation()
-        {
-            int assigned = CountAssignedSprites(_fogBitmaskSpritesProp, BitmaskCount);
-            bool hasAtlasMismatch = HasAtlasMismatch(_fogBitmaskSpritesProp, BitmaskCount, out Texture firstMaskTexture);
-            int wrongSizeCount = CountSpritesWithUnexpectedTileSize(_fogBitmaskSpritesProp, BitmaskCount);
-            Texture tileTexture = _fogTileSpriteProp.objectReferenceValue is Sprite tileSprite ? tileSprite.texture : null;
-
-            if (_useBitmaskAutotilingProp.boolValue && assigned == 0)
-            {
-                EditorGUILayout.HelpBox(
-                    "Бітова маска увімкнена, але спрайти не призначено. Буде використано базовий тайл як фолбек.",
-                    MessageType.Warning);
-            }
-            else if (assigned > 0 && assigned < BitmaskCount)
-            {
-                EditorGUILayout.HelpBox(
-                    $"Призначено {assigned}/{BitmaskCount} масок. Порожні слоти використають базовий тайл як фолбек.",
-                    MessageType.Info);
-            }
-
-            if (hasAtlasMismatch)
-            {
-                EditorGUILayout.HelpBox(
-                    "Маски взято з різних атласів. Шейдер читає один атлас, тому частина спрайтів може не відобразитись.",
-                    MessageType.Warning);
-            }
-
-            if (wrongSizeCount > 0)
-            {
-                EditorGUILayout.HelpBox(
-                    $"{wrongSizeCount} слот(ів) бітової маски мають розмір не {FogOfWarSettings.FogTilePixelSize}x{FogOfWarSettings.FogTilePixelSize} px. Для рівного тайлування краще використовувати саме 16x16 px.",
-                    MessageType.Warning);
-            }
-
-            if (tileTexture != null && firstMaskTexture != null && tileTexture != firstMaskTexture)
-            {
-                EditorGUILayout.HelpBox(
-                    "Базовий тайл і маски з різних атласів. Це допустимо як фолбек, але для стабільного рендера краще тримати їх разом.",
-                    MessageType.Warning);
-            }
-        }
-
-        private void FillEmptyBitmaskSlotsWithTile()
-        {
-            Object tileSprite = _fogTileSpriteProp.objectReferenceValue;
-            if (tileSprite == null)
-                return;
-
-            for (int i = 0; i < BitmaskCount; i++)
-            {
-                SerializedProperty slot = _fogBitmaskSpritesProp.GetArrayElementAtIndex(i);
-                if (slot.objectReferenceValue == null)
-                    slot.objectReferenceValue = tileSprite;
-            }
-        }
-
-        private void ClearBitmaskSlots()
-        {
-            for (int i = 0; i < BitmaskCount; i++)
-                _fogBitmaskSpritesProp.GetArrayElementAtIndex(i).objectReferenceValue = null;
         }
 
         private void DrawIconsSection()
@@ -563,22 +380,6 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             return count;
         }
 
-        private static int CountSpritesWithUnexpectedTileSize(SerializedProperty arrayProp, int maxCount)
-        {
-            if (arrayProp == null || !arrayProp.isArray)
-                return 0;
-
-            int count = 0;
-            int limit = Mathf.Min(arrayProp.arraySize, maxCount);
-            for (int i = 0; i < limit; i++)
-            {
-                if (arrayProp.GetArrayElementAtIndex(i).objectReferenceValue is Sprite sprite && !HasExpectedTileSize(sprite))
-                    count++;
-            }
-
-            return count;
-        }
-
         private static bool HasExpectedTileSize(Sprite sprite)
         {
             if (sprite == null)
@@ -615,18 +416,6 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 arrayProp.GetArrayElementAtIndex(index).objectReferenceValue = null;
 
             arrayProp.DeleteArrayElementAtIndex(index);
-        }
-
-        private void EnsureBitmaskArraySize()
-        {
-            if (_fogBitmaskSpritesProp == null || _fogBitmaskSpritesProp.arraySize == BitmaskCount)
-                return;
-
-            while (_fogBitmaskSpritesProp.arraySize < BitmaskCount)
-                _fogBitmaskSpritesProp.InsertArrayElementAtIndex(_fogBitmaskSpritesProp.arraySize);
-
-            while (_fogBitmaskSpritesProp.arraySize > BitmaskCount)
-                _fogBitmaskSpritesProp.DeleteArrayElementAtIndex(_fogBitmaskSpritesProp.arraySize - 1);
         }
     }
 }

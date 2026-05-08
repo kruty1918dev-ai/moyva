@@ -30,10 +30,6 @@ namespace Kruty1918.Moyva.FogOfWar.API
         public Sprite FogTileSprite;
         [Min(1f)] public float FogTileTiling = 1f;
 
-        // ─── Bitmask autotiling (4-neighbor, 16 variants) ────────────────────
-        public bool UseBitmaskAutotiling = true;
-        public Sprite[] FogBitmaskSprites = new Sprite[16];
-
         // ─── Icons ───────────────────────────────────────────────────────────
         public Sprite[] FogIconSprites;
         public Vector2Int FogIconGridSize = new Vector2Int(10, 10);
