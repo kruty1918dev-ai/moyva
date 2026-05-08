@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c901b822f5d445c099af4a87c12aef57, type: 3}
   m_Name: FogOfWarSettings
   m_EditorClassIdentifier: Kruty1918.Moyva.FogOfWar::Kruty1918.Moyva.FogOfWar.API.FogOfWarSettings
-  DefaultVisionRange: 5
+  DefaultVisionRange: 3
   MinVisionRange: 1
   MaxVisionRange: 12
   ElevationStep: 0.16
@@ -25,34 +25,17 @@ MonoBehaviour:
   OcclusionSlopeBias: 0.03
   UnexploredColor: {r: 1, g: 1, b: 1, a: 1}
   ExploredColor: {r: 1, g: 1, b: 1, a: 0.4627451}
-  FogTileSprite: {fileID: 1254302609, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
+  FogTileSprite: {fileID: 21300000, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
+  FogTileSpritePixelSize: {x: 64, y: 64}
+  FogTileSizeInCells: {x: 2, y: 2}
+  FogTileSeamOverlapPixels: 1
+  FogMapEdgePaddingPixels: 2
   FogTileTiling: 1
-  UseBitmaskAutotiling: 1
-  FogBitmaskSprites:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  FogIconSprites:
-  - {fileID: 1304278523823668175, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
-  - {fileID: -1955975525111214421, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
-  - {fileID: 716254519558751959, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
-  - {fileID: 6564136638424821856, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
-  FogIconGridSize: {x: 50, y: 50}
+  FogIconSprites: []
+  FogIconSpritePixelSize: {x: 16, y: 16}
+  FogIconGridSize: {x: 30, y: 30}
   FogIconScale: 1
   CenterIcon: 1
   UnexploredAlpha: 1
-  ExploredAlpha: 0.5
+  ExploredAlpha: 0.8
   FullyTransparentWhenVisible: 1
