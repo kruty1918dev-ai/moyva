@@ -5,12 +5,12 @@ namespace Kruty1918.Moyva.FogOfWar.API
     [CreateAssetMenu(menuName = "Moyva/FogOfWarSettings", fileName = "FogOfWarSettings")]
     public class FogOfWarSettings : ScriptableObject
     {
-        [Header("Vision Range")]
+        // ─── Vision Range ────────────────────────────────────────────────────
         public int DefaultVisionRange = 5;
         public int MinVisionRange = 1;
         public int MaxVisionRange = 12;
 
-        [Header("Height Vision")]
+        // ─── Height Vision ───────────────────────────────────────────────────
         [Min(0.01f)] public float ElevationStep = 0.15f;
         [Min(0)] public int ObserverHeightBonusPerStep = 1;
         [Min(0)] public int DownhillVisionBonusPerStep = 1;
@@ -20,31 +20,25 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Min(0)] public int MaxUphillVisionPenalty = 6;
         [Min(0f)] public float OcclusionSlopeBias = 0.02f;
 
-        [Header("Fog Colors")]
+        // ─── Colors ──────────────────────────────────────────────────────────
         public Color UnexploredColor = new Color(0f, 0f, 0f, 1f);
         public Color ExploredColor   = new Color(0f, 0f, 0f, 0.5f);
 
-            [Header("Fog Tile Sprite")]
-            public Sprite FogTileSprite;
-        [Tooltip("Scale for tiling the fog cell texture. Higher = more tiles per cell")]
+        // ─── Tile ────────────────────────────────────────────────────────────
+        public Sprite FogTileSprite;
         [Min(1f)] public float FogTileTiling = 1f;
 
-        [Header("Fog Icons")]
-        [Tooltip("Array of icon sprites to cycle through fog cells in regular pattern")]
-        public Sprite[] FogIconSprites;
-        [Tooltip("Independent icon grid over map (X columns, Y rows). Icons are placed sequentially by this grid, not by tile cells")]
-        public Vector2Int FogIconGridSize = new Vector2Int(10, 10);
-        [Tooltip("Icon scale relative to cell size")]
-        [Min(0.1f)] public float FogIconScale = 0.5f;
-        [Tooltip("If enabled, place icon at cell center; if disabled, distribute across cell")]
-        public bool CenterIcon = true;
+        // ─── Bitmask autotiling (4-neighbor, 16 variants) ────────────────────
+        public bool UseBitmaskAutotiling = true;
+        public Sprite[] FogBitmaskSprites = new Sprite[16];
 
-        [Header("Transparency Blending")]
-        [Tooltip("Alpha for fully unexplored fog")]
+        // ─── Icons ───────────────────────────────────────────────────────────
+        public Sprite[] FogIconSprites;
+        public Vector2Int FogIconGridSize = new Vector2Int(10, 10);
+        [Min(0.1f)] public float FogIconScale = 0.5f;
+
+        // ─── Transparency ─────────────────────────────────────────────────────
         [Range(0f, 1f)] public float UnexploredAlpha = 1f;
-        [Tooltip("Alpha for explored fog")]
         [Range(0f, 1f)] public float ExploredAlpha = 0.5f;
-        [Tooltip("Visible areas are fully transparent (alpha=0)")]
-        public bool FullyTransparentWhenVisible = true;
     }
 }
