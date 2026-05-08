@@ -189,25 +189,9 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             DrawStartSection(
                 "Fog Reveal Shape",
                 settings,
-                "innerRadius",
+                "revealedCircleRadius",
                 "keepCoreFullyVisible",
-                "coreVisibleRadiusOverride",
-                "outerRadius",
-                "outerPadding");
-
-            DrawStartSection(
-                "Noise",
-                settings,
-                "noiseScale",
-                "noiseOffsetRange");
-
-            DrawStartSection(
-                "Reveal Probability",
-                settings,
-                "outerStartReveal",
-                "outerEndReveal",
-                "outerNoiseMinFactor",
-                "outerNoiseFactor");
+                "coreVisibleRadiusOverride");
 
             DrawStartSection(
                 "Camera",

@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
     /// <summary>
     /// На старті нової гри обирає випадкову точку на мапі,
-    /// хаотично розкриває туман навколо неї (імітація стартової позиції)
+    /// розкриває піксельне коло туману навколо неї (імітація стартової позиції)
     /// та миттєво переміщує камеру туди.
     ///
     /// При завантаженні збереження — не втручається: туман відновлює FogOfWarSaveModule.
@@ -79,7 +79,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
                 int visibleRange = _settings.coreVisibleRadiusOverride > 0
                     ? _settings.coreVisibleRadiusOverride
-                    : Mathf.Max(1, _settings.innerRadius);
+                    : Mathf.Max(1, _settings.revealedCircleRadius);
                 _fogOfWarService.RegisterUnit(StartVisionAnchorId, startPos, visibleRange);
                 _startAnchorRegistered = true;
             }
@@ -115,46 +115,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return new Vector2Int(x, y);
         }
 
-        // ─── Хаотичне розкриття туману ────────────────────────────────────────
+        // ─── Стартове піксельне коло розкриття туману ────────────────────────
 
         private void RevealStartingArea(int width, int height, Vector2Int center)
         {
-            int innerRadius = Mathf.Max(1, _settings.innerRadius);
-            int outerRadius = Mathf.Max(innerRadius, _settings.outerRadius);
-            float outerPadding = Mathf.Max(0f, _settings.outerPadding);
-
-            // Зміщення шуму, щоб кожна гра виглядала унікально
-            float noiseOffX = UnityEngine.Random.Range(0f, _settings.noiseOffsetRange);
-            float noiseOffY = UnityEngine.Random.Range(0f, _settings.noiseOffsetRange);
+            int radius = Mathf.Max(1, _settings.revealedCircleRadius);
+            int radiusSqr = radius * radius;
 
             var snapshot = new bool[width, height];
+            int minX = Mathf.Max(0, center.x - radius);
+            int maxX = Mathf.Min(width - 1, center.x + radius);
+            int minY = Mathf.Max(0, center.y - radius);
+            int maxY = Mathf.Min(height - 1, center.y + radius);
 
-            for (int x = 0; x < width; x++)
+            for (int x = minX; x <= maxX; x++)
             {
-                for (int y = 0; y < height; y++)
+                int dx = x - center.x;
+                int dxSqr = dx * dx;
+
+                for (int y = minY; y <= maxY; y++)
                 {
-                    float dist = Vector2.Distance(new Vector2(x, y), new Vector2(center.x, center.y));
-                    if (dist > outerRadius + outerPadding) continue;
-
-                    if (dist <= innerRadius)
-                    {
-                        // Ядро завжди повністю розвідане (а за потреби ще й повністю видиме через StartVisionAnchor).
+                    int dy = y - center.y;
+                    if (dxSqr + dy * dy <= radiusSqr)
                         snapshot[x, y] = true;
-                        continue;
-                    }
-
-                    // Perlin-шум для органічних «дірок» і виступів
-                    float noise = Mathf.PerlinNoise(
-                        (x + noiseOffX) * Mathf.Max(0.01f, _settings.noiseScale),
-                        (y + noiseOffY) * Mathf.Max(0.01f, _settings.noiseScale)); // 0..1
-
-                    float probability;
-                    // Периферія: імовірність спадає від центру + сильно залежить від шуму.
-                    float t = Mathf.InverseLerp(innerRadius, outerRadius, dist);
-                    probability = Mathf.Lerp(_settings.outerStartReveal, _settings.outerEndReveal, t) *
-                                  (_settings.outerNoiseMinFactor + noise * _settings.outerNoiseFactor);
-
-                    snapshot[x, y] = UnityEngine.Random.value < Mathf.Clamp01(probability);
                 }
             }
 
