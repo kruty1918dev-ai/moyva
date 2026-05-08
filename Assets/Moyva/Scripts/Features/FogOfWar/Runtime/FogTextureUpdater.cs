@@ -110,37 +110,36 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 for (int x = 0; x < _mapWidth; x++)
                 {
                     int idx = y * _mapWidth + x;
-                    if (IsVisible(x, y))
+                    byte center = _buffer[idx];
+                    if (IsVisible(center))
                     {
                         _maskIndexBuffer[idx] = 0;
                         continue;
                     }
 
                     int mask = 0;
-                    if (IsFogged(x, y + 1)) mask |= 1; // N
-                    if (IsFogged(x + 1, y)) mask |= 2; // E
-                    if (IsFogged(x, y - 1)) mask |= 4; // S
-                    if (IsFogged(x - 1, y)) mask |= 8; // W
+                    if (IsSameFogZone(center, x, y + 1)) mask |= 1; // N
+                    if (IsSameFogZone(center, x + 1, y)) mask |= 2; // E
+                    if (IsSameFogZone(center, x, y - 1)) mask |= 4; // S
+                    if (IsSameFogZone(center, x - 1, y)) mask |= 8; // W
 
                     _maskIndexBuffer[idx] = (byte)mask;
                 }
             }
         }
 
-        private bool IsVisible(int x, int y)
+        private bool IsSameFogZone(byte center, int x, int y)
         {
             if (x < 0 || x >= _mapWidth || y < 0 || y >= _mapHeight)
                 return false;
 
-            return _buffer[y * _mapWidth + x] >= 255;
+            byte neighbor = _buffer[y * _mapWidth + x];
+            return !IsVisible(neighbor) && neighbor == center;
         }
 
-        private bool IsFogged(int x, int y)
+        private static bool IsVisible(byte value)
         {
-            if (x < 0 || x >= _mapWidth || y < 0 || y >= _mapHeight)
-                return false;
-
-            return !IsVisible(x, y);
+            return value >= 255;
         }
 
         private static byte StateToPixel(FogStateType state)
