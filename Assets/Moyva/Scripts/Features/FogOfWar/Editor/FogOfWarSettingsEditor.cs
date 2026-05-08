@@ -7,33 +7,18 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
     [CustomEditor(typeof(FogOfWarSettings))]
     public sealed class FogOfWarSettingsEditor : UnityEditor.Editor
     {
-        // ─── Bitmask labels: N/E/S/W neighbors encoded as bits 0-3 ──────────
-        // Bit pattern displayed per slot (index 0..15):
-        //   N=bit0(1), E=bit1(2), S=bit2(4), W=bit3(8)
-        private static readonly string[] BitmaskSlotHints = new string[16]
+        private const int BitmaskCount = 16;
+        private const float SmallPreviewSize = 50f;
+        private const float LargePreviewSize = 64f;
+
+        private static readonly string[] BitmaskSlotNames =
         {
-            "Немає сусідів",        // 0000
-            "Північ",               // 0001
-            "Схід",                 // 0010
-            "Північ + Схід",        // 0011
-            "Південь",              // 0100
-            "Північ + Південь",     // 0101
-            "Схід + Південь",       // 0110
-            "Пн + Сх + Пд",        // 0111
-            "Захід",               // 1000
-            "Північ + Захід",       // 1001
-            "Схід + Захід",        // 1010
-            "Пн + Сх + Зх",        // 1011
-            "Південь + Захід",     // 1100
-            "Пд + Пн + Зх",        // 1101
-            "Пд + Сх + Зх",        // 1110
-            "Всі сусіди",          // 1111
+            "Без сусідів", "Північ", "Схід", "Пн + Сх",
+            "Південь", "Пн + Пд", "Сх + Пд", "Пн + Сх + Пд",
+            "Захід", "Пн + Зх", "Сх + Зх", "Пн + Сх + Зх",
+            "Пд + Зх", "Пн + Пд + Зх", "Сх + Пд + Зх", "Усі сусіди",
         };
 
-        private const int BitmaskCount = 16;
-        private const float SpritePreviewSize = 52f;
-
-        // ─── Serialized properties ────────────────────────────────────────────
         private SerializedProperty _defaultVisionRangeProp;
         private SerializedProperty _minVisionRangeProp;
         private SerializedProperty _maxVisionRangeProp;
@@ -57,13 +42,15 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private SerializedProperty _fogIconGridSizeProp;
         private SerializedProperty _fogIconScaleProp;
 
-        // ─── Foldout state ────────────────────────────────────────────────────
         private bool _visionFoldout = true;
-        private bool _heightFoldout = false;
-        private bool _colorsFoldout = true;
-        private bool _tileFoldout = true;
+        private bool _heightFoldout;
+        private bool _appearanceFoldout = true;
         private bool _bitmaskFoldout = true;
         private bool _iconsFoldout = true;
+
+        private GUIStyle _panelStyle;
+        private GUIStyle _filledSlotStyle;
+        private GUIStyle _emptySlotStyle;
 
         private void OnEnable()
         {
@@ -94,19 +81,39 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+            EnsureStyles();
 
             DrawScriptReference();
+            DrawSummaryPanel();
             DrawVisionSection();
             DrawHeightVisionSection();
-            DrawColorSection();
-            DrawTileSection();
+            DrawAppearanceSection();
             DrawBitmaskSection();
             DrawIconsSection();
 
             serializedObject.ApplyModifiedProperties();
         }
 
-        // ─── Script reference ─────────────────────────────────────────────────
+        private void EnsureStyles()
+        {
+            _panelStyle ??= new GUIStyle(EditorStyles.helpBox)
+            {
+                padding = new RectOffset(10, 10, 8, 8),
+                margin = new RectOffset(0, 0, 4, 8),
+            };
+
+            _filledSlotStyle ??= new GUIStyle(GUI.skin.box)
+            {
+                padding = new RectOffset(5, 5, 5, 5),
+                margin = new RectOffset(2, 2, 2, 2),
+            };
+
+            _emptySlotStyle ??= new GUIStyle(EditorStyles.helpBox)
+            {
+                padding = new RectOffset(5, 5, 5, 5),
+                margin = new RectOffset(2, 2, 2, 2),
+            };
+        }
 
         private void DrawScriptReference()
         {
@@ -115,384 +122,450 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 var script = MonoScript.FromScriptableObject((FogOfWarSettings)target);
                 EditorGUILayout.ObjectField("Скрипт", script, typeof(MonoScript), false);
             }
-            EditorGUILayout.Space(4);
         }
 
-        // ─── Vision Range ─────────────────────────────────────────────────────
+        private void DrawSummaryPanel()
+        {
+            int masks = CountAssignedSprites(_fogBitmaskSpritesProp, BitmaskCount);
+            int icons = CountAssignedSprites(_fogIconSpritesProp, _fogIconSpritesProp.arraySize);
+
+            EditorGUILayout.BeginVertical(_panelStyle);
+            EditorGUILayout.LabelField("Стан туману", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Базовий тайл", _fogTileSpriteProp.objectReferenceValue != null ? "призначено" : "немає");
+            EditorGUILayout.LabelField("Бітмаска", _useBitmaskAutotilingProp.boolValue ? $"увімкнено, {masks}/{BitmaskCount} слотів" : "вимкнено");
+            EditorGUILayout.LabelField("Іконки", icons > 0 ? $"{icons} активних" : "не використовуються");
+            EditorGUILayout.EndVertical();
+        }
 
         private void DrawVisionSection()
         {
             _visionFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_visionFoldout,
-                new GUIContent("Дальність огляду", "Базові параметри дальності видимості юнітів"));
+                new GUIContent("Дальність огляду", "Базові межі видимості юнітів"));
 
             if (_visionFoldout)
             {
-                EditorGUI.indentLevel++;
+                EditorGUILayout.BeginVertical(_panelStyle);
                 EditorGUILayout.PropertyField(_defaultVisionRangeProp,
                     new GUIContent("За замовчуванням", "Радіус видимості, якщо юніт не задає власного значення"));
                 EditorGUILayout.PropertyField(_minVisionRangeProp,
-                    new GUIContent("Мінімум", "Мінімально допустима дальність огляду"));
+                    new GUIContent("Мінімум", "Мінімальна допустима дальність огляду"));
                 EditorGUILayout.PropertyField(_maxVisionRangeProp,
-                    new GUIContent("Максимум", "Максимально допустима дальність огляду"));
-                EditorGUI.indentLevel--;
+                    new GUIContent("Максимум", "Максимальна допустима дальність огляду"));
+                EditorGUILayout.EndVertical();
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();
-            EditorGUILayout.Space(2);
         }
-
-        // ─── Height Vision ────────────────────────────────────────────────────
 
         private void DrawHeightVisionSection()
         {
             _heightFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_heightFoldout,
-                new GUIContent("Висота та рельєф", "Як висота клітинок впливає на дальність огляду"));
+                new GUIContent("Висота та рельєф", "Як перепад висот змінює видимість"));
 
             if (_heightFoldout)
             {
-                EditorGUI.indentLevel++;
-
-                EditorGUILayout.LabelField("Параметри кроку висоти", EditorStyles.miniBoldLabel);
+                EditorGUILayout.BeginVertical(_panelStyle);
+                EditorGUILayout.LabelField("Крок висоти", EditorStyles.miniBoldLabel);
                 EditorGUILayout.PropertyField(_elevationStepProp,
-                    new GUIContent("Крок висоти", "Різниця висоти (у world units) між ступенями підйому/спуску"));
+                    new GUIContent("Розмір кроку", "Різниця висоти між одним логічним ступенем підйому або спуску"));
 
                 EditorGUILayout.Space(4);
-                EditorGUILayout.LabelField("Бонуси і штрафи за крок", EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("Зміна дальності за крок", EditorStyles.miniBoldLabel);
                 EditorGUILayout.PropertyField(_observerHeightBonusProp,
-                    new GUIContent("Бонус спостерігача / крок", "Скільки клітинок дальності додає кожен крок висоти спостерігача"));
+                    new GUIContent("Бонус спостерігача", "Скільки дальності додає висота самого спостерігача"));
                 EditorGUILayout.PropertyField(_downhillBonusProp,
-                    new GUIContent("Бонус донизу / крок", "Бонус дальності за погляд під ухил (ціль нижча)"));
+                    new GUIContent("Бонус донизу", "Бонус за огляд цілей нижче спостерігача"));
                 EditorGUILayout.PropertyField(_uphillPenaltyProp,
-                    new GUIContent("Штраф вгору / крок", "Зменшення дальності за погляд вгору (ціль вища)"));
+                    new GUIContent("Штраф угору", "Штраф за огляд цілей вище спостерігача"));
 
                 EditorGUILayout.Space(4);
-                EditorGUILayout.LabelField("Ліміти", EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("Обмеження", EditorStyles.miniBoldLabel);
                 EditorGUILayout.PropertyField(_maxObserverHeightBonusProp,
-                    new GUIContent("Макс. бонус спостерігача", "Стеля бонусу від висоти спостерігача"));
+                    new GUIContent("Макс. бонус спостерігача", "Максимальний бонус від висоти спостерігача"));
                 EditorGUILayout.PropertyField(_maxDownhillBonusProp,
-                    new GUIContent("Макс. бонус донизу", "Стеля бонусу за погляд донизу"));
+                    new GUIContent("Макс. бонус донизу", "Максимальний бонус за погляд донизу"));
                 EditorGUILayout.PropertyField(_maxUphillPenaltyProp,
-                    new GUIContent("Макс. штраф вгору", "Стеля штрафу за погляд угору"));
+                    new GUIContent("Макс. штраф угору", "Максимальний штраф за погляд угору"));
                 EditorGUILayout.PropertyField(_occlusionSlopeBiasProp,
-                    new GUIContent("Зсув нахилу оклюзії", "Невеликий зсув, що зменшує мерехтіння ліній видимості на схилах"));
-
-                EditorGUI.indentLevel--;
+                    new GUIContent("Зсув нахилу", "Невеликий допуск для стабільнішої оклюзії на схилах"));
+                EditorGUILayout.EndVertical();
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();
-            EditorGUILayout.Space(2);
         }
 
-        // ─── Colors & transparency ────────────────────────────────────────────
-
-        private void DrawColorSection()
+        private void DrawAppearanceSection()
         {
-            _colorsFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_colorsFoldout,
-                new GUIContent("Кольори та прозорість", "Кольори та рівні альфа для різних станів туману"));
+            _appearanceFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_appearanceFoldout,
+                new GUIContent("Вигляд туману", "Колір, прозорість і базовий спрайт туману"));
 
-            if (_colorsFoldout)
+            if (_appearanceFoldout)
             {
-                EditorGUI.indentLevel++;
-
+                EditorGUILayout.BeginVertical(_panelStyle);
+                EditorGUILayout.LabelField("Кольори", EditorStyles.miniBoldLabel);
                 EditorGUILayout.PropertyField(_unexploredColorProp,
-                    new GUIContent("Колір «Не досліджено»", "Колір повністю закритих клітинок (ще не відвіданих)"));
+                    new GUIContent("Не досліджено", "Колір клітинок, які ще ніколи не були видимі"));
                 EditorGUILayout.PropertyField(_exploredColorProp,
-                    new GUIContent("Колір «Досліджено»", "Колір клітинок, що були видимі, але зараз поза зоною огляду"));
-
-                EditorGUILayout.Space(4);
-
+                    new GUIContent("Досліджено", "Колір клітинок, які були видимі, але зараз поза оглядом"));
                 EditorGUILayout.PropertyField(_unexploredAlphaProp,
-                    new GUIContent("Альфа «Не досліджено»", "Непрозорість туману для невідвіданих клітинок (0 = повністю прозоро)"));
+                    new GUIContent("Альфа не досліджено", "Непрозорість для невідвіданих клітинок"));
                 EditorGUILayout.PropertyField(_exploredAlphaProp,
-                    new GUIContent("Альфа «Досліджено»", "Непрозорість туману для відвіданих, але наразі невидимих клітинок"));
+                    new GUIContent("Альфа досліджено", "Непрозорість для відвіданих, але невидимих клітинок"));
 
+                EditorGUILayout.Space(5);
                 DrawColorPreview();
 
-                EditorGUI.indentLevel--;
-            }
-
-            EditorGUILayout.EndFoldoutHeaderGroup();
-            EditorGUILayout.Space(2);
-        }
-
-        private void DrawColorPreview()
-        {
-            EditorGUILayout.Space(4);
-            EditorGUILayout.BeginHorizontal();
-
-            DrawColorSwatch("Не досліджено",
-                _unexploredColorProp.colorValue,
-                _unexploredAlphaProp.floatValue);
-
-            GUILayout.FlexibleSpace();
-
-            DrawColorSwatch("Досліджено",
-                _exploredColorProp.colorValue,
-                _exploredAlphaProp.floatValue);
-
-            EditorGUILayout.EndHorizontal();
-        }
-
-        private static void DrawColorSwatch(string label, Color baseColor, float alpha)
-        {
-            EditorGUILayout.BeginVertical(GUILayout.Width(90));
-            EditorGUILayout.LabelField(label, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(90));
-
-            var swatchRect = GUILayoutUtility.GetRect(90, 20, GUILayout.Width(90));
-            // Checkerboard to show transparency
-            EditorGUI.DrawTextureTransparent(swatchRect, Texture2D.whiteTexture);
-            var swatchColor = baseColor;
-            swatchColor.a = alpha;
-            EditorGUI.DrawRect(swatchRect, swatchColor);
-
-            EditorGUILayout.EndVertical();
-        }
-
-        // ─── Fog Tile ─────────────────────────────────────────────────────────
-
-        private void DrawTileSection()
-        {
-            _tileFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_tileFoldout,
-                new GUIContent("Базовий тайл туману", "Спрайт і параметри тайлу, що вкриває невидимі клітинки"));
-
-            if (_tileFoldout)
-            {
-                EditorGUI.indentLevel++;
-
-                DrawSpriteFieldWithPreview(_fogTileSpriteProp,
-                    new GUIContent("Спрайт тайлу", "Спрайт, що повторюється по туману. Береться з атласу — вказуйте окремий спрайт, не текстуру цілком"));
+                EditorGUILayout.Space(8);
+                EditorGUILayout.LabelField("Базовий тайл", EditorStyles.miniBoldLabel);
+                DrawSpriteField(_fogTileSpriteProp,
+                    new GUIContent("Спрайт тайлу", "Спрайт із атласу, який повторюється по клітинках туману"),
+                    LargePreviewSize);
+                EditorGUILayout.PropertyField(_fogTileTilingProp,
+                    new GUIContent("Тайлінг", "Кількість повторень спрайту на одну клітинку туману"));
 
                 if (_fogTileSpriteProp.objectReferenceValue == null)
                 {
                     EditorGUILayout.HelpBox(
-                        "Базовий тайл не встановлено. Туман буде відображатись суцільним кольором без текстури.",
+                        "Базовий тайл не встановлено. Рендер використає суцільний колір туману як фолбек.",
                         MessageType.Warning);
                 }
 
-                EditorGUILayout.PropertyField(_fogTileTilingProp,
-                    new GUIContent("Тайлінг", "Кількість повторень спрайту на одну клітинку туману. Більше значення = дрібніший візерунок"));
-
-                EditorGUI.indentLevel--;
+                EditorGUILayout.EndVertical();
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();
-            EditorGUILayout.Space(2);
         }
 
-        // ─── Bitmask ──────────────────────────────────────────────────────────
+        private void DrawColorPreview()
+        {
+            EditorGUILayout.BeginHorizontal();
+            DrawColorSwatch("Не досліджено", _unexploredColorProp.colorValue, _unexploredAlphaProp.floatValue);
+            GUILayout.Space(10);
+            DrawColorSwatch("Досліджено", _exploredColorProp.colorValue, _exploredAlphaProp.floatValue);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private static void DrawColorSwatch(string label, Color color, float alpha)
+        {
+            EditorGUILayout.BeginVertical(GUILayout.Width(120));
+            EditorGUILayout.LabelField(label, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(120));
+            Rect rect = GUILayoutUtility.GetRect(120, 24, GUILayout.Width(120));
+            EditorGUI.DrawTextureTransparent(rect, Texture2D.whiteTexture);
+            color.a = alpha;
+            EditorGUI.DrawRect(rect, color);
+            EditorGUILayout.EndVertical();
+        }
 
         private void DrawBitmaskSection()
         {
             _bitmaskFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_bitmaskFoldout,
-                new GUIContent("Бітмаска країв туману", "Автотайлінг країв за 4-сусідами (Пн/Сх/Пд/Зх). 16 варіантів спрайтів"));
+                new GUIContent("Бітова маска країв", "16 спрайтів для автотайлінгу за сусідами: Пн=1, Сх=2, Пд=4, Зх=8"));
 
             if (_bitmaskFoldout)
             {
-                EditorGUI.indentLevel++;
                 EnsureBitmaskArraySize();
+                EditorGUILayout.BeginVertical(_panelStyle);
 
                 EditorGUILayout.PropertyField(_useBitmaskAutotilingProp,
-                    new GUIContent("Увімкнути бітмаску", "Якщо увімкнено — кожна клітинка туману отримує спрайт-маску згідно сусідів"));
+                    new GUIContent("Увімкнути автотайлінг", "Клітинка туману обирає спрайт за кодом сусідніх туманних клітинок"));
 
-                EditorGUILayout.Space(4);
                 EditorGUILayout.HelpBox(
-                    "Індекс слоту = код сусідів (біти): Пн=1, Сх=2, Пд=4, Зх=8.\n" +
-                    "Наприклад, слот 3 (Пн+Сх) — клітинка має туманних сусідів на Північ і Схід.",
+                    "Код слоту: Пн=1, Сх=2, Пд=4, Зх=8. Наприклад #3 = Пн + Сх, #15 = усі сусіди.",
                     MessageType.None);
-                EditorGUILayout.Space(4);
 
+                DrawBitmaskToolbar();
                 DrawBitmaskGrid();
-
-                EditorGUILayout.Space(4);
                 DrawBitmaskValidation();
 
-                EditorGUI.indentLevel--;
+                EditorGUILayout.EndVertical();
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();
-            EditorGUILayout.Space(2);
+        }
+
+        private void DrawBitmaskToolbar()
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            using (new EditorGUI.DisabledScope(_fogTileSpriteProp.objectReferenceValue == null))
+            {
+                if (GUILayout.Button(new GUIContent("Заповнити порожні тайлом", "Скопіювати базовий тайл в усі порожні слоти маски")))
+                    FillEmptyBitmaskSlotsWithTile();
+            }
+
+            if (GUILayout.Button(new GUIContent("Очистити маски", "Прибрати всі 16 спрайтів бітової маски")))
+                ClearBitmaskSlots();
+
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(4);
         }
 
         private void DrawBitmaskGrid()
         {
+            int assigned = CountAssignedSprites(_fogBitmaskSpritesProp, BitmaskCount);
+            EditorGUILayout.LabelField($"Налаштовано {assigned}/{BitmaskCount} слотів", EditorStyles.miniBoldLabel);
+
             for (int row = 0; row < 4; row++)
             {
                 EditorGUILayout.BeginHorizontal();
                 for (int col = 0; col < 4; col++)
                 {
-                    int idx = row * 4 + col;
-                    var elem = _fogBitmaskSpritesProp.GetArrayElementAtIndex(idx);
-                    bool isEmpty = elem.objectReferenceValue == null;
+                    int index = row * 4 + col;
+                    SerializedProperty slot = _fogBitmaskSpritesProp.GetArrayElementAtIndex(index);
+                    bool empty = slot.objectReferenceValue == null;
 
-                    // Slot background to visually indicate empty/filled
-                    var bgStyle = isEmpty
-                        ? EditorStyles.helpBox
-                        : GUI.skin.box;
+                    EditorGUILayout.BeginVertical(empty ? _emptySlotStyle : _filledSlotStyle, GUILayout.Width(72));
+                    EditorGUILayout.LabelField(new GUIContent($"#{index}", GetBitmaskTooltip(index)), EditorStyles.centeredGreyMiniLabel, GUILayout.Width(64));
+                    DrawCompass(index);
 
-                    EditorGUILayout.BeginVertical(bgStyle, GUILayout.Width(SpritePreviewSize + 8));
-
-                    // Slot label: index + neighbor hint
-                    string slotLabel = $"[{idx}] {BitmaskSlotHints[idx]}";
-                    EditorGUILayout.LabelField(
-                        new GUIContent(slotLabel, $"Бітний код сусідів: {idx:D2} ({System.Convert.ToString(idx, 2).PadLeft(4, '0')} бінарно)"),
-                        EditorStyles.centeredGreyMiniLabel,
-                        GUILayout.Width(SpritePreviewSize + 4));
-
-                    // Sprite picker with thumbnail
-                    elem.objectReferenceValue = EditorGUILayout.ObjectField(
-                        elem.objectReferenceValue,
+                    slot.objectReferenceValue = EditorGUILayout.ObjectField(
+                        slot.objectReferenceValue,
                         typeof(Sprite),
                         false,
-                        GUILayout.Width(SpritePreviewSize), GUILayout.Height(SpritePreviewSize));
+                        GUILayout.Width(SmallPreviewSize),
+                        GUILayout.Height(SmallPreviewSize));
 
+                    EditorGUILayout.LabelField(BitmaskSlotNames[index], EditorStyles.centeredGreyMiniLabel, GUILayout.Width(64));
                     EditorGUILayout.EndVertical();
-                    GUILayout.Space(2);
                 }
                 EditorGUILayout.EndHorizontal();
-                GUILayout.Space(2);
             }
+        }
+
+        private static void DrawCompass(int mask)
+        {
+            string north = (mask & 1) != 0 ? "Пн" : "--";
+            string east = (mask & 2) != 0 ? "Сх" : "--";
+            string south = (mask & 4) != 0 ? "Пд" : "--";
+            string west = (mask & 8) != 0 ? "Зх" : "--";
+
+            EditorGUILayout.LabelField(north, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(64));
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label(west, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(32));
+            GUILayout.Label(east, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(32));
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.LabelField(south, EditorStyles.centeredGreyMiniLabel, GUILayout.Width(64));
+        }
+
+        private static string GetBitmaskTooltip(int mask)
+        {
+            return $"Сусіди туману: {BitmaskSlotNames[mask]}. Бінарний код: {System.Convert.ToString(mask, 2).PadLeft(4, '0')}";
         }
 
         private void DrawBitmaskValidation()
         {
-            bool autotilingOn = _useBitmaskAutotilingProp.boolValue;
-            Texture baseTex = _fogTileSpriteProp.objectReferenceValue is Sprite tile ? tile.texture : null;
-            bool hasAtlasMismatch = false;
-            int assigned = 0;
-            Texture firstMaskTex = null;
+            int assigned = CountAssignedSprites(_fogBitmaskSpritesProp, BitmaskCount);
+            bool hasAtlasMismatch = HasAtlasMismatch(_fogBitmaskSpritesProp, BitmaskCount, out Texture firstMaskTexture);
+            Texture tileTexture = _fogTileSpriteProp.objectReferenceValue is Sprite tileSprite ? tileSprite.texture : null;
 
-            for (int i = 0; i < BitmaskCount; i++)
-            {
-                var prop = _fogBitmaskSpritesProp.GetArrayElementAtIndex(i);
-                if (!(prop.objectReferenceValue is Sprite s))
-                    continue;
-
-                assigned++;
-                if (firstMaskTex == null)
-                    firstMaskTex = s.texture;
-                else if (s.texture != firstMaskTex)
-                    hasAtlasMismatch = true;
-            }
-
-            if (autotilingOn && assigned == 0)
+            if (_useBitmaskAutotilingProp.boolValue && assigned == 0)
             {
                 EditorGUILayout.HelpBox(
-                    "Бітмаска увімкнена, але жоден спрайт не призначено. " +
-                    "Буде використано базовий тайл як фолбек.",
+                    "Бітова маска увімкнена, але спрайти не призначено. Буде використано базовий тайл як фолбек.",
                     MessageType.Warning);
             }
             else if (assigned > 0 && assigned < BitmaskCount)
             {
                 EditorGUILayout.HelpBox(
-                    $"Призначено {assigned}/{BitmaskCount} масок. " +
-                    "Порожні слоти автоматично замінять базовим тайлом.",
+                    $"Призначено {assigned}/{BitmaskCount} масок. Порожні слоти використають базовий тайл як фолбек.",
                     MessageType.Info);
             }
 
             if (hasAtlasMismatch)
             {
                 EditorGUILayout.HelpBox(
-                    "Спрайти бітмаски з різних текстурних атласів. " +
-                    "Шейдер читає лише один атлас — деякі маски не відображатимуться правильно. " +
-                    "Використовуйте спрайти з одного атласу.",
+                    "Маски взято з різних атласів. Шейдер читає один атлас, тому частина спрайтів може не відобразитись.",
                     MessageType.Warning);
             }
 
-            if (baseTex != null && firstMaskTex != null && firstMaskTex != baseTex)
+            if (tileTexture != null && firstMaskTexture != null && tileTexture != firstMaskTexture)
             {
                 EditorGUILayout.HelpBox(
-                    "Спрайти бітмаски та базовий тайл з різних текстур. " +
-                    "Рекомендується тримати всі в одному атласі.",
+                    "Базовий тайл і маски з різних атласів. Це допустимо як фолбек, але для стабільного рендера краще тримати їх разом.",
                     MessageType.Warning);
             }
         }
 
-        // ─── Icons ────────────────────────────────────────────────────────────
+        private void FillEmptyBitmaskSlotsWithTile()
+        {
+            Object tileSprite = _fogTileSpriteProp.objectReferenceValue;
+            if (tileSprite == null)
+                return;
+
+            for (int i = 0; i < BitmaskCount; i++)
+            {
+                SerializedProperty slot = _fogBitmaskSpritesProp.GetArrayElementAtIndex(i);
+                if (slot.objectReferenceValue == null)
+                    slot.objectReferenceValue = tileSprite;
+            }
+        }
+
+        private void ClearBitmaskSlots()
+        {
+            for (int i = 0; i < BitmaskCount; i++)
+                _fogBitmaskSpritesProp.GetArrayElementAtIndex(i).objectReferenceValue = null;
+        }
 
         private void DrawIconsSection()
         {
             _iconsFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_iconsFoldout,
-                new GUIContent("Іконки на тумані", "Повторювані іконки (наприклад, черепи / запитання), розміщені поверх туману"));
+                new GUIContent("Іконки на тумані", "Список спрайтів, які циклічно розміщуються поверх туману"));
 
             if (_iconsFoldout)
             {
-                EditorGUI.indentLevel++;
+                EditorGUILayout.BeginVertical(_panelStyle);
+                DrawIconList();
 
-                EditorGUILayout.PropertyField(_fogIconSpritesProp,
-                    new GUIContent("Іконки (масив)", "Масив спрайтів іконок. Іконки циклічно розставляються по сітці туману"),
-                    true);
-
-                EditorGUILayout.Space(4);
-
-                var iconArray = _fogIconSpritesProp;
-                bool iconsEmpty = iconArray.arraySize == 0;
-                bool hasNullIcon = false;
-                bool hasAtlasMismatch = false;
-                Texture firstIconTex = null;
-
-                for (int i = 0; i < iconArray.arraySize; i++)
-                {
-                    var elem = iconArray.GetArrayElementAtIndex(i);
-                    if (elem.objectReferenceValue == null)
-                    {
-                        hasNullIcon = true;
-                        continue;
-                    }
-                    var s = (Sprite)elem.objectReferenceValue;
-                    if (firstIconTex == null)
-                        firstIconTex = s.texture;
-                    else if (s.texture != firstIconTex)
-                        hasAtlasMismatch = true;
-                }
-
-                if (iconsEmpty)
-                {
-                    EditorGUILayout.HelpBox(
-                        "Масив іконок порожній — іконки на тумані не відображатимуться.",
-                        MessageType.Info);
-                }
-                else
-                {
-                    if (hasNullIcon)
-                        EditorGUILayout.HelpBox(
-                            "Деякі слоти іконок порожні (null). Порожні слоти пропускаються при рендері.",
-                            MessageType.Warning);
-
-                    if (hasAtlasMismatch)
-                        EditorGUILayout.HelpBox(
-                            "Іконки з різних текстурних атласів. " +
-                            "Шейдер читає лише один атлас — використовуйте іконки з одного атласу.",
-                            MessageType.Warning);
-                }
-
-                EditorGUILayout.Space(4);
+                EditorGUILayout.Space(6);
                 EditorGUILayout.PropertyField(_fogIconGridSizeProp,
-                    new GUIContent("Розмір сітки іконок", "Незалежна сітка (X стовпців × Y рядків), по якій розставляються іконки по карті"));
+                    new GUIContent("Сітка іконок", "Незалежна сітка розміщення іконок по всій мапі"));
                 EditorGUILayout.PropertyField(_fogIconScaleProp,
-                    new GUIContent("Масштаб іконки", "Розмір іконки відносно клітинки туману (0.1 = дуже дрібно, 1.0 = повна клітинка)"));
+                    new GUIContent("Масштаб", "Розмір іконки відносно клітинки туману"));
 
-                EditorGUI.indentLevel--;
+                DrawIconValidation();
+                EditorGUILayout.EndVertical();
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        // ─── Helpers ──────────────────────────────────────────────────────────
+        private void DrawIconList()
+        {
+            EditorGUILayout.LabelField("Спрайти іконок", EditorStyles.miniBoldLabel);
 
-        private static void DrawSpriteFieldWithPreview(SerializedProperty spriteProp, GUIContent label)
+            for (int i = 0; i < _fogIconSpritesProp.arraySize; i++)
+            {
+                SerializedProperty slot = _fogIconSpritesProp.GetArrayElementAtIndex(i);
+
+                EditorGUILayout.BeginHorizontal(_filledSlotStyle);
+                EditorGUILayout.LabelField($"#{i + 1}", GUILayout.Width(28));
+                slot.objectReferenceValue = EditorGUILayout.ObjectField(
+                    slot.objectReferenceValue,
+                    typeof(Sprite),
+                    false,
+                    GUILayout.Width(LargePreviewSize),
+                    GUILayout.Height(LargePreviewSize));
+
+                EditorGUILayout.BeginVertical();
+                EditorGUILayout.Space(6);
+                EditorGUILayout.LabelField(GetSpriteDescription(slot.objectReferenceValue as Sprite), EditorStyles.wordWrappedMiniLabel);
+
+                if (GUILayout.Button(new GUIContent("Видалити", "Прибрати цю іконку зі списку"), GUILayout.Width(90)))
+                {
+                    DeleteArrayElement(_fogIconSpritesProp, i);
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.EndHorizontal();
+                    break;
+                }
+
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.EndHorizontal();
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button(new GUIContent("Додати іконку", "Додати порожній слот для нового спрайта")))
+            {
+                int index = _fogIconSpritesProp.arraySize;
+                _fogIconSpritesProp.InsertArrayElementAtIndex(index);
+                _fogIconSpritesProp.GetArrayElementAtIndex(index).objectReferenceValue = null;
+            }
+
+            using (new EditorGUI.DisabledScope(_fogIconSpritesProp.arraySize == 0))
+            {
+                if (GUILayout.Button(new GUIContent("Очистити", "Прибрати всі іконки")))
+                    _fogIconSpritesProp.ClearArray();
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawIconValidation()
+        {
+            int assigned = CountAssignedSprites(_fogIconSpritesProp, _fogIconSpritesProp.arraySize);
+            bool mismatch = HasAtlasMismatch(_fogIconSpritesProp, _fogIconSpritesProp.arraySize, out _);
+            bool hasEmpty = assigned < _fogIconSpritesProp.arraySize;
+
+            if (_fogIconSpritesProp.arraySize == 0)
+            {
+                EditorGUILayout.HelpBox("Іконки не додані — туман рендериться без декоративних іконок.", MessageType.Info);
+            }
+            else if (hasEmpty)
+            {
+                EditorGUILayout.HelpBox("У списку є порожні слоти. Під час рендера вони пропускаються.", MessageType.Warning);
+            }
+
+            if (mismatch)
+            {
+                EditorGUILayout.HelpBox(
+                    "Іконки взято з різних атласів. Шейдер використовує один атлас, тому частина іконок може не відобразитись.",
+                    MessageType.Warning);
+            }
+        }
+
+        private static void DrawSpriteField(SerializedProperty spriteProp, GUIContent label, float size)
         {
             EditorGUILayout.BeginHorizontal();
-
             EditorGUILayout.PrefixLabel(label);
-
-            var prevSprite = spriteProp.objectReferenceValue as Sprite;
-
-            // Sprite object field
             spriteProp.objectReferenceValue = EditorGUILayout.ObjectField(
-                prevSprite, typeof(Sprite), false,
-                GUILayout.Height(SpritePreviewSize), GUILayout.Width(SpritePreviewSize));
-
+                spriteProp.objectReferenceValue,
+                typeof(Sprite),
+                false,
+                GUILayout.Width(size),
+                GUILayout.Height(size));
             EditorGUILayout.EndHorizontal();
+        }
+
+        private static string GetSpriteDescription(Sprite sprite)
+        {
+            if (sprite == null)
+                return "Порожній слот";
+
+            Rect rect = sprite.textureRect;
+            string texture = sprite.texture != null ? sprite.texture.name : "без текстури";
+            return $"{sprite.name}\nАтлас: {texture}\nRect: {Mathf.RoundToInt(rect.width)}x{Mathf.RoundToInt(rect.height)}";
+        }
+
+        private static int CountAssignedSprites(SerializedProperty arrayProp, int maxCount)
+        {
+            if (arrayProp == null || !arrayProp.isArray)
+                return 0;
+
+            int count = 0;
+            int limit = Mathf.Min(arrayProp.arraySize, maxCount);
+            for (int i = 0; i < limit; i++)
+            {
+                if (arrayProp.GetArrayElementAtIndex(i).objectReferenceValue != null)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static bool HasAtlasMismatch(SerializedProperty arrayProp, int maxCount, out Texture firstTexture)
+        {
+            firstTexture = null;
+            bool mismatch = false;
+            int limit = Mathf.Min(arrayProp.arraySize, maxCount);
+
+            for (int i = 0; i < limit; i++)
+            {
+                if (!(arrayProp.GetArrayElementAtIndex(i).objectReferenceValue is Sprite sprite) || sprite.texture == null)
+                    continue;
+
+                if (firstTexture == null)
+                    firstTexture = sprite.texture;
+                else if (firstTexture != sprite.texture)
+                    mismatch = true;
+            }
+
+            return mismatch;
+        }
+
+        private static void DeleteArrayElement(SerializedProperty arrayProp, int index)
+        {
+            if (arrayProp.GetArrayElementAtIndex(index).objectReferenceValue != null)
+                arrayProp.GetArrayElementAtIndex(index).objectReferenceValue = null;
+
+            arrayProp.DeleteArrayElementAtIndex(index);
         }
 
         private void EnsureBitmaskArraySize()
