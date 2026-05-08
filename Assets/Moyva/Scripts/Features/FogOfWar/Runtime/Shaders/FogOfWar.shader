@@ -7,6 +7,7 @@ Shader "Moyva/FogOfWar"
         _FogIconTex              ("Fog Icon Texture", 2D)              = "white" {}
         _FogTileUVRect           ("Fog Tile UV Rect", Vector)          = (0, 0, 1, 1)
         _FogIconUVRect           ("Fog Icon UV Rect", Vector)          = (0, 0, 1, 1)
+        _FogTileSpritePixelSize  ("Fog Tile Sprite Pixel Size", Vector)= (16, 16, 0, 0)
         _UnexploredColor         ("Unexplored Color", Color)           = (0, 0, 0, 1)
         _ExploredColor           ("Explored Color",   Color)           = (0, 0, 0, 0.5)
         _FogTileTiling           ("Fog Tile Tiling", Float)            = 1.0
@@ -59,6 +60,7 @@ Shader "Moyva/FogOfWar"
                 float4 _FogIconTex_ST;
                 float4 _FogTileUVRect;
                 float4 _FogIconUVRect;
+                float4 _FogTileSpritePixelSize;
                 float4 _FogIconGridSize;
                 float4 _UnexploredColor;
                 float4 _ExploredColor;
@@ -113,6 +115,8 @@ Shader "Moyva/FogOfWar"
                 // ─── Sample tile texture once per fog cell ───────────────────────
                 // FogTileTiling controls detail inside each cell (1 = one full sprite per cell).
                 float2 tiledUV = frac(cellFrac * _FogTileTiling);
+                float2 tileHalfTexel = 0.5 / max(1.0.xx, _FogTileSpritePixelSize.xy);
+                tiledUV = lerp(tileHalfTexel, 1.0.xx - tileHalfTexel, tiledUV);
                 float2 tileSpriteUV = _FogTileUVRect.xy + tiledUV * _FogTileUVRect.zw;
                 half4 tileSample = SAMPLE_TEXTURE2D(_FogTileTex, sampler_FogTileTex, tileSpriteUV);
 

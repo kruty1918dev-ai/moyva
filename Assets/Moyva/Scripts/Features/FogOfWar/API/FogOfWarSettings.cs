@@ -28,6 +28,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
         public Sprite FogTileSprite;
         [Tooltip("Sprite sample size in pixels, measured from the sprite rect origin inside the texture atlas.")]
         public Vector2Int FogTileSpritePixelSize = new Vector2Int(16, 16);
+        [Tooltip("World size of one fog tile. Increase this if fog tiles leave visible gaps between map cells.")]
+        public Vector2 FogTileWorldSize = Vector2.one;
         [Tooltip("Scale for tiling the fog cell texture. Higher = more tiles per cell")]
         [Min(1f)] public float FogTileTiling = 1f;
 
@@ -54,12 +56,18 @@ namespace Kruty1918.Moyva.FogOfWar.API
         private void OnValidate()
         {
             FogTileSpritePixelSize = ClampSpritePixelSize(FogTileSpritePixelSize);
+            FogTileWorldSize = ClampTileWorldSize(FogTileWorldSize);
             FogIconSpritePixelSize = ClampSpritePixelSize(FogIconSpritePixelSize);
         }
 
         private static Vector2Int ClampSpritePixelSize(Vector2Int size)
         {
             return new Vector2Int(Mathf.Max(1, size.x), Mathf.Max(1, size.y));
+        }
+
+        private static Vector2 ClampTileWorldSize(Vector2 size)
+        {
+            return new Vector2(Mathf.Max(0.001f, size.x), Mathf.Max(0.001f, size.y));
         }
     }
 }

@@ -23,9 +23,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             int w = _gridService != null ? _gridService.GridWidth  : 10;
             int h = _gridService != null ? _gridService.GridHeight : 10;
+            Vector2 tileWorldSize = ResolveFogTileWorldSize();
 
-            transform.localScale = new Vector3(w, h, 1f);
-            transform.position   = new Vector3((w - 1) * 0.5f, (h - 1) * 0.5f, -0.5f);
+            transform.localScale = new Vector3(w * tileWorldSize.x, h * tileWorldSize.y, 1f);
+            transform.position   = new Vector3((w - 1) * tileWorldSize.x * 0.5f, (h - 1) * tileWorldSize.y * 0.5f, -0.5f);
 
             var mr = GetComponent<MeshRenderer>();
             _mat = mr.material;
@@ -106,6 +107,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             // Tiling and scaling parameters
             _mat.SetFloat("_FogTileTiling", _settings.FogTileTiling);
+            _mat.SetVector("_FogTileSpritePixelSize", new Vector4(
+                Mathf.Max(1, _settings.FogTileSpritePixelSize.x),
+                Mathf.Max(1, _settings.FogTileSpritePixelSize.y),
+                0f,
+                0f));
             _mat.SetFloat("_FogIconScale", _settings.FogIconScale);
             _mat.SetVector("_FogIconGridSize", new Vector4(
                 Mathf.Max(1, _settings.FogIconGridSize.x),
@@ -137,6 +143,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 textureRect.y * invH,
                 width * invW,
                 height * invH);
+        }
+
+        private Vector2 ResolveFogTileWorldSize()
+        {
+            if (_settings == null)
+                return Vector2.one;
+
+            return new Vector2(
+                Mathf.Max(0.001f, _settings.FogTileWorldSize.x),
+                Mathf.Max(0.001f, _settings.FogTileWorldSize.y));
         }
 
         private void ApplyOverlayRenderPriority(Renderer renderer)

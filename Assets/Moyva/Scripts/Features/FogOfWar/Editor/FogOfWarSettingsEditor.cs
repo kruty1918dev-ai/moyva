@@ -27,6 +27,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private SerializedProperty _exploredAlphaProp;
         private SerializedProperty _fogTileSpriteProp;
         private SerializedProperty _fogTileSpritePixelSizeProp;
+        private SerializedProperty _fogTileWorldSizeProp;
         private SerializedProperty _fogTileTilingProp;
         private SerializedProperty _fogIconSpritesProp;
         private SerializedProperty _fogIconSpritePixelSizeProp;
@@ -59,6 +60,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             _exploredAlphaProp          = serializedObject.FindProperty("ExploredAlpha");
             _fogTileSpriteProp          = serializedObject.FindProperty("FogTileSprite");
             _fogTileSpritePixelSizeProp = serializedObject.FindProperty("FogTileSpritePixelSize");
+            _fogTileWorldSizeProp       = serializedObject.FindProperty("FogTileWorldSize");
             _fogTileTilingProp          = serializedObject.FindProperty("FogTileTiling");
             _fogIconSpritesProp         = serializedObject.FindProperty("FogIconSprites");
             _fogIconSpritePixelSizeProp = serializedObject.FindProperty("FogIconSpritePixelSize");
@@ -239,6 +241,10 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                     new GUIContent("Розмір спрайта, px", "Скільки пікселів читати з текстури, починаючи від rect переданого спрайта. Наприклад 16x16 для одного тайла"));
                 DrawSpritePixelSizeValidation(_fogTileSpriteProp, _fogTileSpritePixelSizeProp, "тайлу");
 
+                EditorGUILayout.PropertyField(_fogTileWorldSizeProp,
+                    new GUIContent("Розмір тайла", "Розмір однієї клітинки туману у world units. Збільште X/Y, якщо між тайлами видно проміжки"));
+                DrawTileWorldSizeValidation();
+
                 if (_fogTileSpriteProp.objectReferenceValue == null)
                 {
                     EditorGUILayout.HelpBox(
@@ -380,6 +386,20 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 EditorGUILayout.HelpBox(
                     $"Sprite rect має {rectWidth}x{rectHeight} px, але рендер читатиме {size.x}x{size.y} px від його початку.",
                     MessageType.Info);
+            }
+        }
+
+        private void DrawTileWorldSizeValidation()
+        {
+            if (_fogTileWorldSizeProp == null)
+                return;
+
+            Vector2 size = _fogTileWorldSizeProp.vector2Value;
+            if (size.x <= 0f || size.y <= 0f)
+            {
+                EditorGUILayout.HelpBox(
+                    "Розмір тайла має бути більшим за 0 по X/Y. Значення буде затиснуто в runtime.",
+                    MessageType.Warning);
             }
         }
     }
