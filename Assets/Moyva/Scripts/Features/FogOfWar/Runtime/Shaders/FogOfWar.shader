@@ -156,6 +156,7 @@ Shader "Moyva/FogOfWar"
                 // Pick icon rect sequentially with mirror symmetry across X/Y axes.
                 float2 symCoord = min(iconGridCoord, iconGridMax - iconGridCoord);
                 float symWidth = floor((iconGridSize.x + 1.0) * 0.5);
+                float hasIconRects = step(0.5, _FogIconRectCount);
                 float iconRectCount = max(1.0, _FogIconRectCount);
                 float iconIndexF = fmod(symCoord.x + symCoord.y * symWidth, iconRectCount);
                 int iconIndex = (int)iconIndexF;
@@ -175,7 +176,7 @@ Shader "Moyva/FogOfWar"
 
                 // ─── Blend tile and icon ──────────────────────────────────────
                 half4 tileCol = tileSample;
-                half4 blended = lerp(tileCol, iconSample, iconSample.a * _FogIconIntensity);
+                half4 blended = lerp(tileCol, iconSample, iconSample.a * _FogIconIntensity * hasIconRects);
 
                 // ─── Apply fog state tint ───────────────────────────────────
                 // White tint keeps the sprite color unchanged; other colors tint it.
