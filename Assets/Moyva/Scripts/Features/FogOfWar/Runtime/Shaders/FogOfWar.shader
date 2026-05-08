@@ -8,6 +8,7 @@ Shader "Moyva/FogOfWar"
         _FogTileUVRect           ("Fog Tile UV Rect", Vector)          = (0, 0, 1, 1)
         _FogIconUVRect           ("Fog Icon UV Rect", Vector)          = (0, 0, 1, 1)
         _FogTileSpritePixelSize  ("Fog Tile Sprite Pixel Size", Vector)= (16, 16, 0, 0)
+        _FogTileSizeInCells      ("Fog Tile Size In Cells", Vector)    = (1, 1, 0, 0)
         _UnexploredColor         ("Unexplored Color", Color)           = (0, 0, 0, 1)
         _ExploredColor           ("Explored Color",   Color)           = (0, 0, 0, 0.5)
         _FogTileTiling           ("Fog Tile Tiling", Float)            = 1.0
@@ -61,6 +62,7 @@ Shader "Moyva/FogOfWar"
                 float4 _FogTileUVRect;
                 float4 _FogIconUVRect;
                 float4 _FogTileSpritePixelSize;
+                float4 _FogTileSizeInCells;
                 float4 _FogIconGridSize;
                 float4 _UnexploredColor;
                 float4 _ExploredColor;
@@ -109,12 +111,12 @@ Shader "Moyva/FogOfWar"
                 // ─── Build fog-cell coordinates from fog texture resolution ─────
                 // _FogTex_TexelSize.xy = (1/width, 1/height), so inverse gives grid size.
                 float2 fogGridSize = max(1.0.xx, rcp(_FogTex_TexelSize.xy));
-                float2 cellCoord = floor(IN.uv * fogGridSize);
-                float2 cellFrac = frac(IN.uv * fogGridSize);
+                float2 fogCoord = IN.uv * fogGridSize;
 
                 // ─── Sample tile texture once per fog cell ───────────────────────
-                // FogTileTiling controls detail inside each cell (1 = one full sprite per cell).
-                float2 tiledUV = frac(cellFrac * _FogTileTiling);
+                // FogTileSizeInCells controls visual sprite size without scaling the map.
+                float2 tileCoord = fogCoord / max(0.001.xx, _FogTileSizeInCells.xy);
+                float2 tiledUV = frac(tileCoord * _FogTileTiling);
                 float2 tileHalfTexel = 0.5 / max(1.0.xx, _FogTileSpritePixelSize.xy);
                 tiledUV = lerp(tileHalfTexel, 1.0.xx - tileHalfTexel, tiledUV);
                 float2 tileSpriteUV = _FogTileUVRect.xy + tiledUV * _FogTileUVRect.zw;
