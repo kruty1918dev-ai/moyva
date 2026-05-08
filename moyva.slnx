@@ -2,6 +2,7 @@
   <Project Path="Zenject.csproj" />
   <Project Path="Zenject-IntegrationTests-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Animations.csproj" />
+  <Project Path="Kruty1918.Moyva.Clouds.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
   <Project Path="Zenject-ReflectionBaking-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Interactions.API.csproj" />
@@ -32,6 +33,7 @@
   <Project Path="Kruty1918.Moyva.BotAI.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Kruty1918.Moyva.Signals.csproj" />
+  <Project Path="Kruty1918.Moyva.Clouds.csproj" />
   <Project Path="Kruty1918.Moyva.WorldCreation.UI.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Calendar.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.InfoPanel.csproj" />
