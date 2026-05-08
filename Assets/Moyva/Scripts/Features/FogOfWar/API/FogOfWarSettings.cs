@@ -5,6 +5,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
     [CreateAssetMenu(menuName = "Moyva/FogOfWarSettings", fileName = "FogOfWarSettings")]
     public class FogOfWarSettings : ScriptableObject
     {
+        public const int FogTilePixelSize = 16;
+
         // ─── Vision Range ────────────────────────────────────────────────────
         public int DefaultVisionRange = 5;
         public int MinVisionRange = 1;

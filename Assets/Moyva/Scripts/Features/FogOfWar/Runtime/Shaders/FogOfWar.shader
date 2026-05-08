@@ -177,14 +177,13 @@ Shader "Moyva/FogOfWar"
                 half4 tileCol = tileSample;
                 half4 blended = lerp(tileCol, iconSample, iconSample.a * _FogIconIntensity);
 
-                // ─── Apply fog state coloring ────────────────────────────────
+                // ─── Apply fog state tint ───────────────────────────────────
+                // White tint keeps the sprite color unchanged; other colors tint it.
                 half4 finalCol;
-                finalCol.rgb = _UnexploredColor.rgb * isUnexplored + _ExploredColor.rgb * isExplored;
                 float fogStateWeight = (isExplored + isUnexplored);
+                float3 fogTint = _UnexploredColor.rgb * isUnexplored + _ExploredColor.rgb * isExplored;
                 float patternAlpha = saturate(blended.a);
-                
-                // Blend with tile texture when not visible
-                finalCol.rgb = lerp(finalCol.rgb, blended.rgb, fogStateWeight * patternAlpha);
+                finalCol.rgb = blended.rgb * lerp(1.0.xxx, fogTint, fogStateWeight);
 
                 // ─── Apply transparency based on fog state ────────────────────
                 finalCol.a = _UnexploredAlpha * isUnexplored + _ExploredAlpha * isExplored;

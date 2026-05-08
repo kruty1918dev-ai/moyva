@@ -131,6 +131,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
 
             EditorGUILayout.BeginVertical(_panelStyle);
             EditorGUILayout.LabelField("Стан туману", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Розмір тайлу", $"{FogOfWarSettings.FogTilePixelSize}x{FogOfWarSettings.FogTilePixelSize} px");
             EditorGUILayout.LabelField("Базовий тайл", _fogTileSpriteProp.objectReferenceValue != null ? "призначено" : "немає");
             EditorGUILayout.LabelField("Бітмаска", _useBitmaskAutotilingProp.boolValue ? $"увімкнено, {masks}/{BitmaskCount} слотів" : "вимкнено");
             EditorGUILayout.LabelField("Іконки", icons > 0 ? $"{icons} активних" : "не використовуються");
@@ -204,9 +205,9 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 EditorGUILayout.BeginVertical(_panelStyle);
                 EditorGUILayout.LabelField("Кольори", EditorStyles.miniBoldLabel);
                 EditorGUILayout.PropertyField(_unexploredColorProp,
-                    new GUIContent("Не досліджено", "Колір клітинок, які ще ніколи не були видимі"));
+                    new GUIContent("Не досліджено", "Tint для невідвіданих клітинок. Білий колір залишає оригінальний колір спрайту"));
                 EditorGUILayout.PropertyField(_exploredColorProp,
-                    new GUIContent("Досліджено", "Колір клітинок, які були видимі, але зараз поза оглядом"));
+                    new GUIContent("Досліджено", "Tint для відвіданих клітинок поза оглядом. Білий колір залишає оригінальний колір спрайту"));
                 EditorGUILayout.PropertyField(_unexploredAlphaProp,
                     new GUIContent("Альфа не досліджено", "Непрозорість для невідвіданих клітинок"));
                 EditorGUILayout.PropertyField(_exploredAlphaProp,
@@ -218,7 +219,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 EditorGUILayout.Space(8);
                 EditorGUILayout.LabelField("Базовий тайл", EditorStyles.miniBoldLabel);
                 DrawSpriteField(_fogTileSpriteProp,
-                    new GUIContent("Спрайт тайлу", "Спрайт із атласу, який повторюється по клітинках туману"),
+                    new GUIContent("Спрайт тайлу", $"Спрайт із атласу, який повторюється по клітинках туману. Очікуваний розмір: {FogOfWarSettings.FogTilePixelSize}x{FogOfWarSettings.FogTilePixelSize} px"),
                     LargePreviewSize);
                 EditorGUILayout.PropertyField(_fogTileTilingProp,
                     new GUIContent("Тайлінг", "Кількість повторень спрайту на одну клітинку туману"));
@@ -227,6 +228,12 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 {
                     EditorGUILayout.HelpBox(
                         "Базовий тайл не встановлено. Рендер використає суцільний колір туману як фолбек.",
+                        MessageType.Warning);
+                }
+                else if (!HasExpectedTileSize((Sprite)_fogTileSpriteProp.objectReferenceValue))
+                {
+                    EditorGUILayout.HelpBox(
+                        $"Базовий тайл має бути {FogOfWarSettings.FogTilePixelSize}x{FogOfWarSettings.FogTilePixelSize} px. Інший розмір може дати нечіткий або нерівний туман.",
                         MessageType.Warning);
                 }
 
@@ -259,7 +266,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private void DrawBitmaskSection()
         {
             _bitmaskFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_bitmaskFoldout,
-                new GUIContent("Бітова маска країв", "16 спрайтів для автотайлінгу за сусідами: Пн=1, Сх=2, Пд=4, Зх=8"));
+                new GUIContent("Бітова маска країв", $"16 спрайтів {FogOfWarSettings.FogTilePixelSize}x{FogOfWarSettings.FogTilePixelSize} px для автотайлінгу за сусідами: Пн=1, Сх=2, Пд=4, Зх=8"));
 
             if (_bitmaskFoldout)
             {
@@ -270,7 +277,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                     new GUIContent("Увімкнути автотайлінг", "Клітинка туману обирає спрайт за кодом сусідніх туманних клітинок"));
 
                 EditorGUILayout.HelpBox(
-                    "Код слоту: Пн=1, Сх=2, Пд=4, Зх=8. Наприклад #3 = Пн + Сх, #15 = усі сусіди.",
+                    $"Один тайл туману = {FogOfWarSettings.FogTilePixelSize}x{FogOfWarSettings.FogTilePixelSize} px. Код слоту: Пн=1, Сх=2, Пд=4, Зх=8. Наприклад #3 = Пн + Сх, #15 = усі сусіди.",
                     MessageType.None);
 
                 DrawBitmaskToolbar();
@@ -356,6 +363,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         {
             int assigned = CountAssignedSprites(_fogBitmaskSpritesProp, BitmaskCount);
             bool hasAtlasMismatch = HasAtlasMismatch(_fogBitmaskSpritesProp, BitmaskCount, out Texture firstMaskTexture);
+            int wrongSizeCount = CountSpritesWithUnexpectedTileSize(_fogBitmaskSpritesProp, BitmaskCount);
             Texture tileTexture = _fogTileSpriteProp.objectReferenceValue is Sprite tileSprite ? tileSprite.texture : null;
 
             if (_useBitmaskAutotilingProp.boolValue && assigned == 0)
@@ -375,6 +383,13 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             {
                 EditorGUILayout.HelpBox(
                     "Маски взято з різних атласів. Шейдер читає один атлас, тому частина спрайтів може не відобразитись.",
+                    MessageType.Warning);
+            }
+
+            if (wrongSizeCount > 0)
+            {
+                EditorGUILayout.HelpBox(
+                    $"{wrongSizeCount} слот(ів) бітової маски мають розмір не {FogOfWarSettings.FogTilePixelSize}x{FogOfWarSettings.FogTilePixelSize} px. Для рівного тайлування краще використовувати саме 16x16 px.",
                     MessageType.Warning);
             }
 
@@ -538,6 +553,32 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             }
 
             return count;
+        }
+
+        private static int CountSpritesWithUnexpectedTileSize(SerializedProperty arrayProp, int maxCount)
+        {
+            if (arrayProp == null || !arrayProp.isArray)
+                return 0;
+
+            int count = 0;
+            int limit = Mathf.Min(arrayProp.arraySize, maxCount);
+            for (int i = 0; i < limit; i++)
+            {
+                if (arrayProp.GetArrayElementAtIndex(i).objectReferenceValue is Sprite sprite && !HasExpectedTileSize(sprite))
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static bool HasExpectedTileSize(Sprite sprite)
+        {
+            if (sprite == null)
+                return true;
+
+            Rect rect = sprite.textureRect;
+            return Mathf.RoundToInt(rect.width) == FogOfWarSettings.FogTilePixelSize &&
+                   Mathf.RoundToInt(rect.height) == FogOfWarSettings.FogTilePixelSize;
         }
 
         private static bool HasAtlasMismatch(SerializedProperty arrayProp, int maxCount, out Texture firstTexture)
