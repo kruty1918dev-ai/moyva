@@ -116,11 +116,11 @@ Shader "Moyva/FogOfWar"
                 return half4(tintedRgb, alpha);
             }
 
-            half4 BlendOver(half4 bottom, half4 top)
+            half4 BlendWithoutAlphaAccumulation(half4 bottom, half4 top)
             {
-                half outAlpha = top.a + bottom.a * (1.0 - top.a);
-                half3 outRgb = top.rgb * top.a + bottom.rgb * bottom.a * (1.0 - top.a);
-                outRgb = outAlpha > 0.0001 ? outRgb / outAlpha : half3(0.0, 0.0, 0.0);
+                half outAlpha = max(bottom.a, top.a);
+                half topWeight = top.a > 0.0001 ? saturate(top.a / max(0.0001, bottom.a + top.a)) : 0.0;
+                half3 outRgb = lerp(bottom.rgb, top.rgb, topWeight);
                 return half4(outRgb, outAlpha);
             }
 
@@ -152,7 +152,7 @@ Shader "Moyva/FogOfWar"
 
                         float2 fogSampleUV = (cell + 0.5.xx) / fogGridSize;
                         float4 fogState = BuildFogState(SAMPLE_TEXTURE2D(_FogTex, sampler_FogTex, fogSampleUV).r);
-                        blended = BlendOver(blended, TintTileByFog(tileSample, fogState));
+                        blended = BlendWithoutAlphaAccumulation(blended, TintTileByFog(tileSample, fogState));
                     }
                 }
 
@@ -174,7 +174,7 @@ Shader "Moyva/FogOfWar"
 
                 // ─── Blend tile and icon ──────────────────────────────────────
                 iconSample.a *= _FogIconIntensity;
-                blended = BlendOver(blended, iconSample);
+                blended = BlendWithoutAlphaAccumulation(blended, iconSample);
                 return blended;
             }
             ENDHLSL
