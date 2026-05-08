@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Clouds.API;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -8,6 +9,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
     public sealed class CloudsSettingsEditor : UnityEditor.Editor
     {
         private const float PreviewSize = 42f;
+        private const float DropAreaHeight = 48f;
 
         private SerializedProperty _enabledProp;
         private SerializedProperty _maxActiveCloudsProp;
@@ -37,6 +39,9 @@ namespace Kruty1918.Moyva.Clouds.Editor
         private bool _movementFoldout = true;
         private bool _viewFoldout = true;
         private bool _shadowsFoldout = true;
+        private bool _documentationFoldout = true;
+
+        private GUIStyle _dropAreaStyle;
 
         private void OnEnable()
         {
@@ -69,6 +74,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
             serializedObject.Update();
 
             DrawScriptReference();
+            DrawDocumentationSection();
             DrawGeneralSection();
             DrawSpritesSection();
             DrawMovementSection();
@@ -87,6 +93,27 @@ namespace Kruty1918.Moyva.Clouds.Editor
                 EditorGUILayout.ObjectField("Скрипт", script, typeof(MonoScript), false);
             }
             EditorGUILayout.Space(4f);
+        }
+
+        private void DrawDocumentationSection()
+        {
+            _documentationFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_documentationFoldout,
+                new GUIContent("Як працює", "Коротке пояснення системи хмаринок"));
+
+            if (_documentationFoldout)
+            {
+                EditorGUILayout.HelpBox(
+                    "Система створює хмаринки за межами камери, рухає їх тільки горизонтально та плавно прибирає за протилежним краєм. " +
+                    "Кожна хмаринка може мати темнішу копію-тінь із вертикальним зміщенням, щоб у top-down 2D вона виглядала нижче на мапі.",
+                    MessageType.None);
+                EditorGUILayout.HelpBox(
+                    "Щоб швидко заповнити список, виділіть один або кілька Sprite/Texture у Project і натисніть 'Додати виділені', або перетягніть їх у зону спрайтів. " +
+                    "Шанс є вагою вибору, а індикатор показує приблизну частку кожного спрайта серед усіх активних варіантів.",
+                    MessageType.None);
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            EditorGUILayout.Space(2f);
         }
 
         private void DrawGeneralSection()
@@ -115,39 +142,105 @@ namespace Kruty1918.Moyva.Clouds.Editor
 
             if (_spritesFoldout)
             {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_cloudSpritesProp, new GUIContent("Варіанти", "Список спрайтів хмаринок із вагами вибору"), includeChildren: false);
+                EditorGUILayout.HelpBox(
+                    "Додайте один або кілька спрайтів хмаринок. Поле 'Шанс' працює як вага: якщо одна хмаринка має шанс 2, а інша 1, перша обиратиметься приблизно вдвічі частіше.",
+                    MessageType.None);
 
-                if (_cloudSpritesProp.isExpanded)
+                DrawSpriteDropArea();
+                DrawSpriteAutomationButtons();
+
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(_cloudSpritesProp.FindPropertyRelative("Array.size"), new GUIContent("Кількість"));
-                    for (int i = 0; i < _cloudSpritesProp.arraySize; i++)
-                        DrawSpriteVariant(_cloudSpritesProp.GetArrayElementAtIndex(i), i);
-                    EditorGUI.indentLevel--;
+                    int newSize = Mathf.Max(0, EditorGUILayout.IntField(new GUIContent("Кількість", "Кількість варіантів хмаринок"), _cloudSpritesProp.arraySize));
+                    if (newSize != _cloudSpritesProp.arraySize)
+                        _cloudSpritesProp.arraySize = newSize;
+
+                    if (GUILayout.Button(new GUIContent("Додати", "Додати порожній варіант хмаринки"), GUILayout.Width(86f)))
+                        AddSpriteVariant(null);
                 }
-                EditorGUI.indentLevel--;
+
+                float totalChance = CalculateTotalChance();
+                for (int i = 0; i < _cloudSpritesProp.arraySize; i++)
+                    DrawSpriteVariant(_cloudSpritesProp.GetArrayElementAtIndex(i), i, totalChance);
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();
             EditorGUILayout.Space(2f);
         }
 
-        private void DrawSpriteVariant(SerializedProperty variant, int index)
+        private void DrawSpriteDropArea()
+        {
+            _dropAreaStyle ??= new GUIStyle(EditorStyles.helpBox)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                wordWrap = true,
+                fontStyle = FontStyle.Italic,
+            };
+
+            Rect dropRect = GUILayoutUtility.GetRect(0f, DropAreaHeight, GUILayout.ExpandWidth(true));
+            EditorGUI.LabelField(dropRect, "Перетягніть сюди Sprite або Texture з нарізаними Sprite", _dropAreaStyle);
+
+            Event current = Event.current;
+            if (!dropRect.Contains(current.mousePosition))
+                return;
+
+            if (current.type == EventType.DragUpdated)
+            {
+                DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
+                current.Use();
+            }
+            else if (current.type == EventType.DragPerform)
+            {
+                DragAndDrop.AcceptDrag();
+                AddSpritesFromObjects(DragAndDrop.objectReferences);
+                current.Use();
+            }
+        }
+
+        private void DrawSpriteAutomationButtons()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button(new GUIContent("Додати виділені", "Додати всі виділені Sprite або Sprite всередині виділених Texture")))
+                    AddSpritesFromObjects(Selection.objects);
+
+                if (GUILayout.Button(new GUIContent("Вирівняти шанси", "Поставити шанс 1 для всіх непорожніх спрайтів")))
+                    SetEqualChances();
+
+                if (GUILayout.Button(new GUIContent("Прибрати порожні", "Видалити рядки без спрайта або з шансом 0")))
+                    RemoveEmptyVariants();
+            }
+        }
+
+        private void DrawSpriteVariant(SerializedProperty variant, int index, float totalChance)
         {
             SerializedProperty spriteProp = variant.FindPropertyRelative("Sprite");
             SerializedProperty chanceProp = variant.FindPropertyRelative("Chance");
+            float chance = Mathf.Max(0f, chanceProp.floatValue);
+            float percent = totalChance > 0f ? chance / totalChance : 0f;
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField($"Варіант {index + 1}", EditorStyles.boldLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField($"Варіант {index + 1}", EditorStyles.boldLabel);
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button(new GUIContent("Видалити", "Видалити цей варіант"), GUILayout.Width(86f)))
+                    {
+                        _cloudSpritesProp.DeleteArrayElementAtIndex(index);
+                        return;
+                    }
+                }
+
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     DrawSpritePreview(spriteProp.objectReferenceValue as Sprite);
                     using (new EditorGUILayout.VerticalScope())
                     {
                         EditorGUILayout.PropertyField(spriteProp, new GUIContent("Спрайт", "Спрайт хмаринки"));
-                        EditorGUILayout.PropertyField(chanceProp, new GUIContent("Шанс", "Вага вибору цього спрайта"));
+                        chanceProp.floatValue = Mathf.Max(0f, EditorGUILayout.FloatField(new GUIContent("Шанс", "Вага вибору цього спрайта"), chanceProp.floatValue));
+                        Rect progressRect = GUILayoutUtility.GetRect(0f, 16f, GUILayout.ExpandWidth(true));
+                        EditorGUI.ProgressBar(progressRect, percent, $"Ймовірність: {percent * 100f:0.#}%");
                     }
                 }
             }
@@ -222,7 +315,9 @@ namespace Kruty1918.Moyva.Clouds.Editor
         {
             if (!HasUsableSprite())
             {
-                EditorGUILayout.HelpBox("Додайте хоча б один спрайт хмаринки з шансом більше 0.", MessageType.Warning);
+                EditorGUILayout.HelpBox(
+                    "Додайте хоча б один спрайт хмаринки з шансом більше 0. Найшвидше: виділіть спрайти в Project і натисніть 'Додати виділені' або перетягніть їх у зону спрайтів.",
+                    MessageType.Warning);
             }
 
             if (_initialCloudsProp.intValue > _maxActiveCloudsProp.intValue)
@@ -250,6 +345,86 @@ namespace Kruty1918.Moyva.Clouds.Editor
             }
 
             return false;
+        }
+
+        private float CalculateTotalChance()
+        {
+            float total = 0f;
+            for (int i = 0; i < _cloudSpritesProp.arraySize; i++)
+            {
+                SerializedProperty variant = _cloudSpritesProp.GetArrayElementAtIndex(i);
+                if (variant.FindPropertyRelative("Sprite").objectReferenceValue != null)
+                    total += Mathf.Max(0f, variant.FindPropertyRelative("Chance").floatValue);
+            }
+
+            return total;
+        }
+
+        private void AddSpriteVariant(Sprite sprite)
+        {
+            int index = _cloudSpritesProp.arraySize;
+            _cloudSpritesProp.InsertArrayElementAtIndex(index);
+            SerializedProperty variant = _cloudSpritesProp.GetArrayElementAtIndex(index);
+            variant.FindPropertyRelative("Sprite").objectReferenceValue = sprite;
+            variant.FindPropertyRelative("Chance").floatValue = 1f;
+        }
+
+        private void AddSpritesFromObjects(Object[] objects)
+        {
+            List<Sprite> sprites = ExtractSprites(objects);
+            for (int i = 0; i < sprites.Count; i++)
+                AddSpriteVariant(sprites[i]);
+        }
+
+        private static List<Sprite> ExtractSprites(Object[] objects)
+        {
+            var sprites = new List<Sprite>();
+            if (objects == null)
+                return sprites;
+
+            for (int i = 0; i < objects.Length; i++)
+            {
+                if (objects[i] is Sprite directSprite)
+                {
+                    sprites.Add(directSprite);
+                    continue;
+                }
+
+                string path = AssetDatabase.GetAssetPath(objects[i]);
+                if (string.IsNullOrEmpty(path))
+                    continue;
+
+                Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
+                for (int assetIndex = 0; assetIndex < assets.Length; assetIndex++)
+                {
+                    if (assets[assetIndex] is Sprite sprite)
+                        sprites.Add(sprite);
+                }
+            }
+
+            return sprites;
+        }
+
+        private void SetEqualChances()
+        {
+            for (int i = 0; i < _cloudSpritesProp.arraySize; i++)
+            {
+                SerializedProperty variant = _cloudSpritesProp.GetArrayElementAtIndex(i);
+                if (variant.FindPropertyRelative("Sprite").objectReferenceValue != null)
+                    variant.FindPropertyRelative("Chance").floatValue = 1f;
+            }
+        }
+
+        private void RemoveEmptyVariants()
+        {
+            for (int i = _cloudSpritesProp.arraySize - 1; i >= 0; i--)
+            {
+                SerializedProperty variant = _cloudSpritesProp.GetArrayElementAtIndex(i);
+                bool hasSprite = variant.FindPropertyRelative("Sprite").objectReferenceValue != null;
+                bool hasChance = variant.FindPropertyRelative("Chance").floatValue > 0f;
+                if (!hasSprite || !hasChance)
+                    _cloudSpritesProp.DeleteArrayElementAtIndex(i);
+            }
         }
 
         private static void DrawSpritePreview(Sprite sprite)
