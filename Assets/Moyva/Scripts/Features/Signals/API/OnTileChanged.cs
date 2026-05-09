@@ -88,4 +88,17 @@ namespace Kruty1918.Moyva.Signals
         public string[,] ObjectMap;
         public float[,] HeightMap;
     }
+
+    public struct SpawnPositionAssignment
+    {
+        public int SlotIndex;
+        public string ParticipantId;
+        public bool IsBot;
+        public Vector2Int Position;
+    }
+
+    public struct WorldSpawnPositionsSignal
+    {
+        public SpawnPositionAssignment[] Assignments;
+    }
 }

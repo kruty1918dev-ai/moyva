@@ -22,15 +22,26 @@ MonoBehaviour:
   _startingPositionSettings:
     minMarginFromBorder: 3
     relativeMarginFactor: 0.1667
-    innerRadius: 3
+    startMinHeight: 0.35
+    startMaxHeight: 1
+    requireHeightMapForStart: 0
+    revealedCircleRadius: 15
+    revealShape: 0
+    minimumExploredTilesBeforeRepair: 4
+    useMapSizeScaledFog: 1
+    fogScaleByMapSize:
+    - MapSideTiles: 64
+      RevealedRadius: 5
+      CoreVisibleRadius: 7
+    - MapSideTiles: 128
+      RevealedRadius: 10
+      CoreVisibleRadius: 12
+    - MapSideTiles: 256
+      RevealedRadius: 15
+      CoreVisibleRadius: 18
     keepCoreFullyVisible: 1
     coreVisibleRadiusOverride: 1
-    outerRadius: 12
-    outerPadding: 1
-    noiseScale: 60
-    noiseOffsetRange: 200
-    outerStartReveal: 0.708
-    outerEndReveal: 0.109
-    outerNoiseMinFactor: 0.42
-    outerNoiseFactor: 0.95
+    multiplayerStartSlots: 4
+    minAStarDistanceBetweenPlayers: 15
+    startCandidateAttempts: 256
     cameraZ: -10

@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
 
@@ -16,15 +17,31 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         [InjectOptional] private IFogOfWarService   _fogService;
         [InjectOptional] private IFogTextureUpdater _textureUpdater;
         [InjectOptional] private IGridService       _gridService;
+        [InjectOptional] private SignalBus          _signalBus;
 
         private Material _mat;
         private int _mapWidth = 10;
         private int _mapHeight = 10;
+        private bool _subscribed;
 
         private void Start()
         {
             int w = _gridService != null ? _gridService.GridWidth  : 10;
             int h = _gridService != null ? _gridService.GridHeight : 10;
+            InitializeOverlay(w, h);
+            SubscribeToWorldGeneratedSignal();
+        }
+
+        private void OnDestroy()
+        {
+            if (_signalBus != null && _subscribed)
+                _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
+        }
+
+        private void InitializeOverlay(int width, int height)
+        {
+            int w = Mathf.Max(1, width);
+            int h = Mathf.Max(1, height);
             _mapWidth = w;
             _mapHeight = h;
 
@@ -55,6 +72,25 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (_settings != null)
                 ApplySettingsToMaterial();
+        }
+
+        private void SubscribeToWorldGeneratedSignal()
+        {
+            if (_signalBus == null || _subscribed)
+                return;
+
+            _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
+            _subscribed = true;
+        }
+
+        private void OnWorldGenerated(WorldGeneratedDataSignal signal)
+        {
+            int width = Mathf.Max(1, signal.Width);
+            int height = Mathf.Max(1, signal.Height);
+            if (width == _mapWidth && height == _mapHeight)
+                return;
+
+            InitializeOverlay(width, height);
         }
 
         private void ApplySettingsToMaterial()

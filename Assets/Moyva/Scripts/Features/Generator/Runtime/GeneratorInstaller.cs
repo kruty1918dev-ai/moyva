@@ -77,6 +77,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
 			try
 			{
+				if (GameLaunchContext.TryGetSeed(out int launchSeed))
+					GlobalSeed.Set(launchSeed);
+
 				Debug.Log("[GeneratorInstaller] Старт побудови світу...");
 				Container.Resolve<IMapInstantiator>().BuildWorld();
 				Debug.Log("[GeneratorInstaller] Побудову світу завершено.");

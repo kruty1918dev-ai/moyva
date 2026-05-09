@@ -44,6 +44,20 @@ namespace Kruty1918.Moyva.Tests.Grid
             Assert.AreEqual(64, g.GridHeight);
         }
 
+        [Test]
+        public void Resize_ChangesDimensions_AndPreservesOverlappingTiles()
+        {
+            _grid.SetTileData(new Vector2Int(2, 3), "grass");
+
+            Assert.IsInstanceOf<IGridResizeService>(_grid);
+            ((IGridResizeService)_grid).Resize(16, 12);
+
+            Assert.AreEqual(16, _grid.GridWidth);
+            Assert.AreEqual(12, _grid.GridHeight);
+            Assert.AreEqual("grass", _grid.GetTileData(new Vector2Int(2, 3)));
+            Assert.DoesNotThrow(() => _grid.SetTileData(new Vector2Int(15, 11), "water"));
+        }
+
         // --- SetTileData / GetTileData ---
         [Test]
         public void SetTileData_GetTileData_ReturnsSameValue()

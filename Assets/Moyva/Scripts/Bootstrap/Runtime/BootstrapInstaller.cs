@@ -53,6 +53,9 @@ namespace Kruty1918.Moyva.Bootstrap
             Container.BindInstance(startingPositionSettings).AsSingle();
             Container.BindInterfacesTo<StartingPositionInitializer>().AsSingle().NonLazy();
             Container.BindExecutionOrder<StartingPositionInitializer>(101);
+
+            Container.BindInterfacesTo<InitialWorldSaveService>().AsSingle().NonLazy();
+            Container.BindExecutionOrder<InitialWorldSaveService>(103);
         }
     }
 
@@ -67,6 +70,40 @@ namespace Kruty1918.Moyva.Bootstrap
             GameLaunchContext.ConfigureDirectGameplayTest();
             Debug.Log("[Bootstrap] Direct gameplay start detected -> solo/no-save test mode enabled.");
 #endif
+        }
+    }
+
+    internal sealed class InitialWorldSaveService : IInitializable, System.IDisposable
+    {
+        private readonly ISaveService _saveService;
+        private readonly SignalBus _signalBus;
+        private bool _saved;
+
+        public InitialWorldSaveService(ISaveService saveService, SignalBus signalBus)
+        {
+            _saveService = saveService;
+            _signalBus = signalBus;
+        }
+
+        public void Initialize()
+        {
+            _signalBus.Subscribe<Kruty1918.Moyva.Signals.WorldGeneratedDataSignal>(OnWorldGenerated);
+        }
+
+        public void Dispose()
+        {
+            _signalBus.TryUnsubscribe<Kruty1918.Moyva.Signals.WorldGeneratedDataSignal>(OnWorldGenerated);
+        }
+
+        private void OnWorldGenerated(Kruty1918.Moyva.Signals.WorldGeneratedDataSignal signal)
+        {
+            if (_saved || GameLaunchContext.Mode != GameLaunchMode.MenuNewGame || !GameLaunchContext.IsAutoSaveEnabled())
+                return;
+
+            _saved = true;
+            int slot = GameLaunchContext.SaveSlot;
+            Debug.Log($"[Bootstrap] Новий світ створено — первинне збереження у слот {slot:D2}.");
+            _saveService.Save(slot);
         }
     }
 }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Visuals;
 using UnityEngine;
@@ -10,7 +11,7 @@ using Kruty1918.Moyva.Signals;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
-    internal sealed class MapVisualInstantiator : IMapInstantiator, IInitializable
+    internal sealed class MapVisualInstantiator : IMapInstantiator, IInitializable, System.IDisposable
     {
         private const int ObjectLayerSortingOrder = 10;
         private const int BuildingLayerMinSortingOrder = 5;
@@ -73,6 +74,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 _definitionsCache[def.Id] = def;
             }
+
+            _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
+        }
+
+        public void Dispose()
+        {
+            _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
         }
 
         public void BuildWorld()
@@ -117,19 +125,62 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     virtualBuildingMap = buildings;
                 });
 
-            return new GeneratedWorldData
+            int width = ResolveWidth(virtualBiomeMap, virtualObjectMap, finalHeightMap, virtualBuildingMap);
+            int height = ResolveHeight(virtualBiomeMap, virtualObjectMap, finalHeightMap, virtualBuildingMap);
+
+            var data = new GeneratedWorldData
             {
-                Width = _gridService.GridWidth,
-                Height = _gridService.GridHeight,
+                Width = width,
+                Height = height,
                 BiomeMap = virtualBiomeMap,
                 ObjectMap = virtualObjectMap,
                 HeightMap = finalHeightMap,
                 BuildingMap = virtualBuildingMap,
             };
+
+            ApplyLaunchMetadata(data);
+            return data;
+        }
+
+        private static int ResolveWidth(string[,] biomeMap, string[,] objectMap, float[,] heightMap, string[,] buildingMap)
+        {
+            if (biomeMap != null) return biomeMap.GetLength(0);
+            if (objectMap != null) return objectMap.GetLength(0);
+            if (heightMap != null) return heightMap.GetLength(0);
+            if (buildingMap != null) return buildingMap.GetLength(0);
+            return 0;
+        }
+
+        private static int ResolveHeight(string[,] biomeMap, string[,] objectMap, float[,] heightMap, string[,] buildingMap)
+        {
+            if (biomeMap != null) return biomeMap.GetLength(1);
+            if (objectMap != null) return objectMap.GetLength(1);
+            if (heightMap != null) return heightMap.GetLength(1);
+            if (buildingMap != null) return buildingMap.GetLength(1);
+            return 0;
+        }
+
+        private static void ApplyLaunchMetadata(GeneratedWorldData data)
+        {
+            if (data == null || !GameLaunchContext.HasWorldSettings)
+                return;
+
+            data.WorldName = GameLaunchContext.WorldName;
+            data.Seed = GameLaunchContext.Seed;
+            data.Size = GameLaunchContext.Size;
+            data.MapType = GameLaunchContext.MapType;
+            data.Difficulty = GameLaunchContext.Difficulty;
         }
 
         private void BuildWorldFromData(GeneratedWorldData worldData)
         {
+            if (worldData == null)
+            {
+                Debug.LogError("[MapVisualInstantiator] BuildWorldFromData received null world data.");
+                return;
+            }
+
+            EnsureGridMatchesWorld(worldData);
             EnsureRoots();
             _mapObjectVisualRegistryService?.Clear();
             ClearRoot(_tilesRoot);
@@ -183,6 +234,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             _currentWorldData = worldData.Clone();
             _signalBus.Fire(new WorldBuiltSignal());
+            FireSavedSpawnPositions(_currentWorldData);
             _signalBus.Fire(new WorldGeneratedDataSignal
             {
                 Width = _currentWorldData.Width,
@@ -191,6 +243,41 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
             });
+        }
+
+        private void OnWorldSpawnPositions(WorldSpawnPositionsSignal signal)
+        {
+            if (_currentWorldData == null || signal.Assignments == null || signal.Assignments.Length == 0)
+                return;
+
+            _currentWorldData.SpawnPositions = (SpawnPositionAssignment[])signal.Assignments.Clone();
+        }
+
+        private void FireSavedSpawnPositions(GeneratedWorldData worldData)
+        {
+            if (worldData?.SpawnPositions == null || worldData.SpawnPositions.Length == 0)
+                return;
+
+            _signalBus.Fire(new WorldSpawnPositionsSignal
+            {
+                Assignments = (SpawnPositionAssignment[])worldData.SpawnPositions.Clone(),
+            });
+        }
+
+        private void EnsureGridMatchesWorld(GeneratedWorldData worldData)
+        {
+            int width = Mathf.Max(1, worldData.Width);
+            int height = Mathf.Max(1, worldData.Height);
+            if (_gridService.GridWidth == width && _gridService.GridHeight == height)
+                return;
+
+            if (_gridService is IGridResizeService resizeService)
+            {
+                resizeService.Resize(width, height);
+                return;
+            }
+
+            Debug.LogWarning($"[MapVisualInstantiator] Grid size {_gridService.GridWidth}x{_gridService.GridHeight} does not match world size {width}x{height}, and the grid service cannot resize. World build may fail if tiles exceed grid bounds.");
         }
 
         private void ApplyLayerData(GeneratedWorldData worldData)

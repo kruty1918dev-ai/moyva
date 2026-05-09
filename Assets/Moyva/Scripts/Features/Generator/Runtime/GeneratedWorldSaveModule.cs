@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.Signals;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
@@ -23,6 +24,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             WriteStringMap(context, data.ObjectMap, data.Width, data.Height);
             WriteFloatMap(context, data.HeightMap, data.Width, data.Height);
             WriteStringMap(context, data.BuildingMap, data.Width, data.Height);
+
+            context.Writer.Write(data.WorldName ?? string.Empty);
+            context.Writer.Write(data.Seed);
+            context.Writer.Write(data.Size);
+            context.Writer.Write(data.MapType);
+            context.Writer.Write(data.Difficulty);
+
+            WriteSpawnPositions(context, data.SpawnPositions);
         }
 
         public void OnLoad(ISaveContext context)
@@ -42,6 +51,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 HeightMap = ReadFloatMap(context, width, height),
                 BuildingMap = ReadStringMap(context, width, height),
             };
+
+            if (context.Reader.BaseStream.Position < context.Reader.BaseStream.Length)
+            {
+                data.WorldName = context.Reader.ReadString();
+                data.Seed = context.Reader.ReadInt32();
+                data.Size = context.Reader.ReadInt32();
+                data.MapType = context.Reader.ReadInt32();
+                data.Difficulty = context.Reader.ReadInt32();
+
+                if (context.Reader.BaseStream.Position < context.Reader.BaseStream.Length)
+                    data.SpawnPositions = ReadSpawnPositions(context);
+            }
 
             _mapVisualInstantiator.SetPendingWorldData(data);
         }
@@ -78,6 +99,41 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     map[x, y] = context.Reader.ReadSingle();
 
             return map;
+        }
+
+        private static void WriteSpawnPositions(ISaveContext context, SpawnPositionAssignment[] assignments)
+        {
+            int count = assignments?.Length ?? 0;
+            context.Writer.Write(count);
+            for (int i = 0; i < count; i++)
+            {
+                context.Writer.Write(assignments[i].SlotIndex);
+                context.Writer.Write(assignments[i].ParticipantId ?? string.Empty);
+                context.Writer.Write(assignments[i].IsBot);
+                context.Writer.Write(assignments[i].Position.x);
+                context.Writer.Write(assignments[i].Position.y);
+            }
+        }
+
+        private static SpawnPositionAssignment[] ReadSpawnPositions(ISaveContext context)
+        {
+            int count = context.Reader.ReadInt32();
+            if (count <= 0)
+                return null;
+
+            var assignments = new SpawnPositionAssignment[count];
+            for (int i = 0; i < count; i++)
+            {
+                assignments[i] = new SpawnPositionAssignment
+                {
+                    SlotIndex = context.Reader.ReadInt32(),
+                    ParticipantId = context.Reader.ReadString(),
+                    IsBot = context.Reader.ReadBoolean(),
+                    Position = new UnityEngine.Vector2Int(context.Reader.ReadInt32(), context.Reader.ReadInt32()),
+                };
+            }
+
+            return assignments;
         }
     }
 }

@@ -11,13 +11,15 @@ namespace Kruty1918.Moyva.SaveSystem
         public bool     Exists           { get; }
         public long     FileSizeBytes    { get; }
         public DateTime LastWriteTimeUtc { get; }
+        public string   WorldName        { get; }
 
-        public SaveSlotInfo(int slot, bool exists, long fileSizeBytes, DateTime lastWriteTimeUtc)
+        public SaveSlotInfo(int slot, bool exists, long fileSizeBytes, DateTime lastWriteTimeUtc, string worldName = null)
         {
             Slot             = slot;
             Exists           = exists;
             FileSizeBytes    = fileSizeBytes;
             LastWriteTimeUtc = lastWriteTimeUtc;
+            WorldName        = worldName;
         }
     }
 }

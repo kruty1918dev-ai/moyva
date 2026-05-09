@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.UI;
 using TMPro;
 using UnityEngine;
@@ -9,6 +10,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     {
         private const string PasswordPanelName = "PasswordPanel";
         private const string RuntimeUiRootName = "RuntimeHomeMenuPanels";
+
+        private static TMP_FontAsset _runtimeFontAsset;
 
         public static void EnsureRequiredPanels(string infoPanelName)
         {
@@ -159,10 +162,58 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             label.fontStyle = style;
             label.alignment = alignment;
             label.color = new Color(0.94f, 0.95f, 0.98f, 1f);
-            label.enableWordWrapping = true;
+            label.textWrappingMode = TextWrappingModes.Normal;
             label.raycastTarget = false;
+            AssignRuntimeFont(label);
             SetFlexible(go, preferredHeight: size + 18f);
             return label;
+        }
+
+        private static void AssignRuntimeFont(TMP_Text label)
+        {
+            if (label == null)
+                return;
+
+            var runtimeFont = GetRuntimeFontAsset();
+            if (runtimeFont != null)
+                label.font = runtimeFont;
+        }
+
+        private static TMP_FontAsset GetRuntimeFontAsset()
+        {
+            if (_runtimeFontAsset != null)
+                return _runtimeFontAsset;
+
+            var defaultFont = TMP_Settings.defaultFontAsset;
+            if (defaultFont == null)
+                return null;
+
+            var clonedFonts = new Dictionary<TMP_FontAsset, TMP_FontAsset>();
+            _runtimeFontAsset = CloneRuntimeFontAsset(defaultFont, clonedFonts);
+            return _runtimeFontAsset;
+        }
+
+        private static TMP_FontAsset CloneRuntimeFontAsset(TMP_FontAsset source, Dictionary<TMP_FontAsset, TMP_FontAsset> clonedFonts)
+        {
+            if (source == null)
+                return null;
+
+            if (clonedFonts.TryGetValue(source, out var existingClone))
+                return existingClone;
+
+            var clone = Object.Instantiate(source);
+            clone.name = $"{source.name} Runtime";
+            clone.hideFlags = HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild;
+            clonedFonts[source] = clone;
+
+            if (source.fallbackFontAssetTable != null && source.fallbackFontAssetTable.Count > 0)
+            {
+                clone.fallbackFontAssetTable = new List<TMP_FontAsset>(source.fallbackFontAssetTable.Count);
+                foreach (var fallback in source.fallbackFontAssetTable)
+                    clone.fallbackFontAssetTable.Add(CloneRuntimeFontAsset(fallback, clonedFonts));
+            }
+
+            return clone;
         }
 
         private static TMP_InputField CreateInputField(Transform parent, string name, string placeholderText)

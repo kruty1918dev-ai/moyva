@@ -27,6 +27,24 @@ namespace Kruty1918.Moyva.WorldCreation.API
         /// <summary>Висота карти в тайлах; актуально лише якщо <see cref="SizePreset"/> == Custom.</summary>
         public int CustomHeight { get; set; } = 64;
 
+        /// <summary>Ширина маленького світу в тайлах.</summary>
+        public int SmallWidth { get; set; } = 32;
+
+        /// <summary>Висота маленького світу в тайлах.</summary>
+        public int SmallHeight { get; set; } = 32;
+
+        /// <summary>Ширина середнього світу в тайлах.</summary>
+        public int MediumWidth { get; set; } = 64;
+
+        /// <summary>Висота середнього світу в тайлах.</summary>
+        public int MediumHeight { get; set; } = 64;
+
+        /// <summary>Ширина великого світу в тайлах.</summary>
+        public int LargeWidth { get; set; } = 128;
+
+        /// <summary>Висота великого світу в тайлах.</summary>
+        public int LargeHeight { get; set; } = 128;
+
         /// <summary>Тип/шаблон карти.</summary>
         public MapTypePreset MapType { get; set; } = MapTypePreset.Balanced;
 
@@ -80,9 +98,9 @@ namespace Kruty1918.Moyva.WorldCreation.API
         /// </summary>
         public int ResolvedWidth => SizePreset switch
         {
-            WorldSizePreset.Small  => 32,
-            WorldSizePreset.Medium => 64,
-            WorldSizePreset.Large  => 128,
+            WorldSizePreset.Small  => SmallWidth,
+            WorldSizePreset.Medium => MediumWidth,
+            WorldSizePreset.Large  => LargeWidth,
             WorldSizePreset.Custom => CustomWidth,
             _                      => 64
         };
@@ -92,9 +110,9 @@ namespace Kruty1918.Moyva.WorldCreation.API
         /// </summary>
         public int ResolvedHeight => SizePreset switch
         {
-            WorldSizePreset.Small  => 32,
-            WorldSizePreset.Medium => 64,
-            WorldSizePreset.Large  => 128,
+            WorldSizePreset.Small  => SmallHeight,
+            WorldSizePreset.Medium => MediumHeight,
+            WorldSizePreset.Large  => LargeHeight,
             WorldSizePreset.Custom => CustomHeight,
             _                      => 64
         };

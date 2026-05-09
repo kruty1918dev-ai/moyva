@@ -19,8 +19,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         public void Initialize(int width, int height, Material fogMaterial)
         {
-            _mapWidth  = width;
-            _mapHeight = height;
+            _mapWidth  = Mathf.Max(1, width);
+            _mapHeight = Mathf.Max(1, height);
 
             if (fogMaterial == null)
             {
@@ -32,9 +32,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _material = fogMaterial;
             }
 
-            _buffer = new byte[width * height];
+            if (_fogTexture != null)
+                Object.Destroy(_fogTexture);
 
-            _fogTexture            = new Texture2D(width, height, TextureFormat.R8, false, true);
+            _buffer = new byte[_mapWidth * _mapHeight];
+
+            _fogTexture            = new Texture2D(_mapWidth, _mapHeight, TextureFormat.R8, false, true);
             _fogTexture.filterMode = FilterMode.Point;
             _fogTexture.wrapMode   = TextureWrapMode.Clamp;
             _fogTexture.name       = "FogOfWar_Grid";

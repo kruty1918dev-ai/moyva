@@ -1,4 +1,6 @@
 using Kruty1918.Moyva.Bootstrap.Runtime;
+using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.FogOfWar.Runtime;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,9 +11,13 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
         private const string DefaultAssetPath = "Assets/Moyva/SO/Bootstrap/BootstrapInstallerConfig.asset";
 
         private BootstrapInstallerConfigSO _config;
+        private FogOfWarSettings _fogSettings;
         private SerializedObject _serializedConfig;
         private Vector2 _scroll;
         private int _tabIndex;
+        private int _fogPreviewMapSide = 25;
+        private int _fogPreviewRadiusOverride;
+        private int _fogPreviewCellPixels = 10;
 
         private GUIStyle _titleStyle;
         private GUIStyle _subtitleStyle;
@@ -32,6 +38,8 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
         {
             if (_config == null)
                 TryAssignFromSelection();
+
+            _fogSettings ??= FindFogSettings();
 
             EnsureSerializedObject();
             BuildStyles();
@@ -196,9 +204,13 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             DrawStartSection(
                 "Форма розкриття туману",
                 settings,
+                "revealShape",
                 "revealedCircleRadius",
+                "minimumExploredTilesBeforeRepair",
                 "keepCoreFullyVisible",
                 "coreVisibleRadiusOverride");
+
+            DrawFogPreviewSection(settings);
 
             DrawStartSection(
                 "Стартові позиції мультиплеєра",
@@ -233,6 +245,170 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             }
 
             EditorGUILayout.Space(8f);
+        }
+
+        private void DrawFogPreviewSection(SerializedProperty settings)
+        {
+            using (new EditorGUILayout.VerticalScope(_cardStyle))
+            {
+                EditorGUILayout.LabelField("Превʼю форми туману", EditorStyles.boldLabel);
+                EditorGUILayout.Space(3f);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    _fogSettings = (FogOfWarSettings)EditorGUILayout.ObjectField("Fog settings", _fogSettings, typeof(FogOfWarSettings), false);
+                    if (GUILayout.Button(_fogSettings == null ? "Знайти" : "Ping", GUILayout.Width(70f)))
+                    {
+                        if (_fogSettings == null)
+                            _fogSettings = FindFogSettings();
+
+                        if (_fogSettings != null)
+                            EditorGUIUtility.PingObject(_fogSettings);
+                    }
+                }
+
+                int configuredRadius = Mathf.Max(1, settings.FindPropertyRelative("revealedCircleRadius")?.intValue ?? 8);
+                _fogPreviewMapSide = EditorGUILayout.IntSlider("Preview map side", Mathf.Max(5, _fogPreviewMapSide), 9, 65);
+                _fogPreviewRadiusOverride = EditorGUILayout.IntSlider("Preview radius override", _fogPreviewRadiusOverride, 0, Mathf.Max(1, _fogPreviewMapSide / 2));
+                _fogPreviewCellPixels = EditorGUILayout.IntSlider("Preview cell size", Mathf.Max(4, _fogPreviewCellPixels), 4, 22);
+
+                var rect = GUILayoutUtility.GetRect(0f, 260f, GUILayout.ExpandWidth(true));
+                DrawFogShapePreview(rect, settings, ResolveFogPreviewRadius(configuredRadius));
+            }
+
+            EditorGUILayout.Space(8f);
+        }
+
+        private void DrawFogShapePreview(Rect rect, SerializedProperty settings, int radius)
+        {
+            EditorGUI.DrawRect(rect, new Color(0.11f, 0.13f, 0.14f));
+            if (settings == null)
+            {
+                DrawCenteredText(rect, "Bootstrap fog settings не призначено.");
+                return;
+            }
+
+            var shapeProperty = settings.FindPropertyRelative("revealShape");
+            FogRevealShape shape = shapeProperty != null
+                ? (FogRevealShape)shapeProperty.enumValueIndex
+                : FogRevealShape.PixelCircle;
+
+            int side = Mathf.Max(radius * 2 + 3, _fogPreviewMapSide);
+            if (side % 2 == 0)
+                side++;
+
+            float cell = Mathf.Max(4f, _fogPreviewCellPixels);
+            float gridPixels = side * cell;
+            float scale = Mathf.Min(1f, Mathf.Min((rect.width - 24f) / gridPixels, (rect.height - 44f) / gridPixels));
+            cell *= Mathf.Max(0.1f, scale);
+
+            var gridRect = new Rect(rect.center.x - side * cell * 0.5f, rect.y + 14f, side * cell, side * cell);
+            DrawFogPreviewGrid(gridRect, side, radius, shape);
+            GUI.Label(new Rect(rect.x + 10f, gridRect.yMax + 8f, rect.width - 20f, 22f), $"{shape} · {ResolveFogSpriteName()}", EditorStyles.miniLabel);
+        }
+
+        private void DrawFogPreviewGrid(Rect gridRect, int side, int radius, FogRevealShape shape)
+        {
+            var fogSprite = _fogSettings != null ? _fogSettings.FogTileSprite : null;
+            var texture = fogSprite != null ? fogSprite.texture : null;
+            var pixelSize = _fogSettings != null ? _fogSettings.FogTileSpritePixelSize : new Vector2Int(16, 16);
+            var uv = BuildSpriteUvRect(fogSprite, texture, pixelSize);
+            int center = side / 2;
+            float cell = gridRect.width / side;
+
+            for (int x = 0; x < side; x++)
+            {
+                for (int y = 0; y < side; y++)
+                {
+                    bool revealed = IsInsideFogPreviewShape(x - center, y - center, radius, shape);
+                    var cellRect = new Rect(gridRect.x + x * cell, gridRect.y + (side - 1 - y) * cell, cell, cell);
+                    EditorGUI.DrawRect(cellRect, revealed ? new Color(0.22f, 0.37f, 0.30f, 0.9f) : new Color(0.03f, 0.04f, 0.05f, 1f));
+                    if (!revealed)
+                        DrawFogPreviewSprite(cellRect, texture, uv);
+                }
+            }
+        }
+
+        private void DrawFogPreviewSprite(Rect rect, Texture2D texture, Rect uv)
+        {
+            if (texture == null)
+            {
+                EditorGUI.DrawRect(rect, new Color(0f, 0f, 0f, 0.82f));
+                return;
+            }
+
+            Color previous = GUI.color;
+            var tint = _fogSettings != null ? _fogSettings.UnexploredColor : Color.black;
+            tint.a = Mathf.Clamp01(_fogSettings != null ? _fogSettings.UnexploredAlpha : 1f);
+            GUI.color = tint;
+            GUI.DrawTextureWithTexCoords(rect, texture, uv, true);
+            GUI.color = previous;
+        }
+
+        private int ResolveFogPreviewRadius(int configuredRadius)
+        {
+            return Mathf.Max(1, _fogPreviewRadiusOverride > 0 ? _fogPreviewRadiusOverride : configuredRadius);
+        }
+
+        private string ResolveFogSpriteName()
+        {
+            if (_fogSettings == null)
+                return "FogOfWarSettings не призначено";
+
+            return _fogSettings.FogTileSprite != null
+                ? _fogSettings.FogTileSprite.name
+                : "FogTileSprite не призначено";
+        }
+
+        private static bool IsInsideFogPreviewShape(int dx, int dy, int radius, FogRevealShape shape)
+        {
+            return shape switch
+            {
+                FogRevealShape.Square => Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) <= radius,
+                FogRevealShape.Diamond => Mathf.Abs(dx) + Mathf.Abs(dy) <= radius,
+                _ => dx * dx + dy * dy <= radius * radius,
+            };
+        }
+
+        private static Rect BuildSpriteUvRect(Sprite sprite, Texture2D texture, Vector2Int pixelSize)
+        {
+            if (sprite == null || texture == null)
+                return new Rect(0f, 0f, 1f, 1f);
+
+            Rect spriteRect = sprite.textureRect;
+            float width = Mathf.Clamp(Mathf.Max(1, pixelSize.x), 1f, texture.width - spriteRect.x);
+            float height = Mathf.Clamp(Mathf.Max(1, pixelSize.y), 1f, texture.height - spriteRect.y);
+            return new Rect(
+                spriteRect.x / texture.width,
+                spriteRect.y / texture.height,
+                width / texture.width,
+                height / texture.height);
+        }
+
+        private static FogOfWarSettings FindFogSettings()
+        {
+            foreach (var installer in Object.FindObjectsByType<FogOfWarInstaller>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var serialized = new SerializedObject(installer);
+                var property = serialized.FindProperty("_settings");
+                if (property?.objectReferenceValue is FogOfWarSettings sceneSettings)
+                    return sceneSettings;
+            }
+
+            string[] guids = AssetDatabase.FindAssets("t:FogOfWarSettings");
+            for (int i = 0; i < guids.Length; i++)
+            {
+                var asset = AssetDatabase.LoadAssetAtPath<FogOfWarSettings>(AssetDatabase.GUIDToAssetPath(guids[i]));
+                if (asset != null)
+                    return asset;
+            }
+
+            return null;
+        }
+
+        private static void DrawCenteredText(Rect rect, string text)
+        {
+            GUI.Label(rect, text, new GUIStyle(EditorStyles.centeredGreyMiniLabel) { alignment = TextAnchor.MiddleCenter });
         }
 
         private void TryAssignFromSelection()

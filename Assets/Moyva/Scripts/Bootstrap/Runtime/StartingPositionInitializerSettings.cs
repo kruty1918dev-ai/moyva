@@ -1,8 +1,23 @@
 using System;
+using System.Collections.Generic;
+using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
+    [Serializable]
+    public sealed class StartingFogScalePoint
+    {
+        [Tooltip("Менша сторона мапи у тайлах, для якої задано це значення.")]
+        [Min(16)] public int MapSideTiles = 64;
+
+        [Tooltip("Радіус стартового розкриття туману для цього розміру мапи.")]
+        [Min(1)] public int RevealedRadius = 15;
+
+        [Tooltip("Радіус постійно видимого ядра для цього розміру. 0 = використати RevealedRadius.")]
+        [Min(0)] public int CoreVisibleRadius = 0;
+    }
+
     [Serializable]
     public sealed class StartingPositionInitializerSettings
     {
@@ -32,6 +47,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         [Min(1)]
         public int revealedCircleRadius = 15;
 
+        [Tooltip("Форма області, яку туман відкриває на старті нового світу або при ремонті пошкодженого сейву.")]
+        public FogRevealShape revealShape = FogRevealShape.PixelCircle;
+
+        [Tooltip("Мінімальна кількість розвіданих тайлів у завантаженому сейві. Якщо менше — туман вважається пошкодженим і стартова область відновлюється.")]
+        [Min(1)] public int minimumExploredTilesBeforeRepair = 4;
+
+        [Tooltip("Якщо увімкнено, стартовий туман масштабується за таблицею залежно від меншої сторони мапи.")]
+        public bool useMapSizeScaledFog = true;
+
+        [Tooltip("Опорні точки масштабування туману. Між найближчими точками значення інтерполюється лінійно.")]
+        public List<StartingFogScalePoint> fogScaleByMapSize = new()
+        {
+            new StartingFogScalePoint { MapSideTiles = 32, RevealedRadius = 9, CoreVisibleRadius = 7 },
+            new StartingFogScalePoint { MapSideTiles = 64, RevealedRadius = 15, CoreVisibleRadius = 12 },
+            new StartingFogScalePoint { MapSideTiles = 128, RevealedRadius = 24, CoreVisibleRadius = 18 },
+        };
+
         [Tooltip("Якщо увімкнено, ядро підтримується повністю видимим (без туману)\nчерез службовий стартовий огляд.\nЯкщо вимкнено, ядро буде лише розвіданим і з часом стане сірим без юнітів.")]
         public bool keepCoreFullyVisible = true;
 
@@ -55,5 +87,68 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         [Header("Камера")]
         [Tooltip("Позиція Z для різкого перенесення камери в стартову точку.\nДля 2D зазвичай -10, щоб камера залишалась на правильній глибині.")]
         public float cameraZ = -10f;
+
+        public int ResolveRevealedRadius(int width, int height)
+            => ResolveFogRadius(width, height, useCoreRadius: false);
+
+        public FogRevealShape ResolveRevealShape()
+            => revealShape;
+
+        public int ResolveCoreVisibleRadius(int width, int height)
+        {
+            if (coreVisibleRadiusOverride > 0)
+                return coreVisibleRadiusOverride;
+
+            return ResolveFogRadius(width, height, useCoreRadius: true);
+        }
+
+        private int ResolveFogRadius(int width, int height, bool useCoreRadius)
+        {
+            if (!useMapSizeScaledFog || fogScaleByMapSize == null || fogScaleByMapSize.Count == 0)
+                return Mathf.Max(1, revealedCircleRadius);
+
+            int side = Mathf.Max(1, Mathf.Min(width, height));
+            StartingFogScalePoint lower = null;
+            StartingFogScalePoint upper = null;
+
+            for (int i = 0; i < fogScaleByMapSize.Count; i++)
+            {
+                var point = fogScaleByMapSize[i];
+                if (point == null || point.MapSideTiles <= 0)
+                    continue;
+
+                if (point.MapSideTiles <= side && (lower == null || point.MapSideTiles > lower.MapSideTiles))
+                    lower = point;
+
+                if (point.MapSideTiles >= side && (upper == null || point.MapSideTiles < upper.MapSideTiles))
+                    upper = point;
+            }
+
+            lower ??= upper;
+            upper ??= lower;
+
+            if (lower == null)
+                return Mathf.Max(1, revealedCircleRadius);
+
+            if (lower == upper || lower.MapSideTiles == upper.MapSideTiles)
+                return ResolvePointRadius(lower, useCoreRadius);
+
+            float t = Mathf.InverseLerp(lower.MapSideTiles, upper.MapSideTiles, side);
+            float radius = Mathf.Lerp(ResolvePointRadius(lower, useCoreRadius), ResolvePointRadius(upper, useCoreRadius), t);
+            return Mathf.Max(1, Mathf.RoundToInt(radius));
+        }
+
+        private static int ResolvePointRadius(StartingFogScalePoint point, bool useCoreRadius)
+        {
+            if (point == null)
+                return 1;
+
+            if (!useCoreRadius)
+                return Mathf.Max(1, point.RevealedRadius);
+
+            return point.CoreVisibleRadius > 0
+                ? point.CoreVisibleRadius
+                : Mathf.Max(1, point.RevealedRadius);
+        }
     }
 }

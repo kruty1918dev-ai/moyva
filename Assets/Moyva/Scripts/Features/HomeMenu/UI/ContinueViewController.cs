@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.API;
 using UnityEngine;
+using UnityEngine.UI;
 using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
@@ -14,11 +15,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         public event Action<GameSlotInfo> OnSlotSelected;
 
-        // Keep track of spawned items by slot name
+        // Keep track of spawned items by stable save slot key.
         private readonly Dictionary<string, WorldItemViewComponent> _spawned
             = new Dictionary<string, WorldItemViewComponent>(StringComparer.Ordinal);
 
-        // Keep the last known GameSlotInfo for each slot (used to refresh displayed data)
+        // Keep the last known GameSlotInfo for each slot (used to refresh displayed data).
         private readonly Dictionary<string, GameSlotInfo> _slotInfos
             = new Dictionary<string, GameSlotInfo>(StringComparer.Ordinal);
 
@@ -39,7 +40,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (_slotPrefab == null || _slotsContainer == null) return;
 
-            string key = slot.SlotName ?? $"slot{slot.SlotIndex:D2}";
+            string key = BuildSlotKey(slot);
 
             // If already exists, update it
             if (_spawned.TryGetValue(key, out var existing))
@@ -54,6 +55,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             instance.Initialize(slot, s => OnSlotSelected?.Invoke(s));
             _spawned[key] = instance;
             _slotInfos[key] = slot;
+            RebuildSlotsLayout();
         }
 
         public void RemoveSlot(string slotName)
@@ -63,9 +65,10 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_spawned.TryGetValue(slotName, out var instance))
             {
                 if (instance != null)
-                    Destroy(instance.gameObject);
+                    DestroySlotObject(instance.gameObject);
                 _spawned.Remove(slotName);
                 _slotInfos.Remove(slotName);
+                RebuildSlotsLayout();
                 return;
             }
 
@@ -75,8 +78,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 var child = _slotsContainer.GetChild(i);
                 if (child.name == slotName)
                 {
-                    Destroy(child.gameObject);
+                    DestroySlotObject(child.gameObject);
                     _slotInfos.Remove(slotName);
+                    RebuildSlotsLayout();
                     break;
                 }
             }
@@ -88,8 +92,10 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             _slotInfos.Clear();
             for (int i = _slotsContainer.childCount - 1; i >= 0; i--)
             {
-                Destroy(_slotsContainer.GetChild(i).gameObject);
+                DestroySlotObject(_slotsContainer.GetChild(i).gameObject);
             }
+
+            RebuildSlotsLayout();
         }
 
         public void RefreshSlots()
@@ -107,6 +113,29 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                     instance.Initialize(info, s => OnSlotSelected?.Invoke(s));
                 }
             }
+
+            RebuildSlotsLayout();
+        }
+
+        private static string BuildSlotKey(GameSlotInfo slot)
+            => $"slot{Mathf.Clamp(slot.SlotIndex, 0, 99):D2}";
+
+        private static void DestroySlotObject(GameObject slotObject)
+        {
+            if (slotObject == null)
+                return;
+
+            slotObject.SetActive(false);
+            Destroy(slotObject);
+        }
+
+        private void RebuildSlotsLayout()
+        {
+            if (_slotsContainer is not RectTransform rectTransform)
+                return;
+
+            Canvas.ForceUpdateCanvases();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
         }
 
         // This class would be implemented by the actual MonoBehaviour that has the UI elements.
