@@ -1,0 +1,49 @@
+<!-- IL2CPP Linker Preserve Rules
+     Prevents aggressive stripping of reflection-heavy assemblies (Zenject DI, DOTween, UGS).
+     managedStrippingLevel = Low (Android) — this file adds extra safety for DI and signals. -->
+<linker>
+  <!-- Zenject DI framework — uses heavy reflection for binding/injection -->
+  <assembly fullname="Zenject" preserve="all"/>
+  <assembly fullname="Zenject-usage" preserve="all"/>
+
+  <!-- Game runtime assemblies -->
+  <assembly fullname="Kruty1918.Moyva.Shared" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Signals" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Bootstrap" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Animations" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.BotAI" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Calendar" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Camera" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Clouds" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Construction" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Construction.UI" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Economy" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Economy.UI" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Faction" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.FogOfWar" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.GameMode" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Generator" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.GraphSystem" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Grid" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.HomeMenu" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.InfoPanel" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Interactions.API" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Multiplayer" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Multiplayer.UI" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.ObjectsMap" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Pathfinding" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.SaveSystem" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Visuals" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.Units" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.WorldCreation.API" preserve="all"/>
+  <assembly fullname="Kruty1918.Moyva.WorldCreation.UI" preserve="all"/>
+
+  <!-- DOTween — uses reflection for tween targets -->
+  <assembly fullname="com.demigiant.dotween" preserve="all"/>
+
+  <!-- UGS Relay — uses reflection for serialization -->
+  <assembly fullname="com.unity.services.relay" preserve="all"/>
+
+  <!-- Newtonsoft.Json — UGS uses it for serialization -->
+  <assembly fullname="Newtonsoft.Json" preserve="all"/>
+</linker>
