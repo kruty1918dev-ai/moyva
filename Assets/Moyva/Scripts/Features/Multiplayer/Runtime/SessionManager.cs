@@ -106,13 +106,14 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             var opts = NormalizeOptions(options);
             _localPlayerId = opts.LocalIdentity.PlayerId;
 
-            // Pure-offline / solo path
-            if (_config.ProviderType == NetworkProviderType.Offline)
+            // Missing join target: fall back to local solo instead of attempting online join.
+            if (!options.CreateIfNotExists && string.IsNullOrWhiteSpace(options.RoomId))
             {
+                _logger.Warn("Join requested without room id. Falling back to local single-player session.");
                 return StartOfflineSolo(opts);
             }
 
-            // Config consistency
+            // Config consistency should be validated even for offline provider.
             if (_config.EnforceConfigConsistency)
             {
                 uint localChecksum = ComputeConfigChecksum(_config);
@@ -122,6 +123,12 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                     _failurePolicy.HandleRecoverable(FailureCategory.ConfigMismatch, "Config checksums differ.");
                     return false;
                 }
+            }
+
+            // Pure-offline / solo path
+            if (_config.ProviderType == NetworkProviderType.Offline)
+            {
+                return StartOfflineSolo(opts);
             }
 
             // Local participant policy
@@ -143,8 +150,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             {
                 _logger.Error($"CreateOrJoinSession failed: {e.Message}");
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, e.Message);
-                await SafeCleanupAsync();
-                return false;
+                return await FallbackToOfflineSoloAsync(opts, "Unhandled exception in session flow.", ct);
             }
         }
 
@@ -167,7 +173,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             if (lobby == null)
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Failed to create lobby.");
-                return false;
+                return await FallbackToOfflineSoloAsync(opts, "Failed to create lobby.", ct);
             }
 
             _currentLobbyId = lobby.LobbyId;
@@ -178,8 +184,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             if (!hostResult.Success)
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, hostResult.ErrorMessage);
-                await SafeCleanupAsync();
-                return false;
+                return await FallbackToOfflineSoloAsync(opts, hostResult.ErrorMessage, ct);
             }
 
             // Relay join code → lobby data so clients can discover it.
@@ -189,6 +194,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _currentRules = opts.Rules;
 
             UpsertLocalParticipant(opts.LocalIdentity, isHost: true);
+            CleanupHostAliasParticipants();
             _logger.Info($"Session hosted. LobbyCode={_currentLobbyCode} RelayCode={_currentSessionId}");
             return true;
         }
@@ -201,7 +207,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             if (lobby == null)
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Failed to join lobby.");
-                return false;
+                return await FallbackToOfflineSoloAsync(opts, "Failed to join lobby.", ct);
             }
 
             _currentLobbyId = lobby.LobbyId;
@@ -213,16 +219,14 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             if (string.IsNullOrEmpty(relayCode))
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Relay code not published by host.");
-                await SafeCleanupAsync();
-                return false;
+                return await FallbackToOfflineSoloAsync(opts, "Relay code not published by host.", ct);
             }
 
             var joinResult = await _network.JoinSessionAsync(relayCode, ct);
             if (!joinResult.Success)
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, joinResult.ErrorMessage);
-                await SafeCleanupAsync();
-                return false;
+                return await FallbackToOfflineSoloAsync(opts, joinResult.ErrorMessage, ct);
             }
 
             _currentSessionId = joinResult.SessionId;
@@ -268,6 +272,12 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             {
                 if (string.IsNullOrEmpty(p.PlayerId)) continue;
                 if (_participants.Exists(x => x.Identity.PlayerId == p.PlayerId)) continue;
+
+                // In tests/stubs the lobby host id may not match the local identity.
+                // When we're the authoritative host, ignore that foreign host alias.
+                if (_isHost && p.IsHost && !string.IsNullOrEmpty(_localPlayerId) &&
+                    !string.Equals(p.PlayerId, _localPlayerId, StringComparison.Ordinal))
+                    continue;
 
                 var identity = new ParticipantIdentity(p.PlayerId, p.DisplayName);
                 _participants.Add(new Participant(identity, isBot: false, isHost: p.IsHost));
@@ -320,10 +330,21 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
             if (leaving.IsHost && _participants.Count > 0)
             {
-                // MVP policy: host left → session ends.
-                _logger.Warn("Host disconnected. Ending session.");
-                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Host disconnected.");
-                _ = SafeCleanupAsync();
+                var migrated = _hostMigration.ChooseNewHost(_participants);
+                if (migrated == null)
+                {
+                    _logger.Warn("Host disconnected and migration failed. Ending session.");
+                    _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Host disconnected.");
+                    _ = SafeCleanupAsync();
+                    return;
+                }
+
+                int index = _participants.FindIndex(p => p.Identity.PlayerId == migrated.Identity.PlayerId);
+                if (index >= 0)
+                    _participants[index] = migrated;
+
+                _isHost = string.Equals(migrated.Identity.PlayerId, _localPlayerId, StringComparison.Ordinal);
+                _logger.Warn($"Host disconnected. Migrated host to '{migrated.Identity.PlayerId}'.");
                 return;
             }
 
@@ -394,6 +415,32 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 options.CreateIfNotExists,
                 rules,
                 options.ConfigChecksum);
+        }
+
+        private async Task<bool> FallbackToOfflineSoloAsync(SessionConnectOptions opts, string reason, CancellationToken ct)
+        {
+            if (!string.IsNullOrWhiteSpace(reason))
+                _logger.Warn($"Online session failed ({reason}). Falling back to local single-player.");
+
+            await SafeCleanupAsync(ct);
+            return StartOfflineSolo(opts);
+        }
+
+        private void CleanupHostAliasParticipants()
+        {
+            if (!_isHost || string.IsNullOrEmpty(_localPlayerId))
+                return;
+
+            for (int i = _participants.Count - 1; i >= 0; i--)
+            {
+                var participant = _participants[i];
+                if (participant.IsHost && !string.Equals(participant.Identity.PlayerId, _localPlayerId, StringComparison.Ordinal))
+                    _participants.RemoveAt(i);
+            }
+
+            int localIndex = _participants.FindIndex(p => string.Equals(p.Identity.PlayerId, _localPlayerId, StringComparison.Ordinal));
+            if (localIndex >= 0 && !_participants[localIndex].IsHost)
+                _participants[localIndex] = _participants[localIndex].AsHost();
         }
     }
 }

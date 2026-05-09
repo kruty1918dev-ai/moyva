@@ -34,6 +34,7 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
             Zenject.SignalBusInstaller.Install(Container);
             Container.DeclareSignal<BuildingInfoPanelRequestedSignal>();
             Container.DeclareSignal<UnitInfoPanelRequestedSignal>();
+            Container.DeclareSignal<MapObjectInfoPanelRequestedSignal>();
             Container.DeclareSignal<WorldInfoPanelClosedSignal>();
             Container.DeclareSignal<WorldInfoSelectionChangedSignal>();
             Container.DeclareSignal<UnitMovedSignal>();

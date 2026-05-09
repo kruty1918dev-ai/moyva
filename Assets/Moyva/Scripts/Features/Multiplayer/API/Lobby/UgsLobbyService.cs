@@ -40,6 +40,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private const float HeartbeatSeconds = 15f;
         private const float PollSeconds = 5f;
         private const float PollBackoffSeconds = 20f;
+        private const float JoinRequestTimeoutSeconds = 20f;
 
         private readonly IMultiplayerLogger _logger;
         private readonly SemaphoreSlim _operationLock = new SemaphoreSlim(1, 1);
@@ -149,7 +150,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
                 try
                 {
-                    _lobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCode, opts);
+                    _lobby = await AwaitWithTimeoutAsync(
+                        LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCode, opts),
+                        TimeSpan.FromSeconds(JoinRequestTimeoutSeconds),
+                        ct,
+                        $"JoinLobbyByCodeAsync('{lobbyCode}')").ConfigureAwait(false);
                 }
                 catch (LobbyServiceException e) when (e.Reason == LobbyExceptionReason.Conflict || e.Reason == LobbyExceptionReason.LobbyConflict)
                 {
@@ -219,7 +224,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 if (LobbyService.Instance == null)
                     throw new InvalidOperationException("[UgsLobby] Unity Lobbies LobbyService instance is unavailable; make sure the Unity Services Lobbies package is present and initialized.");
 
-                _lobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, opts);
+                _lobby = await AwaitWithTimeoutAsync(
+                    LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, opts),
+                    TimeSpan.FromSeconds(JoinRequestTimeoutSeconds),
+                    ct,
+                    $"JoinLobbyByIdAsync('{lobbyId}')").ConfigureAwait(false);
                 if (_lobby == null)
                 {
                     _logger.Warn("[UgsLobby] JoinLobbyByIdAsync returned null.");
@@ -239,6 +248,17 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 _operationLock.Release();
             }
+        }
+
+        private static async Task<T> AwaitWithTimeoutAsync<T>(Task<T> operation, TimeSpan timeout, CancellationToken ct, string operationName)
+        {
+            var timeoutTask = Task.Delay(timeout, ct);
+            var completed = await Task.WhenAny(operation, timeoutTask).ConfigureAwait(false);
+            if (completed == operation)
+                return await operation.ConfigureAwait(false);
+
+            ct.ThrowIfCancellationRequested();
+            throw new TimeoutException($"[UgsLobby] {operationName} timed out after {timeout.TotalSeconds:0.#}s.");
         }
 
         public async Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)

@@ -140,6 +140,7 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<WorldBuiltSignal>();
             Container.DeclareSignal<WorldGeneratedDataSignal>();
+            Container.DeclareSignal<WorldSpawnPositionsSignal>();
         }
 
         public override void Teardown()
