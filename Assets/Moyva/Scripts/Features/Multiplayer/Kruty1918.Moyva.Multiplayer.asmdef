@@ -3,6 +3,7 @@
     "rootNamespace": "Kruty1918.Moyva.Multiplayer",
     "references": [
         "Zenject",
+        "Kruty1918.Moyva.Signals",
         "Unity.Services.Core",
         "Unity.Services.Authentication",
         "Unity.Services.Relay",

@@ -213,6 +213,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             // Тільки хост може стартувати гру
             if (!IsHost(_currentLobby)) return;
+            if (!CanStartGame(_currentLobby))
+            {
+                _infoPanelService?.Show(new InfoMessage("Старт недоступний", "Для запуску гри потрібно щонайменше 2 гравці в кімнаті."));
+                UpdateViewFromLobby(_currentLobby);
+                return;
+            }
 
             _isStartingGame = true;
             if (_lobbyPanelViewController.StartGameButton != null)
@@ -273,6 +279,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private WorldSettingsDto BuildWorldSettingsDto()
         {
+            if (TryGetDraftWorldSettings(out var draft))
+                return draft;
+
             var seed = _worldSetupViewController != null ? _worldSetupViewController.Seed : 0;
             var worldName = _worldSetupViewController != null ? _worldSetupViewController.WorldName : "Новий світ";
             var size = _worldSetupViewController != null ? (int)_worldSetupViewController.Size : (int)WorldSize.Medium;
@@ -287,6 +296,28 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 ? _worldCreationDefaults.ResolveHeight((WorldSizePreset)size)
                 : 0;
             return new WorldSettingsDto(worldName, seed, size, width, height, mapType, difficulty, maxPlayers, isPrivate);
+        }
+
+        private bool TryGetDraftWorldSettings(out WorldSettingsDto worldSettings)
+        {
+            worldSettings = default;
+            var draft = _gameplaySession?.WorldSettings ?? default;
+            if (string.IsNullOrWhiteSpace(draft.WorldName) || draft.Seed == 0)
+                return false;
+
+            int maxPlayers = _currentLobby != null ? _currentLobby.MaxPlayers : draft.MaxPlayers;
+            bool isPrivate = _currentLobby != null ? _currentLobby.IsPrivate : draft.IsPrivate;
+            worldSettings = new WorldSettingsDto(
+                draft.WorldName,
+                draft.Seed,
+                draft.Size,
+                draft.Width,
+                draft.Height,
+                draft.MapType,
+                draft.Difficulty,
+                maxPlayers,
+                isPrivate);
+            return true;
         }
 
         private void ApplyGameplaySession(WorldSettingsDto worldSettings)

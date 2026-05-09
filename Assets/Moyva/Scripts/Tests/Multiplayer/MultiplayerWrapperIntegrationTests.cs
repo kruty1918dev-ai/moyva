@@ -9,7 +9,9 @@ using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
 using Kruty1918.Moyva.Multiplayer.Runtime;
+using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
+using Zenject;
 
 namespace Kruty1918.Moyva.Tests.Multiplayer
 {
@@ -115,6 +117,32 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             public void SimulatePeerDisconnected(string peerId) => PeerDisconnected?.Invoke(peerId);
         }
 
+        private sealed class FakeGameCommandSyncService : IGameCommandSyncService
+        {
+            public GameCommandType? LastSentType { get; private set; }
+            public byte[] LastSentPayload { get; private set; }
+            public int SendCount { get; private set; }
+            public Action<string, byte[]> StartingPositionsHandler { get; private set; }
+
+            public void SendCommand(GameCommandType type, byte[] payload)
+            {
+                LastSentType = type;
+                LastSentPayload = payload;
+                SendCount++;
+            }
+
+            public void RegisterHandler(GameCommandType type, Action<string, byte[]> handler)
+            {
+                if (type == GameCommandType.StartingPositions)
+                    StartingPositionsHandler = handler;
+            }
+
+            public void PushIncoming(string senderId, byte[] payload)
+            {
+                StartingPositionsHandler?.Invoke(senderId, payload);
+            }
+        }
+
         private sealed class FakeFailurePolicy : IFailureHandlingPolicy
         {
             public bool HandleRecoverable(FailureCategory cat, string details) => false;
@@ -198,6 +226,58 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             Assert.AreEqual(1, body[0]);
             Assert.AreEqual(2, body[1]);
             Assert.AreEqual(3, body[2]);
+        }
+
+        [Test]
+        public void StartingPositionSync_BroadcastsAndRestoresAssignments()
+        {
+            var container = new DiContainer();
+            Zenject.SignalBusInstaller.Install(container);
+            container.DeclareSignal<WorldSpawnPositionsSignal>().OptionalSubscriber();
+
+            var signalBus = container.Resolve<SignalBus>();
+            var logger = new FakeLogger();
+            var network = new FakeNetworkProvider();
+            var commandSync = new FakeGameCommandSyncService();
+            var service = new StartingPositionSyncService(signalBus, network, commandSync, logger);
+
+            service.Initialize();
+
+            WorldSpawnPositionsSignal received = default;
+            bool receivedFlag = false;
+            signalBus.Subscribe<WorldSpawnPositionsSignal>(signal =>
+            {
+                received = signal;
+                receivedFlag = true;
+            });
+
+            signalBus.Fire(new WorldSpawnPositionsSignal
+            {
+                Assignments = new[]
+                {
+                    new SpawnPositionAssignment
+                    {
+                        SlotIndex = 0,
+                        ParticipantId = "player-1",
+                        IsBot = false,
+                        Position = new UnityEngine.Vector2Int(7, 9),
+                    },
+                },
+            });
+
+            Assert.AreEqual(1, commandSync.SendCount);
+            Assert.AreEqual(GameCommandType.StartingPositions, commandSync.LastSentType);
+
+            network.SimulatePeerConnected("peer-2");
+            Assert.AreEqual(2, commandSync.SendCount);
+
+            commandSync.PushIncoming("peer-2", commandSync.LastSentPayload);
+
+            Assert.IsTrue(receivedFlag);
+            Assert.AreEqual(1, received.Assignments.Length);
+            Assert.AreEqual("player-1", received.Assignments[0].ParticipantId);
+            Assert.AreEqual(7, received.Assignments[0].Position.x);
+            Assert.AreEqual(9, received.Assignments[0].Position.y);
         }
 
         [Test]

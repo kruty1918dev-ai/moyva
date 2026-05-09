@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.SaveSystem;
@@ -16,8 +17,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [Inject] private INavigation _navigation;
         [Inject] private IGameplaySession _gameplaySession;
         [Inject] private IHomeMenuGameStarter _gameStarter;
+        [InjectOptional] private ILobbyService _lobbyService;
         [InjectOptional] private ISaveService _saveService;
         [InjectOptional] private ILocalGameSettingsService _localSettings;
+        [InjectOptional] private IMultiplayerModeSelector _modeSelector;
         [InjectOptional] private ISelectedGameModeService _selectedGameModeService;
         [InjectOptional] private IBotViewController _botViewController;
         [InjectOptional] private WorldCreationDefaultsSO _worldCreationDefaults;
@@ -50,7 +53,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
-            if (_mode == WolrdCreationMode.Solo)
+            if (ShouldStoreMultiplayerDraft())
+            {
+                ApplyMultiplayerSessionDraft();
+                _navigation.Open(_lobbyPanelName);
+            }
+            else if (_mode == WolrdCreationMode.Solo)
             {
                 if (_isStarting)
                     return;
@@ -71,14 +79,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     _isStarting = false;
                     Refresh();
                 }
-            }
-            else if (_mode == WolrdCreationMode.Multiplayer)
-            {
-                // перекидуємо на панель з лобі зберігаючи параметри світу,
-                // тримані з _viewController,
-                // для подальшого створення кімнати та запуску гри після налаштування лобі
-
-                _navigation.Open(_lobbyPanelName);
             }
             else
             {
@@ -103,6 +103,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             return !_isStarting
                 && !string.IsNullOrWhiteSpace(_viewController.WorldName)
                 && _viewController.Seed != 0;
+        }
+
+        private bool ShouldStoreMultiplayerDraft()
+        {
+            if (_mode == WolrdCreationMode.Multiplayer)
+                return true;
+
+            var currentLobby = _lobbyService?.Current;
+            return currentLobby != null && !string.IsNullOrWhiteSpace(currentLobby.LobbyId ?? currentLobby.LobbyCode);
         }
 
         private void ApplySoloSession()
@@ -146,6 +155,73 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 worldSettings.Width,
                 worldSettings.Height);
             _gameplaySession.Apply(NetworkProviderType.Offline, worldSettings, players, localId);
+        }
+
+        private void ApplyMultiplayerSessionDraft()
+        {
+            string localId = ResolveLocalPlayerId();
+            string playerName = string.IsNullOrWhiteSpace(_localSettings?.PlayerName)
+                ? "Player"
+                : _localSettings.PlayerName;
+            var currentLobby = _lobbyService?.Current;
+            int maxPlayers = currentLobby?.MaxPlayers > 0 ? currentLobby.MaxPlayers : 2;
+
+            var worldSettings = new WorldSettingsDto(
+                _viewController.WorldName,
+                _viewController.Seed,
+                (int)_viewController.Size,
+                ResolveWorldWidth(),
+                ResolveWorldHeight(),
+                _viewController.MapType,
+                _viewController.Difficulty,
+                maxPlayers,
+                currentLobby?.IsPrivate ?? true);
+
+            var players = new List<GameplayPlayer>
+            {
+                new GameplayPlayer(localId, playerName, isHost: true, isLocal: true)
+            };
+
+            _gameplaySession.Apply(_modeSelector?.CurrentMode ?? NetworkProviderType.Relay, worldSettings, players, localId);
+            GameLaunchContext.ConfigureMenuMultiplayerGame(
+                worldSettings.WorldName,
+                worldSettings.Seed,
+                worldSettings.Size,
+                (int)worldSettings.MapType,
+                (int)worldSettings.Difficulty,
+                worldSettings.MaxPlayers,
+                worldSettings.IsPrivate,
+                worldSettings.Width,
+                worldSettings.Height);
+        }
+
+        private string ResolveLocalPlayerId()
+        {
+            var currentLobby = _lobbyService?.Current;
+            if (currentLobby?.Players != null)
+            {
+                string playerName = string.IsNullOrWhiteSpace(_localSettings?.PlayerName)
+                    ? "Player"
+                    : _localSettings.PlayerName;
+
+                foreach (var player in currentLobby.Players)
+                {
+                    if (player != null && player.IsHost && !string.IsNullOrWhiteSpace(player.PlayerId))
+                        return player.PlayerId;
+                }
+
+                foreach (var player in currentLobby.Players)
+                {
+                    if (player != null &&
+                        string.Equals(player.DisplayName, playerName, StringComparison.Ordinal) &&
+                        !string.IsNullOrWhiteSpace(player.PlayerId))
+                    {
+                        return player.PlayerId;
+                    }
+                }
+            }
+
+            return "local-player";
         }
 
         private void ApplyDefaultsToView()
