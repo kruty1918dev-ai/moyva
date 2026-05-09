@@ -1,20 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-9001111111111111111
-MonoBehaviour:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 363daa2e2947cf2dd98450cc0d555bf3, type: 3}
-  m_Name: SharedSettingsNode
-  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SharedSettingsNode
-  _nodeId: 1d93dff2-17ef-48f9-aef6-f445ef53ec5a
-  _editorPosition: {x: 50, y: -550}
-  _settings: {fileID: 11400000, guid: 88c3490bfea75c6e6ad1c6f98b092fc6, type: 2}
 --- !u!114 &-8680848799688398106
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -54,7 +39,6 @@ MonoBehaviour:
   _denseForestTile: forest-dense
   _sparseForestTile: forest-sparse
   _denseThreshold: 0.58
-  _seed: 1918
   _minForestNeighborsForTree: 2
   _treeDensityExponent: 1.4
 --- !u!114 &-7599073612490096189
@@ -105,8 +89,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.SeedNode
   _nodeId: 0e244104-f5c0-46dd-9310-026029a2b3d9
   _editorPosition: {x: 50, y: -355}
-  seed: 1918
-  isRandomSeed: 0
+  seed: 3398
 --- !u!114 &-5797957555401290775
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -249,6 +232,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.HeightSourceNode
   _nodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
   _editorPosition: {x: 350, y: -250}
+  _noiseSettings: {fileID: 0}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -262,7 +246,6 @@ MonoBehaviour:
   m_Name: GeneratorGraph
   m_EditorClassIdentifier: Kruty1918.Moyva.GraphSystem::Kruty1918.Moyva.GraphSystem.API.GraphAsset
   _nodes:
-  - {fileID: -9001111111111111111}
   - {fileID: -7207838343501215377}
   - {fileID: -609753921142276548}
   - {fileID: 2733130157158313261}

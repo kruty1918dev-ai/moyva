@@ -1,0 +1,844 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d33d42cb1af10d56bade04a61d284d66, type: 3}
+  m_Name: TestBuilding Registry SO
+  m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.Runtime.BuildingRegistrySO
+  Buildings:
+  - Id: camp-building-001
+    DisplayName: Camp
+    Category: 0
+    Icon: {fileID: 0}
+    Prefab: {fileID: 9115590486455589008, guid: 730a69ffb4ed9034eb13e98989966b66, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: hut-building-001
+    DisplayName: Hut
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 7055799958886931148, guid: b49ac39432c3e4b41a7aaa02123601c8, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: mine-building-001
+    DisplayName: Mine
+    Category: 2
+    Icon: {fileID: 0}
+    Prefab: {fileID: 6943329417366340874, guid: b8e1c3ed3b8a7b648bfb40b91c33ed6d, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-001
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 8383563070371264966, guid: e36d8f03969745a439a829a31870c34e, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-002
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 4287179497652365080, guid: 0df1ce889f87b6744a27c7e4ef5fb567, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-003
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3430185227779065653, guid: f72577beb1a569e47ab8be4ca5cd3b71, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-004
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 79726975301780305, guid: d9d78fed8ae6ff24b82dbfe60067a5b3, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-005
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 6323299081742815019, guid: 1f9bafc083c76aa44b7722d737213a49, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-006
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 5244600797715513297, guid: 3eb6af587b69d7740bb2dffedc8a9503, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-007
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 6422872215027267566, guid: d5504b07d7e1bf24c89ace00fa357c12, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-008
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3879974112690414833, guid: dc8fdb59654ded24092f0bc15775855b, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-009
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 8233912129200882241, guid: c5701c145e2e4bf49be6312fb3b7c95c, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-010
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 9193909804144925799, guid: a758c48bb220e904c9d1ef67cc1d704d, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-011
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 5197986733417334582, guid: d9363ad45771aee42ba316e75340e9e5, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-012
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 1923716214489347264, guid: ba7e1fa54a1eeee4dac57c8f9d894495, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-013
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 7917621763428518926, guid: 85f70e03e01f6fc4e8821ed5078d90b1, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-014
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 993482676797502561, guid: e688cb69414e8f24dbf12314b9a60d3f, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-015
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3484678072035089221, guid: 6e036b8ea1a31af4c97131070f587701, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-016
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 8721898933638162798, guid: 1ccbd17d62b45fc4491294af7a4ab4ea, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-017
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3376264010624840861, guid: 0e0660fe1751e4448b14de78a586c869, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-018
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 7205124257987397167, guid: f84c949103571484daa70cac839059f8, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-019
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 2455975684511891589, guid: 582f5f38f32c16b4282c57c05746c611, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-020
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 4940362207240234694, guid: 99e529deeb451fe42a17d5c151838319, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: house-building-021
+    DisplayName: House
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 7088639280524513685, guid: 7cba2621e2bdf644ab3bda4f725e1617, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: well-building-001
+    DisplayName: Well
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 25188253009154306, guid: 283f82557bee44c4bad9dc1509b4c4ef, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-camp-building-001
+    DisplayName: Green camp
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 5849195685242338273, guid: d405982091353a642b54618c71d8bf62, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-hut-building-001
+    DisplayName: Green hut
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 1179988881765633851, guid: 36ac72274a427bb47ae3a0d824cc6d3a, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-mine-building-001
+    DisplayName: Green mine
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 5141795348561950698, guid: 36b2c09fb74ab96409dbdd5b9114f992, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-001
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3304021570510688777, guid: ed13922671e3d4f47a08ee6d8e3f2325, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-002
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3011280825731187235, guid: 9e41d4ab04899064faa7d363c6ae69c3, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-003
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 4575860653434100836, guid: a748067c9f2eec24581baf1b2aed611e, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-004
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 2691141485465161996, guid: ffcb6d495bcaad443a3d828ade26c472, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-005
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 5925838819469673048, guid: 6c2b5c9072a4616439c7197d3d87ecdb, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-006
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3770939996213510476, guid: a5897637b98394a4999ee6f83429658e, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-007
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 8717372751054053555, guid: 3c670b5412a16a843b8a1b602b566d4b, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-008
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 7837282905436564532, guid: 3e9240dab6407c948be468e3bb3d71bc, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-009
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 5347097267737766889, guid: 5feda6ec4a58fa9429fdb6b51b9c22a6, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-010
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 8552828166373820414, guid: 503d172a25a27204eba18e66fbaf6b34, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-011
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3176018267719534077, guid: 6c56088cd61806141a0ae29dbf77217e, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-012
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 6342033575214466781, guid: 323339bdff28f2a499fbebd24def5ae5, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-013
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 8076659595273561694, guid: 9357b8c3713b8ca499232e8db2d060c0, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-014
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 2919740514469301680, guid: 29c9843c9b8e2c74f8d4600f48375c7e, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-015
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 4846153119876158068, guid: 0434b4dfd890dc049880550fefc7e349, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-016
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 1221053526379582702, guid: 449ee9a6492038a49bfb048490bc1b9f, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-017
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3039835949356404006, guid: f10f21b32eca6bd49a0554f3ea3be406, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-018
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 121368560478972243, guid: a2e5961de6f682b42b807d17cd99aa07, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-019
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 2598633172967718770, guid: 2312731d33e0bf54e96e274dbffa4d4e, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-020
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 4299962626927720725, guid: c96f5f8c806fa574f9eaac79129eaefd, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-house-building-021
+    DisplayName: Green house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3773504550086738680, guid: d3ee2cbca8163be43a95bf64bd5f4106, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: green-well-building-001
+    DisplayName: Green well
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3792611484841151006, guid: 17e1c8e0535d68240aa604d802efceba, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-camp-building-001
+    DisplayName: Red camp
+    Category: 0
+    Icon: {fileID: 0}
+    Prefab: {fileID: 289661653937975280, guid: c4ed9fe60081288409dbd666da8d410a, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-hut-building-001
+    DisplayName: Red hut
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3523025374730220455, guid: 6615812759a31ce4582e10a77dc0b67c, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-mine-building-001
+    DisplayName: Red mine
+    Category: 2
+    Icon: {fileID: 0}
+    Prefab: {fileID: 2812501706482353985, guid: 4d788daffe5a34e438bb1a07ebbf54b9, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-001
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 5792615674544876785, guid: 0f549a98b580ca64bb6b1d8491b02353, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-002
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 1747819639878248062, guid: bbca69841e1e47542a90eb056d2a3763, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-003
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 6188402004401466243, guid: 00f30f1c4efc94145b3b0bb6bfa8414f, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-004
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 1578086931564559731, guid: e96aebf3ab72a8741857635260714119, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-005
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3528766602134415947, guid: e0b9a618ab190c94c992f7d1d012ab4b, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-006
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 7301613360406505271, guid: 2b2c3a5c1dc1c95439e1c975d992f6b6, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-007
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 2650927597051883443, guid: dc6783f0bcc0b39448f001e4c0dfb984, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-008
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 9139313533089249183, guid: efc8745a211bf714eb8fbdd38056db85, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-009
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 7945336252528123336, guid: 73b269a5566eb734a9c5966609f389ea, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-010
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 4520460476207148257, guid: a9b8086c3e36c7c4a886ae8bb7e79096, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-011
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 2874046094736572384, guid: 47bdbf91b3422334dad2cde5e49710ba, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-012
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 2918156883736002583, guid: b6007444a285fe246894191188a97629, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-013
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 6242203412100991192, guid: 6aac8c33b67e1fb429b688b724e3678c, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-014
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 457489785330398042, guid: b338c0ee8f8a5924eaca97e285412d74, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-015
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 2089793223882557557, guid: e5e38b846c159bb4494429391501bbb5, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-016
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 718592655492384176, guid: 134bbc496e6e9524ba0f95c5b5e2d964, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-017
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 4596529316391239144, guid: f608ce6000e263748a45dc7bb2c98383, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-018
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 6227986637657876040, guid: 9ea7fb26b77f6da4a8e99d136945bbb5, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-019
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 1541595074602528514, guid: c87826d7525989741863cb978d352d2a, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-020
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 5733313687770750947, guid: 0ad2cf5573ce4ba469a8095f1938879e, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-house-building-021
+    DisplayName: Red house
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 5874264764994105955, guid: b963c46863594fe4b853a4a569ba457e, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  - Id: red-well-building-001
+    DisplayName: Red well
+    Category: 1
+    Icon: {fileID: 0}
+    Prefab: {fileID: 3467396121987866490, guid: 895f7dfbd601ad940a6e9aee9987717c, type: 3}
+    ConstructionCost: []
+    Modules: []
+    UseCustomTownHallRules: 0
+    RequireTownHallInRange: 0
+    BlockIfTownHallAlreadyInRange: 0
+    TownHallProximityRadiusOverride: 0
+  WallCollections: []
+  references:
+    version: 2
+    RefIds: []
