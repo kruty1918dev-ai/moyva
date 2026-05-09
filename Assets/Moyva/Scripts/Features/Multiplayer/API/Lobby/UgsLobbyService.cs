@@ -154,7 +154,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCode, opts),
                         TimeSpan.FromSeconds(JoinRequestTimeoutSeconds),
                         ct,
-                        $"JoinLobbyByCodeAsync('{lobbyCode}')").ConfigureAwait(false);
+                        $"JoinLobbyByCodeAsync('{lobbyCode}')");
                 }
                 catch (LobbyServiceException e) when (e.Reason == LobbyExceptionReason.Conflict || e.Reason == LobbyExceptionReason.LobbyConflict)
                 {
@@ -228,7 +228,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, opts),
                     TimeSpan.FromSeconds(JoinRequestTimeoutSeconds),
                     ct,
-                    $"JoinLobbyByIdAsync('{lobbyId}')").ConfigureAwait(false);
+                    $"JoinLobbyByIdAsync('{lobbyId}')");
                 if (_lobby == null)
                 {
                     _logger.Warn("[UgsLobby] JoinLobbyByIdAsync returned null.");
