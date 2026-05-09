@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         event Action OnButtonNextClicked;
         event Action OnRandomSeedClicked;
+        event Action OnSettingsChanged;
         Button CreateWorldButton { get; }
     }
 }

@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.HomeMenu.Runtime.Services;
 using Kruty1918.Moyva.HomeMenu.UI;
+using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
+using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using Zenject;
 using System.Threading;
@@ -27,6 +31,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private IPasswordPanelService _passwordPanelService;
         [InjectOptional] private IInfoPanelService _infoPanelService;
         [InjectOptional] private INetworkProvider _networkProvider;
+        [InjectOptional] private SwitchableNetworkProvider _switchableNetworkProvider;
+        [InjectOptional] private IConfigStore _configStore;
+        [InjectOptional] private IGameplaySession _gameplaySession;
+        [InjectOptional] private IHomeMenuGameStarter _gameStarter;
 
         private CancellationTokenSource _roomsCts;
         private Action _onListRefreshRequested;
@@ -339,6 +347,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (room != null)
                 {
                     Debug.Log($"[JoinRoomPanelService] JoinRoomAsync ok: lobbyId='{room.LobbyId}' code='{room.LobbyCode}' relay='{room.RelayJoinCode}' players={room.Players?.Count ?? 0}.");
+                    var blockReason = GetPostJoinBlockReason(room);
+                    if (!string.IsNullOrEmpty(blockReason))
+                    {
+                        shouldRefreshRoomListAfterFailure = true;
+                        await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Кімната недоступна", blockReason);
+                        return;
+                    }
+
                     var transportReady = await JoinNetworkSessionAsync(room);
                     if (!transportReady)
                     {
@@ -351,6 +367,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     }
 
                     RememberJoinOrigin(joinPanelName, joinProviderType);
+
+                    if (room.State == LobbyState.Started)
+                    {
+                        bool reconnected = await StartReconnectedGameAsync(room);
+                        if (!reconnected)
+                        {
+                            shouldRefreshRoomListAfterFailure = true;
+                            await ReturnToLobbyChooserWithMessageAsync(
+                                joinPanelName,
+                                "Не вдалося перепідключитися",
+                                "Кімната вже у грі, але не містить валідних налаштувань світу для перепідключення.");
+                        }
+                        return;
+                    }
+
                     MainThreadDispatcher.Enqueue(() =>
                     {
                         var inviteCode = !string.IsNullOrWhiteSpace(room.LobbyCode) ? room.LobbyCode : room.LobbyId;
@@ -405,16 +436,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         /// </summary>
         private async Task<bool> JoinNetworkSessionAsync(LobbyRoom room)
         {
-            if (room != null && room.State != LobbyState.Open)
-            {
-                return false;
-            }
-
             if (_networkProvider == null)
             {
                 Debug.LogWarning("[JoinRoomPanelService] INetworkProvider not available; lobby joined without transport connection.");
                 return true;
             }
+
+            var providerType = GetCurrentProviderType();
+            if (!await EnsureNetworkProviderMatchesLobbyAsync(providerType))
+                return false;
 
             var joinCode = await ResolveNetworkJoinCodeAsync(room);
             if (string.IsNullOrWhiteSpace(joinCode))
@@ -435,6 +465,110 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             return true;
+        }
+
+        private async Task<bool> StartReconnectedGameAsync(LobbyRoom room)
+        {
+            if (room == null || room.StartedWorldSettingsBytes == null || room.StartedWorldSettingsBytes.Length == 0)
+                return false;
+
+            if (!WorldSettingsDto.TryFromBytes(room.StartedWorldSettingsBytes, out var worldSettings))
+                return false;
+
+            var localId = ResolveLocalPlayerId(room);
+            var mode = GetCurrentProviderType();
+            _gameplaySession?.Apply(mode, worldSettings, MultiplayerRoomLifecycle.ProjectGameplayPlayers(room, localId), localId);
+            GameLaunchContext.ConfigureMenuMultiplayerGame(
+                worldSettings.WorldName,
+                worldSettings.Seed,
+                worldSettings.Size,
+                (int)worldSettings.MapType,
+                (int)worldSettings.Difficulty,
+                worldSettings.MaxPlayers,
+                worldSettings.IsPrivate,
+                worldSettings.Width,
+                worldSettings.Height);
+
+            if (_gameStarter != null)
+                await _gameStarter.StartGameAsync();
+
+            return true;
+        }
+
+        private string GetPostJoinBlockReason(LobbyRoom room)
+        {
+            if (room == null)
+                return "Кімната недоступна.";
+
+            if (room.State == LobbyState.Closed)
+                return "Кімната вже закрита.";
+
+            if (room.State == LobbyState.Started && !MultiplayerRoomLifecycle.IsReconnectAllowed(room, GetPlayerName(), ResolveReconnectToleranceSeconds()))
+                return "Гра вже запущена. Приєднання доступне лише для перепідключення з тим самим ніком і коректним локальним часом.";
+
+            return null;
+        }
+
+        private string ResolveLocalPlayerId(LobbyRoom room)
+        {
+            var playerName = GetPlayerName();
+            if (room?.Players != null)
+            {
+                foreach (var player in room.Players)
+                {
+                    if (!string.IsNullOrWhiteSpace(player.PlayerId) && string.Equals(player.DisplayName, playerName, StringComparison.OrdinalIgnoreCase))
+                        return player.PlayerId;
+                }
+
+                foreach (var player in room.Players)
+                {
+                    if (!string.IsNullOrWhiteSpace(player.PlayerId) && !player.IsHost)
+                        return player.PlayerId;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private float ResolveReconnectToleranceSeconds()
+        {
+            try
+            {
+                return _configStore?.Load()?.ReconnectLocalTimeToleranceSeconds ?? 120f;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[JoinRoomPanelService] Failed to load reconnect tolerance: {e.Message}");
+                return 120f;
+            }
+        }
+
+        private async Task<bool> EnsureNetworkProviderMatchesLobbyAsync(NetworkProviderType providerType)
+        {
+            if (providerType == NetworkProviderType.Offline)
+                return true;
+
+            var switchable = _switchableNetworkProvider ?? _networkProvider as SwitchableNetworkProvider;
+            if (switchable == null)
+            {
+                Debug.LogWarning($"[JoinRoomPanelService] Network provider is not switchable; cannot force transport provider {providerType}.");
+                return true;
+            }
+
+            if (switchable.CurrentType == providerType)
+                return true;
+
+            try
+            {
+                await switchable.SwitchToAsync(providerType);
+                Debug.Log($"[JoinRoomPanelService] Transport provider switched to {switchable.CurrentType} before lobby join transport step.");
+                return switchable.CurrentType == providerType;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[JoinRoomPanelService] Failed to switch transport provider to {providerType}: {e.Message}");
+                return false;
+            }
         }
 
         private async Task<string> ResolveNetworkJoinCodeAsync(LobbyRoom room)
@@ -690,6 +824,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (room.State != LobbyState.Open)
                     continue;
 
+                int currentPlayers = room.Players?.Count ?? 0;
+                if (room.MaxPlayers > 0 && currentPlayers >= room.MaxPlayers)
+                    continue;
+
                 var key = BuildRoomKey(room, providerType);
                 if (string.IsNullOrWhiteSpace(key))
                     continue;
@@ -704,7 +842,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     LobbyId = room.LobbyId,
                     HostDisplayName = ResolveHostDisplayName(room),
                     ProviderType = providerType,
-                    CurrentPlayers = room.Players?.Count ?? 0,
+                    CurrentPlayers = currentPlayers,
                     MaxPlayers = room.MaxPlayers,
                     HasPassword = room.HasPassword,
                     IsPrivate = room.IsPrivate,

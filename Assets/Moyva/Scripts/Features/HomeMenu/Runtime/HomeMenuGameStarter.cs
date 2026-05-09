@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -105,10 +106,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             ct.ThrowIfCancellationRequested();
 
             // Встановлюємо контекст запуску ДО активації сцени
-            if (_session.IsHost)
-                GameLaunchContext.ConfigureMenuNewGame(saveSlot: 0);
-            else
-                GameLaunchContext.ConfigureMenuJoinGame();
+            if (GameLaunchContext.Mode == GameLaunchMode.Unknown || GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest)
+            {
+                if (_session.IsHost && _session.Mode == NetworkProviderType.Offline)
+                    ConfigureOfflineNewGameFallback();
+                else if (_session.IsHost)
+                    ConfigureMultiplayerFallback();
+                else
+                    ConfigureMultiplayerFallback();
+            }
 
             Debug.Log($"{Prefix} GameLaunchContext.Mode = {GameLaunchContext.Mode}");
 
@@ -131,6 +137,37 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             Debug.Log($"{Prefix} Сцена '{sceneName}' завантажена.");
+        }
+
+        private void ConfigureOfflineNewGameFallback()
+        {
+            var settings = _session.WorldSettings;
+            GameLaunchContext.ConfigureMenuNewGame(
+                0,
+                settings.WorldName,
+                settings.Seed,
+                settings.Size,
+                (int)settings.MapType,
+                (int)settings.Difficulty,
+                settings.MaxPlayers,
+                settings.IsPrivate,
+                settings.Width,
+                settings.Height);
+        }
+
+        private void ConfigureMultiplayerFallback()
+        {
+            var settings = _session.WorldSettings;
+            GameLaunchContext.ConfigureMenuMultiplayerGame(
+                settings.WorldName,
+                settings.Seed,
+                settings.Size,
+                (int)settings.MapType,
+                (int)settings.Difficulty,
+                settings.MaxPlayers,
+                settings.IsPrivate,
+                settings.Width,
+                settings.Height);
         }
     }
 }

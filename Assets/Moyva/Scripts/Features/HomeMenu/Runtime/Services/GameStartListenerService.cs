@@ -1,10 +1,11 @@
 using System;
-using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.HomeMenu.Runtime.Services;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Runtime;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using Zenject;
@@ -54,9 +55,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                 var mode = _modeSelector?.CurrentMode ?? NetworkProviderType.Offline;
                 var localId = _sessionManager?.LocalPlayerId ?? string.Empty;
-                var players = ProjectPlayers(_lobbyService?.Current, localId);
+                var players = MultiplayerRoomLifecycle.ProjectGameplayPlayers(_lobbyService?.Current, localId);
 
                 _session.Apply(mode, dto, players, localId);
+                GameLaunchContext.ConfigureMenuMultiplayerGame(
+                    dto.WorldName,
+                    dto.Seed,
+                    dto.Size,
+                    (int)dto.MapType,
+                    (int)dto.Difficulty,
+                    dto.MaxPlayers,
+                    dto.IsPrivate,
+                    dto.Width,
+                    dto.Height);
 
                 MainThreadDispatcher.Enqueue(() =>
                 {
@@ -75,17 +86,5 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
         }
 
-        private static IReadOnlyList<GameplayPlayer> ProjectPlayers(LobbyRoom lobby, string localPlayerId)
-        {
-            if (lobby?.Players == null) return Array.Empty<GameplayPlayer>();
-            var list = new List<GameplayPlayer>(lobby.Players.Count);
-            foreach (var p in lobby.Players)
-            {
-                if (p == null) continue;
-                var isLocal = !string.IsNullOrEmpty(localPlayerId) && string.Equals(p.PlayerId, localPlayerId, StringComparison.Ordinal);
-                list.Add(new GameplayPlayer(p.PlayerId, p.DisplayName, p.IsHost, isLocal));
-            }
-            return list;
-        }
     }
 }

@@ -18,6 +18,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private ILocalGameSettingsService _localGameSettings;
         [InjectOptional] private INetworkProvider _networkProvider;
         [InjectOptional] private IInfoPanelService _infoPanelService;
+        [Inject] private INavigation _navigation;
+        [Inject(Id = "WorldSetupPanelName")] private string _worldSetupPanelName;
 
         private bool _isCreating;
 
@@ -94,6 +96,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         var inviteCode = !string.IsNullOrWhiteSpace(room.LobbyCode) ? room.LobbyCode : room.LobbyId;
                         try { _lobbyPanelViewController?.SetLobbyInvateCode(inviteCode); } catch { }
                         try { _worldCreationPanelService?.SetupMode(WolrdCreationMode.Multiplayer); } catch { }
+                        try { _navigation.Open(_worldSetupPanelName); } catch { }
                     });
                 }
                 else

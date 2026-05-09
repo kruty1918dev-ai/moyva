@@ -5,6 +5,7 @@ using System.Text;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -76,7 +77,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 // Якщо GraphSharedSettings задає розмір мапи — використовуємо його,
                 // щоб розмір плей-моду збігався з розміром превью в редакторі.
                 var sharedSettings = _graphAsset?.SharedSettings;
-                if (sharedSettings != null && sharedSettings.HasMapSize)
+                if (!GameLaunchContext.HasWorldSettings && sharedSettings != null && sharedSettings.HasMapSize)
                 {
                     width  = sharedSettings.MapWidth;
                     height = sharedSettings.MapHeight;
@@ -373,6 +374,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private int GetSeedFromGraph()
         {
+            if (GameLaunchContext.TryGetSeed(out int launchSeed))
+                return launchSeed;
+
             if (_graphAsset?.Nodes == null)
                 return GlobalSeed.DefaultSeed;
 

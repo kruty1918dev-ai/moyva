@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Kruty1918.Moyva.Multiplayer.Lobbies
@@ -25,6 +26,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public string RelayJoinCode { get; }
         public IReadOnlyList<LobbyPlayer> Players { get; }
         public LobbyState State { get; }
+        public IReadOnlyList<LobbyReconnectRecord> ReconnectRecords { get; }
+        public byte[] StartedWorldSettingsBytes { get; }
 
         /// <summary>Хеш пароля кімнати (SHA-256 hex). Порожній = кімната без пароля.</summary>
         public string PasswordHash { get; }
@@ -42,7 +45,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             string relayJoinCode,
             IReadOnlyList<LobbyPlayer> players,
             string passwordHash = null,
-            LobbyState state = LobbyState.Open)
+            LobbyState state = LobbyState.Open,
+            IReadOnlyList<LobbyReconnectRecord> reconnectRecords = null,
+            byte[] startedWorldSettingsBytes = null)
         {
             LobbyId = lobbyId ?? string.Empty;
             LobbyCode = lobbyCode ?? string.Empty;
@@ -54,6 +59,22 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             Players = players ?? new List<LobbyPlayer>();
             PasswordHash = passwordHash ?? string.Empty;
             State = state;
+            ReconnectRecords = reconnectRecords ?? Array.Empty<LobbyReconnectRecord>();
+            StartedWorldSettingsBytes = startedWorldSettingsBytes ?? Array.Empty<byte>();
+        }
+    }
+
+    public sealed class LobbyReconnectRecord
+    {
+        public string DisplayName { get; }
+        public long PlayerLocalTicksAtDisconnect { get; }
+        public long HostUtcTicksAtDisconnect { get; }
+
+        public LobbyReconnectRecord(string displayName, long playerLocalTicksAtDisconnect, long hostUtcTicksAtDisconnect)
+        {
+            DisplayName = displayName ?? string.Empty;
+            PlayerLocalTicksAtDisconnect = playerLocalTicksAtDisconnect;
+            HostUtcTicksAtDisconnect = hostUtcTicksAtDisconnect;
         }
     }
 
@@ -65,12 +86,14 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public string PlayerId { get; }
         public string DisplayName { get; }
         public bool IsHost { get; }
+        public long LocalTimeTicks { get; }
 
-        public LobbyPlayer(string playerId, string displayName, bool isHost)
+        public LobbyPlayer(string playerId, string displayName, bool isHost, long localTimeTicks = 0)
         {
             PlayerId = playerId ?? string.Empty;
             DisplayName = displayName ?? string.Empty;
             IsHost = isHost;
+            LocalTimeTicks = localTimeTicks;
         }
     }
 
