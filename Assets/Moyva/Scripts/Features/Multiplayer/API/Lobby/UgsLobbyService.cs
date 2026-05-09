@@ -218,12 +218,16 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             try
             {
                 if (_current != null && string.Equals(_current.LobbyId, lobbyId, StringComparison.Ordinal))
+                {
+                    UnityEngine.Debug.Log($"[UgsLobby] JoinByIdAsync: early return — already in lobby '{lobbyId}'.");
                     return _current;
+                }
 
                 var opts = new JoinLobbyByIdOptions { Player = BuildLocalPlayer(displayName) };
                 if (LobbyService.Instance == null)
                     throw new InvalidOperationException("[UgsLobby] Unity Lobbies LobbyService instance is unavailable; make sure the Unity Services Lobbies package is present and initialized.");
 
+                UnityEngine.Debug.Log($"[UgsLobby] JoinByIdAsync: calling LobbyService.Instance.JoinLobbyByIdAsync('{lobbyId}')...");
                 _lobby = await AwaitWithTimeoutAsync(
                     LobbyService.Instance.JoinLobbyByIdAsync(lobbyId, opts),
                     TimeSpan.FromSeconds(JoinRequestTimeoutSeconds),
@@ -231,10 +235,12 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     $"JoinLobbyByIdAsync('{lobbyId}')");
                 if (_lobby == null)
                 {
+                    UnityEngine.Debug.LogWarning($"[UgsLobby] JoinByIdAsync: LobbyService.Instance.JoinLobbyByIdAsync('{lobbyId}') returned null.");
                     _logger.Warn("[UgsLobby] JoinLobbyByIdAsync returned null.");
                     return null;
                 }
 
+                UnityEngine.Debug.Log($"[UgsLobby] JoinByIdAsync: joined lobby '{lobbyId}' successfully (players={_lobby.Players?.Count ?? 0}).");
                 _isHost = false;
                 _current = Project(_lobby);
                 LobbyUpdated?.Invoke(_current);
