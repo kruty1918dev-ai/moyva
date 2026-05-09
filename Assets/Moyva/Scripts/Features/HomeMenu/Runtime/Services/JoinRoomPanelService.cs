@@ -707,7 +707,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return null;
 
             var normalizedLobbyId = lobbyId.Trim();
+            Debug.Log($"[JoinRoomPanelService] JoinByIdWithOptionalPasswordAsync: calling JoinByIdAsync('{normalizedLobbyId}')...");
             var room = await _lobbyService.JoinByIdAsync(normalizedLobbyId, GetPlayerName());
+            Debug.Log($"[JoinRoomPanelService] JoinByIdWithOptionalPasswordAsync: JoinByIdAsync returned {(room == null ? "null" : $"room '{room.LobbyId}'")}.");
             if (room == null)
             {
                 var fallback = await ResolveJoinCodeAliasAsync(normalizedLobbyId);
@@ -716,6 +718,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 {
                     Debug.LogWarning($"[JoinRoomPanelService] JoinByIdAsync returned null for lobbyId='{normalizedLobbyId}', retrying via {fallback.Kind}='{fallback.Value}'.");
                     room = await JoinExactTargetAsync(fallback, password);
+                }
+                else
+                {
+                    Debug.LogWarning($"[JoinRoomPanelService] JoinByIdAsync returned null for lobbyId='{normalizedLobbyId}', fallback={fallback.Kind}/'{fallback.Value}' isValid={fallback.IsValid} — giving up.");
                 }
 
                 if (room == null)
