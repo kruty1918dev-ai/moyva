@@ -37,6 +37,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     #pragma warning restore CS0649
 
         private bool _startAnchorRegistered;
+        private int _registeredStartAnchorCount;
 
         public StartingPositionInitializer(
             IFogOfWarService fogOfWarService,
@@ -89,7 +90,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             if (!CanRunStartLogic())
+            {
+                TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height));
                 return;
+            }
 
             List<Vector2Int> startPositions = PickStartingPositions(signal);
             Vector2Int startPos = startPositions.Count > 0
@@ -110,25 +114,28 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 });
             }
 
-            RevealStartingArea(signal.Width, signal.Height, startPos);
+            var revealCenters = ResolveActiveStartPositions(_startingPositionState.SpawnAssignments, startPos);
+            RevealStartingAreas(signal.Width, signal.Height, revealCenters);
 
             if (_settings.keepCoreFullyVisible)
             {
                 // Уникаємо попередження FogOfWar «UnregisterUnit before Initialize»:
                 // на першому виклику якорь ще не зареєстровано — пропускаємо unregister.
                 if (_startAnchorRegistered)
-                    _fogOfWarService.UnregisterUnit(StartVisionAnchorId);
+                    UnregisterStartVisionAnchors();
 
                 int visibleRange = _settings.coreVisibleRadiusOverride > 0
                     ? _settings.coreVisibleRadiusOverride
                     : _settings.ResolveCoreVisibleRadius(signal.Width, signal.Height);
-                _fogOfWarService.RegisterFixedVisionArea(StartVisionAnchorId, startPos, visibleRange, _settings.ResolveRevealShape());
+                for (int index = 0; index < revealCenters.Count; index++)
+                    _fogOfWarService.RegisterFixedVisionArea(ResolveStartVisionAnchorId(index), revealCenters[index], visibleRange, _settings.ResolveRevealShape());
                 _startAnchorRegistered = true;
+                _registeredStartAnchorCount = revealCenters.Count;
             }
 
-            TeleportMainCamera(ResolveVisibleCameraTarget(startPos, signal.Width, signal.Height));
+            TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height));
 
-            Debug.Log($"[Bootstrap] Стартова позиція: {startPos}. Туман розкрито, камеру переміщено.");
+            Debug.Log($"[Bootstrap] Стартові позиції: {string.Join(", ", revealCenters)}. Туман розкрито, камеру переміщено.");
         }
 
         private void TeleportMainCamera(Vector2Int startPos)
@@ -480,11 +487,50 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         // ─── Стартове кругле розкриття туману ─────────────────────────────────
 
-        private void RevealStartingArea(int width, int height, Vector2Int center)
+        private void RevealStartingAreas(int width, int height, IReadOnlyList<Vector2Int> centers)
         {
             int radius = _settings.ResolveRevealedRadius(width, height);
-            var snapshot = BuildRevealSnapshot(width, height, center, radius, _settings.ResolveRevealShape());
+            var snapshot = BuildRevealSnapshot(width, height, centers, radius, _settings.ResolveRevealShape());
             _fogOfWarService.LoadFromSnapshot(snapshot);
+        }
+
+        private static IReadOnlyList<Vector2Int> ResolveActiveStartPositions(
+            IReadOnlyList<SpawnPositionAssignment> assignments,
+            Vector2Int fallback)
+        {
+            var result = new List<Vector2Int>();
+            if (assignments != null)
+            {
+                bool hasAssignedParticipant = false;
+                for (int index = 0; index < assignments.Count; index++)
+                {
+                    if (!string.IsNullOrEmpty(assignments[index].ParticipantId) || assignments[index].IsBot)
+                    {
+                        result.Add(assignments[index].Position);
+                        hasAssignedParticipant = true;
+                    }
+                }
+
+                if (!hasAssignedParticipant && assignments.Count > 0)
+                    result.Add(assignments[0].Position);
+            }
+
+            if (result.Count == 0)
+                result.Add(fallback);
+
+            return result;
+        }
+
+        private static string ResolveStartVisionAnchorId(int index)
+            => index <= 0 ? StartVisionAnchorId : $"{StartVisionAnchorId}-{index}";
+
+        private void UnregisterStartVisionAnchors()
+        {
+            int count = Mathf.Max(1, _registeredStartAnchorCount);
+            for (int index = 0; index < count; index++)
+                _fogOfWarService.UnregisterUnit(ResolveStartVisionAnchorId(index));
+
+            _registeredStartAnchorCount = 0;
         }
 
         private void RepairLoadedFogIfNeeded(WorldGeneratedDataSignal signal)
@@ -625,6 +671,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         private static bool[,] BuildRevealSnapshot(int width, int height, Vector2Int center, int radius, FogRevealShape shape)
+            => BuildRevealSnapshot(width, height, new[] { center }, radius, shape);
+
+        private static bool[,] BuildRevealSnapshot(int width, int height, IReadOnlyList<Vector2Int> centers, int radius, FogRevealShape shape)
         {
             width = Mathf.Max(1, width);
             height = Mathf.Max(1, height);
@@ -633,21 +682,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             float radiusSqr = radiusWithCellCoverage * radiusWithCellCoverage;
 
             var snapshot = new bool[width, height];
-            int minX = Mathf.Max(0, center.x - radius);
-            int maxX = Mathf.Min(width - 1, center.x + radius);
-            int minY = Mathf.Max(0, center.y - radius);
-            int maxY = Mathf.Min(height - 1, center.y + radius);
+            if (centers == null || centers.Count == 0)
+                return snapshot;
 
-            for (int x = minX; x <= maxX; x++)
+            for (int centerIndex = 0; centerIndex < centers.Count; centerIndex++)
             {
-                int deltaX = x - center.x;
-                int deltaXSqr = deltaX * deltaX;
+                Vector2Int center = centers[centerIndex];
+                int minX = Mathf.Max(0, center.x - radius);
+                int maxX = Mathf.Min(width - 1, center.x + radius);
+                int minY = Mathf.Max(0, center.y - radius);
+                int maxY = Mathf.Min(height - 1, center.y + radius);
 
-                for (int y = minY; y <= maxY; y++)
+                for (int x = minX; x <= maxX; x++)
                 {
-                    int deltaY = y - center.y;
-                    if (IsInsideRevealShape(deltaX, deltaY, radius, radiusSqr, shape))
-                        snapshot[x, y] = true;
+                    int deltaX = x - center.x;
+                    for (int y = minY; y <= maxY; y++)
+                    {
+                        int deltaY = y - center.y;
+                        if (IsInsideRevealShape(deltaX, deltaY, radius, radiusSqr, shape))
+                            snapshot[x, y] = true;
+                    }
                 }
             }
 

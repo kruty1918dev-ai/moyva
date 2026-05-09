@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.SaveSystem;
@@ -69,14 +70,31 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 // Центр ядра розкриття туману, встановлений StartingPositionInitializer (order 101).
                 // Ми маємо order 102, тому значення вже є.
-                var target = _startingPositionState.IsSet
+                var fallback = _startingPositionState.IsSet
                     ? _startingPositionState.StartPosition
                     : new Vector2Int(signal.Width / 2, signal.Height / 2);
+                var targets = ResolveActiveSpawnAssignments(fallback);
+                int placedCount = 0;
 
-                bool placed = TryPlaceWithSpiralSearch(_settings.DefaultBuildingId, target, signal.Width, signal.Height);
+                for (int index = 0; index < targets.Count; index++)
+                {
+                    var target = targets[index];
+                    string ownerId = ResolveSpawnOwnerId(target, index);
+                    bool placed = TryPlaceWithSpiralSearch(_settings.DefaultBuildingId, target.Position, signal.Width, signal.Height, ownerId, out Vector2Int placedPosition);
 
-                if (!placed)
-                    Debug.LogWarning($"[Bootstrap] Не вдалось розмістити '{_settings.DefaultBuildingId}' в радіусі {MaxSearchRadius} від {target}");
+                    if (placed)
+                    {
+                        placedCount++;
+                        Debug.Log($"[Bootstrap] '{_settings.DefaultBuildingId}' розміщено для slot {target.SlotIndex} ({ownerId}) на {placedPosition} (центр {target.Position})");
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[Bootstrap] Не вдалось розмістити '{_settings.DefaultBuildingId}' для slot {target.SlotIndex} в радіусі {MaxSearchRadius} від {target.Position}");
+                    }
+                }
+
+                if (targets.Count > 1)
+                    Debug.Log($"[Bootstrap] Стартові будівлі розміщено: {placedCount}/{targets.Count}.");
             }
             else
             {
@@ -86,7 +104,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         // ─── Спіральний пошук вільного тайлу ─────────────────────────────────
 
-        private bool TryPlaceWithSpiralSearch(string buildingId, Vector2Int center, int mapWidth, int mapHeight)
+        private bool TryPlaceWithSpiralSearch(string buildingId, Vector2Int center, int mapWidth, int mapHeight, string ownerId, out Vector2Int placedPosition)
         {
             for (int radius = 0; radius <= MaxSearchRadius; radius++)
             {
@@ -102,15 +120,54 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                         if (pos.x < 0 || pos.x >= mapWidth || pos.y < 0 || pos.y >= mapHeight)
                             continue;
 
-                        if (_constructionService.TryDirectPlace(buildingId, pos, "bootstrap"))
+                        if (_constructionService.TryDirectPlace(buildingId, pos, ownerId))
                         {
-                            Debug.Log($"[Bootstrap] '{buildingId}' розміщено на {pos} (центр {center}, радіус {radius})");
+                            placedPosition = pos;
                             return true;
                         }
                     }
                 }
             }
+            placedPosition = default;
             return false;
+        }
+
+        private IReadOnlyList<SpawnPositionAssignment> ResolveActiveSpawnAssignments(Vector2Int fallback)
+        {
+            var result = new List<SpawnPositionAssignment>();
+            var assignments = _startingPositionState.SpawnAssignments;
+            bool hasAssignedParticipant = false;
+
+            for (int index = 0; index < assignments.Count; index++)
+            {
+                var assignment = assignments[index];
+                if (!string.IsNullOrEmpty(assignment.ParticipantId) || assignment.IsBot)
+                {
+                    result.Add(assignment);
+                    hasAssignedParticipant = true;
+                }
+            }
+
+            if (!hasAssignedParticipant)
+            {
+                if (assignments.Count > 0)
+                    result.Add(assignments[0]);
+                else
+                    result.Add(new SpawnPositionAssignment { SlotIndex = 0, Position = fallback });
+            }
+
+            return result;
+        }
+
+        private static string ResolveSpawnOwnerId(SpawnPositionAssignment assignment, int fallbackIndex)
+        {
+            if (!string.IsNullOrWhiteSpace(assignment.ParticipantId))
+                return assignment.ParticipantId;
+
+            if (assignment.IsBot)
+                return $"bot-{assignment.SlotIndex:00}";
+
+            return fallbackIndex == 0 ? "bootstrap" : $"spawn-slot-{assignment.SlotIndex:00}";
         }
 
         private bool CanRunBootstrapLogic()
