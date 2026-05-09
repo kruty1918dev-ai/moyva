@@ -257,14 +257,14 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             return Task.CompletedTask;
         }
 
-        public Task LockAsync(bool locked, CancellationToken ct = default)
+        public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, CancellationToken ct = default)
         {
             var state = locked ? LobbyState.Started : LobbyState.Open;
             if (_current != null)
             {
                 _current = new LobbyRoom(_current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
                     _current.IsPrivate, _current.HostPlayerId, _current.RelayJoinCode, _current.Players,
-                    _current.PasswordHash, state);
+                    _current.PasswordHash, state, _current.ReconnectRecords, locked ? startedWorldSettingsBytes : null);
                 LobbyUpdated?.Invoke(_current);
             }
             PublishState(state);
@@ -347,7 +347,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var isPrivate = (_current?.IsPrivate ?? false) ? "1" : "0";
             var passwordHash = _current?.PasswordHash ?? string.Empty;
             var state = ((int)(_current?.State ?? LobbyState.Open)).ToString();
-            return string.Join('|', PayloadProtocol, roomId, name, max.ToString(), ip, port, hostId, hostName, players, isPrivate, passwordHash, state);
+            var worldSettings = EncodeBytes(_current?.StartedWorldSettingsBytes);
+            return string.Join('|', PayloadProtocol, roomId, name, max.ToString(), ip, port, hostId, hostName, players, isPrivate, passwordHash, state, worldSettings);
         }
 
         private async Task SendDiscoveryPayloadAsync(byte[] bytes)
@@ -457,7 +458,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 players.Add(new LobbyPlayer(localId, string.IsNullOrWhiteSpace(displayName) ? "Player" : displayName.Trim(), isHost: false));
 
             return new LobbyRoom(room.LobbyId, room.LobbyCode, room.Name, room.MaxPlayers, room.IsPrivate,
-                room.HostPlayerId, room.RelayJoinCode, players, room.PasswordHash, room.State);
+                room.HostPlayerId, room.RelayJoinCode, players, room.PasswordHash, room.State,
+                room.ReconnectRecords, room.StartedWorldSettingsBytes);
         }
 
         private static bool MatchesJoinInput(LobbyRoom room, string value)
@@ -533,9 +535,12 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var relayJoinCode = !string.IsNullOrWhiteSpace(first?.RelayJoinCode) ? first.RelayJoinCode : second?.RelayJoinCode;
             var passwordHash = !string.IsNullOrEmpty(first?.PasswordHash) ? first.PasswordHash : second?.PasswordHash;
             var state = first?.State ?? second?.State ?? LobbyState.Open;
+            var reconnectRecords = (first?.ReconnectRecords?.Count ?? 0) > 0 ? first.ReconnectRecords : second?.ReconnectRecords;
+            var worldSettings = (first?.StartedWorldSettingsBytes?.Length ?? 0) > 0 ? first.StartedWorldSettingsBytes : second?.StartedWorldSettingsBytes;
 
             return new LobbyRoom(lobbyId, lobbyCode, name, maxPlayers, first?.IsPrivate ?? second?.IsPrivate ?? false,
-                hostPlayerId, relayJoinCode, new List<LobbyPlayer>(playersById.Values), passwordHash, state);
+                hostPlayerId, relayJoinCode, new List<LobbyPlayer>(playersById.Values), passwordHash, state,
+                reconnectRecords, worldSettings);
         }
 
         private static void AddPlayers(Dictionary<string, LobbyPlayer> playersById, IReadOnlyList<LobbyPlayer> players)
@@ -604,10 +609,12 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var state = LobbyState.Open;
             if (parts.Length >= 12 && int.TryParse(parts[11], out var rawState) && Enum.IsDefined(typeof(LobbyState), rawState))
                 state = (LobbyState)rawState;
+            var worldSettings = parts.Length >= 13 ? DecodeBytes(parts[12]) : Array.Empty<byte>();
 
             joinCode = $"lan:{ip}:{port}";
             var lobbyCode = roomId.Length >= 8 ? roomId.Substring(0, 8) : roomId;
-            room = new LobbyRoom(roomId, lobbyCode, name, max, isPrivate, hostId, joinCode, players, passwordHash, state);
+            room = new LobbyRoom(roomId, lobbyCode, name, max, isPrivate, hostId, joinCode, players, passwordHash, state,
+                startedWorldSettingsBytes: worldSettings);
             return true;
         }
 
@@ -681,6 +688,20 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 return string.Empty;
             }
+        }
+
+        private static string EncodeBytes(byte[] bytes)
+        {
+            return bytes == null || bytes.Length == 0 ? string.Empty : Convert.ToBase64String(bytes);
+        }
+
+        private static byte[] DecodeBytes(string encoded)
+        {
+            if (string.IsNullOrWhiteSpace(encoded))
+                return Array.Empty<byte>();
+
+            try { return Convert.FromBase64String(encoded); }
+            catch { return Array.Empty<byte>(); }
         }
 
         private static UdpClient CreateListeningClient(int port)

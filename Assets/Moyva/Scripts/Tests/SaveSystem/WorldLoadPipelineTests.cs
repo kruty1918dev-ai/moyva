@@ -226,6 +226,50 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             loadUnitsModule.Dispose();
         }
 
+        [Test]
+        public void BuildSavedWorld_ResizesRuntimeGrid_WhenSavedDimensionsAreLargerThanStartupGrid()
+        {
+            _signalBus = Container.Resolve<SignalBus>();
+
+            var tileRegistry = ScriptableObject.CreateInstance<TileRegistrySO>();
+            _createdUnityObjects.Add(tileRegistry);
+            SetTileDefinitions(tileRegistry, "grass", "river");
+
+            var grid = CreateRuntimeGrid(1, 1);
+            var dataGenerator = new FakeMapDataGenerator();
+            var container = new DiContainer();
+
+            var instantiator = new MapVisualInstantiator(tileRegistry, new FakeMapObjectRegistry(), null, null, null, null, grid, dataGenerator, container, _signalBus, null, null);
+            instantiator.Initialize();
+
+            var savedWorld = new GeneratedWorldData
+            {
+                Width = 3,
+                Height = 3,
+                BiomeMap = new[,]
+                {
+                    { "grass", "grass", "grass" },
+                    { "grass", "grass", "grass" },
+                    { "grass", "grass", "grass" },
+                },
+                ObjectMap = new[,]
+                {
+                    { string.Empty, string.Empty, string.Empty },
+                    { string.Empty, string.Empty, string.Empty },
+                    { string.Empty, string.Empty, "river" },
+                },
+                HeightMap = new float[3, 3],
+            };
+
+            instantiator.SetPendingWorldData(savedWorld);
+
+            Assert.DoesNotThrow(() => instantiator.BuildWorld());
+            Assert.AreEqual(3, grid.GridWidth);
+            Assert.AreEqual(3, grid.GridHeight);
+            Assert.AreEqual("river", grid.GetTileData(new Vector2Int(2, 2)));
+            Assert.IsFalse(dataGenerator.WasGenerateCalled);
+        }
+
         private static byte[] SaveModulePayload(ISaveModule module)
         {
             using var stream = new MemoryStream();
@@ -240,6 +284,13 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             using var stream = new MemoryStream(payload);
             using var reader = new BinaryReader(stream);
             module.OnLoad(new SaveContext(null, reader));
+        }
+
+        private static IGridService CreateRuntimeGrid(int width, int height)
+        {
+            var type = typeof(IGridService).Assembly.GetType("Kruty1918.Moyva.Grid.Runtime.GridService");
+            Assert.IsNotNull(type, "GridService type not found");
+            return (IGridService)System.Activator.CreateInstance(type, width, height);
         }
 
         private static void SetTileDefinitions(TileRegistrySO registry, string biomeId, string objectId)

@@ -2,6 +2,7 @@ using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime.Services;
 using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Runtime;
+using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using Zenject;
 
@@ -14,12 +15,15 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     public sealed class HomeMenuInstaller : MonoInstaller
     {
         [SerializeField] private string _lobbyPanelName = "LobbyPanel";
+        [SerializeField] private string _worldSetupPanelName = "WorldSetupPanel";
+        [SerializeField] private string _createRoomPanelName = "CreateRoomPanel";
         [SerializeField] private string _joinRoomPanelName = "JoinRoomPanel";
         [SerializeField] private string _kickPlayerPanelName = "KickPlayerPanel";
         [SerializeField] private string _infoPanelName = "InfoPanel";
         [SerializeField] private string _multiplayerTypePanelName = "SelectMultiplayerType";
         [SerializeField] private AudioMixerBindingsSO _audioMixerBindings;
         [SerializeField] private HomeMenuConfigSO _config;
+        [SerializeField] private WorldCreationDefaultsSO _worldCreationDefaults;
         [Header("Navigation")]
         [Tooltip("Names of panels that require confirmation when the player navigates back from them.")]
         [SerializeField] private string[] _confirmOnBackMenuNames = new string[0];
@@ -82,6 +86,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             if (_audioMixerBindings != null)
                 Container.BindInstance(_audioMixerBindings).AsSingle();
+
+            if (_worldCreationDefaults != null)
+                Container.BindInstance(_worldCreationDefaults).AsSingle();
 
             var config = _config != null ? _config : ScriptableObject.CreateInstance<HomeMenuConfigSO>();
             Container.BindInstance(config).AsSingle().IfNotBound();
@@ -160,6 +167,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.BindInterfacesAndSelfTo<SelectedGameModeService>()
                 .AsSingle();
 
+            Container.BindInterfacesAndSelfTo<SoloPanelService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<MultiplayerPanelService>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<CreateRoomPanelService>()
                 .AsSingle();
 
@@ -203,6 +216,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             Container.BindInstance(_lobbyPanelName)
                 .WithId("LobbyPanelName");
+
+            Container.BindInstance(_worldSetupPanelName)
+                .WithId("WorldSetupPanelName");
+
+            Container.BindInstance(_createRoomPanelName)
+                .WithId("CreateRoomPanelName");
 
             Container.BindInstance(_joinRoomPanelName)
                 .WithId("JoinRoomPanelName");

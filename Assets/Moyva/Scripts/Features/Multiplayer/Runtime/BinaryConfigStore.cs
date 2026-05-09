@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// Runtime-friendly; does not depend on UnityEditor.
     /// Schema v1 files are read without provider-specific settings (defaults applied).
     /// Schema v2 adds RelayProviderSettings, WebSocketProviderSettings, and FallbackProviderType.
+    /// Schema v3 adds reconnect local-time tolerance.
     /// </summary>
     public sealed class BinaryConfigStore : IConfigStore
     {
@@ -93,6 +94,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             bw.Write(ws.AuthToken);
             bw.Write(ws.ReconnectAttempts);
             bw.Write(ws.ReconnectDelaySeconds);
+            bw.Write(config.ReconnectLocalTimeToleranceSeconds);
         }
 
         internal static MultiplayerConfig ReadConfig(BinaryReader br)
@@ -136,6 +138,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 webSocketSettings = new WebSocketProviderSettings(wsUrl, wsPort, wsAuthToken, wsReconnectAttempts, wsReconnectDelay);
             }
 
+            float reconnectTolerance = schemaVersion >= 3 ? br.ReadSingle() : 120f;
+
             return new MultiplayerConfig(
                 schemaVersion,
                 providerType,
@@ -145,7 +149,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 matchmaking,
                 relaySettings,
                 webSocketSettings,
-                fallbackProviderType);
+                fallbackProviderType,
+                reconnectTolerance);
         }
     }
 }

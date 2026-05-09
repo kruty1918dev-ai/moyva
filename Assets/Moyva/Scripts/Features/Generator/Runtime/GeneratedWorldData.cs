@@ -1,4 +1,5 @@
 using UnityEngine;
+using Kruty1918.Moyva.Signals;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
@@ -14,6 +15,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public string[,] ObjectMap;
         public float[,] HeightMap;
         public string[,] BuildingMap;
+        public string WorldName;
+        public int Seed;
+        public int Size;
+        public int MapType;
+        public int Difficulty;
+        public SpawnPositionAssignment[] SpawnPositions;
 
         /// <summary>
         /// індекс шару - це його порядок у ордер лейері шарів тобто 0 - це шар який є в самомум низу чим індекс вищий то тим шар рендеру вищий іншими словами 1 буде перекравати 0 
@@ -30,6 +37,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ObjectMap = MapArrayUtils.CloneStringMap(ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(HeightMap),
                 BuildingMap = MapArrayUtils.CloneStringMap(BuildingMap),
+                WorldName = WorldName,
+                Seed = Seed,
+                Size = Size,
+                MapType = MapType,
+                Difficulty = Difficulty,
+                SpawnPositions = SpawnPositions != null ? (SpawnPositionAssignment[])SpawnPositions.Clone() : null,
                 LayerData = LayerData != null ? (WorldLayerData[])LayerData.Clone() : null,
             };
         }

@@ -41,9 +41,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly Dictionary<string, Vector2Int> _unitPositions
             = new Dictionary<string, Vector2Int>();
 
+        private readonly Dictionary<string, FogRevealShape> _fixedVisionShapes
+            = new Dictionary<string, FogRevealShape>();
+
         // unitId -> pending registration data received before Initialize(width,height)
-        private readonly Dictionary<string, (Vector2Int Position, int VisionRange)> _pendingUnits
-            = new Dictionary<string, (Vector2Int Position, int VisionRange)>();
+        private readonly Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape)> _pendingUnits
+            = new Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape)>();
 
         private HashSet<Vector2Int> _lastDirtyTiles = new HashSet<Vector2Int>();
 
@@ -88,11 +91,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         public void Initialize(int width, int height)
         {
+            width = Mathf.Max(1, width);
+            height = Mathf.Max(1, height);
+
             _width  = width;
             _height = height;
 
             _visibilityCounters = new int[width, height];
             _exploredTiles      = new bool[width, height];
+            _unitVisibleTiles.Clear();
 
             _initialized = true;
 
@@ -106,9 +113,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_pendingUnits.Count > 0)
             {
                 foreach (var kvp in _pendingUnits)
-                    RegisterUnit(kvp.Key, kvp.Value.Position, kvp.Value.VisionRange);
+                    RegisterVisionArea(kvp.Key, kvp.Value.Position, kvp.Value.VisionRange, kvp.Value.Shape);
 
                 _pendingUnits.Clear();
+            }
+            else
+            {
+                RecalculateAllVisibility();
             }
 
             // Ensure texture reflects current state after all pending units processed
@@ -116,10 +127,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         }
 
         public void RegisterUnit(string unitId, Vector2Int position, int visionRange)
+            => RegisterVisionArea(unitId, position, visionRange, null);
+
+        public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape)
+            => RegisterVisionArea(areaId, position, visionRange, shape);
+
+        private void RegisterVisionArea(string unitId, Vector2Int position, int visionRange, FogRevealShape? shape)
         {
             if (!_initialized)
             {
-                _pendingUnits[unitId] = (position, visionRange);
+                _pendingUnits[unitId] = (position, visionRange, shape);
                 return;
             }
 
@@ -127,7 +144,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _unitVisionRange[unitId] = visionRange;
             _unitPositions[unitId] = position;
 
-            var tiles = ComputePixelCircleTiles(position, visionRange);
+            if (shape.HasValue)
+                _fixedVisionShapes[unitId] = shape.Value;
+            else
+                _fixedVisionShapes.Remove(unitId);
+
+            var tiles = ComputeInitialVisibleTiles(unitId, position, visionRange);
             _unitVisibleTiles[unitId] = tiles;
 
             foreach (var t in tiles)
@@ -148,7 +170,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     ? storedRange
                     : _defaultVisionRange;
 
-                _pendingUnits[unitId] = (newPosition, pendingRange);
+                FogRevealShape? shape = _fixedVisionShapes.TryGetValue(unitId, out var storedShape)
+                    ? storedShape
+                    : null;
+                _pendingUnits[unitId] = (newPosition, pendingRange, shape);
                 return;
             }
 
@@ -172,7 +197,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             // Compute new visible tiles
             int range = _unitVisionRange.TryGetValue(unitId, out int r) ? r : _defaultVisionRange;
             _unitPositions[unitId] = newPosition;
-            var newTiles = _resolver.ComputeVisibleTiles(newPosition, range, _width, _height);
+            var newTiles = ComputeVisibleTiles(unitId, newPosition, range);
             _unitVisibleTiles[unitId] = newTiles;
 
             // Increment new tiles
@@ -202,6 +227,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _unitVisibleTiles.Remove(unitId);
             _unitVisionRange.Remove(unitId);
             _unitPositions.Remove(unitId);
+            _fixedVisionShapes.Remove(unitId);
 
             FlushTexture();
         }
@@ -253,6 +279,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             for (int x = 0; x < copyW; x++)
                 for (int y = 0; y < copyH; y++)
                     _exploredTiles[x, y] = explored[x, y];
+
+            _textureUpdater?.RebuildFullTexture(this);
         }
 
         public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles()
@@ -276,8 +304,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             _resolver.SetHeightMap(signal.HeightMap);
 
+            int signalWidth = Mathf.Max(1, signal.Width);
+            int signalHeight = Mathf.Max(1, signal.Height);
+
             if (!_initialized)
+            {
+                Initialize(signalWidth, signalHeight);
                 return;
+            }
+
+            if (_width != signalWidth || _height != signalHeight)
+                ResizeToWorldDimensions(signalWidth, signalHeight);
 
             RecalculateAllVisibility();
         }
@@ -295,6 +332,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             => pos.x >= 0 && pos.x < _width && pos.y >= 0 && pos.y < _height;
 
         private IReadOnlyList<Vector2Int> ComputePixelCircleTiles(Vector2Int origin, int radius)
+            => ComputeShapeTiles(origin, radius, FogRevealShape.PixelCircle);
+
+        private IReadOnlyList<Vector2Int> ComputeShapeTiles(Vector2Int origin, int radius, FogRevealShape shape)
         {
             var result = new List<Vector2Int>();
             int safeRadius = Mathf.Max(0, radius);
@@ -305,7 +345,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             {
                 for (int dy = -safeRadius; dy <= safeRadius; dy++)
                 {
-                    if (dx * dx + dy * dy > sqrRadius)
+                    if (!IsInsideShape(dx, dy, safeRadius, sqrRadius, shape))
                         continue;
 
                     var tile = new Vector2Int(origin.x + dx, origin.y + dy);
@@ -315,6 +355,30 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             return result;
+        }
+
+        private static bool IsInsideShape(int dx, int dy, int radius, float sqrRadius, FogRevealShape shape)
+        {
+            return shape switch
+            {
+                FogRevealShape.Square => Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) <= radius,
+                FogRevealShape.Diamond => Mathf.Abs(dx) + Mathf.Abs(dy) <= radius,
+                _ => dx * dx + dy * dy <= sqrRadius,
+            };
+        }
+
+        private IReadOnlyList<Vector2Int> ComputeInitialVisibleTiles(string unitId, Vector2Int position, int range)
+        {
+            return _fixedVisionShapes.TryGetValue(unitId, out var shape)
+                ? ComputeShapeTiles(position, range, shape)
+                : ComputePixelCircleTiles(position, range);
+        }
+
+        private IReadOnlyList<Vector2Int> ComputeVisibleTiles(string unitId, Vector2Int position, int range)
+        {
+            return _fixedVisionShapes.TryGetValue(unitId, out var shape)
+                ? ComputeShapeTiles(position, range, shape)
+                : _resolver.ComputeVisibleTiles(position, range, _width, _height);
         }
 
         private static bool[,] CloneSnapshot(bool[,] source)
@@ -351,7 +415,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 if (!_unitVisionRange.TryGetValue(unitEntry.Key, out int range))
                     range = _defaultVisionRange;
 
-                var visibleTiles = _resolver.ComputeVisibleTiles(unitEntry.Value, range, _width, _height);
+                var visibleTiles = ComputeVisibleTiles(unitEntry.Key, unitEntry.Value, range);
                 _unitVisibleTiles[unitEntry.Key] = visibleTiles;
 
                 foreach (var tile in visibleTiles)
@@ -363,6 +427,21 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             _textureUpdater?.RebuildFullTexture(this);
             _lastDirtyTiles.Clear();
+        }
+
+        private void ResizeToWorldDimensions(int width, int height)
+        {
+            var exploredSnapshot = GetExploredSnapshot();
+
+            _width = Mathf.Max(1, width);
+            _height = Mathf.Max(1, height);
+            _visibilityCounters = new int[_width, _height];
+            _exploredTiles = new bool[_width, _height];
+            _unitVisibleTiles.Clear();
+            _lastDirtyTiles.Clear();
+
+            if (exploredSnapshot != null)
+                LoadFromSnapshot(exploredSnapshot);
         }
     }
 }

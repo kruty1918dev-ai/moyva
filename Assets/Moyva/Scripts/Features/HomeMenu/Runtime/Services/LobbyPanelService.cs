@@ -1,13 +1,14 @@
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.HomeMenu.Runtime.Services;
 using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Runtime;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.WorldCreation.API;
 using Zenject;
 
@@ -33,6 +34,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private IInfoPanelService _infoPanelService;
         [InjectOptional] private IWorldSetupViewController _worldSetupViewController;
         [InjectOptional] private IGameplaySession _gameplaySession;
+        [InjectOptional] private WorldCreationDefaultsSO _worldCreationDefaults;
         [InjectOptional] private IHomeMenuGameStarter _gameStarter;
 
         // --- Внутрішній стан
@@ -155,8 +157,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private bool CanStartGame(LobbyRoom lobby)
         {
             if (lobby == null) return false;
-            int minPlayers = Math.Min(2, lobby.MaxPlayers);
-            return lobby.Players?.Count >= minPlayers;
+            if (lobby.State != LobbyState.Open) return false;
+            return (lobby.Players?.Count ?? 0) >= 1;
         }
 
         /// <summary>
@@ -217,12 +219,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _lobbyPanelViewController.StartGameButton.interactable = false;
 
             var worldSettings = BuildWorldSettingsDto();
+                var worldSettingsBytes = worldSettings.ToBytes();
 
             try
             {
-                // Заблокувати лобі, щоб заборонити подальші приєднання
                 if (_lobbyService != null)
-                    await _lobbyService.LockAsync(true);
+                    await _lobbyService.LockAsync(true, worldSettingsBytes);
             }
             catch
             {
@@ -232,7 +234,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             // Розіслати команду старту іншим гравцям
             try
             {
-                _gameCommandSync?.SendCommand(GameCommandType.StartGame, worldSettings.ToBytes());
+                _gameCommandSync?.SendCommand(GameCommandType.StartGame, worldSettingsBytes);
             }
             catch (Exception e)
             {
@@ -243,6 +245,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             try
             {
                 ApplyGameplaySession(worldSettings);
+                GameLaunchContext.ConfigureMenuMultiplayerGame(
+                    worldSettings.WorldName,
+                    worldSettings.Seed,
+                    worldSettings.Size,
+                    (int)worldSettings.MapType,
+                    (int)worldSettings.Difficulty,
+                    worldSettings.MaxPlayers,
+                    worldSettings.IsPrivate,
+                    worldSettings.Width,
+                    worldSettings.Height);
                 _gameStateService?.StartGame();
                 if (_gameStarter != null)
                     await _gameStarter.StartGameAsync();
@@ -262,12 +274,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private WorldSettingsDto BuildWorldSettingsDto()
         {
             var seed = _worldSetupViewController != null ? _worldSetupViewController.Seed : 0;
+            var worldName = _worldSetupViewController != null ? _worldSetupViewController.WorldName : "Новий світ";
             var size = _worldSetupViewController != null ? (int)_worldSetupViewController.Size : (int)WorldSize.Medium;
             var mapType = _worldSetupViewController != null ? _worldSetupViewController.MapType : MapType.Continents;
             var difficulty = _worldSetupViewController != null ? _worldSetupViewController.Difficulty : Difficulty.Normal;
             var maxPlayers = _currentLobby != null ? _currentLobby.MaxPlayers : 4;
             var isPrivate = _currentLobby != null && _currentLobby.IsPrivate;
-            return new WorldSettingsDto(seed, size, mapType, difficulty, maxPlayers, isPrivate);
+            int width = _worldCreationDefaults != null
+                ? _worldCreationDefaults.ResolveWidth((WorldSizePreset)size)
+                : 0;
+            int height = _worldCreationDefaults != null
+                ? _worldCreationDefaults.ResolveHeight((WorldSizePreset)size)
+                : 0;
+            return new WorldSettingsDto(worldName, seed, size, width, height, mapType, difficulty, maxPlayers, isPrivate);
         }
 
         private void ApplyGameplaySession(WorldSettingsDto worldSettings)
@@ -279,32 +298,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 ? _sessionManager.LocalPlayerId
                 : _localPlayerId;
             var mode = _modeSelector?.CurrentMode ?? NetworkProviderType.Offline;
-            _gameplaySession.Apply(mode, worldSettings, ProjectGameplayPlayers(_currentLobby, _sessionManager?.Participants, localId), localId);
-        }
-
-        private static IReadOnlyList<GameplayPlayer> ProjectGameplayPlayers(LobbyRoom lobby, IReadOnlyList<Participant> participants, string localPlayerId)
-        {
-            var result = new List<GameplayPlayer>();
-            if (lobby?.Players != null)
-            {
-                foreach (var p in lobby.Players)
-                {
-                    if (p == null) continue;
-                    var isLocal = !string.IsNullOrEmpty(localPlayerId) && string.Equals(p.PlayerId, localPlayerId, StringComparison.Ordinal);
-                    result.Add(new GameplayPlayer(p.PlayerId, p.DisplayName, p.IsHost, isLocal));
-                }
-            }
-
-            if (result.Count > 0 || participants == null)
-                return result;
-
-            foreach (var p in participants)
-            {
-                if (p?.Identity == null) continue;
-                var isLocal = !string.IsNullOrEmpty(localPlayerId) && string.Equals(p.Identity.PlayerId, localPlayerId, StringComparison.Ordinal);
-                result.Add(new GameplayPlayer(p.Identity.PlayerId, p.Identity.Nickname, p.IsHost, isLocal));
-            }
-            return result;
+            _gameplaySession.Apply(mode, worldSettings, MultiplayerRoomLifecycle.ProjectGameplayPlayers(_currentLobby, localId), localId);
         }
         #endregion
 

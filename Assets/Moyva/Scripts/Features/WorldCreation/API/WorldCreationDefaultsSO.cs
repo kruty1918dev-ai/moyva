@@ -2,6 +2,21 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.WorldCreation.API
 {
+    [System.Serializable]
+    public sealed class WorldSizePresetDefinition
+    {
+        [Min(16)] public int Width = 64;
+        [Min(16)] public int Height = 64;
+
+        public WorldSizePresetDefinition() { }
+
+        public WorldSizePresetDefinition(int width, int height)
+        {
+            Width = Mathf.Max(16, width);
+            Height = Mathf.Max(16, height);
+        }
+    }
+
     /// <summary>
     /// ScriptableObject із типовими значеннями для екрану створення світу.
     /// Дозволяє дизайнерам налаштовувати дефолти без правки коду.
@@ -13,7 +28,13 @@ namespace Kruty1918.Moyva.WorldCreation.API
     {
         [Header("Основні параметри")]
         [Tooltip("Назва нового світу за замовчуванням.")]
-        public string DefaultWorldName = "Новий світ";
+        public string DefaultWorldName = "Мій світ";
+
+        [Tooltip("Якщо увімкнено, меню створення світу додасть індекс до стартової назви, коли існують попередні збереження.")]
+        public bool AppendIndexWhenSaveExists = true;
+
+        [Tooltip("Індекс першого світу, який додається до назви, якщо потрібно уникнути дублювання.")]
+        [Min(1)] public int FirstWorldIndex = 1;
 
         [Tooltip("Розмір карти за замовчуванням.")]
         public WorldSizePreset DefaultSizePreset = WorldSizePreset.Medium;
@@ -23,6 +44,11 @@ namespace Kruty1918.Moyva.WorldCreation.API
 
         [Tooltip("Висота (тайли) коли вибрано Custom. Мін: 16.")]
         [Min(16)] public int DefaultCustomHeight = 64;
+
+        [Header("Пресети розміру")]
+        public WorldSizePresetDefinition SmallWorld = new(32, 32);
+        public WorldSizePresetDefinition MediumWorld = new(64, 64);
+        public WorldSizePresetDefinition LargeWorld = new(128, 128);
 
         [Tooltip("Тип карти за замовчуванням.")]
         public MapTypePreset DefaultMapType = MapTypePreset.Balanced;
@@ -80,6 +106,12 @@ namespace Kruty1918.Moyva.WorldCreation.API
                 SizePreset       = DefaultSizePreset,
                 CustomWidth      = DefaultCustomWidth,
                 CustomHeight     = DefaultCustomHeight,
+                SmallWidth       = ResolveWidth(WorldSizePreset.Small),
+                SmallHeight      = ResolveHeight(WorldSizePreset.Small),
+                MediumWidth      = ResolveWidth(WorldSizePreset.Medium),
+                MediumHeight     = ResolveHeight(WorldSizePreset.Medium),
+                LargeWidth       = ResolveWidth(WorldSizePreset.Large),
+                LargeHeight      = ResolveHeight(WorldSizePreset.Large),
                 MapType          = DefaultMapType,
                 Difficulty       = DefaultDifficulty,
                 EnableBots       = DefaultEnableBots,
@@ -95,6 +127,42 @@ namespace Kruty1918.Moyva.WorldCreation.API
                 GenerateBiomes   = DefaultGenerateBiomes,
                 ApplyWFC         = DefaultApplyWFC
             };
+        }
+
+        public int ResolveWidth(WorldSizePreset preset, int customWidth = 0)
+        {
+            return Mathf.Max(16, preset switch
+            {
+                WorldSizePreset.Small => SmallWorld?.Width ?? 32,
+                WorldSizePreset.Medium => MediumWorld?.Width ?? 64,
+                WorldSizePreset.Large => LargeWorld?.Width ?? 128,
+                WorldSizePreset.Custom => customWidth > 0 ? customWidth : DefaultCustomWidth,
+                _ => MediumWorld?.Width ?? 64,
+            });
+        }
+
+        public int ResolveHeight(WorldSizePreset preset, int customHeight = 0)
+        {
+            return Mathf.Max(16, preset switch
+            {
+                WorldSizePreset.Small => SmallWorld?.Height ?? 32,
+                WorldSizePreset.Medium => MediumWorld?.Height ?? 64,
+                WorldSizePreset.Large => LargeWorld?.Height ?? 128,
+                WorldSizePreset.Custom => customHeight > 0 ? customHeight : DefaultCustomHeight,
+                _ => MediumWorld?.Height ?? 64,
+            });
+        }
+
+        public string BuildIndexedWorldName(int existingSaveCount)
+        {
+            string baseName = string.IsNullOrWhiteSpace(DefaultWorldName)
+                ? "Мій світ"
+                : DefaultWorldName.Trim();
+
+            if (!AppendIndexWhenSaveExists || existingSaveCount <= 0)
+                return baseName;
+
+            return $"{baseName} {Mathf.Max(1, FirstWorldIndex + existingSaveCount)}";
         }
     }
 }

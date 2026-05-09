@@ -32,40 +32,68 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         public string WorldName
         {
             get => _worldNameInput != null ? _worldNameInput.text : string.Empty;
-            set { if (_worldNameInput != null) _worldNameInput.SetTextWithoutNotify(value ?? string.Empty); }
+            set
+            {
+                if (_worldNameInput == null) return;
+                _worldNameInput.SetTextWithoutNotify(value ?? string.Empty);
+                NotifySettingsChanged();
+            }
         }
 
         public int Seed
         {
             get => int.TryParse(_seedInput != null ? _seedInput.text : string.Empty, out var v) ? v : 0;
-            set { if (_seedInput != null) _seedInput.SetTextWithoutNotify(value.ToString()); }
+            set
+            {
+                if (_seedInput == null) return;
+                _seedInput.SetTextWithoutNotify(value.ToString());
+                NotifySettingsChanged();
+            }
         }
 
         public WorldSize Size
         {
             get => _sizeDropdown != null ? (WorldSize)_sizeDropdown.value : WorldSize.Medium;
-            set { if (_sizeDropdown != null) _sizeDropdown.SetValueWithoutNotify((int)value); }
+            set
+            {
+                if (_sizeDropdown == null) return;
+                _sizeDropdown.SetValueWithoutNotify((int)value);
+                NotifySettingsChanged();
+            }
         }
 
         public MapType MapType
         {
             get => _mapTypeDropdown != null ? (MapType)_mapTypeDropdown.value : MapType.Continents;
-            set { if (_mapTypeDropdown != null) _mapTypeDropdown.SetValueWithoutNotify((int)value); }
+            set
+            {
+                if (_mapTypeDropdown == null) return;
+                _mapTypeDropdown.SetValueWithoutNotify((int)value);
+                NotifySettingsChanged();
+            }
         }
 
         public Difficulty Difficulty
         {
             get => _difficultyDropdown != null ? (Difficulty)_difficultyDropdown.value : Difficulty.Normal;
-            set { if (_difficultyDropdown != null) _difficultyDropdown.SetValueWithoutNotify((int)value); }
+            set
+            {
+                if (_difficultyDropdown == null) return;
+                _difficultyDropdown.SetValueWithoutNotify((int)value);
+                NotifySettingsChanged();
+            }
         }
 
         public Button CreateWorldButton => _nextButton;
 
         public event Action OnButtonNextClicked;
         public event Action OnRandomSeedClicked;
+        public event Action OnSettingsChanged;
 
         private UnityAction _onNextClicked;
         private UnityAction _onRandomClicked;
+        private UnityAction<string> _onTextChanged;
+        private UnityAction<int> _onDropdownChanged;
 
         public void Initialize() { EnsureRuntimeControls(); AttachListeners(); PopulateDropdowns(); }
         private void Awake() { EnsureRuntimeControls(); AttachListeners(); PopulateDropdowns(); }
@@ -74,6 +102,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (_onNextClicked == null) _onNextClicked = () => OnButtonNextClicked?.Invoke();
             if (_onRandomClicked == null) _onRandomClicked = HandleRandomSeed;
+            if (_onTextChanged == null) _onTextChanged = _ => NotifySettingsChanged();
+            if (_onDropdownChanged == null) _onDropdownChanged = _ => NotifySettingsChanged();
 
             if (_nextButton != null)
             {
@@ -86,6 +116,31 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 _randomSeedButton.onClick.RemoveListener(_onRandomClicked);
                 _randomSeedButton.onClick.AddListener(_onRandomClicked);
             }
+
+            AttachValueListeners();
+        }
+
+        private void AttachValueListeners()
+        {
+            AttachTextListener(_worldNameInput);
+            AttachTextListener(_seedInput);
+            AttachDropdownListener(_sizeDropdown);
+            AttachDropdownListener(_mapTypeDropdown);
+            AttachDropdownListener(_difficultyDropdown);
+        }
+
+        private void AttachTextListener(TMP_InputField input)
+        {
+            if (input == null) return;
+            input.onValueChanged.RemoveListener(_onTextChanged);
+            input.onValueChanged.AddListener(_onTextChanged);
+        }
+
+        private void AttachDropdownListener(TMP_Dropdown dropdown)
+        {
+            if (dropdown == null) return;
+            dropdown.onValueChanged.RemoveListener(_onDropdownChanged);
+            dropdown.onValueChanged.AddListener(_onDropdownChanged);
         }
 
         /// <summary>Заповнити dropdown-и значеннями enum'ів. Безпечно викликати повторно.</summary>
@@ -118,6 +173,22 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (_nextButton != null && _onNextClicked != null) _nextButton.onClick.RemoveListener(_onNextClicked);
             if (_randomSeedButton != null && _onRandomClicked != null) _randomSeedButton.onClick.RemoveListener(_onRandomClicked);
+            if (_onTextChanged != null)
+            {
+                if (_worldNameInput != null) _worldNameInput.onValueChanged.RemoveListener(_onTextChanged);
+                if (_seedInput != null) _seedInput.onValueChanged.RemoveListener(_onTextChanged);
+            }
+            if (_onDropdownChanged != null)
+            {
+                if (_sizeDropdown != null) _sizeDropdown.onValueChanged.RemoveListener(_onDropdownChanged);
+                if (_mapTypeDropdown != null) _mapTypeDropdown.onValueChanged.RemoveListener(_onDropdownChanged);
+                if (_difficultyDropdown != null) _difficultyDropdown.onValueChanged.RemoveListener(_onDropdownChanged);
+            }
+        }
+
+        private void NotifySettingsChanged()
+        {
+            OnSettingsChanged?.Invoke();
         }
 
         private void EnsureRuntimeControls()

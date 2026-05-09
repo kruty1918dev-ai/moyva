@@ -159,7 +159,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         public Task SetRelayJoinCodeAsync(string relayJoinCode, CancellationToken ct = default) => _inner.SetRelayJoinCodeAsync(relayJoinCode, ct);
 
-        public Task LockAsync(bool locked, CancellationToken ct = default) => _inner.LockAsync(locked, ct);
+        public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, CancellationToken ct = default) => _inner.LockAsync(locked, startedWorldSettingsBytes, ct);
 
         public void Dispose()
         {

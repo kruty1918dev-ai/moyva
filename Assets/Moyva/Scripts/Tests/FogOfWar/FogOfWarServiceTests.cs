@@ -176,6 +176,39 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.IsTrue(_service.IsVisible(new Vector2Int(6, 6)));
         }
 
+        [Test]
+        public void RegisterFixedVisionArea_Diamond_KeepsShapeAfterWorldRecalculate()
+        {
+            InitMap();
+            _service.RegisterFixedVisionArea("start", new Vector2Int(5, 5), 2, FogRevealShape.Diamond);
+
+            _signalBus.Fire(new WorldGeneratedDataSignal
+            {
+                Width = 10,
+                Height = 10,
+                HeightMap = new float[10, 10],
+                TileMap = null,
+                ObjectMap = null,
+            });
+
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(5, 7)));
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(6, 6)));
+            Assert.IsFalse(_service.IsVisible(new Vector2Int(7, 7)));
+        }
+
+        [Test]
+        public void LoadFromSnapshot_RebuildsTextureImmediately()
+        {
+            InitMap(5, 5);
+            int rebuildsBefore = _textureUpdater.RebuildCallCount;
+            var snap = new bool[5, 5];
+            snap[2, 2] = true;
+
+            _service.LoadFromSnapshot(snap);
+
+            Assert.Greater(_textureUpdater.RebuildCallCount, rebuildsBefore);
+        }
+
         // ─── 4. UpdateUnitPosition_RemovesVisibilityFromOldTiles ─────────────
 
         [Test]

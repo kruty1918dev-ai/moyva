@@ -119,13 +119,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (participants == null || participants.Count == 0)
                 return true;
 
-            for (int index = 0; index < participants.Count; index++)
-            {
-                if (participants[index].IsHost)
-                    return true;
-            }
-
-            return false;
+            return _sessionManager.IsLocalPlayerHost;
         }
     }
 }

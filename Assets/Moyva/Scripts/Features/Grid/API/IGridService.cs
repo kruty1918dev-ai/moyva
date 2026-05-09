@@ -10,4 +10,9 @@ namespace Kruty1918.Moyva.Grid.API
         public int GridWidth { get; }
         public int GridHeight { get; }
     }
+
+    public interface IGridResizeService
+    {
+        public void Resize(int width, int height);
+    }
 }
