@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         public string HoverTooltipText { get; set; }
         public Texture2D PreviewTexture => _previewTexture;
         public string PreviewStatus => _previewLabel?.text;
+        public float PreferredWidth => CalculatePreferredWidth(NodeData);
 
         private readonly List<GeneratorPort> _inputPorts = new();
         private readonly List<GeneratorPort> _outputPorts = new();
@@ -62,13 +63,29 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             // Style
             AddToClassList("generator-node");
-            style.width = 280;
+            if (Attribute.IsDefined(nodeData.GetType(), typeof(StaticGraphNodeAttribute)))
+            {
+                capabilities &= ~Capabilities.Deletable;
+                capabilities &= ~Capabilities.Copiable;
+                capabilities &= ~Capabilities.Movable;
+                capabilities &= ~Capabilities.Groupable;
+                AddToClassList("static-generator-node");
+            }
+
+            float preferredWidth = PreferredWidth;
+            style.width = preferredWidth;
             style.minWidth = 280;
-            style.maxWidth = 280;
+            style.maxWidth = 640;
+            style.height = StyleKeyword.Auto;
+            style.minHeight = 0;
+            style.overflow = Overflow.Visible;
+            extensionContainer.style.overflow = Overflow.Visible;
+            inputContainer.style.overflow = Overflow.Visible;
+            outputContainer.style.overflow = Overflow.Visible;
 
             // Position
             var pos = nodeData.EditorPosition;
-            SetPosition(new Rect(pos.x, pos.y, 280, 0));
+            SetPosition(new Rect(pos.x, pos.y, preferredWidth, 0));
 
             // Category badge
             var badge = new Label(nodeData.Category)
@@ -225,6 +242,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         public GeneratorPort GetOutputPort(int index) =>
             index >= 0 && index < _outputPorts.Count ? _outputPorts[index] : null;
+
+        public void ClearInputElementIndexControls()
+        {
+            for (int i = 0; i < _inputPorts.Count; i++)
+                _inputPorts[i]?.ClearElementIndexControl();
+        }
 
         public int OutputCount => _outputPorts.Count;
 
@@ -525,6 +548,36 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return type.GetElementType()?.Name + "[]";
 
             return type?.Name ?? "unknown";
+        }
+
+        private static float CalculatePreferredWidth(NodeBase nodeData)
+        {
+            if (nodeData == null)
+                return 280f;
+
+            int maxChars = Mathf.Max(
+                nodeData.Title?.Length ?? 0,
+                nodeData.Category?.Length ?? 0);
+
+            AppendMaxPortChars(nodeData.Inputs, ref maxChars);
+            AppendMaxPortChars(nodeData.Outputs, ref maxChars);
+
+            float width = 180f + maxChars * 7f;
+            return Mathf.Clamp(width, 280f, 640f);
+        }
+
+        private static void AppendMaxPortChars(PortDefinition[] ports, ref int maxChars)
+        {
+            if (ports == null)
+                return;
+
+            for (int i = 0; i < ports.Length; i++)
+            {
+                var port = ports[i];
+                int count = (port.Name?.Length ?? 0) + (FormatTypeName(port.ValueType)?.Length ?? 0) + 3;
+                if (count > maxChars)
+                    maxChars = count;
+            }
         }
     }
 }

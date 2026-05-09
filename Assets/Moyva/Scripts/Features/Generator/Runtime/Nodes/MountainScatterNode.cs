@@ -61,7 +61,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (_layers == null || _layers.Length == 0)
                 return NodeOutput.Success(result);
 
-            var rng = context.CreateRandom($"{NodeId}:MountainScatter");
+            var rng = context.CreateRandom();
 
             for (int x = 0; x < w; x++)
             {

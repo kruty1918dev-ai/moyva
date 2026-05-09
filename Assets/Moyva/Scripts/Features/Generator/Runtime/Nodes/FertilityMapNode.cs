@@ -26,6 +26,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [Tooltip("Радіус пошуку води для бонусу родючості. Клітинки за межами цього радіуса не отримають перевагу від близькості до водойми.")]
         [SerializeField, Range(1, 20)] private int _waterBonusRadius = 5;
 
+        [Header("Fallback Fertility Noise")]
+        [SerializeField, Min(0.0001f)] private float _fallbackNoiseScale = 0.05f;
+        [SerializeField, Range(1, 8)] private int _fallbackNoiseOctaves = 1;
+        [SerializeField, Min(1f)] private float _fallbackNoiseLacunarity = 2f;
+        [SerializeField, Range(0.01f, 1f)] private float _fallbackNoisePersistence = 0.5f;
+
         public override string Title => "Fertility Map";
         public override string Category => "Generators";
 
@@ -61,13 +67,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             }
             else
             {
-                fertility = new float[w, h];
-                var rng = context.CreateRandom($"{NodeId}:FertilityFallback");
-                float offsetX = (float)rng.NextDouble() * 9999f;
-                float offsetY = (float)rng.NextDouble() * 9999f;
-                for (int x = 0; x < w; x++)
-                    for (int y = 0; y < h; y++)
-                        fertility[x, y] = Mathf.PerlinNoise(x * 0.05f + offsetX, y * 0.05f + offsetY);
+                fertility = GenerateFallbackNoise(
+                    w,
+                    h,
+                    context.Seed,
+                    _fallbackNoiseScale,
+                    _fallbackNoiseOctaves,
+                    _fallbackNoiseLacunarity,
+                    _fallbackNoisePersistence);
             }
 
             // Height influence — optimal height range gets bonus
@@ -142,6 +149,48 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             }
 
             return minDist;
+        }
+
+        private static float[,] GenerateFallbackNoise(
+            int w,
+            int h,
+            int seed,
+            float scale,
+            int octaves,
+            float lacunarity,
+            float persistence)
+        {
+            var result = new float[w, h];
+            var rng = new System.Random(seed);
+            float offsetX = (float)rng.NextDouble() * 9999f;
+            float offsetY = (float)rng.NextDouble() * 9999f;
+            scale = Mathf.Max(0.0001f, scale);
+            octaves = Mathf.Max(1, octaves);
+            lacunarity = Mathf.Max(1f, lacunarity);
+            persistence = Mathf.Clamp01(persistence);
+
+            for (int x = 0; x < w; x++)
+            {
+                for (int y = 0; y < h; y++)
+                {
+                    float amplitude = 1f;
+                    float frequency = 1f;
+                    float value = 0f;
+                    float amplitudeSum = 0f;
+
+                    for (int octave = 0; octave < octaves; octave++)
+                    {
+                        value += Mathf.PerlinNoise(x * scale * frequency + offsetX, y * scale * frequency + offsetY) * amplitude;
+                        amplitudeSum += amplitude;
+                        amplitude *= persistence;
+                        frequency *= lacunarity;
+                    }
+
+                    result[x, y] = amplitudeSum > 0f ? Mathf.Clamp01(value / amplitudeSum) : 0f;
+                }
+            }
+
+            return result;
         }
     }
 }

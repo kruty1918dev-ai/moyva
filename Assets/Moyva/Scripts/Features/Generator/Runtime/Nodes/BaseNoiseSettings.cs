@@ -10,22 +10,22 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
     public sealed class BaseNoiseSettings : NodeBase
     {
         
-        [SerializeField]
+        [SerializeField, Min(0.0001f)]
         [InlineEditable("scale")]
         [Tooltip("Масштаб шуму. Визначає, наскільки 'розтягнутий' або 'стиснутий' буде шум. Великі значення — плавні області, малі — дрібні деталі. Приклад: 50 — великі континенти, 5 — дрібні острови.")]
         private float scale = 20f;
 
-        [SerializeField]
+        [SerializeField, Range(1, 12)]
         [InlineEditable("octaves")]
         [Tooltip("Кількість октав. Визначає, скільки шарів шуму буде накладено. 1 — гладко, 8 — багато деталей. Приклад: 4 — баланс між деталізацією та продуктивністю.")]
         private int octaves = 4;
 
-        [SerializeField]
+        [SerializeField, Range(0.01f, 1f)]
         [InlineEditable("persistance")]
         [Tooltip("Persistance — як швидко зменшується амплітуда шуму для кожної октави. 0.3 — плавно, 0.8 — багато дрібних деталей. Приклад: 0.5 — природний рельєф.")]
         private float persistance = 0.5f;
 
-        [SerializeField]
+        [SerializeField, Min(1f)]
         [InlineEditable("lacunarity")]
         [Tooltip("Lacunarity — як швидко зростає частота шуму для кожної октави. 2 — типовий для природних карт, 3+ — дуже 'шумно'. Приклад: 2 — класика для перлинного шуму.")]
         private float lacunarity = 2f;

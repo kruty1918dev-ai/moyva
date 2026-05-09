@@ -33,14 +33,14 @@ namespace Kruty1918.Moyva.Generator.Editor
         {
             if (settings.TileRules == null || settings.TileRules.Count == 0) return;
 
-            var registry = FindFirstRegistry();
+            var registry = FindRegistry(settings);
             if (registry == null)
             {
-                EditorGUILayout.HelpBox("TileRegistrySO не знайдено в проєкті.", MessageType.Warning);
+                EditorGUILayout.HelpBox("TileRegistrySO не знайдено. Вкажіть реєстр у полі 'Tile Registry' або додайте його до проєкту.", MessageType.Warning);
                 return;
             }
 
-            var knownIds = LoadKnownTileIds();
+            var knownIds = LoadKnownTileIds(registry);
             var usedIds = CollectUsedIds(settings);
             if (usedIds.Count == 0) return;
 
@@ -54,6 +54,9 @@ namespace Kruty1918.Moyva.Generator.Editor
             var unknownIds = new HashSet<string>();
             foreach (var id in usedIds)
             {
+                if (IsVirtualTileId(settings, id))
+                    continue;
+
                 if (!knownIds.Contains(id))
                     unknownIds.Add(id);
             }
@@ -72,12 +75,12 @@ namespace Kruty1918.Moyva.Generator.Editor
                 }
             }
 
-            DrawMissingPrefabSection(registry, usedIds);
+            DrawMissingPrefabSection(registry, usedIds, settings);
         }
 
-        private void DrawMissingPrefabSection(TileRegistrySO registry, HashSet<string> usedIds)
+        private void DrawMissingPrefabSection(TileRegistrySO registry, HashSet<string> usedIds, WFCDataSettings settings)
         {
-            var missingPrefabIds = CollectMissingPrefabIds(registry, usedIds);
+            var missingPrefabIds = CollectMissingPrefabIds(registry, usedIds, settings);
             if (missingPrefabIds.Count == 0)
             {
                 EditorGUILayout.HelpBox("Усі ID, які використовує WFC, мають prefab.", MessageType.Info);
@@ -152,7 +155,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             return usedIds;
         }
 
-        private static List<string> CollectMissingPrefabIds(TileRegistrySO registry, HashSet<string> usedIds)
+        private static List<string> CollectMissingPrefabIds(TileRegistrySO registry, HashSet<string> usedIds, WFCDataSettings settings)
         {
             var list = new List<string>();
             if (registry.Definitions == null) return list;
@@ -166,12 +169,36 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             foreach (var id in usedIds)
             {
+                if (IsVirtualTileId(settings, id))
+                    continue;
+
                 if (known.TryGetValue(id, out var def) && def.VisualPrefab == null)
                     list.Add(id);
             }
 
             list.Sort();
             return list;
+        }
+
+        private static bool IsVirtualTileId(WFCDataSettings settings, string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return false;
+
+            string trimmed = id.Trim();
+            if (trimmed.StartsWith("flag:", System.StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (settings?.VirtualTileIds == null)
+                return false;
+
+            for (int i = 0; i < settings.VirtualTileIds.Length; i++)
+            {
+                if (string.Equals(trimmed, settings.VirtualTileIds[i]?.Trim(), System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
         }
 
         private static void CreateMissingIds(TileRegistrySO registry, HashSet<string> unknownIds)
@@ -285,8 +312,11 @@ namespace Kruty1918.Moyva.Generator.Editor
             return false;
         }
 
-        private static TileRegistrySO FindFirstRegistry()
+        private static TileRegistrySO FindRegistry(WFCDataSettings settings)
         {
+            if (settings != null && settings.TileRegistry != null)
+                return settings.TileRegistry;
+
             string[] guids = AssetDatabase.FindAssets("t:TileRegistrySO");
             if (guids.Length == 0) return null;
             string path = AssetDatabase.GUIDToAssetPath(guids[0]);
@@ -295,32 +325,31 @@ namespace Kruty1918.Moyva.Generator.Editor
 
         private static HashSet<string> _cachedKnownIds;
         private static double _knownIdsTime;
+        private static TileRegistrySO _cachedRegistrySource;
 
         private static void InvalidateKnownIdsCache()
         {
             _cachedKnownIds = null;
             _knownIdsTime = 0;
+            _cachedRegistrySource = null;
         }
 
-        private static HashSet<string> LoadKnownTileIds()
+        private static HashSet<string> LoadKnownTileIds(TileRegistrySO registry)
         {
             double now = EditorApplication.timeSinceStartup;
-            if (_cachedKnownIds != null && now - _knownIdsTime < 2.0)
+            if (_cachedKnownIds != null && now - _knownIdsTime < 2.0 && _cachedRegistrySource == registry)
                 return _cachedKnownIds;
 
-            _cachedKnownIds = LoadKnownTileIdsInternal();
+            _cachedKnownIds = LoadKnownTileIdsInternal(registry);
             _knownIdsTime = now;
+            _cachedRegistrySource = registry;
             return _cachedKnownIds;
         }
 
-        private static HashSet<string> LoadKnownTileIdsInternal()
+        private static HashSet<string> LoadKnownTileIdsInternal(TileRegistrySO registry)
         {
             var result = new HashSet<string>();
-            string[] guids = AssetDatabase.FindAssets("t:TileRegistrySO");
-            if (guids.Length == 0) return result;
-
-            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-            var registry = AssetDatabase.LoadAssetAtPath<TileRegistrySO>(path);
+            if (registry == null) return result;
             if (registry?.Definitions == null) return result;
 
             foreach (var def in registry.Definitions)

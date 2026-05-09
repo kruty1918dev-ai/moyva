@@ -11,6 +11,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         public int PortIndex { get; private set; }
         public Type PortValueType { get; private set; }
 
+        private VisualElement _elementIndexContainer;
+        private IntegerField _elementIndexField;
+        private Label _elementCountLabel;
+        private Action<int> _elementIndexChanged;
+        private bool _updatingElementIndex;
+
         private GeneratorPort(Orientation orientation, Direction direction,
             Capacity capacity, Type type)
             : base(orientation, direction, capacity, type)
@@ -31,6 +37,98 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             port.m_EdgeConnector = new EdgeConnector<Edge>(listener);
             VisualElementExtensions.AddManipulator(port, port.m_EdgeConnector);
             return port;
+        }
+
+        public void SetElementIndexControl(int index, int elementCount, Action<int> onChanged)
+        {
+            EnsureElementIndexControl();
+
+            _elementIndexChanged = onChanged;
+            _elementIndexContainer.style.display = DisplayStyle.Flex;
+
+            int clampedIndex = Mathf.Max(0, index);
+            if (elementCount > 0)
+                clampedIndex = Mathf.Min(clampedIndex, elementCount - 1);
+
+            _updatingElementIndex = true;
+            _elementIndexField.SetValueWithoutNotify(clampedIndex);
+            _updatingElementIndex = false;
+
+            _elementCountLabel.text = elementCount > 0 ? $"/{elementCount}" : "/?";
+            _elementIndexContainer.tooltip = elementCount > 0
+                ? $"Index {clampedIndex} з {elementCount} доступних елементів списку."
+                : $"Index {clampedIndex}. Кількість елементів буде відома після виконання графа.";
+        }
+
+        public void ClearElementIndexControl()
+        {
+            if (_elementIndexContainer == null)
+                return;
+
+            _elementIndexChanged = null;
+            _elementIndexContainer.style.display = DisplayStyle.None;
+        }
+
+        private void EnsureElementIndexControl()
+        {
+            if (_elementIndexContainer != null)
+                return;
+
+            _elementIndexContainer = new VisualElement
+            {
+                style =
+                {
+                    flexDirection = FlexDirection.Row,
+                    alignItems = Align.Center,
+                    marginLeft = 6,
+                    display = DisplayStyle.None
+                }
+            };
+
+            var label = new Label("idx")
+            {
+                style =
+                {
+                    fontSize = 9,
+                    color = new Color(0.72f, 0.72f, 0.72f),
+                    marginRight = 2
+                }
+            };
+
+            _elementIndexField = new IntegerField
+            {
+                isDelayed = true,
+                style =
+                {
+                    width = 42,
+                    height = 18,
+                    fontSize = 10,
+                    marginLeft = 0,
+                    marginRight = 0
+                }
+            };
+            _elementIndexField.RegisterValueChangedCallback(evt =>
+            {
+                if (_updatingElementIndex)
+                    return;
+
+                _elementIndexChanged?.Invoke(Mathf.Max(0, evt.newValue));
+            });
+
+            _elementCountLabel = new Label("/?")
+            {
+                style =
+                {
+                    fontSize = 9,
+                    color = new Color(0.72f, 0.72f, 0.72f),
+                    marginLeft = 2
+                }
+            };
+
+            _elementIndexContainer.Add(label);
+            _elementIndexContainer.Add(_elementIndexField);
+            _elementIndexContainer.Add(_elementCountLabel);
+            Add(_elementIndexContainer);
         }
 
         private class DefaultEdgeConnectorListener : IEdgeConnectorListener

@@ -81,8 +81,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 var sourcePort = sourceOutputs[conn.SourcePortIndex];
                 var targetPort = targetInputs[conn.TargetPortIndex];
 
-                bool isWildcard = sourcePort.ValueType == typeof(object) || targetPort.ValueType == typeof(object);
-                if (!isWildcard && !targetPort.ValueType.IsAssignableFrom(sourcePort.ValueType))
+                if (!PortDefinition.AreValueTypesCompatible(sourcePort.ValueType, targetPort.ValueType))
                 {
                     errors.Add(new ValidationError(target.NodeId,
                         $"Type mismatch: '{source.Title}'.{sourcePort.Name} ({sourcePort.ValueType.Name}) → '{target.Title}'.{targetPort.Name} ({targetPort.ValueType.Name})."));

@@ -319,23 +319,26 @@ namespace Kruty1918.Moyva.Grid.Editor
         private const string MainTileRegistryPath = "Assets/Moyva/SO/Tile/TileRegistry.asset";
         private const string GraphEditorWindowSettingsPath = "Assets/Moyva/Scripts/Features/GraphSystem/Editor/GraphEditorWindowSettings.asset";
         private const string EditorPreviewSettingsPath = "Assets/Moyva/SO/Generation/EditorPreviewSettings.asset";
+        private const string PreferredTileRegistryGuidKey = "Moyva.RegistryHub.TileRegistry.Guid";
 
         private static TileRegistrySO FindRegistryInternal()
         {
-            // Пріоритет 1: preview settings, вибраний у Graph Editor window.
-            var windowSettingsObj = AssetDatabase.LoadAssetAtPath<ScriptableObject>(GraphEditorWindowSettingsPath);
-            if (windowSettingsObj != null)
+            // Пріоритет 0: реєстр, який користувач явно вибрав у Registry Hub.
+            string preferredGuid = EditorPrefs.GetString(PreferredTileRegistryGuidKey, string.Empty);
+            if (!string.IsNullOrEmpty(preferredGuid))
             {
-                var windowSo = new SerializedObject(windowSettingsObj);
-                var previewSettingsProp = windowSo.FindProperty("previewSettings");
-                if (previewSettingsProp?.objectReferenceValue is ScriptableObject selectedPreviewSettingsObj)
+                string preferredPath = AssetDatabase.GUIDToAssetPath(preferredGuid);
+                if (!string.IsNullOrEmpty(preferredPath))
                 {
-                    var previewSo = new SerializedObject(selectedPreviewSettingsObj);
-                    var registryProp = previewSo.FindProperty("_tileRegistry");
-                    if (registryProp?.objectReferenceValue is TileRegistrySO registryFromWindowPreview)
-                        return registryFromWindowPreview;
+                    var preferredRegistry = AssetDatabase.LoadAssetAtPath<TileRegistrySO>(preferredPath);
+                    if (preferredRegistry != null)
+                        return preferredRegistry;
                 }
             }
+
+            // Пріоритет 1: TileRegistry з Preview Settings, вибраного у Graph Editor settings.
+            if (TryGetRegistryFromGraphWindowSettings(out var registryFromGraphSettings))
+                return registryFromGraphSettings;
 
             // Пріоритет 2: реєстр з legacy EditorPreviewSettings asset.
             var previewSettingsObj = AssetDatabase.LoadAssetAtPath<ScriptableObject>(EditorPreviewSettingsPath);
@@ -362,6 +365,43 @@ namespace Kruty1918.Moyva.Grid.Editor
                 .ToList();
 
             return AssetDatabase.LoadAssetAtPath<TileRegistrySO>(paths[0]);
+        }
+
+        private static bool TryGetRegistryFromGraphWindowSettings(out TileRegistrySO registry)
+        {
+            registry = null;
+
+            var windowSettingsObj = AssetDatabase.LoadAssetAtPath<ScriptableObject>(GraphEditorWindowSettingsPath);
+            if (windowSettingsObj == null)
+                return false;
+
+            var windowSo = new SerializedObject(windowSettingsObj);
+            ScriptableObject previewSettingsObj = null;
+
+            var previewSettingsProp = windowSo.FindProperty("previewSettings");
+            if (previewSettingsProp?.objectReferenceValue is ScriptableObject directPreviewSettings)
+            {
+                previewSettingsObj = directPreviewSettings;
+            }
+            else
+            {
+                var previewGuidProp = windowSo.FindProperty("previewSettingsGuid");
+                string previewGuid = previewGuidProp?.stringValue;
+                if (!string.IsNullOrEmpty(previewGuid))
+                {
+                    string previewPath = AssetDatabase.GUIDToAssetPath(previewGuid);
+                    if (!string.IsNullOrEmpty(previewPath))
+                        previewSettingsObj = AssetDatabase.LoadAssetAtPath<ScriptableObject>(previewPath);
+                }
+            }
+
+            if (previewSettingsObj == null)
+                return false;
+
+            var previewSo = new SerializedObject(previewSettingsObj);
+            var registryProp = previewSo.FindProperty("_tileRegistry");
+            registry = registryProp?.objectReferenceValue as TileRegistrySO;
+            return true;
         }
 
         private static TileRegistrySO FindRegistry()

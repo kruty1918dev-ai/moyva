@@ -21,19 +21,24 @@ namespace Kruty1918.Moyva.SaveSystem
     {
         public override void InstallBindings()
         {
-            Container.BindInterfacesAndSelfTo<SaveService>()
+            Install(Container);
+        }
+
+        public static void Install(DiContainer container)
+        {
+            container.BindInterfacesAndSelfTo<SaveService>()
                 .AsSingle()
                 .NonLazy();
 
-            Container.Bind<ISaveInspectorService>()
+            container.Bind<ISaveInspectorService>()
                 .To<SaveInspectorService>()
                 .AsSingle();
 
-            Container.BindInterfacesAndSelfTo<ConfigService>()
+            container.BindInterfacesAndSelfTo<ConfigService>()
                 .AsSingle()
                 .NonLazy();
 
-            Container.BindExecutionOrder<SaveService>(-8);
+            container.BindExecutionOrder<SaveService>(-8);
         }
     }
 }

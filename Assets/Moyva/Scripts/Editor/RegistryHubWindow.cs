@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
@@ -40,6 +41,11 @@ namespace Kruty1918.Moyva.Editor
         private const string ObjectPrefabFolder  = "Assets/Moyva/Prefabs/Objects";
         private const string UnitPrefabFolder    = "Assets/Moyva/Prefabs/Units";
         private const string BuildingPrefabFolder = "Assets/Moyva/Prefabs/Buildings";
+        private const string PrefKeyTileRegistryGuid = "Moyva.RegistryHub.TileRegistry.Guid";
+        private const string PrefKeyObjectRegistryGuid = "Moyva.RegistryHub.ObjectRegistry.Guid";
+        private const string PrefKeyUnitRegistryGuid = "Moyva.RegistryHub.UnitRegistry.Guid";
+        private const string PrefKeyBuildingRegistryGuid = "Moyva.RegistryHub.BuildingRegistry.Guid";
+        private const int DefaultPageSize = 120;
 
         private const float SidebarWidth = 170f;
 
@@ -59,6 +65,8 @@ namespace Kruty1918.Moyva.Editor
         private Sprite           _newTileSprite;
         private GameObject       _newTilePrefab;
         private bool             _tileCreateOpen = true;
+        private bool             _tileListOpen = true;
+        private int              _tilePage;
 
         // MapObject
         private MapObjectRegistrySO _objReg;
@@ -67,6 +75,8 @@ namespace Kruty1918.Moyva.Editor
         private Sprite              _newObjSprite;
         private GameObject          _newObjPrefab;
         private bool                _objCreateOpen = true;
+        private bool                _objListOpen = true;
+        private int                 _objPage;
 
         // Unit
         private UnitRegistrySO   _unitReg;
@@ -79,6 +89,8 @@ namespace Kruty1918.Moyva.Editor
         private GameObject       _newUnitPrefab;
         private int              _unitRoleFilter;
         private bool             _unitCreateOpen = true;
+        private bool             _unitListOpen = true;
+        private int              _unitPage;
 
         // Building
         private BuildingRegistrySO _bldReg;
@@ -89,6 +101,15 @@ namespace Kruty1918.Moyva.Editor
         private Sprite             _newBldSprite;
         private GameObject         _newBldPrefab;
         private bool               _bldCreateOpen = true;
+        private bool               _bldListOpen = true;
+        private int                _bldPage;
+
+        // Shared performance controls
+        private int _listPageSize = DefaultPageSize;
+
+        // Prefab -> sprite icon cache to avoid repeated GetComponentInChildren on every repaint.
+        private static readonly Dictionary<int, Sprite> _prefabSpriteCache = new();
+        private static readonly HashSet<int> _prefabNoSpriteCache = new();
 
         // Walls
         private int _expandedWall = -1;
@@ -123,6 +144,12 @@ namespace Kruty1918.Moyva.Editor
         private const string DragDataKey = "RegistryHub_Move";
         private (Tab source, int index, string id)? _dragPayload;
 
+        // Multi-selection + bulk actions inside registry tabs
+        private readonly Dictionary<Tab, HashSet<string>> _selectedIdsByTab = new();
+        private readonly Dictionary<Tab, string> _selectionAnchorByTab = new();
+        private string _bulkRenamePrefix = "item";
+        private int _bulkRenameStart = 1;
+
         // ══════════════════════════════════════════════════════
         //  МЕНЮ
         // ══════════════════════════════════════════════════════
@@ -148,11 +175,21 @@ namespace Kruty1918.Moyva.Editor
         //  LIFECYCLE
         // ══════════════════════════════════════════════════════
 
-        private void OnEnable()  => AutoFind();
-        private void OnFocus()   => RefreshSOs();
+        private void OnEnable()
+        {
+            LoadRegistrySelections();
+            AutoFind();
+        }
+        private void OnFocus()
+        {
+            RefreshSOs();
+            _prefabSpriteCache.Clear();
+            _prefabNoSpriteCache.Clear();
+        }
 
         private void OnDisable()
         {
+            SaveRegistrySelections();
             foreach (var editor in _resourceEditors.Values)
                 if (editor != null) DestroyImmediate(editor);
             _resourceEditors.Clear();
@@ -350,71 +387,106 @@ namespace Kruty1918.Moyva.Editor
         {
             RegistryEditorStyles.DrawColoredHeader("  Tile Registry — типи тайлів", RegistryEditorStyles.Accent);
 
+            EditorGUI.BeginChangeCheck();
             _tileReg = (TileRegistrySO)EditorGUILayout.ObjectField("Registry Asset", _tileReg, typeof(TileRegistrySO), false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SaveRegistryPreference(PrefKeyTileRegistryGuid, _tileReg);
+                RefreshSOs();
+            }
             if (_tileReg && _tileSO?.targetObject != _tileReg) RefreshSOs();
             if (!_tileReg) { EditorGUILayout.HelpBox("Оберіть TileRegistrySO або натисніть \u27f3.", MessageType.Warning); return; }
 
             DrawAssetPath(_tileReg);
             RegistryEditorStyles.DrawSeparator();
+            DrawRegistryMultiSelectionToolbar();
 
             var defs = _tileSO.FindProperty("_definitions");
             int count = defs?.arraySize ?? 0;
             EditorGUILayout.LabelField($"Записи ({count})", RegistryEditorStyles.SubHeader);
+            _tileListOpen = EditorGUILayout.Foldout(_tileListOpen, "Список тайлів", true, EditorStyles.foldoutHeader);
 
-            if (count == 0)
-                EditorGUILayout.LabelField("Записів немає. Додайте перший тайл нижче.", RegistryEditorStyles.CenteredMini);
-
-            int removeIdx = -1;
-            for (int i = 0; i < count; i++)
+            if (_tileListOpen)
             {
-                var el = defs.GetArrayElementAtIndex(i);
-                string id     = el.FindPropertyRelative("_id")?.stringValue ?? "?";
-                float  cost   = el.FindPropertyRelative("_movementCost")?.floatValue ?? 0f;
-                var    prefab = el.FindPropertyRelative("_visualPrefab")?.objectReferenceValue;
-
-                if (!MatchesFilter(id)) continue;
-
-                GUIStyle style = i % 2 == 0 ? RegistryEditorStyles.Card : RegistryEditorStyles.CardAlt;
-                EditorGUILayout.BeginVertical(style);
-                Rect tileRowRect = GUILayoutUtility.GetRect(0, 0);
-
-                // Рядок-заголовок (клік — розгортання)
-                EditorGUILayout.BeginHorizontal();
-                bool isOpen = _expandedTile == i;
-                if (GUILayout.Button(isOpen ? "\u25BC" : "\u25B6", EditorStyles.miniLabel, GUILayout.Width(16)))
-                    _expandedTile = isOpen ? -1 : i;
-                DrawIdLabel(id, 150);
-                EditorGUILayout.LabelField($"Рух: {cost:F1}", EditorStyles.miniLabel, GUILayout.Width(70));
-                EditorGUILayout.LabelField(prefab ? $"\u2713 {prefab.name}" : "\u2717 Немає prefab", EditorStyles.miniLabel);
-                if (DrawDeleteBtn()) removeIdx = i;
-                EditorGUILayout.EndHorizontal();
-
-                // FATAL: prefab відсутній
-                if (!prefab)
-                    DrawMissingPrefabRow(i, id, el, "_visualPrefab", TilePrefabFolder, _pendingTileSprites, _tileSO);
-
-                // Інлайн-редагування
-                if (isOpen)
+                DrawPaginationToolbar(count, ref _tilePage, "тайлів", out int start, out int endExclusive);
+                var tileSelectionScope = new List<string>();
+                for (int i = start; i < endExclusive; i++)
                 {
-                    DrawInlineEditBox(el, new[] {
-                        ("_id",            "ID"),
-                        ("_movementCost",  "Movement Cost"),
-                        ("_visualPrefab",  "Visual Prefab"),
-                    });
-                    _tileSO.ApplyModifiedProperties();
+                    string scopeId = defs.GetArrayElementAtIndex(i).FindPropertyRelative("_id")?.stringValue;
+                    if (!string.IsNullOrWhiteSpace(scopeId) && MatchesFilter(scopeId))
+                        tileSelectionScope.Add(scopeId);
                 }
 
-                EditorGUILayout.EndVertical();
-                { int ci = i; string cid = id; HandleRowContextClick(
-                    new Rect(tileRowRect.x, tileRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - tileRowRect.y),
-                    () => ShowMoveMenu(cid, Tab.Tiles, ci));
-                  HandleRowDragStart(
-                    new Rect(tileRowRect.x, tileRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - tileRowRect.y),
-                    cid, Tab.Tiles, ci); }
-            }
+                if (count == 0)
+                    EditorGUILayout.LabelField("Записів немає. Додайте перший тайл нижче.", RegistryEditorStyles.CenteredMini);
 
-            HandleRemove(defs, removeIdx, "_id", _tileSO);
-            DrawDeleteAllButton(defs, "_id", _tileSO, "тайлів");
+                int removeIdx = -1;
+                EditorGUI.BeginChangeCheck();
+                for (int i = start; i < endExclusive; i++)
+                {
+                    var el = defs.GetArrayElementAtIndex(i);
+                    var costProp = el.FindPropertyRelative("_movementCost");
+                    var prefabProp = el.FindPropertyRelative("_visualPrefab");
+                    string id     = el.FindPropertyRelative("_id")?.stringValue ?? "?";
+                    float  cost   = costProp?.floatValue ?? 0f;
+                    var    prefab = prefabProp?.objectReferenceValue;
+
+                    if (!MatchesFilter(id)) continue;
+
+                    GUIStyle style = i % 2 == 0 ? RegistryEditorStyles.Card : RegistryEditorStyles.CardAlt;
+                    EditorGUILayout.BeginVertical(style);
+                    Rect tileRowRect = GUILayoutUtility.GetRect(0, 0);
+
+                    // Рядок-заголовок: швидкі налаштування доступні без розгортання
+                    EditorGUILayout.BeginHorizontal();
+                    bool isOpen = _expandedTile == i;
+                    if (GUILayout.Button(isOpen ? "\u25BC" : "\u25B6", EditorStyles.miniLabel, GUILayout.Width(16)))
+                        _expandedTile = isOpen ? -1 : i;
+                    DrawSelectionMarker(Tab.Tiles, id);
+                    DrawPrefabMiniIcon(prefab);
+                    DrawIdLabel(id, 130);
+                    float newCost = EditorGUILayout.FloatField(cost, GUILayout.Width(52));
+                    var newPrefab = (GameObject)EditorGUILayout.ObjectField(prefab, typeof(GameObject), false, GUILayout.Width(150));
+                    if (costProp != null && !Mathf.Approximately(newCost, cost))
+                        costProp.floatValue = newCost;
+                    if (prefabProp != null && newPrefab != prefab)
+                        prefabProp.objectReferenceValue = newPrefab;
+                    if (DrawDeleteBtn()) removeIdx = i;
+                    EditorGUILayout.EndHorizontal();
+
+                    prefab = prefabProp?.objectReferenceValue;
+
+                    if (!prefab)
+                        DrawMissingPrefabRow(i, id, el, "_visualPrefab", TilePrefabFolder, _pendingTileSprites, _tileSO);
+
+                    if (isOpen)
+                    {
+                        DrawInlineEditBox(el, new[] {
+                            ("_id",            "ID"),
+                            ("_movementCost",  "Movement Cost"),
+                            ("_visualPrefab",  "Visual Prefab"),
+                        });
+                    }
+
+                    EditorGUILayout.EndVertical();
+                                        {
+                                                int ci = i;
+                                                string cid = id;
+                                                Rect rowHitRect = new Rect(tileRowRect.x, tileRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - tileRowRect.y);
+                                                HandleRowSelectionMouseUp(rowHitRect, Tab.Tiles, cid, tileSelectionScope);
+                                                HandleRowContextClick(
+                                                rowHitRect,
+                        () => ShowMoveMenu(cid, Tab.Tiles, ci));
+                                            HandleRowDragStart(
+                                                rowHitRect,
+                        cid, Tab.Tiles, ci); }
+                }
+
+                if (EditorGUI.EndChangeCheck())
+                    _tileSO.ApplyModifiedProperties();
+                HandleRemove(defs, removeIdx, "_id", _tileSO);
+                DrawDeleteAllButton(defs, "_id", _tileSO, "тайлів");
+            }
             RegistryEditorStyles.DrawSeparator();
 
             // ── Створення ──
@@ -466,66 +538,99 @@ namespace Kruty1918.Moyva.Editor
         {
             RegistryEditorStyles.DrawColoredHeader("  Map Object Registry — об'єкти карти", RegistryEditorStyles.Accent);
 
+            EditorGUI.BeginChangeCheck();
             _objReg = (MapObjectRegistrySO)EditorGUILayout.ObjectField("Registry Asset", _objReg, typeof(MapObjectRegistrySO), false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SaveRegistryPreference(PrefKeyObjectRegistryGuid, _objReg);
+                RefreshSOs();
+            }
             if (_objReg && _objSO?.targetObject != _objReg) RefreshSOs();
             if (!_objReg) { EditorGUILayout.HelpBox("Оберіть MapObjectRegistrySO або натисніть \u27f3.", MessageType.Warning); return; }
 
             DrawAssetPath(_objReg);
             RegistryEditorStyles.DrawSeparator();
+            DrawRegistryMultiSelectionToolbar();
 
             var defs = _objSO.FindProperty("_definitions");
             int count = defs?.arraySize ?? 0;
             EditorGUILayout.LabelField($"Записи ({count})", RegistryEditorStyles.SubHeader);
+            _objListOpen = EditorGUILayout.Foldout(_objListOpen, "Список об'єктів", true, EditorStyles.foldoutHeader);
 
-            if (count == 0)
-                EditorGUILayout.LabelField("Записів немає.", RegistryEditorStyles.CenteredMini);
-
-            int removeIdx = -1;
-            for (int i = 0; i < count; i++)
+            if (_objListOpen)
             {
-                var el = defs.GetArrayElementAtIndex(i);
-                string id = el.FindPropertyRelative("_id")?.stringValue ?? "?";
-                var prefab = el.FindPropertyRelative("_visualPrefab")?.objectReferenceValue;
-
-                if (!MatchesFilter(id)) continue;
-
-                GUIStyle style = i % 2 == 0 ? RegistryEditorStyles.Card : RegistryEditorStyles.CardAlt;
-                EditorGUILayout.BeginVertical(style);
-                Rect objRowRect = GUILayoutUtility.GetRect(0, 0);
-
-                EditorGUILayout.BeginHorizontal();
-                bool isOpen = _expandedObj == i;
-                if (GUILayout.Button(isOpen ? "\u25BC" : "\u25B6", EditorStyles.miniLabel, GUILayout.Width(16)))
-                    _expandedObj = isOpen ? -1 : i;
-                DrawIdLabel(id, 180);
-                EditorGUILayout.LabelField(prefab ? $"\u2713 {prefab.name}" : "\u2717 Немає prefab", EditorStyles.miniLabel);
-                if (DrawDeleteBtn()) removeIdx = i;
-                EditorGUILayout.EndHorizontal();
-
-                // FATAL: prefab відсутній
-                if (!prefab)
-                    DrawMissingPrefabRow(i, id, el, "_visualPrefab", ObjectPrefabFolder, _pendingObjSprites, _objSO);
-
-                if (isOpen)
+                DrawPaginationToolbar(count, ref _objPage, "об'єктів", out int start, out int endExclusive);
+                var objSelectionScope = new List<string>();
+                for (int i = start; i < endExclusive; i++)
                 {
-                    DrawInlineEditBox(el, new[] {
-                        ("_id",            "ID"),
-                        ("_visualPrefab",  "Visual Prefab"),
-                    });
-                    _objSO.ApplyModifiedProperties();
+                    string scopeId = defs.GetArrayElementAtIndex(i).FindPropertyRelative("_id")?.stringValue;
+                    if (!string.IsNullOrWhiteSpace(scopeId) && MatchesFilter(scopeId))
+                        objSelectionScope.Add(scopeId);
                 }
 
-                EditorGUILayout.EndVertical();
-                { int ci = i; string cid = id; HandleRowContextClick(
-                    new Rect(objRowRect.x, objRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - objRowRect.y),
-                    () => ShowMoveMenu(cid, Tab.MapObjects, ci));
-                  HandleRowDragStart(
-                    new Rect(objRowRect.x, objRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - objRowRect.y),
-                    cid, Tab.MapObjects, ci); }
-            }
+                if (count == 0)
+                    EditorGUILayout.LabelField("Записів немає.", RegistryEditorStyles.CenteredMini);
 
-            HandleRemove(defs, removeIdx, "_id", _objSO);
-            DrawDeleteAllButton(defs, "_id", _objSO, "об'єктів");
+                int removeIdx = -1;
+                EditorGUI.BeginChangeCheck();
+                for (int i = start; i < endExclusive; i++)
+                {
+                    var el = defs.GetArrayElementAtIndex(i);
+                    var prefabProp = el.FindPropertyRelative("_visualPrefab");
+                    string id = el.FindPropertyRelative("_id")?.stringValue ?? "?";
+                    var prefab = prefabProp?.objectReferenceValue;
+
+                    if (!MatchesFilter(id)) continue;
+
+                    GUIStyle style = i % 2 == 0 ? RegistryEditorStyles.Card : RegistryEditorStyles.CardAlt;
+                    EditorGUILayout.BeginVertical(style);
+                    Rect objRowRect = GUILayoutUtility.GetRect(0, 0);
+
+                    EditorGUILayout.BeginHorizontal();
+                    bool isOpen = _expandedObj == i;
+                    if (GUILayout.Button(isOpen ? "\u25BC" : "\u25B6", EditorStyles.miniLabel, GUILayout.Width(16)))
+                        _expandedObj = isOpen ? -1 : i;
+                    DrawSelectionMarker(Tab.MapObjects, id);
+                    DrawPrefabMiniIcon(prefab);
+                    DrawIdLabel(id, 150);
+                    var newPrefab = (GameObject)EditorGUILayout.ObjectField(prefab, typeof(GameObject), false, GUILayout.Width(190));
+                    if (prefabProp != null && newPrefab != prefab)
+                        prefabProp.objectReferenceValue = newPrefab;
+                    if (DrawDeleteBtn()) removeIdx = i;
+                    EditorGUILayout.EndHorizontal();
+
+                    prefab = prefabProp?.objectReferenceValue;
+
+                    if (!prefab)
+                        DrawMissingPrefabRow(i, id, el, "_visualPrefab", ObjectPrefabFolder, _pendingObjSprites, _objSO);
+
+                    if (isOpen)
+                    {
+                        DrawInlineEditBox(el, new[] {
+                            ("_id",            "ID"),
+                            ("_visualPrefab",  "Visual Prefab"),
+                        });
+                    }
+
+                    EditorGUILayout.EndVertical();
+                                        {
+                                                int ci = i;
+                                                string cid = id;
+                                                Rect rowHitRect = new Rect(objRowRect.x, objRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - objRowRect.y);
+                                                HandleRowSelectionMouseUp(rowHitRect, Tab.MapObjects, cid, objSelectionScope);
+                                                HandleRowContextClick(
+                                                rowHitRect,
+                        () => ShowMoveMenu(cid, Tab.MapObjects, ci));
+                                            HandleRowDragStart(
+                                                rowHitRect,
+                        cid, Tab.MapObjects, ci); }
+                }
+
+                if (EditorGUI.EndChangeCheck())
+                    _objSO.ApplyModifiedProperties();
+                HandleRemove(defs, removeIdx, "_id", _objSO);
+                DrawDeleteAllButton(defs, "_id", _objSO, "об'єктів");
+            }
             RegistryEditorStyles.DrawSeparator();
 
             _objCreateOpen = EditorGUILayout.Foldout(_objCreateOpen, "\u2795 Створити новий об'єкт", true, EditorStyles.foldoutHeader);
@@ -574,12 +679,19 @@ namespace Kruty1918.Moyva.Editor
         {
             RegistryEditorStyles.DrawColoredHeader("  Unit Registry — класи юнітів", RegistryEditorStyles.Accent);
 
+            EditorGUI.BeginChangeCheck();
             _unitReg = (UnitRegistrySO)EditorGUILayout.ObjectField("Registry Asset", _unitReg, typeof(UnitRegistrySO), false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SaveRegistryPreference(PrefKeyUnitRegistryGuid, _unitReg);
+                RefreshSOs();
+            }
             if (_unitReg && _unitSO?.targetObject != _unitReg) RefreshSOs();
             if (!_unitReg) { EditorGUILayout.HelpBox("Оберіть UnitRegistrySO або натисніть \u27f3.", MessageType.Warning); return; }
 
             DrawAssetPath(_unitReg);
             RegistryEditorStyles.DrawSeparator();
+            DrawRegistryMultiSelectionToolbar();
 
             var configs = _unitSO.FindProperty("Configs");
             int count = configs?.arraySize ?? 0;
@@ -597,17 +709,39 @@ namespace Kruty1918.Moyva.Editor
                 else workerCount++;
             }
             EditorGUILayout.LabelField($"Worker: {workerCount}   Military: {militaryCount}", EditorStyles.miniLabel);
+            _unitListOpen = EditorGUILayout.Foldout(_unitListOpen, "Список юнітів", true, EditorStyles.foldoutHeader);
 
-            if (count == 0)
-                EditorGUILayout.LabelField("Записів немає.", RegistryEditorStyles.CenteredMini);
-
-            int removeIdx = -1;
-            for (int i = 0; i < count; i++)
+            if (_unitListOpen)
             {
+                DrawPaginationToolbar(count, ref _unitPage, "юнітів", out int start, out int endExclusive);
+                var unitSelectionScope = new List<string>();
+                for (int i = start; i < endExclusive; i++)
+                {
+                    var scopeEl = configs.GetArrayElementAtIndex(i);
+                    string scopeId = scopeEl.FindPropertyRelative("TypeId")?.stringValue;
+                    int scopeRoleIndex = scopeEl.FindPropertyRelative("Role")?.enumValueIndex ?? (int)UnitRole.Worker;
+                    UnitRole scopeRole = scopeRoleIndex == (int)UnitRole.Military ? UnitRole.Military : UnitRole.Worker;
+                    if (string.IsNullOrWhiteSpace(scopeId) || !MatchesFilter(scopeId))
+                        continue;
+                    if (_unitRoleFilter == 1 && scopeRole != UnitRole.Worker)
+                        continue;
+                    if (_unitRoleFilter == 2 && scopeRole != UnitRole.Military)
+                        continue;
+                    unitSelectionScope.Add(scopeId);
+                }
+
+                if (count == 0)
+                    EditorGUILayout.LabelField("Записів немає.", RegistryEditorStyles.CenteredMini);
+
+                int removeIdx = -1;
+                EditorGUI.BeginChangeCheck();
+                for (int i = start; i < endExclusive; i++)
+                {
                 var el = configs.GetArrayElementAtIndex(i);
                 string typeId   = el.FindPropertyRelative("TypeId")?.stringValue ?? "?";
                 float  stamina  = el.FindPropertyRelative("BaseStamina")?.floatValue ?? 0f;
-                var    prefab   = el.FindPropertyRelative("Prefab")?.objectReferenceValue;
+                var    prefabProp = el.FindPropertyRelative("Prefab");
+                var    prefab   = prefabProp?.objectReferenceValue;
                 var    roleProp = el.FindPropertyRelative("Role");
                 int    roleIndex = roleProp != null ? roleProp.enumValueIndex : (int)UnitRole.Worker;
                 UnitRole role = roleIndex == (int)UnitRole.Military ? UnitRole.Military : UnitRole.Worker;
@@ -624,12 +758,18 @@ namespace Kruty1918.Moyva.Editor
                 bool isOpen = _expandedUnit == i;
                 if (GUILayout.Button(isOpen ? "\u25BC" : "\u25B6", EditorStyles.miniLabel, GUILayout.Width(16)))
                     _expandedUnit = isOpen ? -1 : i;
-                DrawIdLabel(typeId, 130);
+                DrawSelectionMarker(Tab.Units, typeId);
+                DrawPrefabMiniIcon(prefab);
+                DrawIdLabel(typeId, 115);
                 RegistryEditorStyles.DrawBadge(role == UnitRole.Worker ? "Worker" : "Military", role == UnitRole.Worker ? new Color(0.16f, 0.53f, 0.25f) : new Color(0.62f, 0.20f, 0.20f));
                 EditorGUILayout.LabelField($"Стаміна: {stamina:F0}", EditorStyles.miniLabel, GUILayout.Width(90));
-                EditorGUILayout.LabelField(prefab ? $"\u2713 {prefab.name}" : "\u2717 Немає", EditorStyles.miniLabel);
+                var newPrefab = (GameObject)EditorGUILayout.ObjectField(prefab, typeof(GameObject), false, GUILayout.Width(150));
+                if (prefabProp != null && newPrefab != prefab)
+                    prefabProp.objectReferenceValue = newPrefab;
                 if (DrawDeleteBtn()) removeIdx = i;
                 EditorGUILayout.EndHorizontal();
+
+                prefab = prefabProp?.objectReferenceValue;
 
                 // FATAL: prefab відсутній
                 if (!prefab)
@@ -645,20 +785,27 @@ namespace Kruty1918.Moyva.Editor
                         ("Prefab",              "Prefab"),
                         ("AnimationSettings",   "Animation Settings"),
                     });
-                    _unitSO.ApplyModifiedProperties();
                 }
 
                 EditorGUILayout.EndVertical();
-                { int ci = i; string cid = typeId; HandleRowContextClick(
-                    new Rect(unitRowRect.x, unitRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - unitRowRect.y),
+                                {
+                                        int ci = i;
+                                        string cid = typeId;
+                                        Rect rowHitRect = new Rect(unitRowRect.x, unitRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - unitRowRect.y);
+                                        HandleRowSelectionMouseUp(rowHitRect, Tab.Units, cid, unitSelectionScope);
+                                        HandleRowContextClick(
+                                        rowHitRect,
                     () => ShowMoveMenu(cid, Tab.Units, ci));
                   HandleRowDragStart(
-                    new Rect(unitRowRect.x, unitRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - unitRowRect.y),
+                                        rowHitRect,
                     cid, Tab.Units, ci); }
-            }
+                    }
 
-            HandleRemove(configs, removeIdx, "TypeId", _unitSO);
-            DrawDeleteAllButton(configs, "TypeId", _unitSO, "юнітів");
+                    if (EditorGUI.EndChangeCheck())
+                        _unitSO.ApplyModifiedProperties();
+                    HandleRemove(configs, removeIdx, "TypeId", _unitSO);
+                    DrawDeleteAllButton(configs, "TypeId", _unitSO, "юнітів");
+                    }
             RegistryEditorStyles.DrawSeparator();
 
             _unitCreateOpen = EditorGUILayout.Foldout(_unitCreateOpen, "\u2795 Створити нового юніта", true, EditorStyles.foldoutHeader);
@@ -724,12 +871,19 @@ namespace Kruty1918.Moyva.Editor
         {
             RegistryEditorStyles.DrawColoredHeader("  Building Registry — будівлі", RegistryEditorStyles.Accent);
 
+            EditorGUI.BeginChangeCheck();
             _bldReg = (BuildingRegistrySO)EditorGUILayout.ObjectField("Registry Asset", _bldReg, typeof(BuildingRegistrySO), false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SaveRegistryPreference(PrefKeyBuildingRegistryGuid, _bldReg);
+                RefreshSOs();
+            }
             if (_bldReg && _bldSO?.targetObject != _bldReg) RefreshSOs();
             if (!_bldReg) { EditorGUILayout.HelpBox("Оберіть BuildingRegistrySO або натисніть \u27f3.", MessageType.Warning); return; }
 
             DrawAssetPath(_bldReg);
             RegistryEditorStyles.DrawSeparator();
+            DrawRegistryMultiSelectionToolbar();
 
             var blds = _bldSO.FindProperty("Buildings");
             int count = blds?.arraySize ?? 0;
@@ -743,15 +897,31 @@ namespace Kruty1918.Moyva.Editor
 
             if (count == 0)
                 EditorGUILayout.LabelField("Записів немає.", RegistryEditorStyles.CenteredMini);
+            _bldListOpen = EditorGUILayout.Foldout(_bldListOpen, "Список будівель", true, EditorStyles.foldoutHeader);
 
-            int removeIdx = -1;
-            for (int i = 0; i < count; i++)
+            if (_bldListOpen)
             {
+                DrawPaginationToolbar(count, ref _bldPage, "будівель", out int start, out int endExclusive);
+                var bldSelectionScope = new List<string>();
+                for (int i = start; i < endExclusive; i++)
+                {
+                    var scopeEl = blds.GetArrayElementAtIndex(i);
+                    string scopeId = scopeEl.FindPropertyRelative("Id")?.stringValue;
+                    string scopeName = scopeEl.FindPropertyRelative("DisplayName")?.stringValue ?? string.Empty;
+                    if (!string.IsNullOrWhiteSpace(scopeId) && (MatchesFilter(scopeId) || MatchesFilter(scopeName)))
+                        bldSelectionScope.Add(scopeId);
+                }
+
+                int removeIdx = -1;
+                EditorGUI.BeginChangeCheck();
+                for (int i = start; i < endExclusive; i++)
+                {
                 var el = blds.GetArrayElementAtIndex(i);
                 string id          = el.FindPropertyRelative("Id")?.stringValue ?? "?";
                 string displayName = el.FindPropertyRelative("DisplayName")?.stringValue ?? "";
                 int    category    = el.FindPropertyRelative("Category")?.enumValueIndex ?? 0;
-                var    prefab      = el.FindPropertyRelative("Prefab")?.objectReferenceValue;
+                var    prefabProp  = el.FindPropertyRelative("Prefab");
+                var    prefab      = prefabProp?.objectReferenceValue;
                 BuildingDefinition runtimeDefinition = null;
                 if (_bldReg != null && _bldReg.Buildings != null && i < _bldReg.Buildings.Length)
                     runtimeDefinition = _bldReg.Buildings[i];
@@ -766,7 +936,9 @@ namespace Kruty1918.Moyva.Editor
                 bool isOpen = _expandedBld == i;
                 if (GUILayout.Button(isOpen ? "\u25BC" : "\u25B6", EditorStyles.miniLabel, GUILayout.Width(16)))
                     _expandedBld = isOpen ? -1 : i;
-                DrawIdLabel(id, 100);
+                DrawSelectionMarker(Tab.Buildings, id);
+                DrawPrefabMiniIcon(prefab);
+                DrawIdLabel(id, 90);
 
                 if (!string.IsNullOrEmpty(displayName))
                     EditorGUILayout.LabelField($"\"{displayName}\"", EditorStyles.miniLabel, GUILayout.Width(120));
@@ -805,9 +977,13 @@ namespace Kruty1918.Moyva.Editor
                 int buildCostCount = runtimeDefinition?.ConstructionCost?.Count ?? 0;
                 if (buildCostCount > 0)
                     RegistryEditorStyles.DrawBadge($"💰{buildCostCount}", new Color(0.80f, 0.65f, 0.20f));
-                EditorGUILayout.LabelField(prefab ? $"\u2713" : "\u2717", EditorStyles.miniLabel, GUILayout.Width(16));
+                var newPrefab = (GameObject)EditorGUILayout.ObjectField(prefab, typeof(GameObject), false, GUILayout.Width(120));
+                if (prefabProp != null && newPrefab != prefab)
+                    prefabProp.objectReferenceValue = newPrefab;
                 if (DrawDeleteBtn()) removeIdx = i;
                 EditorGUILayout.EndHorizontal();
+
+                prefab = prefabProp?.objectReferenceValue;
 
                 // FATAL: prefab відсутній
                 if (!prefab)
@@ -816,20 +992,27 @@ namespace Kruty1918.Moyva.Editor
                 if (isOpen)
                 {
                     DrawBuildingInlineEditBox(el, i);
-                    _bldSO.ApplyModifiedProperties();
                 }
 
                 EditorGUILayout.EndVertical();
-                { int ci = i; string cid = id; HandleRowContextClick(
-                    new Rect(bldRowRect.x, bldRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - bldRowRect.y),
+                                {
+                                        int ci = i;
+                                        string cid = id;
+                                        Rect rowHitRect = new Rect(bldRowRect.x, bldRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - bldRowRect.y);
+                                        HandleRowSelectionMouseUp(rowHitRect, Tab.Buildings, cid, bldSelectionScope);
+                                        HandleRowContextClick(
+                                        rowHitRect,
                     () => ShowMoveMenu(cid, Tab.Buildings, ci));
                   HandleRowDragStart(
-                    new Rect(bldRowRect.x, bldRowRect.y, position.width, GUILayoutUtility.GetLastRect().yMax - bldRowRect.y),
+                                        rowHitRect,
                     cid, Tab.Buildings, ci); }
-            }
+                    }
 
-            HandleRemove(blds, removeIdx, "Id", _bldSO);
-            DrawDeleteAllButton(blds, "Id", _bldSO, "будівель");
+                    if (EditorGUI.EndChangeCheck())
+                        _bldSO.ApplyModifiedProperties();
+                    HandleRemove(blds, removeIdx, "Id", _bldSO);
+                    DrawDeleteAllButton(blds, "Id", _bldSO, "будівель");
+                    }
             RegistryEditorStyles.DrawSeparator();
 
             _bldCreateOpen = EditorGUILayout.Foldout(_bldCreateOpen, "\u2795 Створити нову будівлю", true, EditorStyles.foldoutHeader);
@@ -1016,6 +1199,16 @@ namespace Kruty1918.Moyva.Editor
             int count = collections?.arraySize ?? 0;
             EditorGUILayout.LabelField($"Колекції стін ({count})", RegistryEditorStyles.SubHeader);
 
+            var wallSelectionScope = new List<string>();
+            for (int i = 0; i < count; i++)
+            {
+                var scopeEl = collections.GetArrayElementAtIndex(i);
+                string scopeCollectionId = scopeEl.FindPropertyRelative("CollectionId")?.stringValue;
+                string scopeWallId = scopeEl.FindPropertyRelative("WallBuildingId")?.stringValue ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(scopeCollectionId) && (MatchesFilter(scopeCollectionId) || MatchesFilter(scopeWallId)))
+                    wallSelectionScope.Add(scopeCollectionId);
+            }
+
             if (count == 0)
                 EditorGUILayout.LabelField("Колекцій стін немає. Додайте першу нижче.", RegistryEditorStyles.CenteredMini);
 
@@ -1036,6 +1229,7 @@ namespace Kruty1918.Moyva.Editor
                 bool isOpen = _expandedWall == i;
                 if (GUILayout.Button(isOpen ? "\u25BC" : "\u25B6", EditorStyles.miniLabel, GUILayout.Width(16)))
                     _expandedWall = isOpen ? -1 : i;
+                DrawSelectionMarker(Tab.Walls, collId);
                 DrawIdLabel(collId, 150);
                 EditorGUILayout.LabelField($"wall:{wallId} gate:{gateId}", EditorStyles.miniLabel);
 
@@ -1085,6 +1279,9 @@ namespace Kruty1918.Moyva.Editor
                 }
 
                 EditorGUILayout.EndVertical();
+
+                Rect wallRowRect = GUILayoutUtility.GetLastRect();
+                HandleRowSelectionMouseUp(wallRowRect, Tab.Walls, collId, wallSelectionScope);
             }
 
             if (removeIdx >= 0 && collections != null)
@@ -1477,6 +1674,470 @@ namespace Kruty1918.Moyva.Editor
         //  СПІЛЬНІ ХЕЛПЕРИ
         // ══════════════════════════════════════════════════════
 
+        private void DrawRegistryMultiSelectionToolbar()
+        {
+            if (!IsMultiSelectionTab(_tab))
+                return;
+
+            var selected = GetSelection(_tab);
+            int selectedCount = selected.Count;
+            if (selectedCount == 0)
+                return;
+
+            if (!TryGetRegistryArrayForTab(_tab, out var so, out var arr, out var idProp))
+                return;
+
+            EditorGUILayout.BeginVertical(RegistryEditorStyles.SectionBox);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField($"Мультивибір: {selectedCount}", RegistryEditorStyles.SubHeader, GUILayout.Width(130f));
+            if (GUILayout.Button("Скасувати вибір", EditorStyles.miniButton, GUILayout.Width(120f)))
+            {
+                selected.Clear();
+                return;
+            }
+            if (GUILayout.Button("Копія", EditorStyles.miniButton, GUILayout.Width(70f)))
+                DuplicateSelected(_tab, so, arr, idProp);
+            Color prevColor = GUI.color;
+            GUI.color = RegistryEditorStyles.ErrorCol;
+            if (GUILayout.Button("Видалити", EditorStyles.miniButton, GUILayout.Width(80f)))
+                DeleteSelected(_tab, so, arr, idProp);
+            GUI.color = prevColor;
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            _bulkRenamePrefix = EditorGUILayout.TextField("Префікс", _bulkRenamePrefix, GUILayout.Width(220f));
+            _bulkRenameStart = EditorGUILayout.IntField("Start", _bulkRenameStart, GUILayout.Width(130f));
+            _bulkRenameStart = Mathf.Max(0, _bulkRenameStart);
+            if (GUILayout.Button("Перейменувати", EditorStyles.miniButton, GUILayout.Width(110f)))
+                RenameSelectedWithPrefix(_tab, so, arr, idProp, _bulkRenamePrefix, _bulkRenameStart);
+            if (GUILayout.Button("Виправити ID", EditorStyles.miniButton, GUILayout.Width(100f)))
+                FixSelectedIds(_tab, so, arr, idProp);
+            if (GUILayout.Button("Перенумерувати", EditorStyles.miniButton, GUILayout.Width(110f)))
+                RenumberSelected(_tab, so, arr, idProp, _bulkRenameStart);
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(4f);
+        }
+
+        private bool IsMultiSelectionTab(Tab tab)
+        {
+            return tab == Tab.Tiles || tab == Tab.MapObjects || tab == Tab.Units || tab == Tab.Buildings || tab == Tab.Walls;
+        }
+
+        private HashSet<string> GetSelection(Tab tab)
+        {
+            if (!_selectedIdsByTab.TryGetValue(tab, out var set))
+            {
+                set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                _selectedIdsByTab[tab] = set;
+            }
+
+            return set;
+        }
+
+        private bool IsSelected(Tab tab, string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return false;
+            return GetSelection(tab).Contains(id);
+        }
+
+        private void DrawSelectionMarker(Tab tab, string id)
+        {
+            if (IsSelected(tab, id))
+            {
+                Color prev = GUI.color;
+                GUI.color = RegistryEditorStyles.SuccessCol;
+                GUILayout.Label("●", GUILayout.Width(12f));
+                GUI.color = prev;
+            }
+            else
+            {
+                GUILayout.Space(12f);
+            }
+        }
+
+        private static int FindIndexIgnoreCase(IReadOnlyList<string> list, string value)
+        {
+            if (list == null || list.Count == 0 || string.IsNullOrWhiteSpace(value))
+                return -1;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (string.Equals(list[i], value, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private void HandleRowSelectionMouseUp(Rect rowRect, Tab tab, string id, IReadOnlyList<string> orderedIds)
+        {
+            if (string.IsNullOrWhiteSpace(id) || orderedIds == null || orderedIds.Count == 0)
+                return;
+
+            var evt = Event.current;
+            if (evt.type != EventType.MouseUp || evt.button != 0)
+                return;
+            if (!rowRect.Contains(evt.mousePosition))
+                return;
+
+            bool isToggle = evt.control || evt.command;
+            bool isRange = evt.shift;
+            var selected = GetSelection(tab);
+
+            if (isRange)
+            {
+                if (!_selectionAnchorByTab.TryGetValue(tab, out string anchorId) || string.IsNullOrWhiteSpace(anchorId))
+                    anchorId = id;
+
+                int anchorIndex = FindIndexIgnoreCase(orderedIds, anchorId);
+                int currentIndex = FindIndexIgnoreCase(orderedIds, id);
+
+                if (anchorIndex < 0 || currentIndex < 0)
+                {
+                    selected.Clear();
+                    selected.Add(id);
+                }
+                else
+                {
+                    int min = Mathf.Min(anchorIndex, currentIndex);
+                    int max = Mathf.Max(anchorIndex, currentIndex);
+
+                    if (!isToggle)
+                        selected.Clear();
+
+                    for (int i = min; i <= max; i++)
+                        selected.Add(orderedIds[i]);
+                }
+            }
+            else if (isToggle)
+            {
+                if (!selected.Add(id))
+                    selected.Remove(id);
+                _selectionAnchorByTab[tab] = id;
+            }
+            else
+            {
+                selected.Clear();
+                selected.Add(id);
+                _selectionAnchorByTab[tab] = id;
+            }
+
+            Repaint();
+            evt.Use();
+        }
+
+        private bool TryGetRegistryArrayForTab(Tab tab, out SerializedObject so, out SerializedProperty arr, out string idProp)
+        {
+            so = null;
+            arr = null;
+            idProp = null;
+
+            switch (tab)
+            {
+                case Tab.Tiles:
+                    so = _tileSO;
+                    arr = _tileSO?.FindProperty("_definitions");
+                    idProp = "_id";
+                    return so != null && arr != null;
+                case Tab.MapObjects:
+                    so = _objSO;
+                    arr = _objSO?.FindProperty("_definitions");
+                    idProp = "_id";
+                    return so != null && arr != null;
+                case Tab.Units:
+                    so = _unitSO;
+                    arr = _unitSO?.FindProperty("Configs");
+                    idProp = "TypeId";
+                    return so != null && arr != null;
+                case Tab.Buildings:
+                    so = _bldSO;
+                    arr = _bldSO?.FindProperty("Buildings");
+                    idProp = "Id";
+                    return so != null && arr != null;
+                case Tab.Walls:
+                    so = _bldSO;
+                    arr = _bldSO?.FindProperty("WallCollections");
+                    idProp = "CollectionId";
+                    return so != null && arr != null;
+                default:
+                    return false;
+            }
+        }
+
+        private void DeleteSelected(Tab tab, SerializedObject so, SerializedProperty arr, string idProp)
+        {
+            var selected = GetSelection(tab);
+            if (selected.Count == 0)
+                return;
+
+            if (!EditorUtility.DisplayDialog("Видалити вибрані",
+                    $"Видалити {selected.Count} записів з {TabLabels[(int)tab].Trim()}?", "Так", "Ні"))
+                return;
+
+            int removed = 0;
+            for (int i = arr.arraySize - 1; i >= 0; i--)
+            {
+                string id = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp)?.stringValue;
+                if (!string.IsNullOrWhiteSpace(id) && selected.Contains(id))
+                {
+                    arr.DeleteArrayElementAtIndex(i);
+                    removed++;
+                }
+            }
+
+            so.ApplyModifiedProperties();
+            selected.Clear();
+            SaveAndNotify($"Видалено {removed} записів");
+        }
+
+        private void DuplicateSelected(Tab tab, SerializedObject so, SerializedProperty arr, string idProp)
+        {
+            var selectedIds = GetSelection(tab).ToList();
+            if (selectedIds.Count == 0)
+                return;
+
+            int copied = 0;
+            var newIds = new List<string>();
+
+            foreach (var id in selectedIds)
+            {
+                int sourceIndex = FindIndexById(arr, idProp, id);
+                if (sourceIndex < 0)
+                    continue;
+
+                arr.InsertArrayElementAtIndex(sourceIndex);
+                var newElement = arr.GetArrayElementAtIndex(sourceIndex);
+                string copyId = MakeUniqueId(arr, idProp, NormalizeId($"{id}-copy", "item"), sourceIndex);
+                newElement.FindPropertyRelative(idProp).stringValue = copyId;
+                newIds.Add(copyId);
+                copied++;
+            }
+
+            so.ApplyModifiedProperties();
+            var selection = GetSelection(tab);
+            selection.Clear();
+            foreach (var id in newIds)
+                selection.Add(id);
+            SaveAndNotify($"Створено копій: {copied}");
+        }
+
+        private void RenameSelectedWithPrefix(Tab tab, SerializedObject so, SerializedProperty arr, string idProp, string prefix, int start)
+        {
+            var selected = GetSelection(tab);
+            if (selected.Count == 0)
+                return;
+
+            string safePrefix = NormalizeId(prefix, "item");
+            int counter = Mathf.Max(0, start);
+            var remap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var reserved = CollectNonSelectedIds(arr, idProp, selected);
+
+            for (int i = 0; i < arr.arraySize; i++)
+            {
+                var idPropRef = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp);
+                if (idPropRef == null)
+                    continue;
+
+                string oldId = idPropRef.stringValue;
+                if (string.IsNullOrWhiteSpace(oldId) || !selected.Contains(oldId))
+                    continue;
+
+                string candidate = $"{safePrefix}-{counter}";
+                counter++;
+                string unique = MakeUniqueFromSet(candidate, reserved);
+                reserved.Add(unique);
+                idPropRef.stringValue = unique;
+                remap[oldId] = unique;
+            }
+
+            so.ApplyModifiedProperties();
+            RemapSelection(tab, remap);
+            SaveAndNotify($"Перейменовано: {remap.Count}");
+        }
+
+        private void FixSelectedIds(Tab tab, SerializedObject so, SerializedProperty arr, string idProp)
+        {
+            var selected = GetSelection(tab);
+            if (selected.Count == 0)
+                return;
+
+            var remap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var reserved = CollectNonSelectedIds(arr, idProp, selected);
+
+            for (int i = 0; i < arr.arraySize; i++)
+            {
+                var idPropRef = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp);
+                if (idPropRef == null)
+                    continue;
+
+                string oldId = idPropRef.stringValue;
+                if (string.IsNullOrWhiteSpace(oldId) || !selected.Contains(oldId))
+                    continue;
+
+                string normalized = NormalizeId(oldId, "item");
+                string unique = MakeUniqueFromSet(normalized, reserved);
+                reserved.Add(unique);
+                idPropRef.stringValue = unique;
+                remap[oldId] = unique;
+            }
+
+            so.ApplyModifiedProperties();
+            RemapSelection(tab, remap);
+            SaveAndNotify($"Виправлено ID: {remap.Count}");
+        }
+
+        private void RenumberSelected(Tab tab, SerializedObject so, SerializedProperty arr, string idProp, int start)
+        {
+            var selected = GetSelection(tab);
+            if (selected.Count == 0)
+                return;
+
+            int counter = Mathf.Max(0, start);
+            var remap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var reserved = CollectNonSelectedIds(arr, idProp, selected);
+
+            for (int i = 0; i < arr.arraySize; i++)
+            {
+                var idPropRef = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp);
+                if (idPropRef == null)
+                    continue;
+
+                string oldId = idPropRef.stringValue;
+                if (string.IsNullOrWhiteSpace(oldId) || !selected.Contains(oldId))
+                    continue;
+
+                string baseName = StripTrailingNumericSuffix(NormalizeId(oldId, "item"));
+                if (string.IsNullOrWhiteSpace(baseName))
+                    baseName = "item";
+
+                string unique = MakeUniqueFromSet($"{baseName}-{counter}", reserved);
+                counter++;
+                reserved.Add(unique);
+                idPropRef.stringValue = unique;
+                remap[oldId] = unique;
+            }
+
+            so.ApplyModifiedProperties();
+            RemapSelection(tab, remap);
+            SaveAndNotify($"Перенумеровано: {remap.Count}");
+        }
+
+        private static HashSet<string> CollectNonSelectedIds(SerializedProperty arr, string idProp, HashSet<string> selected)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < arr.arraySize; i++)
+            {
+                string id = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp)?.stringValue;
+                if (string.IsNullOrWhiteSpace(id))
+                    continue;
+                if (!selected.Contains(id))
+                    set.Add(id);
+            }
+
+            return set;
+        }
+
+        private void RemapSelection(Tab tab, IReadOnlyDictionary<string, string> remap)
+        {
+            var selection = GetSelection(tab);
+            var updated = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var id in selection)
+            {
+                if (remap.TryGetValue(id, out string newId) && !string.IsNullOrWhiteSpace(newId))
+                    updated.Add(newId);
+                else
+                    updated.Add(id);
+            }
+
+            selection.Clear();
+            foreach (var id in updated)
+                selection.Add(id);
+        }
+
+        private static int FindIndexById(SerializedProperty arr, string idProp, string id)
+        {
+            if (arr == null || string.IsNullOrWhiteSpace(id))
+                return -1;
+
+            for (int i = 0; i < arr.arraySize; i++)
+            {
+                string candidate = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp)?.stringValue;
+                if (string.Equals(candidate, id, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+
+            return -1;
+        }
+
+        private static string NormalizeId(string value, string fallback)
+        {
+            string normalized = (value ?? string.Empty).Trim();
+            normalized = normalized.Replace('_', '-');
+            normalized = Regex.Replace(normalized, @"\s+", "-");
+            normalized = Regex.Replace(normalized, @"[^a-zA-Z0-9\-]", "-");
+            normalized = Regex.Replace(normalized, @"\-+", "-").Trim('-');
+
+            if (string.IsNullOrWhiteSpace(normalized))
+                return fallback;
+
+            return normalized;
+        }
+
+        private static string StripTrailingNumericSuffix(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return value;
+
+            return Regex.Replace(value, @"-\d+$", string.Empty);
+        }
+
+        private static string MakeUniqueFromSet(string candidate, HashSet<string> reserved)
+        {
+            string baseId = NormalizeId(candidate, "item");
+            string result = baseId;
+            int suffix = 1;
+            while (reserved.Contains(result))
+            {
+                result = $"{baseId}-{suffix}";
+                suffix++;
+            }
+
+            return result;
+        }
+
+        private static string MakeUniqueId(SerializedProperty arr, string idProp, string candidate, int selfIndex)
+        {
+            string baseId = NormalizeId(candidate, "item");
+            string result = baseId;
+            int suffix = 1;
+
+            while (ContainsIdExcept(arr, idProp, result, selfIndex))
+            {
+                result = $"{baseId}-{suffix}";
+                suffix++;
+            }
+
+            return result;
+        }
+
+        private static bool ContainsIdExcept(SerializedProperty arr, string idProp, string candidate, int exceptIndex)
+        {
+            for (int i = 0; i < arr.arraySize; i++)
+            {
+                if (i == exceptIndex)
+                    continue;
+
+                string existing = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp)?.stringValue;
+                if (string.Equals(existing, candidate, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
         private static void DrawDeleteAllButton(SerializedProperty arr, string idProp, SerializedObject so, string itemsLabel)
         {
             if (arr == null) return;
@@ -1518,6 +2179,84 @@ namespace Kruty1918.Moyva.Editor
             if (err != null) GUI.color = RegistryEditorStyles.ErrorCol;
             EditorGUILayout.LabelField(err != null ? $"\u26a0 {id}" : id, RegistryEditorStyles.EntryTitle, GUILayout.Width(width));
             GUI.color = prev;
+        }
+
+        private void DrawPaginationToolbar(int totalCount, ref int page, string noun, out int start, out int endExclusive)
+        {
+            int pageSize = Mathf.Max(20, _listPageSize);
+            int totalPages = Mathf.Max(1, Mathf.CeilToInt(totalCount / (float)pageSize));
+            page = Mathf.Clamp(page, 0, totalPages - 1);
+            int previewStart = page * pageSize;
+            int previewEndExclusive = Mathf.Min(totalCount, previewStart + pageSize);
+
+            EditorGUILayout.BeginHorizontal();
+            _listPageSize = EditorGUILayout.IntField("Page", _listPageSize, GUILayout.Width(110));
+            _listPageSize = Mathf.Clamp(_listPageSize, 20, 500);
+            using (new EditorGUI.DisabledScope(page <= 0))
+            {
+                if (GUILayout.Button("◀", EditorStyles.miniButton, GUILayout.Width(26))) page--;
+            }
+            EditorGUILayout.LabelField($"{(totalCount == 0 ? 0 : previewStart + 1)}-{previewEndExclusive} / {totalCount} {noun}", EditorStyles.miniLabel, GUILayout.Width(170));
+            using (new EditorGUI.DisabledScope(page >= totalPages - 1))
+            {
+                if (GUILayout.Button("▶", EditorStyles.miniButton, GUILayout.Width(26))) page++;
+            }
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+
+            pageSize = Mathf.Max(20, _listPageSize);
+            totalPages = Mathf.Max(1, Mathf.CeilToInt(totalCount / (float)pageSize));
+            page = Mathf.Clamp(page, 0, totalPages - 1);
+            start = page * pageSize;
+            endExclusive = Mathf.Min(totalCount, start + pageSize);
+        }
+
+        private static void DrawPrefabMiniIcon(UnityEngine.Object prefabOrAsset)
+        {
+            Rect iconRect = GUILayoutUtility.GetRect(18f, 18f, GUILayout.Width(20f));
+            Sprite sprite = ExtractPreviewSprite(prefabOrAsset as GameObject);
+            if (sprite != null && sprite.texture != null)
+            {
+                DrawSpritePreviewIcon(iconRect, sprite);
+                return;
+            }
+
+            var fallback = prefabOrAsset != null
+                ? EditorGUIUtility.ObjectContent(prefabOrAsset, prefabOrAsset.GetType()).image
+                : EditorGUIUtility.FindTexture("Prefab Icon");
+
+            if (fallback != null)
+                GUI.DrawTexture(iconRect, fallback, ScaleMode.ScaleToFit, true);
+        }
+
+        private static Sprite ExtractPreviewSprite(GameObject prefab)
+        {
+            if (prefab == null)
+                return null;
+
+            int id = prefab.GetInstanceID();
+            if (_prefabSpriteCache.TryGetValue(id, out var cachedSprite))
+                return cachedSprite;
+            if (_prefabNoSpriteCache.Contains(id))
+                return null;
+
+            var sr = prefab.GetComponentInChildren<SpriteRenderer>(true);
+            if (sr != null && sr.sprite != null)
+            {
+                _prefabSpriteCache[id] = sr.sprite;
+                return sr.sprite;
+            }
+
+            _prefabNoSpriteCache.Add(id);
+            return null;
+        }
+
+        private static void DrawSpritePreviewIcon(Rect rect, Sprite sprite)
+        {
+            Texture2D tex = sprite.texture;
+            Rect tr = sprite.textureRect;
+            Rect uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
+            GUI.DrawTextureWithTexCoords(rect, tex, uv);
         }
 
         private static bool DrawDeleteBtn()
@@ -1743,6 +2482,60 @@ namespace Kruty1918.Moyva.Editor
             string[] guids = AssetDatabase.FindAssets($"t:{typeof(T).Name}");
             if (guids.Length == 0) return null;
             return AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guids[0]));
+        }
+
+        private void SaveRegistrySelections()
+        {
+            SaveRegistryPreference(PrefKeyTileRegistryGuid, _tileReg);
+            SaveRegistryPreference(PrefKeyObjectRegistryGuid, _objReg);
+            SaveRegistryPreference(PrefKeyUnitRegistryGuid, _unitReg);
+            SaveRegistryPreference(PrefKeyBuildingRegistryGuid, _bldReg);
+        }
+
+        private void LoadRegistrySelections()
+        {
+            _tileReg = LoadRegistryPreference<TileRegistrySO>(PrefKeyTileRegistryGuid);
+            _objReg = LoadRegistryPreference<MapObjectRegistrySO>(PrefKeyObjectRegistryGuid);
+            _unitReg = LoadRegistryPreference<UnitRegistrySO>(PrefKeyUnitRegistryGuid);
+            _bldReg = LoadRegistryPreference<BuildingRegistrySO>(PrefKeyBuildingRegistryGuid);
+        }
+
+        private static void SaveRegistryPreference(string key, UnityEngine.Object asset)
+        {
+            if (asset == null)
+            {
+                EditorPrefs.DeleteKey(key);
+                return;
+            }
+
+            string path = AssetDatabase.GetAssetPath(asset);
+            if (string.IsNullOrEmpty(path))
+            {
+                EditorPrefs.DeleteKey(key);
+                return;
+            }
+
+            string guid = AssetDatabase.AssetPathToGUID(path);
+            if (string.IsNullOrEmpty(guid))
+            {
+                EditorPrefs.DeleteKey(key);
+                return;
+            }
+
+            EditorPrefs.SetString(key, guid);
+        }
+
+        private static T LoadRegistryPreference<T>(string key) where T : UnityEngine.Object
+        {
+            string guid = EditorPrefs.GetString(key, string.Empty);
+            if (string.IsNullOrEmpty(guid))
+                return null;
+
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            if (string.IsNullOrEmpty(path))
+                return null;
+
+            return AssetDatabase.LoadAssetAtPath<T>(path);
         }
 
         private static void EnsureFolder(string folder)

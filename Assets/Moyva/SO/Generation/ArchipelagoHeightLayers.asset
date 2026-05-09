@@ -14,17 +14,84 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.HeightMapSettings
   HeightLayers:
   - TileID: water-deep-depth-tile-001
+    TileIDChance: 1
+    WeightedVariants: []
+    VariantTileIDs: []
     MinHeight: 0
     MaxHeight: 0.18
   - TileID: water-deep-depth-tile-002
+    TileIDChance: 1
+    WeightedVariants: []
+    VariantTileIDs: []
     MinHeight: 0.18
     MaxHeight: 0.27
-  - TileID: water-deep-depth-tile-003
+  - TileID: water-middle-depth-tile-001
+    TileIDChance: 1
+    WeightedVariants: []
+    VariantTileIDs: []
     MinHeight: 0.27
-    MaxHeight: 0.35
+    MaxHeight: 0.34
   - TileID: sand-tile-003
-    MinHeight: 0.35
+    TileIDChance: 1
+    WeightedVariants: []
+    VariantTileIDs: []
+    MinHeight: 0.34
     MaxHeight: 0.4
   - TileID: grass-tile-001
+    TileIDChance: 0.5
+    WeightedVariants:
+    - TileID: texture-grass-tile-001
+      Chance: 0.06
+    - TileID: texture-grass-tile-002
+      Chance: 0.06
+    - TileID: texture-grass-tile-003
+      Chance: 0.06
+    - TileID: texture-grass-tile-004
+      Chance: 0.07
+    - TileID: texture-grass-tile-005
+      Chance: 0.06999999
+    - TileID: texture-grass-tile-006
+      Chance: 0.07
+    - TileID: texture-grass-tile-007
+      Chance: 0.06
+    - TileID: texture-grass-tile-008
+      Chance: 0.05
+    VariantTileIDs: []
     MinHeight: 0.4
+    MaxHeight: 0.5
+  - TileID: grass-tile-level-1-001
+    TileIDChance: 1
+    WeightedVariants: []
+    VariantTileIDs: []
+    MinHeight: 0.5
+    MaxHeight: 0.6
+  - TileID: grass-tile-level-2-001
+    TileIDChance: 1
+    WeightedVariants: []
+    VariantTileIDs: []
+    MinHeight: 0.6
+    MaxHeight: 0.7
+  - TileID: grass-tile-level-3-001
+    TileIDChance: 1
+    WeightedVariants: []
+    VariantTileIDs: []
+    MinHeight: 0.7
+    MaxHeight: 0.8
+  - TileID: snow-tile-001
+    TileIDChance: 1
+    WeightedVariants: []
+    VariantTileIDs: []
+    MinHeight: 0.8
+    MaxHeight: 0.9
+  - TileID: snow-tile-001
+    TileIDChance: 1
+    WeightedVariants: []
+    VariantTileIDs: []
+    MinHeight: 0.9
+    MaxHeight: 0.95
+  - TileID: snow-tile-001
+    TileIDChance: 1
+    WeightedVariants: []
+    VariantTileIDs: []
+    MinHeight: 0.95
     MaxHeight: 1

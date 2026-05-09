@@ -49,7 +49,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (startPoints.Count == 0 || waterTargets.Count == 0)
                 return;
 
-            Shuffle(startPoints, GlobalSeed.CreateRandom($"RiverFeatureGenerator:{w}:{h}:{_riversCount}"));
+            Shuffle(startPoints, GlobalSeed.CreateRandom());
 
             int generated = 0;
             int attempts = Mathf.Min(startPoints.Count, Mathf.Max(_riversCount * 4, _riversCount));

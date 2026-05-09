@@ -33,10 +33,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [SerializeField, Range(0f, 10f)] private float _straightness = 1f;
         [Tooltip("Кількість випадкового відхилення (меандрування). " +
                  "0 — детермінований шлях; 5 — сильне блукання. " +
-                 "Для відтворюваності вкажіть Зерно.")]
+                 "Для відтворюваності використовується Seed Settings нода графа.")]
         [SerializeField, Range(0f, 5f)] private float _wandering = 1f;
-        [Tooltip("Зерно генератора випадковості. Однакове зерно = однаковий шлях.")]
-        [SerializeField] private int _seed = 0;
         // сонечко я тебе люблю <3
         [Header("Форма русла")]
         [Tooltip("Зовнішній радіус русла у клітинах карти.")]
@@ -84,7 +82,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             int endCol = Mathf.Clamp(Mathf.RoundToInt(_endX * (width - 1)), 0, width - 1);
             int endRow = Mathf.Clamp(Mathf.RoundToInt(_endY * (height - 1)), 0, height - 1);
 
-            var wander = BuildWanderMap(width, height);
+            var wander = BuildWanderMap(width, height, context.Seed);
 
             var path = FindPath(sourceMap, wander, width, height, startCol, startRow, endCol, endRow);
             if (path == null || path.Count < 2)
@@ -98,12 +96,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         // ── Wander map ───────────────────────────────────────────────────────
 
         // Заздалегідь будуємо карту випадкового шуму для відтворюваного меандрування.
-        private float[,] BuildWanderMap(int width, int height)
+        private float[,] BuildWanderMap(int width, int height, int seed)
         {
             var map = new float[width, height];
             if (_wandering <= 0f) return map;
 
-            var rng = new System.Random(_seed);
+            var rng = new System.Random(seed);
             for (int c = 0; c < width; c++)
                 for (int r = 0; r < height; r++)
                     map[c, r] = (float)rng.NextDouble();

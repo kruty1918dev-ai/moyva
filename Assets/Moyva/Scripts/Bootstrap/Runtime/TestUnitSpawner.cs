@@ -19,18 +19,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void Initialize()
         {
-            if (!SavePlayModeOptions.AutoLoadEnabled)
+            if (!GameLaunchContext.IsAutoLoadEnabled())
             {
                 Debug.Log("[Bootstrap] Auto Load вимкнено — стартуємо як нову гру.");
                 return;
             }
 
-            bool hasSavedWorld = _saveService.HasSave(0) &&
-                _saveInspectorService.HasBlock(0, "Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule");
+            int slot = GameLaunchContext.SaveSlot;
+            bool hasSavedWorld = _saveService.HasSave(slot) &&
+                _saveInspectorService.HasBlock(slot, "Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule");
             if (hasSavedWorld)
             {
-                Debug.Log("[Bootstrap] Знайдено збереження зі збереженими даними генератора — запускаємо завантаження слота 0.");
-                _saveService.Load(0);
+                Debug.Log($"[Bootstrap] Знайдено збереження зі збереженими даними генератора — запускаємо завантаження слота {slot}.");
+                _saveService.Load(slot);
             }
             else
             {

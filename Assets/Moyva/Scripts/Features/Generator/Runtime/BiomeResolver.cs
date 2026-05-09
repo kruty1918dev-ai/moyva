@@ -81,7 +81,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             float[,] map = new float[width, height];
             float scale = _settings.MoistureScale;
-            var rng = GlobalSeed.CreateRandom("BiomeResolver:Moisture");
+            var rng = GlobalSeed.CreateRandom();
             float offsetX = (float)rng.NextDouble() * 9999f;
             float offsetY = (float)rng.NextDouble() * 9999f;
 

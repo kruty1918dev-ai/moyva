@@ -46,3 +46,21 @@ MonoBehaviour:
   - _id: forest-dense
     _movementCost: 2
     _visualPrefab: {fileID: 2574010424079311619, guid: d38490c7e15db92efbcd9e52a5042f41, type: 3}
+  - _id: grass-tile-level-1-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2680998980662229933, guid: e82361f05179d965b8476942dedc85d5, type: 3}
+  - _id: grass-tile-level-2-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2680998980662229933, guid: 955f6aa9affbb795eafafed74c565106, type: 3}
+  - _id: grass-tile-level-3-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2680998980662229933, guid: eb0fb5eb46a037b0c8ccceee10fd4f48, type: 3}
+  - _id: grass-tile-level-4-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2680998980662229933, guid: 4ad2fec847d647f36a4f653350e23db7, type: 3}
+  - _id: grass-tile-level-5-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2680998980662229933, guid: f5e8775cfe47b07ffa82e01d86e32dfb, type: 3}
+  - _id: grass-tile-level-6-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2680998980662229933, guid: 47b18e70c8a3ede7db87d467b84050ab, type: 3}

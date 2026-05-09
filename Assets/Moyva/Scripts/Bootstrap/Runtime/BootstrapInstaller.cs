@@ -42,6 +42,9 @@ namespace Kruty1918.Moyva.Bootstrap
 
             // Ініціалізатор запуску: перевіряє наявність сейву і завантажує його.
             // Має ініціалізуватись після усіх сервісів.
+            Container.BindInterfacesTo<DirectGameplayLaunchModeInitializer>().AsSingle().NonLazy();
+            Container.BindExecutionOrder<DirectGameplayLaunchModeInitializer>(90);
+
             Container.BindInterfacesTo<TestUnitSpawner>().AsSingle().NonLazy();
             Container.BindExecutionOrder<TestUnitSpawner>(100);
 
@@ -50,6 +53,20 @@ namespace Kruty1918.Moyva.Bootstrap
             Container.BindInstance(startingPositionSettings).AsSingle();
             Container.BindInterfacesTo<StartingPositionInitializer>().AsSingle().NonLazy();
             Container.BindExecutionOrder<StartingPositionInitializer>(101);
+        }
+    }
+
+    internal sealed class DirectGameplayLaunchModeInitializer : IInitializable
+    {
+        public void Initialize()
+        {
+            if (GameLaunchContext.Mode != GameLaunchMode.Unknown)
+                return;
+
+#if UNITY_EDITOR
+            GameLaunchContext.ConfigureDirectGameplayTest();
+            Debug.Log("[Bootstrap] Direct gameplay start detected -> solo/no-save test mode enabled.");
+#endif
         }
     }
 }

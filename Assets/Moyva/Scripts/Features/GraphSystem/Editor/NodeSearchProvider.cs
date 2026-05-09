@@ -28,6 +28,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 .Where(t => !t.IsAbstract && !t.IsGenericType)
                 .Where(t => !string.Equals(t.Name, "SharedSettingsNode", StringComparison.Ordinal))
                 .Where(t => !string.Equals(t.Name, "RoutePointNode", StringComparison.Ordinal))
+                .Where(t => !GraphStaticNodeUtility.IsStaticGraphNode(t))
                 .Where(t => !IsUnavailableUniqueNode(t));
 
             var categories = new SortedDictionary<string, List<(string title, Type type)>>();

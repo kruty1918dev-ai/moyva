@@ -21,9 +21,12 @@ namespace Kruty1918.Moyva.GraphSystem.API
         }
 
         internal GraphExecutionResult(string errorNodeId, string errorMessage,
-            List<NodeExecutionLog> logs)
+            List<NodeExecutionLog> logs,
+            Dictionary<string, object[]> partialNodeOutputs = null)
         {
-            _nodeOutputs = new Dictionary<string, object[]>();
+            _nodeOutputs = partialNodeOutputs != null
+                ? new Dictionary<string, object[]>(partialNodeOutputs)
+                : new Dictionary<string, object[]>();
             _logs = logs;
             Success = false;
             ErrorNodeId = errorNodeId;

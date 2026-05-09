@@ -87,7 +87,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             int[,] waterDist = waterMask != null ? ComputeDistanceField(waterMask, w, h) : null;
 
             var placedPOIs = new List<Vector2Int>();
-            var rng = context.CreateRandom($"{NodeId}:POIPlacement");
+            var rng = context.CreateRandom();
             int poiId = 1;
 
             if (_rules == null) return NodeOutput.Success(buildingMap, poiMap);

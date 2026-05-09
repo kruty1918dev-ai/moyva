@@ -16,5 +16,4 @@ MonoBehaviour:
   Octaves: 4
   Persistance: 0.5
   Lacunarity: 2
-  Seed: 42
   Offset: {x: 0, y: 0}

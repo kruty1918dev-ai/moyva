@@ -165,7 +165,6 @@ MonoBehaviour:
   _lacunarity: 2.1
   _persistence: 0.48
   _offset: {x: 0, y: 0}
-  _seedOffset: 1918
 --- !u!114 &-3743344069470685114
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -270,14 +269,10 @@ MonoBehaviour:
   - {fileID: 1479833658002957872}
   - {fileID: 5621360656782093542}
   _connections:
-  - _sourceNodeId: 0e244104-f5c0-46dd-9310-026029a2b3d9
-    _sourcePortIndex: 0
-    _targetNodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
-    _targetPortIndex: 0
   - _sourceNodeId: e85324de-9519-4605-9c2d-49e7b25ef12d
     _sourcePortIndex: 0
     _targetNodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
-    _targetPortIndex: 1
+    _targetPortIndex: 0
   - _sourceNodeId: 256a7793-7ac2-4aab-9dbe-1633d6b26785
     _sourcePortIndex: 0
     _targetNodeId: ab061f13-7325-448f-8f2c-f0bbfdd9ca46

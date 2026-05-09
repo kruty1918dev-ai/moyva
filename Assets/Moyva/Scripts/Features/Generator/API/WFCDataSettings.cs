@@ -41,8 +41,15 @@ namespace Kruty1918.Moyva.Generator.API
     [CreateAssetMenu(menuName = "Moyva/Generator/WFCDataSettings", fileName = "WFCDataSettings")]
     public class WFCDataSettings : ScriptableObject
     {
+        [Header("Tile Registry")]
+        [Tooltip("Реєстр тайлів для WFC. Якщо не вказано — редактор шукає перший TileRegistrySO у проєкті.")]
+        public TileRegistrySO TileRegistry;
+
         [Header("Ruleset")]
         public List<WFCTileRule> TileRules;
+        
+        [Tooltip("Віртуальні ID для правил WFC, які не зобов'язані існувати в TileRegistry. Зручно для прапорців на кшталт flag:road, flag:river, marker:poi.")]
+        public string[] VirtualTileIds;
 
         [Header("Polishing Settings")]
         [Tooltip("Скільки ітерацій полірування пройти")]

@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07ae75188c481f84be44c3dce940a61, type: 3}
+  m_Name: CloudsSettings
+  m_EditorClassIdentifier: Kruty1918.Moyva.Clouds::Kruty1918.Moyva.Clouds.API.CloudsSettings
+  Enabled: 1
+  MaxActiveClouds: 10
+  InitialClouds: 3
+  InitialCloudsStartInView: 1
+  SpawnIntervalRange: {x: 1.5, y: 3}
+  CloudSprites:
+  - Sprite: {fileID: 9026702686629719296, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: 5460574913838338161, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: 8935597098142700565, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: -1966770584162202525, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: 4278469685058734327, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: 1295183437819781357, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: 1361124476698527635, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: -2960514239382257479, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: -3484542077086448108, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: -3866478078174537713, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: 835994297939739400, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  - Sprite: {fileID: 9181428109425497092, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Chance: 1
+  SpeedRange: {x: 0.1, y: 0.8}
+  ScaleRange: {x: 1, y: 2}
+  LeftToRightChance: 0.5
+  SpawnHorizontalPadding: 3
+  SpawnVerticalPadding: 1.5
+  DespawnHorizontalPadding: 4
+  FadeDuration: 10
+  MapMaskEnabled: 1
+  ManualMapSize: {x: 32, y: 32}
+  ManualMapCenter: {x: 15.5, y: 15.5}
+  MaskEdgeFadeWidth: 1.5
+  MaskEdgeFadeSteps: 5
+  LifetimeDissolveEnabled: 1
+  LifetimeRange: {x: 2, y: 230}
+  DissolveDuration: 3
+  CloudColor: {r: 1, g: 1, b: 1, a: 1}
+  CloudAlpha: 0.85
+  SortingLayerName: Default
+  SortingOrder: 50
+  ShadowsEnabled: 1
+  CloudHeight: 2
+  ShadowOffset: {x: 0, y: -2}
+  ShadowOffsetPerHeight: {x: 0.08, y: -0.18}
+  ShadowColor: {r: 0, g: 0, b: 0, a: 1}
+  ShadowAlphaMultiplier: 0.35
+  ShadowScaleMultiplier: 1.4
+  ShadowScalePerHeight: 0.04
+  ShadowAlphaHeightFade: 0.08
+  ShadowSortingOrderOffset: -1

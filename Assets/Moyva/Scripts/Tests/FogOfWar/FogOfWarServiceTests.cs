@@ -134,6 +134,48 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.IsTrue(_service.IsExplored(new Vector2Int(5, 5)));
         }
 
+        [Test]
+        public void RegisterUnit_InitialReveal_IsDeterministicPixelCircle()
+        {
+            InitMap();
+            _service.RegisterUnit("u1", new Vector2Int(5, 5), 2);
+
+            int visibleCount = 0;
+            for (int x = 0; x < 10; x++)
+                for (int y = 0; y < 10; y++)
+                    if (_service.IsVisible(new Vector2Int(x, y)))
+                        visibleCount++;
+
+            Assert.AreEqual(21, visibleCount);
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(7, 5)));
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(6, 6)));
+            Assert.IsFalse(_service.IsVisible(new Vector2Int(7, 7)));
+            Assert.IsFalse(_service.IsVisible(new Vector2Int(8, 5)));
+        }
+
+        [Test]
+        public void RegisterUnit_InitialReveal_IgnoresHeightOcclusionHoles()
+        {
+            InitMap();
+            var heightMap = new float[10, 10];
+            heightMap[5, 5] = 0.05f;
+            heightMap[6, 5] = 1f;
+
+            _signalBus.Fire(new WorldGeneratedDataSignal
+            {
+                Width = 10,
+                Height = 10,
+                HeightMap = heightMap,
+                TileMap = null,
+                ObjectMap = null,
+            });
+
+            _service.RegisterUnit("u1", new Vector2Int(5, 5), 1);
+
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(6, 5)));
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(6, 6)));
+        }
+
         // ─── 4. UpdateUnitPosition_RemovesVisibilityFromOldTiles ─────────────
 
         [Test]

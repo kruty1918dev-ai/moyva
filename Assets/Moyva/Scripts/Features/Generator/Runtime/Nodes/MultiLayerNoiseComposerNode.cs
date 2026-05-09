@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [SerializeField, Range(0f, 1f)] private float _ridgedWeight = 0.4f;
         [SerializeField, Range(0f, 1f)] private float _cellularWeight = 0.4f;
         [SerializeField, Range(0f, 1f)] private float _domainWarpWeight = 0.3f;
+        [SerializeField, Min(0f)] private float _domainWarpStrength = 8f;
         [SerializeField, Range(0f, 1f)] private float _blend = 1f;
         [SerializeField] private bool _invert;
         [SerializeField] private bool _clamp = true;
@@ -58,8 +59,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 for (int y = 0; y < h; y++)
                 {
                     float warp = Sample(domainWarp, x, y);
-                    int wx = Mathf.Clamp(x + Mathf.RoundToInt((warp - 0.5f) * 8f * _domainWarpWeight), 0, w - 1);
-                    int wy = Mathf.Clamp(y + Mathf.RoundToInt((warp - 0.5f) * 8f * _domainWarpWeight), 0, h - 1);
+                    int wx = Mathf.Clamp(x + Mathf.RoundToInt((warp - 0.5f) * _domainWarpStrength * _domainWarpWeight), 0, w - 1);
+                    int wy = Mathf.Clamp(y + Mathf.RoundToInt((warp - 0.5f) * _domainWarpStrength * _domainWarpWeight), 0, h - 1);
 
                     float p = Sample(perlin, wx, wy);
                     float s = Sample(simplex, wx, wy);

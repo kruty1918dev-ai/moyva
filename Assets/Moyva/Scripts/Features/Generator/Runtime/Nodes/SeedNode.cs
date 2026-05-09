@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
     [NodeInfo("Seed Settings", "Generators", "Налаштування сіду")]
     [HidePreview]
     [UniqueNode]
+    [StaticGraphNode]
     public sealed class SeedNode : NodeBase, ISeedProvider
     {       
         [SerializeField]
@@ -22,15 +23,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override PortDefinition[] Inputs => Array.Empty<PortDefinition>();
 
-        public override PortDefinition[] Outputs => new[]
-        {
-            PortDefinition.Output<int>("Seed")
-        };
+        public override PortDefinition[] Outputs => Array.Empty<PortDefinition>();
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
             GlobalSeed.Set(seed);
-            return NodeOutput.Success(seed);
+            return NodeOutput.Success();
         }
     }
 }

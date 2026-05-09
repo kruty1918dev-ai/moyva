@@ -186,14 +186,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                         // Пріоритет: Icon (Sprite), потім Prefab → SpriteRenderer
                         var sprite = def.Icon;
+                        Color spriteTint = Color.white;
                         if (sprite == null && def.Prefab != null)
                         {
                             var sr = def.Prefab.GetComponentInChildren<SpriteRenderer>(true);
-                            if (sr != null) sprite = sr.sprite;
+                            if (sr != null)
+                            {
+                                sprite = sr.sprite;
+                                spriteTint = sr.color;
+                            }
                         }
 
                         if (sprite != null)
-                            StampSprite(canvas, texW, texH, x, y, ppt, GetSpritePixels(sprite, HashColor(bldId)));
+                            StampSprite(canvas, texW, texH, x, y, ppt, GetSpritePixels(sprite, HashColor(bldId), spriteTint));
                         else
                             StampDot(canvas, texW, texH, x, y, ppt, new Color(0.9f, 0.6f, 0.2f, 1f));
                     }
@@ -277,12 +282,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
                 if (sr == null || sr.sprite == null) continue;
 
-                cache[def.Id] = GetSpritePixels(sr.sprite, sr.color);
+                cache[def.Id] = GetSpritePixels(sr.sprite, HashColor(def.Id), sr.color);
             }
             return cache;
         }
 
-        private static SpritePixelData GetSpritePixels(Sprite sprite, Color fallbackColor)
+        private static SpritePixelData GetSpritePixels(Sprite sprite, Color fallbackColor, Color tint)
         {
             try
             {
@@ -290,9 +295,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 int x = (int)rect.x, y = (int)rect.y;
                 int w = Mathf.Max(1, (int)rect.width);
                 int h = Mathf.Max(1, (int)rect.height);
+                Color[] pixels = sprite.texture.GetPixels(x, y, w, h);
+                ApplyTint(pixels, tint);
                 return new SpritePixelData
                 {
-                    Pixels = sprite.texture.GetPixels(x, y, w, h),
+                    Pixels = pixels,
                     Width = w,
                     Height = h
                 };
@@ -402,7 +409,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
                 if (sr == null || sr.sprite == null) continue;
 
-                cache[def.Id] = GetSpritePixels(sr.sprite, sr.color);
+                cache[def.Id] = GetSpritePixels(sr.sprite, HashColor(def.Id), sr.color);
             }
 
             return cache;
@@ -421,6 +428,15 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 (src.g * sa + dst.g * da) / oa,
                 (src.b * sa + dst.b * da) / oa,
                 oa);
+        }
+
+        private static void ApplyTint(Color[] pixels, Color tint)
+        {
+            if (pixels == null || pixels.Length == 0)
+                return;
+
+            for (int i = 0; i < pixels.Length; i++)
+                pixels[i] *= tint;
         }
 
         private static Color AverageOpaqueColor(Color[] pixels)

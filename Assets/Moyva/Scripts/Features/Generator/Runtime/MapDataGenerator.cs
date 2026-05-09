@@ -40,9 +40,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         // Інтерфейс тепер має повертати IEnumerator або використовувати Callbacks
         public void GenerateMapData(int width, int height, Action<string[,], string[,], float[,], string[,]> onComplete)
         {
-            GlobalSeed.Set(_noiseSettings != null ? _noiseSettings.Seed : GlobalSeed.DefaultSeed);
+            int generationSeed = GlobalSeed.Current;
             var previousRandomState = UnityEngine.Random.state;
-            UnityEngine.Random.InitState(GlobalSeed.Current);
+            UnityEngine.Random.InitState(generationSeed);
 
             try
             {

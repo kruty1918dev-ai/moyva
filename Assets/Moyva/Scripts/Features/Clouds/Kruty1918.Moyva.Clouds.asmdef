@@ -1,0 +1,17 @@
+{
+    "name": "Kruty1918.Moyva.Clouds",
+    "rootNamespace": "Kruty1918.Moyva.Clouds",
+    "references": [
+        "Kruty1918.Moyva.Grid",
+        "Zenject"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

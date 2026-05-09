@@ -10,11 +10,13 @@ namespace Kruty1918.Moyva.GraphSystem.API
         [SerializeField] private int _sourcePortIndex;
         [SerializeField] private string _targetNodeId;
         [SerializeField] private int _targetPortIndex;
+        [SerializeField] private int _sourceElementIndex;
 
         public string SourceNodeId => _sourceNodeId;
         public int SourcePortIndex => _sourcePortIndex;
         public string TargetNodeId => _targetNodeId;
         public int TargetPortIndex => _targetPortIndex;
+        public int SourceElementIndex => _sourceElementIndex;
 
         public Connection(string sourceNodeId, int sourcePortIndex,
             string targetNodeId, int targetPortIndex)
@@ -23,6 +25,11 @@ namespace Kruty1918.Moyva.GraphSystem.API
             _sourcePortIndex = sourcePortIndex;
             _targetNodeId = targetNodeId;
             _targetPortIndex = targetPortIndex;
+        }
+
+        public void SetSourceElementIndex(int index)
+        {
+            _sourceElementIndex = Mathf.Max(0, index);
         }
     }
 }

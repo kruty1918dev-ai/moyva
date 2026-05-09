@@ -31,7 +31,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var cameFrom = new Dictionary<Vector2Int, Vector2Int>();
             var gScore = new Dictionary<Vector2Int, float> { [start] = 0 };
             var fScore = new Dictionary<Vector2Int, float> { [start] = Heuristic(start, end) };
-            var rng = GlobalSeed.CreateRandom($"RiverPathfinder:{start.x}:{start.y}:{end.x}:{end.y}:{width}:{height}");
+            var rng = GlobalSeed.CreateRandom();
 
             while (openSet.Count > 0)
             {

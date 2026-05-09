@@ -102,6 +102,35 @@ var biomeResolver = context.GetService<IBiomeResolver>();
 context.Cancellation.ThrowIfCancellationRequested();
 ```
 
+### Доступ до статичних даних генератора
+
+Дані, які граф записав через ноду `Static Generator Data`, можна отримати з `IGeneratorDataRegistry` за ключем. Наприклад, якщо `Hill Generator` підключений до `Static Generator Data` з ключем `hill-levels`, runtime-система може прочитати рівень, висоту і тайл конкретної клітинки так:
+
+```csharp
+if (_generatorDataRegistry.TryGetHillLevelData("hill-levels", out var hillData) &&
+    hillData.TryGetTile(x, y, out var tileData))
+{
+    int level = tileData.Level;
+    float height = tileData.Height;
+    string tileId = tileData.TileId;
+}
+```
+
+`HillLevelDataMap` містить записи для всіх клітинок, що пройшли через `Hill Generator`, включно з тими, які нода не змінювала.
+
+Кожен `HillLevelTileData` також містить `DirectionId` — напрямок hill-тайла, який поставив `Hill Generator` (`North`, `CornerSE`, `InnerCornerNW` тощо). Це поле потрібне для нодів на кшталт `Hill Level Tile Override`, які хочуть замінювати саме hill-тайли генератора, а не просто робити blind replace по `TileId`.
+
+### Mask-scoped Hill override
+
+`Hill Generator` підтримує override-профіль (окремі `levels/thresholds` і окремі `HillTileEntry[]`) для зони маски.
+
+Пріоритет джерела маски:
+1. `Mask (optional)` input (`bool[,]`) — якщо підключений і валідного розміру.
+2. `LayerIndexMap (optional)` input (`int[,]`) + список target layer indices у налаштуваннях ноди.
+3. Якщо жодне джерело не доступне — нода працює у базовому режимі без override.
+
+Це дозволяє робити сценарій: `Height To Tile.LayerIndexMap -> Hill Generator.LayerIndexMap`, а далі переключати маскову зону через список індексів без додаткових mask-нодів.
+
 ### NodeInfoAttribute — метадані ноду
 
 ```csharp
@@ -267,8 +296,11 @@ public class Connection
     public int FromPortIndex;   // Індекс output-порту
     public string ToNodeId;     // ID вхідного ноду
     public int ToPortIndex;     // Індекс input-порту
+    public int SourceElementIndex; // Індекс елемента, якщо output-список підключений до scalar input
 }
 ```
+
+Якщо output-порт повертає список або одновимірний масив, а input-порт очікує один елемент цього типу, з'єднання лишається звичайним edge. У редакторі біля input-порту з'явиться поле `idx`: воно визначає, який елемент списку буде переданий у `inputs[]`. За замовчуванням використовується індекс `0`; після виконання графа поруч показується кількість доступних варіантів, якщо її можна визначити.
 
 ### GraphRunner
 

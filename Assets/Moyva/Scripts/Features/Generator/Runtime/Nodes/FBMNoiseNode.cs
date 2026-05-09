@@ -19,7 +19,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [SerializeField, Min(1f)] private float _lacunarity = 2f;
         [SerializeField, Range(0.01f, 1f)] private float _persistence = 0.5f;
         [SerializeField] private Vector2 _offset;
-        [SerializeField] private int _seedOffset = 911;
 
         public override string Title => "FBM Noise";
         public override string Category => "Noise";
@@ -30,7 +29,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         {
             int w = Mathf.Max(1, context.MapSize.x);
             int h = Mathf.Max(1, context.MapSize.y);
-            int seed = GlobalSeed.Combine(context.Seed, _seedOffset);
+            int seed = context.Seed;
             bool simplexBase = _baseNoise == FbmBaseNoise.Simplex;
             var map = new float[w, h];
 
