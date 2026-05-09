@@ -50,6 +50,6 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         /// <summary>
         /// Marks the lobby as locked (no new players). Typically called after game start.
         /// </summary>
-        Task LockAsync(bool locked, CancellationToken ct = default);
+        Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, CancellationToken ct = default);
     }
 }

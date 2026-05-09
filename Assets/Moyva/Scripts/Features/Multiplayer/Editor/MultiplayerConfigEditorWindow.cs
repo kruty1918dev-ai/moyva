@@ -29,6 +29,7 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
         private bool _enableMatchmaking;
         private bool _allowMatchSave;
         private bool _enforceConfigConsistency = true;
+        private float _reconnectLocalTimeToleranceSeconds = 120f;
 
         // ── Relay settings ─────────────────────────────────────────────────────────
         private bool _relayFoldout = true;
@@ -71,6 +72,7 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             DrawNetworkSection();
             DrawProviderSettingsSection();
             DrawSessionRulesSection();
+            DrawReconnectSection();
             DrawFlagsSection();
             DrawValidation();
             DrawButtons();
@@ -175,6 +177,17 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             _enforceConfigConsistency = EditorGUILayout.Toggle("Enforce Config Consistency", _enforceConfigConsistency);
         }
 
+        private void DrawReconnectSection()
+        {
+            EditorGUILayout.Space(8);
+            EditorGUILayout.LabelField("Reconnect", EditorStyles.boldLabel);
+            _reconnectLocalTimeToleranceSeconds = EditorGUILayout.Slider(
+                new GUIContent("Local Time Tolerance (s)", "Allowed difference between host elapsed time and reconnecting player's local elapsed time."),
+                _reconnectLocalTimeToleranceSeconds,
+                0f,
+                600f);
+        }
+
         private void DrawValidation()
         {
             EditorGUILayout.Space(8);
@@ -276,7 +289,8 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
                 _enableMatchmaking,
                 relay,
                 ws,
-                _fallbackProviderType);
+                _fallbackProviderType,
+                _reconnectLocalTimeToleranceSeconds);
 
             string dir = Path.GetDirectoryName(ConfigPath);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -301,6 +315,7 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             _strictParticipantLock = config.StrictParticipantLock;
             _enforceConfigConsistency = config.EnforceConfigConsistency;
             _enableMatchmaking = config.MatchmakingEnabled;
+            _reconnectLocalTimeToleranceSeconds = config.ReconnectLocalTimeToleranceSeconds;
 
             var relay = config.RelaySettings;
             _relayProjectId = relay.ProjectId;

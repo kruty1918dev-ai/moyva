@@ -17,6 +17,12 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.services.relay",
+            "expression": "1.0.0",
+            "define": "MOYVA_UGS_RELAY"
+        }
+    ],
     "noEngineReferences": false
 }

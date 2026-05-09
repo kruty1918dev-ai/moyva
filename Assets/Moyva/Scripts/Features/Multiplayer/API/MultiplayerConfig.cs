@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Multiplayer.Config
     /// </summary>
     public sealed class MultiplayerConfig
     {
-        public const int CurrentSchemaVersion = 2;
+        public const int CurrentSchemaVersion = 3;
 
         public int SchemaVersion { get; }
         public NetworkProviderType ProviderType { get; }
@@ -30,6 +30,7 @@ namespace Kruty1918.Moyva.Multiplayer.Config
         public bool StrictParticipantLock { get; }
         public bool EnforceConfigConsistency { get; }
         public bool MatchmakingEnabled { get; }
+        public float ReconnectLocalTimeToleranceSeconds { get; }
 
         public MultiplayerConfig(
             int schemaVersion,
@@ -40,7 +41,8 @@ namespace Kruty1918.Moyva.Multiplayer.Config
             bool matchmakingEnabled,
             RelayProviderSettings relaySettings = null,
             WebSocketProviderSettings webSocketSettings = null,
-            NetworkProviderType fallbackProviderType = NetworkProviderType.Offline)
+            NetworkProviderType fallbackProviderType = NetworkProviderType.Offline,
+            float reconnectLocalTimeToleranceSeconds = 120f)
         {
             SchemaVersion = schemaVersion;
             ProviderType = providerType;
@@ -51,6 +53,7 @@ namespace Kruty1918.Moyva.Multiplayer.Config
             StrictParticipantLock = strictParticipantLock;
             EnforceConfigConsistency = enforceConfigConsistency;
             MatchmakingEnabled = matchmakingEnabled;
+            ReconnectLocalTimeToleranceSeconds = reconnectLocalTimeToleranceSeconds < 0f ? 0f : reconnectLocalTimeToleranceSeconds;
         }
 
         public static MultiplayerConfig Default() =>
@@ -63,6 +66,7 @@ namespace Kruty1918.Moyva.Multiplayer.Config
                 matchmakingEnabled: false,
                 relaySettings: RelayProviderSettings.Default(),
                 webSocketSettings: WebSocketProviderSettings.Default(),
-                fallbackProviderType: NetworkProviderType.Offline);
+                fallbackProviderType: NetworkProviderType.Offline,
+                reconnectLocalTimeToleranceSeconds: 120f);
     }
 }

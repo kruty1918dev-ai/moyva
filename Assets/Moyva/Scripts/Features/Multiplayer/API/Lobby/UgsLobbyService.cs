@@ -8,6 +8,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Core;
@@ -32,6 +33,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private const string ProviderDataKey = "moyvaProvider";
         private const string ProviderDataValue = "relay";
         private const string PasswordHashDataKey = "moyvaPasswordHash";
+        private const string StateDataKey = "moyvaState";
+        private const string WorldSettingsDataKey = "moyvaWorldSettings";
+        private const string ReconnectRecordsDataKey = "moyvaReconnectRecords";
+        private const string LocalTimeTicksDataKey = "localTimeTicks";
         private const float HeartbeatSeconds = 15f;
         private const float PollSeconds = 5f;
         private const float PollBackoffSeconds = 20f;
@@ -87,6 +92,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         { ProjectDataKey, new DataObject(DataObject.VisibilityOptions.Public, ProjectDataValue, DataObject.IndexOptions.S1) },
                         { ProviderDataKey, new DataObject(DataObject.VisibilityOptions.Public, ProviderDataValue, DataObject.IndexOptions.S2) },
                         { PasswordHashDataKey, new DataObject(DataObject.VisibilityOptions.Public, LobbyPasswordHasher.Hash(options.Password)) },
+                        { StateDataKey, new DataObject(DataObject.VisibilityOptions.Public, LobbyState.Open.ToString()) },
+                        { WorldSettingsDataKey, new DataObject(DataObject.VisibilityOptions.Member, string.Empty) },
+                        { ReconnectRecordsDataKey, new DataObject(DataObject.VisibilityOptions.Member, string.Empty) },
                     }
                 };
 
@@ -330,14 +338,25 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             PublishState(_current.State);
         }
 
-        public async Task LockAsync(bool locked, CancellationToken ct = default)
+        public async Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, CancellationToken ct = default)
         {
             if (_lobby == null || !_isHost) return;
-            var opts = new UpdateLobbyOptions { IsLocked = locked };
+            var state = locked ? LobbyState.Started : LobbyState.Open;
+            var data = new Dictionary<string, DataObject>
+            {
+                { StateDataKey, new DataObject(DataObject.VisibilityOptions.Public, state.ToString()) },
+                { WorldSettingsDataKey, new DataObject(DataObject.VisibilityOptions.Member, locked ? EncodeBytes(startedWorldSettingsBytes) : string.Empty) },
+            };
+
+            var opts = new UpdateLobbyOptions
+            {
+                IsLocked = false,
+                Data = data,
+            };
             _lobby = await LobbyService.Instance.UpdateLobbyAsync(_lobby.Id, opts);
             _current = Project(_lobby);
             LobbyUpdated?.Invoke(_current);
-            PublishState(locked ? LobbyState.Started : LobbyState.Open);
+            PublishState(state);
         }
 
         // ── Internals ────────────────────────────────────────────────────────
@@ -449,6 +468,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 data: new Dictionary<string, PlayerDataObject>
                 {
                     { "name", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, displayName ?? "Player") },
+                    { LocalTimeTicksDataKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, DateTime.Now.Ticks.ToString()) },
                 });
         }
 
@@ -465,6 +485,14 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (l.Data != null && l.Data.TryGetValue(PasswordHashDataKey, out var pwdObj) && pwdObj != null)
                 passwordHash = pwdObj.Value ?? string.Empty;
 
+            byte[] worldSettingsBytes = Array.Empty<byte>();
+            if (l.Data != null && l.Data.TryGetValue(WorldSettingsDataKey, out var worldObj) && worldObj != null)
+                worldSettingsBytes = DecodeBytes(worldObj.Value);
+
+            IReadOnlyList<LobbyReconnectRecord> reconnectRecords = Array.Empty<LobbyReconnectRecord>();
+            if (l.Data != null && l.Data.TryGetValue(ReconnectRecordsDataKey, out var reconnectObj) && reconnectObj != null)
+                reconnectRecords = DecodeReconnectRecords(reconnectObj.Value);
+
             var players = new List<LobbyPlayer>(l.Players?.Count ?? 0);
             if (l.Players != null)
             {
@@ -473,13 +501,30 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     string name = p.Id;
                     if (p.Data != null && p.Data.TryGetValue("name", out var nm) && nm != null)
                         name = nm.Value;
-                    players.Add(new LobbyPlayer(p.Id, name, isHost: p.Id == l.HostId));
+                    long localTicks = 0;
+                    if (p.Data != null && p.Data.TryGetValue(LocalTimeTicksDataKey, out var ticksObj) && ticksObj != null)
+                        long.TryParse(ticksObj.Value, out localTicks);
+                    players.Add(new LobbyPlayer(p.Id, name, isHost: p.Id == l.HostId, localTicks));
                 }
             }
 
-            var state = l.IsLocked ? LobbyState.Started : LobbyState.Open;
+            var state = ResolveLobbyState(l);
             return new LobbyRoom(l.Id, l.LobbyCode, l.Name, l.MaxPlayers, l.IsPrivate,
-                l.HostId, relayCode, players, passwordHash, state);
+                l.HostId, relayCode, players, passwordHash, state, reconnectRecords, worldSettingsBytes);
+        }
+
+        private static LobbyState ResolveLobbyState(Lobby lobby)
+        {
+            if (lobby == null)
+                return LobbyState.Closed;
+
+            if (lobby.Data != null && lobby.Data.TryGetValue(StateDataKey, out var stateObj) && stateObj != null &&
+                Enum.TryParse(stateObj.Value, out LobbyState state))
+            {
+                return state;
+            }
+
+            return lobby.IsLocked ? LobbyState.Started : LobbyState.Open;
         }
 
         private void PublishState(LobbyState state)
@@ -554,11 +599,16 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 try
                 {
+                    await UpdateLocalPlayerTimeAsync();
                     var refreshed = await LobbyService.Instance.GetLobbyAsync(_lobby.Id);
                     if (refreshed != null)
                     {
+                        var previous = _current;
                         _lobby = refreshed;
                         _current = Project(_lobby);
+                        if (_isHost)
+                            await PublishReconnectRecordsForRemovedPlayersAsync(previous, _current, ct);
+
                         LobbyUpdated?.Invoke(_current);
                         PublishState(_current.State);
 
@@ -608,6 +658,123 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 try { await Task.Delay(TimeSpan.FromSeconds(PollSeconds), ct); }
                 catch (OperationCanceledException) { return; }
             }
+        }
+
+        private async Task PublishReconnectRecordsForRemovedPlayersAsync(LobbyRoom previous, LobbyRoom current, CancellationToken ct)
+        {
+            if (previous == null || current == null || current.State != LobbyState.Started || _lobby == null)
+                return;
+
+            var activeIds = new HashSet<string>(StringComparer.Ordinal);
+            var activeNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var player in current.Players)
+            {
+                activeIds.Add(player.PlayerId);
+                activeNames.Add(player.DisplayName ?? string.Empty);
+            }
+
+            var records = new List<LobbyReconnectRecord>();
+            foreach (var record in current.ReconnectRecords)
+            {
+                if (!activeNames.Contains(record.DisplayName ?? string.Empty))
+                    records.Add(record);
+            }
+
+            bool changed = records.Count != current.ReconnectRecords.Count;
+            long hostTicks = DateTime.UtcNow.Ticks;
+            foreach (var player in previous.Players)
+            {
+                if (player.IsHost || activeIds.Contains(player.PlayerId))
+                    continue;
+
+                long playerTicks = player.LocalTimeTicks > 0 ? player.LocalTimeTicks : DateTime.Now.Ticks;
+                records.Add(new LobbyReconnectRecord(player.DisplayName, playerTicks, hostTicks));
+                changed = true;
+            }
+
+            if (!changed)
+                return;
+
+            var update = new UpdateLobbyOptions
+            {
+                Data = new Dictionary<string, DataObject>
+                {
+                    { ReconnectRecordsDataKey, new DataObject(DataObject.VisibilityOptions.Member, EncodeReconnectRecords(records)) },
+                }
+            };
+
+            _lobby = await LobbyService.Instance.UpdateLobbyAsync(_lobby.Id, update).ConfigureAwait(false);
+            _current = Project(_lobby);
+        }
+
+        private async Task UpdateLocalPlayerTimeAsync()
+        {
+            if (_lobby == null || LobbyService.Instance == null || AuthenticationService.Instance == null || string.IsNullOrEmpty(AuthenticationService.Instance.PlayerId))
+                return;
+
+            var update = new UpdatePlayerOptions
+            {
+                Data = new Dictionary<string, PlayerDataObject>
+                {
+                    { LocalTimeTicksDataKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, DateTime.Now.Ticks.ToString()) },
+                }
+            };
+
+            await LobbyService.Instance.UpdatePlayerAsync(_lobby.Id, AuthenticationService.Instance.PlayerId, update).ConfigureAwait(false);
+        }
+
+        private static string EncodeBytes(byte[] bytes)
+        {
+            return bytes == null || bytes.Length == 0 ? string.Empty : Convert.ToBase64String(bytes);
+        }
+
+        private static byte[] DecodeBytes(string encoded)
+        {
+            if (string.IsNullOrWhiteSpace(encoded))
+                return Array.Empty<byte>();
+
+            try { return Convert.FromBase64String(encoded); }
+            catch { return Array.Empty<byte>(); }
+        }
+
+        private static string EncodeReconnectRecords(IReadOnlyList<LobbyReconnectRecord> records)
+        {
+            if (records == null || records.Count == 0)
+                return string.Empty;
+
+            var parts = new List<string>(records.Count);
+            for (int index = 0; index < records.Count; index++)
+            {
+                var record = records[index];
+                string name = Convert.ToBase64String(Encoding.UTF8.GetBytes(record.DisplayName ?? string.Empty));
+                parts.Add($"{name},{record.PlayerLocalTicksAtDisconnect},{record.HostUtcTicksAtDisconnect}");
+            }
+
+            return string.Join(";", parts);
+        }
+
+        private static IReadOnlyList<LobbyReconnectRecord> DecodeReconnectRecords(string encoded)
+        {
+            if (string.IsNullOrWhiteSpace(encoded))
+                return Array.Empty<LobbyReconnectRecord>();
+
+            var records = new List<LobbyReconnectRecord>();
+            var entries = encoded.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int index = 0; index < entries.Length; index++)
+            {
+                var fields = entries[index].Split(',');
+                if (fields.Length != 3 || !long.TryParse(fields[1], out long playerTicks) || !long.TryParse(fields[2], out long hostTicks))
+                    continue;
+
+                try
+                {
+                    string name = Encoding.UTF8.GetString(Convert.FromBase64String(fields[0]));
+                    records.Add(new LobbyReconnectRecord(name, playerTicks, hostTicks));
+                }
+                catch { }
+            }
+
+            return records;
         }
 
         private void CloseLobbyState(string reason)

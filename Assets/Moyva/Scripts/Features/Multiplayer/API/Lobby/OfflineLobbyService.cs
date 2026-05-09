@@ -97,8 +97,18 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             return Task.CompletedTask;
         }
 
-        public Task LockAsync(bool locked, CancellationToken ct = default)
+        public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, CancellationToken ct = default)
         {
+            if (_current != null)
+            {
+                _current = new LobbyRoom(
+                    _current.LobbyId, _current.LobbyCode, _current.Name, _current.MaxPlayers,
+                    _current.IsPrivate, _current.HostPlayerId, _current.RelayJoinCode, _current.Players,
+                    _current.PasswordHash, locked ? LobbyState.Started : LobbyState.Open,
+                    _current.ReconnectRecords, locked ? startedWorldSettingsBytes : null);
+                LobbyUpdated?.Invoke(_current);
+            }
+
             PublishState(locked ? LobbyState.Started : LobbyState.Open);
             return Task.CompletedTask;
         }
