@@ -74,17 +74,23 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void OnLobbyUpdated(LobbyRoom lobby)
         {
             _currentLobby = lobby;
-            if (string.IsNullOrWhiteSpace(_localPlayerId) || !ContainsPlayerId(lobby, _localPlayerId))
-                RequestLocalIdentityResolve();
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                if (string.IsNullOrWhiteSpace(_localPlayerId) || !ContainsPlayerId(lobby, _localPlayerId))
+                    RequestLocalIdentityResolve();
 
-            UpdateView(lobby);
+                UpdateView(lobby);
+            });
         }
 
         private void OnKickedFromLobby(string reason)
         {
-            _currentLobby = null;
-            _viewController?.ClearPlayers();
-            _viewController?.SetStatus("Тебе видалили з лобі.");
+            MainThreadDispatcher.Enqueue(() =>
+            {
+                _currentLobby = null;
+                _viewController?.ClearPlayers();
+                _viewController?.SetStatus("Тебе видалили з лобі.");
+            });
         }
 
         private void OnCloseRequested()
