@@ -21,10 +21,10 @@ MonoBehaviour:
       Amount: 30
   _startingPositionSettings:
     minMarginFromBorder: 3
-    relativeMarginFactor: 0.1667
-    startMinHeight: 0.35
-    startMaxHeight: 1
-    requireHeightMapForStart: 0
+    relativeMarginFactor: 0.0853
+    startMinHeight: 0.36
+    startMaxHeight: 0.7
+    requireHeightMapForStart: 1
     revealedCircleRadius: 15
     revealShape: 0
     minimumExploredTilesBeforeRepair: 4
@@ -42,6 +42,6 @@ MonoBehaviour:
     keepCoreFullyVisible: 1
     coreVisibleRadiusOverride: 1
     multiplayerStartSlots: 4
-    minAStarDistanceBetweenPlayers: 15
-    startCandidateAttempts: 256
+    minAStarDistanceBetweenPlayers: 30
+    startCandidateAttempts: 512
     cameraZ: -10
