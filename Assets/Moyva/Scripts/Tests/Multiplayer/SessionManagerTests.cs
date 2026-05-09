@@ -140,7 +140,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             public Task LeaveAsync(System.Threading.CancellationToken ct = default) { Current = null; PublishState(LobbyState.Closed); return Task.CompletedTask; }
             public Task KickAsync(string playerId, System.Threading.CancellationToken ct = default) => Task.CompletedTask;
             public Task SetRelayJoinCodeAsync(string relayJoinCode, System.Threading.CancellationToken ct = default) => Task.CompletedTask;
-            public Task LockAsync(bool locked, System.Threading.CancellationToken ct = default) { PublishState(locked ? LobbyState.Started : LobbyState.Open); return Task.CompletedTask; }
+            public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, System.Threading.CancellationToken ct = default) { PublishState(locked ? LobbyState.Started : LobbyState.Open); return Task.CompletedTask; }
 
             private void PublishState(LobbyState state)
             {
@@ -427,7 +427,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             public Task LeaveAsync(System.Threading.CancellationToken ct = default) { Current = null; PublishState(LobbyState.Closed); return Task.CompletedTask; }
             public Task KickAsync(string playerId, System.Threading.CancellationToken ct = default) => Task.CompletedTask;
             public Task SetRelayJoinCodeAsync(string relayJoinCode, System.Threading.CancellationToken ct = default) => Task.CompletedTask;
-            public Task LockAsync(bool locked, System.Threading.CancellationToken ct = default) { PublishState(locked ? LobbyState.Started : LobbyState.Open); return Task.CompletedTask; }
+            public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, System.Threading.CancellationToken ct = default) { PublishState(locked ? LobbyState.Started : LobbyState.Open); return Task.CompletedTask; }
 
             private void PublishState(LobbyState state)
             {
