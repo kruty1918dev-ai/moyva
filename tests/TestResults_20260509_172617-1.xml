@@ -1,0 +1,852 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="118" result="Failed(Child)" total="118" passed="115" failed="3" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:46Z" duration="1,0233751">
+  <test-suite type="TestSuite" id="2495" name="moyva_project" fullname="moyva_project" runstate="Runnable" testcasecount="1146" result="Failed" site="Child" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:46Z" duration="1.023375" total="118" passed="115" failed="3" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="Assembly" id="1640" name="Kruty1918.Moyva.Tests.Multiplayer.dll" fullname="/home/oleks/moyva/Library/ScriptAssemblies/Kruty1918.Moyva.Tests.Multiplayer.dll" runstate="Runnable" testcasecount="118" result="Failed" site="Child" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:46Z" duration="0.992464" total="118" passed="115" failed="3" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="891309" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1641" name="Kruty1918" fullname="Kruty1918" runstate="Runnable" testcasecount="118" result="Failed" site="Child" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:46Z" duration="0.990056" total="118" passed="115" failed="3" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1642" name="Moyva" fullname="Kruty1918.Moyva" runstate="Runnable" testcasecount="118" result="Failed" site="Child" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:46Z" duration="0.988239" total="118" passed="115" failed="3" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestSuite" id="1643" name="Tests" fullname="Kruty1918.Moyva.Tests" runstate="Runnable" testcasecount="118" result="Failed" site="Child" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:46Z" duration="0.973599" total="118" passed="115" failed="3" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="TestSuite" id="1644" name="Multiplayer" fullname="Kruty1918.Moyva.Tests.Multiplayer" runstate="Runnable" testcasecount="118" result="Failed" site="Child" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:46Z" duration="0.970775" total="118" passed="115" failed="3" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-suite type="TestFixture" id="1593" name="ConsistencyCheckResultEnumTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.ConsistencyCheckResultEnumTests" classname="Kruty1918.Moyva.Tests.Multiplayer.ConsistencyCheckResultEnumTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.058313" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1594" name="Equal_IsZero" fullname="Kruty1918.Moyva.Tests.Multiplayer.ConsistencyCheckResultEnumTests.Equal_IsZero" methodname="Equal_IsZero" classname="Kruty1918.Moyva.Tests.Multiplayer.ConsistencyCheckResultEnumTests" runstate="Runnable" seed="698541450" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.032882" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1595" name="Has3Values" fullname="Kruty1918.Moyva.Tests.Multiplayer.ConsistencyCheckResultEnumTests.Has3Values" methodname="Has3Values" classname="Kruty1918.Moyva.Tests.Multiplayer.ConsistencyCheckResultEnumTests" runstate="Runnable" seed="1839709889" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000305" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1589" name="FailureCategoryEnumTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.FailureCategoryEnumTests" classname="Kruty1918.Moyva.Tests.Multiplayer.FailureCategoryEnumTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.017587" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1591" name="AllValuesUnique" fullname="Kruty1918.Moyva.Tests.Multiplayer.FailureCategoryEnumTests.AllValuesUnique" methodname="AllValuesUnique" classname="Kruty1918.Moyva.Tests.Multiplayer.FailureCategoryEnumTests" runstate="Runnable" seed="1065250903" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.001468" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1592" name="Has8Values" fullname="Kruty1918.Moyva.Tests.Multiplayer.FailureCategoryEnumTests.Has8Values" methodname="Has8Values" classname="Kruty1918.Moyva.Tests.Multiplayer.FailureCategoryEnumTests" runstate="Runnable" seed="2045412694" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000324" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1590" name="Unknown_IsZero" fullname="Kruty1918.Moyva.Tests.Multiplayer.FailureCategoryEnumTests.Unknown_IsZero" methodname="Unknown_IsZero" classname="Kruty1918.Moyva.Tests.Multiplayer.FailureCategoryEnumTests" runstate="Runnable" seed="872072262" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000281" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1582" name="GameCommandTypeEnumTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests" classname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.018677" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1585" name="BuildingDemolish_Is3" fullname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests.BuildingDemolish_Is3" methodname="BuildingDemolish_Is3" classname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests" runstate="Runnable" seed="595166123" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000521" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1584" name="BuildingPlace_Is2" fullname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests.BuildingPlace_Is2" methodname="BuildingPlace_Is2" classname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests" runstate="Runnable" seed="2130052746" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000161" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1587" name="GameStateChange_Is5" fullname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests.GameStateChange_Is5" methodname="GameStateChange_Is5" classname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests" runstate="Runnable" seed="2065374086" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000177" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1588" name="StartingPositions_Is8" fullname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests.StartingPositions_Is8" methodname="StartingPositions_Is8" classname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests" runstate="Runnable" seed="17213713" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000185" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1583" name="UnitMove_Is1" fullname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests.UnitMove_Is1" methodname="UnitMove_Is1" classname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests" runstate="Runnable" seed="300982381" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000458" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1586" name="UnitSpawn_Is4" fullname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests.UnitSpawn_Is4" methodname="UnitSpawn_Is4" classname="Kruty1918.Moyva.Tests.Multiplayer.GameCommandTypeEnumTests" runstate="Runnable" seed="882368753" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000217" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1525" name="HostMigrationServiceTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests" classname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.031473" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1528" name="ChooseNewHost_AllBots_ReturnsNull" fullname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests.ChooseNewHost_AllBots_ReturnsNull" methodname="ChooseNewHost_AllBots_ReturnsNull" classname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests" runstate="Runnable" seed="972734738" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.004401" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1526" name="ChooseNewHost_EmptyList_ReturnsNull" fullname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests.ChooseNewHost_EmptyList_ReturnsNull" methodname="ChooseNewHost_EmptyList_ReturnsNull" classname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests" runstate="Runnable" seed="1839409979" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000272" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1530" name="ChooseNewHost_FirstHumanWins" fullname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests.ChooseNewHost_FirstHumanWins" methodname="ChooseNewHost_FirstHumanWins" classname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests" runstate="Runnable" seed="371838584" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000587" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1529" name="ChooseNewHost_MixedBotHuman_ReturnsHuman" fullname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests.ChooseNewHost_MixedBotHuman_ReturnsHuman" methodname="ChooseNewHost_MixedBotHuman_ReturnsHuman" classname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests" runstate="Runnable" seed="914153087" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.004255" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1527" name="ChooseNewHost_SingleHuman_ReturnsAsHost" fullname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests.ChooseNewHost_SingleHuman_ReturnsAsHost" methodname="ChooseNewHost_SingleHuman_ReturnsAsHost" classname="Kruty1918.Moyva.Tests.Multiplayer.HostMigrationServiceTests" runstate="Runnable" seed="1864249798" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000644" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1544" name="MultiplayerConfigTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.022972" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1552" name="Constructor_NullRelay_DefaultsToRelayDefault" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests.Constructor_NullRelay_DefaultsToRelayDefault" methodname="Constructor_NullRelay_DefaultsToRelayDefault" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests" runstate="Runnable" seed="2128714421" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.001058" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1551" name="Constructor_SetsAllProperties" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests.Constructor_SetsAllProperties" methodname="Constructor_SetsAllProperties" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests" runstate="Runnable" seed="1136560333" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.003163" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1549" name="Default_EnforceConsistency_IsTrue" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests.Default_EnforceConsistency_IsTrue" methodname="Default_EnforceConsistency_IsTrue" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests" runstate="Runnable" seed="597048290" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000317" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1550" name="Default_Matchmaking_IsFalse" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests.Default_Matchmaking_IsFalse" methodname="Default_Matchmaking_IsFalse" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests" runstate="Runnable" seed="1112220468" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000426" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1547" name="Default_ProviderType_IsRelay" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests.Default_ProviderType_IsRelay" methodname="Default_ProviderType_IsRelay" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests" runstate="Runnable" seed="1703661811" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000170" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1545" name="Default_ReturnsNonNull" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests.Default_ReturnsNonNull" methodname="Default_ReturnsNonNull" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests" runstate="Runnable" seed="833284954" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000186" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1546" name="Default_SchemaVersion_IsCurrent" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests.Default_SchemaVersion_IsCurrent" methodname="Default_SchemaVersion_IsCurrent" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests" runstate="Runnable" seed="117012402" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000164" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1548" name="Default_StrictLock_IsFalse" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests.Default_StrictLock_IsFalse" methodname="Default_StrictLock_IsFalse" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerConfigTests" runstate="Runnable" seed="1355578328" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000149" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1596" name="MultiplayerWrapperIntegrationTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.295183" total="9" passed="9" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1604" name="BinaryConfigStore_SaveLoad_RoundTrip" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests.BinaryConfigStore_SaveLoad_RoundTrip" methodname="BinaryConfigStore_SaveLoad_RoundTrip" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" runstate="Runnable" seed="1899441624" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.005309" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1602" name="ConfigSync_ReceivesHostConfig_StoresLoadedConfig" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests.ConfigSync_ReceivesHostConfig_StoresLoadedConfig" methodname="ConfigSync_ReceivesHostConfig_StoresLoadedConfig" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" runstate="Runnable" seed="1448742694" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.001035" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1597" name="FallbackProvider_HostFailure_SwitchesToFallbackAndRetries" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests.FallbackProvider_HostFailure_SwitchesToFallbackAndRetries" methodname="FallbackProvider_HostFailure_SwitchesToFallbackAndRetries" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" runstate="Runnable" seed="756082693" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.026732" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1598" name="FallbackProvider_Reset_ReturnsTrafficToPrimary" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests.FallbackProvider_Reset_ReturnsTrafficToPrimary" methodname="FallbackProvider_Reset_ReturnsTrafficToPrimary" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" runstate="Runnable" seed="894648057" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.016412" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1600" name="GameCommandSync_IncomingMessage_DispatchesToRegisteredHandler" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests.GameCommandSync_IncomingMessage_DispatchesToRegisteredHandler" methodname="GameCommandSync_IncomingMessage_DispatchesToRegisteredHandler" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" runstate="Runnable" seed="428285785" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.004500" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1599" name="GameCommandSync_SendCommand_BuildsPacketAndBroadcasts" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests.GameCommandSync_SendCommand_BuildsPacketAndBroadcasts" methodname="GameCommandSync_SendCommand_BuildsPacketAndBroadcasts" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" runstate="Runnable" seed="779180197" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000943" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1605" name="SessionManager_JoinExisting_SetsLocalParticipantAsNonHost" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests.SessionManager_JoinExisting_SetsLocalParticipantAsNonHost" methodname="SessionManager_JoinExisting_SetsLocalParticipantAsNonHost" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" runstate="Runnable" seed="349892200" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.038241" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1603" name="SnapshotStore_SaveAndLoad_RoundTrip" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests.SnapshotStore_SaveAndLoad_RoundTrip" methodname="SnapshotStore_SaveAndLoad_RoundTrip" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" runstate="Runnable" seed="1253574517" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.001452" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1601" name="StartingPositionSync_BroadcastsAndRestoresAssignments" fullname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests.StartingPositionSync_BroadcastsAndRestoresAssignments" methodname="StartingPositionSync_BroadcastsAndRestoresAssignments" classname="Kruty1918.Moyva.Tests.Multiplayer.MultiplayerWrapperIntegrationTests" runstate="Runnable" seed="1938317217" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.179849" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1500" name="ParticipantIdentityTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" testcasecount="12" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.031285" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1510" name="BotIdPrefix_IsCorrect" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.BotIdPrefix_IsCorrect" methodname="BotIdPrefix_IsCorrect" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="1695616503" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000316" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1503" name="Constructor_NullNickname_Throws" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.Constructor_NullNickname_Throws" methodname="Constructor_NullNickname_Throws" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="1447992519" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.008449" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1502" name="Constructor_NullPlayerId_Throws" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.Constructor_NullPlayerId_Throws" methodname="Constructor_NullPlayerId_Throws" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="1412564910" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000330" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1501" name="Constructor_SetsProperties" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.Constructor_SetsProperties" methodname="Constructor_SetsProperties" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="1341531255" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000221" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1505" name="Equals_DifferentPlayerId_ReturnsFalse" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.Equals_DifferentPlayerId_ReturnsFalse" methodname="Equals_DifferentPlayerId_ReturnsFalse" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="1367980427" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000285" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1506" name="Equals_Null_ReturnsFalse" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.Equals_Null_ReturnsFalse" methodname="Equals_Null_ReturnsFalse" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="1254475939" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000214" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1511" name="Equals_NullObject_ReturnsFalse" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.Equals_NullObject_ReturnsFalse" methodname="Equals_NullObject_ReturnsFalse" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="1196862158" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000244" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1507" name="Equals_Object_Works" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.Equals_Object_Works" methodname="Equals_Object_Works" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="525286754" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000174" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1504" name="Equals_SamePlayerId_ReturnsTrue" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.Equals_SamePlayerId_ReturnsTrue" methodname="Equals_SamePlayerId_ReturnsTrue" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="1549041437" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000211" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1512" name="Equals_Self_ReturnsTrue" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.Equals_Self_ReturnsTrue" methodname="Equals_Self_ReturnsTrue" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="1513176339" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000187" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1508" name="GetHashCode_SamePlayerId_Same" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.GetHashCode_SamePlayerId_Same" methodname="GetHashCode_SamePlayerId_Same" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="1700193016" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000290" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1509" name="ToString_ContainsPlayerIdAndNickname" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests.ToString_ContainsPlayerIdAndNickname" methodname="ToString_ContainsPlayerIdAndNickname" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantIdentityTests" runstate="Runnable" seed="425377194" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000265" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1606" name="ParticipantPolicyServiceTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.019883" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1612" name="CanJoin_HumansAndBots_ShouldNotExceedMaxParticipants" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests.CanJoin_HumansAndBots_ShouldNotExceedMaxParticipants" methodname="CanJoin_HumansAndBots_ShouldNotExceedMaxParticipants" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests" runstate="Runnable" seed="360221329" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000696" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1611" name="CanJoin_ShouldAllowBot_WhenBotSlotAvailable" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests.CanJoin_ShouldAllowBot_WhenBotSlotAvailable" methodname="CanJoin_ShouldAllowBot_WhenBotSlotAvailable" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests" runstate="Runnable" seed="162311022" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000319" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1610" name="CanJoin_ShouldReturnFalse_WhenMaxBotsReached" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests.CanJoin_ShouldReturnFalse_WhenMaxBotsReached" methodname="CanJoin_ShouldReturnFalse_WhenMaxBotsReached" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests" runstate="Runnable" seed="1588044613" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000317" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1609" name="CanJoin_ShouldReturnFalse_WhenMaxHumansReached" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests.CanJoin_ShouldReturnFalse_WhenMaxHumansReached" methodname="CanJoin_ShouldReturnFalse_WhenMaxHumansReached" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests" runstate="Runnable" seed="237943892" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000502" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1608" name="CanJoin_ShouldReturnFalse_WhenMaxParticipantsReached" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests.CanJoin_ShouldReturnFalse_WhenMaxParticipantsReached" methodname="CanJoin_ShouldReturnFalse_WhenMaxParticipantsReached" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests" runstate="Runnable" seed="1009213213" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000715" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1607" name="CanJoin_ShouldReturnTrue_WhenSessionIsEmpty" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests.CanJoin_ShouldReturnTrue_WhenSessionIsEmpty" methodname="CanJoin_ShouldReturnTrue_WhenSessionIsEmpty" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantPolicyServiceTests" runstate="Runnable" seed="2089723702" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000321" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1519" name="ParticipantSlotTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.018021" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1520" name="Constructor_SetsAll" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests.Constructor_SetsAll" methodname="Constructor_SetsAll" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests" runstate="Runnable" seed="482479129" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000535" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1524" name="Immutable_OriginalUnchanged" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests.Immutable_OriginalUnchanged" methodname="Immutable_OriginalUnchanged" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests" runstate="Runnable" seed="926911741" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000257" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1523" name="WithOccupied_False_ClearsFlag" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests.WithOccupied_False_ClearsFlag" methodname="WithOccupied_False_ClearsFlag" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests" runstate="Runnable" seed="1254249491" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000163" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1522" name="WithOccupied_PreservesOtherProperties" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests.WithOccupied_PreservesOtherProperties" methodname="WithOccupied_PreservesOtherProperties" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests" runstate="Runnable" seed="209083847" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000229" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1521" name="WithOccupied_True_ChangesFlag" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests.WithOccupied_True_ChangesFlag" methodname="WithOccupied_True_ChangesFlag" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantSlotTests" runstate="Runnable" seed="61881537" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000235" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1513" name="ParticipantTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.018431" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1516" name="AsHost_PreservesIsBot" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests.AsHost_PreservesIsBot" methodname="AsHost_PreservesIsBot" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests" runstate="Runnable" seed="1415802070" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000272" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1515" name="AsHost_ReturnsNewWithIsHostTrue" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests.AsHost_ReturnsNewWithIsHostTrue" methodname="AsHost_ReturnsNewWithIsHostTrue" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests" runstate="Runnable" seed="668824108" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000267" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1517" name="Bot_CreatesCorrectly" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests.Bot_CreatesCorrectly" methodname="Bot_CreatesCorrectly" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests" runstate="Runnable" seed="892207906" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000511" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1514" name="Constructor_SetsAll" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests.Constructor_SetsAll" methodname="Constructor_SetsAll" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests" runstate="Runnable" seed="1667322571" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000332" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1518" name="IsHost_FalseByDefault" fullname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests.IsHost_FalseByDefault" methodname="IsHost_FalseByDefault" classname="Kruty1918.Moyva.Tests.Multiplayer.ParticipantTests" runstate="Runnable" seed="2100037147" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000232" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1560" name="ProviderSettingsTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests" classname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests" runstate="Runnable" testcasecount="8" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.022914" total="8" passed="8" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1564" name="Relay_NullEnvironment_DefaultsProduction" fullname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests.Relay_NullEnvironment_DefaultsProduction" methodname="Relay_NullEnvironment_DefaultsProduction" classname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests" runstate="Runnable" seed="422659103" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000546" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1562" name="Relay_NullProjectId_DefaultsToEmpty" fullname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests.Relay_NullProjectId_DefaultsToEmpty" methodname="Relay_NullProjectId_DefaultsToEmpty" classname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests" runstate="Runnable" seed="259771262" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000213" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1563" name="Relay_ZeroMaxConnections_DefaultsTo4" fullname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests.Relay_ZeroMaxConnections_DefaultsTo4" methodname="Relay_ZeroMaxConnections_DefaultsTo4" classname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests" runstate="Runnable" seed="1404821098" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000189" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1561" name="RelayDefault_HasCorrectDefaults" fullname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests.RelayDefault_HasCorrectDefaults" methodname="RelayDefault_HasCorrectDefaults" classname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests" runstate="Runnable" seed="72756611" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000202" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1568" name="WebSocket_NegativeReconnect_DefaultsTo3" fullname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests.WebSocket_NegativeReconnect_DefaultsTo3" methodname="WebSocket_NegativeReconnect_DefaultsTo3" classname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests" runstate="Runnable" seed="403095049" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000189" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1566" name="WebSocket_NullUrl_DefaultsToLocalhost" fullname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests.WebSocket_NullUrl_DefaultsToLocalhost" methodname="WebSocket_NullUrl_DefaultsToLocalhost" classname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests" runstate="Runnable" seed="361464075" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000175" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1567" name="WebSocket_ZeroPort_DefaultsTo9999" fullname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests.WebSocket_ZeroPort_DefaultsTo9999" methodname="WebSocket_ZeroPort_DefaultsTo9999" classname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests" runstate="Runnable" seed="939294819" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000288" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1565" name="WebSocketDefault_HasCorrectDefaults" fullname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests.WebSocketDefault_HasCorrectDefaults" methodname="WebSocketDefault_HasCorrectDefaults" classname="Kruty1918.Moyva.Tests.Multiplayer.ProviderSettingsTests" runstate="Runnable" seed="464638337" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.003098" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1569" name="SessionConnectOptionsTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionConnectOptionsTests" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionConnectOptionsTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.015398" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1572" name="Checksum_Zero_IsValid" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionConnectOptionsTests.Checksum_Zero_IsValid" methodname="Checksum_Zero_IsValid" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionConnectOptionsTests" runstate="Runnable" seed="414829569" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000270" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1570" name="Constructor_SetsAllProperties" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionConnectOptionsTests.Constructor_SetsAllProperties" methodname="Constructor_SetsAllProperties" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionConnectOptionsTests" runstate="Runnable" seed="1314820407" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000314" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1571" name="NullIdentity_StoresNull" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionConnectOptionsTests.NullIdentity_StoresNull" methodname="NullIdentity_StoresNull" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionConnectOptionsTests" runstate="Runnable" seed="623807286" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000222" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1621" name="SessionManagerMigrationTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerMigrationTests" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerMigrationTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.059498" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1622" name="OnHostDisconnect_ShouldMigrateHostToRemainingParticipant" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerMigrationTests.OnHostDisconnect_ShouldMigrateHostToRemainingParticipant" methodname="OnHostDisconnect_ShouldMigrateHostToRemainingParticipant" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerMigrationTests" runstate="Runnable" seed="1175427330" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.011865" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1623" name="OnParticipantDisconnect_ShouldAddBotFallback_WhenRulesAllow" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerMigrationTests.OnParticipantDisconnect_ShouldAddBotFallback_WhenRulesAllow" methodname="OnParticipantDisconnect_ShouldAddBotFallback_WhenRulesAllow" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerMigrationTests" runstate="Runnable" seed="1708773360" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.016580" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1624" name="OnUnknownPeerDisconnect_ShouldNotThrow_AndLogWarning" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerMigrationTests.OnUnknownPeerDisconnect_ShouldNotThrow_AndLogWarning" methodname="OnUnknownPeerDisconnect_ShouldNotThrow_AndLogWarning" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerMigrationTests" runstate="Runnable" seed="1972653433" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.015696" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1613" name="SessionManagerTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests" runstate="Runnable" testcasecount="7" result="Failed" site="Child" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.144788" total="7" passed="4" failed="3" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <failure>
+                  <message><![CDATA[One or more child tests had errors]]></message>
+                </failure>
+                <test-case id="1615" name="CreateOrJoin_ShouldAddLocalParticipantAsHost_WhenCreating" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests.CreateOrJoin_ShouldAddLocalParticipantAsHost_WhenCreating" methodname="CreateOrJoin_ShouldAddLocalParticipantAsHost_WhenCreating" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests" runstate="Runnable" seed="1734838893" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.004946" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1620" name="CreateOrJoin_ShouldFallbackToLocalSinglePlayer_WhenNetworkFails" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests.CreateOrJoin_ShouldFallbackToLocalSinglePlayer_WhenNetworkFails" methodname="CreateOrJoin_ShouldFallbackToLocalSinglePlayer_WhenNetworkFails" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests" runstate="Runnable" seed="762332022" result="Failed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.030752" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <failure>
+                    <message><![CDATA[  Expected: True
+  But was:  False
+]]></message>
+                    <stack-trace><![CDATA[at Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests.CreateOrJoin_ShouldFallbackToLocalSinglePlayer_WhenNetworkFails () [0x000c6] in /home/oleks/moyva/Assets/Moyva/Scripts/Tests/Multiplayer/SessionManagerTests.cs:296
+at UnityEngine.TestTools.TestRunner.TestTaskWrapper+<Execute>d__2.MoveNext () [0x00074] in ./Library/PackageCache/com.unity.test-framework@353f8d76a670/UnityEngine.TestRunner/TestRunner/TestTaskWrapper.cs:31
+at UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0004e] in ./Library/PackageCache/com.unity.test-framework@353f8d76a670/UnityEngine.TestRunner/NUnitExtensions/Attributes/TestEnumerator.cs:44
+]]></stack-trace>
+                  </failure>
+                </test-case>
+                <test-case id="1619" name="CreateOrJoin_ShouldFallbackToSolo_WhenRoomIdIsMissing" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests.CreateOrJoin_ShouldFallbackToSolo_WhenRoomIdIsMissing" methodname="CreateOrJoin_ShouldFallbackToSolo_WhenRoomIdIsMissing" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests" runstate="Runnable" seed="982102816" result="Failed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.016213" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <failure>
+                    <message><![CDATA[  Expected: True
+  But was:  False
+]]></message>
+                    <stack-trace><![CDATA[at Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests.CreateOrJoin_ShouldFallbackToSolo_WhenRoomIdIsMissing () [0x000e1] in /home/oleks/moyva/Assets/Moyva/Scripts/Tests/Multiplayer/SessionManagerTests.cs:282
+at UnityEngine.TestTools.TestRunner.TestTaskWrapper+<Execute>d__2.MoveNext () [0x00074] in ./Library/PackageCache/com.unity.test-framework@353f8d76a670/UnityEngine.TestRunner/TestRunner/TestTaskWrapper.cs:31
+at UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0004e] in ./Library/PackageCache/com.unity.test-framework@353f8d76a670/UnityEngine.TestRunner/NUnitExtensions/Attributes/TestEnumerator.cs:44
+]]></stack-trace>
+                  </failure>
+                </test-case>
+                <test-case id="1617" name="CreateOrJoin_ShouldReturnFalse_WhenConfigChecksumMismatch" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests.CreateOrJoin_ShouldReturnFalse_WhenConfigChecksumMismatch" methodname="CreateOrJoin_ShouldReturnFalse_WhenConfigChecksumMismatch" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests" runstate="Runnable" seed="1301790881" result="Failed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.016855" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <failure>
+                    <message><![CDATA[  Expected: False
+  But was:  True
+]]></message>
+                    <stack-trace><![CDATA[at Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests.CreateOrJoin_ShouldReturnFalse_WhenConfigChecksumMismatch () [0x0011b] in /home/oleks/moyva/Assets/Moyva/Scripts/Tests/Multiplayer/SessionManagerTests.cs:252
+at UnityEngine.TestTools.TestRunner.TestTaskWrapper+<Execute>d__2.MoveNext () [0x00074] in ./Library/PackageCache/com.unity.test-framework@353f8d76a670/UnityEngine.TestRunner/TestRunner/TestTaskWrapper.cs:31
+at UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0004e] in ./Library/PackageCache/com.unity.test-framework@353f8d76a670/UnityEngine.TestRunner/NUnitExtensions/Attributes/TestEnumerator.cs:44
+]]></stack-trace>
+                  </failure>
+                </test-case>
+                <test-case id="1618" name="CreateOrJoin_ShouldReturnFalse_WhenSessionFull" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests.CreateOrJoin_ShouldReturnFalse_WhenSessionFull" methodname="CreateOrJoin_ShouldReturnFalse_WhenSessionFull" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests" runstate="Runnable" seed="918907920" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.015006" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1614" name="CreateOrJoin_ShouldReturnTrue_WhenCreatingOfflineSession" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests.CreateOrJoin_ShouldReturnTrue_WhenCreatingOfflineSession" methodname="CreateOrJoin_ShouldReturnTrue_WhenCreatingOfflineSession" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests" runstate="Runnable" seed="68263319" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.026938" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1616" name="Leave_ShouldClearParticipants" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests.Leave_ShouldClearParticipants" methodname="Leave_ShouldClearParticipants" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionManagerTests" runstate="Runnable" seed="564779901" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.015317" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1577" name="SessionResultTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionResultTests" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionResultTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.016150" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1580" name="Constructor_SetsAll" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionResultTests.Constructor_SetsAll" methodname="Constructor_SetsAll" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionResultTests" runstate="Runnable" seed="667434242" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000282" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1579" name="Fail_ReturnsSuccessFalse" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionResultTests.Fail_ReturnsSuccessFalse" methodname="Fail_ReturnsSuccessFalse" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionResultTests" runstate="Runnable" seed="875280466" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000185" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1581" name="NetworkMessage_Constructor_SetsFields" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionResultTests.NetworkMessage_Constructor_SetsFields" methodname="NetworkMessage_Constructor_SetsFields" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionResultTests" runstate="Runnable" seed="1400426597" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000204" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1578" name="Ok_ReturnsSuccessTrue" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionResultTests.Ok_ReturnsSuccessTrue" methodname="Ok_ReturnsSuccessTrue" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionResultTests" runstate="Runnable" seed="1268998650" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000198" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1553" name="SessionRulesExtendedTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.018317" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1557" name="Constructor_SetsAllFields" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests.Constructor_SetsAllFields" methodname="Constructor_SetsAllFields" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests" runstate="Runnable" seed="1899997298" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000461" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1556" name="Default_AllowBotsFallback_IsFalse" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests.Default_AllowBotsFallback_IsFalse" methodname="Default_AllowBotsFallback_IsFalse" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests" runstate="Runnable" seed="1022025560" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000208" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1555" name="Default_MaxParticipants_Is4" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests.Default_MaxParticipants_Is4" methodname="Default_MaxParticipants_Is4" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests" runstate="Runnable" seed="990052014" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000266" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1554" name="Default_Mode_IsMultiplayerHumans" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests.Default_Mode_IsMultiplayerHumans" methodname="Default_Mode_IsMultiplayerHumans" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests" runstate="Runnable" seed="1435954949" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000391" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1558" name="Default_StrictLock_IsFalse" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests.Default_StrictLock_IsFalse" methodname="Default_StrictLock_IsFalse" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests" runstate="Runnable" seed="990458162" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000176" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1559" name="PeacefulSolo_EnumValue_IsZero" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests.PeacefulSolo_EnumValue_IsZero" methodname="PeacefulSolo_EnumValue_IsZero" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesExtendedTests" runstate="Runnable" seed="1958608392" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000169" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1625" name="SessionRulesTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesTests" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.015895" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1628" name="Constructor_SetsAllProperties" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesTests.Constructor_SetsAllProperties" methodname="Constructor_SetsAllProperties" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesTests" runstate="Runnable" seed="49917718" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000339" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1626" name="Default_ShouldHaveMaxParticipants4" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesTests.Default_ShouldHaveMaxParticipants4" methodname="Default_ShouldHaveMaxParticipants4" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesTests" runstate="Runnable" seed="101872061" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000175" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1627" name="Default_ShouldNotHaveStrictLock" fullname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesTests.Default_ShouldNotHaveStrictLock" methodname="Default_ShouldNotHaveStrictLock" classname="Kruty1918.Moyva.Tests.Multiplayer.SessionRulesTests" runstate="Runnable" seed="441127058" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000157" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1573" name="SlotMappingTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.SlotMappingTests" classname="Kruty1918.Moyva.Tests.Multiplayer.SlotMappingTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.016613" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1574" name="Constructor_SetsArray" fullname="Kruty1918.Moyva.Tests.Multiplayer.SlotMappingTests.Constructor_SetsArray" methodname="Constructor_SetsArray" classname="Kruty1918.Moyva.Tests.Multiplayer.SlotMappingTests" runstate="Runnable" seed="2127394605" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000413" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1575" name="EmptyArray_IsValid" fullname="Kruty1918.Moyva.Tests.Multiplayer.SlotMappingTests.EmptyArray_IsValid" methodname="EmptyArray_IsValid" classname="Kruty1918.Moyva.Tests.Multiplayer.SlotMappingTests" runstate="Runnable" seed="906081954" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000187" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1576" name="NullArray_StoresNull" fullname="Kruty1918.Moyva.Tests.Multiplayer.SlotMappingTests.NullArray_StoresNull" methodname="NullArray_StoresNull" classname="Kruty1918.Moyva.Tests.Multiplayer.SlotMappingTests" runstate="Runnable" seed="1992047200" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000154" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1629" name="SwitchableLobbyServiceTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests" classname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:46Z" duration="0.059750" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1630" name="Constructor_UsesConfiguredProvider" fullname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests.Constructor_UsesConfiguredProvider" methodname="Constructor_UsesConfiguredProvider" classname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests" runstate="Runnable" seed="699835329" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.002392" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1634" name="LanPayloadParser_AcceptsMoyvaLanPayload" fullname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests.LanPayloadParser_AcceptsMoyvaLanPayload" methodname="LanPayloadParser_AcceptsMoyvaLanPayload" classname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests" runstate="Runnable" seed="220419997" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.001634" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1633" name="LanPayloadParser_RejectsLegacyPayloadWithoutProtocolMarker" fullname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests.LanPayloadParser_RejectsLegacyPayloadWithoutProtocolMarker" methodname="LanPayloadParser_RejectsLegacyPayloadWithoutProtocolMarker" classname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests" runstate="Runnable" seed="330290743" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:45Z" duration="0.000522" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1632" name="SwitchToAsync_RehooksLobbyUpdatedEvent" fullname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests.SwitchToAsync_RehooksLobbyUpdatedEvent" methodname="SwitchToAsync_RehooksLobbyUpdatedEvent" classname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests" runstate="Runnable" seed="1145604801" result="Passed" start-time="2026-05-09 15:24:45Z" end-time="2026-05-09 15:24:46Z" duration="0.021519" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1631" name="SwitchToAsync_UpdatesRequestedAndEffectiveProvider" fullname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests.SwitchToAsync_UpdatesRequestedAndEffectiveProvider" methodname="SwitchToAsync_UpdatesRequestedAndEffectiveProvider" classname="Kruty1918.Moyva.Tests.Multiplayer.SwitchableLobbyServiceTests" runstate="Runnable" seed="1578092271" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.014984" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1531" name="WorldConsistencyExtendedTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.020083" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1532" name="Compare_BothNull_ReturnsWorldMismatch" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests.Compare_BothNull_ReturnsWorldMismatch" methodname="Compare_BothNull_ReturnsWorldMismatch" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests" runstate="Runnable" seed="618830122" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.001039" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1534" name="Compare_ClientNull_ReturnsWorldMismatch" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests.Compare_ClientNull_ReturnsWorldMismatch" methodname="Compare_ClientNull_ReturnsWorldMismatch" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests" runstate="Runnable" seed="585237305" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000259" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1536" name="Compare_DifferentId_ReturnsMismatch" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests.Compare_DifferentId_ReturnsMismatch" methodname="Compare_DifferentId_ReturnsMismatch" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests" runstate="Runnable" seed="1814421728" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000289" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1533" name="Compare_HostNull_ReturnsWorldMismatch" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests.Compare_HostNull_ReturnsWorldMismatch" methodname="Compare_HostNull_ReturnsWorldMismatch" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests" runstate="Runnable" seed="1197553961" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000371" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1537" name="Compare_SameIdDifferentChecksum_ReturnsMismatch" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests.Compare_SameIdDifferentChecksum_ReturnsMismatch" methodname="Compare_SameIdDifferentChecksum_ReturnsMismatch" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests" runstate="Runnable" seed="1501379105" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000372" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1535" name="Compare_SameIdSameChecksum_ReturnsEqual" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests.Compare_SameIdSameChecksum_ReturnsEqual" methodname="Compare_SameIdSameChecksum_ReturnsEqual" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyExtendedTests" runstate="Runnable" seed="1640463679" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000334" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1635" name="WorldConsistencyServiceTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyServiceTests" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyServiceTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.017305" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1636" name="Compare_ShouldReturnEqual_WhenChecksumAndIdMatch" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyServiceTests.Compare_ShouldReturnEqual_WhenChecksumAndIdMatch" methodname="Compare_ShouldReturnEqual_WhenChecksumAndIdMatch" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyServiceTests" runstate="Runnable" seed="1010147341" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000529" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1637" name="Compare_ShouldReturnWorldMismatch_WhenChecksumsDiffer" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyServiceTests.Compare_ShouldReturnWorldMismatch_WhenChecksumsDiffer" methodname="Compare_ShouldReturnWorldMismatch_WhenChecksumsDiffer" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyServiceTests" runstate="Runnable" seed="535255423" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000295" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1639" name="Compare_ShouldReturnWorldMismatch_WhenEitherSnapshotIsNull" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyServiceTests.Compare_ShouldReturnWorldMismatch_WhenEitherSnapshotIsNull" methodname="Compare_ShouldReturnWorldMismatch_WhenEitherSnapshotIsNull" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyServiceTests" runstate="Runnable" seed="852204665" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000285" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1638" name="Compare_ShouldReturnWorldMismatch_WhenWorldIdsDiffer" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyServiceTests.Compare_ShouldReturnWorldMismatch_WhenWorldIdsDiffer" methodname="Compare_ShouldReturnWorldMismatch_WhenWorldIdsDiffer" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldConsistencyServiceTests" runstate="Runnable" seed="1970903650" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000364" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1538" name="WorldSnapshotTests" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.017005" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1540" name="Constructor_NullWorldId_Throws" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests.Constructor_NullWorldId_Throws" methodname="Constructor_NullWorldId_Throws" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests" runstate="Runnable" seed="2114668703" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000551" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1539" name="Constructor_SetsAll" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests.Constructor_SetsAll" methodname="Constructor_SetsAll" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests" runstate="Runnable" seed="1899691950" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000206" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1543" name="ToString_ContainsCrcHex" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests.ToString_ContainsCrcHex" methodname="ToString_ContainsCrcHex" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests" runstate="Runnable" seed="767844389" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000261" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1542" name="ToString_ContainsVersion" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests.ToString_ContainsVersion" methodname="ToString_ContainsVersion" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests" runstate="Runnable" seed="1641744288" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000170" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1541" name="ToString_ContainsWorldId" fullname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests.ToString_ContainsWorldId" methodname="ToString_ContainsWorldId" classname="Kruty1918.Moyva.Tests.Multiplayer.WorldSnapshotTests" runstate="Runnable" seed="1298170155" result="Passed" start-time="2026-05-09 15:24:46Z" end-time="2026-05-09 15:24:46Z" duration="0.000252" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[Saving results to: /home/oleks/.config/unity3d/DefaultCompany/moyva_project/TestResults.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

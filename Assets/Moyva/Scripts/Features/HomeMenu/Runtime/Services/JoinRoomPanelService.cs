@@ -703,9 +703,24 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
         private async Task<LobbyRoom> JoinByIdWithOptionalPasswordAsync(string lobbyId, string password)
         {
-            var room = await _lobbyService.JoinByIdAsync(lobbyId, GetPlayerName());
-            if (room == null)
+            if (string.IsNullOrWhiteSpace(lobbyId))
                 return null;
+
+            var normalizedLobbyId = lobbyId.Trim();
+            var room = await _lobbyService.JoinByIdAsync(normalizedLobbyId, GetPlayerName());
+            if (room == null)
+            {
+                var fallback = await ResolveJoinCodeAliasAsync(normalizedLobbyId);
+                if (fallback.IsValid &&
+                    !(fallback.Kind == JoinRoomTargetKind.LobbyId && string.Equals(fallback.Value, normalizedLobbyId, StringComparison.OrdinalIgnoreCase)))
+                {
+                    Debug.LogWarning($"[JoinRoomPanelService] JoinByIdAsync returned null for lobbyId='{normalizedLobbyId}', retrying via {fallback.Kind}='{fallback.Value}'.");
+                    room = await JoinExactTargetAsync(fallback, password);
+                }
+
+                if (room == null)
+                    return null;
+            }
 
             if (!string.IsNullOrEmpty(password) && room.HasPassword && !LobbyPasswordHasher.Verify(password, room.PasswordHash))
             {
@@ -732,8 +747,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     if (room == null)
                         continue;
 
-                    if (string.Equals(room.LobbyId, value, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(room.LobbyId))
-                        return new JoinRoomTarget(JoinRoomTargetKind.LobbyId, room.LobbyId.Trim());
+                    if (string.Equals(room.LobbyId, value, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!string.IsNullOrWhiteSpace(room.LobbyCode))
+                            return new JoinRoomTarget(JoinRoomTargetKind.JoinCode, room.LobbyCode.Trim());
+
+                        if (!string.IsNullOrWhiteSpace(room.RelayJoinCode))
+                            return new JoinRoomTarget(JoinRoomTargetKind.JoinCode, room.RelayJoinCode.Trim());
+
+                        if (!string.IsNullOrWhiteSpace(room.LobbyId))
+                            return new JoinRoomTarget(JoinRoomTargetKind.LobbyId, room.LobbyId.Trim());
+                    }
 
                     if (string.Equals(room.RelayJoinCode, value, StringComparison.OrdinalIgnoreCase))
                     {

@@ -74,7 +74,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         {
             base.Setup();
             Zenject.SignalBusInstaller.Install(Container);
-            Container.DeclareSignal<GameModeChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<GameModeChangedSignal>();
             Container.DeclareSignal<BuildingPlacedSignal>();
             Container.DeclareSignal<BuildingCancelledSignal>();
             Container.DeclareSignal<BuildingDemolishedSignal>();

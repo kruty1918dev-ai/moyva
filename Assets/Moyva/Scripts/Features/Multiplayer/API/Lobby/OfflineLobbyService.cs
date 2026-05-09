@@ -53,12 +53,37 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         public Task<LobbyRoom> JoinByCodeAsync(string lobbyCode, string displayName, CancellationToken ct = default)
         {
-            return Task.FromResult<LobbyRoom>(null);
+            var code = string.IsNullOrWhiteSpace(lobbyCode)
+                ? $"OFF{Guid.NewGuid():N}".Substring(0, 6).ToUpperInvariant()
+                : lobbyCode.Trim().ToUpperInvariant();
+
+            var lobbyId = $"offline-join-{code}";
+            var hostId = $"offline-host-{code}";
+
+            // Keep players empty in the offline join stub: SessionManager adds local participant.
+            _current = new LobbyRoom(
+                lobbyId,
+                code,
+                code,
+                maxPlayers: 4,
+                isPrivate: false,
+                hostPlayerId: hostId,
+                relayJoinCode: code,
+                players: new List<LobbyPlayer>());
+
+            _logger?.Info($"[OfflineLobby] Joined synthetic room code={code}");
+            LobbyUpdated?.Invoke(_current);
+            PublishState(LobbyState.Open);
+            return Task.FromResult(_current);
         }
 
         public Task<LobbyRoom> JoinByIdAsync(string lobbyId, string displayName, CancellationToken ct = default)
         {
-            return Task.FromResult<LobbyRoom>(null);
+            var id = string.IsNullOrWhiteSpace(lobbyId)
+                ? $"offline-join-{Guid.NewGuid():N}".Substring(0, 16)
+                : lobbyId.Trim();
+            var code = id.Length >= 6 ? id.Substring(0, 6).ToUpperInvariant() : id.ToUpperInvariant();
+            return JoinByCodeAsync(code, displayName, ct);
         }
 
         public Task<LobbyRoom> JoinByCodeWithPasswordAsync(string lobbyCode, string displayName, string password, CancellationToken ct = default)

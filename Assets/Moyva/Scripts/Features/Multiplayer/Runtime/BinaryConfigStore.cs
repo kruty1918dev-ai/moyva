@@ -64,7 +64,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         internal static void WriteConfig(BinaryWriter bw, MultiplayerConfig config)
         {
             // v1 fields
-            bw.Write(MultiplayerConfig.CurrentSchemaVersion);
+            bw.Write(config.SchemaVersion);
             bw.Write((int)config.ProviderType);
             bw.Write(config.StrictParticipantLock);
             bw.Write(config.EnforceConfigConsistency);
@@ -94,7 +94,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             bw.Write(ws.AuthToken);
             bw.Write(ws.ReconnectAttempts);
             bw.Write(ws.ReconnectDelaySeconds);
-            bw.Write(config.ReconnectLocalTimeToleranceSeconds);
+
+            if (config.SchemaVersion >= 3)
+                bw.Write(config.ReconnectLocalTimeToleranceSeconds);
         }
 
         internal static MultiplayerConfig ReadConfig(BinaryReader br)
