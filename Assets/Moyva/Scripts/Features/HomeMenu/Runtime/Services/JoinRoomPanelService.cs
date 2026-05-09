@@ -627,9 +627,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var probe = await TryProbeRoomForPasswordAsync(target);
             if (!probe.RequiresPassword)
             {
-                var joinedWithoutPassword = target.Kind == JoinRoomTargetKind.LobbyId
-                    ? await _lobbyService.JoinByIdAsync(target.Value, GetPlayerName())
-                    : await _lobbyService.JoinByCodeAsync(target.Value, GetPlayerName());
+                var joinedWithoutPassword = await JoinTargetAsync(target);
 
                 if (joinedWithoutPassword == null || !joinedWithoutPassword.HasPassword)
                     return joinedWithoutPassword;
@@ -656,7 +654,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
                 try
                 {
-                    var room = await _lobbyService.JoinByCodeWithPasswordAsync(target.Value, GetPlayerName(), prompt.Password);
+                    var room = await JoinTargetAsync(target, prompt.Password);
                     return room;
                 }
                 catch (WrongPasswordException)
@@ -670,6 +668,89 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
             }
             return null;
+        }
+
+        private async Task<LobbyRoom> JoinTargetAsync(JoinRoomTarget target, string password = null)
+        {
+            if (!target.IsValid)
+                return null;
+
+            var room = await JoinExactTargetAsync(target, password);
+            if (room != null || target.Kind != JoinRoomTargetKind.JoinCode)
+                return room;
+
+            var resolved = await ResolveJoinCodeAliasAsync(target.Value);
+            if (!resolved.IsValid ||
+                (resolved.Kind == target.Kind && string.Equals(resolved.Value, target.Value, StringComparison.OrdinalIgnoreCase)))
+            {
+                return null;
+            }
+
+            Debug.LogWarning($"[JoinRoomPanelService] Join by code '{target.Value}' returned null; retrying as {resolved.Kind}='{resolved.Value}'.");
+            return await JoinExactTargetAsync(resolved, password);
+        }
+
+        private async Task<LobbyRoom> JoinExactTargetAsync(JoinRoomTarget target, string password)
+        {
+            if (target.Kind == JoinRoomTargetKind.LobbyId)
+                return await JoinByIdWithOptionalPasswordAsync(target.Value, password);
+
+            if (string.IsNullOrEmpty(password))
+                return await _lobbyService.JoinByCodeAsync(target.Value, GetPlayerName());
+
+            return await _lobbyService.JoinByCodeWithPasswordAsync(target.Value, GetPlayerName(), password);
+        }
+
+        private async Task<LobbyRoom> JoinByIdWithOptionalPasswordAsync(string lobbyId, string password)
+        {
+            var room = await _lobbyService.JoinByIdAsync(lobbyId, GetPlayerName());
+            if (room == null)
+                return null;
+
+            if (!string.IsNullOrEmpty(password) && room.HasPassword && !LobbyPasswordHasher.Verify(password, room.PasswordHash))
+            {
+                try { await _lobbyService.LeaveAsync(); } catch { }
+                throw new WrongPasswordException();
+            }
+
+            return room;
+        }
+
+        private async Task<JoinRoomTarget> ResolveJoinCodeAliasAsync(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return new JoinRoomTarget(JoinRoomTargetKind.None, string.Empty);
+
+            try
+            {
+                var rooms = await _lobbyService.QueryRoomsAsync();
+                if (rooms == null)
+                    return new JoinRoomTarget(JoinRoomTargetKind.None, string.Empty);
+
+                foreach (var room in rooms)
+                {
+                    if (room == null)
+                        continue;
+
+                    if (string.Equals(room.LobbyId, value, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(room.LobbyId))
+                        return new JoinRoomTarget(JoinRoomTargetKind.LobbyId, room.LobbyId.Trim());
+
+                    if (string.Equals(room.RelayJoinCode, value, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (!string.IsNullOrWhiteSpace(room.LobbyId))
+                            return new JoinRoomTarget(JoinRoomTargetKind.LobbyId, room.LobbyId.Trim());
+
+                        if (!string.IsNullOrWhiteSpace(room.LobbyCode))
+                            return new JoinRoomTarget(JoinRoomTargetKind.JoinCode, room.LobbyCode.Trim());
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[JoinRoomPanelService] ResolveJoinCodeAliasAsync failed for '{value}': {e.Message}");
+            }
+
+            return new JoinRoomTarget(JoinRoomTargetKind.None, string.Empty);
         }
 
         private async Task ReturnToLobbyChooserWithMessageAsync(string joinPanelName, string title, string message)

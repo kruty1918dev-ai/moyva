@@ -158,7 +158,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (lobby == null) return false;
             if (lobby.State != LobbyState.Open) return false;
-            return (lobby.Players?.Count ?? 0) >= 1;
+            return (lobby.Players?.Count ?? 0) >= 2;
         }
 
         /// <summary>
