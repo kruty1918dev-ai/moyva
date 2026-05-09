@@ -10,5 +10,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         GameStateChange  = 5,
         StartGame        = 6,
         EndTurn          = 7,
+        StartingPositions = 8,
     }
 }

@@ -24,6 +24,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly BootstrapGameSettings _settings;
         private readonly ISaveService _saveService;
         private readonly BootstrapStartingPositionState _startingPositionState;
+        private WorldGeneratedDataSignal _pendingWorldGeneratedSignal;
+        private bool _hasPendingWorldGeneratedSignal;
+        private bool _bootstrapApplied;
 
     #pragma warning disable CS0649
         [InjectOptional] private ISessionManager _sessionManager;
@@ -47,21 +50,45 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public void Initialize()
         {
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
+            _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
         }
 
         public void Dispose()
         {
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
+            _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
         }
 
         // ─────────────────────────────────────────────────────────────
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
+            _pendingWorldGeneratedSignal = signal;
+            _hasPendingWorldGeneratedSignal = true;
+
+            TryApplyBootstrap();
+        }
+
+        private void OnWorldSpawnPositions(WorldSpawnPositionsSignal signal)
+        {
+            if (signal.Assignments == null || signal.Assignments.Length == 0)
+                return;
+
+            TryApplyBootstrap();
+        }
+
+        private void TryApplyBootstrap()
+        {
+            if (_bootstrapApplied || !_hasPendingWorldGeneratedSignal)
+                return;
+
             // Якщо є збереження — не робимо bootstrap
             int slot = GameLaunchContext.SaveSlot;
             if (GameLaunchContext.IsAutoLoadEnabled() && _saveService.HasSave(slot))
+            {
+                _bootstrapApplied = true;
                 return;
+            }
 
             if (!CanRunBootstrapLogic())
                 return;
@@ -72,7 +99,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 // Ми маємо order 102, тому значення вже є.
                 var fallback = _startingPositionState.IsSet
                     ? _startingPositionState.StartPosition
-                    : new Vector2Int(signal.Width / 2, signal.Height / 2);
+                    : new Vector2Int(_pendingWorldGeneratedSignal.Width / 2, _pendingWorldGeneratedSignal.Height / 2);
                 var targets = ResolveActiveSpawnAssignments(fallback);
                 int placedCount = 0;
 
@@ -80,7 +107,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 {
                     var target = targets[index];
                     string ownerId = ResolveSpawnOwnerId(target, index);
-                    bool placed = TryPlaceWithSpiralSearch(_settings.DefaultBuildingId, target.Position, signal.Width, signal.Height, ownerId, out Vector2Int placedPosition);
+                    bool placed = TryPlaceWithSpiralSearch(_settings.DefaultBuildingId, target.Position, _pendingWorldGeneratedSignal.Width, _pendingWorldGeneratedSignal.Height, ownerId, out Vector2Int placedPosition);
 
                     if (placed)
                     {
@@ -100,6 +127,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 Debug.LogWarning("[Bootstrap] DefaultBuildingId не установлено");
             }
+
+            _bootstrapApplied = true;
         }
 
         // ─── Спіральний пошук вільного тайлу ─────────────────────────────────
@@ -134,26 +163,47 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private IReadOnlyList<SpawnPositionAssignment> ResolveActiveSpawnAssignments(Vector2Int fallback)
         {
-            var result = new List<SpawnPositionAssignment>();
             var assignments = _startingPositionState.SpawnAssignments;
-            bool hasAssignedParticipant = false;
+
+            var result = new List<SpawnPositionAssignment>();
+            if (assignments == null || assignments.Count == 0)
+            {
+                result.Add(new SpawnPositionAssignment { SlotIndex = 0, Position = fallback });
+                return result;
+            }
+
+            string localPlayerId = _sessionManager?.LocalPlayerId;
+            bool isHost = _sessionManager == null || _sessionManager.IsLocalPlayerHost;
 
             for (int index = 0; index < assignments.Count; index++)
             {
                 var assignment = assignments[index];
-                if (!string.IsNullOrEmpty(assignment.ParticipantId) || assignment.IsBot)
+
+                if (!string.IsNullOrEmpty(localPlayerId) && string.Equals(assignment.ParticipantId, localPlayerId, StringComparison.Ordinal))
                 {
                     result.Add(assignment);
-                    hasAssignedParticipant = true;
+                    continue;
+                }
+
+                if (isHost && assignment.IsBot)
+                {
+                    result.Add(assignment);
                 }
             }
 
-            if (!hasAssignedParticipant)
+            if (result.Count == 0)
             {
-                if (assignments.Count > 0)
+                for (int index = 0; index < assignments.Count; index++)
+                {
+                    if (!assignments[index].IsBot)
+                    {
+                        result.Add(assignments[index]);
+                        break;
+                    }
+                }
+
+                if (result.Count == 0)
                     result.Add(assignments[0]);
-                else
-                    result.Add(new SpawnPositionAssignment { SlotIndex = 0, Position = fallback });
             }
 
             return result;
@@ -176,7 +226,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (participants == null || participants.Count == 0)
                 return true;
 
-            return _sessionManager.IsLocalPlayerHost;
+            return _startingPositionState.IsSet;
         }
     }
 }

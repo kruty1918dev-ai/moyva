@@ -38,6 +38,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private bool _startAnchorRegistered;
         private int _registeredStartAnchorCount;
+        private bool _startLogicApplied;
+        private bool _hasPendingWorldGeneratedSignal;
+        private WorldGeneratedDataSignal _pendingWorldGeneratedSignal;
 
         public StartingPositionInitializer(
             IFogOfWarService fogOfWarService,
@@ -73,12 +76,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             _startingPositionState.Set(signal.Assignments);
+            TryApplyStartLogic();
         }
 
         // ─── Основна логіка ───────────────────────────────────────────────────
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
+            _pendingWorldGeneratedSignal = signal;
+            _hasPendingWorldGeneratedSignal = true;
+
+            TryApplyStartLogic();
+        }
+
+        private void TryApplyStartLogic()
+        {
+            if (_startLogicApplied || !_hasPendingWorldGeneratedSignal)
+                return;
+
+            var signal = _pendingWorldGeneratedSignal;
+
             // Якщо є збереження і автозавантаження ввімкнено —
             // туман відновить FogOfWarSaveModule. Якщо snapshot битий, робимо repair.
             int slot = GameLaunchContext.SaveSlot;
@@ -86,36 +103,39 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 RepairLoadedFogIfNeeded(signal);
                 TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height));
+                _startLogicApplied = true;
                 return;
             }
 
-            if (!CanRunStartLogic())
+            if (ShouldComputeHostStartPositions() && !_startingPositionState.IsSet)
             {
-                TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height));
-                return;
-            }
+                List<Vector2Int> startPositions = PickStartingPositions(signal);
+                Vector2Int startPos = startPositions.Count > 0
+                    ? startPositions[0]
+                    : PickStartingPosition(signal.Width, signal.Height);
 
-            List<Vector2Int> startPositions = PickStartingPositions(signal);
-            Vector2Int startPos = startPositions.Count > 0
-                ? startPositions[0]
-                : PickStartingPosition(signal.Width, signal.Height);
+                // Зберігаємо позиції, щоб BootstrapGameInitializer міг розмістити замок на першій з них.
+                if (startPositions.Count > 0)
+                    _startingPositionState.Set(BuildSpawnAssignments(startPositions));
+                else
+                    _startingPositionState.Set(startPos);
 
-            // Зберігаємо позиції, щоб BootstrapGameInitializer міг розмістити замок на першій з них.
-            if (startPositions.Count > 0)
-                _startingPositionState.Set(BuildSpawnAssignments(startPositions));
-            else
-                _startingPositionState.Set(startPos);
-
-            if (_startingPositionState.SpawnAssignments.Count > 0)
-            {
-                _signalBus.Fire(new WorldSpawnPositionsSignal
+                if (_startingPositionState.SpawnAssignments.Count > 0)
                 {
-                    Assignments = CopySpawnAssignments(_startingPositionState.SpawnAssignments),
-                });
+                    _signalBus.Fire(new WorldSpawnPositionsSignal
+                    {
+                        Assignments = CopySpawnAssignments(_startingPositionState.SpawnAssignments),
+                    });
+                }
+
+                return;
             }
 
-            var revealCenters = ResolveActiveStartPositions(_startingPositionState.SpawnAssignments, startPos);
-            RevealStartingAreas(signal.Width, signal.Height, revealCenters);
+            if (!CanRunStartLogic() || !_startingPositionState.IsSet)
+                return;
+
+            _startLogicApplied = true;
+            RevealStartingAreas(signal.Width, signal.Height);
 
             if (_settings.keepCoreFullyVisible)
             {
@@ -127,15 +147,15 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 int visibleRange = _settings.coreVisibleRadiusOverride > 0
                     ? _settings.coreVisibleRadiusOverride
                     : _settings.ResolveCoreVisibleRadius(signal.Width, signal.Height);
-                for (int index = 0; index < revealCenters.Count; index++)
-                    _fogOfWarService.RegisterFixedVisionArea(ResolveStartVisionAnchorId(index), revealCenters[index], visibleRange, _settings.ResolveRevealShape());
+                Vector2Int revealCenter = ResolveLocalRevealCenter(signal.Width, signal.Height);
+                _fogOfWarService.RegisterFixedVisionArea(ResolveStartVisionAnchorId(0), revealCenter, visibleRange, _settings.ResolveRevealShape());
                 _startAnchorRegistered = true;
-                _registeredStartAnchorCount = revealCenters.Count;
+                _registeredStartAnchorCount = 1;
             }
 
             TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height));
 
-            Debug.Log($"[Bootstrap] Стартові позиції: {string.Join(", ", revealCenters)}. Туман розкрито, камеру переміщено.");
+            Debug.Log($"[Bootstrap] Стартова позиція: {ResolveLocalRevealCenter(signal.Width, signal.Height)}. Туман розкрито, камеру переміщено.");
         }
 
         private void TeleportMainCamera(Vector2Int startPos)
@@ -477,7 +497,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private bool CanRunStartLogic()
         {
-            return _sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0 || IsMultiplayerHost();
+            if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
+                return true;
+
+            if (_sessionManager.IsLocalPlayerHost)
+                return true;
+
+            return _startingPositionState.IsSet;
         }
 
         private bool IsMultiplayerHost()
@@ -487,38 +513,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         // ─── Стартове кругле розкриття туману ─────────────────────────────────
 
-        private void RevealStartingAreas(int width, int height, IReadOnlyList<Vector2Int> centers)
+        private void RevealStartingAreas(int width, int height)
         {
             int radius = _settings.ResolveRevealedRadius(width, height);
-            var snapshot = BuildRevealSnapshot(width, height, centers, radius, _settings.ResolveRevealShape());
+            var snapshot = BuildRevealSnapshot(width, height, ResolveLocalRevealCenter(width, height), radius, _settings.ResolveRevealShape());
             _fogOfWarService.LoadFromSnapshot(snapshot);
         }
 
-        private static IReadOnlyList<Vector2Int> ResolveActiveStartPositions(
-            IReadOnlyList<SpawnPositionAssignment> assignments,
-            Vector2Int fallback)
+        private bool ShouldComputeHostStartPositions()
         {
-            var result = new List<Vector2Int>();
-            if (assignments != null)
-            {
-                bool hasAssignedParticipant = false;
-                for (int index = 0; index < assignments.Count; index++)
-                {
-                    if (!string.IsNullOrEmpty(assignments[index].ParticipantId) || assignments[index].IsBot)
-                    {
-                        result.Add(assignments[index].Position);
-                        hasAssignedParticipant = true;
-                    }
-                }
+            if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
+                return true;
 
-                if (!hasAssignedParticipant && assignments.Count > 0)
-                    result.Add(assignments[0].Position);
-            }
-
-            if (result.Count == 0)
-                result.Add(fallback);
-
-            return result;
+            return _sessionManager.IsLocalPlayerHost;
         }
 
         private static string ResolveStartVisionAnchorId(int index)
@@ -594,6 +601,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             position = default;
             return false;
+        }
+
+        private Vector2Int ResolveLocalRevealCenter(int width, int height)
+        {
+            if (TryGetLocalSpawnPosition(out Vector2Int localSpawn))
+                return ClampToMap(localSpawn, width, height);
+
+            if (_startingPositionState.IsSet)
+                return ClampToMap(_startingPositionState.StartPosition, width, height);
+
+            return new Vector2Int(Mathf.Max(0, width / 2), Mathf.Max(0, height / 2));
         }
 
         private static Vector2Int ClampToMap(Vector2Int position, int width, int height)

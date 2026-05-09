@@ -2,8 +2,10 @@
     "name": "Kruty1918.Moyva.Tests.Multiplayer",
     "rootNamespace": "Kruty1918.Moyva.Tests.Multiplayer",
     "references": [
+        "Zenject",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
+        "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.Multiplayer"
     ],
     "includePlatforms": ["Editor"],

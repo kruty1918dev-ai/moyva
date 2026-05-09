@@ -2,6 +2,7 @@ using Zenject;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Kruty1918.Moyva.Bootstrap.Runtime;
+using Kruty1918.Moyva.Multiplayer.Runtime;
 
 namespace Kruty1918.Moyva.Bootstrap
 {
@@ -51,6 +52,8 @@ namespace Kruty1918.Moyva.Bootstrap
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
             // Виконується після TestUnitSpawner, щоб знати чи є збереження.
             Container.BindInstance(startingPositionSettings).AsSingle();
+            Container.BindInterfacesTo<StartingPositionSyncService>().AsSingle().NonLazy();
+            Container.BindExecutionOrder<StartingPositionSyncService>(100);
             Container.BindInterfacesTo<StartingPositionInitializer>().AsSingle().NonLazy();
             Container.BindExecutionOrder<StartingPositionInitializer>(101);
 

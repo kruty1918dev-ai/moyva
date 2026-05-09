@@ -678,7 +678,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
     }
 
     // ====================================================================
-    // GameCommandTypeEnumTests — 5 tests
+    // GameCommandTypeEnumTests — 6 tests
     // ====================================================================
     [TestFixture]
     public sealed class GameCommandTypeEnumTests
@@ -697,6 +697,9 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
 
         [Test]
         public void GameStateChange_Is5() => Assert.AreEqual(5, (int)GameCommandType.GameStateChange);
+
+        [Test]
+        public void StartingPositions_Is8() => Assert.AreEqual(8, (int)GameCommandType.StartingPositions);
     }
 
     // ====================================================================
