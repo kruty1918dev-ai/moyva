@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Grid.API;
 using UnityEditor;
 using UnityEngine;
 
@@ -162,7 +163,7 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private void DrawGeneratorAssetSection()
         {
-            BeginSection("Генератор", "d_GraphView Icon", "GraphAsset або інший ScriptableObject генератора, з якого можна підтягнути noise/height settings.");
+            BeginSection("Генератор", "d_Project", "GraphAsset або інший ScriptableObject генератора, з якого можна підтягнути noise/height settings.");
 
             EditorGUI.BeginChangeCheck();
             var nextGenerator = EditorGUILayout.ObjectField(
@@ -533,6 +534,9 @@ namespace Kruty1918.Moyva.Units.Editor
             var chance = layer.FindPropertyRelative("TileIDChance");
             var variants = layer.FindPropertyRelative("WeightedVariants");
 
+            if (tile != null && string.IsNullOrWhiteSpace(tile.stringValue))
+                tile.stringValue = ResolveFirstExistingTileId();
+
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(tile, new GUIContent("Tile ID", "Базовий tile id для цього рівня."));
 
@@ -680,6 +684,7 @@ namespace Kruty1918.Moyva.Units.Editor
             EnsureGeneratorPreviewTexture(_generatorPreviewWidth, _generatorPreviewHeight);
 
             int visibleCells = 0;
+            string fallbackTileId = ResolveFirstExistingTileId();
             for (int y = 0; y < _generatorPreviewHeight; y++)
             {
                 for (int x = 0; x < _generatorPreviewWidth; x++)
@@ -687,7 +692,7 @@ namespace Kruty1918.Moyva.Units.Editor
                     float heightValue = _generatorPreviewNoiseMap[x, y];
                     int levelIndex = ResolvePreviewLevel(levels, heightValue);
                     var level = levels[Mathf.Clamp(levelIndex, 0, levels.Count - 1)];
-                    string tileId = SelectPreviewTile(level, x, y, _generatorPreviewSeed);
+                    string tileId = SelectPreviewTile(level, x, y, _generatorPreviewSeed, fallbackTileId);
                     bool visible = IsInsideSelectedVision(x, y);
                     if (visible)
                         visibleCells++;
@@ -824,10 +829,10 @@ namespace Kruty1918.Moyva.Units.Editor
             return fallback;
         }
 
-        private string SelectPreviewTile(PreviewHeightLevel level, int x, int y, int seed)
+        private string SelectPreviewTile(PreviewHeightLevel level, int x, int y, int seed, string fallbackTileId)
         {
             if (level.Variants == null || level.Variants.Length == 0)
-                return level.TileId;
+                return ResolveTileIdOrFallback(level.TileId, fallbackTileId);
 
             float roll = (PositiveHash(seed, x, y) % 100000) / 100000f;
             float cumulative = 0f;
@@ -835,7 +840,7 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 cumulative += level.TileChance;
                 if (roll < cumulative)
-                    return level.TileId;
+                    return ResolveTileIdOrFallback(level.TileId, fallbackTileId);
             }
 
             for (int i = 0; i < level.Variants.Length; i++)
@@ -849,7 +854,42 @@ namespace Kruty1918.Moyva.Units.Editor
                     return variant.TileId;
             }
 
-            return level.TileId;
+            return ResolveTileIdOrFallback(level.TileId, fallbackTileId);
+        }
+
+        private static string ResolveTileIdOrFallback(string tileId, string fallbackTileId)
+        {
+            if (!string.IsNullOrWhiteSpace(tileId))
+                return tileId.Trim();
+
+            return !string.IsNullOrWhiteSpace(fallbackTileId) ? fallbackTileId : "ground";
+        }
+
+        private static string ResolveFirstExistingTileId()
+        {
+            string[] guids = AssetDatabase.FindAssets("t:TileRegistrySO");
+            if (guids == null || guids.Length == 0)
+                return "ground";
+
+            Array.Sort(guids, StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var registry = AssetDatabase.LoadAssetAtPath<TileRegistrySO>(path);
+                if (registry == null || registry.Definitions == null)
+                    continue;
+
+                for (int j = 0; j < registry.Definitions.Length; j++)
+                {
+                    var definition = registry.Definitions[j];
+                    if (definition == null || string.IsNullOrWhiteSpace(definition.Id))
+                        continue;
+
+                    return definition.Id.Trim();
+                }
+            }
+
+            return "ground";
         }
 
         private bool IsInsideSelectedVision(int x, int y)

@@ -31,3 +31,13 @@ MonoBehaviour:
     AnimationSettings:
       MoveDurationPerTile: 0.3
       DelayOnTile: 0.05
+    CustomSprite: {fileID: 0}
+    AnimationClips:
+    - Type: 0
+      Name: Animation 1
+      AnimationClip: {fileID: 0}
+      AnimatorParameterName: 
+      SpriteFrames: []
+      SpriteFPS: 0
+      Loop: 1
+      Duration: 1

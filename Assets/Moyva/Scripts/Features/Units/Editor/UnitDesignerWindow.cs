@@ -37,11 +37,15 @@ namespace Kruty1918.Moyva.Units.Editor
         private bool _showStatsPreview = true;
         private bool _showAnimationPreview = true;
         private bool _showDetailedStatePreview = true;
+        private int _verticalLayoutTab;
         private string _autoAnimationSearchFolder = "Assets/Moyva/Art";
         private string _autoAnimationPrefix = string.Empty;
         private int _autoAnimationFps = 10;
         private bool _autoAnimationReplaceByType = true;
         private double _lastRepaintTime;
+        private float _previewSimulationSpeed = 1f;
+        private float _previewSimulationTime;
+        private bool _pauseSimulation;
         
         // Animation preview
         private int _previewAnimationIndex = -1;
@@ -111,6 +115,7 @@ namespace Kruty1918.Moyva.Units.Editor
 
             DrawToolbar();
             DrawMainBody();
+
             DrawStatusBar();
 
             if (_registryObject != null && _registryObject.ApplyModifiedProperties())
@@ -122,17 +127,28 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private void OnEditorUpdate()
         {
-            if (!_autoPlayPreview || !_showAnimationPreview)
+            if (!_showAnimationPreview)
                 return;
 
             double now = EditorApplication.timeSinceStartup;
-            if (now - _lastRepaintTime < 1.0 / 30.0)
+            if (_lastAnimationFrameTime <= 0)
+                _lastAnimationFrameTime = now;
+
+            float deltaTime = Mathf.Max(0f, (float)(now - _lastAnimationFrameTime));
+            _lastAnimationFrameTime = now;
+
+            bool previewActive = _autoPlayPreview || _isPlayingAnimation;
+            if (!previewActive)
                 return;
 
-            _lastRepaintTime = now;
+            float simulationScale = _pauseSimulation ? 0f : Mathf.Max(0.05f, _previewSimulationSpeed);
+            float scaledDelta = deltaTime * simulationScale;
+
+            if (_autoPlayPreview)
+                _previewSimulationTime += scaledDelta;
 
             // Update animation playback
-            if (_isPlayingAnimation && _previewAnimationIndex >= 0 && HasSelectedUnit())
+            if (_autoPlayPreview && _isPlayingAnimation && _previewAnimationIndex >= 0 && HasSelectedUnit())
             {
                 var unit = SelectedUnitProperty();
                 var animationClips = unit.FindPropertyRelative("AnimationClips");
@@ -140,10 +156,9 @@ namespace Kruty1918.Moyva.Units.Editor
                 {
                     var clip = animationClips.GetArrayElementAtIndex(_previewAnimationIndex);
                     var durationRef = clip.FindPropertyRelative("Duration");
-                    float duration = durationRef != null ? durationRef.floatValue : 1f;
+                    float duration = durationRef != null ? Mathf.Max(0.01f, durationRef.floatValue) : 1f;
 
-                    _animationPlaybackTime += (float)(now - _lastAnimationFrameTime);
-                    _lastAnimationFrameTime = now;
+                    _animationPlaybackTime += scaledDelta;
 
                     if (_animationPlaybackTime > duration)
                     {
@@ -156,7 +171,14 @@ namespace Kruty1918.Moyva.Units.Editor
                 }
             }
 
-            Repaint();
+            // Keep the editor loop and repaint running even when the mouse is idle.
+            EditorApplication.QueuePlayerLoopUpdate();
+
+            if (now - _lastRepaintTime >= 1.0 / 60.0)
+            {
+                _lastRepaintTime = now;
+                Repaint();
+            }
         }
 
         private void DrawToolbar()
@@ -303,17 +325,16 @@ namespace Kruty1918.Moyva.Units.Editor
             // Tabbed view for narrow windows
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             GUILayout.FlexibleSpace();
-            bool showList = GUILayout.Toggle(true, "Юніти", EditorStyles.toolbarButton, GUILayout.Width(60f));
-            bool showDetails = GUILayout.Toggle(false, "Налаштування", EditorStyles.toolbarButton, GUILayout.Width(100f));
-            bool showPreview = GUILayout.Toggle(false, "Preview", EditorStyles.toolbarButton, GUILayout.Width(70f));
+            _verticalLayoutTab = GUILayout.Toolbar(_verticalLayoutTab, new[] { "Юніти", "Налаштування", "Preview" }, EditorStyles.toolbarButton,
+                GUILayout.Width(250f));
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
             
-            if (showList)
+            if (_verticalLayoutTab == 0)
                 DrawUnitListPanel(GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
-            else if (showDetails)
+            else if (_verticalLayoutTab == 1)
                 DrawDetailsPanel(GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
-            else if (showPreview)
+            else
                 DrawPreviewPanel(GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
             
             EditorGUILayout.EndVertical();
@@ -428,9 +449,15 @@ namespace Kruty1918.Moyva.Units.Editor
             string typeId = GetString(unit, "TypeId");
             DrawValidationSummary(unit, _selectedIndex);
 
-            _detailsScroll = GUILayout.BeginScrollView(_detailsScroll, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
+            _detailsScroll = GUILayout.BeginScrollView(
+                _detailsScroll,
+                true,
+                true,
+                GUILayout.ExpandHeight(true),
+                GUILayout.ExpandWidth(true));
 
-            EditorGUILayout.BeginVertical(GUILayout.MinWidth(1200f));
+            float contentMinWidth = Mathf.Max(1400f, position.width * 0.62f);
+            GUILayout.BeginVertical(GUILayout.MinWidth(contentMinWidth));
             DrawIdentitySection(unit);
             DrawPrefabSection(unit, typeId);
             DrawPrefabComponentsSection(unit);
@@ -438,7 +465,9 @@ namespace Kruty1918.Moyva.Units.Editor
             DrawCombatCompactSection(unit);
             DrawAnimationSection(unit);
             DrawDangerSection(unit);
-            EditorGUILayout.EndVertical();
+            // Extra padding ensures last controls are reachable above scrollbars.
+            GUILayout.Space(48f);
+            GUILayout.EndVertical();
 
             GUILayout.EndScrollView();
             EditorGUILayout.EndVertical();
@@ -459,6 +488,31 @@ namespace Kruty1918.Moyva.Units.Editor
             var unit = SelectedUnitProperty();
             var prefab = GetObject<GameObject>(unit, "Prefab");
             var sprite = ResolveSprite(prefab);
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Швидкість симуляції", EditorStyles.boldLabel);
+
+            EditorGUILayout.BeginHorizontal();
+            _previewSimulationSpeed = EditorGUILayout.Slider(new GUIContent("Множник", "Керує швидкістю preview для руху та анімацій."), _previewSimulationSpeed, 0.05f, 4f);
+            if (GUILayout.Button(_pauseSimulation ? "▶" : "⏸", GUILayout.Width(32f), GUILayout.Height(18f)))
+                _pauseSimulation = !_pauseSimulation;
+            if (GUILayout.Button("Reset", GUILayout.Width(54f), GUILayout.Height(18f)))
+            {
+                _previewSimulationTime = 0f;
+                _animationPlaybackTime = 0f;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("0.25x", GUILayout.Width(50f), GUILayout.Height(18f))) _previewSimulationSpeed = 0.25f;
+            if (GUILayout.Button("0.5x", GUILayout.Width(46f), GUILayout.Height(18f))) _previewSimulationSpeed = 0.5f;
+            if (GUILayout.Button("1x", GUILayout.Width(34f), GUILayout.Height(18f))) _previewSimulationSpeed = 1f;
+            if (GUILayout.Button("2x", GUILayout.Width(34f), GUILayout.Height(18f))) _previewSimulationSpeed = 2f;
+            if (GUILayout.Button("4x", GUILayout.Width(34f), GUILayout.Height(18f))) _previewSimulationSpeed = 4f;
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.LabelField(_pauseSimulation ? "Пауза" : $"t: {_previewSimulationTime:0.00}s", EditorStyles.miniLabel, GUILayout.Width(90f));
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
 
             // Adaptive preview size based on window width
             float previewMinHeight = Mathf.Clamp(position.width * 0.4f, 180f, 320f);
@@ -1153,7 +1207,7 @@ namespace Kruty1918.Moyva.Units.Editor
             float movementDelay = Mathf.Max(0f, GetNestedFloat(unit, "AnimationSettings", "DelayOnTile", 0.05f));
             float cycleTime = (movementDuration + movementDelay) * 4f;
             float normalizedTime = _autoPlayPreview && _showAnimationPreview && cycleTime > 0.001f
-                ? (float)(EditorApplication.timeSinceStartup % cycleTime)
+                ? _previewSimulationTime % cycleTime
                 : 0f;
             
             if (_isPlayingAnimation && _previewAnimationIndex >= 0)
@@ -1182,11 +1236,11 @@ namespace Kruty1918.Moyva.Units.Editor
                         int frameIndex = Mathf.FloorToInt(_animationPlaybackTime / frameTime) % spritesRef.arraySize;
                         var frame = spritesRef.GetArrayElementAtIndex(frameIndex);
                         displaySprite = frame.objectReferenceValue as Sprite;
-                        statusLabel = $"{clipType}: {clipName} | кадр {frameIndex + 1}/{spritesRef.arraySize} | {fps} FPS | {(loop ? "Loop" : "Once")}";
+                        statusLabel = $"{clipType}: {clipName} | кадр {frameIndex + 1}/{spritesRef.arraySize} | {fps} FPS | {(loop ? "Loop" : "Once")} | sim x{_previewSimulationSpeed:0.00}";
                     }
                     else
                     {
-                        statusLabel = $"{clipType}: {clipName} | AnimationClip/без спрайтів";
+                        statusLabel = $"{clipType}: {clipName} | AnimationClip/без спрайтів | sim x{_previewSimulationSpeed:0.00}";
                     }
                 }
             }
@@ -1229,9 +1283,10 @@ namespace Kruty1918.Moyva.Units.Editor
                 centerPos.y -= Mathf.Clamp(rect.height * 0.16f, 18f, 44f);
 
                 float tilesPerSecond = 1f / Mathf.Max(0.02f, movementDuration + movementDelay);
+                float effectiveSpeed = _pauseSimulation ? 0f : tilesPerSecond * Mathf.Max(0.05f, _previewSimulationSpeed);
                 statusLabel = waiting
-                    ? $"Пауза ({phaseName}) | speed {tilesPerSecond:0.00} tile/s | delay {movementDelay:0.00}s"
-                    : $"Рух ({phaseName}) | speed {tilesPerSecond:0.00} tile/s | t {moveT:0.00}";
+                    ? $"Пауза ({phaseName}) | speed {effectiveSpeed:0.00} tile/s | delay {movementDelay:0.00}s"
+                    : $"Рух ({phaseName}) | speed {effectiveSpeed:0.00} tile/s | t {moveT:0.00} | sim x{_previewSimulationSpeed:0.00}";
             }
 
             float spriteSize = Mathf.Clamp(rect.width * 0.3f, 40f, 100f);
@@ -1282,6 +1337,7 @@ namespace Kruty1918.Moyva.Units.Editor
             float moveDuration = Mathf.Max(0.02f, GetNestedFloat(unit, "AnimationSettings", "MoveDurationPerTile", 0.3f));
             float moveDelay = Mathf.Max(0f, GetNestedFloat(unit, "AnimationSettings", "DelayOnTile", 0.05f));
             float speed = 1f / Mathf.Max(0.02f, moveDuration + moveDelay);
+            float effectiveSpeed = _pauseSimulation ? 0f : speed * Mathf.Max(0.05f, _previewSimulationSpeed);
 
             var prefab = GetObject<GameObject>(unit, "Prefab");
             var customSprite = GetObject<Sprite>(unit, "CustomSprite");
@@ -1324,6 +1380,7 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorGUILayout.LabelField($"Damage C/P/Cr: {cuttingDmg}/{penetratingDmg}/{crushingDmg} (total {totalDamage})");
             EditorGUILayout.LabelField($"Defense C/P/Cr: {cuttingDef}/{penetratingDef}/{crushingDef} (total {totalDefense})");
             EditorGUILayout.LabelField($"Movement: duration {moveDuration:0.00}s, delay {moveDelay:0.00}s, speed {speed:0.00} tile/s");
+            EditorGUILayout.LabelField($"Simulation: speed x{_previewSimulationSpeed:0.00}, effective {effectiveSpeed:0.00} tile/s, time {_previewSimulationTime:0.00}s");
             EditorGUILayout.LabelField($"Animations: {clipCount} | Active: {activeAnimation}", EditorStyles.wordWrappedMiniLabel);
 
             EditorGUILayout.EndVertical();
