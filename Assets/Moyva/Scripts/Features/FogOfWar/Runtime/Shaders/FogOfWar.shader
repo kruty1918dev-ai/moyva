@@ -80,6 +80,8 @@ Shader "Moyva/FogOfWar"
                 float _IconGridSize;
             CBUFFER_END
 
+            float _MoyvaMobileFillRatePressure;
+
             struct Attributes
             {
                 float4 positionOS : POSITION;
@@ -138,11 +140,15 @@ Shader "Moyva/FogOfWar"
                 float2 tileHalfTexel = 0.5 / max(1.0.xx, _FogTileSpritePixelSize.xy);
                 float2 seamOverlapUV = _FogTileSeamOverlapPixels.xx / max(1.0.xx, _FogTileSpritePixelSize.xy);
                 half4 blended = half4(0.0, 0.0, 0.0, 0.0);
+                int sampleRadius = _MoyvaMobileFillRatePressure >= 0.65 ? 2 : 4;
 
                 for (int y = -4; y <= 4; y++)
                 {
                     for (int x = -4; x <= 4; x++)
                     {
+                        if (x < -sampleRadius || x > sampleRadius || y < -sampleRadius || y > sampleRadius)
+                            continue;
+
                         float2 cell = baseCell + float2(x, y);
                         float inBounds = step(0.0, cell.x) * step(0.0, cell.y) *
                                          step(cell.x, fogGridSize.x - 1.0) * step(cell.y, fogGridSize.y - 1.0);
@@ -163,27 +169,22 @@ Shader "Moyva/FogOfWar"
                     }
                 }
 
-                // ─── Sample icon texture with independent icon grid ─────────────
-                float2 iconGridSize = max(1.0.xx, _FogIconGridSize.xy);
-                float2 iconCellFrac = frac(mapUV * iconGridSize);
-                
-                // Scale cell fractional to icon size and center within icon cell
-                float2 iconUVInSprite = iconCellFrac * _FogIconScale;
-                iconUVInSprite += float2(0.5 - _FogIconScale * 0.5, 0.5 - _FogIconScale * 0.5);
+                if (_UseFogIcons > 0.5 && _MoyvaMobileFillRatePressure < 0.8)
+                {
+                    float2 iconGridSize = max(1.0.xx, _FogIconGridSize.xy);
+                    float2 iconCellFrac = frac(mapUV * iconGridSize);
+                    float2 iconUVInSprite = iconCellFrac * _FogIconScale;
+                    iconUVInSprite += float2(0.5 - _FogIconScale * 0.5, 0.5 - _FogIconScale * 0.5);
 
-                // Sample exact sprite rect from atlas texture
-                float2 iconUV = _FogIconUVRect.xy + iconUVInSprite * _FogIconUVRect.zw;
-                
-                half4 iconSample = SAMPLE_TEXTURE2D(_FogIconTex, sampler_FogIconTex, iconUV);
-                iconSample *= step(0.5, _UseFogIcons);
-                float mapInside = step(0.0, mapUV.x) * step(mapUV.x, 1.0) * step(0.0, mapUV.y) * step(mapUV.y, 1.0);
-                float4 currentFogState = BuildFogState(SAMPLE_TEXTURE2D(_FogTex, sampler_FogTex, saturate(mapUV)).r);
-                iconSample.a *= (_UnexploredAlpha * currentFogState.z + _ExploredAlpha * currentFogState.y) * (1.0 - currentFogState.x);
-                iconSample.a *= mapInside;
+                    float2 iconUV = _FogIconUVRect.xy + iconUVInSprite * _FogIconUVRect.zw;
+                    half4 iconSample = SAMPLE_TEXTURE2D(_FogIconTex, sampler_FogIconTex, iconUV);
+                    float mapInside = step(0.0, mapUV.x) * step(mapUV.x, 1.0) * step(0.0, mapUV.y) * step(mapUV.y, 1.0);
+                    float4 currentFogState = BuildFogState(SAMPLE_TEXTURE2D(_FogTex, sampler_FogTex, saturate(mapUV)).r);
+                    iconSample.a *= (_UnexploredAlpha * currentFogState.z + _ExploredAlpha * currentFogState.y) * (1.0 - currentFogState.x);
+                    iconSample.a *= mapInside * _FogIconIntensity;
+                    blended = BlendWithoutAlphaAccumulation(blended, iconSample);
+                }
 
-                // ─── Blend tile and icon ──────────────────────────────────────
-                iconSample.a *= _FogIconIntensity;
-                blended = BlendWithoutAlphaAccumulation(blended, iconSample);
                 return blended;
             }
             ENDHLSL

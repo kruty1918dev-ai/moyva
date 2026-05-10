@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -38,6 +39,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         private LobbyState _state = LobbyState.Closed;
         private bool _broadcastWarningLogged;
         private bool _loopbackWarningLogged;
+        private int _invalidPayloadCount;
 
         public event Action<LobbyRoom> LobbyUpdated;
         public event Action<LobbyState> StateChanged;
@@ -59,6 +61,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, CancellationToken ct = default)
         {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
             // For LAN we simply return a LobbyRoom and start broadcasting
             var roomId = Guid.NewGuid().ToString("N");
             var ip = GetLocalIPAddress() ?? "127.0.0.1";
@@ -73,6 +78,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             _currentPasswordHash = LobbyPasswordHasher.Hash(options.Password);
             _current = new LobbyRoom(roomId, lobbyCode, options.Name, options.MaxPlayers, options.IsPrivate,
                 hostPlayerId: hostPlayerId, relayJoinCode: joinCode, players: players, passwordHash: _currentPasswordHash, state: LobbyState.Open);
+
+            if (ip.StartsWith("127.", StringComparison.Ordinal))
+                _logger.Warn($"[LanLobby] CreateRoomAsync detected loopback address '{ip}'. Other devices will not be able to connect.");
+
+            _logger.Info($"[LanLobby] CreateRoomAsync created room='{options.Name}', lobbyId='{roomId}', joinCode='{joinCode}', hostId='{hostPlayerId}', maxPlayers={options.MaxPlayers}, private={options.IsPrivate}.");
 
             StartBroadcastLoop();
             LobbyUpdated?.Invoke(_current);
@@ -192,12 +202,16 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public async Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)
         {
             var roomsByKey = new Dictionary<string, LobbyRoom>(StringComparer.Ordinal);
+            var responses = 0;
+            var parsed = 0;
+            var invalid = 0;
 
             using (var client = CreateQueryClient())
             {
                 var deadline = DateTime.UtcNow.AddMilliseconds(QueryTimeoutMs);
                 try
                 {
+                    _logger.Trace($"[LanLobby] QueryRoomsAsync started. timeoutMs={QueryTimeoutMs}, discoveryPort={DiscoveryPort}, broadcast='{_broadcastEndPoint.Address}:{_broadcastEndPoint.Port}'.");
                     await SendDiscoveryQueryAsync(client).ConfigureAwait(false);
 
                     while (DateTime.UtcNow < deadline)
@@ -210,6 +224,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
                             var result = await ReceiveResultWithTimeoutAsync(client, remaining, ct).ConfigureAwait(false);
                             if (!result.HasValue) break;
+                            responses++;
 
                             var json = Encoding.UTF8.GetString(result.Value.Buffer);
                             if (IsDiscoveryQuery(json))
@@ -217,11 +232,16 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
                             if (TryParsePayload(json, out var room, out var joinCode))
                             {
+                                parsed++;
                                 var key = $"{room.LobbyId}:{joinCode}";
                                 roomsByKey[key] = roomsByKey.TryGetValue(key, out var existing)
                                     ? MergeRooms(existing, room)
                                     : room;
                                 RememberDiscoveredRoom(roomsByKey[key]);
+                            }
+                            else
+                            {
+                                invalid++;
                             }
                         }
                         catch (SocketException) { break; }
@@ -233,6 +253,15 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     }
                 }
                 catch { }
+            }
+
+            if (roomsByKey.Count == 0)
+            {
+                _logger.Warn($"[LanLobby] QueryRoomsAsync discovered no rooms (responses={responses}, parsed={parsed}, invalid={invalid}). Check same subnet, firewall/UDP broadcast, and host advertised IP.");
+            }
+            else
+            {
+                _logger.Info($"[LanLobby] QueryRoomsAsync discovered {roomsByKey.Count} room(s) (responses={responses}, parsed={parsed}, invalid={invalid}).");
             }
 
             return new List<LobbyRoom>(roomsByKey.Values);
@@ -278,6 +307,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             _cts = new CancellationTokenSource();
             _listenUdp = CreateListeningClient(DiscoveryPort);
             var ct = _cts.Token;
+            _logger.Info($"[LanLobby] StartBroadcastLoop host='{ResolveHostDisplayName(_current)}' lobbyId='{_current?.LobbyId}' join='{_current?.RelayJoinCode}' discoveryPort={DiscoveryPort}.");
             _ = Task.Run(async () =>
             {
                 while (!ct.IsCancellationRequested)
@@ -311,7 +341,12 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                         }
 
                         if (!TryParsePayload(json, out var incomingRoom, out _))
+                        {
+                            _invalidPayloadCount++;
+                            if (_invalidPayloadCount <= 5 || _invalidPayloadCount % 20 == 0)
+                                _logger.Warn($"[LanLobby] Ignored invalid discovery payload. count={_invalidPayloadCount}.");
                             continue;
+                        }
 
                         RememberDiscoveredRoom(incomingRoom);
                         if (MergeCurrentRoom(incomingRoom))
@@ -598,6 +633,12 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var max = int.TryParse(parts[3], out var parsedMax) ? parsedMax : 4;
             var ip = parts[4];
             var port = parts[5];
+            if (!IPAddress.TryParse(ip, out var parsedIp) || parsedIp.AddressFamily != AddressFamily.InterNetwork)
+                return false;
+
+            if (!int.TryParse(port, out var parsedPort) || parsedPort <= 0 || parsedPort > 65535)
+                return false;
+
             var hostId = parts.Length >= 7 && !string.IsNullOrWhiteSpace(parts[6]) ? parts[6] : roomId;
             var hostName = parts.Length >= 8 ? parts[7] : string.Empty;
             var players = parts.Length >= 9 ? DeserializePlayers(parts[8]) : new List<LobbyPlayer>();
@@ -764,13 +805,44 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         {
             try
             {
+                foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (ni.OperationalStatus != OperationalStatus.Up)
+                        continue;
+
+                    if (ni.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
+                        ni.NetworkInterfaceType == NetworkInterfaceType.Tunnel)
+                    {
+                        continue;
+                    }
+
+                    var props = ni.GetIPProperties();
+                    foreach (var uni in props.UnicastAddresses)
+                    {
+                        if (uni.Address.AddressFamily != AddressFamily.InterNetwork)
+                            continue;
+
+                        var ip = uni.Address.ToString();
+                        if (ip.StartsWith("169.254.", StringComparison.Ordinal))
+                            continue;
+
+                        return ip;
+                    }
+                }
+            }
+
+            catch { }
+
+            try
+            {
                 foreach (var ni in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
                 {
-                    if (ni.AddressFamily == AddressFamily.InterNetwork)
+                    if (ni.AddressFamily == AddressFamily.InterNetwork && !ni.ToString().StartsWith("127.", StringComparison.Ordinal))
                         return ni.ToString();
                 }
             }
             catch { }
+
             return null;
         }
 

@@ -73,7 +73,17 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Services
             if (_modeSelector == null)
                 return;
 
+            var effectiveBefore = _modeSelector.EffectiveMode;
+            if (_modeSelector.CurrentMode == mode && effectiveBefore == mode)
+                return;
+
             await _modeSelector.SetModeAsync(mode);
+            if (_modeSelector.CurrentMode != mode || _modeSelector.EffectiveMode != mode)
+            {
+                Debug.LogWarning($"[MultiplayerMenuModeService] Menu '{menuName}' requested {mode} multiplayer mode but effective mode is {_modeSelector.EffectiveMode}.");
+                return;
+            }
+
             Debug.Log($"[MultiplayerMenuModeService] Menu '{menuName}' selected {mode} multiplayer mode.");
         }
 

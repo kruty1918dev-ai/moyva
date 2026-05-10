@@ -27,6 +27,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .To<UnitClassConfigService>()
                 .AsSingle();
 
+            Container.Bind<IUnitCombatService>()
+                .To<UnitCombatService>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<UnitWorldInfoPresenter>()
                 .AsSingle()
                 .NonLazy();

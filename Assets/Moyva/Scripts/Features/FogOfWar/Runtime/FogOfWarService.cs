@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
@@ -14,6 +16,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// </summary>
     internal sealed class FogOfWarService : IFogOfWarService, IInitializable, IDisposable
     {
+        private const string BuildingVisionAreaPrefix = "building:";
+
         private readonly IFogVisibilityResolver _resolver;
         private readonly IFogTextureUpdater     _textureUpdater;
         private readonly IFogSaveDataProvider   _saveProvider;
@@ -50,6 +54,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private HashSet<Vector2Int> _lastDirtyTiles = new HashSet<Vector2Int>();
 
+        internal int Version { get; private set; }
+        internal bool IsReady => _initialized;
+
         public FogOfWarService(
             IFogVisibilityResolver resolver,
             IFogTextureUpdater     textureUpdater,
@@ -76,6 +83,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreated);
             _signalBus.Subscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+            _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGeneratedData);
         }
 
@@ -84,6 +93,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _signalBus.Unsubscribe<UnitCreatedSignal>(OnUnitCreated);
             _signalBus.Unsubscribe<UnitMovedSignal>(OnUnitMoved);
             _signalBus.Unsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+            _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGeneratedData);
         }
 
@@ -124,6 +135,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             // Ensure texture reflects current state after all pending units processed
             _textureUpdater?.RebuildFullTexture(this);
+            BumpVersion();
         }
 
         public void RegisterUnit(string unitId, Vector2Int position, int visionRange)
@@ -134,11 +146,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void RegisterVisionArea(string unitId, Vector2Int position, int visionRange, FogRevealShape? shape)
         {
+            if (string.IsNullOrWhiteSpace(unitId))
+                return;
+
             if (!_initialized)
             {
                 _pendingUnits[unitId] = (position, visionRange, shape);
                 return;
             }
+
+            RemoveVisibleTiles(unitId);
 
             visionRange = ClampVisionRange(visionRange);
             _unitVisionRange[unitId] = visionRange;
@@ -213,18 +230,21 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         public void UnregisterUnit(string unitId)
         {
-            if (!_initialized) { Debug.LogWarning("[FogOfWar] UnregisterUnit called before Initialize(width,height)."); return; }
-
-            if (!_unitVisibleTiles.TryGetValue(unitId, out var tiles))
+            if (string.IsNullOrWhiteSpace(unitId))
                 return;
 
-            foreach (var t in tiles)
+            if (!_initialized)
             {
-                _visibilityCounters[t.x, t.y] = Mathf.Max(0, _visibilityCounters[t.x, t.y] - 1);
-                _lastDirtyTiles.Add(t);
+                _pendingUnits.Remove(unitId);
+                _unitVisionRange.Remove(unitId);
+                _unitPositions.Remove(unitId);
+                _fixedVisionShapes.Remove(unitId);
+                return;
             }
 
-            _unitVisibleTiles.Remove(unitId);
+            if (!RemoveVisibleTiles(unitId))
+                return;
+
             _unitVisionRange.Remove(unitId);
             _unitPositions.Remove(unitId);
             _fixedVisionShapes.Remove(unitId);
@@ -281,6 +301,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     _exploredTiles[x, y] = explored[x, y];
 
             _textureUpdater?.RebuildFullTexture(this);
+            BumpVersion();
         }
 
         public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles()
@@ -299,6 +320,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void OnUnitDestroyed(UnitDestroyedSignal signal)
             => UnregisterUnit(signal.UnitId);
+
+        private void OnBuildingPlaced(BuildingPlacedSignal signal)
+        {
+            int requestedRange = _defaultVisionRange;
+            RegisterFixedVisionArea(GetBuildingVisionAreaId(signal.Position), signal.Position, requestedRange, FogRevealShape.PixelCircle);
+        }
+
+        private void OnBuildingDemolished(BuildingDemolishedSignal signal)
+            => UnregisterUnit(GetBuildingVisionAreaId(signal.Position));
 
         private void OnWorldGeneratedData(WorldGeneratedDataSignal signal)
         {
@@ -330,6 +360,24 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private bool IsInBounds(Vector2Int pos)
             => pos.x >= 0 && pos.x < _width && pos.y >= 0 && pos.y < _height;
+
+        private bool RemoveVisibleTiles(string unitId)
+        {
+            if (!_unitVisibleTiles.TryGetValue(unitId, out var tiles))
+                return false;
+
+            foreach (var tile in tiles)
+            {
+                _visibilityCounters[tile.x, tile.y] = Mathf.Max(0, _visibilityCounters[tile.x, tile.y] - 1);
+                _lastDirtyTiles.Add(tile);
+            }
+
+            _unitVisibleTiles.Remove(unitId);
+            return true;
+        }
+
+        private static string GetBuildingVisionAreaId(Vector2Int position)
+            => $"{BuildingVisionAreaPrefix}{position.x}:{position.y}";
 
         private IReadOnlyList<Vector2Int> ComputePixelCircleTiles(Vector2Int origin, int radius)
             => ComputeShapeTiles(origin, radius, FogRevealShape.PixelCircle);
@@ -396,8 +444,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void FlushTexture()
         {
+            int dirtyCount = _lastDirtyTiles.Count;
             if (_textureUpdater != null)
                 _textureUpdater.UpdateDirtyTiles(this, _lastDirtyTiles);
+
+            if (dirtyCount > 0)
+                BumpVersion();
 
             _lastDirtyTiles.Clear();
         }
@@ -426,7 +478,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             _textureUpdater?.RebuildFullTexture(this);
+            BumpVersion();
             _lastDirtyTiles.Clear();
+        }
+
+        private void BumpVersion()
+        {
+            unchecked
+            {
+                Version++;
+            }
         }
 
         private void ResizeToWorldDimensions(int width, int height)
@@ -442,6 +503,414 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (exploredSnapshot != null)
                 LoadFromSnapshot(exploredSnapshot);
+        }
+    }
+
+    internal static class FogRendererCullingEvaluator
+    {
+        private const float BoundsEdgeEpsilon = 0.001f;
+
+        public static bool ShouldRender(Bounds worldBounds, IFogOfWarService fogService, IGridService gridService, float boundsPaddingCells)
+        {
+            if (fogService == null || gridService == null)
+                return true;
+
+            if (!TryGetCoveredTileRange(worldBounds, gridService, boundsPaddingCells, out var min, out var max))
+                return true;
+
+            for (int x = min.x; x <= max.x; x++)
+            {
+                for (int y = min.y; y <= max.y; y++)
+                {
+                    if (fogService.GetFogState(new Vector2Int(x, y)) != FogStateType.Unexplored)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        internal static bool TryGetCoveredTileRange(
+            Bounds worldBounds,
+            IGridService gridService,
+            float boundsPaddingCells,
+            out Vector2Int min,
+            out Vector2Int max)
+        {
+            min = default;
+            max = default;
+
+            if (gridService == null || gridService.GridWidth <= 0 || gridService.GridHeight <= 0)
+                return false;
+
+            float padding = Mathf.Max(0f, boundsPaddingCells);
+            int rawMinX = Mathf.FloorToInt(worldBounds.min.x + 0.5f - padding);
+            int rawMinY = Mathf.FloorToInt(worldBounds.min.y + 0.5f - padding);
+            int rawMaxX = Mathf.FloorToInt(worldBounds.max.x + 0.5f - BoundsEdgeEpsilon + padding);
+            int rawMaxY = Mathf.FloorToInt(worldBounds.max.y + 0.5f - BoundsEdgeEpsilon + padding);
+
+            if (rawMaxX < 0 || rawMaxY < 0 || rawMinX >= gridService.GridWidth || rawMinY >= gridService.GridHeight)
+                return false;
+
+            min = new Vector2Int(
+                Mathf.Clamp(rawMinX, 0, gridService.GridWidth - 1),
+                Mathf.Clamp(rawMinY, 0, gridService.GridHeight - 1));
+
+            max = new Vector2Int(
+                Mathf.Clamp(rawMaxX, 0, gridService.GridWidth - 1),
+                Mathf.Clamp(rawMaxY, 0, gridService.GridHeight - 1));
+
+            return min.x <= max.x && min.y <= max.y;
+        }
+    }
+
+    internal sealed class FogRendererCullingService : IInitializable, ITickable, IDisposable
+    {
+        private const int DefaultMaxRenderersPerFrame = 384;
+        private const float DefaultDiscoveryInterval = 0.75f;
+        private const float DefaultBoundsPaddingCells = 0f;
+
+        private static readonly string[] WorldRootNames =
+        {
+            "TilesRoot",
+            "ObjectsRoot",
+            "BuildingsRoot",
+            "PlayerBuildingsRoot",
+        };
+
+        private readonly FogOfWarService _fogService;
+        private readonly IGridService _gridService;
+        private readonly SignalBus _signalBus;
+        private readonly FogOfWarSettings _settings;
+
+        private readonly List<CullableRenderer> _renderers = new List<CullableRenderer>();
+        private readonly Dictionary<Renderer, CullableRenderer> _tracked = new Dictionary<Renderer, CullableRenderer>();
+        private readonly Dictionary<string, GameObject> _unitObjects = new Dictionary<string, GameObject>();
+        private readonly Dictionary<string, Transform> _worldRoots = new Dictionary<string, Transform>();
+        private readonly HashSet<Renderer> _discoveredRenderers = new HashSet<Renderer>();
+        private readonly List<Renderer> _rendererDiscoveryBuffer = new List<Renderer>(512);
+
+        private bool _discoveryRequested = true;
+        private bool _evaluationPending;
+        private int _cursor;
+        private int _lastFogVersion = -1;
+        private float _nextDiscoveryAt;
+
+        public FogRendererCullingService(
+            FogOfWarService fogService,
+            IGridService gridService,
+            SignalBus signalBus,
+            [InjectOptional] FogOfWarSettings settings)
+        {
+            _fogService = fogService;
+            _gridService = gridService;
+            _signalBus = signalBus;
+            _settings = settings;
+        }
+
+        public void Initialize()
+        {
+            _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
+            _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGeneratedData);
+            _signalBus.Subscribe<UnitCreatedSignal>(OnUnitCreated);
+            _signalBus.Subscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+            _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            RequestDiscovery();
+        }
+
+        public void Dispose()
+        {
+            _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
+            _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGeneratedData);
+            _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreated);
+            _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+            _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+
+            RestoreAllRenderers();
+            _unitObjects.Clear();
+        }
+
+        public void Tick()
+        {
+            if (!IsCullingEnabled())
+            {
+                RestoreAllRenderers();
+                return;
+            }
+
+            if (_fogService == null || !_fogService.IsReady)
+                return;
+
+            float now = Time.unscaledTime;
+            if (now >= _nextDiscoveryAt)
+                RequestDiscovery();
+
+            if (_discoveryRequested)
+            {
+                RebuildTrackedRenderers();
+                _discoveryRequested = false;
+                _nextDiscoveryAt = now + ResolveDiscoveryInterval();
+                RequestEvaluation(resetCursor: true);
+            }
+
+            if (_lastFogVersion != _fogService.Version)
+            {
+                _lastFogVersion = _fogService.Version;
+                RequestEvaluation(resetCursor: true);
+            }
+
+            if (!_evaluationPending)
+                return;
+
+            EvaluateBatch(ResolveMaxRenderersPerFrame());
+        }
+
+        private void OnWorldBuilt(WorldBuiltSignal _)
+            => RequestDiscovery();
+
+        private void OnWorldGeneratedData(WorldGeneratedDataSignal _)
+            => RequestDiscovery();
+
+        private void OnUnitCreated(UnitCreatedSignal signal)
+        {
+            if (!string.IsNullOrWhiteSpace(signal.UnitId) && signal.UnitObject != null)
+                _unitObjects[signal.UnitId] = signal.UnitObject;
+
+            RequestDiscovery();
+        }
+
+        private void OnUnitDestroyed(UnitDestroyedSignal signal)
+        {
+            if (!string.IsNullOrWhiteSpace(signal.UnitId))
+                _unitObjects.Remove(signal.UnitId);
+
+            RequestDiscovery();
+        }
+
+        private void OnBuildingPlaced(BuildingPlacedSignal _)
+            => RequestDiscovery();
+
+        private void OnBuildingDemolished(BuildingDemolishedSignal _)
+            => RequestDiscovery();
+
+        private void RequestDiscovery()
+        {
+            _discoveryRequested = true;
+        }
+
+        private void RequestEvaluation(bool resetCursor)
+        {
+            if (resetCursor)
+                _cursor = 0;
+
+            _evaluationPending = true;
+        }
+
+        private void RebuildTrackedRenderers()
+        {
+            _discoveredRenderers.Clear();
+
+            for (int i = 0; i < WorldRootNames.Length; i++)
+            {
+                var root = ResolveWorldRoot(WorldRootNames[i]);
+                if (root != null)
+                    AddRenderersFrom(root, _discoveredRenderers);
+            }
+
+            foreach (var unitObject in _unitObjects.Values)
+            {
+                if (unitObject != null)
+                    AddRenderersFrom(unitObject.transform, _discoveredRenderers);
+            }
+
+            for (int i = _renderers.Count - 1; i >= 0; i--)
+            {
+                var entry = _renderers[i];
+                if (entry.Renderer != null && _discoveredRenderers.Contains(entry.Renderer))
+                    continue;
+
+                entry.Restore();
+                if (entry.Renderer != null)
+                    _tracked.Remove(entry.Renderer);
+
+                _renderers.RemoveAt(i);
+            }
+
+            _discoveredRenderers.Clear();
+        }
+
+        private Transform ResolveWorldRoot(string rootName)
+        {
+            if (_worldRoots.TryGetValue(rootName, out var cachedRoot) && cachedRoot != null)
+                return cachedRoot;
+
+            var rootObject = GameObject.Find(rootName);
+            var root = rootObject != null ? rootObject.transform : null;
+            _worldRoots[rootName] = root;
+            return root;
+        }
+
+        private void AddRenderersFrom(Transform root, HashSet<Renderer> discovered)
+        {
+            if (root == null || !root.gameObject.activeInHierarchy)
+                return;
+
+            _rendererDiscoveryBuffer.Clear();
+            root.GetComponentsInChildren(true, _rendererDiscoveryBuffer);
+            for (int i = 0; i < _rendererDiscoveryBuffer.Count; i++)
+            {
+                var renderer = _rendererDiscoveryBuffer[i];
+                if (!IsSupportedRenderer(renderer))
+                    continue;
+
+                discovered.Add(renderer);
+
+                if (_tracked.ContainsKey(renderer))
+                    continue;
+
+                var entry = new CullableRenderer(renderer);
+                _tracked.Add(renderer, entry);
+                _renderers.Add(entry);
+            }
+
+            _rendererDiscoveryBuffer.Clear();
+        }
+
+        private void EvaluateBatch(int maxRenderers)
+        {
+            if (_renderers.Count == 0)
+            {
+                _cursor = 0;
+                _evaluationPending = false;
+                return;
+            }
+
+            int processed = 0;
+            float paddingCells = ResolveBoundsPaddingCells();
+
+            while (processed < maxRenderers && _cursor < _renderers.Count)
+            {
+                var entry = _renderers[_cursor++];
+                var renderer = entry.Renderer;
+                if (renderer == null || !renderer.gameObject.activeInHierarchy)
+                {
+                    processed++;
+                    continue;
+                }
+
+                bool shouldRender = FogRendererCullingEvaluator.ShouldRender(renderer.bounds, _fogService, _gridService, paddingCells);
+                entry.SetHiddenByFog(!shouldRender);
+                processed++;
+            }
+
+            if (_cursor < _renderers.Count)
+                return;
+
+            _cursor = 0;
+            _evaluationPending = false;
+        }
+
+        private void RestoreAllRenderers()
+        {
+            for (int i = 0; i < _renderers.Count; i++)
+                _renderers[i].Restore();
+
+            _tracked.Clear();
+            _renderers.Clear();
+            _cursor = 0;
+            _evaluationPending = false;
+            _lastFogVersion = -1;
+        }
+
+        private bool IsCullingEnabled()
+        {
+            if (_settings == null)
+                return true;
+
+            if (!_settings.EnableRendererCulling)
+                return false;
+
+            if (_settings.RequireOpaqueUnexploredForCulling && _settings.UnexploredAlpha < 0.99f)
+                return false;
+
+            return true;
+        }
+
+        private int ResolveMaxRenderersPerFrame()
+            => _settings != null
+                ? Mathf.Max(1, _settings.RendererCullingMaxRenderersPerFrame)
+                : DefaultMaxRenderersPerFrame;
+
+        private float ResolveDiscoveryInterval()
+            => _settings != null
+                ? Mathf.Max(0.05f, _settings.RendererCullingDiscoveryInterval)
+                : DefaultDiscoveryInterval;
+
+        private float ResolveBoundsPaddingCells()
+            => _settings != null
+                ? Mathf.Max(0f, _settings.RendererCullingBoundsPaddingCells)
+                : DefaultBoundsPaddingCells;
+
+        private bool IsSupportedRenderer(Renderer renderer)
+        {
+            if (renderer == null || !renderer.gameObject.activeInHierarchy)
+                return false;
+
+            if (!(renderer is SpriteRenderer) && !(renderer is MeshRenderer) && !(renderer is TilemapRenderer))
+                return false;
+
+            if (_settings != null)
+            {
+                int bit = 1 << renderer.gameObject.layer;
+                if ((_settings.RendererCullingLayerMask.value & bit) == 0)
+                    return false;
+            }
+
+            return renderer.GetComponentInParent<FogQuadController>() == null;
+        }
+
+        private sealed class CullableRenderer
+        {
+            public readonly Renderer Renderer;
+            private bool _hiddenByFog;
+            private bool _enabledBeforeFog;
+
+            public CullableRenderer(Renderer renderer)
+            {
+                Renderer = renderer;
+                _enabledBeforeFog = renderer != null && renderer.enabled;
+            }
+
+            public void SetHiddenByFog(bool hidden)
+            {
+                if (Renderer == null)
+                    return;
+
+                if (hidden)
+                {
+                    if (!_hiddenByFog)
+                    {
+                        _enabledBeforeFog = Renderer.enabled;
+                        _hiddenByFog = true;
+                    }
+
+                    Renderer.enabled = false;
+                    return;
+                }
+
+                Restore();
+            }
+
+            public void Restore()
+            {
+                if (!_hiddenByFog || Renderer == null)
+                    return;
+
+                Renderer.enabled = _enabledBeforeFog;
+                _hiddenByFog = false;
+            }
         }
     }
 }

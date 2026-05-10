@@ -1,4 +1,3 @@
-using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -10,12 +9,22 @@ namespace Kruty1918.Moyva.Visuals
         [SerializeField] private SpriteRenderer _spriteRenderer;
         [SerializeField] private Color _occupiedColor;
 
-        [Inject] private SignalBus _signalBus;
-        [Inject] private IObjectsMapService _objectsMapService;
+        private SignalBus _signalBus;
+
+        [Inject]
+        private void Construct(SignalBus signalBus)
+        {
+            _signalBus = signalBus;
+        }
 
         private void Start()
         {
-            _signalBus.Subscribe<OnObjectsMapChangedSignal>(OnObjectsMapChanged);
+            _signalBus?.Subscribe<OnObjectsMapChangedSignal>(OnObjectsMapChanged);
+        }
+
+        private void OnDestroy()
+        {
+            _signalBus?.TryUnsubscribe<OnObjectsMapChangedSignal>(OnObjectsMapChanged);
         }
 
         private void OnObjectsMapChanged(OnObjectsMapChangedSignal signal)

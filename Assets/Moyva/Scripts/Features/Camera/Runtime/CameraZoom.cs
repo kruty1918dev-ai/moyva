@@ -8,12 +8,17 @@ namespace Kruty1918.Moyva.Camera.Runtime
     {
         private const string GlobalMipBiasProperty = "_MoyvaTexLodBias";
         private const float MaxAutoMipBias = 3.0f;
+        private const float MobileCloseZoomMipBias = 0.75f;
+        private const float MobileCloseZoomBiasEnd = 0.22f;
+        private const float ZoomEpsilon = 0.0005f;
+        private static readonly int GlobalMipBiasId = Shader.PropertyToID(GlobalMipBiasProperty);
 
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
 
         private float _targetZoom;
         private float _currentVelocity; // Необхідно для Mathf.SmoothDamp
+    private float _lastPushedMipBias = float.NaN;
 
         private float _forceBlockTimer;
         private const float ForceBlockDuration = 1.5f; // Час затримки після форсованого зуму
@@ -53,6 +58,23 @@ namespace Kruty1918.Moyva.Camera.Runtime
             );
         }
 
+        public void ZoomCameraByScale(float scaleFactor, bool immediate)
+        {
+            if (_forceBlockTimer > 0f) return;
+            if (scaleFactor <= 0f || float.IsNaN(scaleFactor) || float.IsInfinity(scaleFactor)) return;
+
+            float sensitivity = Mathf.Max(0.01f, _settings.touchPinchZoomSensitivity);
+            float adjustedScale = Mathf.Pow(scaleFactor, sensitivity);
+            _targetZoom = Mathf.Clamp(_targetZoom * adjustedScale, _settings.minZoom, _settings.maxZoom);
+
+            if (!immediate)
+                return;
+
+            _currentVelocity = 0f;
+            ApplyZoomValue(_targetZoom);
+            UpdateGlobalMipBias();
+        }
+
         public void ForceZoomCamera(float zoomLevel)
         {
             // Встановлюємо новий цільовий зум (теж обмежуємо про всяк випадок)
@@ -73,25 +95,31 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (_camera.orthographic)
             {
                 // Логіка для 2D (Orthographic)
-                _camera.orthographicSize = Mathf.SmoothDamp(
+                ApplyZoomValue(Mathf.SmoothDamp(
                     _camera.orthographicSize,
                     _targetZoom,
                     ref _currentVelocity,
-                    _settings.smoothTime
-                );
+                    _settings.smoothTime));
             }
             else
             {
                 // Логіка для 3D (Perspective)
-                _camera.fieldOfView = Mathf.SmoothDamp(
+                ApplyZoomValue(Mathf.SmoothDamp(
                     _camera.fieldOfView,
                     _targetZoom,
                     ref _currentVelocity,
-                    _settings.smoothTime
-                );
+                    _settings.smoothTime));
             }
 
             UpdateGlobalMipBias();
+        }
+
+        private void ApplyZoomValue(float zoomValue)
+        {
+            if (_camera.orthographic)
+                _camera.orthographicSize = zoomValue;
+            else
+                _camera.fieldOfView = zoomValue;
         }
 
         private void UpdateGlobalMipBias()
@@ -104,8 +132,30 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 ? Mathf.InverseLerp(minZoom, maxZoom, currentZoom)
                 : 0f;
 
-            float mipBias = normalized * MaxAutoMipBias;
-            Shader.SetGlobalFloat(GlobalMipBiasProperty, mipBias);
+            float zoomOutMipBias = normalized * MaxAutoMipBias;
+            float closeZoomMipBias = 0f;
+            if (ShouldUseMobileCloseZoomBias())
+            {
+                float closeBiasEndZoom = Mathf.Lerp(minZoom, maxZoom, MobileCloseZoomBiasEnd);
+                float closePressure = 1f - Mathf.Clamp01(Mathf.InverseLerp(minZoom, closeBiasEndZoom, currentZoom));
+                closeZoomMipBias = closePressure * MobileCloseZoomMipBias;
+            }
+
+            float mipBias = Mathf.Max(zoomOutMipBias, closeZoomMipBias);
+            if (Mathf.Abs(_lastPushedMipBias - mipBias) <= ZoomEpsilon)
+                return;
+
+            Shader.SetGlobalFloat(GlobalMipBiasId, mipBias);
+            _lastPushedMipBias = mipBias;
+        }
+
+        private static bool ShouldUseMobileCloseZoomBias()
+        {
+#if UNITY_ANDROID || UNITY_IOS
+            return true;
+#else
+            return Application.isMobilePlatform;
+#endif
         }
     }
 }

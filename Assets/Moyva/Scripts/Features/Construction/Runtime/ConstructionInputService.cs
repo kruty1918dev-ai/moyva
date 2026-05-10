@@ -1,24 +1,27 @@
 using System;
+using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using UnityEngine.UI;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     /// <summary>
-    /// Обробляє введення миші для будівництва.
-    /// Реалізує ITickable для прямого читання кліків — TileClickInputService
+    /// Обробляє mouse/touch pointer-введення для будівництва.
+    /// Реалізує ITickable для прямого читання натискань — TileClickInputService
     /// блокує TileClickedSignal через IsPointerOverGameObject(),
     /// коли Construction UI панелі видимі.
     /// </summary>
     internal sealed class ConstructionInputService : IConstructionInputService, IInitializable, IDisposable, ITickable
     {
-        private const bool VerboseLogs = true;
+        private static bool VerboseLogs => Application.isEditor && Debug.isDebugBuild;
 
         private readonly IConstructionService _constructionService;
         private readonly IWallPlacementService _wallPlacementService;
@@ -33,6 +36,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private Vector2Int _wallDragStartPosition;
         private Vector2Int _lastWallDragTile;
         private readonly System.Collections.Generic.HashSet<Vector2Int> _wallDragPendingPositions = new();
+        private readonly List<RaycastResult> _uiRaycastResults = new List<RaycastResult>(8);
+        private PointerEventData _pointerEventData;
 
         [Inject]
         public ConstructionInputService(
@@ -66,11 +71,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!_isActive)
                 return;
 
-            var mouse = Mouse.current;
-            if (mouse == null)
+            PointerSnapshot pointer = ReadPointerSnapshot();
+            if (!pointer.HasPointer)
                 return;
 
-            if (mouse.leftButton.wasReleasedThisFrame)
+            if (pointer.ActiveTouchCount > 1)
+            {
+                CancelActiveDrags();
+                return;
+            }
+
+            if (pointer.WasReleasedThisFrame)
             {
                 if (_isDraggingPendingPlacement)
                 {
@@ -91,12 +102,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
             }
 
-            if (_isDraggingWallPath && mouse.leftButton.isPressed)
+            if (_isDraggingWallPath && pointer.IsPressed)
             {
-                if (IsClickOnInteractiveUI())
+                if (IsPointerOverInteractiveUI(pointer.Position, pointer.PointerId))
                     return;
 
-                Vector2 dragScreenPos = mouse.position.ReadValue();
+                Vector2 dragScreenPos = pointer.Position;
                 Vector2Int dragTilePos = _screenToGrid.ScreenToGrid(dragScreenPos);
                 if (!_gridService.TryGetTileData(dragTilePos, out _))
                     return;
@@ -150,12 +161,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            if (_isDraggingPendingPlacement && mouse.leftButton.isPressed)
+            if (_isDraggingPendingPlacement && pointer.IsPressed)
             {
-                if (IsClickOnInteractiveUI())
+                if (IsPointerOverInteractiveUI(pointer.Position, pointer.PointerId))
                     return;
 
-                Vector2 dragScreenPos = mouse.position.ReadValue();
+                Vector2 dragScreenPos = pointer.Position;
                 Vector2Int dragTilePos = _screenToGrid.ScreenToGrid(dragScreenPos);
                 if (!_gridService.TryGetTileData(dragTilePos, out _))
                     return;
@@ -175,19 +186,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            if (!mouse.leftButton.wasPressedThisFrame)
+            if (!pointer.WasPressedThisFrame)
                 return;
 
             // Пропускаємо кліки на інтерактивних UI елементах (Button, Toggle тощо),
             // але дозволяємо кліки «крізь» фонові панелі Construction UI.
-            if (IsClickOnInteractiveUI())
+            if (IsPointerOverInteractiveUI(pointer.Position, pointer.PointerId))
             {
                 if (VerboseLogs)
                     Debug.Log("[ConstructionInput] Click ignored: pointer over interactive UI.");
                 return;
             }
 
-            Vector2 screenPos = mouse.position.ReadValue();
+            Vector2 screenPos = pointer.Position;
             Vector2Int tilePos = _screenToGrid.ScreenToGrid(screenPos);
 
             if (VerboseLogs)
@@ -289,30 +300,94 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
-        private static bool IsClickOnInteractiveUI()
+        private PointerSnapshot ReadPointerSnapshot()
         {
-            var eventSystem = UnityEngine.EventSystems.EventSystem.current;
+            var touchscreen = Touchscreen.current;
+            if (touchscreen != null)
+            {
+                TouchControl activeTouch = null;
+                TouchControl pressedTouch = null;
+                TouchControl releasedTouch = null;
+                int activeTouchCount = 0;
+
+                var touches = touchscreen.touches;
+                for (int touchIndex = 0; touchIndex < touches.Count; touchIndex++)
+                {
+                    TouchControl touch = touches[touchIndex];
+                    if (touch.press.isPressed)
+                    {
+                        activeTouchCount++;
+                        activeTouch ??= touch;
+                    }
+
+                    if (pressedTouch == null && touch.press.wasPressedThisFrame)
+                        pressedTouch = touch;
+
+                    if (releasedTouch == null && touch.press.wasReleasedThisFrame)
+                        releasedTouch = touch;
+                }
+
+                TouchControl selectedTouch = activeTouch ?? releasedTouch ?? pressedTouch;
+                if (selectedTouch != null)
+                {
+                    return new PointerSnapshot(
+                        hasPointer: true,
+                        wasPressedThisFrame: selectedTouch.press.wasPressedThisFrame,
+                        wasReleasedThisFrame: selectedTouch.press.wasReleasedThisFrame,
+                        isPressed: selectedTouch.press.isPressed,
+                        position: selectedTouch.position.ReadValue(),
+                        pointerId: selectedTouch.touchId.ReadValue(),
+                        activeTouchCount: activeTouchCount);
+                }
+            }
+
+            var mouse = Mouse.current;
+            if (mouse == null)
+                return default;
+
+            return new PointerSnapshot(
+                hasPointer: true,
+                wasPressedThisFrame: mouse.leftButton.wasPressedThisFrame,
+                wasReleasedThisFrame: mouse.leftButton.wasReleasedThisFrame,
+                isPressed: mouse.leftButton.isPressed,
+                position: mouse.position.ReadValue(),
+                pointerId: -1,
+                activeTouchCount: 0);
+        }
+
+        private bool IsPointerOverInteractiveUI(Vector2 screenPosition, int pointerId)
+        {
+            var eventSystem = EventSystem.current;
             if (eventSystem == null)
                 return false;
 
-            if (!eventSystem.IsPointerOverGameObject())
-                return false;
-
             // Курсор над UI — перевіряємо чи є під ним інтерактивний елемент
-            var pointer = new UnityEngine.EventSystems.PointerEventData(eventSystem)
-            {
-                position = Mouse.current.position.ReadValue()
-            };
-            var results = new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
-            eventSystem.RaycastAll(pointer, results);
+            _pointerEventData ??= new PointerEventData(eventSystem);
+            _pointerEventData.Reset();
+            _pointerEventData.pointerId = pointerId;
+            _pointerEventData.position = screenPosition;
 
-            for (int i = 0; i < results.Count; i++)
+            _uiRaycastResults.Clear();
+            eventSystem.RaycastAll(_pointerEventData, _uiRaycastResults);
+
+            for (int resultIndex = 0; resultIndex < _uiRaycastResults.Count; resultIndex++)
             {
-                if (results[i].gameObject.GetComponentInParent<Selectable>() != null)
+                if (_uiRaycastResults[resultIndex].gameObject.GetComponentInParent<Selectable>() != null)
                     return true;
             }
 
             return false;
+        }
+
+        private void CancelActiveDrags()
+        {
+            _isDraggingPendingPlacement = false;
+
+            if (_isDraggingWallPath)
+                _wallPlacementService.EndDrag();
+
+            _isDraggingWallPath = false;
+            _wallDragPendingPositions.Clear();
         }
 
         private void OnGameModeChanged(GameModeChangedSignal signal)
@@ -320,10 +395,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _isActive = signal.NewMode == GameModeType.Construction;
             if (!_isActive)
             {
-                _isDraggingPendingPlacement = false;
-                _isDraggingWallPath = false;
-                _wallDragPendingPositions.Clear();
-                _wallPlacementService.EndDrag();
+                CancelActiveDrags();
             }
 
             if (VerboseLogs)
@@ -333,5 +405,34 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public void OnUndoRequested() => _constructionService.UndoLast();
 
         public void OnRedoRequested() => _constructionService.RedoLast();
+
+        private readonly struct PointerSnapshot
+        {
+            public readonly bool HasPointer;
+            public readonly bool WasPressedThisFrame;
+            public readonly bool WasReleasedThisFrame;
+            public readonly bool IsPressed;
+            public readonly Vector2 Position;
+            public readonly int PointerId;
+            public readonly int ActiveTouchCount;
+
+            public PointerSnapshot(
+                bool hasPointer,
+                bool wasPressedThisFrame,
+                bool wasReleasedThisFrame,
+                bool isPressed,
+                Vector2 position,
+                int pointerId,
+                int activeTouchCount)
+            {
+                HasPointer = hasPointer;
+                WasPressedThisFrame = wasPressedThisFrame;
+                WasReleasedThisFrame = wasReleasedThisFrame;
+                IsPressed = isPressed;
+                Position = position;
+                PointerId = pointerId;
+                ActiveTouchCount = activeTouchCount;
+            }
+        }
     }
 }

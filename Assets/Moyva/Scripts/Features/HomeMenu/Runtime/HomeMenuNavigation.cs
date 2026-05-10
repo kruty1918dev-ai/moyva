@@ -46,6 +46,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 if (string.IsNullOrWhiteSpace(name))
                     continue;
 
+                name = name.Trim();
+
                 if (!_panelsByName.ContainsKey(name))
                     _panelsByName.Add(name, p);
                 else
@@ -57,6 +59,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (string.IsNullOrWhiteSpace(menuName))
                 return;
+
+            menuName = menuName.Trim();
 
             if (!_panelsByName.TryGetValue(menuName, out var panel))
             {
@@ -307,6 +311,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void OpenForce(string menuName)
         {
             if (string.IsNullOrWhiteSpace(menuName)) return;
+            menuName = menuName.Trim();
+
             if (!_panelsByName.TryGetValue(menuName, out var panel))
             {
                 LogWarning($"Panel '{menuName}' not found.");

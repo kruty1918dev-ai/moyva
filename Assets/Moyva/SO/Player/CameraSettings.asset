@@ -18,3 +18,10 @@ MonoBehaviour:
   minZoom: 5
   maxZoom: 50
   defaultCameraZ: -10
+  touchMoveSpeed: 1
+  touchPinchZoomSensitivity: 1
+  touchDragDeadZonePixels: 0.5
+  touchPinchDeadZonePixels: 2
+  maxTouchDeltaPixels: 96
+  useImmediateTouchGestures: 1
+  keepPinchFocusUnderFingers: 1

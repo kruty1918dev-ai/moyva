@@ -10,6 +10,7 @@ namespace Kruty1918.Moyva.Construction.Editor
     public sealed class ConstructionUISetupWindow : EditorWindow
     {
         private const string ControllerTypeName = "Kruty1918.Moyva.Construction.UI.ConstructionUIController";
+        private const string InputSystemUiInputModuleTypeName = "UnityEngine.InputSystem.UI.InputSystemUIInputModule";
 
         private MonoBehaviour _controller;
         private BuildingRegistrySO _registry;
@@ -150,8 +151,10 @@ namespace Kruty1918.Moyva.Construction.Editor
                 var evGO = new GameObject("EventSystem");
                 Undo.RegisterCreatedObjectUndo(evGO, undoName);
                 evGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
-                evGO.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
-                _messages.Add("Створено: EventSystem.");
+                if (TryAddInputSystemUiInputModule(evGO))
+                    _messages.Add("Створено: EventSystem з InputSystemUIInputModule.");
+                else
+                    _messages.Add("Помилка: InputSystemUIInputModule не знайдено. Перевірте, що пакет Input System встановлений і активний.");
             }
 
             var root = new GameObject("ConstructionUI", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
@@ -656,6 +659,20 @@ namespace Kruty1918.Moyva.Construction.Editor
                 .GetAssemblies()
                 .Select(assembly => assembly.GetType(ControllerTypeName, false))
                 .FirstOrDefault(type => type != null);
+        }
+
+        private static bool TryAddInputSystemUiInputModule(GameObject eventSystemObject)
+        {
+            var inputModuleType = System.AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Select(assembly => assembly.GetType(InputSystemUiInputModuleTypeName, false))
+                .FirstOrDefault(type => type != null);
+
+            if (inputModuleType == null)
+                return false;
+
+            eventSystemObject.AddComponent(inputModuleType);
+            return true;
         }
     }
 }

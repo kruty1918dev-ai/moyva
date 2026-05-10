@@ -25,8 +25,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             var primary = CreateSingle(config.ProviderType, config, logger);
 
-            // If no real fallback is configured, or primary is already offline, skip wrapping
+            // Relay lobbies publish Relay join codes into UGS. Falling back to a non-Relay
+            // transport would create a visible UGS room that clients cannot actually join.
             if (config.ProviderType == NetworkProviderType.Offline ||
+                config.ProviderType == NetworkProviderType.Relay ||
                 config.ProviderType == config.FallbackProviderType)
             {
                 return primary;
@@ -44,7 +46,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             var primary = CreateSingle(type, config, logger);
 
-            if (type == NetworkProviderType.Offline || type == config.FallbackProviderType)
+            if (type == NetworkProviderType.Offline ||
+                type == NetworkProviderType.Relay ||
+                type == config.FallbackProviderType)
                 return primary;
 
             var fallback = CreateSingle(config.FallbackProviderType, config, logger);

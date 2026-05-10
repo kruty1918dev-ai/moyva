@@ -14,6 +14,7 @@ Shader "Moyva/2D/WaterLayerMipLodContour"
 
         [Header(Mask and Stencil)]
         _LandMaskTex ("Land Mask (auto)", 2D) = "black" {}
+        [HideInInspector] _MoyvaMobileFillRatePressure ("Mobile Fill Rate Pressure", Range(0, 1)) = 0
         [Enum(UnityEngine.Rendering.CompareFunction)] _WaterStencilComp ("Water Stencil Compare", Float) = 6
         _WaterStencilRef ("Water Stencil Ref", Float) = 1
     }
@@ -59,12 +60,19 @@ Shader "Moyva/2D/WaterLayerMipLodContour"
             SAMPLER(sampler_LandMaskTex);
             float4 _LandMaskTex_TexelSize;
 
+            TEXTURE2D(_MoyvaFogTex);
+            SAMPLER(sampler_MoyvaFogTex);
+            float4 _MoyvaFogMapParams;
+            float _MoyvaFogCullEnabled;
+            float _MoyvaFogCullThreshold;
+
             half4 _Color;
             half4 _ContourColor;
             float _ContourWidth;
             float _ContourThreshold;
             float _ContourSharpness;
             float _ContourOpacity;
+            float _MoyvaMobileFillRatePressure;
 
             struct appdata
             {
@@ -78,6 +86,7 @@ Shader "Moyva/2D/WaterLayerMipLodContour"
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 half4 color : COLOR;
+                float2 worldXY : TEXCOORD1;
             };
 
             v2f vert(appdata v)
@@ -86,7 +95,20 @@ Shader "Moyva/2D/WaterLayerMipLodContour"
                 o.positionCS = TransformObjectToHClip(v.positionOS);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.color = v.color * _Color;
+                o.worldXY = TransformObjectToWorld(v.positionOS).xy;
                 return o;
+            }
+
+            void ClipHiddenByFog(float2 worldXY)
+            {
+                if (_MoyvaFogCullEnabled < 0.5)
+                    return;
+
+                float2 invMapSize = max(_MoyvaFogMapParams.zw, float2(0.000001, 0.000001));
+                float2 fogUV = (worldXY + float2(0.5, 0.5)) * invMapSize;
+                float inside = step(0.0, fogUV.x) * step(fogUV.x, 1.0) * step(0.0, fogUV.y) * step(fogUV.y, 1.0);
+                float fogValue = SAMPLE_TEXTURE2D(_MoyvaFogTex, sampler_MoyvaFogTex, saturate(fogUV)).r;
+                clip((1.0 - inside) + fogValue - _MoyvaFogCullThreshold);
             }
 
             float ComputeShorelineMask(float2 uv)
@@ -107,8 +129,15 @@ Shader "Moyva/2D/WaterLayerMipLodContour"
 
             half4 frag(v2f i) : SV_Target
             {
+                ClipHiddenByFog(i.worldXY);
                 half4 baseCol = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
-                float shoreline = ComputeShorelineMask(i.uv) * _ContourOpacity * baseCol.a;
+                float shoreline = 0.0;
+                if (_MoyvaMobileFillRatePressure < 0.65)
+                {
+                    float shorelineFade = saturate(1.0 - _MoyvaMobileFillRatePressure * 1.5);
+                    shoreline = ComputeShorelineMask(i.uv) * _ContourOpacity * baseCol.a * shorelineFade;
+                }
+
                 half3 rgb = lerp(baseCol.rgb, _ContourColor.rgb, saturate(shoreline));
 
                 half4 outCol = half4(rgb, baseCol.a) * i.color;

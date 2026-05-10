@@ -55,7 +55,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             => ExecuteWithFallback(p => p.HostSessionAsync(sessionId, ct), sessionId, ct);
 
         public Task<SessionResult> JoinSessionAsync(string sessionId, CancellationToken ct = default)
-            => ExecuteWithFallback(p => p.JoinSessionAsync(sessionId, ct), sessionId, ct);
+            => ExecuteWithoutFallback(p => p.JoinSessionAsync(sessionId, ct), sessionId);
 
         public Task LeaveSessionAsync(CancellationToken ct = default)
             => Active.LeaveSessionAsync(ct);
@@ -66,6 +66,29 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         // ── Fallback logic ─────────────────────────────────────────────────────────
 
         private INetworkProvider Active => _usingFallback ? _fallback : _primary;
+
+        private async Task<SessionResult> ExecuteWithoutFallback(
+            Func<INetworkProvider, Task<SessionResult>> action,
+            string sessionId)
+        {
+            var provider = Active;
+            try
+            {
+                var result = await action(provider);
+                if (result == null)
+                    return SessionResult.Fail("JoinSession returned null result.");
+
+                if (!result.Success)
+                    _logger.Warn($"[Fallback] JoinSession failed on active provider ({provider.GetType().Name}) for '{sessionId}': '{result.ErrorMessage}'. Auto fallback is disabled for joins.");
+
+                return result;
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"[Fallback] JoinSession threw on active provider ({provider.GetType().Name}) for '{sessionId}': {e.Message}. Auto fallback is disabled for joins.");
+                return SessionResult.Fail(e.Message);
+            }
+        }
 
         private async Task<SessionResult> ExecuteWithFallback(
             Func<INetworkProvider, Task<SessionResult>> action,

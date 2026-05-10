@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const int BuildingLayerMinSortingOrder = 5;
         private const float GhostAlpha = 0.55f;
         private const float BlockedFlashDuration = 0.35f;
+        private const string InfluenceRadiusShaderName = "Moyva/2D/InfluenceRadius";
 
         private readonly SignalBus _signalBus;
         private readonly IBuildingRegistry _buildingRegistry;
@@ -544,8 +545,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             mr.sortingLayerName  = "Default";
             mr.sortingOrder      = sortingOrder;
 
-            var shader = Shader.Find("Moyva/2D/InfluenceRadius");
-            mat = new Material(shader != null ? shader : Shader.Find("Sprites/Default"));
+            var shader = Shader.Find(InfluenceRadiusShaderName);
+            if (shader == null)
+            {
+                Debug.LogError($"[ConstructionVisual] Shader '{InfluenceRadiusShaderName}' not found. Influence radius overlay is disabled to avoid rendering a fallback quad.");
+                mat = null;
+                mr.sharedMaterial = null;
+                mr.enabled = false;
+                return go;
+            }
+
+            mat = new Material(shader) { name = $"{objectName}_Material" };
 
             // Межі мапи в world-space для шейдерної маски (1 тайл = 1 юніт, центр тайла в int-координаті)
             float minX = -0.5f;
@@ -568,7 +578,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private int ResolveInfluenceRadius(BuildingDefinition def)
         {
-            return _townHallBuildRadius;
+            return BuildingDefinitionCapabilities.GetInfluenceRadius(def, _townHallBuildRadius);
         }
 
         /// <summary>
@@ -581,7 +591,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             GameObject go, MeshRenderer mr, Material mat,
             Vector2Int center, int radius)
         {
-            if (mr == null) return;
+            if (go == null || mr == null || mat == null) return;
 
             float size = radius * 2f + 1f;
             go.transform.position   = new Vector3(center.x, center.y, 0.05f);

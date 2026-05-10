@@ -183,13 +183,17 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 if (string.IsNullOrWhiteSpace(joinCode))
                     return SessionResult.Fail("Relay join code is empty.");
 
+                var normalizedJoinCode = joinCode.Trim();
+                if (!RelayJoinCodeUtility.IsValid(normalizedJoinCode))
+                    return SessionResult.Fail($"Relay join code '{normalizedJoinCode}' is invalid. Expected 6-12 chars from '6789BCDFGHJKLMNPQRTW'.");
+
                 await EnsureRelayReadyAsync();
                 _localPeerId = AuthenticationService.Instance.PlayerId ?? $"local-{Guid.NewGuid():N}";
 
                 await ShutdownTransportAsync();
 
                 var relayService = ResolveRelayServiceInstance();
-                var joinAllocation = await JoinAllocationAsync(relayService, joinCode);
+                var joinAllocation = await JoinAllocationAsync(relayService, normalizedJoinCode);
 
                 var relayServerData = BuildRelayServerData(joinAllocation, RelayConnectionType, isHostAllocation: false);
                 var netSettings = new NetworkSettings();
@@ -216,7 +220,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 }
 
                 _logger.Info($"[Relay] Joined allocation. Host={_hostPeerId}");
-                return SessionResult.Ok(joinCode);
+                return SessionResult.Ok(normalizedJoinCode);
             }
             catch (OperationCanceledException)
             {
