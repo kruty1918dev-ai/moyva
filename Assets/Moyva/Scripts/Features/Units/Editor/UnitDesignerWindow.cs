@@ -36,6 +36,11 @@ namespace Kruty1918.Moyva.Units.Editor
         private bool _showVisionPreview = true;
         private bool _showStatsPreview = true;
         private bool _showAnimationPreview = true;
+        private bool _showDetailedStatePreview = true;
+        private string _autoAnimationSearchFolder = "Assets/Moyva/Art";
+        private string _autoAnimationPrefix = string.Empty;
+        private int _autoAnimationFps = 10;
+        private bool _autoAnimationReplaceByType = true;
         private double _lastRepaintTime;
         
         // Animation preview
@@ -423,8 +428,9 @@ namespace Kruty1918.Moyva.Units.Editor
             string typeId = GetString(unit, "TypeId");
             DrawValidationSummary(unit, _selectedIndex);
 
-            _detailsScroll = EditorGUILayout.BeginScrollView(_detailsScroll);
+            _detailsScroll = GUILayout.BeginScrollView(_detailsScroll, GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
 
+            EditorGUILayout.BeginVertical(GUILayout.MinWidth(1200f));
             DrawIdentitySection(unit);
             DrawPrefabSection(unit, typeId);
             DrawPrefabComponentsSection(unit);
@@ -432,8 +438,9 @@ namespace Kruty1918.Moyva.Units.Editor
             DrawCombatCompactSection(unit);
             DrawAnimationSection(unit);
             DrawDangerSection(unit);
+            EditorGUILayout.EndVertical();
 
-            EditorGUILayout.EndScrollView();
+            GUILayout.EndScrollView();
             EditorGUILayout.EndVertical();
         }
 
@@ -464,6 +471,13 @@ namespace Kruty1918.Moyva.Units.Editor
 
             if (_showVisionPreview)
                 DrawVisionGrid(unit);
+
+            _showDetailedStatePreview = EditorGUILayout.ToggleLeft(
+                new GUIContent("Детальний стан юніта", "Показує всі ключові параметри у симуляції прев'ю."),
+                _showDetailedStatePreview);
+
+            if (_showDetailedStatePreview)
+                DrawDetailedStatePreview(unit);
 
             DrawQuickHints(unit, prefab, sprite);
             EditorGUILayout.EndVertical();
@@ -715,6 +729,9 @@ namespace Kruty1918.Moyva.Units.Editor
                 return;
             }
 
+            DrawAutoAnimationTools(unit, animationClips);
+            EditorGUILayout.Space(4f);
+
             // Add animation button
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("Всього анімацій:", animationClips.arraySize.ToString(), EditorStyles.miniLabel, GUILayout.Width(120f));
@@ -741,6 +758,259 @@ namespace Kruty1918.Moyva.Units.Editor
             }
 
             EndSection();
+        }
+
+        private void DrawAutoAnimationTools(SerializedProperty unit, SerializedProperty animationClips)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Швидке автоналаштування", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Автоматично збирає Idle/Move/Attack/TakeDamage/Die зі спрайтів за назвою.", EditorStyles.wordWrappedMiniLabel);
+
+            DefaultAsset folderAsset = AssetDatabase.IsValidFolder(_autoAnimationSearchFolder)
+                ? AssetDatabase.LoadAssetAtPath<DefaultAsset>(_autoAnimationSearchFolder)
+                : null;
+
+            var newFolderAsset = (DefaultAsset)EditorGUILayout.ObjectField(
+                new GUIContent("Папка спрайтів", "Папка, де шукати спрайти для анімацій."),
+                folderAsset,
+                typeof(DefaultAsset),
+                false);
+
+            if (newFolderAsset != folderAsset)
+            {
+                string newPath = AssetDatabase.GetAssetPath(newFolderAsset);
+                if (AssetDatabase.IsValidFolder(newPath))
+                    _autoAnimationSearchFolder = newPath;
+            }
+
+            if (string.IsNullOrWhiteSpace(_autoAnimationPrefix))
+                _autoAnimationPrefix = SuggestAutoAnimationPrefix(unit);
+
+            _autoAnimationPrefix = EditorGUILayout.TextField(
+                new GUIContent("Префікс імені", "Спільна частина імен спрайтів. Напр.: archer, worker, cossack."),
+                _autoAnimationPrefix);
+            _autoAnimationFps = EditorGUILayout.IntSlider(new GUIContent("FPS", "Буде застосовано до автогенерованих спрайт-анімацій."), Mathf.Clamp(_autoAnimationFps, 1, 60), 1, 60);
+            _autoAnimationReplaceByType = EditorGUILayout.ToggleLeft(
+                new GUIContent("Заміняти існуючі за типом", "Якщо ввімкнено - оновить існуючі Idle/Move/... замість дублювання."),
+                _autoAnimationReplaceByType);
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button(new GUIContent("Автостворити набір", "Створити та заповнити базові анімації з папки."), GUILayout.Height(22f)))
+                AutoGenerateAnimationSet(unit, animationClips);
+
+            Color old = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.95f, 0.36f, 0.32f);
+            if (GUILayout.Button(new GUIContent("Очистити всі", "Видалити всі анімації юніта."), GUILayout.Width(110f), GUILayout.Height(22f)))
+            {
+                if (EditorUtility.DisplayDialog("Очистити анімації", "Видалити всі анімації для цього юніта?", "Так", "Скасувати"))
+                {
+                    animationClips.arraySize = 0;
+                    _previewAnimationIndex = -1;
+                    _isPlayingAnimation = false;
+                }
+            }
+            GUI.backgroundColor = old;
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private void AutoGenerateAnimationSet(SerializedProperty unit, SerializedProperty animationClips)
+        {
+            if (animationClips == null)
+                return;
+
+            if (string.IsNullOrWhiteSpace(_autoAnimationSearchFolder) || !AssetDatabase.IsValidFolder(_autoAnimationSearchFolder))
+            {
+                EditorUtility.DisplayDialog("Автогенерація анімацій", "Оберіть валідну папку зі спрайтами.", "OK");
+                return;
+            }
+
+            string prefix = string.IsNullOrWhiteSpace(_autoAnimationPrefix)
+                ? SuggestAutoAnimationPrefix(unit)
+                : _autoAnimationPrefix;
+
+            if (string.IsNullOrWhiteSpace(prefix))
+            {
+                EditorUtility.DisplayDialog("Автогенерація анімацій", "Не вдалося визначити префікс. Вкажіть його вручну.", "OK");
+                return;
+            }
+
+            var groupedSprites = CollectAnimationSpritesByType(_autoAnimationSearchFolder, prefix);
+            int createdCount = 0;
+
+            foreach (var kvp in groupedSprites)
+            {
+                var type = kvp.Key;
+                var sprites = kvp.Value;
+                if (sprites == null || sprites.Count == 0)
+                    continue;
+
+                SerializedProperty clip = _autoAnimationReplaceByType
+                    ? FindAnimationClipByType(animationClips, type)
+                    : null;
+
+                if (clip == null)
+                {
+                    animationClips.arraySize++;
+                    clip = animationClips.GetArrayElementAtIndex(animationClips.arraySize - 1);
+                }
+
+                ConfigureAnimationClip(clip, type, sprites, _autoAnimationFps);
+                createdCount++;
+            }
+
+            if (createdCount == 0)
+            {
+                EditorUtility.DisplayDialog(
+                    "Автогенерація анімацій",
+                    $"Не знайдено кадрів для префікса '{prefix}' у '{_autoAnimationSearchFolder}'.\n" +
+                    "Приклад імен: archer_idle_01, archer_attack_02, archer_move_03.",
+                    "OK");
+                return;
+            }
+
+            _autoAnimationPrefix = prefix;
+            _previewAnimationIndex = -1;
+            _isPlayingAnimation = false;
+            EditorUtility.SetDirty(_registry);
+            EditorUtility.DisplayDialog("Автогенерація анімацій", $"Створено/оновлено анімацій: {createdCount}.", "OK");
+        }
+
+        private static Dictionary<AnimationType, List<Sprite>> CollectAnimationSpritesByType(string folder, string prefix)
+        {
+            var result = new Dictionary<AnimationType, List<Sprite>>
+            {
+                { AnimationType.Idle, new List<Sprite>() },
+                { AnimationType.Move, new List<Sprite>() },
+                { AnimationType.Attack, new List<Sprite>() },
+                { AnimationType.TakeDamage, new List<Sprite>() },
+                { AnimationType.Die, new List<Sprite>() },
+            };
+
+            string[] guids = AssetDatabase.FindAssets("t:Sprite", new[] { folder });
+            string normalizedPrefix = prefix.Trim().ToLowerInvariant();
+
+            for (int i = 0; i < guids.Length; i++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (sprite == null)
+                    continue;
+
+                string name = sprite.name.ToLowerInvariant();
+                if (!name.Contains(normalizedPrefix))
+                    continue;
+
+                if (MatchesAny(name, "idle", "stand", "rest"))
+                    result[AnimationType.Idle].Add(sprite);
+                else if (MatchesAny(name, "move", "walk", "run"))
+                    result[AnimationType.Move].Add(sprite);
+                else if (MatchesAny(name, "attack", "hit", "slash", "strike", "shoot"))
+                    result[AnimationType.Attack].Add(sprite);
+                else if (MatchesAny(name, "damage", "hurt", "hitreact", "take"))
+                    result[AnimationType.TakeDamage].Add(sprite);
+                else if (MatchesAny(name, "die", "death", "dead"))
+                    result[AnimationType.Die].Add(sprite);
+            }
+
+            foreach (var kvp in result)
+                kvp.Value.Sort((a, b) => string.Compare(a != null ? a.name : string.Empty, b != null ? b.name : string.Empty, StringComparison.OrdinalIgnoreCase));
+
+            return result;
+        }
+
+        private static bool MatchesAny(string value, params string[] tokens)
+        {
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                if (value.Contains(tokens[i]))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static SerializedProperty FindAnimationClipByType(SerializedProperty animationClips, AnimationType type)
+        {
+            if (animationClips == null)
+                return null;
+
+            for (int i = 0; i < animationClips.arraySize; i++)
+            {
+                var clip = animationClips.GetArrayElementAtIndex(i);
+                var typeRef = clip?.FindPropertyRelative("Type");
+                if (typeRef != null && typeRef.enumValueIndex == (int)type)
+                    return clip;
+            }
+
+            return null;
+        }
+
+        private static void ConfigureAnimationClip(SerializedProperty clip, AnimationType type, List<Sprite> sprites, int fps)
+        {
+            if (clip == null)
+                return;
+
+            var nameRef = clip.FindPropertyRelative("Name");
+            var typeRef = clip.FindPropertyRelative("Type");
+            var animClipRef = clip.FindPropertyRelative("AnimationClip");
+            var spritesRef = clip.FindPropertyRelative("SpriteFrames");
+            var loopRef = clip.FindPropertyRelative("Loop");
+            var durationRef = clip.FindPropertyRelative("Duration");
+            var fpsRef = clip.FindPropertyRelative("SpriteFPS");
+            var animatorParamRef = clip.FindPropertyRelative("AnimatorParameterName");
+
+            if (nameRef != null)
+                nameRef.stringValue = type.ToString();
+            if (typeRef != null)
+                typeRef.enumValueIndex = (int)type;
+            if (animClipRef != null)
+                animClipRef.objectReferenceValue = null;
+            if (fpsRef != null)
+                fpsRef.intValue = Mathf.Clamp(fps, 1, 60);
+            if (animatorParamRef != null && string.IsNullOrWhiteSpace(animatorParamRef.stringValue))
+                animatorParamRef.stringValue = type.ToString();
+
+            if (loopRef != null)
+                loopRef.boolValue = type == AnimationType.Idle || type == AnimationType.Move;
+
+            if (spritesRef != null)
+            {
+                spritesRef.arraySize = sprites.Count;
+                for (int i = 0; i < sprites.Count; i++)
+                    spritesRef.GetArrayElementAtIndex(i).objectReferenceValue = sprites[i];
+            }
+
+            if (durationRef != null)
+            {
+                float safeFps = Mathf.Max(1f, fps);
+                durationRef.floatValue = Mathf.Max(0.1f, sprites.Count / safeFps);
+            }
+        }
+
+        private static string SuggestAutoAnimationPrefix(SerializedProperty unit)
+        {
+            if (unit == null)
+                return string.Empty;
+
+            string typeId = GetString(unit, "TypeId");
+            if (!string.IsNullOrWhiteSpace(typeId))
+            {
+                string sanitized = Regex.Replace(typeId.Trim().ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_');
+                if (!string.IsNullOrWhiteSpace(sanitized))
+                    return sanitized;
+            }
+
+            var prefab = GetObject<GameObject>(unit, "Prefab");
+            if (prefab != null)
+            {
+                string prefabName = Regex.Replace(prefab.name.Trim().ToLowerInvariant(), "[^a-z0-9]+", "_").Trim('_');
+                if (!string.IsNullOrWhiteSpace(prefabName))
+                    return prefabName;
+            }
+
+            return string.Empty;
         }
 
         private void DrawAnimationClipItem(SerializedProperty clip, int index, SerializedProperty animationClips)
@@ -878,6 +1148,13 @@ namespace Kruty1918.Moyva.Units.Editor
             // Check if we're currently previewing an animation
             Sprite displaySprite = sprite;
             string statusLabel = "Рух між тайлами";
+            Vector2 centerPos = new Vector2(rect.center.x, rect.y + rect.height * 0.4f);
+            float movementDuration = Mathf.Max(0.02f, GetNestedFloat(unit, "AnimationSettings", "MoveDurationPerTile", 0.3f));
+            float movementDelay = Mathf.Max(0f, GetNestedFloat(unit, "AnimationSettings", "DelayOnTile", 0.05f));
+            float cycleTime = (movementDuration + movementDelay) * 4f;
+            float normalizedTime = _autoPlayPreview && _showAnimationPreview && cycleTime > 0.001f
+                ? (float)(EditorApplication.timeSinceStartup % cycleTime)
+                : 0f;
             
             if (_isPlayingAnimation && _previewAnimationIndex >= 0)
             {
@@ -886,48 +1163,77 @@ namespace Kruty1918.Moyva.Units.Editor
                 {
                     var clip = animationClips.GetArrayElementAtIndex(_previewAnimationIndex);
                     var nameRef = clip.FindPropertyRelative("Name");
+                    var typeRef = clip.FindPropertyRelative("Type");
                     var spritesRef = clip.FindPropertyRelative("SpriteFrames");
                     var durationRef = clip.FindPropertyRelative("Duration");
+                    var fpsRef = clip.FindPropertyRelative("SpriteFPS");
+                    var loopRef = clip.FindPropertyRelative("Loop");
                     
-                    statusLabel = $"Анімація: {nameRef?.stringValue ?? "Unknown"}";
+                    string clipName = nameRef != null ? nameRef.stringValue : "Unknown";
+                    string clipType = typeRef != null ? typeRef.enumDisplayNames[Mathf.Clamp(typeRef.enumValueIndex, 0, typeRef.enumDisplayNames.Length - 1)] : "Unknown";
+                    int fps = fpsRef != null ? Mathf.Max(1, fpsRef.intValue) : 0;
+                    bool loop = loopRef != null && loopRef.boolValue;
 
                     // Get the current sprite frame from the animation
                     if (spritesRef != null && spritesRef.arraySize > 0)
                     {
                         float duration = durationRef != null ? durationRef.floatValue : 1f;
-                        float frameTime = duration / spritesRef.arraySize;
+                        float frameTime = Mathf.Max(0.01f, duration / spritesRef.arraySize);
                         int frameIndex = Mathf.FloorToInt(_animationPlaybackTime / frameTime) % spritesRef.arraySize;
                         var frame = spritesRef.GetArrayElementAtIndex(frameIndex);
                         displaySprite = frame.objectReferenceValue as Sprite;
+                        statusLabel = $"{clipType}: {clipName} | кадр {frameIndex + 1}/{spritesRef.arraySize} | {fps} FPS | {(loop ? "Loop" : "Once")}";
+                    }
+                    else
+                    {
+                        statusLabel = $"{clipType}: {clipName} | AnimationClip/без спрайтів";
                     }
                 }
             }
             else
             {
-                float duration = Mathf.Max(0.02f, GetNestedFloat(unit, "AnimationSettings", "MoveDurationPerTile", 0.3f));
-                float delay = Mathf.Max(0f, GetNestedFloat(unit, "AnimationSettings", "DelayOnTile", 0.05f));
-                float segment = duration + delay;
-                float total = segment * 2f;
-                float time = _autoPlayPreview && _showAnimationPreview
-                    ? (float)(EditorApplication.timeSinceStartup % total)
-                    : 0f;
+                float segment = movementDuration + movementDelay;
+                int phase = segment > 0.001f ? Mathf.FloorToInt(normalizedTime / segment) % 4 : 0;
+                float local = segment > 0.001f ? normalizedTime - phase * segment : 0f;
+                bool waiting = local > movementDuration;
+                float moveT = movementDuration > 0.001f ? Mathf.Clamp01(local / movementDuration) : 1f;
 
-                bool waiting;
-                if (time < segment)
+                Vector2 from;
+                Vector2 to;
+                string phaseName;
+                switch (phase)
                 {
-                    float local = time;
-                    waiting = local > duration;
+                    case 0:
+                        from = a;
+                        to = b;
+                        phaseName = "A->B";
+                        break;
+                    case 1:
+                        from = b;
+                        to = c;
+                        phaseName = "B->C";
+                        break;
+                    case 2:
+                        from = c;
+                        to = b;
+                        phaseName = "C->B";
+                        break;
+                    default:
+                        from = b;
+                        to = a;
+                        phaseName = "B->A";
+                        break;
                 }
-                else
-                {
-                    float local = time - segment;
-                    waiting = local > duration;
-                }
-                
-                statusLabel = waiting ? "Пауза на тайлі" : "Рух між тайлами";
+
+                centerPos = waiting ? to : Vector2.Lerp(from, to, moveT);
+                centerPos.y -= Mathf.Clamp(rect.height * 0.16f, 18f, 44f);
+
+                float tilesPerSecond = 1f / Mathf.Max(0.02f, movementDuration + movementDelay);
+                statusLabel = waiting
+                    ? $"Пауза ({phaseName}) | speed {tilesPerSecond:0.00} tile/s | delay {movementDelay:0.00}s"
+                    : $"Рух ({phaseName}) | speed {tilesPerSecond:0.00} tile/s | t {moveT:0.00}";
             }
 
-            Vector2 centerPos = new Vector2(rect.center.x, rect.y + rect.height * 0.4f);
             float spriteSize = Mathf.Clamp(rect.width * 0.3f, 40f, 100f);
             Rect spriteRect = new Rect(centerPos.x - spriteSize * 0.5f, centerPos.y - spriteSize * 0.9f, spriteSize, spriteSize);
             DrawSpriteOrPrefab(spriteRect, displaySprite, prefab, true);
@@ -943,6 +1249,84 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 GUI.Label(new Rect(rect.x + 16f, rect.center.y - 12f, rect.width - 32f, 24f), "Додайте prefab або створіть його", CenterMiniStyle());
             }
+        }
+
+        private void DrawDetailedStatePreview(SerializedProperty unit)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Симуляція стану (усі параметри)", EditorStyles.boldLabel);
+
+            string typeId = GetString(unit, "TypeId");
+            UnitRole role = (UnitRole)Mathf.Clamp(GetEnumIndex(unit, "Role"), 0, Enum.GetValues(typeof(UnitRole)).Length - 1);
+            int combatTypeIdx = GetEnumIndex(unit, "CombatType");
+            string combatType = Enum.IsDefined(typeof(UnitCombatType), combatTypeIdx)
+                ? ((UnitCombatType)combatTypeIdx).ToString()
+                : combatTypeIdx.ToString(CultureInfo.InvariantCulture);
+
+            int level = GetInt(unit, "BaseLevel");
+            int hp = GetInt(unit, "HitPoints");
+            float stamina = GetFloat(unit, "BaseStamina");
+            Vector2 staminaRange = GetVector2(unit, "StaminaRandomRange");
+            int vision = GetInt(unit, "VisionRange");
+
+            int cuttingDmg = Mathf.Max(0, GetInt(unit, "CuttingDamage"));
+            int penetratingDmg = Mathf.Max(0, GetInt(unit, "PenetratingDamage"));
+            int crushingDmg = Mathf.Max(0, GetInt(unit, "CrushingDamage"));
+            int totalDamage = cuttingDmg + penetratingDmg + crushingDmg;
+
+            int cuttingDef = Mathf.Max(0, GetInt(unit, "CuttingDefense"));
+            int penetratingDef = Mathf.Max(0, GetInt(unit, "PenetratingDefense"));
+            int crushingDef = Mathf.Max(0, GetInt(unit, "CrushingDefense"));
+            int totalDefense = cuttingDef + penetratingDef + crushingDef;
+
+            float moveDuration = Mathf.Max(0.02f, GetNestedFloat(unit, "AnimationSettings", "MoveDurationPerTile", 0.3f));
+            float moveDelay = Mathf.Max(0f, GetNestedFloat(unit, "AnimationSettings", "DelayOnTile", 0.05f));
+            float speed = 1f / Mathf.Max(0.02f, moveDuration + moveDelay);
+
+            var prefab = GetObject<GameObject>(unit, "Prefab");
+            var customSprite = GetObject<Sprite>(unit, "CustomSprite");
+
+            var clips = unit.FindPropertyRelative("AnimationClips");
+            int clipCount = clips != null ? clips.arraySize : 0;
+
+            string activeAnimation = "Немає";
+            if (_isPlayingAnimation && clips != null && _previewAnimationIndex >= 0 && _previewAnimationIndex < clips.arraySize)
+            {
+                var clip = clips.GetArrayElementAtIndex(_previewAnimationIndex);
+                var nameRef = clip.FindPropertyRelative("Name");
+                var typeRef = clip.FindPropertyRelative("Type");
+                var fpsRef = clip.FindPropertyRelative("SpriteFPS");
+                var durationRef = clip.FindPropertyRelative("Duration");
+                var loopRef = clip.FindPropertyRelative("Loop");
+                var spritesRef = clip.FindPropertyRelative("SpriteFrames");
+                var animatorParamRef = clip.FindPropertyRelative("AnimatorParameterName");
+
+                string clipName = nameRef != null ? nameRef.stringValue : "Unknown";
+                string clipType = typeRef != null ? typeRef.enumDisplayNames[Mathf.Clamp(typeRef.enumValueIndex, 0, typeRef.enumDisplayNames.Length - 1)] : "Unknown";
+                int fps = fpsRef != null ? Mathf.Max(1, fpsRef.intValue) : 0;
+                float duration = durationRef != null ? Mathf.Max(0.01f, durationRef.floatValue) : 0f;
+                bool loop = loopRef != null && loopRef.boolValue;
+                int frames = spritesRef != null ? spritesRef.arraySize : 0;
+                string animatorParam = animatorParamRef != null ? animatorParamRef.stringValue : string.Empty;
+
+                activeAnimation = $"{clipType}/{clipName} | {frames} frames | {fps} FPS | {duration:0.00}s | {(loop ? "Loop" : "Once")}";
+                if (!string.IsNullOrWhiteSpace(animatorParam))
+                    activeAnimation += $" | Animator: {animatorParam}";
+            }
+
+            EditorGUILayout.LabelField($"TypeId: {(string.IsNullOrWhiteSpace(typeId) ? "<порожній>" : typeId)}");
+            EditorGUILayout.LabelField($"Role/Combat: {role} / {combatType}");
+            EditorGUILayout.LabelField($"Level/HP: {level} / {hp}");
+            EditorGUILayout.LabelField($"Stamina: {stamina:0.0} ({stamina + staminaRange.x:0.0}..{stamina + staminaRange.y:0.0})");
+            EditorGUILayout.LabelField($"Vision: {vision}");
+            EditorGUILayout.LabelField($"Prefab: {(prefab != null ? prefab.name : "<не задано>")}");
+            EditorGUILayout.LabelField($"CustomSprite: {(customSprite != null ? customSprite.name : "<не задано>")}");
+            EditorGUILayout.LabelField($"Damage C/P/Cr: {cuttingDmg}/{penetratingDmg}/{crushingDmg} (total {totalDamage})");
+            EditorGUILayout.LabelField($"Defense C/P/Cr: {cuttingDef}/{penetratingDef}/{crushingDef} (total {totalDefense})");
+            EditorGUILayout.LabelField($"Movement: duration {moveDuration:0.00}s, delay {moveDelay:0.00}s, speed {speed:0.00} tile/s");
+            EditorGUILayout.LabelField($"Animations: {clipCount} | Active: {activeAnimation}", EditorStyles.wordWrappedMiniLabel);
+
+            EditorGUILayout.EndVertical();
         }
 
         private void DrawStatVisualization(SerializedProperty unit)
