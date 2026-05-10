@@ -84,6 +84,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (_cachedLayerSources == null || _cachedMaskWidth <= 0 || _cachedMaskHeight <= 0)
                 return;
 
+            float now = Time.unscaledTime;
+            if (_rebuildInterval > 0f && now < _nextRebuildTime)
+                return;
+
+            _nextRebuildTime = now + _rebuildInterval;
+
             if (!CheckDirty())
                 return;
 
@@ -179,6 +185,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 _cachedMaskHeight = maskHeight;
                 _opaqueCache.Clear();
                 _isDirty = true;
+                _nextRebuildTime = Time.unscaledTime + _rebuildInterval;
             }
 
             _waterMaterials = waterMaterials;

@@ -3,7 +3,9 @@
     "rootNamespace": "Kruty1918.Moyva.Construction.Editor",
     "references": [
         "Kruty1918.Moyva.Construction",
-        "Kruty1918.Moyva.Construction.UI"
+        "Kruty1918.Moyva.Construction.UI",
+        "Kruty1918.Moyva.EditorShared",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [
         "Editor"

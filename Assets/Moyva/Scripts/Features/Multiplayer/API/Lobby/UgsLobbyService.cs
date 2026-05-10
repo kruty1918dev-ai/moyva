@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Runtime;
 using UnityEngine;
 using Unity.Services.Authentication;
@@ -70,6 +71,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public async Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, CancellationToken ct = default)
         {
             await EnsureServicesReadyAsync();
+            LogRuntimeContext("CreateRoomAsync");
 
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
@@ -139,6 +141,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             await EnsureServicesReadyAsync();
 
             await _operationLock.WaitAsync(ct);
+            LogRuntimeContext("JoinByCodeAsync");
             try
             {
                 if (_current != null && string.Equals(_current.LobbyCode, lobbyCode, StringComparison.OrdinalIgnoreCase))
@@ -215,6 +218,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             await EnsureServicesReadyAsync();
 
             await _operationLock.WaitAsync(ct);
+            LogRuntimeContext("JoinByIdAsync");
             try
             {
                 if (_current != null && string.Equals(_current.LobbyId, lobbyId, StringComparison.Ordinal))
@@ -270,6 +274,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public async Task<IReadOnlyList<LobbyRoom>> QueryRoomsAsync(CancellationToken ct = default)
         {
             await EnsureServicesReadyAsync();
+            LogRuntimeContext("QueryRoomsAsync");
+
+            if (LobbyService.Instance == null)
+            {
+                _logger.Warn("[UgsLobby] QueryRoomsAsync skipped: LobbyService.Instance is unavailable.");
+                return Array.Empty<LobbyRoom>();
+            }
 
             var query = new QueryLobbiesOptions
             {
@@ -295,6 +306,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     list.Add(Project(l));
                 }
 
+                _logger.Info($"[UgsLobby] QueryRoomsAsync returned {list.Count}/{result.Results.Count} lobbies after Moyva relay filtering.");
+
                 return list;
             }
             catch (LobbyServiceException e) when (e.Message != null && e.Message.Contains("Too Many Requests"))
@@ -304,7 +317,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             }
             catch (Exception e)
             {
-                _logger.Warn($"[UgsLobby] QueryRoomsAsync failed: {e.Message}");
+                _logger.Warn($"[UgsLobby] QueryRoomsAsync failed: {e}");
                 return Array.Empty<LobbyRoom>();
             }
         }
@@ -323,7 +336,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             }
             catch (Exception e)
             {
-                _logger.Warn($"[UgsLobby] LeaveAsync: {e.Message}");
+                _logger.Warn($"[UgsLobby] LeaveAsync failed: {e}");
             }
             finally
             {
@@ -350,11 +363,19 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         {
             if (_lobby == null || !_isHost) return;
 
+            var normalizedRelayJoinCode = relayJoinCode?.Trim() ?? string.Empty;
+            if (!string.IsNullOrEmpty(normalizedRelayJoinCode) && !RelayJoinCodeUtility.IsValid(normalizedRelayJoinCode))
+            {
+                var message = $"[UgsLobby] Refusing to publish invalid Relay join code '{normalizedRelayJoinCode}' for lobby '{_lobby.Id}'.";
+                _logger.Warn(message);
+                throw new ArgumentException(message, nameof(relayJoinCode));
+            }
+
             var updateOpts = new UpdateLobbyOptions
             {
                 Data = new Dictionary<string, DataObject>
                 {
-                    { RelayCodeDataKey, new DataObject(DataObject.VisibilityOptions.Member, relayJoinCode ?? string.Empty) },
+                    { RelayCodeDataKey, new DataObject(DataObject.VisibilityOptions.Member, normalizedRelayJoinCode) },
                 }
             };
 
@@ -505,7 +526,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
             string relayCode = string.Empty;
             if (l.Data != null && l.Data.TryGetValue(RelayCodeDataKey, out var dataObj) && dataObj != null)
+            {
                 relayCode = dataObj.Value ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(relayCode) && !RelayJoinCodeUtility.IsValid(relayCode))
+                    relayCode = string.Empty;
+            }
 
             string passwordHash = string.Empty;
             if (l.Data != null && l.Data.TryGetValue(PasswordHashDataKey, out var pwdObj) && pwdObj != null)
@@ -611,7 +636,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
                 catch (Exception e)
                 {
-                    _logger.Warn($"[UgsLobby] Heartbeat failed: {e.Message}");
+                    _logger.Warn($"[UgsLobby] Heartbeat failed: {e}");
                 }
 
                 try { await Task.Delay(TimeSpan.FromSeconds(HeartbeatSeconds), ct); }
@@ -625,8 +650,16 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 try
                 {
+                    var lobby = _lobby;
+                    var lobbyService = LobbyService.Instance;
+                    if (lobby == null || lobbyService == null)
+                        return;
+
                     await UpdateLocalPlayerTimeAsync();
-                    var refreshed = await LobbyService.Instance.GetLobbyAsync(_lobby.Id);
+                    if (ct.IsCancellationRequested || _lobby == null)
+                        return;
+
+                    var refreshed = await lobbyService.GetLobbyAsync(lobby.Id);
                     if (refreshed != null)
                     {
                         var previous = _current;
@@ -674,8 +707,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
                 catch (Exception e)
                 {
-                    _logger.Warn($"[UgsLobby] Poll failed: {e.Message}");
-                    var delaySeconds = e.Message.Contains("Too Many Requests") ? PollBackoffSeconds : PollSeconds;
+                    _logger.Warn($"[UgsLobby] Poll failed: {e}");
+                    var delaySeconds = e.Message != null && e.Message.Contains("Too Many Requests") ? PollBackoffSeconds : PollSeconds;
                     try { await Task.Delay(TimeSpan.FromSeconds(delaySeconds), ct); }
                     catch (OperationCanceledException) { return; }
                     continue;
@@ -684,6 +717,15 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 try { await Task.Delay(TimeSpan.FromSeconds(PollSeconds), ct); }
                 catch (OperationCanceledException) { return; }
             }
+        }
+
+        private void LogRuntimeContext(string action)
+        {
+            var profile = MultiplayerClientScope.IsDefault ? "default" : MultiplayerClientScope.ScopeId;
+            var playerId = AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn
+                ? AuthenticationService.Instance.PlayerId
+                : "<not-signed-in>";
+            _logger.Trace($"[UgsLobby] {action} context: profile={profile}, playerId={playerId}, services={UnityServices.State}, signedIn={(AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn)}.");
         }
 
         private async Task PublishReconnectRecordsForRemovedPlayersAsync(LobbyRoom previous, LobbyRoom current, CancellationToken ct)
@@ -735,7 +777,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
 
         private async Task UpdateLocalPlayerTimeAsync()
         {
-            if (_lobby == null || LobbyService.Instance == null || AuthenticationService.Instance == null || string.IsNullOrEmpty(AuthenticationService.Instance.PlayerId))
+            var lobby = _lobby;
+            var lobbyService = LobbyService.Instance;
+            var authenticationService = AuthenticationService.Instance;
+            if (lobby == null || lobbyService == null || authenticationService == null || string.IsNullOrEmpty(authenticationService.PlayerId))
                 return;
 
             var update = new UpdatePlayerOptions
@@ -746,7 +791,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 }
             };
 
-            await LobbyService.Instance.UpdatePlayerAsync(_lobby.Id, AuthenticationService.Instance.PlayerId, update).ConfigureAwait(false);
+            await lobbyService.UpdatePlayerAsync(lobby.Id, authenticationService.PlayerId, update).ConfigureAwait(false);
         }
 
         private static string EncodeBytes(byte[] bytes)

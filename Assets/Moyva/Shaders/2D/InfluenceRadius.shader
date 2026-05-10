@@ -31,6 +31,7 @@ Shader "Moyva/2D/InfluenceRadius"
             Cull Off
 
             HLSLPROGRAM
+            #pragma target 2.0
             #pragma vertex   vert
             #pragma fragment frag
 
@@ -75,10 +76,11 @@ Shader "Moyva/2D/InfluenceRadius"
 
             float4 frag(Varyings IN) : SV_Target
             {
-                // Маска меж мапи: обрізаємо все поза прямокутником тайлів
-                if (IN.worldXY.x < _MapRect.x || IN.worldXY.x > _MapRect.z ||
-                    IN.worldXY.y < _MapRect.y || IN.worldXY.y > _MapRect.w)
-                    return float4(0, 0, 0, 0);
+                float insideMap = step(_MapRect.x, IN.worldXY.x)
+                    * step(IN.worldXY.x, _MapRect.z)
+                    * step(_MapRect.y, IN.worldXY.y)
+                    * step(IN.worldXY.y, _MapRect.w);
+                clip(insideMap - 0.5);
 
                 float2 centerWS = mul(unity_ObjectToWorld, float4(0, 0, 0, 1)).xy;
                 float2 dir = IN.worldXY - centerWS;
@@ -93,8 +95,7 @@ Shader "Moyva/2D/InfluenceRadius"
                 float ringMask = 1.0 - smoothstep(halfWidth - edgeFeather, halfWidth + edgeFeather, edgeDistance);
                 float fillMask = 1.0 - smoothstep(ringRadius - halfWidth - edgeFeather, ringRadius - halfWidth + edgeFeather, distanceToCenter);
 
-                if (ringMask <= 0.0 && fillMask <= 0.0)
-                    return float4(0, 0, 0, 0);
+                clip(max(ringMask, fillMask) - 0.001);
 
                 if (ringMask <= 0.0)
                     return float4(_FillColor.rgb, _FillColor.a * fillMask);

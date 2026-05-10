@@ -25,6 +25,19 @@ namespace Kruty1918.Moyva.Units.API
             if (config.VisionRange > 0)
                 output.AppendLine($"Дальність огляду: {config.VisionRange}");
 
+            if (config.HitPoints > 0)
+                output.AppendLine($"HP: {config.HitPoints}");
+
+            output.AppendLine($"Тип бою: {config.CombatType}");
+
+            int totalDamage = config.CuttingDamage + config.PenetratingDamage + config.CrushingDamage;
+            if (totalDamage > 0)
+                output.AppendLine($"Шкода: {UnitCombatCalculator.FormatDamageTriplet(config)}");
+
+            int totalDefense = config.CuttingDefense + config.PenetratingDefense + config.CrushingDefense;
+            if (totalDefense > 0)
+                output.AppendLine($"Захист: {UnitCombatCalculator.FormatDefenseTriplet(config)}");
+
             if (config.StaminaRandomRange != Vector2.zero)
                 output.AppendLine($"Рандом стаміни: {config.StaminaRandomRange.x:0.#} .. {config.StaminaRandomRange.y:0.#}");
 

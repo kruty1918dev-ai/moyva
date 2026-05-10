@@ -138,19 +138,65 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             var sessionId = !string.IsNullOrWhiteSpace(room.LobbyId) ? room.LobbyId : room.LobbyCode;
+            var providerType = GetCurrentProviderType();
+            var effectiveNetworkType = GetEffectiveNetworkProviderType();
+            if (providerType == NetworkProviderType.Relay && effectiveNetworkType != NetworkProviderType.Relay)
+            {
+                var error = $"Глобальний Relay транспорт недоступний: активний мережевий провайдер зараз {effectiveNetworkType}.";
+                await FailCreatedLobbyAsync(error);
+                return false;
+            }
+
             var result = await _networkProvider.HostSessionAsync(sessionId);
             if (result == null || !result.Success)
             {
                 var error = result?.ErrorMessage ?? "Не вдалося запустити мережеву сесію.";
-                UnityEngine.Debug.LogError($"[CreateRoomPanelService] HostSessionAsync failed: {error}");
-                _infoPanelService?.Show(new InfoMessage("Помилка кімнати", error));
+                await FailCreatedLobbyAsync(error);
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(result.SessionId) && _lobbyService != null)
-                await _lobbyService.SetRelayJoinCodeAsync(result.SessionId);
+            var transportJoinCode = result.SessionId?.Trim() ?? string.Empty;
+            if (providerType == NetworkProviderType.Relay && !RelayJoinCodeUtility.IsValid(transportJoinCode))
+            {
+                var error = $"Relay повернув невалідний код підключення '{transportJoinCode}'. Очікувався короткий Relay join code, а не lobby id '{room?.LobbyId}'.";
+                await FailCreatedLobbyAsync(error);
+                return false;
+            }
+
+            if (!string.IsNullOrWhiteSpace(transportJoinCode) && _lobbyService != null)
+            {
+                try
+                {
+                    await _lobbyService.SetRelayJoinCodeAsync(transportJoinCode);
+                }
+                catch (Exception e)
+                {
+                    await FailCreatedLobbyAsync($"Не вдалося опублікувати мережевий код кімнати: {e.Message}");
+                    return false;
+                }
+            }
 
             return true;
+        }
+
+        private NetworkProviderType GetCurrentProviderType()
+        {
+            return _modeSelector?.CurrentMode ?? NetworkProviderType.Relay;
+        }
+
+        private NetworkProviderType GetEffectiveNetworkProviderType()
+        {
+            return _networkProvider is SwitchableNetworkProvider switchableNetworkProvider
+                ? switchableNetworkProvider.CurrentType
+                : GetCurrentProviderType();
+        }
+
+        private async Task FailCreatedLobbyAsync(string error)
+        {
+            UnityEngine.Debug.LogError($"[CreateRoomPanelService] HostSessionAsync failed: {error}");
+            try { if (_lobbyService != null) await _lobbyService.LeaveAsync(); }
+            catch (Exception leaveError) { UnityEngine.Debug.LogWarning($"[CreateRoomPanelService] Leave after failed host transport failed: {leaveError.Message}"); }
+            _infoPanelService?.Show(new InfoMessage("Помилка кімнати", error));
         }
 
         private string GetPlayerName()

@@ -187,6 +187,14 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 return await FallbackToOfflineSoloAsync(opts, hostResult.ErrorMessage, ct);
             }
 
+            if (_config.ProviderType == NetworkProviderType.Relay && !RelayJoinCodeUtility.IsValid(hostResult.SessionId))
+            {
+                var error = $"Relay host returned invalid join code '{hostResult.SessionId ?? string.Empty}'.";
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, error);
+                try { await _lobby.LeaveAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after invalid Relay join code failed: {leaveError.Message}"); }
+                return await FallbackToOfflineSoloAsync(opts, error, ct);
+            }
+
             // Relay join code → lobby data so clients can discover it.
             await _lobby.SetRelayJoinCodeAsync(hostResult.SessionId, ct);
 

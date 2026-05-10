@@ -29,6 +29,27 @@ namespace Kruty1918.Moyva.Camera.Runtime
         }
 
         public void MoveCamera(Vector3 delta) // delta — це чисті пікселі з Action Map
+            => ApplyScreenDelta(delta, _settings.moveSpeed, immediate: false);
+
+        public void MoveCameraImmediate(Vector3 delta, float speedMultiplier)
+            => ApplyScreenDelta(delta, speedMultiplier, immediate: true);
+
+        public void ShiftCameraWorld(Vector3 worldDelta, bool immediate)
+        {
+            if (_forceBlockTimer > 0f) return;
+
+            worldDelta.z = 0f;
+            _targetPosition += worldDelta;
+            _targetPosition.z = _settings.defaultCameraZ;
+
+            if (!immediate)
+                return;
+
+            _currentVelocity = Vector3.zero;
+            _camera.transform.position = _targetPosition;
+        }
+
+        private void ApplyScreenDelta(Vector3 delta, float speedMultiplier, bool immediate)
         {
             if (_forceBlockTimer > 0f) return;
 
@@ -48,10 +69,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
             // 3. Додаємо до цілі. 
             // ТУТ ВАЖЛИВО: moveSpeed у налаштуваннях тепер має бути в районі 1.0.
             // Якщо поставиш 1.0 — мапа буде ідеально "приклеєна" до пальця/курсора.
-            _targetPosition += moveDirection * _settings.moveSpeed;
+            _targetPosition += moveDirection * speedMultiplier;
 
             // Тримаємо Z стабільним для 2D
             _targetPosition.z = _settings.defaultCameraZ;
+
+            if (!immediate)
+                return;
+
+            _currentVelocity = Vector3.zero;
+            _camera.transform.position = _targetPosition;
         }
 
         public void ForceMoveCameraToPosition(Vector3 position)

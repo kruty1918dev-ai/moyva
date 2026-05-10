@@ -328,6 +328,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_isJoining)
                 return;
 
+            var traceId = Guid.NewGuid().ToString("N").Substring(0, 8).ToUpperInvariant();
+
             var joinPanelName = ResolveJoinOriginPanelName();
             var joinProviderType = GetCurrentProviderType();
             var shouldRefreshRoomListAfterFailure = false;
@@ -338,27 +340,29 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var overlay = _loader?.LoadOverlay(0f, 100f, "%");
             try
             {
-                Debug.Log($"[JoinRoomPanelService] JoinRoomAsync start: kind={target.Kind} value='{target.Value}' provider={joinProviderType}.");
+                Debug.Log($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync start: kind={target.Kind} value='{target.Value}' provider={joinProviderType} currentMenu='{_navigation?.CurrentMenu}'.");
                 await ApplySelectedProviderAsync();
-                Debug.Log($"[JoinRoomPanelService] JoinRoomAsync provider applied; effective={GetCurrentProviderType()}.");
+                Debug.Log($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync provider applied; effective={GetCurrentProviderType()} requested={joinProviderType}.");
 
                 LobbyRoom room = await TryJoinWithPasswordLoopAsync(target);
 
                 if (room != null)
                 {
-                    Debug.Log($"[JoinRoomPanelService] JoinRoomAsync ok: lobbyId='{room.LobbyId}' code='{room.LobbyCode}' relay='{room.RelayJoinCode}' players={room.Players?.Count ?? 0}.");
+                    Debug.Log($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync lobby join ok: lobbyId='{room.LobbyId}' code='{room.LobbyCode}' relay='{room.RelayJoinCode}' players={room.Players?.Count ?? 0} state={room.State}.");
                     var blockReason = GetPostJoinBlockReason(room);
                     if (!string.IsNullOrEmpty(blockReason))
                     {
                         shouldRefreshRoomListAfterFailure = true;
+                        Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Join blocked after lobby join: {blockReason}");
                         await ReturnToLobbyChooserWithMessageAsync(joinPanelName, "Кімната недоступна", blockReason);
                         return;
                     }
 
-                    var transportReady = await JoinNetworkSessionAsync(room);
+                    var transportReady = await JoinNetworkSessionAsync(room, traceId);
                     if (!transportReady)
                     {
                         shouldRefreshRoomListAfterFailure = true;
+                        Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Join transport phase failed for lobby '{room.LobbyId}'.");
                         await ReturnToLobbyChooserWithMessageAsync(
                             joinPanelName,
                             "Помилка приєднання",
@@ -374,6 +378,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         if (!reconnected)
                         {
                             shouldRefreshRoomListAfterFailure = true;
+                            Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Reconnect flow failed: started room has no valid world settings.");
                             await ReturnToLobbyChooserWithMessageAsync(
                                 joinPanelName,
                                 "Не вдалося перепідключитися",
@@ -391,7 +396,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
                 else
                 {
-                    Debug.LogError($"[JoinRoomPanelService] failed to join room by {target.Kind}='{target.Value}', no exception but result was null.");
+                    Debug.LogError($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync failed to join by {target.Kind}='{target.Value}': result was null.");
                     shouldRefreshRoomListAfterFailure = true;
                     await ReturnToLobbyChooserWithMessageAsync(
                         joinPanelName,
@@ -401,7 +406,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
             catch (Exception e)
             {
-                Debug.LogError($"[JoinRoomPanelService] JoinRoomAsync failed: {e}");
+                Debug.LogError($"[JoinRoomPanelService] [{traceId}] JoinRoomAsync failed: {e}");
                 shouldRefreshRoomListAfterFailure = true;
                 await ReturnToLobbyChooserWithMessageAsync(
                     joinPanelName,
@@ -434,11 +439,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         /// Після lobby-join підключає transport provider до реальної сесії (LAN/Relay/etc.).
         /// Саме цей крок потрібен, щоб знайдена кімната перетворилась на активне мережеве підключення.
         /// </summary>
-        private async Task<bool> JoinNetworkSessionAsync(LobbyRoom room)
+        private async Task<bool> JoinNetworkSessionAsync(LobbyRoom room, string traceId)
         {
             if (_networkProvider == null)
             {
-                Debug.LogWarning("[JoinRoomPanelService] INetworkProvider not available; lobby joined without transport connection.");
+                Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] INetworkProvider not available; lobby joined without transport connection.");
                 return true;
             }
 
@@ -446,25 +451,43 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (!await EnsureNetworkProviderMatchesLobbyAsync(providerType))
                 return false;
 
-            var joinCode = await ResolveNetworkJoinCodeAsync(room);
+            var joinCode = await ResolveNetworkJoinCodeAsync(room, traceId);
             if (string.IsNullOrWhiteSpace(joinCode))
             {
                 const string error = "Хост ще не опублікував мережевий код підключення для цієї кімнати.";
-                Debug.LogError($"[JoinRoomPanelService] {error}");
+                Debug.LogError($"[JoinRoomPanelService] [{traceId}] {error} LobbyId='{room?.LobbyId}' LobbyCode='{room?.LobbyCode}' Provider='{providerType}'.");
+                await LeaveLobbyAfterFailedTransportJoinAsync(traceId);
                 return false;
             }
 
-            Debug.Log($"[JoinRoomPanelService] Joining transport session '{joinCode}'.");
-            var result = await _networkProvider.JoinSessionAsync(joinCode);
+            var normalizedJoinCode = joinCode.Trim();
+            if (providerType == NetworkProviderType.Relay)
+            {
+                if (!RelayJoinCodeUtility.IsValid(normalizedJoinCode))
+                {
+                    Debug.LogError($"[JoinRoomPanelService] [{traceId}] Resolved transport code '{normalizedJoinCode}' is not a valid Relay join code. LobbyId='{room?.LobbyId}', LobbyCode='{room?.LobbyCode}', RelayJoinCode='{room?.RelayJoinCode}'.");
+                    await LeaveLobbyAfterFailedTransportJoinAsync(traceId);
+                    return false;
+                }
+            }
+
+            Debug.Log($"[JoinRoomPanelService] [{traceId}] Joining transport session '{normalizedJoinCode}' using provider '{providerType}'.");
+            var result = await _networkProvider.JoinSessionAsync(normalizedJoinCode);
             if (result == null || !result.Success)
             {
                 var error = result?.ErrorMessage ?? "Не вдалося підключитися до мережевої сесії.";
-                Debug.LogError($"[JoinRoomPanelService] JoinSessionAsync failed: {error}");
-                try { await _lobbyService.LeaveAsync(); } catch (Exception e) { Debug.LogWarning($"[JoinRoomPanelService] Leave after failed transport join failed: {e.Message}"); }
+                Debug.LogError($"[JoinRoomPanelService] [{traceId}] JoinSessionAsync failed: {error}");
+                await LeaveLobbyAfterFailedTransportJoinAsync(traceId);
                 return false;
             }
 
             return true;
+        }
+
+        private async Task LeaveLobbyAfterFailedTransportJoinAsync(string traceId)
+        {
+            try { if (_lobbyService != null) await _lobbyService.LeaveAsync(); }
+            catch (Exception e) { Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] Leave after failed transport join failed: {e.Message}"); }
         }
 
         private async Task<bool> StartReconnectedGameAsync(LobbyRoom room)
@@ -571,19 +594,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
         }
 
-        private async Task<string> ResolveNetworkJoinCodeAsync(LobbyRoom room)
+        private async Task<string> ResolveNetworkJoinCodeAsync(LobbyRoom room, string traceId)
         {
-            if (!string.IsNullOrWhiteSpace(room?.RelayJoinCode))
-                return room.RelayJoinCode;
-
             var providerType = GetCurrentProviderType();
+            if (TryNormalizeTransportJoinCode(room?.RelayJoinCode, providerType, out var initialJoinCode))
+                return initialJoinCode;
 
             var deadline = DateTime.UtcNow.AddSeconds(15);
             while (DateTime.UtcNow < deadline)
             {
                 var current = _lobbyService?.Current;
-                if (!string.IsNullOrWhiteSpace(current?.RelayJoinCode))
-                    return current.RelayJoinCode;
+                if (TryNormalizeTransportJoinCode(current?.RelayJoinCode, providerType, out var currentJoinCode))
+                    return currentJoinCode;
 
                 try
                 {
@@ -595,25 +617,39 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                             if (candidate == null) continue;
                             var sameLobby = string.Equals(candidate.LobbyId, room.LobbyId, StringComparison.OrdinalIgnoreCase) ||
                                             string.Equals(candidate.LobbyCode, room.LobbyCode, StringComparison.OrdinalIgnoreCase);
-                            if (sameLobby && !string.IsNullOrWhiteSpace(candidate.RelayJoinCode))
-                                return candidate.RelayJoinCode;
+                            if (sameLobby && TryNormalizeTransportJoinCode(candidate.RelayJoinCode, providerType, out var candidateJoinCode))
+                            {
+                                Debug.Log($"[JoinRoomPanelService] [{traceId}] ResolveNetworkJoinCodeAsync found relay code in query list for lobby '{candidate.LobbyId}'.");
+                                return candidateJoinCode;
+                            }
                         }
                     }
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"[JoinRoomPanelService] ResolveNetworkJoinCodeAsync query failed: {e.Message}");
+                    Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] ResolveNetworkJoinCodeAsync query failed: {e.Message}");
                 }
 
                 await Task.Delay(250);
             }
 
+            Debug.LogWarning($"[JoinRoomPanelService] [{traceId}] ResolveNetworkJoinCodeAsync timed out after 15s for lobbyId='{room?.LobbyId}' lobbyCode='{room?.LobbyCode}' provider='{providerType}'.");
+
             if (providerType == NetworkProviderType.Relay || providerType == NetworkProviderType.Lan)
                 return null;
 
             return !string.IsNullOrWhiteSpace(room?.RelayJoinCode)
-                ? room.RelayJoinCode
+                ? room.RelayJoinCode.Trim()
                 : (!string.IsNullOrWhiteSpace(room?.LobbyCode) ? room.LobbyCode : room?.LobbyId);
+        }
+
+        private static bool TryNormalizeTransportJoinCode(string value, NetworkProviderType providerType, out string normalizedJoinCode)
+        {
+            normalizedJoinCode = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+            if (string.IsNullOrEmpty(normalizedJoinCode))
+                return false;
+
+            return providerType != NetworkProviderType.Relay || RelayJoinCodeUtility.IsValid(normalizedJoinCode);
         }
 
         /// <summary>

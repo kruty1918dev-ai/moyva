@@ -1,0 +1,25 @@
+{
+    "name": "Kruty1918.Moyva.Tests.WorldCreation",
+    "rootNamespace": "Kruty1918.Moyva.Tests.WorldCreation",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Kruty1918.Moyva.WorldCreation.API",
+        "Kruty1918.Moyva.Signals"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

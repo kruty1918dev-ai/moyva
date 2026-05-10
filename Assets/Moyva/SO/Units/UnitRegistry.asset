@@ -15,8 +15,17 @@ MonoBehaviour:
   Configs:
   - TypeId: warrior
     Role: 1
+    CombatType: 0
     BaseStamina: 15
     VisionRange: 1
+    HitPoints: 100
+    BaseLevel: 1
+    CuttingDamage: 15
+    PenetratingDamage: 0
+    CrushingDamage: 0
+    CuttingDefense: 0
+    PenetratingDefense: 0
+    CrushingDefense: 0
     Prefab: {fileID: 3012185294812511675, guid: 4d504a73108154c2a87c088a007ff633, type: 3}
     StaminaRandomRange: {x: -1, y: 1}
     AnimationSettings:

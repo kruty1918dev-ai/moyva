@@ -255,7 +255,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             // Основна перевірка розміщення
-            if (!gateReplacementAllowed && !CanPlaceAt(position, null, _selectedBuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var townHallZoneBlocked))
+            if (!gateReplacementAllowed && !CanPlaceAt(position, null, _selectedBuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
@@ -265,7 +265,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 });
 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] TryPreviewAt({position}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, townHallZoneBlocked={townHallZoneBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
+                    Debug.Log($"[Construction] TryPreviewAt({position}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
 
                 return false;
             }
@@ -330,7 +330,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            if (!gateReplacementAllowed && !CanPlaceAt(toPosition, fromPosition, placement.BuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var townHallZoneBlocked))
+            if (!gateReplacementAllowed && !CanPlaceAt(toPosition, fromPosition, placement.BuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
@@ -340,7 +340,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 });
 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, townHallZoneBlocked={townHallZoneBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
+                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
 
                 return false;
             }
@@ -388,14 +388,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 var pos = placement.Position;
                 var id = placement.BuildingId;
+                bool gateReplacementAllowed = _wallPlacementService != null
+                    && _wallPlacementService.IsGate(id)
+                    && _wallPlacementService.CanReplaceWallWithGate(pos, id, out _);
+
+                if (!gateReplacementAllowed && !CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked))
+                {
+                    Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: placement became invalid. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, townHallBuildRadius={_townHallBuildRadius}.");
+                    _signalBus.Fire(new BuildingPreviewChangedSignal
+                    {
+                        Position = pos,
+                        BuildingId = id,
+                        PreviewState = BuildingPreviewState.None
+                    });
+                    continue;
+                }
 
                 if (_objectsMapService.IsOccupied(pos))
                 {
-                    bool replaced = _wallPlacementService != null
-                        && _wallPlacementService.IsGate(id)
-                        && _wallPlacementService.CanReplaceWallWithGate(pos, id, out _);
-
-                    if (!replaced)
+                    if (!gateReplacementAllowed)
                     {
                         Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: tile occupied.");
                         continue;
@@ -660,11 +671,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool TryDirectPlace(string buildingId, Vector2Int position, string placedByFactionId)
         {
+            if (string.IsNullOrWhiteSpace(buildingId))
+            {
+                Debug.LogWarning($"[Construction] TryDirectPlace({position}): buildingId порожній.");
+                return false;
+            }
+
             if (_objectsMapService.IsOccupied(position))
             {
                 if (VerboseLogs) Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}): тайл зайнятий.");
                 return false;
             }
+
+            if (IsBlockedByInfluenceZone(position, buildingId, ignoredPendingPosition: null))
+            {
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}) -> BLOCKED. influenceZoneBlocked=True, townHallBuildRadius={_townHallBuildRadius}.");
+                return false;
+            }
+
             _objectsMapService.Register(position, buildingId);
             _factionPlacedBuildings[position] = (buildingId, placedByFactionId);
             _signalBus.Fire(new BuildingPlacedSignal { BuildingId = buildingId, Position = position, SourceFactionId = placedByFactionId });
@@ -874,41 +899,50 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out bool tileOccupied,
             out bool spacingBlocked,
             out bool fogBlocked,
-            out bool townHallZoneBlocked)
+            out bool influenceZoneBlocked)
         {
             if (VerboseLogs)
                 Debug.Log($"[Construction] CanPlaceAt({position}, buildingId={buildingId}) проверка ПОЧАЛАСЬ");
 
             try
             {
-                tileOccupied = _objectsMapService.IsOccupied(position)
-                    || (_pendingPositions.Contains(position) && position != ignoredPendingPosition);
-                
+                var result = BuildingPlacementEvaluator.Evaluate(new BuildingPlacementEvaluationRequest
+                {
+                    BuildingRegistry = _buildingRegistry,
+                    BuildingId = buildingId,
+                    Position = position,
+                    IgnoredPendingPosition = ignoredPendingPosition,
+                    MinSpacing = _minSpacing,
+                    TownHallBuildRadius = _townHallBuildRadius,
+                    IsOccupied = _objectsMapService.IsOccupied,
+                    GetOccupantId = GetObjectOccupantId,
+                    IsFogBlocked = IsBlockedByFog,
+                    PendingPlacements = BuildPlacementSimulationEntries(),
+                });
+
+                tileOccupied = result.TileOccupied;
                 if (VerboseLogs)
                     Debug.Log($"[Construction] CanPlaceAt({position}): tileOccupied={tileOccupied}");
 
-                spacingBlocked = !tileOccupied && IsBlockedBySpacing(position, ignoredPendingPosition);
-                
+                spacingBlocked = result.SpacingBlocked;
                 if (VerboseLogs)
                     Debug.Log($"[Construction] CanPlaceAt({position}): spacingBlocked={spacingBlocked}");
 
-                fogBlocked = !tileOccupied && !spacingBlocked && IsBlockedByFog(position);
-                
+                fogBlocked = result.FogBlocked;
                 if (VerboseLogs)
                     Debug.Log($"[Construction] CanPlaceAt({position}): fogBlocked={fogBlocked}");
 
-                townHallZoneBlocked = !tileOccupied && !spacingBlocked && !fogBlocked
-                    && IsBlockedByTownHallZone(position, buildingId, ignoredPendingPosition);
+                influenceZoneBlocked = result.InfluenceZoneBlocked;
 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] CanPlaceAt({position}): townHallZoneBlocked={townHallZoneBlocked}");
+                    Debug.Log($"[Construction] CanPlaceAt({position}): influenceZoneBlocked={influenceZoneBlocked}");
 
-                bool result = !tileOccupied && !spacingBlocked && !fogBlocked && !townHallZoneBlocked;
+                bool allowed = result.IsValid;
                 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] CanPlaceAt({position}) результат: {(result ? "✓ VALID" : "❌ BLOCKED")}");
+                    Debug.Log($"[Construction] CanPlaceAt({position}) результат: {(allowed ? "✓ VALID" : "❌ BLOCKED")}");
 
-                return result;
+                return allowed;
             }
             catch (Exception ex)
             {
@@ -916,129 +950,135 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 tileOccupied = false;
                 spacingBlocked = false;
                 fogBlocked = false;
-                townHallZoneBlocked = false;
+                influenceZoneBlocked = false;
                 return false;
             }
         }
 
+        private string GetObjectOccupantId(Vector2Int position)
+        {
+            return _objectsMapService.TryGetOccupant(position, out var occupantId)
+                ? occupantId
+                : null;
+        }
+
+        private List<BuildingPlacementSimulationEntry> BuildPlacementSimulationEntries()
+        {
+            var entries = new List<BuildingPlacementSimulationEntry>(_pendingPlacements.Count);
+            for (int index = 0; index < _pendingPlacements.Count; index++)
+            {
+                var placement = _pendingPlacements[index];
+                entries.Add(new BuildingPlacementSimulationEntry(placement.Position, placement.BuildingId));
+            }
+
+            return entries;
+        }
+
         /// <summary>
-        /// Правило поселення: будь-яку не-ратушу можна ставити лише в зоні дії ратуші.
-        /// Якщо в реєстрі взагалі немає будівель типу TownHall — правило ігнорується.
+        /// Правило поселення: будь-яку не-центральну будівлю можна ставити лише в зоні дії ратуші або замку.
+        /// Якщо в реєстрі взагалі немає центральних будівель — правило ігнорується.
         /// </summary>
-        private bool IsBlockedByTownHallZone(Vector2Int position, string buildingId, Vector2Int? ignoredPendingPosition)
+        private bool IsBlockedByInfluenceZone(Vector2Int position, string buildingId, Vector2Int? ignoredPendingPosition)
         {
             // Базові перевірки
             if (string.IsNullOrWhiteSpace(buildingId))
             {
-                Debug.LogWarning("[Construction] IsBlockedByTownHallZone: buildingId порожній");
+                Debug.LogWarning("[Construction] IsBlockedByInfluenceZone: buildingId порожній");
                 return false;
             }
 
             if (_buildingRegistry == null)
             {
-                Debug.LogError("[Construction] IsBlockedByTownHallZone: _buildingRegistry == null");
+                Debug.LogError("[Construction] IsBlockedByInfluenceZone: _buildingRegistry == null");
                 return false;
             }
 
             var candidate = _buildingRegistry.GetById(buildingId);
             if (candidate == null)
             {
-                Debug.LogWarning($"[Construction] IsBlockedByTownHallZone: будівля '{buildingId}' не знайдена у реєстрі");
+                Debug.LogWarning($"[Construction] IsBlockedByInfluenceZone: будівля '{buildingId}' не знайдена у реєстрі");
                 return false;
             }
 
-            // Якщо жодна будівля в реєстрі не позначена IsTownHall — правило не діє.
-            bool anyTownHallDefined = System.Array.Exists(
+            bool anyInfluenceCenterDefined = System.Array.Exists(
                 _buildingRegistry.GetAll(),
-                def => def != null && BuildingDefinitionCapabilities.IsTownHall(def));
+                IsInfluenceCenter);
             
-            if (!anyTownHallDefined)
+            if (!anyInfluenceCenterDefined)
             {
                 if (VerboseLogs)
-                    Debug.Log("[Construction] IsBlockedByTownHallZone: RuleDisabled - немає ніякої TownHall будівлі у реєстрі");
+                    Debug.Log("[Construction] IsBlockedByInfluenceZone: RuleDisabled - немає ратуші або замку у реєстрі");
                 return false;
             }
 
-            int radius = candidate.TownHallProximityRadiusOverride > 0
-                ? candidate.TownHallProximityRadiusOverride
-                : _townHallBuildRadius;
+            int ruleRadius = IsInfluenceCenter(candidate)
+                ? ResolveInfluenceRadius(candidate)
+                : ResolveMaxInfluenceRadius();
 
-            if (radius <= 0)
+            if (ruleRadius <= 0)
             {
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] IsBlockedByTownHallZone: radius <= 0 ({radius}) - правило відключено");
+                    Debug.Log($"[Construction] IsBlockedByInfluenceZone: ruleRadius <= 0 ({ruleRadius}) - правило відключено");
                 return false;
             }
 
-            bool hasTownHallInRange = HasTownHallInRadius(position, radius, ignoredPendingPosition);
+            bool hasInfluenceCenterInRange = HasInfluenceCenterCoveringPosition(position, candidate, ignoredPendingPosition);
             
             if (VerboseLogs)
-                Debug.Log($"[Construction] IsBlockedByTownHallZone({position}, {buildingId}): radius={radius}, hasTownHallInRange={hasTownHallInRange}");
+                Debug.Log($"[Construction] IsBlockedByInfluenceZone({position}, {buildingId}): ruleRadius={ruleRadius}, hasInfluenceCenterInRange={hasInfluenceCenterInRange}");
 
-            bool requireTownHallInRange;
-            bool blockWhenTownHallExists;
+            bool requireInfluenceCenterInRange;
+            bool blockWhenInfluenceCenterExists;
 
             if (candidate.UseCustomTownHallRules)
             {
-                requireTownHallInRange = candidate.RequireTownHallInRange;
-                blockWhenTownHallExists = candidate.BlockIfTownHallAlreadyInRange;
+                requireInfluenceCenterInRange = candidate.RequireTownHallInRange;
+                blockWhenInfluenceCenterExists = candidate.BlockIfTownHallAlreadyInRange;
                 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] IsBlockedByTownHallZone: CustomRules - require={requireTownHallInRange}, blockWhenExists={blockWhenTownHallExists}");
+                    Debug.Log($"[Construction] IsBlockedByInfluenceZone: CustomRules - require={requireInfluenceCenterInRange}, blockWhenExists={blockWhenInfluenceCenterExists}");
             }
             else
             {
                 // Базова логіка за типом будівлі.
-                bool isTownHall = BuildingDefinitionCapabilities.IsTownHall(candidate);
-                requireTownHallInRange = !isTownHall;
-                blockWhenTownHallExists = isTownHall;
+                bool isInfluenceCenter = IsInfluenceCenter(candidate);
+                requireInfluenceCenterInRange = !isInfluenceCenter;
+                blockWhenInfluenceCenterExists = isInfluenceCenter;
                 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] IsBlockedByTownHallZone: DefaultRules - isTownHall={isTownHall}, require={requireTownHallInRange}, blockWhenExists={blockWhenTownHallExists}");
+                    Debug.Log($"[Construction] IsBlockedByInfluenceZone: DefaultRules - isInfluenceCenter={isInfluenceCenter}, require={requireInfluenceCenterInRange}, blockWhenExists={blockWhenInfluenceCenterExists}");
             }
 
-            if (requireTownHallInRange && !hasTownHallInRange)
+            if (requireInfluenceCenterInRange && !hasInfluenceCenterInRange)
             {
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] IsBlockedByTownHallZone: BLOCKED - вимагається TownHall, але його немає в радіусі {radius}");
+                    Debug.Log($"[Construction] IsBlockedByInfluenceZone: BLOCKED - потрібна ратуша або замок у радіусі {ruleRadius}");
                 return true;
             }
 
-            if (blockWhenTownHallExists && hasTownHallInRange)
+            int candidateInfluenceRadius = ResolveInfluenceRadius(candidate);
+            if (blockWhenInfluenceCenterExists && HasOverlappingInfluenceCenter(position, candidateInfluenceRadius, ignoredPendingPosition, out var overlapPosition, out var overlapBuildingId, out var overlapRadius))
             {
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] IsBlockedByTownHallZone: BLOCKED - TownHall вже в радіусі {radius}, нові TownHall не дозволяються");
+                    Debug.Log($"[Construction] IsBlockedByInfluenceZone: BLOCKED - зона '{buildingId}' radius={candidateInfluenceRadius} перетинається з '{overlapBuildingId}' на {overlapPosition} radius={overlapRadius}");
                 return true;
             }
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] IsBlockedByTownHallZone: ALLOWED - переговорами пройшла");
+                Debug.Log("[Construction] IsBlockedByInfluenceZone: ALLOWED");
 
             return false;
         }
 
-        private bool HasTownHallInRadius(Vector2Int center, int radius, Vector2Int? ignoredPendingPosition)
+        private bool HasInfluenceCenterCoveringPosition(Vector2Int position, BuildingDefinition candidate, Vector2Int? ignoredPendingPosition)
         {
-            if (radius <= 0)
-                return false;
+            int candidateLimit = ResolveCandidateProximityLimit(candidate);
 
             // 1) Вже зайняті тайли (будь-які джерела: placed, restored, world bootstrap)
-            for (int dx = -radius; dx <= radius; dx++)
-            {
-                for (int dy = -radius; dy <= radius; dy++)
-                {
-                    var pos = new Vector2Int(center.x + dx, center.y + dy);
+            if (HasPlacedInfluenceCenter(position, ignoredPendingPosition, candidateLimit))
+                return true;
 
-                    if (!_objectsMapService.TryGetOccupant(pos, out var occupantId) || string.IsNullOrWhiteSpace(occupantId))
-                        continue;
-
-                    var def = _buildingRegistry.GetById(occupantId);
-                    if (def != null && BuildingDefinitionCapabilities.IsTownHall(def))
-                        return true;
-                }
-            }
-
-            // 2) Ратуша в поточному pending-сеті (дозволяє в одній сесії будувати пачкою)
+            // 2) Центральна будівля в поточному pending-сеті (дозволяє в одній сесії будувати пачкою)
             for (int i = 0; i < _pendingPlacements.Count; i++)
             {
                 var pending = _pendingPlacements[i];
@@ -1046,15 +1086,177 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     continue;
 
                 var pendingDef = _buildingRegistry.GetById(pending.BuildingId);
-                if (pendingDef == null || !BuildingDefinitionCapabilities.IsTownHall(pendingDef))
+                if (!IsInfluenceCenter(pendingDef))
                     continue;
 
-                var delta = pending.Position - center;
-                if (Mathf.Max(Mathf.Abs(delta.x), Mathf.Abs(delta.y)) <= radius)
+                int allowedRadius = ResolveCoverageRadius(pendingDef, candidateLimit);
+                if (allowedRadius <= 0)
+                    continue;
+
+                if (GetChebyshevDistance(pending.Position, position) <= allowedRadius)
                     return true;
             }
 
             return false;
+        }
+
+        private bool HasPlacedInfluenceCenter(Vector2Int position, Vector2Int? ignoredPendingPosition, int candidateLimit)
+        {
+            int searchRadius = ResolvePlacedCenterSearchRadius(candidateLimit);
+            if (searchRadius <= 0)
+                return false;
+
+            for (int dx = -searchRadius; dx <= searchRadius; dx++)
+            {
+                for (int dy = -searchRadius; dy <= searchRadius; dy++)
+                {
+                    var centerPosition = new Vector2Int(position.x + dx, position.y + dy);
+                    if (centerPosition == ignoredPendingPosition)
+                        continue;
+
+                    if (!_objectsMapService.TryGetOccupant(centerPosition, out var occupantId) || string.IsNullOrWhiteSpace(occupantId))
+                        continue;
+
+                    var definition = _buildingRegistry.GetById(occupantId);
+                    if (!IsInfluenceCenter(definition))
+                        continue;
+
+                    int allowedRadius = ResolveCoverageRadius(definition, candidateLimit);
+                    if (allowedRadius > 0 && GetChebyshevDistance(centerPosition, position) <= allowedRadius)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool HasOverlappingInfluenceCenter(
+            Vector2Int candidatePosition,
+            int candidateRadius,
+            Vector2Int? ignoredPendingPosition,
+            out Vector2Int overlappingPosition,
+            out string overlappingBuildingId,
+            out int overlappingRadius)
+        {
+            overlappingPosition = default;
+            overlappingBuildingId = null;
+            overlappingRadius = 0;
+
+            if (candidateRadius <= 0)
+                return false;
+
+            int searchRadius = candidateRadius + ResolveMaxInfluenceRadius();
+            for (int dx = -searchRadius; dx <= searchRadius; dx++)
+            {
+                for (int dy = -searchRadius; dy <= searchRadius; dy++)
+                {
+                    var centerPosition = new Vector2Int(candidatePosition.x + dx, candidatePosition.y + dy);
+                    if (centerPosition == ignoredPendingPosition)
+                        continue;
+
+                    if (!_objectsMapService.TryGetOccupant(centerPosition, out var occupantId) || string.IsNullOrWhiteSpace(occupantId))
+                        continue;
+
+                    var definition = _buildingRegistry.GetById(occupantId);
+                    if (!IsInfluenceCenter(definition))
+                        continue;
+
+                    int existingRadius = ResolveInfluenceRadius(definition);
+                    if (existingRadius <= 0)
+                        continue;
+
+                    if (GetChebyshevDistance(centerPosition, candidatePosition) > candidateRadius + existingRadius)
+                        continue;
+
+                    overlappingPosition = centerPosition;
+                    overlappingBuildingId = occupantId;
+                    overlappingRadius = existingRadius;
+                    return true;
+                }
+            }
+
+            for (int i = 0; i < _pendingPlacements.Count; i++)
+            {
+                var pending = _pendingPlacements[i];
+                if (pending.Position == ignoredPendingPosition)
+                    continue;
+
+                var pendingDef = _buildingRegistry.GetById(pending.BuildingId);
+                if (!IsInfluenceCenter(pendingDef))
+                    continue;
+
+                int existingRadius = ResolveInfluenceRadius(pendingDef);
+                if (existingRadius <= 0)
+                    continue;
+
+                if (GetChebyshevDistance(pending.Position, candidatePosition) <= candidateRadius + existingRadius)
+                {
+                    overlappingPosition = pending.Position;
+                    overlappingBuildingId = pending.BuildingId;
+                    overlappingRadius = existingRadius;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private int ResolveCoverageRadius(BuildingDefinition centerDefinition, int candidateLimit)
+        {
+            int sourceRadius = ResolveInfluenceRadius(centerDefinition);
+            if (sourceRadius <= 0)
+                return 0;
+
+            return candidateLimit > 0
+                ? Mathf.Min(sourceRadius, candidateLimit)
+                : sourceRadius;
+        }
+
+        private int ResolvePlacedCenterSearchRadius(int candidateLimit)
+        {
+            int maxRadius = ResolveMaxInfluenceRadius();
+            return candidateLimit > 0
+                ? Mathf.Min(maxRadius, candidateLimit)
+                : maxRadius;
+        }
+
+        private int ResolveMaxInfluenceRadius()
+        {
+            int maxRadius = _townHallBuildRadius;
+            var definitions = _buildingRegistry.GetAll();
+            for (int i = 0; i < definitions.Length; i++)
+            {
+                var definition = definitions[i];
+                if (!IsInfluenceCenter(definition))
+                    continue;
+
+                maxRadius = Mathf.Max(maxRadius, ResolveInfluenceRadius(definition));
+            }
+
+            return Mathf.Max(0, maxRadius);
+        }
+
+        private int ResolveCandidateProximityLimit(BuildingDefinition candidate)
+        {
+            return candidate != null && candidate.TownHallProximityRadiusOverride > 0
+                ? candidate.TownHallProximityRadiusOverride
+                : 0;
+        }
+
+        private int ResolveInfluenceRadius(BuildingDefinition definition)
+        {
+            return BuildingDefinitionCapabilities.GetInfluenceRadius(definition, _townHallBuildRadius);
+        }
+
+        private static int GetChebyshevDistance(Vector2Int a, Vector2Int b)
+        {
+            return Mathf.Max(Mathf.Abs(a.x - b.x), Mathf.Abs(a.y - b.y));
+        }
+
+        private static bool IsInfluenceCenter(BuildingDefinition definition)
+        {
+            return BuildingDefinitionCapabilities.IsTownHall(definition)
+                || BuildingDefinitionCapabilities.IsCastle(definition);
         }
 
         private bool AddPendingPlacement(Vector2Int position, string buildingId, bool clearRedoHistory)

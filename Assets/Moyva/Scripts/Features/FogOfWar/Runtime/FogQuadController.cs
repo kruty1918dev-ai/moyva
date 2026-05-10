@@ -11,18 +11,33 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     {
         private const int FogOverlaySortingOrder = short.MaxValue;
         private const int FogOverlayRenderQueue = 4000; // Overlay queue
+        private static readonly int GlobalFogCullEnabledId = Shader.PropertyToID("_MoyvaFogCullEnabled");
+        private static readonly int GlobalFogCullThresholdId = Shader.PropertyToID("_MoyvaFogCullThreshold");
 
         [SerializeField] private FogOfWarSettings _settings;
 
-        [InjectOptional] private IFogOfWarService   _fogService;
-        [InjectOptional] private IFogTextureUpdater _textureUpdater;
-        [InjectOptional] private IGridService       _gridService;
-        [InjectOptional] private SignalBus          _signalBus;
+    private IFogOfWarService _fogService;
+    private IFogTextureUpdater _textureUpdater;
+    private IGridService _gridService;
+    private SignalBus _signalBus;
 
         private Material _mat;
         private int _mapWidth = 10;
         private int _mapHeight = 10;
         private bool _subscribed;
+
+        [Inject]
+        private void ConstructOptionalDependencies(
+            [InjectOptional] IFogOfWarService fogService,
+            [InjectOptional] IFogTextureUpdater textureUpdater,
+            [InjectOptional] IGridService gridService,
+            [InjectOptional] SignalBus signalBus)
+        {
+            _fogService = fogService;
+            _textureUpdater = textureUpdater;
+            _gridService = gridService;
+            _signalBus = signalBus;
+        }
 
         private void Start()
         {
@@ -36,6 +51,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             if (_signalBus != null && _subscribed)
                 _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
+
+            Shader.SetGlobalFloat(GlobalFogCullEnabledId, 0f);
+            ReleaseMaterialInstance();
         }
 
         private void InitializeOverlay(int width, int height)
@@ -50,7 +68,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             transform.position   = new Vector3((w - 1) * 0.5f, (h - 1) * 0.5f, -0.5f);
 
             var mr = GetComponent<MeshRenderer>();
-            _mat = mr.material;
+            if (_mat == null)
+                _mat = mr.material;
             ApplyOverlayRenderPriority(mr);
 
             if (_mat == null)
@@ -69,6 +88,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             _textureUpdater.Initialize(w, h, _mat);
             _fogService.Initialize(w, h);
+            ApplyShaderCullingSettings();
 
             if (_settings != null)
                 ApplySettingsToMaterial();
@@ -172,6 +192,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             
             // Icon blend intensity (how much icon blends into fog)
             _mat.SetFloat("_FogIconIntensity", 0.6f);
+            ApplyShaderCullingSettings();
+        }
+
+        private void ApplyShaderCullingSettings()
+        {
+            bool enabled = _settings == null || _settings.EnableShaderFogCulling;
+            float threshold = _settings != null ? _settings.ShaderFogCullThreshold : 0.01f;
+            Shader.SetGlobalFloat(GlobalFogCullEnabledId, enabled ? 1f : 0f);
+            Shader.SetGlobalFloat(GlobalFogCullThresholdId, Mathf.Clamp(threshold, 0f, 0.25f));
         }
 
         private static Vector4 BuildSpriteUvRect(Sprite sprite, Texture2D texture, Vector2Int pixelSize)
@@ -202,6 +231,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 (height + edgePadding.y * 2f) / height,
                 -edgePadding.x / width,
                 -edgePadding.y / height));
+        }
+
+        private void ReleaseMaterialInstance()
+        {
+            if (_mat == null)
+                return;
+
+            Destroy(_mat);
+            _mat = null;
         }
 
         private Vector2 ResolveEdgePaddingInCells()

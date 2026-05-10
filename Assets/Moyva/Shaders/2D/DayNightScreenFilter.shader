@@ -97,7 +97,7 @@ Shader "Moyva/2D/DayNight Screen Filter"
                 return (color - 0.5) * contrast + 0.5;
             }
 
-            half4 Frag(Varyings input) : SV_Target
+            float4 Frag(Varyings input) : SV_Target
             {
                 float2 uv = input.uv;
                 float4 scene = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, uv);
@@ -130,7 +130,7 @@ Shader "Moyva/2D/DayNight Screen Filter"
                 graded = lerp(graded, targetColorized, colorizeStrength);
 
                 float alpha = saturate(_FilterStrength);
-                return half4(lerp(scene.rgb, graded, alpha), scene.a);
+                return float4(lerp(scene.rgb, graded, alpha), scene.a);
             }
             ENDHLSL
         }
@@ -173,7 +173,7 @@ Shader "Moyva/2D/DayNight Screen Filter"
                 return output;
             }
 
-            half4 FragCopy(Varyings input) : SV_Target
+            float4 FragCopy(Varyings input) : SV_Target
             {
                 return SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_BlitTexture, input.uv);
             }

@@ -186,6 +186,37 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         }
 
         [Test]
+        public async Task FallbackProvider_JoinFailure_DoesNotSwitchToFallback()
+        {
+            var logger = new FakeLogger();
+            var primary = new FakeNetworkProvider { JoinResultFactory = _ => SessionResult.Fail("primary join failed") };
+            var fallback = new FakeNetworkProvider { JoinResultFactory = sid => SessionResult.Ok($"fb-{sid}") };
+            var provider = new FallbackNetworkProvider(primary, fallback, logger);
+
+            var result = await provider.JoinSessionAsync("room-join");
+
+            Assert.IsFalse(result.Success);
+            Assert.AreEqual(1, primary.JoinCalls);
+            Assert.AreEqual(0, fallback.JoinCalls);
+        }
+
+        [Test]
+        public async Task FallbackProvider_JoinException_DoesNotSwitchToFallback()
+        {
+            var logger = new FakeLogger();
+            var primary = new FakeNetworkProvider { JoinResultFactory = _ => throw new InvalidOperationException("join exception") };
+            var fallback = new FakeNetworkProvider { JoinResultFactory = sid => SessionResult.Ok($"fb-{sid}") };
+            var provider = new FallbackNetworkProvider(primary, fallback, logger);
+
+            var result = await provider.JoinSessionAsync("room-join");
+
+            Assert.IsFalse(result.Success);
+            Assert.AreEqual(1, primary.JoinCalls);
+            Assert.AreEqual(0, fallback.JoinCalls);
+            Assert.IsTrue(result.ErrorMessage.Contains("join exception"));
+        }
+
+        [Test]
         public void GameCommandSync_SendCommand_BuildsPacketAndBroadcasts()
         {
             var logger = new FakeLogger();

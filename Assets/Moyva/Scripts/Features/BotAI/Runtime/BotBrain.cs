@@ -34,7 +34,6 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IUnitMovementService     _movementService;
         private readonly IBotDifficultySettings   _settings;
 
-        [InjectOptional]
         private IFogOfWarServiceRegistry _fogRegistry;
 
         // CancellationTokenSource per unit to cancel previous orders
@@ -61,6 +60,12 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             _unitService     = unitService;
             _movementService = movementService;
             _settings        = settings;
+        }
+
+        [Inject]
+        private void ConstructOptionalDependencies([InjectOptional] IFogOfWarServiceRegistry fogRegistry)
+        {
+            _fogRegistry = fogRegistry;
         }
 
         public void Tick()

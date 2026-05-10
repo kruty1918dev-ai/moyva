@@ -17,10 +17,6 @@ namespace Kruty1918.Moyva.Generator.Editor
         private bool _helpFoldout;
 
         private Texture2D _previewTexture;
-        private float     _cachedDelta    = -1f;
-        private int       _cachedIter     = -1;
-        private bool      _cachedCardinal;
-        private int       _cachedCells;
 
         private void OnEnable()
         {

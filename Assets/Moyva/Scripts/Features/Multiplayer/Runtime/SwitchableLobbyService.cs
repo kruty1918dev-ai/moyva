@@ -123,8 +123,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             {
                 if (_requestedProviderType == type)
                 {
+                    _logger.Trace($"[SwitchableLobbyService] SwitchToAsync skipped: requested={type}, effective={_effectiveProviderType}.");
                     return;
                 }
+
+                _logger.Info($"[SwitchableLobbyService] Switching lobby provider: requested={_requestedProviderType} effective={_effectiveProviderType} -> requested={type}.");
 
                 try { await _inner.LeaveAsync(ct).ConfigureAwait(false); } catch { }
                 UnhookInner(_inner);
@@ -133,6 +136,13 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 _requestedProviderType = type;
                 _inner = CreateByType(type, out _effectiveProviderType);
                 HookInner(_inner);
+
+                _logger.Info($"[SwitchableLobbyService] Lobby provider switched: requested={_requestedProviderType}, effective={_effectiveProviderType}, impl={_inner.GetType().Name}.");
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"[SwitchableLobbyService] SwitchToAsync failed: {e}");
+                throw;
             }
             finally { _switchLock.Release(); }
         }
