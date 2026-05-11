@@ -13,6 +13,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     /// Schema v1 files are read without provider-specific settings (defaults applied).
     /// Schema v2 adds RelayProviderSettings, WebSocketProviderSettings, and FallbackProviderType.
     /// Schema v3 adds reconnect local-time tolerance.
+    /// Schema v4 adds risky feature toggles.
+    /// Schema v5 adds graceful reconnect window.
     /// </summary>
     public sealed class BinaryConfigStore : IConfigStore
     {
@@ -28,18 +30,20 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         public MultiplayerConfig Load()
         {
             if (!Exists())
-                return MultiplayerConfig.Default();
+                return MultiplayerConfigLifecycle.ValidateAndFreeze(MultiplayerConfig.Default());
 
             try
             {
                 using var fs = File.OpenRead(_filePath);
                 using var br = new BinaryReader(fs);
-                return ReadConfig(br);
+                var raw = ReadConfig(br);
+                var migrated = MultiplayerConfigMigrationPipeline.MigrateToLatest(raw);
+                return MultiplayerConfigLifecycle.ValidateAndFreeze(migrated);
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[Multiplayer] Failed to load config: {e.Message}. Using defaults.");
-                return MultiplayerConfig.Default();
+                return MultiplayerConfigLifecycle.ValidateAndFreeze(MultiplayerConfig.Default());
             }
         }
 
@@ -97,6 +101,15 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
             if (config.SchemaVersion >= 3)
                 bw.Write(config.ReconnectLocalTimeToleranceSeconds);
+
+            if (config.SchemaVersion >= 4)
+            {
+                bw.Write(config.EnableRelayProvider);
+                bw.Write(config.EnableHostMigration);
+            }
+
+            if (config.SchemaVersion >= 5)
+                bw.Write(config.GracefulReconnectWindowSeconds);
         }
 
         internal static MultiplayerConfig ReadConfig(BinaryReader br)
@@ -141,6 +154,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
 
             float reconnectTolerance = schemaVersion >= 3 ? br.ReadSingle() : 120f;
+            bool enableRelayProvider = schemaVersion >= 4 ? br.ReadBoolean() : true;
+            bool enableHostMigration = schemaVersion >= 4 ? br.ReadBoolean() : true;
+            float gracefulReconnectWindow = schemaVersion >= 5 ? br.ReadSingle() : 8f;
 
             return new MultiplayerConfig(
                 schemaVersion,
@@ -152,7 +168,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 relaySettings,
                 webSocketSettings,
                 fallbackProviderType,
-                reconnectTolerance);
+                reconnectTolerance,
+                gracefulReconnectWindow,
+                enableRelayProvider,
+                enableHostMigration);
         }
     }
 }

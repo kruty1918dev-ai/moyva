@@ -30,6 +30,9 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
         private bool _allowMatchSave;
         private bool _enforceConfigConsistency = true;
         private float _reconnectLocalTimeToleranceSeconds = 120f;
+        private float _gracefulReconnectWindowSeconds = 8f;
+        private bool _enableRelayProvider = true;
+        private bool _enableHostMigration = true;
 
         // ── Relay settings ─────────────────────────────────────────────────────────
         private bool _relayFoldout = true;
@@ -175,6 +178,8 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             _enableMatchmaking = EditorGUILayout.Toggle("Enable Matchmaking", _enableMatchmaking);
             _allowMatchSave = EditorGUILayout.Toggle("Allow Match Save For Analysis", _allowMatchSave);
             _enforceConfigConsistency = EditorGUILayout.Toggle("Enforce Config Consistency", _enforceConfigConsistency);
+            _enableRelayProvider = EditorGUILayout.Toggle(new GUIContent("Enable Relay Provider", "Master toggle for Relay provider. Disable for quick rollback to fallback provider."), _enableRelayProvider);
+            _enableHostMigration = EditorGUILayout.Toggle(new GUIContent("Enable Host Migration", "When disabled, session ends if host disconnects."), _enableHostMigration);
         }
 
         private void DrawReconnectSection()
@@ -186,6 +191,11 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
                 _reconnectLocalTimeToleranceSeconds,
                 0f,
                 600f);
+            _gracefulReconnectWindowSeconds = EditorGUILayout.Slider(
+                new GUIContent("Graceful Window (s)", "How long a disconnected player may reconnect without forcing hard session recovery."),
+                _gracefulReconnectWindowSeconds,
+                1f,
+                60f);
         }
 
         private void DrawValidation()
@@ -290,7 +300,10 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
                 relay,
                 ws,
                 _fallbackProviderType,
-                _reconnectLocalTimeToleranceSeconds);
+                _reconnectLocalTimeToleranceSeconds,
+                _gracefulReconnectWindowSeconds,
+                _enableRelayProvider,
+                _enableHostMigration);
 
             string dir = Path.GetDirectoryName(ConfigPath);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -316,6 +329,9 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
             _enforceConfigConsistency = config.EnforceConfigConsistency;
             _enableMatchmaking = config.MatchmakingEnabled;
             _reconnectLocalTimeToleranceSeconds = config.ReconnectLocalTimeToleranceSeconds;
+            _gracefulReconnectWindowSeconds = config.GracefulReconnectWindowSeconds;
+            _enableRelayProvider = config.EnableRelayProvider;
+            _enableHostMigration = config.EnableHostMigration;
 
             var relay = config.RelaySettings;
             _relayProjectId = relay.ProjectId;
