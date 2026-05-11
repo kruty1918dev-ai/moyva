@@ -1,5 +1,7 @@
 namespace Kruty1918.Moyva.SaveSystem
 {
+    using System;
+
     public enum GameLaunchMode
     {
         Unknown = 0,
@@ -16,8 +18,12 @@ namespace Kruty1918.Moyva.SaveSystem
     /// </summary>
     public static class GameLaunchContext
     {
+        private static readonly TimeSpan DefaultContextTtl = TimeSpan.FromMinutes(30);
+
         private static bool? _autoLoadOverride;
         private static bool? _autoSaveOverride;
+        private static DateTime _configuredAtUtc;
+        private static DateTime _expiresAtUtc;
 
         public static GameLaunchMode Mode { get; private set; } = GameLaunchMode.Unknown;
         public static int SaveSlot { get; private set; } = 0;
@@ -31,6 +37,10 @@ namespace Kruty1918.Moyva.SaveSystem
         public static int Difficulty { get; private set; }
         public static int MaxPlayers { get; private set; }
         public static bool IsPrivate { get; private set; }
+        public static DateTime ConfiguredAtUtc => _configuredAtUtc;
+        public static DateTime ExpiresAtUtc => _expiresAtUtc;
+        public static bool HasActiveContext => Mode != GameLaunchMode.Unknown;
+        public static bool IsExpired => HasActiveContext && DateTime.UtcNow >= _expiresAtUtc;
 
         public static void ConfigureDirectGameplayTest()
         {
@@ -39,6 +49,7 @@ namespace Kruty1918.Moyva.SaveSystem
             ClearWorldSettings();
             _autoLoadOverride = false;
             _autoSaveOverride = false;
+            MarkConfigured(DefaultContextTtl);
         }
 
         public static void ConfigureMenuNewGame(int saveSlot = 0)
@@ -48,6 +59,7 @@ namespace Kruty1918.Moyva.SaveSystem
             ClearWorldSettings();
             _autoLoadOverride = false;
             _autoSaveOverride = true;
+            MarkConfigured(DefaultContextTtl);
         }
 
         public static void ConfigureMenuNewGame(
@@ -67,6 +79,7 @@ namespace Kruty1918.Moyva.SaveSystem
             SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height);
             _autoLoadOverride = false;
             _autoSaveOverride = true;
+            MarkConfigured(DefaultContextTtl);
         }
 
         public static void ConfigureMenuLoadGame(int saveSlot)
@@ -76,6 +89,7 @@ namespace Kruty1918.Moyva.SaveSystem
             ClearWorldSettings();
             _autoLoadOverride = true;
             _autoSaveOverride = true;
+            MarkConfigured(DefaultContextTtl);
         }
 
         public static void ConfigureMenuJoinGame()
@@ -85,6 +99,7 @@ namespace Kruty1918.Moyva.SaveSystem
             ClearWorldSettings();
             _autoLoadOverride = false;
             _autoSaveOverride = false;
+            MarkConfigured(DefaultContextTtl);
         }
 
         public static void ConfigureMenuMultiplayerGame(
@@ -103,16 +118,53 @@ namespace Kruty1918.Moyva.SaveSystem
             SetWorldSettings(worldName, seed, size, mapType, difficulty, maxPlayers, isPrivate, width, height);
             _autoLoadOverride = false;
             _autoSaveOverride = false;
+            MarkConfigured(DefaultContextTtl);
+        }
+
+        public static void Reset()
+        {
+            Mode = GameLaunchMode.Unknown;
+            SaveSlot = 0;
+            ClearWorldSettings();
+            _autoLoadOverride = null;
+            _autoSaveOverride = null;
+            _configuredAtUtc = DateTime.MinValue;
+            _expiresAtUtc = DateTime.MinValue;
+        }
+
+        public static bool EnsureNotExpired()
+        {
+            if (!IsExpired)
+                return true;
+
+            Reset();
+            return false;
+        }
+
+        public static void RefreshTtl(TimeSpan? ttl = null)
+        {
+            if (!HasActiveContext)
+                return;
+
+            MarkConfigured(ttl ?? DefaultContextTtl);
         }
 
         public static bool IsAutoLoadEnabled()
-            => _autoLoadOverride ?? SavePlayModeOptions.AutoLoadEnabled;
+        {
+            EnsureNotExpired();
+            return _autoLoadOverride ?? SavePlayModeOptions.AutoLoadEnabled;
+        }
 
         public static bool IsAutoSaveEnabled()
-            => _autoSaveOverride ?? SavePlayModeOptions.AutoSaveEnabled;
+        {
+            EnsureNotExpired();
+            return _autoSaveOverride ?? SavePlayModeOptions.AutoSaveEnabled;
+        }
 
         public static bool TryGetWorldDimensions(out int width, out int height)
         {
+            EnsureNotExpired();
+
             width = 0;
             height = 0;
 
@@ -141,8 +193,18 @@ namespace Kruty1918.Moyva.SaveSystem
 
         public static bool TryGetSeed(out int seed)
         {
+            EnsureNotExpired();
             seed = HasWorldSettings ? Seed : 0;
             return HasWorldSettings && seed != 0;
+        }
+
+        private static void MarkConfigured(TimeSpan ttl)
+        {
+            if (ttl <= TimeSpan.Zero)
+                ttl = DefaultContextTtl;
+
+            _configuredAtUtc = DateTime.UtcNow;
+            _expiresAtUtc = _configuredAtUtc.Add(ttl);
         }
 
         private static void SetWorldSettings(

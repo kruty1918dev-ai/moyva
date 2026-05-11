@@ -33,8 +33,8 @@ namespace Kruty1918.Moyva.SaveSystem
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<SaveRequestedSignal>(OnSaveRequested);
-            _signalBus.Unsubscribe<LoadRequestedSignal>(OnLoadRequested);
+            _signalBus.TryUnsubscribe<SaveRequestedSignal>(OnSaveRequested);
+            _signalBus.TryUnsubscribe<LoadRequestedSignal>(OnLoadRequested);
         }
 
         private void OnSaveRequested(SaveRequestedSignal signal) => Save(signal.Slot);
