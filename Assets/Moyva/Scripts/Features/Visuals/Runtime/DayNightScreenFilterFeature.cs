@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Visuals
     public sealed class DayNightScreenFilterFeature : ScriptableRendererFeature
     {
         private const string ShaderName = "Moyva/2D/DayNight Screen Filter";
+        private const float SettingsEpsilon = 0.0005f;
 
         [System.Serializable]
         private struct FilterSettings
@@ -74,6 +75,8 @@ namespace Kruty1918.Moyva.Visuals
 
         private Material _material;
         private DayNightScreenFilterPass _pass;
+    private FilterSettings _lastAppliedSettings;
+    private bool _hasAppliedSettings;
 
         public override void Create()
         {
@@ -81,7 +84,10 @@ namespace Kruty1918.Moyva.Visuals
             {
                 var shader = Shader.Find(ShaderName);
                 if (shader != null)
+                {
                     _material = CoreUtils.CreateEngineMaterial(shader);
+                    _hasAppliedSettings = false;
+                }
             }
 
             ApplyMaterialProperties();
@@ -150,6 +156,9 @@ namespace Kruty1918.Moyva.Visuals
             if (_material == null || _pass == null)
                 return;
 
+            if (!IsEffectEnabled())
+                return;
+
             ApplyMaterialProperties();
 
             if (renderingData.cameraData.isPreviewCamera)
@@ -167,6 +176,7 @@ namespace Kruty1918.Moyva.Visuals
             {
                 CoreUtils.Destroy(_material);
                 _material = null;
+                _hasAppliedSettings = false;
             }
         }
 
@@ -176,6 +186,8 @@ namespace Kruty1918.Moyva.Visuals
                 return;
 
             FilterSettings active = ResolveActiveSettings();
+            if (_hasAppliedSettings && ApproximatelyEqual(_lastAppliedSettings, active))
+                return;
 
             _material.SetColor("_DayTint", active.DayTint);
             _material.SetColor("_NightTint", active.NightTint);
@@ -191,6 +203,39 @@ namespace Kruty1918.Moyva.Visuals
             _material.SetFloat("_PhaseTintStrength", active.PhaseTintStrength);
             _material.SetFloat("_NightMinBrightness", active.NightMinBrightness);
             _material.SetFloat("_ColorizeStrength", active.ColorizeStrength);
+            _lastAppliedSettings = active;
+            _hasAppliedSettings = true;
+        }
+
+        private bool IsEffectEnabled()
+        {
+            return _filterStrength > SettingsEpsilon;
+        }
+
+        private static bool ApproximatelyEqual(FilterSettings left, FilterSettings right)
+        {
+            return Approximately(left.DayTint, right.DayTint)
+                && Approximately(left.NightTint, right.NightTint)
+                && Approximately(left.DawnTint, right.DawnTint)
+                && Approximately(left.DuskTint, right.DuskTint)
+                && Mathf.Abs(left.FilterStrength - right.FilterStrength) <= SettingsEpsilon
+                && Mathf.Abs(left.DaySaturation - right.DaySaturation) <= SettingsEpsilon
+                && Mathf.Abs(left.NightSaturation - right.NightSaturation) <= SettingsEpsilon
+                && Mathf.Abs(left.DayContrast - right.DayContrast) <= SettingsEpsilon
+                && Mathf.Abs(left.NightContrast - right.NightContrast) <= SettingsEpsilon
+                && Mathf.Abs(left.DayExposure - right.DayExposure) <= SettingsEpsilon
+                && Mathf.Abs(left.NightExposure - right.NightExposure) <= SettingsEpsilon
+                && Mathf.Abs(left.PhaseTintStrength - right.PhaseTintStrength) <= SettingsEpsilon
+                && Mathf.Abs(left.NightMinBrightness - right.NightMinBrightness) <= SettingsEpsilon
+                && Mathf.Abs(left.ColorizeStrength - right.ColorizeStrength) <= SettingsEpsilon;
+        }
+
+        private static bool Approximately(Color left, Color right)
+        {
+            return Mathf.Abs(left.r - right.r) <= SettingsEpsilon
+                && Mathf.Abs(left.g - right.g) <= SettingsEpsilon
+                && Mathf.Abs(left.b - right.b) <= SettingsEpsilon
+                && Mathf.Abs(left.a - right.a) <= SettingsEpsilon;
         }
 
         private FilterSettings ResolveActiveSettings()
