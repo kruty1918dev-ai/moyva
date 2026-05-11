@@ -36,7 +36,7 @@ MonoBehaviour:
     - Type: 0
       Name: Animation 1
       AnimationClip: {fileID: 0}
-      AnimatorParameterName: 
+      AnimatorParameterName:
       SpriteFrames: []
       SpriteFPS: 0
       Loop: 1
