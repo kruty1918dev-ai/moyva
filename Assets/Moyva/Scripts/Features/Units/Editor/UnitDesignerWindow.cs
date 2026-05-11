@@ -3130,6 +3130,37 @@ namespace Kruty1918.Moyva.Units.Editor
             CopyRelativeFloat(sourceAnimation, destinationAnimation, "DelayOnTile");
         }
 
+        private static void SetTerrainVisionDefaults(SerializedProperty unit)
+        {
+            SetRelativeBool(unit, "CanSeeCrest", true);
+            SetRelativeFloat(unit, "CrestVisibilityFactor", 1f);
+            SetRelativeFloat(unit, "DownSlopeVisionBonus", 0f);
+            SetRelativeFloat(unit, "SilhouettePenalty", 0f);
+        }
+
+        private static void CopyTerrainVisionSerializedValues(SerializedProperty source, SerializedProperty destination)
+        {
+            CopyRelativeBool(source, destination, "CanSeeCrest");
+            CopyRelativeFloat(source, destination, "CrestVisibilityFactor");
+            CopyRelativeFloat(source, destination, "DownSlopeVisionBonus");
+            CopyRelativeFloat(source, destination, "SilhouettePenalty");
+        }
+
+        private static void SetRelativeBool(SerializedProperty parent, string propertyName, bool value)
+        {
+            var property = parent?.FindPropertyRelative(propertyName);
+            if (property != null)
+                property.boolValue = value;
+        }
+
+        private static void CopyRelativeBool(SerializedProperty source, SerializedProperty destination, string propertyName)
+        {
+            var sourceProperty = source?.FindPropertyRelative(propertyName);
+            var destinationProperty = destination?.FindPropertyRelative(propertyName);
+            if (sourceProperty != null && destinationProperty != null)
+                destinationProperty.boolValue = sourceProperty.boolValue;
+        }
+
         private static void CopyRelativeFloat(SerializedProperty source, SerializedProperty destination, string propertyName)
         {
             var sourceProperty = source.FindPropertyRelative(propertyName);
