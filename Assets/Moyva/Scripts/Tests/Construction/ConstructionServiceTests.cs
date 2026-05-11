@@ -91,6 +91,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         private SignalBus _signalBus;
         private IObjectsMapService _objectsMap;
         private FakeFogOfWarService _fogOfWarService;
+        private BuildingRegistrySO _buildingRegistry;
 
         public override void Setup()
         {
@@ -116,10 +117,10 @@ namespace Kruty1918.Moyva.Tests.Construction
             Container.Bind<IFogOfWarService>().To<FakeFogOfWarService>().AsSingle();
             Container.Bind<IWallPlacementService>().To<FakeWallPlacementService>().AsSingle();
 
-            var regSO = ScriptableObject.CreateInstance<BuildingRegistrySO>();
-            Container.Bind<IBuildingRegistry>().FromInstance(regSO).AsSingle();
+            _buildingRegistry = ScriptableObject.CreateInstance<BuildingRegistrySO>();
+            Container.Bind<IBuildingRegistry>().FromInstance(_buildingRegistry).AsSingle();
             Container.BindInstance(0).WithId("minSpacing");
-            Container.BindInstance(0).WithId("townHallBuildRadius");
+            Container.BindInstance(2).WithId("townHallBuildRadius");
 
             var constructionServiceType = typeof(IConstructionService).Assembly
                 .GetType("Kruty1918.Moyva.Construction.Runtime.ConstructionService");
@@ -151,6 +152,8 @@ namespace Kruty1918.Moyva.Tests.Construction
         {
             _serviceDisposable.Dispose();
             Container.Resolve<ObjectsMapService>().Dispose();
+            if (_buildingRegistry != null)
+                Object.DestroyImmediate(_buildingRegistry);
             base.Teardown();
         }
 
@@ -340,6 +343,103 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.AreEqual("gate", occupantId);
         }
 
+        [Test]
+        public void TryPreviewAt_ShouldBlockRegularBuildingOutsideTownHallOrCastleRadius()
+        {
+            ConfigureInfluenceRegistry();
+
+            _service.SelectBuilding("house");
+
+            Assert.IsFalse(_service.TryPreviewAt(new Vector2Int(10, 10)));
+        }
+
+        [Test]
+        public void TryPreviewAt_ShouldAllowRegularBuildingInsideTownHallRadius()
+        {
+            ConfigureInfluenceRegistry();
+            var townHallPosition = new Vector2Int(30, 30);
+
+            PlaceAndConfirmBuilding("townhall", townHallPosition);
+            _service.SelectBuilding("house");
+
+            Assert.IsTrue(_service.TryPreviewAt(new Vector2Int(32, 31)));
+            Assert.IsFalse(_service.TryPreviewAt(new Vector2Int(33, 30)));
+        }
+
+        [Test]
+        public void TryPreviewAt_ShouldAllowRegularBuildingInsideCastleRadius()
+        {
+            ConfigureInfluenceRegistry();
+            var castlePosition = new Vector2Int(40, 40);
+
+            PlaceAndConfirmBuilding("castle", castlePosition);
+            _service.SelectBuilding("house");
+
+            Assert.IsTrue(_service.TryPreviewAt(new Vector2Int(43, 40)));
+            Assert.IsFalse(_service.TryPreviewAt(new Vector2Int(44, 40)));
+        }
+
+        [Test]
+        public void TryPreviewAt_ShouldBlockSecondCenterInsideInfluenceRadius()
+        {
+            ConfigureInfluenceRegistry();
+
+            PlaceAndConfirmBuilding("townhall", new Vector2Int(50, 50));
+            _service.SelectBuilding("castle");
+
+            Assert.IsFalse(_service.TryPreviewAt(new Vector2Int(51, 51)));
+        }
+
+        [Test]
+        public void TryPreviewAt_ShouldBlockSecondCenterWhenInfluenceRadiiTouch()
+        {
+            ConfigureInfluenceRegistry();
+
+            PlaceAndConfirmBuilding("townhall", new Vector2Int(80, 80));
+            _service.SelectBuilding("castle");
+
+            Assert.IsFalse(_service.TryPreviewAt(new Vector2Int(85, 80)));
+        }
+
+        [Test]
+        public void TryPreviewAt_ShouldAllowSecondCenterWhenInfluenceRadiiDoNotOverlap()
+        {
+            ConfigureInfluenceRegistry();
+
+            PlaceAndConfirmBuilding("townhall", new Vector2Int(90, 90));
+            _service.SelectBuilding("castle");
+
+            Assert.IsTrue(_service.TryPreviewAt(new Vector2Int(96, 90)));
+        }
+
+        [Test]
+        public void Confirm_ShouldSkipPendingBuilding_WhenInfluenceCenterPendingWasRemoved()
+        {
+            ConfigureInfluenceRegistry();
+            var townHallPosition = new Vector2Int(60, 60);
+            var housePosition = new Vector2Int(61, 61);
+
+            PreviewBuilding("townhall", townHallPosition);
+            PreviewBuilding("house", housePosition);
+            Assert.IsTrue(_service.RemovePendingAt(townHallPosition));
+
+            _service.Confirm();
+
+            Assert.IsFalse(_objectsMap.IsOccupied(housePosition));
+        }
+
+        [Test]
+        public void TryDirectPlace_ShouldRespectTownHallOrCastleRadius()
+        {
+            ConfigureInfluenceRegistry();
+            var castlePosition = new Vector2Int(70, 70);
+
+            Assert.IsFalse(_service.TryDirectPlace("house", new Vector2Int(80, 80), "bot"));
+            Assert.IsTrue(_service.TryDirectPlace("castle", castlePosition, "bot"));
+            Assert.IsTrue(_service.TryDirectPlace("house", new Vector2Int(73, 70), "bot"));
+            Assert.IsFalse(_service.TryDirectPlace("house", new Vector2Int(74, 70), "bot"));
+        }
+
         // ─── TryDemolishAt ───────────────────────────────────────────────────
 
         [Test]
@@ -430,6 +530,27 @@ namespace Kruty1918.Moyva.Tests.Construction
         {
             _service.SelectBuilding(buildingId);
             Assert.IsTrue(_service.TryPreviewAt(pos));
+        }
+
+        private void ConfigureInfluenceRegistry()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding("townhall", new TownHallBuildingModule { BuildRadius = 2 }),
+                CreateBuilding("castle", new CastleBuildingModule { ExclusionRadius = 3 }),
+                CreateBuilding("house"),
+            };
+        }
+
+        private static BuildingDefinition CreateBuilding(string id, params BuildingModuleDefinition[] modules)
+        {
+            return new BuildingDefinition
+            {
+                Id = id,
+                Modules = modules != null
+                    ? new List<BuildingModuleDefinition>(modules)
+                    : new List<BuildingModuleDefinition>(),
+            };
         }
     }
 }
