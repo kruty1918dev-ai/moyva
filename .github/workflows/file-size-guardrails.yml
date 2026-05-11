@@ -1,0 +1,28 @@
+name: File Size Guardrails
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Moyva/Scripts/**/*.cs'
+      - 'tools/quality/check-file-length-limits.sh'
+      - '.github/workflows/file-size-guardrails.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-file-length-limits:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run file length guardrails
+        run: |
+          chmod +x tools/quality/check-file-length-limits.sh
+          tools/quality/check-file-length-limits.sh \
+            --base-ref "origin/${{ github.base_ref }}" \
+            --changed-only

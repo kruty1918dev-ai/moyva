@@ -1,0 +1,30 @@
+name: Feature Dependency Map
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Moyva/Scripts/**/*.asmdef'
+      - 'Assets/Moyva/Scripts/**/*.asmdef.meta'
+      - 'tools/quality/feature_dependency_map.py'
+      - '.github/workflows/feature-dependency-map.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-map-and-cycle-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate dependency map and check cycles
+        run: |
+          python3 tools/quality/feature_dependency_map.py --check-cycles
+
+      - name: Upload dependency map artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-dependency-map
+          path: docs/architecture/feature-dependency-map.md

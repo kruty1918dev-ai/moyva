@@ -1,0 +1,28 @@
+name: Naming Policy
+
+on:
+  pull_request:
+    paths:
+      - 'Assets/Moyva/Scripts/**/*.cs'
+      - 'tools/quality/check-naming-policy.py'
+      - '.github/workflows/naming-policy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  naming-policy-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check naming policy (new violations only)
+        run: |
+          python3 tools/quality/check-naming-policy.py \
+            --base-ref "origin/${{ github.base_ref }}" \
+            --changed-only \
+            --strict
