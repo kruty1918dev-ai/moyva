@@ -39,6 +39,10 @@ Shader "Moyva/2D/LayerMipLod"
             float _MipBias;
             float _ZoomLodStrength;
             float _MoyvaTexLodBias;
+            sampler2D _MoyvaFogTex;
+            float4 _MoyvaFogMapParams;
+            float _MoyvaFogCullEnabled;
+            float _MoyvaFogCullThreshold;
 
             struct appdata
             {
@@ -52,6 +56,7 @@ Shader "Moyva/2D/LayerMipLod"
                 float4 vertex : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 fixed4 color : COLOR;
+                float2 worldXY : TEXCOORD1;
             };
 
             v2f vert(appdata v)
@@ -60,11 +65,25 @@ Shader "Moyva/2D/LayerMipLod"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.color = v.color * _Color;
+                o.worldXY = mul(unity_ObjectToWorld, v.vertex).xy;
                 return o;
+            }
+
+            void ClipHiddenByFog(float2 worldXY)
+            {
+                if (_MoyvaFogCullEnabled < 0.5)
+                    return;
+
+                float2 invMapSize = max(_MoyvaFogMapParams.zw, float2(0.000001, 0.000001));
+                float2 fogUV = (worldXY + float2(0.5, 0.5)) * invMapSize;
+                float inside = step(0.0, fogUV.x) * step(fogUV.x, 1.0) * step(0.0, fogUV.y) * step(fogUV.y, 1.0);
+                float fogValue = tex2D(_MoyvaFogTex, saturate(fogUV)).r;
+                clip((1.0 - inside) + fogValue - _MoyvaFogCullThreshold);
             }
 
             fixed4 frag(v2f i) : SV_Target
             {
+                ClipHiddenByFog(i.worldXY);
                 float mipBias = _MipBias + (_MoyvaTexLodBias * _ZoomLodStrength);
                 fixed4 texColor = tex2Dbias(_MainTex, float4(i.uv, 0, mipBias));
                 fixed4 c = texColor * i.color;
@@ -104,6 +123,10 @@ Shader "Moyva/2D/LayerMipLod"
             sampler2D _MainTex;
             float4 _MainTex_ST;
             fixed4 _Color;
+            sampler2D _MoyvaFogTex;
+            float4 _MoyvaFogMapParams;
+            float _MoyvaFogCullEnabled;
+            float _MoyvaFogCullThreshold;
 
             struct appdata
             {
@@ -117,6 +140,7 @@ Shader "Moyva/2D/LayerMipLod"
                 float4 vertex : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 fixed4 color : COLOR;
+                float2 worldXY : TEXCOORD1;
             };
 
             v2f vert(appdata v)
@@ -125,11 +149,25 @@ Shader "Moyva/2D/LayerMipLod"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.color = v.color * _Color;
+                o.worldXY = mul(unity_ObjectToWorld, v.vertex).xy;
                 return o;
+            }
+
+            void ClipHiddenByFog(float2 worldXY)
+            {
+                if (_MoyvaFogCullEnabled < 0.5)
+                    return;
+
+                float2 invMapSize = max(_MoyvaFogMapParams.zw, float2(0.000001, 0.000001));
+                float2 fogUV = (worldXY + float2(0.5, 0.5)) * invMapSize;
+                float inside = step(0.0, fogUV.x) * step(fogUV.x, 1.0) * step(0.0, fogUV.y) * step(fogUV.y, 1.0);
+                float fogValue = tex2D(_MoyvaFogTex, saturate(fogUV)).r;
+                clip((1.0 - inside) + fogValue - _MoyvaFogCullThreshold);
             }
 
             fixed4 frag(v2f i) : SV_Target
             {
+                ClipHiddenByFog(i.worldXY);
                 fixed4 c = tex2D(_MainTex, i.uv) * i.color;
                 c.rgb *= c.a;
                 return c;
