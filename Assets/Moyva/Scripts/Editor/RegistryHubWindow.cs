@@ -21,10 +21,10 @@ namespace Kruty1918.Moyva.Editor
         //  КОНСТАНТИ
         // ══════════════════════════════════════════════════════
 
-        private enum Tab { Tiles, MapObjects, Units, Buildings, Walls, Resources, BulkDelete }
+        private enum Tab { Tiles, MapObjects, Units, Buildings, Walls, Resources, AssetHealth, BulkDelete }
 
         private static readonly string[] TabLabels =
-            { "  Тайли", "  Об'єкти", "  Юніти", "  Будівлі", "  Стіни", "  Ресурси", "  Мультивибір" };
+            { "  Тайли", "  Об'єкти", "  Юніти", "  Будівлі", "  Стіни", "  Ресурси", "  Asset health", "  Мультивибір" };
 
         private static readonly string[][] TabIconCandidates =
         {
@@ -34,6 +34,7 @@ namespace Kruty1918.Moyva.Editor
             new[] { "d_BuildSettings.Standalone.Small", "BuildSettings.Standalone.Small" },
             new[] { "d_SceneViewOrtho", "SceneViewOrtho" },
             new[] { "d_ScriptableObject Icon", "ScriptableObject Icon" },
+            new[] { "d_console.warnicon", "console.warnicon", "d_Profiler.Audio" },
             new[] { "d_FilterByType", "FilterByType" },
         };
 
@@ -45,6 +46,11 @@ namespace Kruty1918.Moyva.Editor
         private const string PrefKeyObjectRegistryGuid = "Moyva.RegistryHub.ObjectRegistry.Guid";
         private const string PrefKeyUnitRegistryGuid = "Moyva.RegistryHub.UnitRegistry.Guid";
         private const string PrefKeyBuildingRegistryGuid = "Moyva.RegistryHub.BuildingRegistry.Guid";
+        private const string TileLockKey = "TileRegistrySO";
+        private const string ObjectLockKey = "MapObjectRegistrySO";
+        private const string UnitLockKey = "UnitRegistrySO";
+        private const string BuildingLockKey = "BuildingRegistrySO";
+        private const string EconomyLockKey = "EconomyDatabaseSO";
         private const int DefaultPageSize = 120;
 
         private const float SidebarWidth = 170f;
@@ -140,6 +146,21 @@ namespace Kruty1918.Moyva.Editor
         private string _bulkPreviewKey = string.Empty;
         private UnityEngine.Object _bulkPreviewObject;
 
+        // Asset Health tab
+        private Vector2 _assetHealthScroll;
+        private bool _assetHealthOnlyErrors;
+        private string _assetHealthSearch = string.Empty;
+        private readonly List<AssetHealthIssue> _assetHealthIssues = new();
+        private DateTime _assetHealthLastScanUtc;
+        private bool _assetHealthScanQueued;
+        private readonly EditorLivePreviewThrottle _livePreviewThrottle = new EditorLivePreviewThrottle(repaintFps: 24d, costlyTickHz: 3d);
+        private readonly EditorAssetStaleTracker _tileStale = new EditorAssetStaleTracker();
+        private readonly EditorAssetStaleTracker _objStale = new EditorAssetStaleTracker();
+        private readonly EditorAssetStaleTracker _unitStale = new EditorAssetStaleTracker();
+        private readonly EditorAssetStaleTracker _bldStale = new EditorAssetStaleTracker();
+        private readonly EditorAssetStaleTracker _ecoStale = new EditorAssetStaleTracker();
+        private readonly EditorWindowPerformanceProfiler _perfProfiler = new EditorWindowPerformanceProfiler();
+
         // Drag-and-drop
         private const string DragDataKey = "RegistryHub_Move";
         private (Tab source, int index, string id)? _dragPayload;
@@ -166,7 +187,7 @@ namespace Kruty1918.Moyva.Editor
         {
             var w = GetWindow<RegistryHubWindow>("Registry Hub");
             w.minSize = new Vector2(660f, 460f);
-            w._tab = (Tab)Mathf.Clamp(tabIndex, 0, 6);
+            w._tab = (Tab)Mathf.Clamp(tabIndex, 0, TabLabels.Length - 1);
             w.Show();
             w.Focus();
         }
@@ -179,6 +200,7 @@ namespace Kruty1918.Moyva.Editor
         {
             LoadRegistrySelections();
             AutoFind();
+            CaptureStaleBaselines();
         }
         private void OnFocus()
         {
@@ -197,11 +219,14 @@ namespace Kruty1918.Moyva.Editor
 
         private void AutoFind()
         {
-            _tileReg ??= FindFirst<TileRegistrySO>();
-            _objReg  ??= FindFirst<MapObjectRegistrySO>();
-            _unitReg ??= FindFirst<UnitRegistrySO>();
-            _bldReg  ??= FindFirst<BuildingRegistrySO>();
+            _tileReg ??= MoyvaProjectEditorContext.GetOrFindFirst<TileRegistrySO>();
+            _objReg  ??= MoyvaProjectEditorContext.GetOrFindFirst<MapObjectRegistrySO>();
+            _unitReg ??= MoyvaProjectEditorContext.GetOrFindFirst<UnitRegistrySO>();
+            _bldReg  ??= MoyvaProjectEditorContext.GetOrFindFirst<BuildingRegistrySO>();
+            _economyDb ??= MoyvaProjectEditorContext.GetOrFindFirst<EconomyDatabaseSO>();
             RefreshSOs();
+            CaptureStaleBaselines();
+            SaveRegistrySelections();
         }
 
         private void RefreshSOs()
@@ -218,19 +243,31 @@ namespace Kruty1918.Moyva.Editor
 
         private void OnGUI()
         {
+            _perfProfiler.BeginFrame();
             _tileSO?.Update();
             _objSO?.Update();
             _unitSO?.Update();
             _bldSO?.Update();
 
+            _perfProfiler.BeginSection("Toolbar");
             DrawToolbar();
+            _perfProfiler.EndSection("Toolbar");
 
+            _perfProfiler.BeginSection("Content");
             EditorGUILayout.BeginHorizontal();
             DrawSidebar();
             DrawContent();
             EditorGUILayout.EndHorizontal();
+            _perfProfiler.EndSection("Content");
 
+            _perfProfiler.BeginSection("Status");
             DrawStatusBar();
+            _perfProfiler.EndSection("Status");
+
+            if (IsActiveRegistryStale())
+                EditorWindowSharedUI.DrawWarning("Активний реєстр змінено зовні. Перевірте дані перед Save.", MessageType.Warning);
+
+            _perfProfiler.EndFrame();
         }
 
         // ── Тулбар ──────────────────────────────────────────
@@ -241,13 +278,17 @@ namespace Kruty1918.Moyva.Editor
             GUILayout.Label("REGISTRY HUB", EditorStyles.boldLabel, GUILayout.Width(120));
             GUILayout.FlexibleSpace();
             _searchFilter = EditorGUILayout.TextField(_searchFilter, EditorStyles.toolbarSearchField, GUILayout.Width(200));
+            bool unlocked = EditorRegistryWriteLock.IsUnlocked(GetActiveLockKey());
+            bool nextUnlocked = GUILayout.Toggle(unlocked, "Unlock", EditorStyles.toolbarButton, GUILayout.Width(70f));
+            if (nextUnlocked != unlocked)
+                EditorRegistryWriteLock.SetUnlocked(GetActiveLockKey(), nextUnlocked);
             if (GUILayout.Button(new GUIContent("  _ → -", "Замінити '_' на '-' в усіх ID та їх посиланнях"), EditorStyles.toolbarButton))
                 FixUnderscoreIds();
             if (GUILayout.Button(EditorGUIUtility.IconContent("d_Refresh"), EditorStyles.toolbarButton, GUILayout.Width(28)))
             {
                 _tileReg = null; _objReg = null; _unitReg = null; _bldReg = null;
                 AutoFind();
-                Repaint();
+                _livePreviewThrottle.TryRepaint(this, force: true);
             }
             EditorGUILayout.EndHorizontal();
         }
@@ -355,6 +396,7 @@ namespace Kruty1918.Moyva.Editor
                 case Tab.Buildings:  DrawBldTab();    break;
                 case Tab.Walls:      DrawWallsTab();  break;
                 case Tab.Resources:  DrawResourcesTab();  break;
+                case Tab.AssetHealth: DrawAssetHealthTab(); break;
                 case Tab.BulkDelete: DrawBulkDeleteTab(); break;
             }
 
@@ -372,10 +414,12 @@ namespace Kruty1918.Moyva.Editor
             int units = _unitSO?.FindProperty("Configs")?.arraySize ?? 0;
             int blds  = _bldSO?.FindProperty("Buildings")?.arraySize ?? 0;
             int walls = _bldSO?.FindProperty("WallCollections")?.arraySize ?? 0;
+            string perf = _perfProfiler.BuildSummary();
+            string lockState = EditorRegistryWriteLock.IsUnlocked(GetActiveLockKey()) ? "UNLOCKED" : "READONLY";
 
             Rect r = EditorGUILayout.GetControlRect(false, 20);
             EditorGUI.DrawRect(r, RegistryEditorStyles.SidebarBg);
-            GUI.Label(r, $"   Тайли: {tiles}  |  Об'єкти: {objs}  |  Юніти: {units}  |  Будівлі: {blds}  |  Стіни: {walls}",
+            GUI.Label(r, $"   Тайли: {tiles}  |  Об'єкти: {objs}  |  Юніти: {units}  |  Будівлі: {blds}  |  Стіни: {walls}  |  lock: {lockState}  |  {perf}",
                 EditorStyles.centeredGreyMiniLabel);
         }
 
@@ -498,6 +542,10 @@ namespace Kruty1918.Moyva.Editor
                 _newTileId     = RegistryEditorStyles.IdFieldWithDuplicateCheck("ID", _newTileId, tileDefs, "_id");
                 _newTileCost   = EditorGUILayout.FloatField("Movement Cost", _newTileCost);
                 _newTileSprite = (Sprite)EditorGUILayout.ObjectField("Sprite", _newTileSprite, typeof(Sprite), false);
+                Rect newTileSpriteRect = GUILayoutUtility.GetLastRect();
+                if (SpriteImportDragDropPolicy.HandleDrop(newTileSpriteRect, ref _newTileSprite, "RegistryHub.NewTileSprite"))
+                    Repaint();
+                SpriteImportDragDropPolicy.EnsureAllowedSprite(ref _newTileSprite, "RegistryHub.NewTileSprite");
                 _newTilePrefab = (GameObject)EditorGUILayout.ObjectField("Prefab (override)", _newTilePrefab, typeof(GameObject), false);
                 if (!_newTilePrefab && !_newTileSprite)
                     EditorGUILayout.HelpBox("Prefab буде створено автоматично (порожній).", MessageType.Info);
@@ -640,6 +688,10 @@ namespace Kruty1918.Moyva.Editor
                 var objDefs = _objSO.FindProperty("_definitions");
                 _newObjId     = RegistryEditorStyles.IdFieldWithDuplicateCheck("ID", _newObjId, objDefs, "_id");
                 _newObjSprite = (Sprite)EditorGUILayout.ObjectField("Sprite", _newObjSprite, typeof(Sprite), false);
+                Rect newObjSpriteRect = GUILayoutUtility.GetLastRect();
+                if (SpriteImportDragDropPolicy.HandleDrop(newObjSpriteRect, ref _newObjSprite, "RegistryHub.NewObjectSprite"))
+                    Repaint();
+                SpriteImportDragDropPolicy.EnsureAllowedSprite(ref _newObjSprite, "RegistryHub.NewObjectSprite");
                 _newObjPrefab = (GameObject)EditorGUILayout.ObjectField("Prefab (override)", _newObjPrefab, typeof(GameObject), false);
                 if (!_newObjPrefab && !_newObjSprite)
                     EditorGUILayout.HelpBox("Prefab буде створено автоматично (порожній).", MessageType.Info);
@@ -818,6 +870,10 @@ namespace Kruty1918.Moyva.Editor
                 _newUnitStamina      = EditorGUILayout.FloatField("Base Stamina", _newUnitStamina);
                 _newUnitStaminaRange = EditorGUILayout.Vector2Field("Stamina Random Range", _newUnitStaminaRange);
                 _newUnitSprite       = (Sprite)EditorGUILayout.ObjectField("Sprite", _newUnitSprite, typeof(Sprite), false);
+                Rect newUnitSpriteRect = GUILayoutUtility.GetLastRect();
+                if (SpriteImportDragDropPolicy.HandleDrop(newUnitSpriteRect, ref _newUnitSprite, "RegistryHub.NewUnitSprite"))
+                    Repaint();
+                SpriteImportDragDropPolicy.EnsureAllowedSprite(ref _newUnitSprite, "RegistryHub.NewUnitSprite");
                 _newUnitPrefab       = (GameObject)EditorGUILayout.ObjectField("Prefab (override)", _newUnitPrefab, typeof(GameObject), false);
                 if (!_newUnitPrefab && !_newUnitSprite)
                     EditorGUILayout.HelpBox("Prefab буде створено автоматично (порожній).", MessageType.Info);
@@ -1024,6 +1080,10 @@ namespace Kruty1918.Moyva.Editor
                 _newBldName     = EditorGUILayout.TextField("Display Name", _newBldName);
                 _newBldCategory = (BuildingCategory)EditorGUILayout.EnumPopup("Category", _newBldCategory);
                 _newBldSprite   = (Sprite)EditorGUILayout.ObjectField("Sprite", _newBldSprite, typeof(Sprite), false);
+                Rect newBldSpriteRect = GUILayoutUtility.GetLastRect();
+                if (SpriteImportDragDropPolicy.HandleDrop(newBldSpriteRect, ref _newBldSprite, "RegistryHub.NewBuildingSprite"))
+                    Repaint();
+                SpriteImportDragDropPolicy.EnsureAllowedSprite(ref _newBldSprite, "RegistryHub.NewBuildingSprite");
                 _newBldPrefab   = (GameObject)EditorGUILayout.ObjectField("Prefab (override)", _newBldPrefab, typeof(GameObject), false);
                 if (!_newBldPrefab && !_newBldSprite)
                     EditorGUILayout.HelpBox("Prefab буде створено автоматично (порожній).", MessageType.Info);
@@ -1187,7 +1247,13 @@ namespace Kruty1918.Moyva.Editor
         {
             RegistryEditorStyles.DrawColoredHeader("  Wall Collections — колекції стін", new Color(0.65f, 0.55f, 0.30f));
 
+            EditorGUI.BeginChangeCheck();
             _bldReg = (BuildingRegistrySO)EditorGUILayout.ObjectField("Registry Asset", _bldReg, typeof(BuildingRegistrySO), false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                SaveRegistryPreference(PrefKeyBuildingRegistryGuid, _bldReg);
+                RefreshSOs();
+            }
             if (_bldReg && _bldSO?.targetObject != _bldReg) RefreshSOs();
             if (!_bldReg) { EditorGUILayout.HelpBox("Оберіть BuildingRegistrySO або натисніть ⟳.", MessageType.Warning); return; }
 
@@ -1455,11 +1521,14 @@ namespace Kruty1918.Moyva.Editor
             var resources = EconomyResourceEditorShared.LoadResources();
             EditorGUILayout.LabelField($"Economy Resources ({resources.Count})", RegistryEditorStyles.SubHeader);
 
+            EditorGUI.BeginChangeCheck();
             _economyDb = (EconomyDatabaseSO)EditorGUILayout.ObjectField(
                 "Economy Database",
                 _economyDb,
                 typeof(EconomyDatabaseSO),
                 false);
+            if (EditorGUI.EndChangeCheck())
+                MoyvaProjectEditorContext.Set(_economyDb);
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("+ Створити ресурс", RegistryEditorStyles.CreateButton, GUILayout.Width(160f)))
@@ -1610,6 +1679,665 @@ namespace Kruty1918.Moyva.Editor
                 return id;
 
             return $"{id} [{folder}]";
+        }
+
+        private enum AssetHealthIssueKind
+        {
+            BrokenReference,
+            NullReference,
+            DuplicateId,
+        }
+
+        private readonly struct AssetHealthIssue
+        {
+            public AssetHealthIssue(AssetHealthIssueKind kind, MessageType severity, string scope, string message, UnityEngine.Object context)
+            {
+                Kind = kind;
+                Severity = severity;
+                Scope = scope;
+                Message = message;
+                Context = context;
+            }
+
+            public AssetHealthIssueKind Kind { get; }
+            public MessageType Severity { get; }
+            public string Scope { get; }
+            public string Message { get; }
+            public UnityEngine.Object Context { get; }
+        }
+
+        // ══════════════════════════════════════════════════════
+        //  ASSET HEALTH TAB
+        // ══════════════════════════════════════════════════════
+
+        private void DrawAssetHealthTab()
+        {
+            TryRunQueuedAssetHealthScan();
+
+            RegistryEditorStyles.DrawColoredHeader("  Asset health — перевірка посилань та ID", new Color(0.78f, 0.34f, 0.22f));
+            EditorWindowSharedUI.DrawWarning("Централізована перевірка на: биті посилання, null refs і дублікати ID у ключових реєстрах.", MessageType.Info);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button(EditorTooltipStandard.Content("Сканувати", "Запускає перевірку реєстрів на проблеми ассетів.", "Допомагає попередити runtime-падіння через некоректні посилання."), GUILayout.Width(120f)))
+                    RequestAssetHealthScan(immediate: true);
+
+                if (GUILayout.Button(EditorTooltipStandard.Content("Очистити", "Очищає список знайдених проблем.", "Дозволяє почати новий цикл перевірки без старих результатів."), GUILayout.Width(100f)))
+                    _assetHealthIssues.Clear();
+
+                GUILayout.Space(8f);
+                _assetHealthOnlyErrors = GUILayout.Toggle(_assetHealthOnlyErrors, new GUIContent("Лише помилки", EditorTooltipStandard.Build("Фільтрує список і залишає лише error-рівень.", "Фокусує увагу на критичних проблемах перед запуском гри.")), GUILayout.Width(120f));
+                GUILayout.Label("Пошук", GUILayout.Width(42f));
+                _assetHealthSearch = EditorGUILayout.TextField(_assetHealthSearch);
+            }
+
+            int errors = _assetHealthIssues.Count(i => i.Severity == MessageType.Error);
+            int warnings = _assetHealthIssues.Count(i => i.Severity == MessageType.Warning);
+            int brokenRefs = _assetHealthIssues.Count(i => i.Kind == AssetHealthIssueKind.BrokenReference);
+            int nullRefs = _assetHealthIssues.Count(i => i.Kind == AssetHealthIssueKind.NullReference);
+            int duplicateIds = _assetHealthIssues.Count(i => i.Kind == AssetHealthIssueKind.DuplicateId);
+            string scanStamp = _assetHealthLastScanUtc == default
+                ? "ще не сканували"
+                : $"{_assetHealthLastScanUtc.ToLocalTime():yyyy-MM-dd HH:mm:ss}";
+
+            EditorGUILayout.LabelField(
+                $"Останній скан: {scanStamp} | Помилки: {errors} | Попередження: {warnings} | Broken refs: {brokenRefs} | Null refs: {nullRefs} | Duplicate id: {duplicateIds}",
+                EditorStyles.miniLabel);
+
+            RegistryEditorStyles.DrawSeparator();
+
+            _assetHealthScroll = EditorGUILayout.BeginScrollView(_assetHealthScroll);
+            if (_assetHealthIssues.Count == 0)
+            {
+                EditorWindowSharedUI.DrawWarning("Натисніть 'Сканувати', щоб побачити проблеми ассетів.", MessageType.None);
+            }
+            else
+            {
+                int shown = 0;
+                for (int i = 0; i < _assetHealthIssues.Count; i++)
+                {
+                    var issue = _assetHealthIssues[i];
+                    if (_assetHealthOnlyErrors && issue.Severity != MessageType.Error)
+                        continue;
+
+                    if (!string.IsNullOrWhiteSpace(_assetHealthSearch) &&
+                        issue.Message.IndexOf(_assetHealthSearch, StringComparison.OrdinalIgnoreCase) < 0 &&
+                        issue.Scope.IndexOf(_assetHealthSearch, StringComparison.OrdinalIgnoreCase) < 0)
+                        continue;
+
+                    shown++;
+                    EditorGUILayout.BeginHorizontal();
+                    EditorGUILayout.HelpBox($"[{issue.Scope}] {issue.Message}", issue.Severity);
+                    if (GUILayout.Button(
+                            EditorTooltipStandard.Content("Quick Fix", "Запускає автовиправлення типових проблем для цього scope.", "Зменшує час на ручне відновлення реєстрів."),
+                            GUILayout.Width(84f),
+                            GUILayout.Height(38f)))
+                        QuickFixAssetHealthIssue(issue);
+
+                    if (issue.Context != null && GUILayout.Button(EditorTooltipStandard.Content("Ping", "Показує пов'язаний ассет у Project.", "Прискорює виправлення проблеми у відповідному реєстрі."), GUILayout.Width(56f), GUILayout.Height(38f)))
+                        EditorGUIUtility.PingObject(issue.Context);
+                    EditorGUILayout.EndHorizontal();
+                }
+
+                if (shown == 0)
+                    EditorGUILayout.HelpBox("За поточними фільтрами проблем не знайдено.", MessageType.None);
+            }
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void RequestAssetHealthScan(bool immediate)
+        {
+            if (immediate || _livePreviewThrottle.ShouldRunCostlyTick())
+            {
+                _assetHealthScanQueued = false;
+                RunAssetHealthScan();
+                return;
+            }
+
+            _assetHealthScanQueued = true;
+        }
+
+        private void TryRunQueuedAssetHealthScan()
+        {
+            if (!_assetHealthScanQueued)
+                return;
+
+            if (!_livePreviewThrottle.ShouldRunCostlyTick())
+                return;
+
+            _assetHealthScanQueued = false;
+            RunAssetHealthScan();
+        }
+
+        private void RunAssetHealthScan()
+        {
+            AutoFind();
+            _assetHealthIssues.Clear();
+
+            ScanTileRegistry();
+            ScanMapObjectRegistry();
+            ScanUnitRegistry();
+            ScanBuildingRegistry();
+            ScanEconomyDatabase();
+
+            _assetHealthLastScanUtc = DateTime.UtcNow;
+            _livePreviewThrottle.TryRepaint(this, force: true);
+            ShowNotification(new GUIContent($"Asset health: знайдено {_assetHealthIssues.Count} проблем."));
+        }
+
+        private void QuickFixAssetHealthIssue(AssetHealthIssue issue)
+        {
+            AutoFind();
+
+            int fixedCount = 0;
+            RunUndoSafeBulkEdit(
+                $"Registry Hub: asset health quick-fix ({issue.Scope})",
+                () =>
+                {
+                    switch (issue.Scope)
+                    {
+                        case "Tiles":
+                            if (issue.Kind == AssetHealthIssueKind.DuplicateId)
+                                fixedCount += AssetHealthFixDuplicateIds(_tileSO, "_definitions", "_id", "tile");
+                            else if (issue.Kind == AssetHealthIssueKind.NullReference)
+                                fixedCount += AssetHealthFixMissingPrefabs(_tileSO, "_definitions", "_id", "_visualPrefab", TilePrefabFolder);
+                            else if (issue.Kind == AssetHealthIssueKind.BrokenReference)
+                                fixedCount += AssetHealthClearBrokenReferences(_tileSO);
+                            break;
+
+                        case "MapObjects":
+                            if (issue.Kind == AssetHealthIssueKind.DuplicateId)
+                                fixedCount += AssetHealthFixDuplicateIds(_objSO, "_definitions", "_id", "object");
+                            else if (issue.Kind == AssetHealthIssueKind.NullReference)
+                                fixedCount += AssetHealthFixMissingPrefabs(_objSO, "_definitions", "_id", "_visualPrefab", ObjectPrefabFolder);
+                            else if (issue.Kind == AssetHealthIssueKind.BrokenReference)
+                                fixedCount += AssetHealthClearBrokenReferences(_objSO);
+                            break;
+
+                        case "Units":
+                            if (issue.Kind == AssetHealthIssueKind.DuplicateId)
+                                fixedCount += AssetHealthFixDuplicateIds(_unitSO, "Configs", "TypeId", "unit");
+                            else if (issue.Kind == AssetHealthIssueKind.NullReference)
+                                fixedCount += AssetHealthFixMissingPrefabs(_unitSO, "Configs", "TypeId", "Prefab", UnitPrefabFolder);
+                            else if (issue.Kind == AssetHealthIssueKind.BrokenReference)
+                                fixedCount += AssetHealthClearBrokenReferences(_unitSO);
+                            break;
+
+                        case "Buildings":
+                            if (issue.Kind == AssetHealthIssueKind.DuplicateId)
+                                fixedCount += AssetHealthFixDuplicateIds(_bldSO, "Buildings", "Id", "building");
+                            else if (issue.Kind == AssetHealthIssueKind.NullReference)
+                                fixedCount += AssetHealthFixMissingPrefabs(_bldSO, "Buildings", "Id", "Prefab", BuildingPrefabFolder);
+                            else if (issue.Kind == AssetHealthIssueKind.BrokenReference)
+                                fixedCount += AssetHealthClearBrokenReferences(_bldSO);
+                            break;
+
+                        case "Walls":
+                            if (issue.Kind == AssetHealthIssueKind.DuplicateId)
+                                fixedCount += AssetHealthFixDuplicateIds(_bldSO, "WallCollections", "CollectionId", "wall-collection");
+                            else if (issue.Kind == AssetHealthIssueKind.NullReference)
+                                fixedCount += AssetHealthFixMissingWallPrefabs();
+                            else if (issue.Kind == AssetHealthIssueKind.BrokenReference)
+                                fixedCount += AssetHealthClearBrokenReferences(_bldSO);
+                            break;
+
+                        case "Economy":
+                            if (_economyDb != null)
+                            {
+                                if (issue.Kind == AssetHealthIssueKind.DuplicateId || issue.Kind == AssetHealthIssueKind.NullReference)
+                                    fixedCount += TryFixEconomyCommonIssues(_economyDb);
+
+                                if (issue.Kind == AssetHealthIssueKind.BrokenReference)
+                                    fixedCount += AssetHealthClearBrokenReferences(new SerializedObject(_economyDb));
+                            }
+                            break;
+                    }
+                },
+                GetUndoTargetsForAssetHealthScope(issue.Scope));
+
+            if (fixedCount > 0)
+            {
+                AssetDatabase.SaveAssets();
+                RequestAssetHealthScan(immediate: false);
+                ShowNotification(new GUIContent($"Quick-fix: виправлено {fixedCount} змін."));
+            }
+            else
+            {
+                ShowNotification(new GUIContent("Quick-fix: типових виправлень для цього кейсу не знайдено."));
+            }
+        }
+
+        private int AssetHealthFixDuplicateIds(SerializedObject so, string arrayPath, string idPropertyName, string fallbackPrefix)
+        {
+            if (so == null || so.targetObject == null)
+                return 0;
+
+            so.Update();
+            var array = so.FindProperty(arrayPath);
+            if (array == null || !array.isArray)
+                return 0;
+
+            int changed = 0;
+            var used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                var element = array.GetArrayElementAtIndex(i);
+                var idProp = element.FindPropertyRelative(idPropertyName);
+                if (idProp == null)
+                    continue;
+
+                string baseId = (idProp.stringValue ?? string.Empty).Trim().Replace('_', '-').ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(baseId))
+                    baseId = $"{fallbackPrefix}-{i + 1}";
+
+                string candidate = baseId;
+                int suffix = 2;
+                while (used.Contains(candidate))
+                    candidate = $"{baseId}-{suffix++}";
+
+                if (!string.Equals(idProp.stringValue, candidate, StringComparison.Ordinal))
+                {
+                    idProp.stringValue = candidate;
+                    changed++;
+                }
+
+                used.Add(candidate);
+            }
+
+            if (changed > 0)
+            {
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(so.targetObject);
+            }
+
+            return changed;
+        }
+
+        private int AssetHealthFixMissingPrefabs(SerializedObject so, string arrayPath, string idPropertyName, string prefabPropertyName, string folder)
+        {
+            if (so == null || so.targetObject == null)
+                return 0;
+
+            so.Update();
+            var array = so.FindProperty(arrayPath);
+            if (array == null || !array.isArray)
+                return 0;
+
+            int changed = 0;
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                var element = array.GetArrayElementAtIndex(i);
+                var prefabProp = element.FindPropertyRelative(prefabPropertyName);
+                if (prefabProp == null || prefabProp.propertyType != SerializedPropertyType.ObjectReference)
+                    continue;
+
+                if (prefabProp.objectReferenceValue != null)
+                    continue;
+
+                string id = element.FindPropertyRelative(idPropertyName)?.stringValue;
+                if (string.IsNullOrWhiteSpace(id))
+                    id = $"{SanitizeFileName(arrayPath)}-{i + 1}";
+
+                prefabProp.objectReferenceValue = ResolvePrefab(id, null, null, folder);
+                changed++;
+            }
+
+            if (changed > 0)
+            {
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(so.targetObject);
+            }
+
+            return changed;
+        }
+
+        private int AssetHealthFixMissingWallPrefabs()
+        {
+            if (_bldSO == null || _bldSO.targetObject == null)
+                return 0;
+
+            _bldSO.Update();
+            var walls = _bldSO.FindProperty("WallCollections");
+            if (walls == null || !walls.isArray)
+                return 0;
+
+            string[] fields =
+            {
+                "HorizontalPrefab",
+                "VerticalPrefab",
+                "CornerNorthEastPrefab",
+                "CornerNorthWestPrefab",
+                "CornerSouthEastPrefab",
+                "CornerSouthWestPrefab",
+                "GatePrefab",
+            };
+
+            int changed = 0;
+            for (int i = 0; i < walls.arraySize; i++)
+            {
+                var wall = walls.GetArrayElementAtIndex(i);
+                string collectionId = wall.FindPropertyRelative("CollectionId")?.stringValue;
+                if (string.IsNullOrWhiteSpace(collectionId))
+                    collectionId = $"wall-collection-{i + 1}";
+
+                for (int f = 0; f < fields.Length; f++)
+                {
+                    string field = fields[f];
+                    var prefabProp = wall.FindPropertyRelative(field);
+                    if (prefabProp == null || prefabProp.propertyType != SerializedPropertyType.ObjectReference)
+                        continue;
+
+                    if (prefabProp.objectReferenceValue != null)
+                        continue;
+
+                    prefabProp.objectReferenceValue = CreateEmptyPrefab($"{collectionId}-{field.ToLowerInvariant()}", BuildingPrefabFolder);
+                    changed++;
+                }
+            }
+
+            if (changed > 0)
+            {
+                _bldSO.ApplyModifiedProperties();
+                EditorUtility.SetDirty(_bldSO.targetObject);
+            }
+
+            return changed;
+        }
+
+        private int AssetHealthClearBrokenReferences(SerializedObject so)
+        {
+            if (so == null || so.targetObject == null)
+                return 0;
+
+            so.Update();
+            int changed = 0;
+            var iterator = so.GetIterator();
+            bool enterChildren = true;
+            while (iterator.NextVisible(enterChildren))
+            {
+                enterChildren = false;
+                if (iterator.propertyPath == "m_Script")
+                    continue;
+
+                if (iterator.propertyType != SerializedPropertyType.ObjectReference)
+                    continue;
+
+                if (iterator.objectReferenceValue == null && iterator.objectReferenceInstanceIDValue != 0)
+                {
+                    iterator.objectReferenceValue = null;
+                    changed++;
+                }
+            }
+
+            if (changed > 0)
+            {
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(so.targetObject);
+            }
+
+            return changed;
+        }
+
+        private void ScanTileRegistry()
+        {
+            if (_tileSO == null || _tileReg == null)
+                return;
+
+            var defs = _tileSO.FindProperty("_definitions");
+            AppendDuplicateIdIssues(defs, "_id", "Tiles", _tileReg);
+            AppendRequiredObjectReferenceIssues(defs, "_visualPrefab", "Tiles", _tileReg);
+            AppendBrokenReferenceIssues(_tileSO, "Tiles", _tileReg);
+        }
+
+        private void ScanMapObjectRegistry()
+        {
+            if (_objSO == null || _objReg == null)
+                return;
+
+            var defs = _objSO.FindProperty("_definitions");
+            AppendDuplicateIdIssues(defs, "_id", "MapObjects", _objReg);
+            AppendRequiredObjectReferenceIssues(defs, "_visualPrefab", "MapObjects", _objReg);
+            AppendBrokenReferenceIssues(_objSO, "MapObjects", _objReg);
+        }
+
+        private void ScanUnitRegistry()
+        {
+            if (_unitSO == null || _unitReg == null)
+                return;
+
+            var defs = _unitSO.FindProperty("Configs");
+            AppendDuplicateIdIssues(defs, "TypeId", "Units", _unitReg);
+            AppendRequiredObjectReferenceIssues(defs, "Prefab", "Units", _unitReg);
+            AppendBrokenReferenceIssues(_unitSO, "Units", _unitReg);
+        }
+
+        private void ScanBuildingRegistry()
+        {
+            if (_bldSO == null || _bldReg == null)
+                return;
+
+            var buildings = _bldSO.FindProperty("Buildings");
+            AppendDuplicateIdIssues(buildings, "Id", "Buildings", _bldReg);
+            AppendRequiredObjectReferenceIssues(buildings, "Prefab", "Buildings", _bldReg);
+
+            var walls = _bldSO.FindProperty("WallCollections");
+            AppendDuplicateIdIssues(walls, "CollectionId", "Walls", _bldReg);
+            AppendRequiredObjectReferenceIssues(walls, "HorizontalPrefab", "Walls", _bldReg);
+            AppendRequiredObjectReferenceIssues(walls, "VerticalPrefab", "Walls", _bldReg);
+            AppendRequiredObjectReferenceIssues(walls, "CornerNorthEastPrefab", "Walls", _bldReg);
+            AppendRequiredObjectReferenceIssues(walls, "CornerNorthWestPrefab", "Walls", _bldReg);
+            AppendRequiredObjectReferenceIssues(walls, "CornerSouthEastPrefab", "Walls", _bldReg);
+            AppendRequiredObjectReferenceIssues(walls, "CornerSouthWestPrefab", "Walls", _bldReg);
+            AppendRequiredObjectReferenceIssues(walls, "GatePrefab", "Walls", _bldReg);
+
+            AppendBrokenReferenceIssues(_bldSO, "Buildings/Walls", _bldReg);
+        }
+
+        private void ScanEconomyDatabase()
+        {
+            if (_economyDb == null)
+                return;
+
+            var validationIssues = ValidateEconomyDatabase(_economyDb, _bldReg);
+            for (int i = 0; i < validationIssues.Count; i++)
+            {
+                var issue = validationIssues[i];
+                if (string.IsNullOrWhiteSpace(issue.Message))
+                    continue;
+
+                string message = issue.Message;
+                string lower = message.ToLowerInvariant();
+                if (lower.Contains("duplicate") || lower.Contains("дублікат"))
+                {
+                    _assetHealthIssues.Add(new AssetHealthIssue(AssetHealthIssueKind.DuplicateId, MessageType.Error, "Economy", message, issue.Context != null ? issue.Context : _economyDb));
+                }
+                else if (lower.Contains("missing") || lower.Contains("unknown") || lower.Contains("not assigned") || lower.Contains("відсут") || lower.Contains("не признач"))
+                {
+                    var severity = issue.IsError ? MessageType.Error : MessageType.Warning;
+                    _assetHealthIssues.Add(new AssetHealthIssue(AssetHealthIssueKind.NullReference, severity, "Economy", message, issue.Context != null ? issue.Context : _economyDb));
+                }
+            }
+
+            AppendBrokenReferenceIssues(new SerializedObject(_economyDb), "Economy", _economyDb);
+        }
+
+        private void AppendDuplicateIdIssues(SerializedProperty array, string idPropertyName, string scope, UnityEngine.Object context)
+        {
+            if (array == null || !array.isArray)
+                return;
+
+            var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                string id = array.GetArrayElementAtIndex(i).FindPropertyRelative(idPropertyName)?.stringValue?.Trim();
+                if (string.IsNullOrWhiteSpace(id))
+                {
+                    _assetHealthIssues.Add(new AssetHealthIssue(
+                        AssetHealthIssueKind.NullReference,
+                        MessageType.Warning,
+                        scope,
+                        $"Елемент #{i + 1} має порожній ID '{idPropertyName}'.",
+                        context));
+                    continue;
+                }
+
+                counts[id] = counts.TryGetValue(id, out int c) ? c + 1 : 1;
+            }
+
+            foreach (var pair in counts)
+            {
+                if (pair.Value > 1)
+                {
+                    _assetHealthIssues.Add(new AssetHealthIssue(
+                        AssetHealthIssueKind.DuplicateId,
+                        MessageType.Error,
+                        scope,
+                        $"Дублікат ID '{pair.Key}' зустрічається {pair.Value} рази.",
+                        context));
+                }
+            }
+        }
+
+        private static int TryFixEconomyCommonIssues(EconomyDatabaseSO database)
+        {
+            if (database == null)
+                return 0;
+
+            var serviceType = FindTypeByName("Kruty1918.Moyva.Economy.Editor.EconomyAutoFixService");
+            var method = serviceType?.GetMethod("FixCommonIssues", new[] { typeof(EconomyDatabaseSO) });
+            if (serviceType == null || method == null)
+                return 0;
+
+            try
+            {
+                object instance = Activator.CreateInstance(serviceType);
+                object result = method.Invoke(instance, new object[] { database });
+                return result is int fixedCount ? fixedCount : 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[RegistryHub] Economy auto-fix unavailable: {ex.Message}");
+                return 0;
+            }
+        }
+
+        private static List<ReflectedEconomyValidationIssue> ValidateEconomyDatabase(EconomyDatabaseSO database, BuildingRegistrySO buildingRegistry)
+        {
+            var issues = new List<ReflectedEconomyValidationIssue>();
+            if (database == null)
+                return issues;
+
+            var serviceType = FindTypeByName("Kruty1918.Moyva.Economy.Editor.EconomyValidationService");
+            var method = serviceType?.GetMethod("Validate", new[] { typeof(EconomyDatabaseSO), typeof(BuildingRegistrySO) });
+            if (serviceType == null || method == null)
+                return issues;
+
+            try
+            {
+                object instance = Activator.CreateInstance(serviceType);
+                object result = method.Invoke(instance, new object[] { database, buildingRegistry });
+                if (!(result is System.Collections.IEnumerable enumerable))
+                    return issues;
+
+                foreach (var item in enumerable)
+                {
+                    if (item == null)
+                        continue;
+
+                    var itemType = item.GetType();
+                    string message = itemType.GetProperty("Message")?.GetValue(item) as string;
+                    object severityValue = itemType.GetProperty("Severity")?.GetValue(item);
+                    var context = itemType.GetProperty("Context")?.GetValue(item) as UnityEngine.Object;
+                    bool isError = string.Equals(severityValue?.ToString(), "Error", StringComparison.Ordinal);
+                    issues.Add(new ReflectedEconomyValidationIssue(message, isError, context));
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[RegistryHub] Economy validation unavailable: {ex.Message}");
+            }
+
+            return issues;
+        }
+
+        private static Type FindTypeByName(string fullName)
+        {
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                var type = assemblies[i].GetType(fullName, throwOnError: false);
+                if (type != null)
+                    return type;
+            }
+
+            return null;
+        }
+
+        private readonly struct ReflectedEconomyValidationIssue
+        {
+            public ReflectedEconomyValidationIssue(string message, bool isError, UnityEngine.Object context)
+            {
+                Message = message ?? string.Empty;
+                IsError = isError;
+                Context = context;
+            }
+
+            public string Message { get; }
+            public bool IsError { get; }
+            public UnityEngine.Object Context { get; }
+        }
+
+        private void AppendRequiredObjectReferenceIssues(SerializedProperty array, string propertyName, string scope, UnityEngine.Object context)
+        {
+            if (array == null || !array.isArray)
+                return;
+
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                var element = array.GetArrayElementAtIndex(i);
+                var prop = element.FindPropertyRelative(propertyName);
+                if (prop == null || prop.propertyType != SerializedPropertyType.ObjectReference)
+                    continue;
+
+                if (prop.objectReferenceValue == null)
+                {
+                    _assetHealthIssues.Add(new AssetHealthIssue(
+                        AssetHealthIssueKind.NullReference,
+                        MessageType.Error,
+                        scope,
+                        $"Елемент #{i + 1}: null reference у полі '{propertyName}'.",
+                        context));
+                }
+            }
+        }
+
+        private void AppendBrokenReferenceIssues(SerializedObject serializedObject, string scope, UnityEngine.Object context)
+        {
+            if (serializedObject == null || serializedObject.targetObject == null)
+                return;
+
+            var iterator = serializedObject.GetIterator();
+            bool enterChildren = true;
+            while (iterator.NextVisible(enterChildren))
+            {
+                enterChildren = false;
+                if (iterator.propertyPath == "m_Script")
+                    continue;
+
+                if (iterator.propertyType != SerializedPropertyType.ObjectReference)
+                    continue;
+
+                if (iterator.objectReferenceValue == null && iterator.objectReferenceInstanceIDValue != 0)
+                {
+                    _assetHealthIssues.Add(new AssetHealthIssue(
+                        AssetHealthIssueKind.BrokenReference,
+                        MessageType.Error,
+                        scope,
+                        $"Бите посилання у '{iterator.propertyPath}'.",
+                        context));
+                }
+            }
         }
 
         private void DrawSOSection<T>(string label) where T : ScriptableObject
@@ -1878,17 +2606,24 @@ namespace Kruty1918.Moyva.Editor
                 return;
 
             int removed = 0;
-            for (int i = arr.arraySize - 1; i >= 0; i--)
-            {
-                string id = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp)?.stringValue;
-                if (!string.IsNullOrWhiteSpace(id) && selected.Contains(id))
+            RunUndoSafeBulkEdit(
+                $"Registry Hub: delete selected ({TabLabels[(int)tab].Trim()})",
+                () =>
                 {
-                    arr.DeleteArrayElementAtIndex(i);
-                    removed++;
-                }
-            }
+                    for (int i = arr.arraySize - 1; i >= 0; i--)
+                    {
+                        string id = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp)?.stringValue;
+                        if (!string.IsNullOrWhiteSpace(id) && selected.Contains(id))
+                        {
+                            arr.DeleteArrayElementAtIndex(i);
+                            removed++;
+                        }
+                    }
 
-            so.ApplyModifiedProperties();
+                    so.ApplyModifiedProperties();
+                },
+                so != null ? so.targetObject : null);
+
             selected.Clear();
             SaveAndNotify($"Видалено {removed} записів");
         }
@@ -1902,21 +2637,28 @@ namespace Kruty1918.Moyva.Editor
             int copied = 0;
             var newIds = new List<string>();
 
-            foreach (var id in selectedIds)
-            {
-                int sourceIndex = FindIndexById(arr, idProp, id);
-                if (sourceIndex < 0)
-                    continue;
+            RunUndoSafeBulkEdit(
+                $"Registry Hub: duplicate selected ({TabLabels[(int)tab].Trim()})",
+                () =>
+                {
+                    foreach (var id in selectedIds)
+                    {
+                        int sourceIndex = FindIndexById(arr, idProp, id);
+                        if (sourceIndex < 0)
+                            continue;
 
-                arr.InsertArrayElementAtIndex(sourceIndex);
-                var newElement = arr.GetArrayElementAtIndex(sourceIndex);
-                string copyId = MakeUniqueId(arr, idProp, NormalizeId($"{id}-copy", "item"), sourceIndex);
-                newElement.FindPropertyRelative(idProp).stringValue = copyId;
-                newIds.Add(copyId);
-                copied++;
-            }
+                        arr.InsertArrayElementAtIndex(sourceIndex);
+                        var newElement = arr.GetArrayElementAtIndex(sourceIndex);
+                        string copyId = MakeUniqueId(arr, idProp, NormalizeId($"{id}-copy", "item"), sourceIndex);
+                        newElement.FindPropertyRelative(idProp).stringValue = copyId;
+                        newIds.Add(copyId);
+                        copied++;
+                    }
 
-            so.ApplyModifiedProperties();
+                    so.ApplyModifiedProperties();
+                },
+                so != null ? so.targetObject : null);
+
             var selection = GetSelection(tab);
             selection.Clear();
             foreach (var id in newIds)
@@ -1935,25 +2677,32 @@ namespace Kruty1918.Moyva.Editor
             var remap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var reserved = CollectNonSelectedIds(arr, idProp, selected);
 
-            for (int i = 0; i < arr.arraySize; i++)
-            {
-                var idPropRef = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp);
-                if (idPropRef == null)
-                    continue;
+            RunUndoSafeBulkEdit(
+                $"Registry Hub: rename selected ({TabLabels[(int)tab].Trim()})",
+                () =>
+                {
+                    for (int i = 0; i < arr.arraySize; i++)
+                    {
+                        var idPropRef = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp);
+                        if (idPropRef == null)
+                            continue;
 
-                string oldId = idPropRef.stringValue;
-                if (string.IsNullOrWhiteSpace(oldId) || !selected.Contains(oldId))
-                    continue;
+                        string oldId = idPropRef.stringValue;
+                        if (string.IsNullOrWhiteSpace(oldId) || !selected.Contains(oldId))
+                            continue;
 
-                string candidate = $"{safePrefix}-{counter}";
-                counter++;
-                string unique = MakeUniqueFromSet(candidate, reserved);
-                reserved.Add(unique);
-                idPropRef.stringValue = unique;
-                remap[oldId] = unique;
-            }
+                        string candidate = $"{safePrefix}-{counter}";
+                        counter++;
+                        string unique = MakeUniqueFromSet(candidate, reserved);
+                        reserved.Add(unique);
+                        idPropRef.stringValue = unique;
+                        remap[oldId] = unique;
+                    }
 
-            so.ApplyModifiedProperties();
+                    so.ApplyModifiedProperties();
+                },
+                so != null ? so.targetObject : null);
+
             RemapSelection(tab, remap);
             SaveAndNotify($"Перейменовано: {remap.Count}");
         }
@@ -1967,24 +2716,31 @@ namespace Kruty1918.Moyva.Editor
             var remap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var reserved = CollectNonSelectedIds(arr, idProp, selected);
 
-            for (int i = 0; i < arr.arraySize; i++)
-            {
-                var idPropRef = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp);
-                if (idPropRef == null)
-                    continue;
+            RunUndoSafeBulkEdit(
+                $"Registry Hub: fix selected ids ({TabLabels[(int)tab].Trim()})",
+                () =>
+                {
+                    for (int i = 0; i < arr.arraySize; i++)
+                    {
+                        var idPropRef = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp);
+                        if (idPropRef == null)
+                            continue;
 
-                string oldId = idPropRef.stringValue;
-                if (string.IsNullOrWhiteSpace(oldId) || !selected.Contains(oldId))
-                    continue;
+                        string oldId = idPropRef.stringValue;
+                        if (string.IsNullOrWhiteSpace(oldId) || !selected.Contains(oldId))
+                            continue;
 
-                string normalized = NormalizeId(oldId, "item");
-                string unique = MakeUniqueFromSet(normalized, reserved);
-                reserved.Add(unique);
-                idPropRef.stringValue = unique;
-                remap[oldId] = unique;
-            }
+                        string normalized = NormalizeId(oldId, "item");
+                        string unique = MakeUniqueFromSet(normalized, reserved);
+                        reserved.Add(unique);
+                        idPropRef.stringValue = unique;
+                        remap[oldId] = unique;
+                    }
 
-            so.ApplyModifiedProperties();
+                    so.ApplyModifiedProperties();
+                },
+                so != null ? so.targetObject : null);
+
             RemapSelection(tab, remap);
             SaveAndNotify($"Виправлено ID: {remap.Count}");
         }
@@ -1999,28 +2755,35 @@ namespace Kruty1918.Moyva.Editor
             var remap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var reserved = CollectNonSelectedIds(arr, idProp, selected);
 
-            for (int i = 0; i < arr.arraySize; i++)
-            {
-                var idPropRef = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp);
-                if (idPropRef == null)
-                    continue;
+            RunUndoSafeBulkEdit(
+                $"Registry Hub: renumber selected ({TabLabels[(int)tab].Trim()})",
+                () =>
+                {
+                    for (int i = 0; i < arr.arraySize; i++)
+                    {
+                        var idPropRef = arr.GetArrayElementAtIndex(i).FindPropertyRelative(idProp);
+                        if (idPropRef == null)
+                            continue;
 
-                string oldId = idPropRef.stringValue;
-                if (string.IsNullOrWhiteSpace(oldId) || !selected.Contains(oldId))
-                    continue;
+                        string oldId = idPropRef.stringValue;
+                        if (string.IsNullOrWhiteSpace(oldId) || !selected.Contains(oldId))
+                            continue;
 
-                string baseName = StripTrailingNumericSuffix(NormalizeId(oldId, "item"));
-                if (string.IsNullOrWhiteSpace(baseName))
-                    baseName = "item";
+                        string baseName = StripTrailingNumericSuffix(NormalizeId(oldId, "item"));
+                        if (string.IsNullOrWhiteSpace(baseName))
+                            baseName = "item";
 
-                string unique = MakeUniqueFromSet($"{baseName}-{counter}", reserved);
-                counter++;
-                reserved.Add(unique);
-                idPropRef.stringValue = unique;
-                remap[oldId] = unique;
-            }
+                        string unique = MakeUniqueFromSet($"{baseName}-{counter}", reserved);
+                        counter++;
+                        reserved.Add(unique);
+                        idPropRef.stringValue = unique;
+                        remap[oldId] = unique;
+                    }
 
-            so.ApplyModifiedProperties();
+                    so.ApplyModifiedProperties();
+                },
+                so != null ? so.targetObject : null);
+
             RemapSelection(tab, remap);
             SaveAndNotify($"Перенумеровано: {remap.Count}");
         }
@@ -2427,8 +3190,114 @@ namespace Kruty1918.Moyva.Editor
 
         private void SaveAndNotify(string msg)
         {
+            if (!EditorRegistryWriteLock.IsUnlocked(GetActiveLockKey()))
+            {
+                Err("Збереження заблоковано: увімкніть Unlock для активного реєстру.");
+                return;
+            }
+
+            if (IsActiveRegistryStale())
+            {
+                Err("Збереження скасовано: активний реєстр змінено зовні.");
+                return;
+            }
+
             AssetDatabase.SaveAssets();
+            EditorContentChangeLog.Write("RegistryHub", msg, GetActiveRegistryAsset(), Array.Empty<string>());
+            CaptureActiveStaleBaseline();
             ShowNotification(new GUIContent($"\u2713 {msg}"));
+        }
+
+        private string GetActiveLockKey()
+        {
+            switch (_tab)
+            {
+                case Tab.Tiles:
+                    return TileLockKey;
+                case Tab.MapObjects:
+                    return ObjectLockKey;
+                case Tab.Units:
+                    return UnitLockKey;
+                case Tab.Buildings:
+                case Tab.Walls:
+                    return BuildingLockKey;
+                case Tab.Resources:
+                    return EconomyLockKey;
+                default:
+                    return UnitLockKey;
+            }
+        }
+
+        private UnityEngine.Object GetActiveRegistryAsset()
+        {
+            switch (_tab)
+            {
+                case Tab.Tiles:
+                    return _tileReg;
+                case Tab.MapObjects:
+                    return _objReg;
+                case Tab.Units:
+                    return _unitReg;
+                case Tab.Buildings:
+                case Tab.Walls:
+                    return _bldReg;
+                case Tab.Resources:
+                    return _economyDb;
+                default:
+                    return null;
+            }
+        }
+
+        private bool IsActiveRegistryStale()
+        {
+            switch (_tab)
+            {
+                case Tab.Tiles:
+                    return _tileStale.IsStale(_tileReg);
+                case Tab.MapObjects:
+                    return _objStale.IsStale(_objReg);
+                case Tab.Units:
+                    return _unitStale.IsStale(_unitReg);
+                case Tab.Buildings:
+                case Tab.Walls:
+                    return _bldStale.IsStale(_bldReg);
+                case Tab.Resources:
+                    return _ecoStale.IsStale(_economyDb);
+                default:
+                    return false;
+            }
+        }
+
+        private void CaptureStaleBaselines()
+        {
+            _tileStale.Capture(_tileReg);
+            _objStale.Capture(_objReg);
+            _unitStale.Capture(_unitReg);
+            _bldStale.Capture(_bldReg);
+            _ecoStale.Capture(_economyDb);
+        }
+
+        private void CaptureActiveStaleBaseline()
+        {
+            switch (_tab)
+            {
+                case Tab.Tiles:
+                    _tileStale.Capture(_tileReg);
+                    break;
+                case Tab.MapObjects:
+                    _objStale.Capture(_objReg);
+                    break;
+                case Tab.Units:
+                    _unitStale.Capture(_unitReg);
+                    break;
+                case Tab.Buildings:
+                case Tab.Walls:
+                    _bldStale.Capture(_bldReg);
+                    break;
+                case Tab.Resources:
+                    _ecoStale.Capture(_economyDb);
+                    break;
+            }
         }
 
         private static Color CategoryColor(int idx) => idx switch
@@ -2439,6 +3308,71 @@ namespace Kruty1918.Moyva.Editor
             3 => new Color(0.65f, 0.55f, 0.30f), // Walls
             _ => Color.grey,
         };
+
+        private static int BeginUndoGroup(string groupName, params UnityEngine.Object[] targets)
+        {
+            Undo.IncrementCurrentGroup();
+            int group = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName(groupName);
+
+            if (targets != null)
+            {
+                var recorded = new HashSet<int>();
+                for (int i = 0; i < targets.Length; i++)
+                {
+                    var target = targets[i];
+                    if (target == null)
+                        continue;
+
+                    int id = target.GetInstanceID();
+                    if (!recorded.Add(id))
+                        continue;
+
+                    Undo.RecordObject(target, groupName);
+                }
+            }
+
+            return group;
+        }
+
+        private static void EndUndoGroup(int group)
+        {
+            Undo.CollapseUndoOperations(group);
+        }
+
+        private static void RunUndoSafeBulkEdit(string groupName, Action action, params UnityEngine.Object[] targets)
+        {
+            int group = BeginUndoGroup(groupName, targets);
+            try
+            {
+                action?.Invoke();
+            }
+            finally
+            {
+                EndUndoGroup(group);
+            }
+        }
+
+        private UnityEngine.Object[] GetUndoTargetsForAssetHealthScope(string scope)
+        {
+            switch (scope)
+            {
+                case "Tiles":
+                    return new UnityEngine.Object[] { _tileSO != null ? _tileSO.targetObject : null };
+                case "MapObjects":
+                    return new UnityEngine.Object[] { _objSO != null ? _objSO.targetObject : null };
+                case "Units":
+                    return new UnityEngine.Object[] { _unitSO != null ? _unitSO.targetObject : null };
+                case "Buildings":
+                    return new UnityEngine.Object[] { _bldSO != null ? _bldSO.targetObject : null };
+                case "Walls":
+                    return new UnityEngine.Object[] { _bldSO != null ? _bldSO.targetObject : null };
+                case "Economy":
+                    return new UnityEngine.Object[] { _economyDb };
+                default:
+                    return Array.Empty<UnityEngine.Object>();
+            }
+        }
 
         // ── Prefab creation ─────────────────────────────────
 
@@ -2490,6 +3424,7 @@ namespace Kruty1918.Moyva.Editor
             SaveRegistryPreference(PrefKeyObjectRegistryGuid, _objReg);
             SaveRegistryPreference(PrefKeyUnitRegistryGuid, _unitReg);
             SaveRegistryPreference(PrefKeyBuildingRegistryGuid, _bldReg);
+            MoyvaProjectEditorContext.Set(_economyDb);
         }
 
         private void LoadRegistrySelections()
@@ -2498,10 +3433,12 @@ namespace Kruty1918.Moyva.Editor
             _objReg = LoadRegistryPreference<MapObjectRegistrySO>(PrefKeyObjectRegistryGuid);
             _unitReg = LoadRegistryPreference<UnitRegistrySO>(PrefKeyUnitRegistryGuid);
             _bldReg = LoadRegistryPreference<BuildingRegistrySO>(PrefKeyBuildingRegistryGuid);
+            _economyDb = MoyvaProjectEditorContext.Get<EconomyDatabaseSO>();
         }
 
-        private static void SaveRegistryPreference(string key, UnityEngine.Object asset)
+        private static void SaveRegistryPreference<T>(string key, T asset) where T : UnityEngine.Object
         {
+            MoyvaProjectEditorContext.Set(asset);
             if (asset == null)
             {
                 EditorPrefs.DeleteKey(key);
@@ -2527,6 +3464,10 @@ namespace Kruty1918.Moyva.Editor
 
         private static T LoadRegistryPreference<T>(string key) where T : UnityEngine.Object
         {
+            var contextAsset = MoyvaProjectEditorContext.Get<T>();
+            if (contextAsset != null)
+                return contextAsset;
+
             string guid = EditorPrefs.GetString(key, string.Empty);
             if (string.IsNullOrEmpty(guid))
                 return null;
@@ -2571,7 +3512,7 @@ namespace Kruty1918.Moyva.Editor
         private void ShowMoveMenu(string id, Tab source, int sourceIndex)
         {
             var menu = new GenericMenu();
-            foreach (Tab target in Enum.GetValues(typeof(Tab)))
+            foreach (Tab target in GetMovableRegistryTabs())
             {
                 if (target == source) continue;
                 Tab t = target;
@@ -2580,6 +3521,14 @@ namespace Kruty1918.Moyva.Editor
                     false, () => MoveEntry(id, source, idx, t));
             }
             menu.ShowAsContext();
+        }
+
+        private static IEnumerable<Tab> GetMovableRegistryTabs()
+        {
+            yield return Tab.Tiles;
+            yield return Tab.MapObjects;
+            yield return Tab.Units;
+            yield return Tab.Buildings;
         }
 
         private void MoveEntry(string id, Tab source, int sourceIndex, Tab target)
@@ -2804,11 +3753,12 @@ namespace Kruty1918.Moyva.Editor
             _bulkScroll = EditorGUILayout.BeginScrollView(_bulkScroll, "box");
             if (entries.Count == 0)
             {
-                EditorGUILayout.HelpBox("Немає елементів для відображення.", MessageType.None);
+                EditorWindowSharedUI.DrawWarning("Немає елементів для відображення.", MessageType.None);
             }
             else
             {
                 string prevCategory = null;
+                int rowIndex = 0;
                 foreach (var entry in entries)
                 {
                     if (entry.Category != prevCategory)
@@ -2819,7 +3769,7 @@ namespace Kruty1918.Moyva.Editor
                     }
 
                     bool wasSelected = _bulkSelectedIds.Contains(entry.Id);
-                    GUIStyle rowStyle = wasSelected ? RegistryEditorStyles.CardAlt : RegistryEditorStyles.Card;
+                    GUIStyle rowStyle = EditorWindowSharedUI.ListRowStyle(wasSelected, rowIndex % 2 != 0);
                     Rect rowRect = EditorGUILayout.BeginHorizontal(rowStyle);
                     bool isSelected = EditorGUILayout.Toggle(wasSelected, GUILayout.Width(20f));
                     EditorGUILayout.LabelField(entry.IsProblem ? $"⚠ {entry.Id}" : entry.Id);
@@ -2841,6 +3791,7 @@ namespace Kruty1918.Moyva.Editor
 
                     if (isSelected && !wasSelected) _bulkSelectedIds.Add(entry.Id);
                     else if (!isSelected && wasSelected) _bulkSelectedIds.Remove(entry.Id);
+                    rowIndex++;
                 }
             }
             EditorGUILayout.EndScrollView();
@@ -3059,10 +4010,19 @@ namespace Kruty1918.Moyva.Editor
                 EditorUtility.SetDirty(so.targetObject);
             }
 
-            DeleteFromSO(_tileSO, "_definitions", "_id");
-            DeleteFromSO(_objSO, "_definitions", "_id");
-            DeleteFromSO(_unitSO, "Configs", "TypeId");
-            DeleteFromSO(_bldSO, "Buildings", "Id");
+            RunUndoSafeBulkEdit(
+                "Registry Hub: bulk delete",
+                () =>
+                {
+                    DeleteFromSO(_tileSO, "_definitions", "_id");
+                    DeleteFromSO(_objSO, "_definitions", "_id");
+                    DeleteFromSO(_unitSO, "Configs", "TypeId");
+                    DeleteFromSO(_bldSO, "Buildings", "Id");
+                },
+                _tileSO != null ? _tileSO.targetObject : null,
+                _objSO != null ? _objSO.targetObject : null,
+                _unitSO != null ? _unitSO.targetObject : null,
+                _bldSO != null ? _bldSO.targetObject : null);
 
             int count = _bulkSelectedIds.Count;
             _bulkSelectedIds.Clear();

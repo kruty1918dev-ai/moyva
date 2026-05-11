@@ -1,4 +1,9 @@
+using System;
+using System.Collections.Generic;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Units.Runtime;
+using Kruty1918.Moyva.Audio.API;
+using Kruty1918.Moyva.Audio.Runtime;
 using UnityEditor;
 using UnityEngine;
 
@@ -8,6 +13,7 @@ namespace Kruty1918.Moyva.Editor
     public sealed class UnitRegistryEditor : UnityEditor.Editor
     {
         private const string UnitPrefabFolder = "Assets/Moyva/Prefabs/Units";
+        private const string UnitDesignerRegistryGuidPrefsKey = "Moyva.UnitDesigner.RegistryGuid";
 
         private SerializedProperty _configs;
         private Vector2 _scroll;
@@ -34,6 +40,8 @@ namespace Kruty1918.Moyva.Editor
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField($"{count} юніт(ів)", EditorStyles.boldLabel);
+            if (GUILayout.Button("Unit Designer", GUILayout.Width(130)))
+                OpenUnitDesignerForCurrentRegistry();
             if (GUILayout.Button("Відкрити Registry Hub", GUILayout.Width(160)))
                 RegistryHubWindow.Open(2);
             EditorGUILayout.EndHorizontal();
@@ -145,6 +153,16 @@ namespace Kruty1918.Moyva.Editor
             _newId = ""; _newSprite = null; _newPrefab = null;
         }
 
+        private void OpenUnitDesignerForCurrentRegistry()
+        {
+            string path = AssetDatabase.GetAssetPath(target);
+            string guid = AssetDatabase.AssetPathToGUID(path);
+            if (!string.IsNullOrWhiteSpace(guid))
+                EditorPrefs.SetString(UnitDesignerRegistryGuidPrefsKey, guid);
+
+            EditorApplication.ExecuteMenuItem("Moyva/Tools/Unit Designer");
+        }
+
         private bool ContainsId(string id)
         {
             for (int i = 0; i < _configs.arraySize; i++)
@@ -213,6 +231,971 @@ namespace Kruty1918.Moyva.Editor
             DestroyImmediate(go);
             AssetDatabase.Refresh();
             return pfb;
+        }
+    }
+}
+
+namespace Kruty1918.Moyva.Editor.Audio
+{
+    [InitializeOnLoad]
+    internal static class AudioProjectBootstrapper
+    {
+        static AudioProjectBootstrapper()
+        {
+            EditorApplication.delayCall += () => AudioEditorRegistryUtility.EnsureDefaultRegistryExists(false);
+        }
+    }
+
+    internal static class AudioEditorRegistryUtility
+    {
+        public const string DefaultRegistryPath = "Assets/Moyva/Resources/MoyvaAudioRegistry.asset";
+        public const string DefaultRegistryResourcePath = "MoyvaAudioRegistry";
+
+        public static AudioRegistrySO GetOrCreateDefaultRegistry()
+            => EnsureDefaultRegistryExists(true);
+
+        public static AudioRegistrySO FindRegistry()
+        {
+            var registry = AssetDatabase.LoadAssetAtPath<AudioRegistrySO>(DefaultRegistryPath);
+            if (registry != null)
+                return registry;
+
+            string[] guids = AssetDatabase.FindAssets("t:AudioRegistrySO");
+            if (guids == null || guids.Length == 0)
+                return null;
+
+            Array.Sort(guids, StringComparer.OrdinalIgnoreCase);
+            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+            return AssetDatabase.LoadAssetAtPath<AudioRegistrySO>(path);
+        }
+
+        public static AudioRegistrySO EnsureDefaultRegistryExists(bool focus)
+        {
+            var registry = AssetDatabase.LoadAssetAtPath<AudioRegistrySO>(DefaultRegistryPath);
+            if (registry != null)
+            {
+                if (focus)
+                    EditorGUIUtility.PingObject(registry);
+                return registry;
+            }
+
+            EnsureFolder("Assets/Moyva/Resources");
+            registry = ScriptableObject.CreateInstance<AudioRegistrySO>();
+            AssetDatabase.CreateAsset(registry, DefaultRegistryPath);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            if (focus)
+            {
+                Selection.activeObject = registry;
+                EditorGUIUtility.PingObject(registry);
+            }
+
+            return registry;
+        }
+
+        public static List<AudioSoundDefinition> GetSounds(AudioRegistrySO registry)
+        {
+            var result = new List<AudioSoundDefinition>();
+            if (registry == null || registry.Sounds == null)
+                return result;
+
+            for (int i = 0; i < registry.Sounds.Length; i++)
+            {
+                if (registry.Sounds[i] != null)
+                    result.Add(registry.Sounds[i]);
+            }
+
+            result.Sort((a, b) => string.Compare(a.Key, b.Key, StringComparison.OrdinalIgnoreCase));
+            return result;
+        }
+
+        public static string MakeUniqueKey(AudioRegistrySO registry, string baseKey)
+        {
+            baseKey = SanitizeKey(string.IsNullOrWhiteSpace(baseKey) ? "sound" : baseKey);
+            if (!ContainsKey(registry, baseKey))
+                return baseKey;
+
+            for (int i = 2; i < 999; i++)
+            {
+                string key = $"{baseKey}-{i}";
+                if (!ContainsKey(registry, key))
+                    return key;
+            }
+
+            return $"{baseKey}-{Guid.NewGuid():N}";
+        }
+
+        public static string SanitizeKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return "sound";
+
+            key = key.Trim().Replace(' ', '-').Replace('_', '-').ToLowerInvariant();
+            var chars = key.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                char c = chars[i];
+                bool ok = c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '-' || c == '/' || c == '.';
+                if (!ok)
+                    chars[i] = '-';
+            }
+
+            return new string(chars).Trim('-');
+        }
+
+        public static bool ContainsKey(AudioRegistrySO registry, string key)
+        {
+            if (registry == null || string.IsNullOrWhiteSpace(key))
+                return false;
+
+            var sounds = registry.Sounds;
+            if (sounds == null)
+                return false;
+
+            for (int i = 0; i < sounds.Length; i++)
+            {
+                if (sounds[i] != null && string.Equals(sounds[i].Key, key, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        public static void EnsureFolder(string folder)
+        {
+            string[] parts = folder.Replace('\\', '/').TrimEnd('/').Split('/');
+            if (parts.Length == 0 || parts[0] != "Assets")
+                return;
+
+            string current = parts[0];
+            for (int i = 1; i < parts.Length; i++)
+            {
+                string next = $"{current}/{parts[i]}";
+                if (!AssetDatabase.IsValidFolder(next))
+                    AssetDatabase.CreateFolder(current, parts[i]);
+                current = next;
+            }
+        }
+    }
+
+    internal static class AudioEditorPreview
+    {
+        private static GameObject _previewRoot;
+        private static AudioSource _source;
+        private static double _stopTime;
+
+        public static void Play(AudioSoundDefinition sound)
+        {
+            if (sound == null)
+                return;
+
+            var clip = ResolveClip(sound);
+            if (clip == null)
+                return;
+
+            EnsureSource();
+            ConfigureSource(sound);
+            _source.clip = clip;
+            _source.volume = Mathf.Clamp01(sound.Volume);
+            _source.pitch = Mathf.Clamp(Mathf.Approximately(sound.Pitch, 0f) ? 1f : sound.Pitch, -3f, 3f);
+            _source.loop = sound.Loop;
+            _source.Play();
+            _stopTime = EditorApplication.timeSinceStartup + Mathf.Max(0.1f, clip.length + 0.2f);
+            EditorApplication.update -= Tick;
+            EditorApplication.update += Tick;
+        }
+
+        public static void Play(AudioClip clip)
+        {
+            if (clip == null)
+                return;
+
+            EnsureSource();
+            ClearEffects();
+            _source.clip = clip;
+            _source.volume = 1f;
+            _source.pitch = 1f;
+            _source.loop = false;
+            _source.Play();
+            _stopTime = EditorApplication.timeSinceStartup + Mathf.Max(0.1f, clip.length + 0.2f);
+            EditorApplication.update -= Tick;
+            EditorApplication.update += Tick;
+        }
+
+        public static void Stop()
+        {
+            if (_source != null)
+                _source.Stop();
+        }
+
+        private static void Tick()
+        {
+            if (_source == null || !_source.isPlaying || EditorApplication.timeSinceStartup >= _stopTime)
+            {
+                Stop();
+                EditorApplication.update -= Tick;
+            }
+        }
+
+        private static void EnsureSource()
+        {
+            if (_source != null)
+                return;
+
+            _previewRoot = EditorUtility.CreateGameObjectWithHideFlags(
+                "Moyva Audio Preview",
+                HideFlags.HideAndDontSave,
+                typeof(AudioSource));
+            _source = _previewRoot.GetComponent<AudioSource>();
+            _source.playOnAwake = false;
+        }
+
+        private static AudioClip ResolveClip(AudioSoundDefinition sound)
+        {
+            if (sound.Variants != null)
+            {
+                for (int i = 0; i < sound.Variants.Length; i++)
+                    if (sound.Variants[i] != null)
+                        return sound.Variants[i];
+            }
+
+            return sound.Clip;
+        }
+
+        private static void ConfigureSource(AudioSoundDefinition sound)
+        {
+            ClearEffects();
+            _source.outputAudioMixerGroup = sound.MixerGroup;
+            _source.spatialBlend = sound.SpatialBlend;
+            _source.dopplerLevel = sound.DopplerLevel;
+            _source.priority = sound.Priority;
+            _source.reverbZoneMix = sound.ReverbZoneMix;
+
+            var effects = sound.Effects;
+            if (effects == null)
+                return;
+
+            if (effects.EnableLowPass)
+            {
+                var f = _previewRoot.AddComponent<AudioLowPassFilter>();
+                f.cutoffFrequency = effects.LowPassCutoff;
+                f.lowpassResonanceQ = effects.LowPassResonance;
+            }
+
+            if (effects.EnableHighPass)
+            {
+                var f = _previewRoot.AddComponent<AudioHighPassFilter>();
+                f.cutoffFrequency = effects.HighPassCutoff;
+                f.highpassResonanceQ = effects.HighPassResonance;
+            }
+
+            if (effects.EnableEcho)
+            {
+                var f = _previewRoot.AddComponent<AudioEchoFilter>();
+                f.delay = effects.EchoDelay;
+                f.decayRatio = effects.EchoDecayRatio;
+                f.wetMix = effects.EchoWetMix;
+                f.dryMix = effects.EchoDryMix;
+            }
+
+            if (effects.EnableReverb)
+            {
+                var f = _previewRoot.AddComponent<AudioReverbFilter>();
+                f.reverbPreset = effects.ReverbPreset;
+            }
+
+            if (effects.EnableDistortion)
+            {
+                var f = _previewRoot.AddComponent<AudioDistortionFilter>();
+                f.distortionLevel = effects.DistortionLevel;
+            }
+
+            if (effects.EnableChorus)
+            {
+                var f = _previewRoot.AddComponent<AudioChorusFilter>();
+                f.dryMix = effects.ChorusDryMix;
+                f.wetMix1 = effects.ChorusWetMix1;
+                f.wetMix2 = effects.ChorusWetMix2;
+                f.wetMix3 = effects.ChorusWetMix3;
+                f.delay = effects.ChorusDelay;
+                f.rate = effects.ChorusRate;
+                f.depth = effects.ChorusDepth;
+            }
+        }
+
+        private static void ClearEffects()
+        {
+            if (_previewRoot == null)
+                return;
+
+            Remove<AudioLowPassFilter>();
+            Remove<AudioHighPassFilter>();
+            Remove<AudioEchoFilter>();
+            Remove<AudioReverbFilter>();
+            Remove<AudioDistortionFilter>();
+            Remove<AudioChorusFilter>();
+        }
+
+        private static void Remove<T>() where T : Component
+        {
+            var component = _previewRoot.GetComponent<T>();
+            if (component != null)
+                UnityEngine.Object.DestroyImmediate(component);
+        }
+    }
+
+    public sealed class AudioDesignerWindow : EditorWindow
+    {
+        private const string RegistryGuidPrefsKey = "Moyva.AudioDesigner.RegistryGuid";
+
+        private AudioRegistrySO _registry;
+        private SerializedObject _serializedRegistry;
+        private SerializedProperty _sounds;
+        private string _search = string.Empty;
+        private Vector2 _listScroll;
+        private Vector2 _detailScroll;
+        private int _selectedIndex = -1;
+        private AudioBus? _busFilter;
+        private bool _showOnlyProblems;
+
+        [MenuItem("Moyva/Tools/Audio Designer %#a", priority = 31)]
+        public static void Open()
+        {
+            var window = GetWindow<AudioDesignerWindow>();
+            window.titleContent = new GUIContent("Audio Designer");
+            window.minSize = new Vector2(920f, 560f);
+            window.Show();
+        }
+
+        private void OnEnable()
+        {
+            ResolveRegistry();
+        }
+
+        private void OnGUI()
+        {
+            DrawToolbar();
+
+            if (_registry == null)
+            {
+                EditorGUILayout.HelpBox("AudioRegistry не знайдено. Створи дефолтний registry, щоб додавати звуки під ключі.", MessageType.Info);
+                if (GUILayout.Button("Створити MoyvaAudioRegistry.asset", GUILayout.Height(32f)))
+                    SetRegistry(AudioEditorRegistryUtility.GetOrCreateDefaultRegistry());
+                return;
+            }
+
+            _serializedRegistry.Update();
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                DrawListPanel();
+                DrawDetailPanel();
+            }
+
+            _serializedRegistry.ApplyModifiedProperties();
+        }
+
+        private void DrawToolbar()
+        {
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+            {
+                EditorGUILayout.LabelField("Audio Registry", GUILayout.Width(90f));
+                var nextRegistry = (AudioRegistrySO)EditorGUILayout.ObjectField(_registry, typeof(AudioRegistrySO), false, GUILayout.MinWidth(220f));
+                if (nextRegistry != _registry)
+                    SetRegistry(nextRegistry);
+
+                if (GUILayout.Button("Auto", EditorStyles.toolbarButton, GUILayout.Width(52f)))
+                    SetRegistry(AudioEditorRegistryUtility.FindRegistry() ?? AudioEditorRegistryUtility.GetOrCreateDefaultRegistry());
+
+                if (GUILayout.Button("Create", EditorStyles.toolbarButton, GUILayout.Width(64f)))
+                    SetRegistry(AudioEditorRegistryUtility.GetOrCreateDefaultRegistry());
+
+                GUILayout.FlexibleSpace();
+
+                if (_registry != null && GUILayout.Button("Ping", EditorStyles.toolbarButton, GUILayout.Width(50f)))
+                    EditorGUIUtility.PingObject(_registry);
+            }
+        }
+
+        private void DrawListPanel()
+        {
+            using (new EditorGUILayout.VerticalScope(GUILayout.Width(330f)))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    _search = EditorGUILayout.TextField(_search, GUI.skin.FindStyle("ToolbarSearchTextField") ?? EditorStyles.textField);
+                    if (GUILayout.Button("+", GUILayout.Width(34f), GUILayout.Height(22f)))
+                        AddSound();
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Toggle(!_busFilter.HasValue, "All", EditorStyles.miniButtonLeft, GUILayout.Width(45f)))
+                        _busFilter = null;
+
+                    foreach (AudioBus bus in Enum.GetValues(typeof(AudioBus)))
+                    {
+                        bool active = _busFilter == bus;
+                        if (GUILayout.Toggle(active, bus.ToString(), EditorStyles.miniButton, GUILayout.MinWidth(42f)))
+                            _busFilter = bus;
+                    }
+                }
+
+                _showOnlyProblems = EditorGUILayout.ToggleLeft("Показати тільки проблемні", _showOnlyProblems);
+                EditorGUILayout.Space(4f);
+
+                _listScroll = EditorGUILayout.BeginScrollView(_listScroll);
+                for (int i = 0; i < _sounds.arraySize; i++)
+                {
+                    var element = _sounds.GetArrayElementAtIndex(i);
+                    if (!PassesFilter(element))
+                        continue;
+
+                    DrawListRow(i, element);
+                }
+                EditorGUILayout.EndScrollView();
+            }
+        }
+
+        private void DrawListRow(int index, SerializedProperty element)
+        {
+            var key = element.FindPropertyRelative("Key");
+            var clip = element.FindPropertyRelative("Clip");
+            var bus = element.FindPropertyRelative("Bus");
+
+            Rect rect = EditorGUILayout.BeginVertical(index == _selectedIndex ? "flow node 0 on" : "box");
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("▶", GUILayout.Width(28f)))
+                    AudioEditorPreview.Play(GetSoundAt(index));
+
+                if (GUILayout.Button(string.IsNullOrWhiteSpace(key.stringValue) ? "<без ключа>" : key.stringValue, EditorStyles.boldLabel))
+                    _selectedIndex = index;
+
+                GUILayout.FlexibleSpace();
+                EditorGUILayout.LabelField(((AudioBus)bus.enumValueIndex).ToString(), EditorStyles.miniLabel, GUILayout.Width(62f));
+            }
+
+            string clipName = clip.objectReferenceValue != null ? clip.objectReferenceValue.name : "немає AudioClip";
+            EditorGUILayout.LabelField(clipName, EditorStyles.miniLabel);
+            EditorGUILayout.EndVertical();
+
+            if (Event.current.type == EventType.MouseDown && rect.Contains(Event.current.mousePosition))
+            {
+                _selectedIndex = index;
+                Repaint();
+            }
+        }
+
+        private void DrawDetailPanel()
+        {
+            using (new EditorGUILayout.VerticalScope())
+            {
+                DrawRegistrySettings();
+                EditorGUILayout.Space(6f);
+
+                if (_sounds == null || _selectedIndex < 0 || _selectedIndex >= _sounds.arraySize)
+                {
+                    EditorGUILayout.HelpBox("Обери звук зі списку або натисни '+', щоб додати новий ключ.", MessageType.Info);
+                    return;
+                }
+
+                // Ensure serialized object is up-to-date before accessing elements
+                _serializedRegistry.Update();
+
+                try
+                {
+                    var element = _sounds.GetArrayElementAtIndex(_selectedIndex);
+                    if (element == null)
+                    {
+                        EditorGUILayout.HelpBox("Обраний звук більше не доступний. Обери інший.", MessageType.Warning);
+                        _selectedIndex = _sounds.arraySize > 0 ? 0 : -1;
+                        return;
+                    }
+
+                    _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll);
+                    DrawSoundDetails(element);
+                    EditorGUILayout.EndScrollView();
+                }
+                catch (System.ObjectDisposedException)
+                {
+                    // SerializedProperty was disposed (e.g., after array modification)
+                    EditorGUILayout.HelpBox("Реєстр був змінений. Обнови вибір.", MessageType.Warning);
+                    _selectedIndex = -1;
+                }
+            }
+        }
+
+        private void DrawRegistrySettings()
+        {
+            using (new EditorGUILayout.VerticalScope("box"))
+            {
+                EditorGUILayout.LabelField("Runtime", EditorStyles.boldLabel);
+                EditorGUILayout.PropertyField(_serializedRegistry.FindProperty("_defaultPoolSize"), new GUIContent("Default Pool Size"));
+                EditorGUILayout.PropertyField(_serializedRegistry.FindProperty("_dontDestroyOnLoad"), new GUIContent("Dont Destroy On Load"));
+                EditorGUILayout.PropertyField(_serializedRegistry.FindProperty("_verboseLogs"), new GUIContent("Verbose Logs"));
+                EditorGUILayout.HelpBox("Runtime завантажує цей asset через Resources/MoyvaAudioRegistry і піднімає пул автоматично у ProjectServicesInstaller.", MessageType.None);
+            }
+        }
+
+        private void DrawSoundDetails(SerializedProperty element)
+        {
+            if (element == null)
+                return;
+
+            try
+            {
+                using (new EditorGUILayout.VerticalScope("box"))
+                {
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUILayout.LabelField("Sound", EditorStyles.boldLabel);
+                        GUILayout.FlexibleSpace();
+                        if (GUILayout.Button("Preview", GUILayout.Width(82f)))
+                            AudioEditorPreview.Play(GetSoundAt(_selectedIndex));
+                        if (GUILayout.Button("Stop", GUILayout.Width(58f)))
+                            AudioEditorPreview.Stop();
+                        if (GUILayout.Button("Duplicate", GUILayout.Width(82f)))
+                            DuplicateSelected();
+                        if (GUILayout.Button("Delete", GUILayout.Width(70f)))
+                            DeleteSelected();
+                    }
+
+                    var key = element.FindPropertyRelative("Key");
+                    if (key != null)
+                    {
+                        EditorGUILayout.PropertyField(key, new GUIContent("Key"));
+                        string sanitized = AudioEditorRegistryUtility.SanitizeKey(key.stringValue);
+                        if (!string.Equals(key.stringValue, sanitized, StringComparison.Ordinal) && GUILayout.Button($"Нормалізувати ключ: {sanitized}"))
+                            key.stringValue = sanitized;
+                    }
+
+                    DrawValidation(element);
+
+                    var clip = element.FindPropertyRelative("Clip");
+                    if (clip != null)
+                        EditorGUILayout.PropertyField(clip);
+
+                    var variants = element.FindPropertyRelative("Variants");
+                    if (variants != null)
+                        EditorGUILayout.PropertyField(variants, true);
+
+                    var bus = element.FindPropertyRelative("Bus");
+                    if (bus != null)
+                        EditorGUILayout.PropertyField(bus);
+
+                    var mixer = element.FindPropertyRelative("MixerGroup");
+                    if (mixer != null)
+                        EditorGUILayout.PropertyField(mixer);
+                }
+
+                using (new EditorGUILayout.VerticalScope("box"))
+                {
+                    EditorGUILayout.LabelField("Playback", EditorStyles.boldLabel);
+                    TryDrawProperty(element, "Volume");
+                    TryDrawProperty(element, "VolumeRandom");
+                    TryDrawProperty(element, "Pitch");
+                    TryDrawProperty(element, "PitchRandom");
+                    TryDrawProperty(element, "SpatialBlend");
+                    TryDrawProperty(element, "DopplerLevel");
+                    TryDrawProperty(element, "ReverbZoneMix");
+                    TryDrawProperty(element, "Priority");
+                    TryDrawProperty(element, "Loop");
+                    TryDrawProperty(element, "PoolWarmup");
+                    TryDrawProperty(element, "MaxSimultaneous");
+                }
+
+                using (new EditorGUILayout.VerticalScope("box"))
+                {
+                    EditorGUILayout.LabelField("Effects", EditorStyles.boldLabel);
+                    var effects = element.FindPropertyRelative("Effects");
+                    if (effects != null)
+                        EditorGUILayout.PropertyField(effects, true);
+                }
+            }
+            catch (System.ObjectDisposedException)
+            {
+                EditorGUILayout.HelpBox("Властивості звуку більше не доступні. Виберіть ще раз.", MessageType.Warning);
+            }
+        }
+
+        private void TryDrawProperty(SerializedProperty element, string propertyName)
+        {
+            try
+            {
+                var prop = element.FindPropertyRelative(propertyName);
+                if (prop != null)
+                    EditorGUILayout.PropertyField(prop);
+            }
+            catch { }
+        }
+
+        private void DrawValidation(SerializedProperty element)
+        {
+            if (element == null)
+                return;
+
+            try
+            {
+                var keyProp = element.FindPropertyRelative("Key");
+                string key = keyProp != null ? keyProp.stringValue : string.Empty;
+
+                if (string.IsNullOrWhiteSpace(key))
+                    EditorGUILayout.HelpBox("Ключ порожній. Такий звук не буде доступний через IAudioService.", MessageType.Warning);
+
+                var clipProp = element.FindPropertyRelative("Clip");
+                var variantsProp = element.FindPropertyRelative("Variants");
+                if (clipProp != null && clipProp.objectReferenceValue == null && !HasVariants(variantsProp))
+                    EditorGUILayout.HelpBox("Немає AudioClip або variants. Preview і Play не спрацюють.", MessageType.Warning);
+
+                if (CountKey(key) > 1)
+                    EditorGUILayout.HelpBox("Дублікат ключа. Runtime використає перший знайдений звук.", MessageType.Error);
+            }
+            catch { }
+        }
+
+        private bool PassesFilter(SerializedProperty element)
+        {
+            string key = element.FindPropertyRelative("Key").stringValue ?? string.Empty;
+            var clip = element.FindPropertyRelative("Clip").objectReferenceValue;
+            var bus = (AudioBus)element.FindPropertyRelative("Bus").enumValueIndex;
+
+            if (_busFilter.HasValue && bus != _busFilter.Value)
+                return false;
+
+            if (_showOnlyProblems && !HasProblem(element))
+                return false;
+
+            if (string.IsNullOrWhiteSpace(_search))
+                return true;
+
+            string needle = _search.Trim();
+            return key.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0
+                   || (clip != null && clip.name.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0)
+                   || bus.ToString().IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private bool HasProblem(SerializedProperty element)
+        {
+            string key = element.FindPropertyRelative("Key").stringValue;
+            return string.IsNullOrWhiteSpace(key)
+                   || CountKey(key) > 1
+                   || element.FindPropertyRelative("Clip").objectReferenceValue == null && !HasVariants(element.FindPropertyRelative("Variants"));
+        }
+
+        private bool HasVariants(SerializedProperty variants)
+        {
+            if (variants == null || !variants.isArray)
+                return false;
+
+            for (int i = 0; i < variants.arraySize; i++)
+                if (variants.GetArrayElementAtIndex(i).objectReferenceValue != null)
+                    return true;
+
+            return false;
+        }
+
+        private int CountKey(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+                return 0;
+
+            int count = 0;
+            for (int i = 0; i < _sounds.arraySize; i++)
+            {
+                string other = _sounds.GetArrayElementAtIndex(i).FindPropertyRelative("Key").stringValue;
+                if (string.Equals(other, key, StringComparison.OrdinalIgnoreCase))
+                    count++;
+            }
+
+            return count;
+        }
+
+        private void AddSound()
+        {
+            _serializedRegistry.Update();
+            int index = _sounds.arraySize;
+            _sounds.InsertArrayElementAtIndex(index);
+            var element = _sounds.GetArrayElementAtIndex(index);
+            element.FindPropertyRelative("Key").stringValue = AudioEditorRegistryUtility.MakeUniqueKey(_registry, "sound");
+            element.FindPropertyRelative("Clip").objectReferenceValue = null;
+            element.FindPropertyRelative("Variants").arraySize = 0;
+            element.FindPropertyRelative("Bus").enumValueIndex = (int)AudioBus.Sfx;
+            element.FindPropertyRelative("MixerGroup").objectReferenceValue = null;
+            element.FindPropertyRelative("Volume").floatValue = 1f;
+            element.FindPropertyRelative("VolumeRandom").floatValue = 0f;
+            element.FindPropertyRelative("Pitch").floatValue = 1f;
+            element.FindPropertyRelative("PitchRandom").floatValue = 0f;
+            element.FindPropertyRelative("SpatialBlend").floatValue = 0f;
+            element.FindPropertyRelative("DopplerLevel").floatValue = 0f;
+            element.FindPropertyRelative("ReverbZoneMix").floatValue = 1f;
+            element.FindPropertyRelative("Priority").intValue = 128;
+            element.FindPropertyRelative("Loop").boolValue = false;
+            element.FindPropertyRelative("PoolWarmup").intValue = 1;
+            element.FindPropertyRelative("MaxSimultaneous").intValue = 8;
+            ResetEffects(element.FindPropertyRelative("Effects"));
+            _selectedIndex = index;
+            _serializedRegistry.ApplyModifiedProperties();
+            EditorUtility.SetDirty(_registry);
+        }
+
+        private static void ResetEffects(SerializedProperty effects)
+        {
+            if (effects == null)
+                return;
+
+            SetBool(effects, "EnableLowPass", false);
+            SetFloat(effects, "LowPassCutoff", 5000f);
+            SetFloat(effects, "LowPassResonance", 1f);
+            SetBool(effects, "EnableHighPass", false);
+            SetFloat(effects, "HighPassCutoff", 120f);
+            SetFloat(effects, "HighPassResonance", 1f);
+            SetBool(effects, "EnableEcho", false);
+            SetFloat(effects, "EchoDelay", 220f);
+            SetFloat(effects, "EchoDecayRatio", 0.35f);
+            SetFloat(effects, "EchoWetMix", 0.28f);
+            SetFloat(effects, "EchoDryMix", 1f);
+            SetBool(effects, "EnableReverb", false);
+            SetBool(effects, "EnableDistortion", false);
+            SetFloat(effects, "DistortionLevel", 0.18f);
+            SetBool(effects, "EnableChorus", false);
+            SetFloat(effects, "ChorusDryMix", 0.5f);
+            SetFloat(effects, "ChorusWetMix1", 0.5f);
+            SetFloat(effects, "ChorusWetMix2", 0.5f);
+            SetFloat(effects, "ChorusWetMix3", 0.5f);
+            SetFloat(effects, "ChorusDelay", 40f);
+            SetFloat(effects, "ChorusRate", 0.8f);
+            SetFloat(effects, "ChorusDepth", 0.03f);
+        }
+
+        private static void SetBool(SerializedProperty root, string relativeName, bool value)
+        {
+            var property = root.FindPropertyRelative(relativeName);
+            if (property != null)
+                property.boolValue = value;
+        }
+
+        private static void SetFloat(SerializedProperty root, string relativeName, float value)
+        {
+            var property = root.FindPropertyRelative(relativeName);
+            if (property != null)
+                property.floatValue = value;
+        }
+
+        private void DuplicateSelected()
+        {
+            if (_selectedIndex < 0 || _selectedIndex >= _sounds.arraySize)
+                return;
+
+            int next = _sounds.arraySize;
+            _sounds.InsertArrayElementAtIndex(next);
+            var element = _sounds.GetArrayElementAtIndex(next);
+            string currentKey = element.FindPropertyRelative("Key").stringValue;
+            element.FindPropertyRelative("Key").stringValue = AudioEditorRegistryUtility.MakeUniqueKey(_registry, currentKey);
+            _selectedIndex = next;
+            _serializedRegistry.ApplyModifiedProperties();
+            EditorUtility.SetDirty(_registry);
+        }
+
+        private void DeleteSelected()
+        {
+            if (_selectedIndex < 0 || _selectedIndex >= _sounds.arraySize)
+                return;
+
+            if (!EditorUtility.DisplayDialog("Видалити звук", "Прибрати цей звук з AudioRegistry? AudioClip asset не видаляється.", "Видалити", "Скасувати"))
+                return;
+
+            _sounds.DeleteArrayElementAtIndex(_selectedIndex);
+            _selectedIndex = Mathf.Clamp(_selectedIndex, 0, _sounds.arraySize - 1);
+            _serializedRegistry.ApplyModifiedProperties();
+            EditorUtility.SetDirty(_registry);
+        }
+
+        private AudioSoundDefinition GetSoundAt(int index)
+        {
+            if (_registry == null || _registry.Sounds == null || index < 0 || index >= _registry.Sounds.Length)
+                return null;
+
+            _serializedRegistry.ApplyModifiedProperties();
+            return _registry.Sounds[index];
+        }
+
+        private void ResolveRegistry()
+        {
+            var contextRegistry = MoyvaProjectEditorContext.Get<AudioRegistrySO>();
+            if (contextRegistry != null)
+            {
+                SetRegistry(contextRegistry);
+                return;
+            }
+
+            string guid = EditorPrefs.GetString(RegistryGuidPrefsKey, string.Empty);
+            if (!string.IsNullOrWhiteSpace(guid))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                var saved = AssetDatabase.LoadAssetAtPath<AudioRegistrySO>(path);
+                if (saved != null)
+                {
+                    SetRegistry(saved);
+                    return;
+                }
+            }
+
+            SetRegistry(AudioEditorRegistryUtility.FindRegistry() ?? AudioEditorRegistryUtility.GetOrCreateDefaultRegistry());
+        }
+
+        private void SetRegistry(AudioRegistrySO registry)
+        {
+            _registry = registry;
+            _serializedRegistry = registry != null ? new SerializedObject(registry) : null;
+            _sounds = _serializedRegistry?.FindProperty("_sounds");
+            _selectedIndex = _sounds != null && _sounds.arraySize > 0 ? Mathf.Clamp(_selectedIndex, 0, _sounds.arraySize - 1) : -1;
+
+            MoyvaProjectEditorContext.Set(registry);
+
+            if (registry != null)
+            {
+                string path = AssetDatabase.GetAssetPath(registry);
+                string guid = AssetDatabase.AssetPathToGUID(path);
+                if (!string.IsNullOrWhiteSpace(guid))
+                    EditorPrefs.SetString(RegistryGuidPrefsKey, guid);
+            }
+        }
+    }
+
+    [CustomPropertyDrawer(typeof(AudioKeyAttribute))]
+    public sealed class AudioKeyDrawer : PropertyDrawer
+    {
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            if (property.propertyType != SerializedPropertyType.String)
+            {
+                EditorGUI.PropertyField(position, property, label);
+                return;
+            }
+
+            position = EditorGUI.PrefixLabel(position, label);
+            Rect previewRect = new Rect(position.x, position.y, 26f, position.height);
+            Rect fieldRect = new Rect(position.x + 30f, position.y, position.width - 30f, position.height);
+
+            using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(property.stringValue)))
+            {
+                if (GUI.Button(previewRect, "▶"))
+                {
+                    var registry = AudioEditorRegistryUtility.FindRegistry();
+                    if (registry != null && registry.TryGet(property.stringValue, out var sound))
+                        AudioEditorPreview.Play(sound);
+                }
+            }
+
+            if (GUI.Button(fieldRect, string.IsNullOrWhiteSpace(property.stringValue) ? "<обрати звук>" : property.stringValue, EditorStyles.popup))
+                PopupWindow.Show(fieldRect, new AudioKeyPopup(property.serializedObject.targetObject, property.propertyPath));
+        }
+    }
+
+    internal sealed class AudioKeyPopup : PopupWindowContent
+    {
+        private readonly UnityEngine.Object _target;
+        private readonly string _propertyPath;
+        private string _search = string.Empty;
+        private Vector2 _scroll;
+
+        public AudioKeyPopup(UnityEngine.Object target, string propertyPath)
+        {
+            _target = target;
+            _propertyPath = propertyPath;
+        }
+
+        public override Vector2 GetWindowSize()
+            => new Vector2(420f, 420f);
+
+        public override void OnGUI(Rect rect)
+        {
+            var registry = AudioEditorRegistryUtility.FindRegistry();
+            if (registry == null)
+            {
+                EditorGUILayout.HelpBox("AudioRegistry не знайдено.", MessageType.Info);
+                if (GUILayout.Button("Створити registry"))
+                    AudioEditorRegistryUtility.GetOrCreateDefaultRegistry();
+                return;
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                _search = EditorGUILayout.TextField(_search, GUI.skin.FindStyle("ToolbarSearchTextField") ?? EditorStyles.textField);
+                if (GUILayout.Button("Stop", GUILayout.Width(52f)))
+                    AudioEditorPreview.Stop();
+            }
+
+            _scroll = EditorGUILayout.BeginScrollView(_scroll);
+            var sounds = AudioEditorRegistryUtility.GetSounds(registry);
+            for (int i = 0; i < sounds.Count; i++)
+            {
+                var sound = sounds[i];
+                if (!Matches(sound))
+                    continue;
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("▶", GUILayout.Width(28f)))
+                        AudioEditorPreview.Play(sound);
+
+                    if (GUILayout.Button(sound.Key, EditorStyles.label))
+                    {
+                        Assign(sound.Key);
+                        editorWindow.Close();
+                    }
+
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.LabelField(sound.Bus.ToString(), EditorStyles.miniLabel, GUILayout.Width(64f));
+                }
+            }
+            EditorGUILayout.EndScrollView();
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Clear"))
+                {
+                    Assign(string.Empty);
+                    editorWindow.Close();
+                }
+
+                if (GUILayout.Button("Open Designer"))
+                {
+                    AudioDesignerWindow.Open();
+                    editorWindow.Close();
+                }
+            }
+        }
+
+        private bool Matches(AudioSoundDefinition sound)
+        {
+            if (sound == null)
+                return false;
+
+            if (string.IsNullOrWhiteSpace(_search))
+                return true;
+
+            string needle = _search.Trim();
+            return (sound.Key != null && sound.Key.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0)
+                   || (sound.Clip != null && sound.Clip.name.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0)
+                   || sound.Bus.ToString().IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private void Assign(string key)
+        {
+            if (_target == null)
+                return;
+
+            var serializedObject = new SerializedObject(_target);
+            var property = serializedObject.FindProperty(_propertyPath);
+            if (property == null || property.propertyType != SerializedPropertyType.String)
+                return;
+
+            property.stringValue = key;
+            serializedObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(_target);
         }
     }
 }
