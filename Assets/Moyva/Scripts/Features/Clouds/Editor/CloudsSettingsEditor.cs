@@ -18,6 +18,9 @@ namespace Kruty1918.Moyva.Clouds.Editor
         private SerializedProperty _initialCloudsProp;
         private SerializedProperty _initialCloudsStartInViewProp;
         private SerializedProperty _spawnIntervalRangeProp;
+        private SerializedProperty _spawnAreaModeProp;
+        private SerializedProperty _minimumSpawnDistanceProp;
+        private SerializedProperty _spawnPlacementAttemptsProp;
         private SerializedProperty _cloudSpritesProp;
         private SerializedProperty _speedRangeProp;
         private SerializedProperty _scaleRangeProp;
@@ -36,6 +39,11 @@ namespace Kruty1918.Moyva.Clouds.Editor
         private SerializedProperty _dissolveDurationProp;
         private SerializedProperty _cloudColorProp;
         private SerializedProperty _cloudAlphaProp;
+        private SerializedProperty _spriteMaterialProp;
+        private SerializedProperty _cameraProximityFadeEnabledProp;
+        private SerializedProperty _cameraFadeOrthographicRangeProp;
+        private SerializedProperty _closeCameraAlphaMultiplierProp;
+        private SerializedProperty _cameraFadeStepsProp;
         private SerializedProperty _sortingLayerNameProp;
         private SerializedProperty _sortingOrderProp;
         private SerializedProperty _shadowsEnabledProp;
@@ -70,6 +78,9 @@ namespace Kruty1918.Moyva.Clouds.Editor
             _initialCloudsProp = serializedObject.FindProperty("InitialClouds");
             _initialCloudsStartInViewProp = serializedObject.FindProperty("InitialCloudsStartInView");
             _spawnIntervalRangeProp = serializedObject.FindProperty("SpawnIntervalRange");
+            _spawnAreaModeProp = serializedObject.FindProperty("SpawnAreaMode");
+            _minimumSpawnDistanceProp = serializedObject.FindProperty("MinimumSpawnDistance");
+            _spawnPlacementAttemptsProp = serializedObject.FindProperty("SpawnPlacementAttempts");
             _cloudSpritesProp = serializedObject.FindProperty("CloudSprites");
             _speedRangeProp = serializedObject.FindProperty("SpeedRange");
             _scaleRangeProp = serializedObject.FindProperty("ScaleRange");
@@ -88,6 +99,11 @@ namespace Kruty1918.Moyva.Clouds.Editor
             _dissolveDurationProp = serializedObject.FindProperty("DissolveDuration");
             _cloudColorProp = serializedObject.FindProperty("CloudColor");
             _cloudAlphaProp = serializedObject.FindProperty("CloudAlpha");
+            _spriteMaterialProp = serializedObject.FindProperty("SpriteMaterial");
+            _cameraProximityFadeEnabledProp = serializedObject.FindProperty("CameraProximityFadeEnabled");
+            _cameraFadeOrthographicRangeProp = serializedObject.FindProperty("CameraFadeOrthographicRange");
+            _closeCameraAlphaMultiplierProp = serializedObject.FindProperty("CloseCameraAlphaMultiplier");
+            _cameraFadeStepsProp = serializedObject.FindProperty("CameraFadeSteps");
             _sortingLayerNameProp = serializedObject.FindProperty("SortingLayerName");
             _sortingOrderProp = serializedObject.FindProperty("SortingOrder");
             _shadowsEnabledProp = serializedObject.FindProperty("ShadowsEnabled");
@@ -144,7 +160,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
             if (_documentationFoldout)
             {
                 EditorGUILayout.HelpBox(
-                    "Система може одразу розкласти стартові хмаринки у видимій частині мапи, а наступні створює біля краю камери або маски. " +
+                    "Система може одразу розкласти стартові хмаринки по всій мапі, а наступні створює біля краю мапи або камери залежно від режиму спавну. " +
                     "Маска мапи не дає хмаринкам показуватися за межами світу, а піксельний край робить вхід і вихід ступінчастим. " +
                     "Висота хмаринки автоматично впливає на позицію, розмір і прозорість тіні.",
                     MessageType.None);
@@ -191,7 +207,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
                 EditorGUILayout.PropertyField(_enabledProp, new GUIContent("Увімкнено", "Вмикає або вимикає систему хмаринок"));
                 EditorGUILayout.PropertyField(_maxActiveCloudsProp, new GUIContent("Максимум хмаринок", "Скільки хмаринок може існувати одночасно"));
                 EditorGUILayout.PropertyField(_initialCloudsProp, new GUIContent("На старті", "Скільки хмаринок створити одразу після запуску сцени"));
-                EditorGUILayout.PropertyField(_initialCloudsStartInViewProp, new GUIContent("Одразу в кадрі", "Якщо увімкнено, стартові хмаринки одразу з'являються у видимій зоні камери"));
+                EditorGUILayout.PropertyField(_initialCloudsStartInViewProp, new GUIContent("Одразу в зоні спавну", "Якщо увімкнено, стартові хмаринки одразу з'являються всередині обраної зони спавну"));
                 EditorGUILayout.PropertyField(_spawnIntervalRangeProp, new GUIContent("Інтервал спавну", "Діапазон часу між появою нових хмаринок у секундах"));
                 EditorGUI.indentLevel--;
             }
@@ -243,7 +259,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
             };
 
             Rect dropRect = GUILayoutUtility.GetRect(0f, DropAreaHeight, GUILayout.ExpandWidth(true));
-            EditorGUI.LabelField(dropRect, "Перетягніть сюди Sprite або Texture з нарізаними Sprite", _dropAreaStyle);
+            EditorGUI.LabelField(dropRect, "Перетягніть сюди Sprite або texture з одним Sprite", _dropAreaStyle);
 
             Event current = Event.current;
             if (!dropRect.Contains(current.mousePosition))
@@ -266,7 +282,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button(new GUIContent("Додати виділені", "Додати всі виділені Sprite або Sprite всередині виділених Texture")))
+                if (GUILayout.Button(new GUIContent("Додати виділені", "Додати виділені Sprite або texture з одним Sprite")))
                     AddSpritesFromObjects(Selection.objects);
 
                 if (GUILayout.Button(new GUIContent("Вирівняти шанси", "Поставити шанс 1 для всіх непорожніх спрайтів")))
@@ -319,6 +335,9 @@ namespace Kruty1918.Moyva.Clouds.Editor
             if (_movementFoldout)
             {
                 EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_spawnAreaModeProp, new GUIContent("Зона спавну", "CameraViewport = стара поведінка біля камери, MapBounds = природний розподіл по всій мапі"));
+                EditorGUILayout.PropertyField(_minimumSpawnDistanceProp, new GUIContent("Мін. відстань", "Бажана мінімальна дистанція між активними хмаринками"));
+                EditorGUILayout.PropertyField(_spawnPlacementAttemptsProp, new GUIContent("Спроби позиції", "Скільки разів система шукає менш скупчену позицію"));
                 EditorGUILayout.PropertyField(_speedRangeProp, new GUIContent("Швидкість", "Діапазон горизонтальної швидкості"));
                 EditorGUILayout.PropertyField(_scaleRangeProp, new GUIContent("Масштаб", "Діапазон випадкового масштабу хмаринок"));
                 EditorGUILayout.PropertyField(_leftToRightChanceProp, new GUIContent("Шанс зліва направо", "Ймовірність руху хмаринки зліва направо"));
@@ -625,6 +644,14 @@ namespace Kruty1918.Moyva.Clouds.Editor
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_cloudColorProp, new GUIContent("Колір", "Білий колір зберігає оригінальні кольори спрайта"));
                 EditorGUILayout.PropertyField(_cloudAlphaProp, new GUIContent("Прозорість", "Загальна прозорість хмаринок"));
+                EditorGUILayout.PropertyField(_spriteMaterialProp, new GUIContent("Матеріал Sprite", "Необов'язковий sprite-compatible матеріал. Якщо порожньо, runtime використає Sprites/Default"));
+                EditorGUILayout.PropertyField(_cameraProximityFadeEnabledProp, new GUIContent("Fade при близькому zoom", "Зменшує прозорість хмаринок, коли камера сильно наближена"));
+                using (new EditorGUI.DisabledScope(!_cameraProximityFadeEnabledProp.boolValue))
+                {
+                    EditorGUILayout.PropertyField(_cameraFadeOrthographicRangeProp, new GUIContent("Zoom range fade", "X = близько і мінімальна прозорість, Y = далеко і повна прозорість"));
+                    EditorGUILayout.PropertyField(_closeCameraAlphaMultiplierProp, new GUIContent("Прозорість зблизька", "Множник alpha при максимально близькому zoom"));
+                    EditorGUILayout.PropertyField(_cameraFadeStepsProp, new GUIContent("Кроки fade", "Кількість ступенів прозорості для піксельного стилю"));
+                }
                 EditorGUILayout.PropertyField(_sortingLayerNameProp, new GUIContent("Шар сортування", "Назва sorting layer для SpriteRenderer"));
                 EditorGUILayout.PropertyField(_sortingOrderProp, new GUIContent("Порядок сортування", "Порядок рендерингу хмаринок"));
                 EditorGUI.indentLevel--;
@@ -750,6 +777,7 @@ namespace Kruty1918.Moyva.Clouds.Editor
         private static List<Sprite> ExtractSprites(Object[] objects)
         {
             var sprites = new List<Sprite>();
+            var seenSpriteIds = new HashSet<int>();
             if (objects == null)
                 return sprites;
 
@@ -757,7 +785,8 @@ namespace Kruty1918.Moyva.Clouds.Editor
             {
                 if (objects[i] is Sprite directSprite)
                 {
-                    sprites.Add(directSprite);
+                    if (seenSpriteIds.Add(directSprite.GetInstanceID()))
+                        sprites.Add(directSprite);
                     continue;
                 }
 
@@ -766,14 +795,33 @@ namespace Kruty1918.Moyva.Clouds.Editor
                     continue;
 
                 Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
+                Sprite singleSprite = null;
                 for (int assetIndex = 0; assetIndex < assets.Length; assetIndex++)
                 {
                     if (assets[assetIndex] is Sprite sprite)
-                        sprites.Add(sprite);
+                        singleSprite = sprite;
+                }
+
+                if (singleSprite != null && CountSpritesAtPath(assets) == 1)
+                {
+                    if (seenSpriteIds.Add(singleSprite.GetInstanceID()))
+                        sprites.Add(singleSprite);
                 }
             }
 
             return sprites;
+        }
+
+        private static int CountSpritesAtPath(Object[] assets)
+        {
+            int count = 0;
+            for (int i = 0; i < assets.Length; i++)
+            {
+                if (assets[i] is Sprite)
+                    count++;
+            }
+
+            return count;
         }
 
         private void SetEqualChances()

@@ -2,6 +2,12 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Clouds.API
 {
+    public enum CloudSpawnAreaMode
+    {
+        CameraViewport = 0,
+        MapBounds = 1
+    }
+
     [CreateAssetMenu(menuName = "Moyva/Clouds/Clouds Settings", fileName = "CloudsSettings")]
     public sealed class CloudsSettings : ScriptableObject
     {
@@ -20,6 +26,15 @@ namespace Kruty1918.Moyva.Clouds.API
 
         [Tooltip("Діапазон часу між спавнами у секундах.")]
         public Vector2 SpawnIntervalRange = new Vector2(1.5f, 4f);
+
+        [Tooltip("Зона, відносно якої створюються хмаринки. MapBounds розкладає їх по всій мапі, а не тільки біля поточного кадру камери.")]
+        public CloudSpawnAreaMode SpawnAreaMode = CloudSpawnAreaMode.MapBounds;
+
+        [Tooltip("Мінімальна бажана відстань між новою та вже активними хмаринками у world units.")]
+        [Min(0f)] public float MinimumSpawnDistance = 5f;
+
+        [Tooltip("Скільки випадкових позицій спробувати перед тим, як погодитись на останню знайдену.")]
+        [Min(1)] public int SpawnPlacementAttempts = 10;
 
         [Header("Варіанти спрайтів")]
         [Tooltip("Список спрайтів хмаринок із вагами вибору.")]
@@ -80,6 +95,21 @@ namespace Kruty1918.Moyva.Clouds.API
         [Tooltip("Загальна прозорість хмаринок.")]
         [Range(0f, 1f)] public float CloudAlpha = 0.85f;
 
+        [Tooltip("Матеріал для SpriteRenderer хмаринок. Якщо порожньо, система створить runtime-матеріал на Sprites/Default, щоб спрайт не підмінявся текстурою матеріалу.")]
+        public Material SpriteMaterial;
+
+        [Tooltip("Коли камера сильно наближена, хмаринки стають прозорішими, щоб не перекривати геймплей під ними.")]
+        public bool CameraProximityFadeEnabled = true;
+
+        [Tooltip("Orthographic size: X = дуже близько і мінімальна прозорість, Y = достатньо далеко і повна прозорість.")]
+        public Vector2 CameraFadeOrthographicRange = new Vector2(5f, 14f);
+
+        [Tooltip("Множник прозорості хмаринок при максимально близькому zoom.")]
+        [Range(0f, 1f)] public float CloseCameraAlphaMultiplier = 0.28f;
+
+        [Tooltip("Кількість ступенів прозорості для close-zoom fade. 1 = плавно без піксельних сходинок.")]
+        [Min(1)] public int CameraFadeSteps = 4;
+
         [Tooltip("Назва sorting layer для хмаринок. Якщо порожньо, використовується Default.")]
         public string SortingLayerName = "Default";
 
@@ -122,6 +152,8 @@ namespace Kruty1918.Moyva.Clouds.API
             MaxActiveClouds = Mathf.Max(0, MaxActiveClouds);
             InitialClouds = Mathf.Clamp(InitialClouds, 0, MaxActiveClouds);
             SpawnIntervalRange = ClampRange(SpawnIntervalRange, 0.01f);
+            MinimumSpawnDistance = Mathf.Max(0f, MinimumSpawnDistance);
+            SpawnPlacementAttempts = Mathf.Max(1, SpawnPlacementAttempts);
             SpeedRange = ClampRange(SpeedRange, 0.001f);
             ScaleRange = ClampRange(ScaleRange, 0.01f);
             SpawnHorizontalPadding = Mathf.Max(0f, SpawnHorizontalPadding);
@@ -134,6 +166,9 @@ namespace Kruty1918.Moyva.Clouds.API
             LifetimeRange = ClampRange(LifetimeRange, 0.01f);
             DissolveDuration = Mathf.Max(0f, DissolveDuration);
             CloudAlpha = Mathf.Clamp01(CloudAlpha);
+            CameraFadeOrthographicRange = ClampRange(CameraFadeOrthographicRange, 0.01f);
+            CloseCameraAlphaMultiplier = Mathf.Clamp01(CloseCameraAlphaMultiplier);
+            CameraFadeSteps = Mathf.Max(1, CameraFadeSteps);
             CloudHeight = Mathf.Max(0f, CloudHeight);
             ShadowAlphaMultiplier = Mathf.Clamp01(ShadowAlphaMultiplier);
             ShadowScaleMultiplier = Mathf.Max(0.01f, ShadowScaleMultiplier);
