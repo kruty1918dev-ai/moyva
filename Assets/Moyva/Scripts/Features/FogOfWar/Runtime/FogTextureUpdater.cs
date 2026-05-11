@@ -10,12 +10,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// </summary>
     internal sealed class FogTextureUpdater : IFogTextureUpdater
     {
+        private static readonly int GlobalFogTextureId = Shader.PropertyToID("_MoyvaFogTex");
+        private static readonly int GlobalFogMapParamsId = Shader.PropertyToID("_MoyvaFogMapParams");
+
         private Texture2D _fogTexture;
         private byte[]    _buffer;
         private Material  _material;
         private int       _mapWidth;
         private int       _mapHeight;
         private bool      _renderingDisabled;
+        private bool      _shaderGlobalsPublished;
+        private Vector4   _mapParams;
 
         public void Initialize(int width, int height, Material fogMaterial)
         {
@@ -26,16 +31,24 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             {
                 Debug.LogError("[FogOfWar] FogTextureUpdater: fogMaterial is null. Rendering disabled.");
                 _renderingDisabled = true;
+                _material = null;
             }
             else
             {
                 _material = fogMaterial;
+                _renderingDisabled = false;
             }
 
             if (_fogTexture != null)
                 Object.Destroy(_fogTexture);
 
             _buffer = new byte[_mapWidth * _mapHeight];
+            _mapParams = new Vector4(
+                _mapWidth,
+                _mapHeight,
+                1f / Mathf.Max(1, _mapWidth),
+                1f / Mathf.Max(1, _mapHeight));
+            _shaderGlobalsPublished = false;
 
             _fogTexture            = new Texture2D(_mapWidth, _mapHeight, TextureFormat.R8, false, true);
             _fogTexture.filterMode = FilterMode.Point;
@@ -43,9 +56,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _fogTexture.name       = "FogOfWar_Grid";
 
             ApplyBuffer();
-
-            if (!_renderingDisabled)
-                _material.SetTexture("_FogTex", _fogTexture);
         }
 
         public void UpdateDirtyTiles(IFogOfWarService fogService, IEnumerable<Vector2Int> dirtyTiles)
@@ -83,8 +93,23 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _fogTexture.SetPixelData(_buffer, 0);
             _fogTexture.Apply(false, false);
 
-            if (!_renderingDisabled && _material != null)
+            if (!_renderingDisabled && _material != null && !_shaderGlobalsPublished)
                 _material.SetTexture("_FogTex", _fogTexture);
+
+            PublishShaderGlobals(force: false);
+        }
+
+        private void PublishShaderGlobals(bool force)
+        {
+            if (_fogTexture == null)
+                return;
+
+            if (!force && _shaderGlobalsPublished)
+                return;
+
+            Shader.SetGlobalTexture(GlobalFogTextureId, _fogTexture);
+            Shader.SetGlobalVector(GlobalFogMapParamsId, _mapParams);
+            _shaderGlobalsPublished = true;
         }
 
         private static byte StateToPixel(FogStateType state)
