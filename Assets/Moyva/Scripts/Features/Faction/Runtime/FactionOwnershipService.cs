@@ -29,8 +29,8 @@ namespace Kruty1918.Moyva.Faction.Runtime
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<UnitCreatedSignal>(OnUnitCreated);
-            _signalBus.Unsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreated);
+            _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
         }
 
         private void OnUnitCreated(UnitCreatedSignal signal)
