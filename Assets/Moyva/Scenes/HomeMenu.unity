@@ -20094,7 +20094,6 @@ GameObject:
   - component: {fileID: 827738558}
   - component: {fileID: 827738557}
   - component: {fileID: 827738556}
-  - component: {fileID: 827738555}
   m_Layer: 5
   m_Name: NextBtn
   m_TagString: Untagged
@@ -20122,21 +20121,6 @@ RectTransform:
   m_AnchoredPosition: {x: 1270.1709, y: -32}
   m_SizeDelta: {x: 836.1139, y: 64}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &827738555
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 827738553}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 456e1a5501318f9abb65a56ece57dc75, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.HomeMenu::Kruty1918.Moyva.HomeMenu.UI.MenuNavButton
-  _menuToOpen: WorldSetupPanel
-  _menuToClose: 
-  _openLast: 0
 --- !u!114 &827738556
 MonoBehaviour:
   m_ObjectHideFlags: 0
