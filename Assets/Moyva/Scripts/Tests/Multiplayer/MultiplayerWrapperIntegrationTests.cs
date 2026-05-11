@@ -186,6 +186,37 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         }
 
         [Test]
+        public async Task FallbackProvider_JoinFailure_DoesNotSwitchToFallback()
+        {
+            var logger = new FakeLogger();
+            var primary = new FakeNetworkProvider { JoinResultFactory = _ => SessionResult.Fail("primary join failed") };
+            var fallback = new FakeNetworkProvider { JoinResultFactory = sid => SessionResult.Ok($"fb-{sid}") };
+            var provider = new FallbackNetworkProvider(primary, fallback, logger);
+
+            var result = await provider.JoinSessionAsync("room-join");
+
+            Assert.IsFalse(result.Success);
+            Assert.AreEqual(1, primary.JoinCalls);
+            Assert.AreEqual(0, fallback.JoinCalls);
+        }
+
+        [Test]
+        public async Task FallbackProvider_JoinException_DoesNotSwitchToFallback()
+        {
+            var logger = new FakeLogger();
+            var primary = new FakeNetworkProvider { JoinResultFactory = _ => throw new InvalidOperationException("join exception") };
+            var fallback = new FakeNetworkProvider { JoinResultFactory = sid => SessionResult.Ok($"fb-{sid}") };
+            var provider = new FallbackNetworkProvider(primary, fallback, logger);
+
+            var result = await provider.JoinSessionAsync("room-join");
+
+            Assert.IsFalse(result.Success);
+            Assert.AreEqual(1, primary.JoinCalls);
+            Assert.AreEqual(0, fallback.JoinCalls);
+            Assert.IsTrue(result.ErrorMessage.Contains("join exception"));
+        }
+
+        [Test]
         public void GameCommandSync_SendCommand_BuildsPacketAndBroadcasts()
         {
             var logger = new FakeLogger();
@@ -337,13 +368,49 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
                 store.Save(source);
                 var loaded = store.Load();
 
-                Assert.AreEqual(2, loaded.SchemaVersion);
+                Assert.AreEqual(MultiplayerConfig.CurrentSchemaVersion, loaded.SchemaVersion);
                 Assert.AreEqual(NetworkProviderType.Relay, loaded.ProviderType);
                 Assert.AreEqual(NetworkProviderType.Offline, loaded.FallbackProviderType);
                 Assert.AreEqual(6, loaded.DefaultSessionRules.MaxParticipants);
                 Assert.AreEqual("project-x", loaded.RelaySettings.ProjectId);
                 Assert.AreEqual(8, loaded.RelaySettings.MaxConnections);
                 Assert.AreEqual(7777, loaded.WebSocketSettings.Port);
+            }
+            finally
+            {
+                if (File.Exists(filePath))
+                    File.Delete(filePath);
+            }
+        }
+
+        [Test]
+        public void BinaryConfigStore_Load_MigratesV2ToLatest_WithToggleDefaultsEnabled()
+        {
+            var filePath = Path.Combine(Path.GetTempPath(), $"moyva_mp_cfg_migrate_{Guid.NewGuid():N}.dat");
+
+            try
+            {
+                var store = new BinaryConfigStore(filePath);
+                var v2 = new MultiplayerConfig(
+                    schemaVersion: 2,
+                    providerType: NetworkProviderType.WebSocket,
+                    defaultSessionRules: SessionRules.Default(),
+                    strictParticipantLock: false,
+                    enforceConfigConsistency: true,
+                    matchmakingEnabled: false,
+                    relaySettings: RelayProviderSettings.Default(),
+                    webSocketSettings: new WebSocketProviderSettings("ws://localhost", 9000, string.Empty, 3, 1f),
+                    fallbackProviderType: NetworkProviderType.Offline,
+                    reconnectLocalTimeToleranceSeconds: 120f,
+                    enableRelayProvider: true,
+                    enableHostMigration: true);
+
+                store.Save(v2);
+                var loaded = store.Load();
+
+                Assert.AreEqual(MultiplayerConfig.CurrentSchemaVersion, loaded.SchemaVersion);
+                Assert.IsTrue(loaded.EnableRelayProvider);
+                Assert.IsTrue(loaded.EnableHostMigration);
             }
             finally
             {
