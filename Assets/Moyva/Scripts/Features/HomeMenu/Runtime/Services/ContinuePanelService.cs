@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Networking;
@@ -23,6 +24,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private IInfoPanelService _infoPanelService;
 
         private bool _isStarting;
+        private CancellationTokenSource _startCts;
 
         public void Dispose()
         {
@@ -33,6 +35,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             {
                 _signalBus.TryUnsubscribe<SaveCompletedSignal>(OnSaveCompleted);
             }
+
+            _startCts?.Cancel();
+            _startCts?.Dispose();
+            _startCts = null;
         }
 
         public void Initialize()
@@ -112,11 +118,19 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             _isStarting = true;
+            _startCts?.Cancel();
+            _startCts?.Dispose();
+            _startCts = new CancellationTokenSource();
+            var ct = _startCts.Token;
             try
             {
                 GameLaunchContext.ConfigureMenuLoadGame(slotIndex);
                 ApplyOfflineSession(slot.SlotName);
-                await _gameStarter.StartGameAsync();
+                await _gameStarter.StartGameAsync(ct);
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.Log("[ContinuePanelService] Start game operation canceled.");
             }
             catch (Exception e)
             {
