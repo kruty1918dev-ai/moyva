@@ -3,7 +3,9 @@
   "rootNamespace": "Kruty1918.Moyva.Editor.Shared",
   "references": [
     "Kruty1918.Moyva.Economy",
-    "Kruty1918.Moyva.Construction"
+    "Kruty1918.Moyva.Construction",
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.FogOfWar"
   ],
   "includePlatforms": [
     "Editor"
