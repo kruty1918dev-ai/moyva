@@ -110,7 +110,7 @@ namespace Kruty1918.Moyva.Construction.API
         /// <summary>
         /// Безпосередньо розміщує будівлю від імені фракції, минаючи UI flow.
         /// Не потребує активного режиму будівництва.
-        /// Повертає true якщо розміщення успішне (тайл вільний).
+        /// Повертає true якщо розміщення успішне (тайл вільний і проходить правило радіусу ратуші/замку).
         /// </summary>
         bool TryDirectPlace(string buildingId, Vector2Int position, string placedByFactionId);
 
