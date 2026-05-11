@@ -37,6 +37,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly GraphBasedMapDataGenerator _graphBasedGenerator;
         private readonly ShoreMaskPrepass _shoreMaskPrepass;
         private readonly WaterLayerMaterialSettings _waterLayerMaterialSettings;
+        private readonly List<Sprite> _runtimeLayerSprites = new List<Sprite>();
+        private readonly List<Material> _runtimeLayerMaterials = new List<Material>();
 
         public MapVisualInstantiator(
             TileRegistrySO tileRegistry,
@@ -81,6 +83,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public void Dispose()
         {
             _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
+            ReleaseRuntimeLayerResources();
         }
 
         public void BuildWorld()
@@ -187,6 +190,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ClearRoot(_objectsRoot);
             ClearRoot(_buildingsRoot);
             ClearRoot(_layersRoot);
+            ReleaseRuntimeLayerResources();
 
             // Ініціалізуємо LayerData до основного проходу, щоб знати чи працюємо у layer-only режимі.
             if (worldData.LayerData == null || worldData.LayerData.Length == 0)
@@ -312,6 +316,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     1f);
 
                 spriteRenderer.sprite = sprite;
+                _runtimeLayerSprites.Add(sprite);
                 spriteRenderer.sortingLayerName = string.IsNullOrEmpty(layerData[i].SortingLayerName)
                     ? "Default"
                     : layerData[i].SortingLayerName;
@@ -326,7 +331,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     var mat = new Material(layerShader) { mainTexture = texture };
                     if (mat.HasProperty("_LandMaskTex"))
                         _waterLayerMaterialSettings?.ApplyTo(mat);
-                    spriteRenderer.material = mat;
+                    spriteRenderer.sharedMaterial = mat;
+                    _runtimeLayerMaterials.Add(mat);
 
                     // Збираємо матеріали що мають _LandMaskTex — RT буде передано після побудови всіх шарів.
                     if (mat.HasProperty("_LandMaskTex"))
@@ -395,6 +401,24 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 var child = root.GetChild(i).gameObject;
                 Object.Destroy(child);
             }
+        }
+
+        private void ReleaseRuntimeLayerResources()
+        {
+            for (int i = 0; i < _runtimeLayerSprites.Count; i++)
+            {
+                if (_runtimeLayerSprites[i] != null)
+                    Object.Destroy(_runtimeLayerSprites[i]);
+            }
+
+            for (int i = 0; i < _runtimeLayerMaterials.Count; i++)
+            {
+                if (_runtimeLayerMaterials[i] != null)
+                    Object.Destroy(_runtimeLayerMaterials[i]);
+            }
+
+            _runtimeLayerSprites.Clear();
+            _runtimeLayerMaterials.Clear();
         }
 
         private void CreateTileView(Vector2Int position, string tileId, Transform root, int sortingOrder)
