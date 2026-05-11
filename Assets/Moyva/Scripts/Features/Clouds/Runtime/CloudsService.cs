@@ -17,15 +17,20 @@ namespace Kruty1918.Moyva.Clouds.Runtime
         private readonly List<CloudInstance> _clouds = new List<CloudInstance>();
 
         private const int MaskSortingRangePadding = 64;
+        private const float MapMaskRefreshIntervalSeconds = 0.5f;
+        private const float ColorEpsilon = 0.001f;
 
         private UnityEngine.Camera _camera;
         private Transform _root;
         private SpriteMask _mapMask;
         private Texture2D _maskTexture;
         private Sprite _maskSprite;
+        private Material _runtimeSpriteMaterial;
         private bool _ownsRoot;
         private float _spawnTimer;
+        private float _nextMapMaskRefresh;
         private int _pendingInitialClouds;
+        private SpriteMaskInteraction _lastAppliedMaskInteraction = (SpriteMaskInteraction)(-1);
 
         public int ActiveCloudsCount => _clouds.Count;
 
@@ -43,7 +48,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
         {
             _camera = _sceneReferences.SceneCamera != null ? _sceneReferences.SceneCamera : UnityEngine.Camera.main;
             _root = ResolveRoot();
-            EnsureMapMask();
+            EnsureMapMask(force: true);
             ResetSpawnTimer();
 
             _pendingInitialClouds = Mathf.Min(_settings.InitialClouds, _settings.MaxActiveClouds);
@@ -61,7 +66,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             if (_camera == null)
                 _camera = UnityEngine.Camera.main;
 
-            EnsureMapMask();
+            EnsureMapMask(force: false);
             TrySpawnInitialClouds();
             TickClouds();
             TickSpawn();
@@ -71,6 +76,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
         {
             ClearClouds();
             DestroyMapMask();
+            DestroyRuntimeSpriteMaterial();
             if (_ownsRoot && _root != null)
                 Object.Destroy(_root.gameObject);
         }
@@ -153,7 +159,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             if (sprite == null)
                 return false;
 
-            CameraBounds bounds = ResolveSpawnBounds();
+            CameraBounds bounds = ResolveDistributionBounds();
             int direction = Random.value <= _settings.LeftToRightChance ? 1 : -1;
             float spawnX = direction > 0
                 ? bounds.MinX - _settings.SpawnHorizontalPadding
@@ -162,14 +168,8 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 ? bounds.MaxX + _settings.DespawnHorizontalPadding
                 : bounds.MinX - _settings.DespawnHorizontalPadding;
 
-            if (startInView)
-                spawnX = Random.Range(bounds.MinX, bounds.MaxX);
-
-            float y = Random.Range(
-                startInView ? bounds.MinY : bounds.MinY - _settings.SpawnVerticalPadding,
-                startInView ? bounds.MaxY : bounds.MaxY + _settings.SpawnVerticalPadding);
-
-            CloudInstance cloud = CreateCloud(sprite, new Vector3(spawnX, y, 0f), direction, endX);
+            Vector3 position = PickSpawnPosition(bounds, spawnX, direction, startInView);
+            CloudInstance cloud = CreateCloud(sprite, position, direction, endX);
             if (startInView)
                 cloud.Age = _settings.FadeDuration;
 
@@ -189,6 +189,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
 
             var cloudRenderer = rootObject.AddComponent<SpriteRenderer>();
             cloudRenderer.sprite = sprite;
+            ApplySpriteMaterial(cloudRenderer);
             ApplySorting(cloudRenderer, _settings.SortingOrder);
 
             SpriteRenderer shadowRenderer = null;
@@ -201,6 +202,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 shadowObject.transform.localScale = Vector3.one * ResolveShadowScaleMultiplier();
                 shadowRenderer = shadowObject.AddComponent<SpriteRenderer>();
                 shadowRenderer.sprite = sprite;
+                ApplySpriteMaterial(shadowRenderer);
                 shadowRenderer.maskInteraction = ResolveMaskInteraction();
                 ApplySorting(shadowRenderer, _settings.SortingOrder + _settings.ShadowSortingOrderOffset);
             }
@@ -215,6 +217,82 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 direction,
                 endX,
                 ResolveLifetime());
+        }
+
+        private Vector3 PickSpawnPosition(CameraBounds bounds, float edgeSpawnX, int direction, bool startInView)
+        {
+            Vector3 fallback = Vector3.zero;
+            int attempts = Mathf.Max(1, _settings.SpawnPlacementAttempts);
+            for (int attempt = 0; attempt < attempts; attempt++)
+            {
+                float x = startInView ? Random.Range(bounds.MinX, bounds.MaxX) : edgeSpawnX;
+                float y = Random.Range(
+                    startInView ? bounds.MinY : bounds.MinY - _settings.SpawnVerticalPadding,
+                    startInView ? bounds.MaxY : bounds.MaxY + _settings.SpawnVerticalPadding);
+
+                var position = new Vector3(x, y, 0f);
+                fallback = position;
+                if (IsFarEnoughFromExistingClouds(position))
+                    return position;
+            }
+
+            return fallback;
+        }
+
+        private bool IsFarEnoughFromExistingClouds(Vector3 position)
+        {
+            float minimumDistance = Mathf.Max(0f, _settings.MinimumSpawnDistance);
+            if (minimumDistance <= 0f)
+                return true;
+
+            float sqrDistance = minimumDistance * minimumDistance;
+            for (int i = 0; i < _clouds.Count; i++)
+            {
+                CloudInstance cloud = _clouds[i];
+                if (cloud.Root == null)
+                    continue;
+
+                if ((cloud.Root.transform.position - position).sqrMagnitude < sqrDistance)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private void ApplySpriteMaterial(SpriteRenderer renderer)
+        {
+            Material material = ResolveSpriteMaterial();
+            if (material != null)
+                renderer.sharedMaterial = material;
+        }
+
+        private Material ResolveSpriteMaterial()
+        {
+            if (_settings.SpriteMaterial != null)
+                return _settings.SpriteMaterial;
+
+            if (_runtimeSpriteMaterial != null)
+                return _runtimeSpriteMaterial;
+
+            Shader shader = Shader.Find("Sprites/Default");
+            if (shader == null)
+                return null;
+
+            _runtimeSpriteMaterial = new Material(shader)
+            {
+                name = "CloudsSpriteRuntimeMaterial",
+                hideFlags = HideFlags.HideAndDontSave,
+            };
+            return _runtimeSpriteMaterial;
+        }
+
+        private void DestroyRuntimeSpriteMaterial()
+        {
+            if (_runtimeSpriteMaterial == null)
+                return;
+
+            Object.Destroy(_runtimeSpriteMaterial);
+            _runtimeSpriteMaterial = null;
         }
 
         private void ApplySorting(SpriteRenderer renderer, int sortingOrder)
@@ -299,6 +377,20 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             return Mathf.Min(fadeIn, fadeOut, dissolve, maskEdge);
         }
 
+        private float ResolveCameraProximityFade()
+        {
+            if (!_settings.CameraProximityFadeEnabled || _camera == null)
+                return 1f;
+
+            float currentZoom = _camera.orthographic ? _camera.orthographicSize : _camera.fieldOfView;
+            float t = Mathf.InverseLerp(
+                _settings.CameraFadeOrthographicRange.x,
+                _settings.CameraFadeOrthographicRange.y,
+                currentZoom);
+            float fade = Mathf.Lerp(_settings.CloseCameraAlphaMultiplier, 1f, Mathf.SmoothStep(0f, 1f, t));
+            return _settings.CameraFadeSteps <= 1 ? fade : PixelateFade(fade, _settings.CameraFadeSteps);
+        }
+
         private float ResolveDissolveFade(CloudInstance cloud)
         {
             if (!_settings.LifetimeDissolveEnabled)
@@ -315,16 +407,38 @@ namespace Kruty1918.Moyva.Clouds.Runtime
 
         private void ApplyAlpha(CloudInstance cloud, float fade)
         {
+            float cameraFade = ResolveCameraProximityFade();
             Color cloudColor = _settings.CloudColor;
-            cloudColor.a *= _settings.CloudAlpha * fade;
-            cloud.CloudRenderer.color = cloudColor;
+            cloudColor.a *= _settings.CloudAlpha * fade * cameraFade;
+            if (!cloud.HasColorState || !Approximately(cloud.LastCloudColor, cloudColor))
+            {
+                cloud.CloudRenderer.color = cloudColor;
+                cloud.LastCloudColor = cloudColor;
+            }
 
             if (cloud.ShadowRenderer == null)
+            {
+                cloud.HasColorState = true;
                 return;
+            }
 
             Color shadowColor = _settings.ShadowColor;
-            shadowColor.a *= _settings.CloudAlpha * ResolveShadowAlphaMultiplier() * fade;
-            cloud.ShadowRenderer.color = shadowColor;
+            shadowColor.a *= _settings.CloudAlpha * ResolveShadowAlphaMultiplier() * fade * cameraFade;
+            if (!cloud.HasColorState || !Approximately(cloud.LastShadowColor, shadowColor))
+            {
+                cloud.ShadowRenderer.color = shadowColor;
+                cloud.LastShadowColor = shadowColor;
+            }
+
+            cloud.HasColorState = true;
+        }
+
+        private static bool Approximately(Color left, Color right)
+        {
+            return Mathf.Abs(left.r - right.r) <= ColorEpsilon
+                && Mathf.Abs(left.g - right.g) <= ColorEpsilon
+                && Mathf.Abs(left.b - right.b) <= ColorEpsilon
+                && Mathf.Abs(left.a - right.a) <= ColorEpsilon;
         }
 
         private bool HasPassedEnd(CloudInstance cloud)
@@ -356,7 +470,12 @@ namespace Kruty1918.Moyva.Clouds.Runtime
 
         private float PixelateFade(float value)
         {
-            int steps = Mathf.Max(1, _settings.MaskEdgeFadeSteps);
+            return PixelateFade(value, _settings.MaskEdgeFadeSteps);
+        }
+
+        private static float PixelateFade(float value, int requestedSteps)
+        {
+            int steps = Mathf.Max(1, requestedSteps);
             return Mathf.Floor(Mathf.Clamp01(value) * steps) / steps;
         }
 
@@ -380,7 +499,15 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             return Random.Range(_settings.LifetimeRange.x, _settings.LifetimeRange.y);
         }
 
-        private CameraBounds ResolveSpawnBounds()
+        private CameraBounds ResolveDistributionBounds()
+        {
+            if (_settings.SpawnAreaMode == CloudSpawnAreaMode.MapBounds)
+                return ToCameraBounds(ResolveMapBounds());
+
+            return ResolveCameraClippedBounds();
+        }
+
+        private CameraBounds ResolveCameraClippedBounds()
         {
             CameraBounds cameraBounds = ResolveCameraBounds();
             if (!_settings.MapMaskEnabled)
@@ -407,6 +534,11 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             return new CameraBounds(minX, maxX, minY, maxY);
         }
 
+        private static CameraBounds ToCameraBounds(MapBounds mapBounds)
+        {
+            return new CameraBounds(mapBounds.MinX, mapBounds.MaxX, mapBounds.MinY, mapBounds.MaxY);
+        }
+
         private MapBounds ResolveMapBounds()
         {
             if (_gridService != null)
@@ -431,14 +563,19 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             return _settings.MapMaskEnabled ? SpriteMaskInteraction.VisibleInsideMask : SpriteMaskInteraction.None;
         }
 
-        private void EnsureMapMask()
+        private void EnsureMapMask(bool force)
         {
             if (_root == null)
                 return;
 
+            if (!force && Time.unscaledTime < _nextMapMaskRefresh && (_settings.MapMaskEnabled || _mapMask == null))
+                return;
+
+            _nextMapMaskRefresh = Time.unscaledTime + MapMaskRefreshIntervalSeconds;
+
             if (!_settings.MapMaskEnabled)
             {
-                ApplyMaskInteractionToClouds(SpriteMaskInteraction.None);
+                ApplyMaskInteractionToClouds(SpriteMaskInteraction.None, force);
                 DestroyMapMask();
                 return;
             }
@@ -461,11 +598,14 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             _mapMask.backSortingLayerID = sortingLayerId;
             _mapMask.frontSortingOrder = _settings.SortingOrder + MaskSortingRangePadding;
             _mapMask.backSortingOrder = _settings.SortingOrder + _settings.ShadowSortingOrderOffset - MaskSortingRangePadding;
-            ApplyMaskInteractionToClouds(SpriteMaskInteraction.VisibleInsideMask);
+            ApplyMaskInteractionToClouds(SpriteMaskInteraction.VisibleInsideMask, force);
         }
 
-        private void ApplyMaskInteractionToClouds(SpriteMaskInteraction interaction)
+        private void ApplyMaskInteractionToClouds(SpriteMaskInteraction interaction, bool force)
         {
+            if (!force && _lastAppliedMaskInteraction == interaction)
+                return;
+
             for (int i = 0; i < _clouds.Count; i++)
             {
                 if (_clouds[i].CloudRenderer != null)
@@ -474,6 +614,8 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 if (_clouds[i].ShadowRenderer != null)
                     _clouds[i].ShadowRenderer.maskInteraction = interaction;
             }
+
+            _lastAppliedMaskInteraction = interaction;
         }
 
         private Sprite CreateMaskSprite()
@@ -503,6 +645,8 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 Object.Destroy(_mapMask.gameObject);
                 _mapMask = null;
             }
+
+            _lastAppliedMaskInteraction = (SpriteMaskInteraction)(-1);
 
             if (_maskSprite != null)
             {
@@ -574,6 +718,9 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             public readonly float EndX;
             public readonly float Lifetime;
             public float Age;
+            public bool HasColorState;
+            public Color LastCloudColor;
+            public Color LastShadowColor;
 
             public CloudInstance(
                 GameObject root,
