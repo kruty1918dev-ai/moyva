@@ -52,6 +52,126 @@ namespace Kruty1918.Moyva.Tests.Units
             var cfg = new UnitClassConfig();
             Assert.AreEqual(new Vector2(-5, 5), cfg.StaminaRandomRange);
         }
+
+        [Test]
+        public void CombatDefaults_MatchBaseTableAssumptions()
+        {
+            var cfg = new UnitClassConfig();
+            Assert.AreEqual(UnitCombatType.Infantry, cfg.CombatType);
+            Assert.AreEqual(100, cfg.HitPoints);
+            Assert.AreEqual(1, cfg.BaseLevel);
+        }
+    }
+
+    [TestFixture]
+    public sealed class UnitCombatCalculatorTests
+    {
+        [Test]
+        public void CalculateAttack_SubtractsMatchingDefensePerDamageType()
+        {
+            var swordman = CreateUnit("swordman", UnitCombatType.Infantry, 25, 5, 5, 10, 5, 5);
+            var spearman = CreateUnit("spearman", UnitCombatType.Infantry, 5, 25, 0, 5, 5, 5);
+
+            var result = UnitCombatCalculator.CalculateAttack(swordman, spearman);
+
+            Assert.AreEqual(20, result.CuttingEffectiveDamage);
+            Assert.AreEqual(0, result.PenetratingEffectiveDamage);
+            Assert.AreEqual(0, result.CrushingEffectiveDamage);
+            Assert.AreEqual(20, result.TotalDamage);
+            Assert.AreEqual(5, result.HitsToDefeat);
+        }
+
+        [Test]
+        public void CalculateAttack_PenetratingDamageCountersCavalryDefenseProfile()
+        {
+            var spearman = CreateUnit("spearman", UnitCombatType.Infantry, 5, 25, 0, 5, 5, 5);
+            var lightCavalry = CreateUnit("light-cavalry", UnitCombatType.Cavalry, 25, 5, 5, 10, 5, 0);
+
+            var result = UnitCombatCalculator.CalculateAttack(spearman, lightCavalry);
+
+            Assert.AreEqual(0, result.CuttingEffectiveDamage);
+            Assert.AreEqual(20, result.PenetratingEffectiveDamage);
+            Assert.AreEqual(0, result.CrushingEffectiveDamage);
+            Assert.AreEqual(20, result.TotalDamage);
+        }
+
+        [Test]
+        public void CalculateAttack_CrushingDamageKeepsSiegeAdvantageAgainstRamArmor()
+        {
+            var catapult = CreateUnit("catapult", UnitCombatType.SiegeMachine, 0, 0, 50, 5, 5, 0);
+            var ram = CreateUnit("ram", UnitCombatType.SiegeMachine, 0, 0, 40, 20, 20, 10);
+
+            var result = UnitCombatCalculator.CalculateAttack(catapult, ram);
+
+            Assert.AreEqual(40, result.CrushingEffectiveDamage);
+            Assert.AreEqual(40, result.TotalDamage);
+            Assert.AreEqual(3, result.HitsToDefeat);
+        }
+
+        [Test]
+        public void CalculateAttack_CatapultAgainstSwordmanDealsFortyFiveDamage()
+        {
+            var catapult = CreateUnit("catapult", UnitCombatType.SiegeMachine, 0, 0, 50, 5, 5, 0);
+            var swordman = CreateUnit("swordman", UnitCombatType.Infantry, 25, 5, 5, 10, 5, 5);
+
+            var result = UnitCombatCalculator.CalculateAttack(catapult, swordman);
+
+            Assert.AreEqual(45, result.CrushingEffectiveDamage);
+            Assert.AreEqual(45, result.TotalDamage);
+            Assert.AreEqual(3, result.HitsToDefeat);
+        }
+
+        [Test]
+        public void CalculateAttack_LevelDifferenceAppliesTenPercentPerLevel()
+        {
+            var attacker = CreateUnit("veteran", UnitCombatType.Infantry, 20, 0, 0, 0, 0, 0);
+            var defender = CreateUnit("recruit", UnitCombatType.Infantry, 0, 0, 0, 0, 0, 0);
+            attacker.BaseLevel = 3;
+            defender.BaseLevel = 1;
+
+            var result = UnitCombatCalculator.CalculateAttack(attacker, defender);
+
+            Assert.AreEqual(1.2f, result.LevelMultiplier, 0.001f);
+            Assert.AreEqual(24, result.TotalDamage);
+        }
+
+        [Test]
+        public void CalculateDuel_ReportsAttackerAdvantageWhenItWinsFaster()
+        {
+            var catapult = CreateUnit("catapult", UnitCombatType.SiegeMachine, 0, 0, 50, 5, 5, 0);
+            var ram = CreateUnit("ram", UnitCombatType.SiegeMachine, 0, 0, 40, 20, 20, 10);
+
+            var duel = UnitCombatCalculator.CalculateDuel(catapult, ram);
+
+            Assert.AreEqual(UnitCombatOutcome.AttackerAdvantage, duel.Outcome);
+            Assert.Greater(duel.AdvantageScore, 0);
+        }
+
+        private static UnitClassConfig CreateUnit(
+            string typeId,
+            UnitCombatType combatType,
+            int cuttingDamage,
+            int penetratingDamage,
+            int crushingDamage,
+            int cuttingDefense,
+            int penetratingDefense,
+            int crushingDefense)
+        {
+            return new UnitClassConfig
+            {
+                TypeId = typeId,
+                Role = UnitRole.Military,
+                CombatType = combatType,
+                HitPoints = 100,
+                BaseLevel = 1,
+                CuttingDamage = cuttingDamage,
+                PenetratingDamage = penetratingDamage,
+                CrushingDamage = crushingDamage,
+                CuttingDefense = cuttingDefense,
+                PenetratingDefense = penetratingDefense,
+                CrushingDefense = crushingDefense,
+            };
+        }
     }
 
     [TestFixture]
