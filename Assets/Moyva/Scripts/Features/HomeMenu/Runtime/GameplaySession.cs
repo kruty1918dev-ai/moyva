@@ -12,13 +12,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     /// </summary>
     internal sealed class GameplaySession : IGameplaySession
     {
+        private static readonly IReadOnlyList<GameplayPlayer> EmptyPlayers = Array.AsReadOnly(Array.Empty<GameplayPlayer>());
+
         private readonly object _lock = new object();
-        private List<GameplayPlayer> _players = new List<GameplayPlayer>();
+        private readonly List<GameplayPlayer> _players = new List<GameplayPlayer>();
+        private IReadOnlyList<GameplayPlayer> _playersSnapshot = EmptyPlayers;
 
         public bool IsHost { get; private set; }
         public NetworkProviderType Mode { get; private set; } = NetworkProviderType.Offline;
         public WorldSettingsDto WorldSettings { get; private set; }
-        public IReadOnlyList<GameplayPlayer> Players { get { lock (_lock) return _players.ToArray(); } }
+        public IReadOnlyList<GameplayPlayer> Players { get { lock (_lock) return _playersSnapshot; } }
         public GameplayPlayer LocalPlayer { get; private set; }
         public GameplayPlayer Host { get; private set; }
 
@@ -47,6 +50,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     if (p.IsHost)
                         Host = p;
                 }
+
+                _playersSnapshot = _players.Count > 0
+                    ? Array.AsReadOnly(_players.ToArray())
+                    : EmptyPlayers;
                 IsHost = LocalPlayer.IsHost;
             }
         }
@@ -58,6 +65,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _players.Clear();
                 LocalPlayer = default;
                 Host = default;
+                _playersSnapshot = EmptyPlayers;
                 IsHost = false;
                 Mode = NetworkProviderType.Offline;
                 WorldSettings = default;
