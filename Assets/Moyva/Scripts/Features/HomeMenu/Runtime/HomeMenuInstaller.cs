@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime.Services;
+using Kruty1918.Moyva.HomeMenu.Runtime.Startup;
 using Kruty1918.Moyva.HomeMenu.UI;
 using Kruty1918.Moyva.Multiplayer.Runtime;
 using Kruty1918.Moyva.WorldCreation.API;
@@ -149,6 +150,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .AsCached();
 
             // Panel services (logic layer)
+            Container.BindInterfacesAndSelfTo<JoinRoomUiGateway>()
+                .AsSingle();
+
             Container.BindInterfacesAndSelfTo<ContinuePanelService>()
                 .AsSingle();
 
@@ -198,6 +202,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<HomeMenuGameStarter>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<GameplayStartupPipeline>()
                 .AsSingle();
 
             Container.BindInterfacesAndSelfTo<GameStartListenerService>()
