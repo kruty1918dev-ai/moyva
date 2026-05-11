@@ -39,6 +39,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private readonly WebSocketProviderSettings _settings;
         private readonly IMultiplayerLogger _logger;
+        private readonly IMultiplayerQosMonitorService _qosMonitor;
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
 
         private ClientWebSocket _socket;
@@ -51,10 +52,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         public event Action<string> PeerDisconnected;
         public IObservable<NetworkMessage> Messages => new MessageObservable(_observers);
 
-        public WebSocketNetworkProvider(WebSocketProviderSettings settings, IMultiplayerLogger logger)
+        public WebSocketNetworkProvider(WebSocketProviderSettings settings, IMultiplayerLogger logger, IMultiplayerQosMonitorService qosMonitor = null)
         {
             _settings = settings ?? WebSocketProviderSettings.Default();
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _qosMonitor = qosMonitor;
         }
 
         // ── Session lifecycle ──────────────────────────────────────────────────────
@@ -108,6 +110,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
             catch (Exception e)
             {
+                _qosMonitor?.RecordPacketDropped("websocket-send-failed");
                 _logger.Error($"[WebSocket] SendMessage failed: {e.Message}");
             }
         }
@@ -240,6 +243,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 }
                 catch (WebSocketException wse)
                 {
+                    _qosMonitor?.RecordPacketDropped("websocket-receive-error");
                     _logger.Error($"[WebSocket] Receive error: {wse.Message}");
                     if (!ct.IsCancellationRequested && _reconnectCount < _settings.ReconnectAttempts)
                     {
@@ -284,6 +288,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private async Task<bool> TryReconnectAsync(CancellationToken ct)
         {
             _reconnectCount++;
+            _qosMonitor?.RecordReconnect("websocket", _reconnectCount);
             _logger.Warn($"[WebSocket] Reconnect attempt {_reconnectCount}/{_settings.ReconnectAttempts}...");
 
             await Task.Delay(TimeSpan.FromSeconds(_settings.ReconnectDelaySeconds), ct);
