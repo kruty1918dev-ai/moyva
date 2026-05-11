@@ -35,13 +35,23 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private SerializedProperty _fogIconSpritePixelSizeProp;
         private SerializedProperty _fogIconGridSizeProp;
         private SerializedProperty _fogIconScaleProp;
+        private SerializedProperty _enableRendererCullingProp;
+        private SerializedProperty _requireOpaqueUnexploredForCullingProp;
+        private SerializedProperty _rendererCullingLayerMaskProp;
+        private SerializedProperty _enableShaderFogCullingProp;
+        private SerializedProperty _rendererCullingMaxRenderersPerFrameProp;
+        private SerializedProperty _rendererCullingDiscoveryIntervalProp;
+        private SerializedProperty _rendererCullingBoundsPaddingCellsProp;
+        private SerializedProperty _shaderFogCullThresholdProp;
 
         // ─── Foldout state ────────────────────────────────────────────────────
         private bool _visionFoldout = true;
         private bool _heightFoldout = false;
         private bool _colorsFoldout = true;
         private bool _tileFoldout = true;
+        private bool _cullingFoldout = true;
         private bool _iconsFoldout = true;
+        private float _previewFogValue = 0f;
 
         private void OnEnable()
         {
@@ -70,6 +80,14 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             _fogIconSpritePixelSizeProp = serializedObject.FindProperty("FogIconSpritePixelSize");
             _fogIconGridSizeProp        = serializedObject.FindProperty("FogIconGridSize");
             _fogIconScaleProp           = serializedObject.FindProperty("FogIconScale");
+            _enableRendererCullingProp  = serializedObject.FindProperty("EnableRendererCulling");
+            _requireOpaqueUnexploredForCullingProp = serializedObject.FindProperty("RequireOpaqueUnexploredForCulling");
+            _rendererCullingLayerMaskProp = serializedObject.FindProperty("RendererCullingLayerMask");
+            _enableShaderFogCullingProp = serializedObject.FindProperty("EnableShaderFogCulling");
+            _rendererCullingMaxRenderersPerFrameProp = serializedObject.FindProperty("RendererCullingMaxRenderersPerFrame");
+            _rendererCullingDiscoveryIntervalProp = serializedObject.FindProperty("RendererCullingDiscoveryInterval");
+            _rendererCullingBoundsPaddingCellsProp = serializedObject.FindProperty("RendererCullingBoundsPaddingCells");
+            _shaderFogCullThresholdProp = serializedObject.FindProperty("ShaderFogCullThreshold");
         }
 
         public override void OnInspectorGUI()
@@ -81,6 +99,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             DrawHeightVisionSection();
             DrawColorSection();
             DrawTileSection();
+            DrawCullingSection();
             DrawIconsSection();
 
             serializedObject.ApplyModifiedProperties();
@@ -345,6 +364,88 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();
+        }
+
+        private void DrawCullingSection()
+        {
+            _cullingFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_cullingFoldout,
+                new GUIContent("Маска рендеру за туманом", "Коли туман повністю закриває клітинку, об'єкти під ним не рендеряться"));
+
+            if (_cullingFoldout)
+            {
+                EditorGUI.indentLevel++;
+
+                EditorGUILayout.PropertyField(_enableRendererCullingProp,
+                    new GUIContent("Увімкнути culling рендерерів", "Повністю вимикає рендерери під повністю закритим туманом"));
+                EditorGUILayout.PropertyField(_requireOpaqueUnexploredForCullingProp,
+                    new GUIContent("Тільки при непрозорому чорному", "Culling активний лише коли UnexploredAlpha >= 0.99"));
+                EditorGUILayout.PropertyField(_rendererCullingLayerMaskProp,
+                    new GUIContent("Шари для culling", "Які world layers підпадають під відсікання туманом"));
+                EditorGUILayout.PropertyField(_rendererCullingMaxRenderersPerFrameProp,
+                    new GUIContent("Макс. рендерерів за кадр", "Скільки об'єктів перевіряти за кадр"));
+                EditorGUILayout.PropertyField(_rendererCullingDiscoveryIntervalProp,
+                    new GUIContent("Інтервал пошуку, сек", "Як часто шукати нові world-renderers"));
+                EditorGUILayout.PropertyField(_rendererCullingBoundsPaddingCellsProp,
+                    new GUIContent("Padding bounds, клітинки", "Невеликий запас для стабільності на межах"));
+
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.PropertyField(_enableShaderFogCullingProp,
+                    new GUIContent("Shader fog culling", "Глобальні shader-флаги для піксельного відсікання"));
+                EditorGUILayout.PropertyField(_shaderFogCullThresholdProp,
+                    new GUIContent("Shader threshold", "Значення fog texture, нижче якого піксель вважається повністю закритим"));
+
+                DrawCullingPreview();
+
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            EditorGUILayout.Space(2);
+        }
+
+        private void DrawCullingPreview()
+        {
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.LabelField("Preview", EditorStyles.miniBoldLabel);
+
+            _previewFogValue = EditorGUILayout.Slider(
+                new GUIContent("Fog Value", "0 = повністю чорний/закритий, 1 = повністю видимий"),
+                _previewFogValue,
+                0f,
+                1f);
+
+            bool isVisible = _previewFogValue >= 0.9f;
+            bool isExplored = _previewFogValue >= 0.3f && _previewFogValue < 0.9f;
+            bool isUnexplored = _previewFogValue < 0.3f;
+
+            string stateLabel = isVisible ? "Visible" : (isExplored ? "Explored" : "Unexplored (black)");
+            bool rendererCullingEnabled = _enableRendererCullingProp != null && _enableRendererCullingProp.boolValue;
+            bool requireOpaque = _requireOpaqueUnexploredForCullingProp != null && _requireOpaqueUnexploredForCullingProp.boolValue;
+            bool opaqueCondition = !requireOpaque || _unexploredAlphaProp.floatValue >= 0.99f;
+            bool rendererWillBeCulled = rendererCullingEnabled && opaqueCondition && isUnexplored;
+
+            bool shaderEnabled = _enableShaderFogCullingProp != null && _enableShaderFogCullingProp.boolValue;
+            float threshold = _shaderFogCullThresholdProp != null ? _shaderFogCullThresholdProp.floatValue : 0.01f;
+            bool shaderWillClip = shaderEnabled && _previewFogValue <= threshold;
+
+            EditorGUILayout.HelpBox($"Fog State: {stateLabel}", MessageType.None);
+            EditorGUILayout.HelpBox(
+                rendererWillBeCulled
+                    ? "Renderer Culling Preview: об'єкт буде вимкнений (не рендериться)."
+                    : "Renderer Culling Preview: об'єкт залишиться увімкненим.",
+                rendererWillBeCulled ? MessageType.Info : MessageType.Warning);
+            EditorGUILayout.HelpBox(
+                shaderWillClip
+                    ? "Shader Preview: піксель вважатиметься прихованим за порогом."
+                    : "Shader Preview: піксель не перетинає поріг clipping.",
+                shaderWillClip ? MessageType.Info : MessageType.None);
+
+            if (requireOpaque && _unexploredAlphaProp.floatValue < 0.99f)
+            {
+                EditorGUILayout.HelpBox(
+                    "Renderer culling зараз заблокований, бо увімкнено 'Тільки при непрозорому чорному', але UnexploredAlpha < 0.99.",
+                    MessageType.Warning);
+            }
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────

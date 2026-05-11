@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Units.Runtime;
 using UnityEditor;
 using UnityEngine;
@@ -115,12 +116,14 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
 
         private FogOfWarSettings _settings;
         private UnitRegistrySO _unitRegistry;
+        private DesignerPresetLibrarySO _designerPresetLibrary;
 
         private SerializedObject _settingsSo;
         private SerializedObject _unitRegistrySo;
 
         private Vector2 _scroll;
         private int _selectedPresetIndex;
+        private int _selectedDesignerFogPresetIndex;
 
         private int _previewBaseRange = 5;
         private int _previewDistance = 4;
@@ -142,10 +145,12 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private void OnEnable()
         {
             if (_settings == null)
-                _settings = FindFirstAsset<FogOfWarSettings>();
+                _settings = MoyvaProjectEditorContext.GetOrFindFirst<FogOfWarSettings>();
 
             if (_unitRegistry == null)
-                _unitRegistry = FindFirstAsset<UnitRegistrySO>();
+                _unitRegistry = MoyvaProjectEditorContext.GetOrFindFirst<UnitRegistrySO>();
+
+            _designerPresetLibrary ??= MoyvaProjectEditorContext.GetOrFindFirst<DesignerPresetLibrarySO>();
 
             RebuildSerializedObjects();
         }
@@ -183,16 +188,20 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             _settings = (FogOfWarSettings)EditorGUILayout.ObjectField(SettingsAssetLabel, _settings, typeof(FogOfWarSettings), false);
             _unitRegistry = (UnitRegistrySO)EditorGUILayout.ObjectField(UnitRegistryAssetLabel, _unitRegistry, typeof(UnitRegistrySO), false);
             if (EditorGUI.EndChangeCheck())
+            {
+                MoyvaProjectEditorContext.Set(_settings);
+                MoyvaProjectEditorContext.Set(_unitRegistry);
                 RebuildSerializedObjects();
+            }
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Auto Find"))
             {
                 if (_settings == null)
-                    _settings = FindFirstAsset<FogOfWarSettings>();
+                    _settings = MoyvaProjectEditorContext.GetOrFindFirst<FogOfWarSettings>();
 
                 if (_unitRegistry == null)
-                    _unitRegistry = FindFirstAsset<UnitRegistrySO>();
+                    _unitRegistry = MoyvaProjectEditorContext.GetOrFindFirst<UnitRegistrySO>();
 
                 RebuildSerializedObjects();
             }
@@ -235,6 +244,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             _settingsSo.Update();
 
             DrawPresetToolbar();
+            DrawDesignerPresetToolbar();
 
             DrawIntProperty("DefaultVisionRange", DefaultVisionRangeLabel, 1);
             DrawIntProperty("MinVisionRange", MinVisionRangeLabel, 1);
@@ -279,6 +289,76 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 ResetSettingsToDefaults();
 
             EditorGUILayout.EndHorizontal();
+            EditorGUILayout.Space(4f);
+        }
+
+        private void DrawDesignerPresetToolbar()
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Designer Presets", EditorStyles.miniBoldLabel);
+
+            EditorGUI.BeginChangeCheck();
+            _designerPresetLibrary = (DesignerPresetLibrarySO)EditorGUILayout.ObjectField(
+                new GUIContent("Preset Library"),
+                _designerPresetLibrary,
+                typeof(DesignerPresetLibrarySO),
+                false);
+            if (EditorGUI.EndChangeCheck())
+                MoyvaProjectEditorContext.Set(_designerPresetLibrary);
+
+            if (_designerPresetLibrary == null)
+            {
+                EditorGUILayout.HelpBox("Призначте DesignerPresetLibrarySO, щоб застосовувати fog preset-и.", MessageType.None);
+                EditorGUILayout.EndVertical();
+                return;
+            }
+
+            var presets = _designerPresetLibrary.FogPresets;
+            if (presets == null || presets.Count == 0)
+            {
+                EditorGUILayout.HelpBox("У бібліотеці немає Fog preset-ів.", MessageType.None);
+                EditorGUILayout.EndVertical();
+                return;
+            }
+
+            var names = new string[presets.Count];
+            for (int i = 0; i < presets.Count; i++)
+            {
+                string presetName = presets[i] != null ? presets[i].Name : string.Empty;
+                names[i] = string.IsNullOrWhiteSpace(presetName) ? $"Fog Preset {i + 1}" : presetName;
+            }
+
+            _selectedDesignerFogPresetIndex = Mathf.Clamp(_selectedDesignerFogPresetIndex, 0, presets.Count - 1);
+            _selectedDesignerFogPresetIndex = EditorGUILayout.Popup("Library Preset", _selectedDesignerFogPresetIndex, names);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(_settings == null))
+                {
+                    if (GUILayout.Button("Apply Library Preset"))
+                    {
+                        var preset = presets[_selectedDesignerFogPresetIndex];
+                        if (preset == null || preset.Template == null)
+                        {
+                            EditorUtility.DisplayDialog("Fog Preset", "Обраний preset порожній.", "OK");
+                        }
+                        else
+                        {
+                            Undo.RecordObject(_settings, $"Apply Fog Preset: {preset.Name}");
+                            if (DesignerPresetApplier.ApplyFogPreset(preset, _settings))
+                            {
+                                EditorUtility.SetDirty(_settings);
+                                RebuildSerializedObjects();
+                            }
+                        }
+                    }
+                }
+
+                if (GUILayout.Button("Ping Library"))
+                    EditorGUIUtility.PingObject(_designerPresetLibrary);
+            }
+
+            EditorGUILayout.EndVertical();
             EditorGUILayout.Space(4f);
         }
 

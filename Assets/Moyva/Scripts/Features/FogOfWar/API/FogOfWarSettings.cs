@@ -57,6 +57,24 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Tooltip("Visible areas are fully transparent (alpha=0)")]
         public bool FullyTransparentWhenVisible = true;
 
+        [Header("Visibility Culling")]
+        [Tooltip("Disables world renderers that are fully covered by unexplored fog.")]
+        public bool EnableRendererCulling = true;
+        [Tooltip("If enabled, renderer culling works only when UnexploredAlpha is close to opaque (>= 0.99).")]
+        public bool RequireOpaqueUnexploredForCulling = true;
+        [Tooltip("Layers affected by fog renderer culling.")]
+        public LayerMask RendererCullingLayerMask = ~0;
+        [Tooltip("Lets custom 2D shaders clip pixels hidden by fully unexplored fog.")]
+        public bool EnableShaderFogCulling = true;
+        [Tooltip("Maximum tracked renderers evaluated per frame. Lower values spread work across more frames.")]
+        [Min(1)] public int RendererCullingMaxRenderersPerFrame = 384;
+        [Tooltip("How often the culling service searches for newly spawned world renderers.")]
+        [Min(0.05f)] public float RendererCullingDiscoveryInterval = 0.75f;
+        [Tooltip("Small bounds padding in map cells to avoid edge flicker when sprites move between cells.")]
+        [Min(0f)] public float RendererCullingBoundsPaddingCells = 0f;
+        [Tooltip("Fog texture value below this threshold is treated as fully hidden by shaders.")]
+        [Range(0f, 0.25f)] public float ShaderFogCullThreshold = 0.01f;
+
         private void OnValidate()
         {
             FogTileSpritePixelSize = ClampSpritePixelSize(FogTileSpritePixelSize);
@@ -64,6 +82,10 @@ namespace Kruty1918.Moyva.FogOfWar.API
             FogTileSeamOverlapPixels = Mathf.Max(0f, FogTileSeamOverlapPixels);
             FogMapEdgePaddingPixels = Mathf.Max(0f, FogMapEdgePaddingPixels);
             FogIconSpritePixelSize = ClampSpritePixelSize(FogIconSpritePixelSize);
+            RendererCullingMaxRenderersPerFrame = Mathf.Max(1, RendererCullingMaxRenderersPerFrame);
+            RendererCullingDiscoveryInterval = Mathf.Max(0.05f, RendererCullingDiscoveryInterval);
+            RendererCullingBoundsPaddingCells = Mathf.Max(0f, RendererCullingBoundsPaddingCells);
+            ShaderFogCullThreshold = Mathf.Clamp(ShaderFogCullThreshold, 0f, 0.25f);
         }
 
         private static Vector2Int ClampSpritePixelSize(Vector2Int size)
