@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime.Services;
@@ -9,6 +10,7 @@ using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Runtime;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.Shared.Common;
 using Kruty1918.Moyva.WorldCreation.API;
 using Zenject;
 
@@ -41,6 +43,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private string _localPlayerId = string.Empty;
         private LobbyRoom _currentLobby;
         private bool _isStartingGame;
+        private CancellationTokenSource _startGameCts;
+        private readonly MultiplayerActionRateLimiter _rateLimiter = new MultiplayerActionRateLimiter();
         #endregion
 
         #region Ініціалізація / життєвий цикл
@@ -81,6 +85,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _lobbyService.LobbyUpdated -= OnLobbyUpdated;
                 _lobbyService.KickedFromLobby -= OnKickedFromLobby;
             }
+
+            _startGameCts?.Cancel();
+            _startGameCts?.Dispose();
+            _startGameCts = null;
         }
 
         /// <summary>
@@ -208,6 +216,23 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         /// </summary>
         private async void OnStartGameClicked()
         {
+            if (!_rateLimiter.Allow("start-game", TimeSpan.FromSeconds(1)))
+            {
+                _infoPanelService?.Show(new InfoMessage("Зачекайте", "Команда Start викликається надто часто."));
+                return;
+            }
+
+            var readiness = MultiplayerPreflightChecks.ValidateSessionReadiness(
+                hasLobbyService: _lobbyService != null,
+                hasGameStarter: _gameStarter != null,
+                hasCommandSync: _gameCommandSync != null);
+            if (readiness.IsFailure)
+            {
+                var readinessError = MultiplayerUserFacingError.FromDomainError(readiness.Error, MoyvaId.NewTraceId());
+                _infoPanelService?.Show(new InfoMessage("Session readiness", readinessError.BuildDisplayMessage()));
+                return;
+            }
+
             if (_isStartingGame)
                 return;
 
@@ -221,6 +246,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             }
 
             _isStartingGame = true;
+            var traceId = MoyvaId.NewTraceId();
+            _startGameCts?.Cancel();
+            _startGameCts?.Dispose();
+            _startGameCts = new CancellationTokenSource();
+            var ct = _startGameCts.Token;
             if (_lobbyPanelViewController.StartGameButton != null)
                 _lobbyPanelViewController.StartGameButton.interactable = false;
 
@@ -229,6 +259,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             try
             {
+                UnityEngine.Debug.Log($"[LobbyPanelService] [{traceId}] StartGame requested by host");
                 if (_lobbyService != null)
                     await _lobbyService.LockAsync(true, worldSettingsBytes);
             }
@@ -241,6 +272,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             try
             {
                 _gameCommandSync?.SendCommand(GameCommandType.StartGame, worldSettingsBytes);
+                UnityEngine.Debug.Log($"[LobbyPanelService] [{traceId}] Start command propagated to peers");
             }
             catch (Exception e)
             {
@@ -263,7 +295,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     worldSettings.Height);
                 _gameStateService?.StartGame();
                 if (_gameStarter != null)
-                    await _gameStarter.StartGameAsync();
+                    await _gameStarter.StartGameAsync(ct);
+                UnityEngine.Debug.Log($"[LobbyPanelService] [{traceId}] Local start completed");
+            }
+            catch (OperationCanceledException)
+            {
+                UnityEngine.Debug.Log("[LobbyPanelService] Start game operation canceled.");
             }
             catch (Exception e)
             {
