@@ -1,6 +1,5 @@
 using System;
 using Kruty1918.Moyva.HomeMenu.API;
-using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
@@ -8,10 +7,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
     public interface IJoinRoomViewController
     {
         string JoinCode { get; set; }
-        Button JoinToRoomButton { get; set; }
         void AddRoomToList(RoomInfo room);
         void ClearRoomList();
         void RefreshRoomList();
+        void SetJoinInteractable(bool interactable);
+        event Action OnJoinRequested;
         event Action OnJoinCodeChanged;
         event Action OnListRoomsRefresh;
         event Action<RoomInfo> OnRoomSelected;
