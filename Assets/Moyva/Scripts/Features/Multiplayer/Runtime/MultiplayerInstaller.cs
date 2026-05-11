@@ -39,7 +39,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .FromMethod(ctx =>
                 {
                     var store = ctx.Container.Resolve<IConfigStore>();
-                    return store.Exists() ? store.Load() : MultiplayerConfig.Default();
+                    var logger = ctx.Container.Resolve<IMultiplayerLogger>();
+                    return MultiplayerConfigLifecycle.LoadValidateFreeze(store, logger);
                 })
                 .AsSingle();
 
@@ -105,7 +106,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         container.Bind<MultiplayerConfig>().FromMethod(ctx =>
                         {
                             var store = ctx.Container.Resolve<IConfigStore>();
-                            return store.Exists() ? store.Load() : MultiplayerConfig.Default();
+                            var logger = ctx.Container.Resolve<IMultiplayerLogger>();
+                            return MultiplayerConfigLifecycle.LoadValidateFreeze(store, logger);
                         }).AsSingle();
 
                     if (!container.HasBinding(typeof(SwitchableNetworkProvider)))
@@ -201,7 +203,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             // config taking connectivity into account and update the container + switchable
             // lobby provider accordingly.
             var store = container.Resolve<IConfigStore>();
-            var cfg = store.Exists() ? store.Load() : MultiplayerConfig.Default();
+            IMultiplayerLogger logger = container.HasBinding(typeof(IMultiplayerLogger))
+                ? container.Resolve<IMultiplayerLogger>()
+                : null;
+            var cfg = MultiplayerConfigLifecycle.LoadValidateFreeze(store, logger);
+            cfg = ApplyRiskFeatureToggles(cfg);
             MultiplayerConfig finalCfg;
             if (!canUseUgs)
             {
@@ -215,7 +221,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     cfg.MatchmakingEnabled,
                     cfg.RelaySettings,
                     cfg.WebSocketSettings,
-                    cfg.FallbackProviderType);
+                        cfg.FallbackProviderType,
+                        cfg.ReconnectLocalTimeToleranceSeconds,
+                        cfg.GracefulReconnectWindowSeconds,
+                        cfg.EnableRelayProvider,
+                        cfg.EnableHostMigration);
             }
             else
             {
@@ -246,11 +256,41 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                         cfg.MatchmakingEnabled,
                         cfg.RelaySettings,
                         cfg.WebSocketSettings,
-                        cfg.FallbackProviderType);
+                        cfg.FallbackProviderType,
+                        cfg.ReconnectLocalTimeToleranceSeconds,
+                        cfg.GracefulReconnectWindowSeconds,
+                        cfg.EnableRelayProvider,
+                        cfg.EnableHostMigration);
                 }
                 else
                 {
-                    finalCfg = cfg;
+                    var relayReflectionValid = RelayNetworkProvider.TryValidateReflectionBindings(out var reflectionError);
+                    if (cfg.ProviderType == NetworkProviderType.Relay && !relayReflectionValid)
+                    {
+                        var fallbackType = cfg.FallbackProviderType == NetworkProviderType.Relay
+                            ? NetworkProviderType.Offline
+                            : cfg.FallbackProviderType;
+
+                        Debug.LogWarning($"{Prefix} Relay reflection metadata is invalid: {reflectionError}. Falling back to {fallbackType}.");
+                        finalCfg = new MultiplayerConfig(
+                            cfg.SchemaVersion,
+                            fallbackType,
+                            cfg.DefaultSessionRules,
+                            cfg.StrictParticipantLock,
+                            cfg.EnforceConfigConsistency,
+                            cfg.MatchmakingEnabled,
+                            cfg.RelaySettings,
+                            cfg.WebSocketSettings,
+                            cfg.FallbackProviderType,
+                                cfg.ReconnectLocalTimeToleranceSeconds,
+                                cfg.GracefulReconnectWindowSeconds,
+                                cfg.EnableRelayProvider,
+                                cfg.EnableHostMigration);
+                    }
+                    else
+                    {
+                        finalCfg = cfg;
+                    }
                 }
             }
             try
@@ -320,6 +360,10 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .To<HostMigrationService>()
                 .AsSingle();
 
+            container.Bind<IHostMigrationCheckpointService>()
+                .To<HostMigrationCheckpointService>()
+                .AsSingle();
+
             container.Bind<IWorldCloneService>()
                 .To<WorldCloneService>()
                 .AsSingle();
@@ -327,6 +371,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             // Учасники та конфігурація
             container.Bind<IParticipantFallbackService>()
                 .To<ParticipantFallbackService>()
+                .AsSingle();
+
+            container.Bind<IRoomAccessPolicyService>()
+                .To<RoomAccessPolicyService>()
+                .AsSingle();
+
+            container.Bind<IMultiplayerQosMonitorService>()
+                .To<MultiplayerQosMonitorService>()
                 .AsSingle();
 
             container.Bind<IConfigSyncService>()
@@ -363,8 +415,45 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             container.Bind<NetworkModeController>()
                 .AsSingle();
         }
+        private static MultiplayerConfig ApplyRiskFeatureToggles(MultiplayerConfig config)
+        {
+            if (config.EnableRelayProvider)
+                return config;
+
+            var fallbackType = config.FallbackProviderType == NetworkProviderType.Relay
+                ? NetworkProviderType.Offline
+                : config.FallbackProviderType;
+
+            var providerType = config.ProviderType == NetworkProviderType.Relay
+                ? fallbackType
+                : config.ProviderType;
+
+            if (providerType == config.ProviderType && fallbackType == config.FallbackProviderType)
+                return config;
+
+            Debug.LogWarning($"{Prefix} Relay provider is disabled by feature toggle. Provider '{config.ProviderType}' is mapped to '{providerType}', fallback '{config.FallbackProviderType}' -> '{fallbackType}'.");
+
+            return new MultiplayerConfig(
+                config.SchemaVersion,
+                providerType,
+                config.DefaultSessionRules,
+                config.StrictParticipantLock,
+                config.EnforceConfigConsistency,
+                config.MatchmakingEnabled,
+                config.RelaySettings,
+                config.WebSocketSettings,
+                fallbackType,
+                config.ReconnectLocalTimeToleranceSeconds,
+                config.GracefulReconnectWindowSeconds,
+                config.EnableRelayProvider,
+                config.EnableHostMigration);
+        }
+
         private static NetworkProviderType ResolveNetworkBootstrapProviderType(MultiplayerConfig config)
         {
+            if (!config.EnableRelayProvider && config.ProviderType == NetworkProviderType.Relay)
+                return config.FallbackProviderType == NetworkProviderType.Relay ? NetworkProviderType.Offline : config.FallbackProviderType;
+
             if (config.ProviderType != NetworkProviderType.Relay || RelayNetworkProvider.IsRuntimeAvailable)
                 return config.ProviderType;
 
