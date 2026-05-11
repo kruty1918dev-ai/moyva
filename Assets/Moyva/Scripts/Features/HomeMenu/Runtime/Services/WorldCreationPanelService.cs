@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.HomeMenu.UI;
@@ -28,6 +29,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [Inject(Id = "LobbyPanelName")] private string _lobbyPanelName;
         private WolrdCreationMode _mode;
         private bool _isStarting;
+        private CancellationTokenSource _startCts;
 
         public void Initialize()
         {
@@ -43,6 +45,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             _viewController.OnButtonNextClicked -= OnCreteWorldClicked;
             _viewController.OnSettingsChanged -= Refresh;
+
+            _startCts?.Cancel();
+            _startCts?.Dispose();
+            _startCts = null;
         }
 
         private async void OnCreteWorldClicked()
@@ -64,10 +70,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                     return;
 
                 _isStarting = true;
+                _startCts?.Cancel();
+                _startCts?.Dispose();
+                _startCts = new CancellationTokenSource();
+                var ct = _startCts.Token;
                 try
                 {
                     ApplySoloSession();
-                    await _gameStarter.StartGameAsync();
+                    await _gameStarter.StartGameAsync(ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    Debug.Log("[WorldCreationPanelService] Solo start canceled.");
                 }
                 catch (Exception e)
                 {
