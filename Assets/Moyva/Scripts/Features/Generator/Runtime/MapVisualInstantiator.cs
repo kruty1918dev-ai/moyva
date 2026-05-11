@@ -138,6 +138,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BiomeMap = virtualBiomeMap,
                 ObjectMap = virtualObjectMap,
                 HeightMap = finalHeightMap,
+                TerrainLevelMap = _graphBasedGenerator?.LastTerrainLevelMap,
                 BuildingMap = virtualBuildingMap,
             };
 
@@ -246,6 +247,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 TileMap = MapArrayUtils.CloneStringMap(_currentWorldData.BiomeMap),
                 ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
+                TerrainLevelMap = MapArrayUtils.CloneIntMap(_currentWorldData.TerrainLevelMap),
             });
         }
 

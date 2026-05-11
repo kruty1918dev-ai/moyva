@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Kruty1918.Moyva.Editor.Shared;
 using UnityEditor;
 using UnityEngine;
@@ -23,13 +24,27 @@ namespace Kruty1918.Moyva.Units.Editor
         private const string GeneratorPreviewSeedPrefsKey = "Moyva.UnitDesigner.GeneratorPreviewSeed";
         private const string GeneratorPreviewUnitXPrefsKey = "Moyva.UnitDesigner.GeneratorPreviewUnitX";
         private const string GeneratorPreviewUnitYPrefsKey = "Moyva.UnitDesigner.GeneratorPreviewUnitY";
+        private const string GeneratorPreviewFogUnionPrefsKey = "Moyva.UnitDesigner.GeneratorPreviewFogUnion";
         private const string GeneratorPreviewAutoPrefsKey = "Moyva.UnitDesigner.GeneratorPreviewAuto";
         private const string GeneratorPreviewFogPrefsKey = "Moyva.UnitDesigner.GeneratorPreviewFog";
         private const string GeneratorPreviewZoomPrefsKey = "Moyva.UnitDesigner.GeneratorPreviewZoom";
+        private const string GeneratorVisionGlobalBoostPrefsKey = "Moyva.UnitDesigner.GeneratorVisionGlobalBoost";
+        private const string GeneratorVisionTerrainLosPrefsKey = "Moyva.UnitDesigner.GeneratorVisionTerrainLos";
+        private const string GeneratorVisionOcclusionTolerancePrefsKey = "Moyva.UnitDesigner.GeneratorVisionOcclusionTolerance";
+        private const string GeneratorVisionDownhillPenaltyPrefsKey = "Moyva.UnitDesigner.GeneratorVisionDownhillPenalty";
+        private const string GeneratorVisionUphillPeekStrengthPrefsKey = "Moyva.UnitDesigner.GeneratorVisionUphillPeekStrength";
+        private const string GeneratorVisionUphillEdgeDropPrefsKey = "Moyva.UnitDesigner.GeneratorVisionUphillEdgeDrop";
+        private const string GeneratorVisionEdgePeekDistancePrefsKey = "Moyva.UnitDesigner.GeneratorVisionEdgePeekDistance";
+        private const string GeneratorVisionEdgeBlindZonePrefsKey = "Moyva.UnitDesigner.GeneratorVisionEdgeBlindZone";
+        private const string GeneratorVisionEdgeMaxBlindZonePrefsKey = "Moyva.UnitDesigner.GeneratorVisionEdgeMaxBlindZone";
+        private const string GeneratorVisionEdgeDistanceScalePrefsKey = "Moyva.UnitDesigner.GeneratorVisionEdgeDistanceScale";
+        private const string GeneratorFogHiddenOpacityPrefsKey = "Moyva.UnitDesigner.GeneratorFogHiddenOpacity";
+        private const string GeneratorFogVisibleTintPrefsKey = "Moyva.UnitDesigner.GeneratorFogVisibleTint";
 
         private const string DataNoiseSettingsTypeName = "Kruty1918.Moyva.Generator.API.DataNoiseSettings";
         private const string HeightMapSettingsTypeName = "Kruty1918.Moyva.Generator.API.HeightMapSettings";
         private const string GraphAssetTypeName = "Kruty1918.Moyva.GraphSystem.API.GraphAsset";
+        private const string HillGeneratorNodeTypeName = "Kruty1918.Moyva.Generator.Runtime.Nodes.HillGeneratorNode";
 
         private static readonly Color[] GeneratorLevelPalette =
         {
@@ -46,32 +61,71 @@ namespace Kruty1918.Moyva.Units.Editor
         private ScriptableObject _generatorAsset;
         private ScriptableObject _noiseSettingsAsset;
         private ScriptableObject _heightSettingsAsset;
+        private ScriptableObject _hillGeneratorNodeAsset;
         private SerializedObject _noiseSettingsObject;
         private SerializedObject _heightSettingsObject;
         private Texture2D _generatorPreviewTexture;
+        private Texture2D _generatorVisibilityOverlayTexture;
         private float[,] _generatorPreviewNoiseMap;
         private string[,] _generatorPreviewTileMap;
         private int[,] _generatorPreviewLevelMap;
+        private bool[,] _generatorPreviewVisibleMap;
+        private byte[,] _generatorPreviewViewerCountMap;
         private Vector2 _generatorLevelsScroll;
         private Vector2 _generatorPreviewScroll;
         private Vector2 _generatorLegendScroll;
         private Vector2 _generatorMapCanvasScroll;
         private Vector2Int _generatorPreviewUnitPosition = new Vector2Int(32, 32);
+        private readonly List<PreviewScenarioUnit> _generatorScenarioUnits = new List<PreviewScenarioUnit>();
+        private int _generatorScenarioActiveIndex;
+        private bool _generatorPreviewFogUnion;
         private Rect _lastGeneratorPreviewRect;
         private Vector2 _generatorPreviewMouse;
+        private bool _generatorPreviewIsPanning;
+        private Vector2 _generatorPreviewPanLastMouse;
+        private bool _generatorPreviewIsDraggingUnit;
+        private int _generatorPreviewDraggingUnitIndex = -1;
+        private bool _generatorPreviewFocusActiveUnitOnNextDraw = true;
+        private bool _generatorMapSettingsFoldout = true;
+        private bool _generatorScenarioFoldout = true;
+        private bool _generatorVisionFogFoldout = true;
+        private bool _generatorSummaryFoldout = true;
+        private bool _generatorLegendFoldout;
         private int _generatorPreviewWidth = 64;
         private int _generatorPreviewHeight = 64;
         private int _generatorPreviewSeed = 1918;
         private bool _generatorPreviewAutoRefresh = true;
         private bool _generatorPreviewShowFog = true;
         private float _generatorPreviewZoom = 1f;
+        private float _generatorFogHiddenOpacity = 0.68f;
+        private float _generatorFogVisibleTint = 0.24f;
+        private float _generatorVisionGlobalBoost = 0.35f;
+        private bool _generatorVisionUseTerrainLos = true;
+        private float _generatorVisionOcclusionTolerance = 0.035f;
+        private float _generatorVisionDownhillPenalty = 0.45f;
+        private float _generatorVisionUphillPeekStrength = 0.6f;
+        private float _generatorVisionUphillEdgeDrop = 0.05f;
+        private int _generatorVisionEdgePeekDistanceTiles = 1;
+        private int _generatorVisionEdgeBlindZoneTiles = 2;
+        private int _generatorVisionEdgeMaxBlindZoneTiles = 4;
+        private float _generatorVisionEdgeDistanceScale = 0.35f;
         private bool _generatorPreviewDirty = true;
         private string _generatorPreviewStatus = "Preview ще не побудовано.";
         private int _generatorPreviewVisibleCells;
         private int _generatorPreviewTotalCells;
+        private bool _generatorPreviewUsesHillNodeLevels;
+        private string _generatorPreviewLevelSource = "HeightLayers";
         private float _generatorPreviewMinHeight;
         private float _generatorPreviewMaxHeight;
         private float _generatorPreviewAverageHeight;
+        private int _generatorPreviewRuntimeSignature;
+        private int _generatorVisionPreviewRuntimeSignature;
+        private double _generatorPreviewDirtySince;
+        private bool _generatorVisionPreviewDirty = true;
+        private double _generatorVisionPreviewDirtySince;
+
+        private const double GeneratorPreviewRebuildDebounceSeconds = 0.06d;
+        private const double GeneratorVisionPreviewRebuildDebounceSeconds = 0.025d;
 
         private void InitializeGeneratorMapDesigner()
         {
@@ -83,7 +137,20 @@ namespace Kruty1918.Moyva.Units.Editor
                 Mathf.Clamp(EditorPrefs.GetInt(GeneratorPreviewUnitYPrefsKey, _generatorPreviewHeight / 2), 0, _generatorPreviewHeight - 1));
             _generatorPreviewAutoRefresh = EditorPrefs.GetBool(GeneratorPreviewAutoPrefsKey, true);
             _generatorPreviewShowFog = EditorPrefs.GetBool(GeneratorPreviewFogPrefsKey, true);
-            _generatorPreviewZoom = Mathf.Clamp(EditorPrefs.GetFloat(GeneratorPreviewZoomPrefsKey, 1f), 0.25f, 8f);
+            _generatorPreviewFogUnion = EditorPrefs.GetBool(GeneratorPreviewFogUnionPrefsKey, false);
+            _generatorPreviewZoom = Mathf.Clamp(EditorPrefs.GetFloat(GeneratorPreviewZoomPrefsKey, 1.5f), 0.25f, 8f);
+            _generatorFogHiddenOpacity = Mathf.Clamp01(EditorPrefs.GetFloat(GeneratorFogHiddenOpacityPrefsKey, 0.68f));
+            _generatorFogVisibleTint = Mathf.Clamp01(EditorPrefs.GetFloat(GeneratorFogVisibleTintPrefsKey, 0.24f));
+            _generatorVisionGlobalBoost = Mathf.Clamp(EditorPrefs.GetFloat(GeneratorVisionGlobalBoostPrefsKey, 0.35f), 0f, 4f);
+            _generatorVisionUseTerrainLos = EditorPrefs.GetBool(GeneratorVisionTerrainLosPrefsKey, true);
+            _generatorVisionOcclusionTolerance = Mathf.Clamp(EditorPrefs.GetFloat(GeneratorVisionOcclusionTolerancePrefsKey, 0.035f), 0f, 0.2f);
+            _generatorVisionDownhillPenalty = Mathf.Clamp01(EditorPrefs.GetFloat(GeneratorVisionDownhillPenaltyPrefsKey, 0.45f));
+            _generatorVisionUphillPeekStrength = Mathf.Clamp01(EditorPrefs.GetFloat(GeneratorVisionUphillPeekStrengthPrefsKey, 0.6f));
+            _generatorVisionUphillEdgeDrop = Mathf.Clamp(EditorPrefs.GetFloat(GeneratorVisionUphillEdgeDropPrefsKey, 0.05f), 0f, 0.2f);
+            _generatorVisionEdgePeekDistanceTiles = Mathf.Clamp(EditorPrefs.GetInt(GeneratorVisionEdgePeekDistancePrefsKey, 1), 0, 6);
+            _generatorVisionEdgeBlindZoneTiles = Mathf.Clamp(EditorPrefs.GetInt(GeneratorVisionEdgeBlindZonePrefsKey, 2), 0, 8);
+            _generatorVisionEdgeMaxBlindZoneTiles = Mathf.Clamp(EditorPrefs.GetInt(GeneratorVisionEdgeMaxBlindZonePrefsKey, 4), _generatorVisionEdgeBlindZoneTiles, 10);
+            _generatorVisionEdgeDistanceScale = Mathf.Clamp(EditorPrefs.GetFloat(GeneratorVisionEdgeDistanceScalePrefsKey, 0.35f), 0f, 1.5f);
 
             _generatorAsset = LoadScriptableObjectPreference(GeneratorAssetGuidPrefsKey);
             _noiseSettingsAsset = LoadScriptableObjectPreference(NoiseSettingsGuidPrefsKey) ?? FindFirstAssetOfType(DataNoiseSettingsTypeName);
@@ -96,6 +163,8 @@ namespace Kruty1918.Moyva.Units.Editor
                 ExtractGeneratorReferencesFromAsset(applyMapSize: true);
 
             RefreshGeneratorMapSerializedObjects();
+            EnsureGeneratorScenarioInitialized();
+            _generatorPreviewFocusActiveUnitOnNextDraw = true;
             MarkGeneratorPreviewDirty();
         }
 
@@ -111,10 +180,26 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorPrefs.SetInt(GeneratorPreviewUnitYPrefsKey, _generatorPreviewUnitPosition.y);
             EditorPrefs.SetBool(GeneratorPreviewAutoPrefsKey, _generatorPreviewAutoRefresh);
             EditorPrefs.SetBool(GeneratorPreviewFogPrefsKey, _generatorPreviewShowFog);
+            EditorPrefs.SetBool(GeneratorPreviewFogUnionPrefsKey, _generatorPreviewFogUnion);
             EditorPrefs.SetFloat(GeneratorPreviewZoomPrefsKey, _generatorPreviewZoom);
+            EditorPrefs.SetFloat(GeneratorFogHiddenOpacityPrefsKey, _generatorFogHiddenOpacity);
+            EditorPrefs.SetFloat(GeneratorFogVisibleTintPrefsKey, _generatorFogVisibleTint);
+            EditorPrefs.SetFloat(GeneratorVisionGlobalBoostPrefsKey, _generatorVisionGlobalBoost);
+            EditorPrefs.SetBool(GeneratorVisionTerrainLosPrefsKey, _generatorVisionUseTerrainLos);
+            EditorPrefs.SetFloat(GeneratorVisionOcclusionTolerancePrefsKey, _generatorVisionOcclusionTolerance);
+            EditorPrefs.SetFloat(GeneratorVisionDownhillPenaltyPrefsKey, _generatorVisionDownhillPenalty);
+            EditorPrefs.SetFloat(GeneratorVisionUphillPeekStrengthPrefsKey, _generatorVisionUphillPeekStrength);
+            EditorPrefs.SetFloat(GeneratorVisionUphillEdgeDropPrefsKey, _generatorVisionUphillEdgeDrop);
+            EditorPrefs.SetInt(GeneratorVisionEdgePeekDistancePrefsKey, _generatorVisionEdgePeekDistanceTiles);
+            EditorPrefs.SetInt(GeneratorVisionEdgeBlindZonePrefsKey, _generatorVisionEdgeBlindZoneTiles);
+            EditorPrefs.SetInt(GeneratorVisionEdgeMaxBlindZonePrefsKey, _generatorVisionEdgeMaxBlindZoneTiles);
+            EditorPrefs.SetFloat(GeneratorVisionEdgeDistanceScalePrefsKey, _generatorVisionEdgeDistanceScale);
 
             if (_generatorPreviewTexture != null)
                 DestroyImmediate(_generatorPreviewTexture);
+
+            if (_generatorVisibilityOverlayTexture != null)
+                DestroyImmediate(_generatorVisibilityOverlayTexture);
         }
 
         private void RefreshGeneratorMapSerializedObjects()
@@ -131,19 +216,43 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private bool IsGeneratorMapWorkspaceActive() => _workspaceMode == WorkspaceMode.GeneratorMap;
 
-        private void DrawWorkspaceModeToolbar()
+        private void DrawWorkspaceModeToolbar(bool compactMode)
         {
-            GUILayout.Space(8f);
             string[] modes = { "Юніти", "Мапа + Fog", "Бій" };
-            int next = GUILayout.Toolbar((int)_workspaceMode, modes, EditorStyles.toolbarButton, GUILayout.Width(260f));
-            if (next != (int)_workspaceMode)
+
+            GUILayout.Space(compactMode ? 4f : 8f);
+
+            if (compactMode || _workspaceTabsInlineMenu)
             {
-                _workspaceMode = (WorkspaceMode)next;
-                if (_workspaceMode == WorkspaceMode.GeneratorMap)
-                    MarkGeneratorPreviewDirty();
-                if (_workspaceMode == WorkspaceMode.CombatSystem)
-                    _combatFacade.OnWorkspaceSelected();
+                if (!compactMode && GUILayout.Button(IconContent("d_FilterByLabel", "Tabs", EditorTooltipStandard.Build("Розгорнути вкладки назад у toolbar.", "Зараз робочі простори показані як компактне inline меню.")), EditorStyles.toolbarButton, GUILayout.Width(54f)))
+                    _workspaceTabsInlineMenu = false;
+
+                int next = EditorGUILayout.Popup(
+                    Mathf.Clamp((int)_workspaceMode, 0, modes.Length - 1),
+                    modes,
+                    EditorStyles.toolbarPopup,
+                    GUILayout.Width(compactMode ? 118f : 160f));
+                SetWorkspaceMode((WorkspaceMode)next);
+                return;
             }
+
+            int toolbarNext = GUILayout.Toolbar((int)_workspaceMode, modes, EditorStyles.toolbarButton, GUILayout.Width(260f));
+            SetWorkspaceMode((WorkspaceMode)toolbarNext);
+
+            if (GUILayout.Button(IconContent("d_FilterByLabel", "Menu", EditorTooltipStandard.Build("Згорнути вкладки у компактне inline меню.", "Активна вкладка лишається видимою, а перемикання йде через dropdown.")), EditorStyles.toolbarButton, GUILayout.Width(58f)))
+                _workspaceTabsInlineMenu = true;
+        }
+
+        private void SetWorkspaceMode(WorkspaceMode nextMode)
+        {
+            if (_workspaceMode == nextMode)
+                return;
+
+            _workspaceMode = nextMode;
+            if (_workspaceMode == WorkspaceMode.GeneratorMap)
+                MarkGeneratorPreviewDirty();
+            if (_workspaceMode == WorkspaceMode.CombatSystem)
+                _combatFacade.OnWorkspaceSelected();
         }
 
         private void DrawGeneratorMapWorkspace()
@@ -153,10 +262,10 @@ namespace Kruty1918.Moyva.Units.Editor
 
             EditorGUILayout.BeginHorizontal();
             DrawUnitListPanel(GUILayout.Width(_generatorListPanelWidth), GUILayout.ExpandHeight(true));
-            DrawColumnSplitter(ref _generatorListPanelWidth, MinUnitListPanelWidth, ResolveMaxPanelWidth(MinDetailsPanelWidth + MinPreviewPanelWidth), GeneratorListWidthPrefsKey);
+            DrawColumnSplitter(ref _generatorListPanelWidth, ref _generatorSettingsPanelWidth, MinUnitListPanelWidth, MinDetailsPanelWidth, GeneratorListWidthPrefsKey, GeneratorSettingsWidthPrefsKey);
             DrawGeneratorLevelsPanel(GUILayout.Width(_generatorSettingsPanelWidth), GUILayout.MinWidth(MinDetailsPanelWidth), GUILayout.ExpandHeight(true));
-            DrawColumnSplitter(ref _generatorSettingsPanelWidth, MinDetailsPanelWidth, ResolveMaxPanelWidth(MinUnitListPanelWidth + MinPreviewPanelWidth), GeneratorSettingsWidthPrefsKey);
-            DrawGeneratorMapPreviewPanel(GUILayout.MinWidth(MinPreviewPanelWidth), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            DrawColumnSplitter(ref _generatorSettingsPanelWidth, ref _generatorPreviewPanelWidth, MinDetailsPanelWidth, MinPreviewPanelWidth, GeneratorSettingsWidthPrefsKey, GeneratorPreviewPanelWidthPrefsKey);
+            DrawGeneratorMapPreviewPanel(GUILayout.Width(_generatorPreviewPanelWidth), GUILayout.MinWidth(MinPreviewPanelWidth), GUILayout.ExpandHeight(true));
             EditorGUILayout.EndHorizontal();
         }
 
@@ -358,83 +467,434 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorGUILayout.BeginVertical(PanelStyle(), options);
             DrawPanelHeader("Map + Fog Preview", IconContent("d_scenevis_visible_hover", string.Empty, "Preview згенерованої мапи з Fog of War та радіусом огляду вибраного юніта."));
 
+            DrawGeneratorPreviewNavigationStrip();
+            DrawGeneratorPreviewTexture();
+
             _generatorPreviewScroll = EditorGUILayout.BeginScrollView(_generatorPreviewScroll);
             DrawGeneratorPreviewControls();
-            DrawGeneratorPreviewTexture();
-            DrawGeneratorPreviewLegend();
+            if (BeginFoldoutSection(ref _generatorLegendFoldout, "Легенда висот", "d_FilterByLabel", "Поточні рівні висоти та їхні кольори у preview."))
+            {
+                DrawGeneratorPreviewLegend();
+                EndFoldoutSection();
+            }
             EditorGUILayout.EndScrollView();
 
             EditorGUILayout.EndVertical();
         }
 
+        private void DrawGeneratorPreviewNavigationStrip()
+        {
+            using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
+            {
+                GUILayout.Label("Навігація", EditorStyles.miniBoldLabel, GUILayout.Width(72f));
+
+                if (GUILayout.Button("-", EditorStyles.toolbarButton, GUILayout.Width(24f)))
+                    _generatorPreviewZoom = Mathf.Clamp(_generatorPreviewZoom * 0.9f, 0.25f, 8f);
+
+                _generatorPreviewZoom = GUILayout.HorizontalSlider(_generatorPreviewZoom, 0.25f, 8f, GUILayout.Width(Mathf.Clamp(_generatorPreviewPanelWidth * 0.28f, 90f, 170f)));
+
+                if (GUILayout.Button("+", EditorStyles.toolbarButton, GUILayout.Width(24f)))
+                    _generatorPreviewZoom = Mathf.Clamp(_generatorPreviewZoom * 1.1f, 0.25f, 8f);
+
+                GUILayout.Label($"{_generatorPreviewZoom:0.00}x", EditorStyles.miniLabel, GUILayout.Width(42f));
+
+                if (GUILayout.Button("Fit", EditorStyles.toolbarButton, GUILayout.Width(42f)))
+                {
+                    _generatorPreviewZoom = CalculateGeneratorFitZoom(_lastGeneratorPreviewRect);
+                    _generatorPreviewFocusActiveUnitOnNextDraw = true;
+                }
+
+                if (GUILayout.Button("1x", EditorStyles.toolbarButton, GUILayout.Width(34f)))
+                    _generatorPreviewZoom = 1f;
+
+                if (GUILayout.Button("Фокус", EditorStyles.toolbarButton, GUILayout.Width(58f)))
+                {
+                    _generatorPreviewFocusActiveUnitOnNextDraw = true;
+                    Repaint();
+                }
+
+                if (GUILayout.Button("Центр", EditorStyles.toolbarButton, GUILayout.Width(58f)))
+                {
+                    var active = GetActiveScenarioUnit();
+                    if (active != null)
+                    {
+                        active.Position = new Vector2Int(_generatorPreviewWidth / 2, _generatorPreviewHeight / 2);
+                        _generatorPreviewUnitPosition = active.Position;
+                        _generatorPreviewFocusActiveUnitOnNextDraw = true;
+                        MarkGeneratorVisionDirty();
+                    }
+                }
+
+                GUILayout.FlexibleSpace();
+                GUILayout.Label("wheel zoom | MMB pan | LMB drag", EditorStyles.miniLabel, GUILayout.Width(176f));
+            }
+        }
+
         private void DrawGeneratorPreviewControls()
         {
-            BeginSection("Preview", "d_SceneViewCamera", "Параметри мапи, позиція юніта і Fog overlay.");
+            BeginSection("Control center", "d_SceneViewCamera", "Згортні блоки для мапи, сценарію, видимості та туману.");
 
-            EditorGUI.BeginChangeCheck();
-            _generatorPreviewWidth = EditorGUILayout.IntSlider(new GUIContent("Width", "Ширина preview-мапи у тайлах."), _generatorPreviewWidth, 8, 256);
-            _generatorPreviewHeight = EditorGUILayout.IntSlider(new GUIContent("Height", "Висота preview-мапи у тайлах."), _generatorPreviewHeight, 8, 256);
-            _generatorPreviewSeed = EditorGUILayout.IntField(new GUIContent("Seed", "Seed для deterministic preview."), _generatorPreviewSeed);
-            if (EditorGUI.EndChangeCheck())
+            if (BeginFoldoutSection(ref _generatorMapSettingsFoldout, "Мапа", "d_Terrain Icon", "Розмір, seed і rebuild preview texture."))
             {
-                _generatorPreviewUnitPosition.x = Mathf.Clamp(_generatorPreviewUnitPosition.x, 0, _generatorPreviewWidth - 1);
-                _generatorPreviewUnitPosition.y = Mathf.Clamp(_generatorPreviewUnitPosition.y, 0, _generatorPreviewHeight - 1);
-                MarkGeneratorPreviewDirty();
-            }
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                EditorGUILayout.LabelField("Unit", GUILayout.Width(38f));
-                _generatorPreviewUnitPosition.x = EditorGUILayout.IntSlider(_generatorPreviewUnitPosition.x, 0, Mathf.Max(0, _generatorPreviewWidth - 1));
-                _generatorPreviewUnitPosition.y = EditorGUILayout.IntSlider(_generatorPreviewUnitPosition.y, 0, Mathf.Max(0, _generatorPreviewHeight - 1));
-            }
-
-            EditorGUI.BeginChangeCheck();
-            _generatorPreviewShowFog = EditorGUILayout.ToggleLeft(new GUIContent("Показувати Fog of War", "Затемнює усе поза радіусом огляду вибраного юніта."), _generatorPreviewShowFog);
-            _generatorPreviewAutoRefresh = EditorGUILayout.ToggleLeft(new GUIContent("Auto refresh", "Автоматично перебудовувати texture після зміни noise/height settings."), _generatorPreviewAutoRefresh);
-            if (EditorGUI.EndChangeCheck())
-                MarkGeneratorPreviewDirty();
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("Оновити preview", GeneratorPrimaryButtonStyle(), GUILayout.Height(28f)))
-                    RebuildGeneratorMapPreview();
-
-                if (GUILayout.Button("Центр", GUILayout.Width(64f), GUILayout.Height(28f)))
+                EditorGUI.BeginChangeCheck();
+                _generatorPreviewWidth = EditorGUILayout.IntSlider(new GUIContent("Width", "Ширина preview-мапи у тайлах."), _generatorPreviewWidth, 8, 256);
+                _generatorPreviewHeight = EditorGUILayout.IntSlider(new GUIContent("Height", "Висота preview-мапи у тайлах."), _generatorPreviewHeight, 8, 256);
+                _generatorPreviewSeed = EditorGUILayout.IntField(new GUIContent("Seed", "Seed для deterministic preview."), _generatorPreviewSeed);
+                _generatorPreviewAutoRefresh = EditorGUILayout.ToggleLeft(new GUIContent("Auto refresh", "Автоматично перебудовувати texture після зміни noise/height settings."), _generatorPreviewAutoRefresh);
+                if (EditorGUI.EndChangeCheck())
                 {
-                    _generatorPreviewUnitPosition = new Vector2Int(_generatorPreviewWidth / 2, _generatorPreviewHeight / 2);
+                    ClampScenarioUnitPositions();
                     MarkGeneratorPreviewDirty();
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Оновити preview", GeneratorPrimaryButtonStyle(), GUILayout.Height(24f)))
+                        RebuildGeneratorMapPreview();
+                    if (GUILayout.Button("Новий seed", GUILayout.Width(90f), GUILayout.Height(24f)))
+                    {
+                        _generatorPreviewSeed = Environment.TickCount & 0x7FFFFFFF;
+                        MarkGeneratorPreviewDirty();
+                    }
+                }
+
+                EndFoldoutSection();
+            }
+
+            if (BeginFoldoutSection(ref _generatorScenarioFoldout, "Сценарій юнітів", "d_AvatarSelector", "Активний юніт, тип, позиція і швидке редагування параметрів."))
+            {
+                DrawGeneratorScenarioControls();
+                EndFoldoutSection();
+            }
+
+            if (BeginFoldoutSection(ref _generatorVisionFogFoldout, "Огляд і туман", "d_scenevis_visible_hover", "Як юніт бачить рельєф і як це лягає на Fog of War."))
+            {
+                DrawGeneratorVisionFogControls();
+                EndFoldoutSection();
+            }
+
+            if (BeginFoldoutSection(ref _generatorSummaryFoldout, "Підсумок", "d_Profiler.GlobalIllumination", "Поточний результат visibility simulation."))
+            {
+                DrawGeneratorPreviewSummary();
+                DrawScenarioVisibilityMatrix();
+                EndFoldoutSection();
+            }
+
+            EndSection();
+        }
+
+        private void DrawGeneratorScenarioControls()
+        {
+            EnsureGeneratorScenarioInitialized();
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Сценарій юнітів", EditorStyles.boldLabel);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    string[] labels = BuildScenarioUnitLabels();
+                    _generatorScenarioActiveIndex = EditorGUILayout.Popup(new GUIContent("Активний", "Активний юніт: ЛКМ по мапі рухає саме його."), Mathf.Clamp(_generatorScenarioActiveIndex, 0, Mathf.Max(0, labels.Length - 1)), labels);
+                    if (GUILayout.Button("+", GUILayout.Width(26f), GUILayout.Height(18f)))
+                    {
+                        AddScenarioUnit();
+                        _generatorPreviewFocusActiveUnitOnNextDraw = true;
+                        GUI.FocusControl(null);
+                    }
+
+                    using (new EditorGUI.DisabledScope(_generatorScenarioUnits.Count <= 1))
+                    {
+                        if (GUILayout.Button("-", GUILayout.Width(26f), GUILayout.Height(18f)))
+                        {
+                            RemoveActiveScenarioUnit();
+                            GUI.FocusControl(null);
+                        }
+                    }
+                }
+
+                var active = GetActiveScenarioUnit();
+                if (active != null)
+                {
+                    bool changed = false;
+                    BuildScenarioTypeOptions(out string[] typeIds, out string[] typeLabels);
+                    int typeIndex = IndexOfTypeId(typeIds, active.TypeId);
+                    int nextTypeIndex = EditorGUILayout.Popup(new GUIContent("Тип юніта", "Профіль юніта для активного сценарного екземпляра."), typeIndex, typeLabels);
+                    if (nextTypeIndex >= 0 && nextTypeIndex < typeIds.Length)
+                    {
+                        string nextTypeId = typeIds[nextTypeIndex];
+                        if (!string.Equals(active.TypeId, nextTypeId, StringComparison.Ordinal))
+                        {
+                            active.TypeId = nextTypeId;
+                            changed = true;
+                        }
+                    }
+
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUILayout.LabelField("Позиція", GUILayout.Width(48f));
+                        int px = EditorGUILayout.IntSlider(active.Position.x, 0, Mathf.Max(0, _generatorPreviewWidth - 1));
+                        int py = EditorGUILayout.IntSlider(active.Position.y, 0, Mathf.Max(0, _generatorPreviewHeight - 1));
+                        if (px != active.Position.x || py != active.Position.y)
+                        {
+                            active.Position = new Vector2Int(px, py);
+                            _generatorPreviewUnitPosition = active.Position;
+                            changed = true;
+                        }
+                    }
+
+                    EditorGUILayout.LabelField("ЛКМ по юніту: вибір. ЛКМ drag: переміщення. Колесо: zoom. Середня кнопка: панорамування.", EditorStyles.miniLabel);
+
+                    var activeConfig = ResolveScenarioUnitConfig(active);
+                    if (activeConfig != null)
+                    {
+                        EditorGUILayout.Space(3f);
+                        EditorGUILayout.LabelField("Швидке редагування вибраного юніта", EditorStyles.boldLabel);
+
+                        var vision = activeConfig.FindPropertyRelative("VisionRange");
+                        var hp = activeConfig.FindPropertyRelative("HitPoints");
+                        var level = activeConfig.FindPropertyRelative("BaseLevel");
+                        var boost = activeConfig.FindPropertyRelative("VisionHeightBoostPerLevel");
+
+                        EditorGUI.BeginChangeCheck();
+                        if (vision != null)
+                            vision.intValue = EditorGUILayout.IntSlider(new GUIContent("Огляд", "Базовий радіус огляду вибраного юніта."), Mathf.Clamp(vision.intValue, 1, 64), 1, 20);
+                        if (hp != null)
+                            hp.intValue = EditorGUILayout.IntSlider(new GUIContent("HP", "Очки здоров'я вибраного юніта."), Mathf.Max(1, hp.intValue), 1, 300);
+                        if (level != null)
+                            level.intValue = EditorGUILayout.IntSlider(new GUIContent("Рівень", "Базовий рівень вибраного юніта."), Mathf.Max(1, level.intValue), 1, 10);
+                        if (boost != null)
+                            boost.floatValue = EditorGUILayout.Slider(new GUIContent("Буст огляду за висоту", "Індивідуальний бустер огляду за кожен рівень висоти."), Mathf.Max(0f, boost.floatValue), 0f, 4f);
+
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            changed = true;
+                            MarkGeneratorVisionDirty();
+                        }
+
+                        DrawScenarioQuickBars(
+                            vision != null ? Mathf.Clamp(vision.intValue, 1, 64) : 1,
+                            hp != null ? Mathf.Max(1, hp.intValue) : 1,
+                            level != null ? Mathf.Max(1, level.intValue) : 1,
+                            boost != null ? Mathf.Max(0f, boost.floatValue) : 0f);
+                    }
+
+                    if (changed)
+                        MarkGeneratorVisionDirty();
+                }
+            }
+        }
+
+        private static void DrawScenarioQuickBars(int vision, int hp, int level, float boost)
+        {
+            DrawScenarioQuickBar("Vision", Mathf.InverseLerp(1f, 20f, vision), new Color(0.15f, 0.72f, 0.86f), vision.ToString(CultureInfo.InvariantCulture));
+            DrawScenarioQuickBar("HP", Mathf.InverseLerp(1f, 300f, hp), new Color(0.2f, 0.72f, 0.45f), hp.ToString(CultureInfo.InvariantCulture));
+            DrawScenarioQuickBar("Level", Mathf.InverseLerp(1f, 10f, level), new Color(0.2f, 0.62f, 0.67f), level.ToString(CultureInfo.InvariantCulture));
+            DrawScenarioQuickBar("Boost", Mathf.InverseLerp(0f, 4f, boost), new Color(0.42f, 0.72f, 1f), boost.ToString("0.00", CultureInfo.InvariantCulture));
+        }
+
+        private void DrawGeneratorVisionFogControls()
+        {
+            EditorGUI.BeginChangeCheck();
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Label("Fog source", GUILayout.Width(82f));
+                bool activeOnly = GUILayout.Toggle(!_generatorPreviewFogUnion, "Активний", EditorStyles.miniButtonLeft, GUILayout.Height(22f));
+                bool allUnits = GUILayout.Toggle(_generatorPreviewFogUnion, "Усі юніти", EditorStyles.miniButtonRight, GUILayout.Height(22f));
+                if (activeOnly)
+                    _generatorPreviewFogUnion = false;
+                if (allUnits)
+                    _generatorPreviewFogUnion = true;
+            }
+
+            _generatorPreviewShowFog = EditorGUILayout.ToggleLeft(new GUIContent("Показувати Fog of War", "Затемнює усе поза видимістю."), _generatorPreviewShowFog);
+            _generatorFogHiddenOpacity = EditorGUILayout.Slider(new GUIContent("Сила туману", "Наскільки сильно затемнюються невидимі тайли."), Mathf.Clamp01(_generatorFogHiddenOpacity), 0f, 1f);
+            _generatorFogVisibleTint = EditorGUILayout.Slider(new GUIContent("Підсвітка видимого", "Наскільки помітно підфарбовувати тайли, які юніт бачить."), Mathf.Clamp01(_generatorFogVisibleTint), 0f, 1f);
+
+            EditorGUILayout.Space(2f);
+            _generatorVisionUseTerrainLos = EditorGUILayout.ToggleLeft(new GUIContent("Розумний LOS по рельєфу", "Видимість враховує схили, вершини, краї й перекриття рельєфом."), _generatorVisionUseTerrainLos);
+            _generatorVisionGlobalBoost = EditorGUILayout.Slider(new GUIContent("Глобальний бустер висоти", "Додає огляд за рівень висоти активного юніта."), _generatorVisionGlobalBoost, 0f, 4f);
+            _generatorVisionOcclusionTolerance = EditorGUILayout.Slider(new GUIContent("Поріг перекриття", "Вищий поріг робить рельєф менш агресивним блокером видимості."), _generatorVisionOcclusionTolerance, 0f, 0.2f);
+            _generatorVisionDownhillPenalty = EditorGUILayout.Slider(new GUIContent("Сила сліпої зони", "Множник того, наскільки агресивно край ховає тайли одразу за обривом."), _generatorVisionDownhillPenalty, 0f, 1f);
+            _generatorVisionUphillPeekStrength = EditorGUILayout.Slider(new GUIContent("Погляд угору на край", "Полегшує видимість верхнього краю/виступу знизу."), _generatorVisionUphillPeekStrength, 0f, 1f);
+            _generatorVisionUphillEdgeDrop = EditorGUILayout.Slider(new GUIContent("Мін. перепад краю", "Наскільки різким має бути край, щоб спрацювала edge-aware логіка."), _generatorVisionUphillEdgeDrop, 0.005f, 0.2f);
+            _generatorVisionEdgePeekDistanceTiles = EditorGUILayout.IntSlider(new GUIContent("Позиція на краю", "Скільки тайлів від обриву ще вважаються достатньо близькими, щоб бачити вниз без blind zone."), _generatorVisionEdgePeekDistanceTiles, 0, 6);
+            _generatorVisionEdgeBlindZoneTiles = EditorGUILayout.IntSlider(new GUIContent("Сліпа зона за краєм", "Скільки нижніх тайлів одразу за краєм не видно, якщо юніт стоїть не біля краю."), _generatorVisionEdgeBlindZoneTiles, 0, 8);
+            _generatorVisionEdgeMaxBlindZoneTiles = EditorGUILayout.IntSlider(new GUIContent("Макс. сліпа зона", "Верхня межа blind zone, коли юніт стоїть далеко від краю."), Mathf.Max(_generatorVisionEdgeBlindZoneTiles, _generatorVisionEdgeMaxBlindZoneTiles), _generatorVisionEdgeBlindZoneTiles, 10);
+            _generatorVisionEdgeDistanceScale = EditorGUILayout.Slider(new GUIContent("Вплив відстані до краю", "Наскільки blind zone росте, якщо юніт стоїть глибше на плато."), _generatorVisionEdgeDistanceScale, 0f, 1.5f);
+
+            var activeScenario = GetActiveScenarioUnit();
+            var activeScenarioUnitConfig = ResolveScenarioUnitConfig(activeScenario);
+            if (activeScenarioUnitConfig != null)
+            {
+                var unitVisionBoost = activeScenarioUnitConfig.FindPropertyRelative("VisionHeightBoostPerLevel");
+                if (unitVisionBoost != null)
+                {
+                    float nextUnitBoost = EditorGUILayout.Slider(new GUIContent("Індивідуальний бустер юніта", "Додається тільки для профілю активного юніта."), Mathf.Max(0f, unitVisionBoost.floatValue), 0f, 4f);
+                    if (!Mathf.Approximately(nextUnitBoost, unitVisionBoost.floatValue))
+                        unitVisionBoost.floatValue = nextUnitBoost;
                 }
             }
 
-            EditorGUILayout.Space(4f);
-            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
-            EditorGUILayout.LabelField("Інтерактивність Preview", EditorStyles.boldLabel);
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Zoom", GUILayout.Width(40f));
-            _generatorPreviewZoom = EditorGUILayout.Slider(_generatorPreviewZoom, 0.25f, 8f);
-            if (GUILayout.Button("1x", GUILayout.Width(36f), GUILayout.Height(18f)))
-                _generatorPreviewZoom = 1f;
-            if (GUILayout.Button("Fit", GUILayout.Width(42f), GUILayout.Height(18f)))
-                _generatorPreviewZoom = 1f;
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.LabelField("Колесо миші над мапою: zoom, перетягування ЛКМ: переміщення юніта.", EditorStyles.miniLabel);
-            EditorGUILayout.EndVertical();
+            if (EditorGUI.EndChangeCheck())
+            {
+                PersistGeneratorVisionPrefs();
+                MarkGeneratorVisionDirty();
+            }
 
-            int vision = ResolveSelectedVisionRange();
+            DrawGeneratorVisionPresetButtons();
+        }
+
+        private void DrawGeneratorVisionPresetButtons()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Label("Presets", GUILayout.Width(58f));
+                if (GUILayout.Button("Radius", GUILayout.Height(22f)))
+                {
+                    _generatorVisionUseTerrainLos = false;
+                    _generatorVisionGlobalBoost = 0f;
+                    _generatorVisionEdgePeekDistanceTiles = 0;
+                    _generatorVisionEdgeBlindZoneTiles = 0;
+                    _generatorVisionEdgeMaxBlindZoneTiles = 0;
+                    _generatorVisionEdgeDistanceScale = 0f;
+                    _generatorFogHiddenOpacity = 0.62f;
+                    _generatorFogVisibleTint = 0.18f;
+                    PersistGeneratorVisionPrefs();
+                    MarkGeneratorVisionDirty();
+                }
+
+                if (GUILayout.Button("Tactical", GUILayout.Height(22f)))
+                {
+                    _generatorVisionUseTerrainLos = true;
+                    _generatorVisionGlobalBoost = 0.35f;
+                    _generatorVisionOcclusionTolerance = 0.035f;
+                    _generatorVisionDownhillPenalty = 0.45f;
+                    _generatorVisionUphillPeekStrength = 0.6f;
+                    _generatorVisionUphillEdgeDrop = 0.05f;
+                    _generatorVisionEdgePeekDistanceTiles = 1;
+                    _generatorVisionEdgeBlindZoneTiles = 2;
+                    _generatorVisionEdgeMaxBlindZoneTiles = 4;
+                    _generatorVisionEdgeDistanceScale = 0.35f;
+                    _generatorFogHiddenOpacity = 0.68f;
+                    _generatorFogVisibleTint = 0.24f;
+                    PersistGeneratorVisionPrefs();
+                    MarkGeneratorVisionDirty();
+                }
+
+                if (GUILayout.Button("High ground", GUILayout.Height(22f)))
+                {
+                    _generatorVisionUseTerrainLos = true;
+                    _generatorVisionGlobalBoost = 0.75f;
+                    _generatorVisionOcclusionTolerance = 0.055f;
+                    _generatorVisionDownhillPenalty = 0.32f;
+                    _generatorVisionUphillPeekStrength = 0.82f;
+                    _generatorVisionUphillEdgeDrop = 0.035f;
+                    _generatorVisionEdgePeekDistanceTiles = 1;
+                    _generatorVisionEdgeBlindZoneTiles = 1;
+                    _generatorVisionEdgeMaxBlindZoneTiles = 3;
+                    _generatorVisionEdgeDistanceScale = 0.25f;
+                    _generatorFogHiddenOpacity = 0.7f;
+                    _generatorFogVisibleTint = 0.3f;
+                    PersistGeneratorVisionPrefs();
+                    MarkGeneratorVisionDirty();
+                }
+            }
+        }
+
+        private void DrawGeneratorPreviewSummary()
+        {
+            var activeScenarioUnit = GetActiveScenarioUnit();
+            int baseVision = ResolveSelectedUnitVisionRange(activeScenarioUnit);
+            int heightLevel = ResolveSelectedUnitHeightLevel(activeScenarioUnit);
+            float totalBoostPerLevel = ResolveSelectedVisionBoostPerLevel(activeScenarioUnit);
+            int vision = ResolveSelectedEffectiveVisionRange(activeScenarioUnit);
             float visiblePercent = _generatorPreviewTotalCells > 0
                 ? (float)_generatorPreviewVisibleCells / _generatorPreviewTotalCells * 100f
                 : 0f;
-            EditorGUILayout.HelpBox(
-                $"Вибраний юніт відкриває радіус {vision}. Видимих тайлів: {_generatorPreviewVisibleCells}/{Mathf.Max(1, _generatorPreviewTotalCells)} ({visiblePercent:0.0}%).\n" +
-                $"Висоти noise: min {_generatorPreviewMinHeight:0.000}, avg {_generatorPreviewAverageHeight:0.000}, max {_generatorPreviewMaxHeight:0.000}.",
-                MessageType.None);
-            EndSection();
+
+            DrawGeneratorSummaryRow("База", baseVision.ToString(CultureInfo.InvariantCulture), "Рівень", (heightLevel + 1).ToString(CultureInfo.InvariantCulture), "Ефективний", vision.ToString(CultureInfo.InvariantCulture));
+            DrawGeneratorSummaryRow("Fog", _generatorPreviewFogUnion ? "усі" : "активний", "Visible", $"{visiblePercent:0.0}%", "LOS", _generatorVisionUseTerrainLos ? "terrain" : "radius");
+            EditorGUILayout.LabelField($"Level source: {_generatorPreviewLevelSource} | Boost/level {totalBoostPerLevel:0.00} | edge peek {_generatorVisionEdgePeekDistanceTiles}, blind {_generatorVisionEdgeBlindZoneTiles}-{_generatorVisionEdgeMaxBlindZoneTiles} | noise min {_generatorPreviewMinHeight:0.000}, avg {_generatorPreviewAverageHeight:0.000}, max {_generatorPreviewMaxHeight:0.000}", EditorStyles.wordWrappedMiniLabel);
+        }
+
+        private static void DrawGeneratorSummaryRow(string labelA, string valueA, string labelB, string valueB, string labelC, string valueC)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                DrawGeneratorSummaryPill(labelA, valueA);
+                DrawGeneratorSummaryPill(labelB, valueB);
+                DrawGeneratorSummaryPill(labelC, valueC);
+            }
+        }
+
+        private static void DrawGeneratorSummaryPill(string label, string value)
+        {
+            Rect rect = GUILayoutUtility.GetRect(0f, 28f, GUILayout.ExpandWidth(true));
+            DrawPanelBackground(rect, EditorGUIUtility.isProSkin ? new Color(0.13f, 0.17f, 0.18f) : new Color(0.82f, 0.88f, 0.89f));
+            GUI.Label(new Rect(rect.x + 6f, rect.y + 3f, rect.width - 12f, 11f), label, EditorStyles.centeredGreyMiniLabel);
+            GUI.Label(new Rect(rect.x + 6f, rect.y + 13f, rect.width - 12f, 13f), value, EditorStyles.miniBoldLabel);
+        }
+
+        private void PersistGeneratorVisionPrefs()
+        {
+            EditorPrefs.SetFloat(GeneratorVisionGlobalBoostPrefsKey, _generatorVisionGlobalBoost);
+            EditorPrefs.SetBool(GeneratorVisionTerrainLosPrefsKey, _generatorVisionUseTerrainLos);
+            EditorPrefs.SetFloat(GeneratorVisionOcclusionTolerancePrefsKey, _generatorVisionOcclusionTolerance);
+            EditorPrefs.SetFloat(GeneratorVisionDownhillPenaltyPrefsKey, _generatorVisionDownhillPenalty);
+            EditorPrefs.SetFloat(GeneratorVisionUphillPeekStrengthPrefsKey, _generatorVisionUphillPeekStrength);
+            EditorPrefs.SetFloat(GeneratorVisionUphillEdgeDropPrefsKey, _generatorVisionUphillEdgeDrop);
+            EditorPrefs.SetInt(GeneratorVisionEdgePeekDistancePrefsKey, _generatorVisionEdgePeekDistanceTiles);
+            EditorPrefs.SetInt(GeneratorVisionEdgeBlindZonePrefsKey, _generatorVisionEdgeBlindZoneTiles);
+            EditorPrefs.SetInt(GeneratorVisionEdgeMaxBlindZonePrefsKey, _generatorVisionEdgeMaxBlindZoneTiles);
+            EditorPrefs.SetFloat(GeneratorVisionEdgeDistanceScalePrefsKey, _generatorVisionEdgeDistanceScale);
+            EditorPrefs.SetBool(GeneratorPreviewFogUnionPrefsKey, _generatorPreviewFogUnion);
+            EditorPrefs.SetFloat(GeneratorFogHiddenOpacityPrefsKey, _generatorFogHiddenOpacity);
+            EditorPrefs.SetFloat(GeneratorFogVisibleTintPrefsKey, _generatorFogVisibleTint);
+        }
+
+        private static void DrawScenarioQuickBar(string label, float value01, Color color, string valueText)
+        {
+            Rect rect = GUILayoutUtility.GetRect(0f, 14f, GUILayout.ExpandWidth(true));
+            GUI.Label(new Rect(rect.x, rect.y, 46f, rect.height), label, EditorStyles.miniLabel);
+            Rect bar = new Rect(rect.x + 48f, rect.y + 3f, rect.width - 98f, 7f);
+            EditorGUI.DrawRect(bar, new Color(0f, 0f, 0f, 0.26f));
+            EditorGUI.DrawRect(new Rect(bar.x, bar.y, bar.width * Mathf.Clamp01(value01), bar.height), color);
+            GUI.Label(new Rect(bar.xMax + 6f, rect.y - 1f, 40f, rect.height), valueText, EditorStyles.miniLabel);
+        }
+
+        private void DrawScenarioVisibilityMatrix()
+        {
+            if (_generatorScenarioUnits.Count <= 1)
+                return;
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Взаємна видимість", EditorStyles.boldLabel);
+                for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+                {
+                    for (int j = i + 1; j < _generatorScenarioUnits.Count; j++)
+                    {
+                        bool iSeesJ = CanScenarioUnitSeeScenarioUnit(i, j);
+                        bool jSeesI = CanScenarioUnitSeeScenarioUnit(j, i);
+                        string left = BuildScenarioUnitLabel(i);
+                        string right = BuildScenarioUnitLabel(j);
+                        string relation = iSeesJ && jSeesI
+                            ? "бачать один одного"
+                            : iSeesJ
+                                ? "бачить тільки лівий"
+                                : jSeesI
+                                    ? "бачить тільки правий"
+                                    : "не бачать";
+                        EditorGUILayout.LabelField($"{left} <-> {right}: {relation}", EditorStyles.miniLabel);
+                    }
+                }
+            }
         }
 
         private void DrawGeneratorPreviewTexture()
         {
-            float viewportHeight = Mathf.Clamp(position.height * 0.5f, 260f, 620f);
+            float viewportHeight = Mathf.Clamp(position.height * 0.5f, 300f, 620f);
             Rect viewportRect = GUILayoutUtility.GetRect(320f, viewportHeight, GUILayout.ExpandWidth(true));
             _lastGeneratorPreviewRect = viewportRect;
             DrawPanelBackground(viewportRect, EditorGUIUtility.isProSkin ? new Color(0.08f, 0.09f, 0.1f) : new Color(0.78f, 0.82f, 0.84f));
@@ -445,92 +905,382 @@ namespace Kruty1918.Moyva.Units.Editor
                 return;
             }
 
-            float cellSize = Mathf.Clamp(8f * _generatorPreviewZoom, 2f, 56f);
-            float contentWidth = Mathf.Max(viewportRect.width - 18f, _generatorPreviewWidth * cellSize);
-            float contentHeight = Mathf.Max(viewportRect.height - 18f, _generatorPreviewHeight * cellSize);
+            float cellSize = GetGeneratorPreviewCellSize();
+            Vector2 mapPixelSize = GetGeneratorPreviewMapPixelSize(cellSize);
+            float contentWidth = Mathf.Max(viewportRect.width, mapPixelSize.x);
+            float contentHeight = Mathf.Max(viewportRect.height, mapPixelSize.y);
 
-            _generatorMapCanvasScroll = GUI.BeginScrollView(
-                viewportRect,
-                _generatorMapCanvasScroll,
-                new Rect(0f, 0f, contentWidth, contentHeight),
-                true,
-                true);
+            if (_generatorPreviewFocusActiveUnitOnNextDraw)
+            {
+                _generatorMapCanvasScroll = CenterGeneratorScrollOnActiveUnit(viewportRect, contentWidth, contentHeight, cellSize);
+                _generatorPreviewFocusActiveUnitOnNextDraw = false;
+            }
+            else
+            {
+                _generatorMapCanvasScroll = ClampGeneratorScroll(_generatorMapCanvasScroll, viewportRect, contentWidth, contentHeight);
+            }
 
-            Rect drawRect = new Rect(0f, 0f, _generatorPreviewWidth * cellSize, _generatorPreviewHeight * cellSize);
+            Rect contentDrawRect = new Rect(0f, 0f, mapPixelSize.x, mapPixelSize.y);
+            bool geometryChanged = HandleGeneratorPreviewInput(viewportRect, contentDrawRect, contentWidth, contentHeight, cellSize);
+            if (geometryChanged)
+            {
+                cellSize = GetGeneratorPreviewCellSize();
+                mapPixelSize = GetGeneratorPreviewMapPixelSize(cellSize);
+                contentWidth = Mathf.Max(viewportRect.width, mapPixelSize.x);
+                contentHeight = Mathf.Max(viewportRect.height, mapPixelSize.y);
+                _generatorMapCanvasScroll = ClampGeneratorScroll(_generatorMapCanvasScroll, viewportRect, contentWidth, contentHeight);
+                contentDrawRect = new Rect(0f, 0f, mapPixelSize.x, mapPixelSize.y);
+            }
+
+            Rect drawRect = new Rect(-_generatorMapCanvasScroll.x, -_generatorMapCanvasScroll.y, mapPixelSize.x, mapPixelSize.y);
+            GUI.BeginGroup(viewportRect);
             GUI.DrawTexture(drawRect, _generatorPreviewTexture, ScaleMode.StretchToFill, false);
-            DrawGeneratorPreviewOverlay(drawRect);
-            HandleGeneratorPreviewInput(drawRect);
-            DrawGeneratorPreviewHover(drawRect);
+            DrawGeneratorPreviewOverlay(drawRect, viewportRect.size);
+            GUI.EndGroup();
 
-            GUI.EndScrollView();
+            DrawGeneratorPreviewViewportHud(viewportRect, cellSize);
+            DrawGeneratorPreviewHover(viewportRect, contentDrawRect);
         }
 
-        private void DrawGeneratorPreviewOverlay(Rect drawRect)
+        private void DrawGeneratorPreviewOverlay(Rect drawRect, Vector2 viewportSize)
         {
-            GUI.Label(new Rect(drawRect.x + 8f, drawRect.y + 8f, drawRect.width - 16f, 20f), _generatorPreviewStatus, PreviewTitleStyle());
-
             float cellW = drawRect.width / Mathf.Max(1, _generatorPreviewWidth);
             float cellH = drawRect.height / Mathf.Max(1, _generatorPreviewHeight);
-            float ux = drawRect.x + _generatorPreviewUnitPosition.x * cellW;
-            float uy = drawRect.yMax - (_generatorPreviewUnitPosition.y + 1) * cellH;
-            Rect unitRect = new Rect(ux, uy, Mathf.Max(3f, cellW), Mathf.Max(3f, cellH));
-            EditorGUI.DrawRect(unitRect, new Color(1f, 0.82f, 0.22f, 1f));
+
+            DrawGeneratorVisibilityCellsOverlay(drawRect, viewportSize, cellW, cellH);
+            DrawGeneratorPreviewGridOverlay(drawRect, viewportSize, cellW, cellH);
 
             Handles.BeginGUI();
-            Handles.color = VisionOutline;
-            float radiusPx = ResolveSelectedVisionRange() * Mathf.Min(cellW, cellH);
-            Handles.DrawWireDisc(new Vector3(unitRect.center.x, unitRect.center.y, 0f), Vector3.forward, radiusPx);
+            for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+            {
+                var unit = _generatorScenarioUnits[i];
+                Color unitColor = ResolveScenarioUnitColor(i);
+                Vector2 center = PreviewCellCenter(drawRect, unit.Position, cellW, cellH);
+                float radiusPx = ResolveSelectedEffectiveVisionRange(unit) * Mathf.Min(cellW, cellH);
+
+                Handles.color = new Color(unitColor.r, unitColor.g, unitColor.b, i == _generatorScenarioActiveIndex ? 0.12f : 0.06f);
+                Handles.DrawSolidDisc(center, Vector3.forward, radiusPx);
+                Handles.color = new Color(unitColor.r, unitColor.g, unitColor.b, i == _generatorScenarioActiveIndex ? 0.92f : 0.58f);
+                Handles.DrawWireDisc(center, Vector3.forward, radiusPx);
+            }
+
             Handles.EndGUI();
+
+            for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+                DrawGeneratorScenarioUnitMarker(i, drawRect, cellW, cellH);
         }
 
-        private void HandleGeneratorPreviewInput(Rect drawRect)
+        private bool HandleGeneratorPreviewInput(Rect viewportRect, Rect drawRect, float contentWidth, float contentHeight, float cellSize)
         {
             var evt = Event.current;
             if (evt == null)
-                return;
-
-            if (evt.type == EventType.ScrollWheel && drawRect.Contains(evt.mousePosition))
-            {
-                float factor = evt.delta.y > 0f ? 0.9f : 1.1f;
-                _generatorPreviewZoom = Mathf.Clamp(_generatorPreviewZoom * factor, 0.25f, 8f);
-                evt.Use();
-                Repaint();
-                return;
-            }
+                return false;
 
             if (evt.type == EventType.MouseMove || evt.type == EventType.Repaint)
                 _generatorPreviewMouse = evt.mousePosition;
 
-            if ((evt.type != EventType.MouseDown && evt.type != EventType.MouseDrag) || evt.button != 0)
-                return;
-
-            if (!drawRect.Contains(evt.mousePosition))
-                return;
-
-            Vector2Int cell = ScreenToPreviewCell(drawRect, evt.mousePosition);
-            if (cell != _generatorPreviewUnitPosition)
+            if (evt.type == EventType.ScrollWheel && viewportRect.Contains(evt.mousePosition))
             {
-                _generatorPreviewUnitPosition = cell;
-                MarkGeneratorPreviewDirty();
+                Vector2 localMouse = evt.mousePosition - viewportRect.position;
+                Vector2 contentAnchor = localMouse + _generatorMapCanvasScroll;
+
+                float factor = evt.delta.y > 0f ? 0.9f : 1.1f;
+                float oldCellSize = Mathf.Max(0.001f, cellSize);
+                _generatorPreviewZoom = Mathf.Clamp(_generatorPreviewZoom * factor, 0.25f, 8f);
+
+                float updatedCellSize = GetGeneratorPreviewCellSize();
+                Vector2 updatedMapPixelSize = GetGeneratorPreviewMapPixelSize(updatedCellSize);
+                float updatedContentWidth = Mathf.Max(viewportRect.width, updatedMapPixelSize.x);
+                float updatedContentHeight = Mathf.Max(viewportRect.height, updatedMapPixelSize.y);
+                float scale = updatedCellSize / oldCellSize;
+                _generatorMapCanvasScroll = ClampGeneratorScroll(contentAnchor * scale - localMouse, viewportRect, updatedContentWidth, updatedContentHeight);
+
+                evt.Use();
+                Repaint();
+                return true;
             }
 
-            evt.Use();
+            if (evt.type == EventType.MouseDown && evt.button == 2 && viewportRect.Contains(evt.mousePosition))
+            {
+                _generatorPreviewIsPanning = true;
+                _generatorPreviewPanLastMouse = evt.mousePosition;
+                evt.Use();
+                return false;
+            }
+
+            if (evt.type == EventType.MouseDrag && _generatorPreviewIsPanning)
+            {
+                Vector2 delta = evt.mousePosition - _generatorPreviewPanLastMouse;
+                _generatorMapCanvasScroll = ClampGeneratorScroll(_generatorMapCanvasScroll - delta, viewportRect, contentWidth, contentHeight);
+                _generatorPreviewPanLastMouse = evt.mousePosition;
+                evt.Use();
+                Repaint();
+                return false;
+            }
+
+            if (evt.type == EventType.MouseUp && evt.button == 2 && _generatorPreviewIsPanning)
+            {
+                _generatorPreviewIsPanning = false;
+                evt.Use();
+                return false;
+            }
+
+            if (evt.type == EventType.MouseUp && evt.button == 0 && _generatorPreviewIsDraggingUnit)
+            {
+                _generatorPreviewIsDraggingUnit = false;
+                _generatorPreviewDraggingUnitIndex = -1;
+                evt.Use();
+                return false;
+            }
+
+            if ((evt.type != EventType.MouseDown && evt.type != EventType.MouseDrag) || evt.button != 0)
+                return false;
+
+            if (!viewportRect.Contains(evt.mousePosition))
+                return false;
+
+            Vector2 contentMouse = ViewportToContentPoint(viewportRect, evt.mousePosition);
+            if (!drawRect.Contains(contentMouse))
+                return false;
+
+            Vector2Int cell = ScreenToPreviewCell(drawRect, contentMouse);
+
+            if (evt.type == EventType.MouseDown)
+            {
+                if (TryGetScenarioUnitIndexAtCell(cell, out int clickedIndex))
+                {
+                    if (_generatorScenarioActiveIndex != clickedIndex)
+                    {
+                        _generatorScenarioActiveIndex = clickedIndex;
+                        _generatorPreviewUnitPosition = _generatorScenarioUnits[clickedIndex].Position;
+                        MarkGeneratorVisionDirty();
+                    }
+
+                    _generatorPreviewIsDraggingUnit = true;
+                    _generatorPreviewDraggingUnitIndex = clickedIndex;
+                }
+                else
+                {
+                    _generatorPreviewIsDraggingUnit = true;
+                    _generatorPreviewDraggingUnitIndex = Mathf.Clamp(_generatorScenarioActiveIndex, 0, Mathf.Max(0, _generatorScenarioUnits.Count - 1));
+                }
+
+                evt.Use();
+                return false;
+            }
+
+            if (evt.type == EventType.MouseDrag && _generatorPreviewIsDraggingUnit)
+            {
+                int targetIndex = Mathf.Clamp(_generatorPreviewDraggingUnitIndex, 0, Mathf.Max(0, _generatorScenarioUnits.Count - 1));
+                if (targetIndex < _generatorScenarioUnits.Count)
+                {
+                    var moving = _generatorScenarioUnits[targetIndex];
+                    if (moving.Position != cell)
+                    {
+                        moving.Position = cell;
+                        _generatorPreviewUnitPosition = cell;
+                        _generatorScenarioActiveIndex = targetIndex;
+                        MarkGeneratorVisionDirty();
+                    }
+                }
+
+                evt.Use();
+            }
+
+            return false;
         }
 
-        private void DrawGeneratorPreviewHover(Rect drawRect)
+        private float GetGeneratorPreviewCellSize()
         {
-            if (_generatorPreviewTexture == null || !drawRect.Contains(_generatorPreviewMouse))
+            return Mathf.Clamp(8f * _generatorPreviewZoom, 2f, 64f);
+        }
+
+        private Vector2 GetGeneratorPreviewMapPixelSize(float cellSize)
+        {
+            return new Vector2(
+                Mathf.Max(1, _generatorPreviewWidth) * cellSize,
+                Mathf.Max(1, _generatorPreviewHeight) * cellSize);
+        }
+
+        private float CalculateGeneratorFitZoom(Rect viewportRect)
+        {
+            if (viewportRect.width <= 1f || viewportRect.height <= 1f)
+                return Mathf.Clamp(_generatorPreviewZoom, 0.25f, 8f);
+
+            float fitCellWidth = (viewportRect.width - 18f) / Mathf.Max(1, _generatorPreviewWidth);
+            float fitCellHeight = (viewportRect.height - 18f) / Mathf.Max(1, _generatorPreviewHeight);
+            float fitCellSize = Mathf.Max(2f, Mathf.Min(fitCellWidth, fitCellHeight));
+            return Mathf.Clamp(fitCellSize / 8f, 0.25f, 8f);
+        }
+
+        private Vector2 CenterGeneratorScrollOnActiveUnit(Rect viewportRect, float contentWidth, float contentHeight, float cellSize)
+        {
+            var active = GetActiveScenarioUnit();
+            if (active == null)
+                return ClampGeneratorScroll(_generatorMapCanvasScroll, viewportRect, contentWidth, contentHeight);
+
+            float centerX = (active.Position.x + 0.5f) * cellSize;
+            float centerY = (_generatorPreviewHeight - active.Position.y - 0.5f) * cellSize;
+            Vector2 target = new Vector2(centerX - viewportRect.width * 0.5f, centerY - viewportRect.height * 0.5f);
+            return ClampGeneratorScroll(target, viewportRect, contentWidth, contentHeight);
+        }
+
+        private void DrawGeneratorVisibilityCellsOverlay(Rect drawRect, Vector2 viewportSize, float cellW, float cellH)
+        {
+            if (_generatorVisibilityOverlayTexture == null)
                 return;
 
-            Vector2Int cell = ScreenToPreviewCell(drawRect, _generatorPreviewMouse);
+            GUI.DrawTexture(drawRect, _generatorVisibilityOverlayTexture, ScaleMode.StretchToFill, true);
+        }
+
+        private void DrawGeneratorPreviewGridOverlay(Rect drawRect, Vector2 viewportSize, float cellW, float cellH)
+        {
+            if (cellW < 6f || cellH < 6f)
+                return;
+
+            int startX = Mathf.Clamp(Mathf.FloorToInt((-drawRect.x) / Mathf.Max(1f, cellW)) - 1, 0, Mathf.Max(0, _generatorPreviewWidth));
+            int endX = Mathf.Clamp(Mathf.CeilToInt((viewportSize.x - drawRect.x) / Mathf.Max(1f, cellW)) + 1, 0, Mathf.Max(0, _generatorPreviewWidth));
+            int startY = Mathf.Clamp(Mathf.FloorToInt((-drawRect.y) / Mathf.Max(1f, cellH)) - 1, 0, Mathf.Max(0, _generatorPreviewHeight));
+            int endY = Mathf.Clamp(Mathf.CeilToInt((viewportSize.y - drawRect.y) / Mathf.Max(1f, cellH)) + 1, 0, Mathf.Max(0, _generatorPreviewHeight));
+
+            Handles.BeginGUI();
+            Handles.color = new Color(GridLine.r, GridLine.g, GridLine.b, 0.32f);
+            for (int x = startX; x <= endX; x++)
+            {
+                float px = drawRect.x + x * cellW;
+                Handles.DrawLine(new Vector3(px, Mathf.Max(0f, drawRect.y)), new Vector3(px, Mathf.Min(viewportSize.y, drawRect.yMax)));
+            }
+
+            for (int y = startY; y <= endY; y++)
+            {
+                float py = drawRect.y + y * cellH;
+                Handles.DrawLine(new Vector3(Mathf.Max(0f, drawRect.x), py), new Vector3(Mathf.Min(viewportSize.x, drawRect.xMax), py));
+            }
+
+            Handles.EndGUI();
+        }
+
+        private static Vector2 PreviewCellCenter(Rect drawRect, Vector2Int cell, float cellW, float cellH)
+        {
+            return new Vector2(
+                drawRect.x + (cell.x + 0.5f) * cellW,
+                drawRect.yMax - (cell.y + 0.5f) * cellH);
+        }
+
+        private void DrawGeneratorScenarioUnitMarker(int index, Rect drawRect, float cellW, float cellH)
+        {
+            if (index < 0 || index >= _generatorScenarioUnits.Count)
+                return;
+
+            var unit = _generatorScenarioUnits[index];
+            bool active = index == _generatorScenarioActiveIndex;
+            Color unitColor = ResolveScenarioUnitColor(index);
+            Vector2 center = PreviewCellCenter(drawRect, unit.Position, cellW, cellH);
+            float markerSize = Mathf.Clamp(Mathf.Min(cellW, cellH) * 1.8f, active ? 24f : 18f, active ? 52f : 40f);
+
+            Handles.BeginGUI();
+            Handles.color = new Color(0f, 0f, 0f, 0.5f);
+            Handles.DrawSolidDisc(center + new Vector2(1.5f, 1.5f), Vector3.forward, markerSize * 0.58f);
+            Handles.color = new Color(unitColor.r, unitColor.g, unitColor.b, active ? 0.95f : 0.78f);
+            Handles.DrawSolidDisc(center, Vector3.forward, markerSize * 0.54f);
+            Handles.color = active ? Color.white : new Color(1f, 1f, 1f, 0.62f);
+            Handles.DrawWireDisc(center, Vector3.forward, markerSize * 0.59f);
+            Handles.EndGUI();
+
+            SerializedProperty config = ResolveScenarioUnitConfig(unit);
+            GameObject prefab = GetObject<GameObject>(config, "Prefab");
+            Sprite customSprite = GetObject<Sprite>(config, "CustomSprite");
+            Sprite sprite = customSprite != null ? customSprite : ResolveSprite(prefab);
+            Rect markerRect = new Rect(center.x - markerSize * 0.42f, center.y - markerSize * 0.42f, markerSize * 0.84f, markerSize * 0.84f);
+            DrawSpriteOrPrefab(markerRect, sprite, prefab, false);
+
+            string indexText = (index + 1).ToString(CultureInfo.InvariantCulture);
+            var numberStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = Color.white }
+            };
+            Rect numberRect = new Rect(center.x - markerSize * 0.56f, center.y - markerSize * 0.64f, markerSize * 0.42f, markerSize * 0.32f);
+            EditorGUI.DrawRect(numberRect, new Color(0f, 0f, 0f, 0.68f));
+            GUI.Label(numberRect, indexText, numberStyle);
+
+            if (!active)
+                return;
+
+            string typeLabel = string.IsNullOrWhiteSpace(unit.TypeId) ? "<TypeId?>" : unit.TypeId;
+            string visionLabel = $"{typeLabel} | огляд {ResolveSelectedEffectiveVisionRange(unit)}";
+            var labelStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                normal = { textColor = Color.white },
+                padding = new RectOffset(5, 5, 2, 2)
+            };
+            Vector2 labelSize = labelStyle.CalcSize(new GUIContent(visionLabel));
+            Rect labelRect = new Rect(center.x + markerSize * 0.58f, center.y - labelSize.y * 0.5f, labelSize.x + 10f, labelSize.y + 4f);
+            EditorGUI.DrawRect(labelRect, new Color(0f, 0f, 0f, 0.78f));
+            GUI.Label(labelRect, visionLabel, labelStyle);
+        }
+
+        private void DrawGeneratorPreviewViewportHud(Rect viewportRect, float cellSize)
+        {
+            string status = $"{_generatorPreviewStatus} | zoom {_generatorPreviewZoom:0.00}x | cell {cellSize:0.#}px";
+            var statusStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                normal = { textColor = Color.white },
+                padding = new RectOffset(6, 6, 3, 3)
+            };
+            Vector2 statusSize = statusStyle.CalcSize(new GUIContent(status));
+            Rect statusRect = new Rect(viewportRect.x + 8f, viewportRect.y + 8f, Mathf.Min(viewportRect.width - 16f, statusSize.x + 12f), statusSize.y + 6f);
+            EditorGUI.DrawRect(statusRect, new Color(0f, 0f, 0f, 0.72f));
+            GUI.Label(statusRect, status, statusStyle);
+
+            string hint = "Wheel zoom | MMB pan | LMB drag unit";
+            var hintStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                normal = { textColor = new Color(1f, 1f, 1f, 0.86f) },
+                alignment = TextAnchor.MiddleRight,
+                padding = new RectOffset(6, 6, 3, 3)
+            };
+            Vector2 hintSize = hintStyle.CalcSize(new GUIContent(hint));
+            Rect hintRect = new Rect(viewportRect.xMax - hintSize.x - 20f, viewportRect.yMax - hintSize.y - 14f, hintSize.x + 12f, hintSize.y + 6f);
+            EditorGUI.DrawRect(hintRect, new Color(0f, 0f, 0f, 0.54f));
+            GUI.Label(hintRect, hint, hintStyle);
+        }
+
+        private bool TryGetScenarioUnitIndexAtCell(Vector2Int cell, out int index)
+        {
+            for (int i = _generatorScenarioUnits.Count - 1; i >= 0; i--)
+            {
+                if (_generatorScenarioUnits[i].Position == cell)
+                {
+                    index = i;
+                    return true;
+                }
+            }
+
+            index = -1;
+            return false;
+        }
+
+        private void DrawGeneratorPreviewHover(Rect viewportRect, Rect drawRect)
+        {
+            if (_generatorPreviewTexture == null || !viewportRect.Contains(_generatorPreviewMouse))
+                return;
+
+            Vector2 contentMouse = ViewportToContentPoint(viewportRect, _generatorPreviewMouse);
+            if (!drawRect.Contains(contentMouse))
+                return;
+
+            Vector2Int cell = ScreenToPreviewCell(drawRect, contentMouse);
             if (_generatorPreviewNoiseMap == null)
                 return;
 
             float h = _generatorPreviewNoiseMap[cell.x, cell.y];
             string tile = _generatorPreviewTileMap != null ? _generatorPreviewTileMap[cell.x, cell.y] : string.Empty;
             int level = _generatorPreviewLevelMap != null ? _generatorPreviewLevelMap[cell.x, cell.y] : -1;
-            bool visible = IsInsideSelectedVision(cell.x, cell.y);
-            string text = $"[{cell.x}, {cell.y}] h={h:0.000} level={level + 1} tile={tile} {(visible ? "visible" : "fog")}";
+            bool visible = IsCachedScenarioVisible(cell.x, cell.y);
+            int viewers = GetCachedScenarioViewers(cell.x, cell.y);
+            string source = _generatorPreviewUsesHillNodeLevels ? "hill" : "height";
+            string text = $"[{cell.x}, {cell.y}] h={h:0.000} level={level + 1} ({source}) tile={tile} {(visible ? "visible" : "fog")}, viewers={viewers}/{Mathf.Max(1, _generatorScenarioUnits.Count)}";
 
             var style = new GUIStyle(EditorStyles.label)
             {
@@ -541,20 +1291,36 @@ namespace Kruty1918.Moyva.Units.Editor
 
             var content = new GUIContent(text);
             Vector2 size = style.CalcSize(content);
-            float x = Mathf.Min(_generatorPreviewMouse.x + 14f, position.width - size.x - 8f);
-            float y = Mathf.Max(drawRect.y + 8f, _generatorPreviewMouse.y - size.y - 6f);
+            float x = Mathf.Min(_generatorPreviewMouse.x + 14f, viewportRect.xMax - size.x - 8f);
+            float y = Mathf.Clamp(_generatorPreviewMouse.y - size.y - 6f, viewportRect.y + 8f, viewportRect.yMax - size.y - 8f);
             Rect bg = new Rect(x - 2f, y - 2f, size.x + 4f, size.y + 4f);
             EditorGUI.DrawRect(bg, new Color(0f, 0f, 0f, 0.78f));
             GUI.Label(new Rect(x, y, size.x, size.y), content, style);
         }
 
+        private Vector2 ViewportToContentPoint(Rect viewportRect, Vector2 mousePosition)
+        {
+            return mousePosition - viewportRect.position + _generatorMapCanvasScroll;
+        }
+
+        private static Vector2 ClampGeneratorScroll(Vector2 scroll, Rect viewportRect, float contentWidth, float contentHeight)
+        {
+            float maxX = Mathf.Max(0f, contentWidth - viewportRect.width);
+            float maxY = Mathf.Max(0f, contentHeight - viewportRect.height);
+            return new Vector2(Mathf.Clamp(scroll.x, 0f, maxX), Mathf.Clamp(scroll.y, 0f, maxY));
+        }
+
         private void DrawGeneratorPreviewLegend()
         {
             BeginSection("Легенда", "d_FilterByLabel", "Поточні рівні висоти та їхні кольори у preview.");
-            var levels = BuildPreviewLevels();
+            var levels = _generatorPreviewUsesHillNodeLevels
+                ? BuildHillGeneratorPreviewLevels()
+                : BuildPreviewLevels();
             if (levels.Count == 0)
             {
-                EditorGUILayout.HelpBox("Немає HeightLayers для легенди.", MessageType.Info);
+                EditorGUILayout.HelpBox(_generatorPreviewUsesHillNodeLevels
+                    ? "HillGeneratorNode не має доступних рівнів для легенди."
+                    : "Немає HeightLayers для легенди.", MessageType.Info);
                 EndSection();
                 return;
             }
@@ -700,7 +1466,42 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private void MaybeRebuildGeneratorPreview()
         {
+            int runtimeSignature = ComputeGeneratorPreviewRuntimeSignature();
+            if (_generatorPreviewRuntimeSignature != runtimeSignature)
+            {
+                _generatorPreviewRuntimeSignature = runtimeSignature;
+                MarkGeneratorPreviewDirty();
+            }
+
+            int visionRuntimeSignature = ComputeGeneratorVisionPreviewRuntimeSignature();
+            if (_generatorVisionPreviewRuntimeSignature != visionRuntimeSignature)
+            {
+                _generatorVisionPreviewRuntimeSignature = visionRuntimeSignature;
+                MarkGeneratorVisionDirty();
+            }
+
             if (!_generatorPreviewDirty || !_generatorPreviewAutoRefresh)
+            {
+                if (!_generatorVisionPreviewDirty || !_generatorPreviewAutoRefresh)
+                    return;
+
+                double visionNow = EditorApplication.timeSinceStartup;
+                if (visionNow - _generatorVisionPreviewDirtySince < GeneratorVisionPreviewRebuildDebounceSeconds)
+                    return;
+
+                if (!_livePreviewThrottle.ShouldRunCostlyTick())
+                    return;
+
+                RebuildGeneratorVisibilityPreview();
+                return;
+            }
+
+            double now = EditorApplication.timeSinceStartup;
+            if (now - _generatorPreviewDirtySince < GeneratorPreviewRebuildDebounceSeconds)
+                return;
+
+            // Heavy map rebuild is throttled to keep editor UI responsive during rapid input.
+            if (!_livePreviewThrottle.ShouldRunCostlyTick())
                 return;
 
             RebuildGeneratorMapPreview();
@@ -709,6 +1510,14 @@ namespace Kruty1918.Moyva.Units.Editor
         private void MarkGeneratorPreviewDirty()
         {
             _generatorPreviewDirty = true;
+            _generatorPreviewDirtySince = EditorApplication.timeSinceStartup;
+            Repaint();
+        }
+
+        private void MarkGeneratorVisionDirty()
+        {
+            _generatorVisionPreviewDirty = true;
+            _generatorVisionPreviewDirtySince = EditorApplication.timeSinceStartup;
             Repaint();
         }
 
@@ -717,17 +1526,20 @@ namespace Kruty1918.Moyva.Units.Editor
             _generatorPreviewDirty = false;
             _generatorPreviewWidth = Mathf.Clamp(_generatorPreviewWidth, 8, 256);
             _generatorPreviewHeight = Mathf.Clamp(_generatorPreviewHeight, 8, 256);
-            _generatorPreviewUnitPosition.x = Mathf.Clamp(_generatorPreviewUnitPosition.x, 0, _generatorPreviewWidth - 1);
-            _generatorPreviewUnitPosition.y = Mathf.Clamp(_generatorPreviewUnitPosition.y, 0, _generatorPreviewHeight - 1);
+            EnsureGeneratorScenarioInitialized();
+            ClampScenarioUnitPositions();
 
-            if (_noiseSettingsObject == null || _heightSettingsObject == null)
+            bool canUseHillNode = _hillGeneratorNodeAsset != null;
+            if (_noiseSettingsObject == null || (!canUseHillNode && _heightSettingsObject == null))
             {
-                _generatorPreviewStatus = "Потрібні Noise Settings і Height Settings.";
+                _generatorPreviewStatus = canUseHillNode
+                    ? "Потрібні Noise Settings для Hill Generator preview."
+                    : "Потрібні Noise Settings і Height Settings.";
                 return;
             }
 
             var levels = BuildPreviewLevels();
-            if (levels.Count == 0)
+            if (!canUseHillNode && levels.Count == 0)
             {
                 _generatorPreviewStatus = "HeightLayers порожній.";
                 return;
@@ -738,12 +1550,26 @@ namespace Kruty1918.Moyva.Units.Editor
             _generatorPreviewLevelMap = new int[_generatorPreviewWidth, _generatorPreviewHeight];
             EnsureGeneratorPreviewTexture(_generatorPreviewWidth, _generatorPreviewHeight);
 
-            int visibleCells = 0;
+            string fallbackTileId = ResolveFirstExistingTileId();
+            string hillBuildMessage = string.Empty;
+            bool usedHillNodeLevels = TryBuildHillGeneratorPreview(
+                _generatorPreviewNoiseMap,
+                levels,
+                fallbackTileId,
+                out var hillTileMap,
+                out var hillLevelMap,
+                out hillBuildMessage);
+
+            _generatorPreviewUsesHillNodeLevels = usedHillNodeLevels;
+            _generatorPreviewLevelSource = usedHillNodeLevels
+                ? $"Hill Generator ({_hillGeneratorNodeAsset.name})"
+                : "HeightLayers fallback";
+
             int totalCells = _generatorPreviewWidth * _generatorPreviewHeight;
             float minHeight = float.MaxValue;
             float maxHeight = float.MinValue;
             float heightSum = 0f;
-            string fallbackTileId = ResolveFirstExistingTileId();
+            var pixels = new Color32[totalCells];
             for (int y = 0; y < _generatorPreviewHeight; y++)
             {
                 for (int x = 0; x < _generatorPreviewWidth; x++)
@@ -752,32 +1578,300 @@ namespace Kruty1918.Moyva.Units.Editor
                     minHeight = Mathf.Min(minHeight, heightValue);
                     maxHeight = Mathf.Max(maxHeight, heightValue);
                     heightSum += heightValue;
-                    int levelIndex = ResolvePreviewLevel(levels, heightValue);
-                    var level = levels[Mathf.Clamp(levelIndex, 0, levels.Count - 1)];
-                    string tileId = SelectPreviewTile(level, x, y, _generatorPreviewSeed, fallbackTileId);
-                    bool visible = IsInsideSelectedVision(x, y);
-                    if (visible)
-                        visibleCells++;
+                    int levelIndex;
+                    string tileId;
+                    if (usedHillNodeLevels)
+                    {
+                        levelIndex = Mathf.Max(0, hillLevelMap[x, y]);
+                        tileId = !string.IsNullOrWhiteSpace(hillTileMap[x, y])
+                            ? hillTileMap[x, y]
+                            : fallbackTileId;
+                    }
+                    else
+                    {
+                        levelIndex = ResolvePreviewLevel(levels, heightValue);
+                        var level = levels[Mathf.Clamp(levelIndex, 0, levels.Count - 1)];
+                        tileId = SelectPreviewTile(level, x, y, _generatorPreviewSeed, fallbackTileId);
+                    }
 
                     _generatorPreviewTileMap[x, y] = tileId;
                     _generatorPreviewLevelMap[x, y] = levelIndex;
                     Color color = ResolvePreviewColor(levelIndex, heightValue);
-                    if (_generatorPreviewShowFog && !visible)
-                        color = Color.Lerp(new Color(0.02f, 0.025f, 0.03f), color, 0.22f);
-                    if (_generatorPreviewShowFog && visible)
-                        color = Color.Lerp(color, VisionFill, 0.18f);
-
-                    _generatorPreviewTexture.SetPixel(x, y, color);
+                    pixels[y * _generatorPreviewWidth + x] = color;
                 }
             }
 
+            _generatorPreviewTexture.SetPixels32(pixels);
             _generatorPreviewTexture.Apply(false, false);
-            _generatorPreviewVisibleCells = visibleCells;
             _generatorPreviewTotalCells = Mathf.Max(1, totalCells);
             _generatorPreviewMinHeight = minHeight < float.MaxValue ? minHeight : 0f;
             _generatorPreviewMaxHeight = maxHeight > float.MinValue ? maxHeight : 0f;
             _generatorPreviewAverageHeight = totalCells > 0 ? heightSum / totalCells : 0f;
-            _generatorPreviewStatus = $"{_generatorPreviewWidth}x{_generatorPreviewHeight} | seed {_generatorPreviewSeed} | visible {visibleCells}";
+            RebuildGeneratorVisibilityPreview();
+            string sourceSuffix = usedHillNodeLevels
+                ? "levels HillGeneratorNode"
+                : string.IsNullOrWhiteSpace(hillBuildMessage)
+                    ? "levels HeightLayers"
+                    : $"levels HeightLayers ({hillBuildMessage})";
+            _generatorPreviewStatus = $"{_generatorPreviewWidth}x{_generatorPreviewHeight} | seed {_generatorPreviewSeed} | {sourceSuffix} | scenario {_generatorScenarioUnits.Count} | visible {_generatorPreviewVisibleCells}";
+        }
+
+        private void RebuildGeneratorVisibilityPreview()
+        {
+            _generatorVisionPreviewDirty = false;
+
+            if (_generatorPreviewNoiseMap == null || _generatorPreviewLevelMap == null)
+            {
+                _generatorPreviewVisibleCells = 0;
+                _generatorPreviewTotalCells = Mathf.Max(1, _generatorPreviewWidth * _generatorPreviewHeight);
+                _generatorPreviewVisibleMap = null;
+                _generatorPreviewViewerCountMap = null;
+                EnsureGeneratorVisibilityOverlayTexture(_generatorPreviewWidth, _generatorPreviewHeight);
+                ClearGeneratorVisibilityOverlayTexture();
+                return;
+            }
+
+            int width = Mathf.Max(1, _generatorPreviewWidth);
+            int height = Mathf.Max(1, _generatorPreviewHeight);
+            int totalCells = width * height;
+            _generatorPreviewVisibleMap = new bool[width, height];
+            _generatorPreviewViewerCountMap = new byte[width, height];
+            EnsureGeneratorVisibilityOverlayTexture(width, height);
+
+            var overlayPixels = new Color32[totalCells];
+            byte hiddenAlpha = (byte)Mathf.RoundToInt(Mathf.Clamp01(_generatorFogHiddenOpacity) * 255f);
+            byte visibleAlpha = (byte)Mathf.RoundToInt(Mathf.Clamp01(_generatorFogVisibleTint) * 255f);
+            byte visibleOnlyAlpha = (byte)Mathf.RoundToInt(Mathf.Clamp01(_generatorFogVisibleTint) * 150f);
+            Color32 fogColor = new Color32(0, 0, 0, hiddenAlpha);
+            Color32 visibleColor = _generatorPreviewFogUnion
+                ? new Color32(77, 230, 174, visibleAlpha)
+                : new Color32(26, 184, 219, visibleAlpha);
+            Color32 visibleOnlyColor = _generatorPreviewFogUnion
+                ? new Color32(77, 230, 174, visibleOnlyAlpha)
+                : new Color32(26, 184, 219, visibleOnlyAlpha);
+            Color32 clear = new Color32(0, 0, 0, 0);
+            int visibleCells = 0;
+
+            int activeIndex = Mathf.Clamp(_generatorScenarioActiveIndex, 0, Mathf.Max(0, _generatorScenarioUnits.Count - 1));
+            for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+            {
+                var observer = _generatorScenarioUnits[i];
+                if (observer == null)
+                    continue;
+
+                int radius = ResolveSelectedEffectiveVisionRange(observer);
+                int minX = Mathf.Max(0, observer.Position.x - radius - 1);
+                int maxX = Mathf.Min(width - 1, observer.Position.x + radius + 1);
+                int minY = Mathf.Max(0, observer.Position.y - radius - 1);
+                int maxY = Mathf.Min(height - 1, observer.Position.y + radius + 1);
+                bool contributesToVisible = _generatorPreviewFogUnion || i == activeIndex;
+
+                for (int y = minY; y <= maxY; y++)
+                {
+                    for (int x = minX; x <= maxX; x++)
+                    {
+                        if (!IsInsideSelectedVision(observer, x, y))
+                            continue;
+
+                        if (_generatorPreviewViewerCountMap[x, y] < byte.MaxValue)
+                            _generatorPreviewViewerCountMap[x, y]++;
+
+                        if (contributesToVisible)
+                            _generatorPreviewVisibleMap[x, y] = true;
+                    }
+                }
+            }
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    bool visible = _generatorPreviewVisibleMap[x, y];
+                    if (visible)
+                        visibleCells++;
+
+                    overlayPixels[y * width + x] = _generatorPreviewShowFog
+                        ? (visible ? visibleColor : fogColor)
+                        : (visible ? visibleOnlyColor : clear);
+                }
+            }
+
+            _generatorVisibilityOverlayTexture.SetPixels32(overlayPixels);
+            _generatorVisibilityOverlayTexture.Apply(false, false);
+            _generatorPreviewVisibleCells = visibleCells;
+            _generatorPreviewTotalCells = Mathf.Max(1, totalCells);
+            _generatorPreviewStatus = $"{width}x{height} | seed {_generatorPreviewSeed} | scenario {_generatorScenarioUnits.Count} | visible {visibleCells}";
+        }
+
+        private int ComputeGeneratorPreviewRuntimeSignature()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + _generatorPreviewWidth;
+                hash = hash * 31 + _generatorPreviewHeight;
+                hash = hash * 31 + _generatorPreviewSeed;
+                hash = hash * 31 + ComputeNoiseSettingsSignature();
+                hash = hash * 31 + ComputeHeightSettingsSignature();
+                hash = hash * 31 + ComputeSerializedObjectSignature(_hillGeneratorNodeAsset);
+                return hash;
+            }
+        }
+
+        private int ComputeGeneratorVisionPreviewRuntimeSignature()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + _generatorPreviewWidth;
+                hash = hash * 31 + _generatorPreviewHeight;
+                hash = hash * 31 + (_generatorPreviewShowFog ? 1 : 0);
+                hash = hash * 31 + (_generatorPreviewFogUnion ? 1 : 0);
+                hash = hash * 31 + (_generatorVisionUseTerrainLos ? 1 : 0);
+                hash = hash * 31 + Mathf.RoundToInt(_generatorVisionGlobalBoost * 1000f);
+                hash = hash * 31 + Mathf.RoundToInt(_generatorVisionOcclusionTolerance * 10000f);
+                hash = hash * 31 + Mathf.RoundToInt(_generatorVisionDownhillPenalty * 1000f);
+                hash = hash * 31 + Mathf.RoundToInt(_generatorVisionUphillPeekStrength * 1000f);
+                hash = hash * 31 + Mathf.RoundToInt(_generatorVisionUphillEdgeDrop * 10000f);
+                hash = hash * 31 + _generatorVisionEdgePeekDistanceTiles;
+                hash = hash * 31 + _generatorVisionEdgeBlindZoneTiles;
+                hash = hash * 31 + _generatorVisionEdgeMaxBlindZoneTiles;
+                hash = hash * 31 + Mathf.RoundToInt(_generatorVisionEdgeDistanceScale * 1000f);
+                hash = hash * 31 + Mathf.RoundToInt(_generatorFogHiddenOpacity * 1000f);
+                hash = hash * 31 + Mathf.RoundToInt(_generatorFogVisibleTint * 1000f);
+                hash = hash * 31 + ComputeScenarioSignature();
+                return hash;
+            }
+        }
+
+        private int ComputeNoiseSettingsSignature()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + Mathf.RoundToInt(GetSerializedFloat(_noiseSettingsObject, "Scale", 20f) * 1000f);
+                hash = hash * 31 + GetSerializedInt(_noiseSettingsObject, "Octaves", 4);
+                hash = hash * 31 + Mathf.RoundToInt(GetSerializedFloat(_noiseSettingsObject, "Persistance", 0.5f) * 1000f);
+                hash = hash * 31 + Mathf.RoundToInt(GetSerializedFloat(_noiseSettingsObject, "Lacunarity", 2f) * 1000f);
+                Vector2 offset = GetSerializedVector2(_noiseSettingsObject, "Offset", Vector2.zero);
+                hash = hash * 31 + Mathf.RoundToInt(offset.x * 1000f);
+                hash = hash * 31 + Mathf.RoundToInt(offset.y * 1000f);
+                return hash;
+            }
+        }
+
+        private int ComputeHeightSettingsSignature()
+        {
+            var layers = _heightSettingsObject?.FindProperty("HeightLayers");
+            if (layers == null || !layers.isArray)
+                return 0;
+
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + layers.arraySize;
+                for (int i = 0; i < layers.arraySize; i++)
+                {
+                    var layer = layers.GetArrayElementAtIndex(i);
+                    string tileId = layer.FindPropertyRelative("TileID")?.stringValue ?? string.Empty;
+                    float min = layer.FindPropertyRelative("MinHeight")?.floatValue ?? 0f;
+                    float max = layer.FindPropertyRelative("MaxHeight")?.floatValue ?? 0f;
+                    float chance = layer.FindPropertyRelative("TileIDChance")?.floatValue ?? 0f;
+                    hash = hash * 31 + tileId.GetHashCode();
+                    hash = hash * 31 + Mathf.RoundToInt(min * 10000f);
+                    hash = hash * 31 + Mathf.RoundToInt(max * 10000f);
+                    hash = hash * 31 + Mathf.RoundToInt(chance * 10000f);
+
+                    var variants = layer.FindPropertyRelative("WeightedVariants");
+                    int variantsCount = variants != null && variants.isArray ? variants.arraySize : 0;
+                    hash = hash * 31 + variantsCount;
+                    for (int v = 0; v < variantsCount; v++)
+                    {
+                        var variant = variants.GetArrayElementAtIndex(v);
+                        string variantTileId = variant.FindPropertyRelative("TileID")?.stringValue ?? string.Empty;
+                        float variantChance = variant.FindPropertyRelative("Chance")?.floatValue ?? 0f;
+                        hash = hash * 31 + variantTileId.GetHashCode();
+                        hash = hash * 31 + Mathf.RoundToInt(variantChance * 10000f);
+                    }
+                }
+
+                return hash;
+            }
+        }
+
+        private int ComputeScenarioSignature()
+        {
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + _generatorScenarioUnits.Count;
+                hash = hash * 31 + _generatorScenarioActiveIndex;
+                for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+                {
+                    var scenario = _generatorScenarioUnits[i];
+                    hash = hash * 31 + (scenario.TypeId ?? string.Empty).GetHashCode();
+                    hash = hash * 31 + scenario.Position.x;
+                    hash = hash * 31 + scenario.Position.y;
+
+                    var config = ResolveScenarioUnitConfig(scenario);
+                    hash = hash * 31 + Mathf.Clamp(GetInt(config, "VisionRange"), 1, 64);
+                    var boost = config?.FindPropertyRelative("VisionHeightBoostPerLevel");
+                    hash = hash * 31 + Mathf.RoundToInt(Mathf.Max(0f, boost != null ? boost.floatValue : 0f) * 1000f);
+                }
+
+                return hash;
+            }
+        }
+
+        private static int ComputeSerializedObjectSignature(UnityEngine.Object source)
+        {
+            if (source == null)
+                return 0;
+
+            unchecked
+            {
+                int hash = 17;
+                hash = hash * 31 + source.GetInstanceID();
+
+                try
+                {
+                    var serialized = new SerializedObject(source);
+                    var property = serialized.GetIterator();
+                    bool enterChildren = true;
+                    while (property.NextVisible(enterChildren))
+                    {
+                        enterChildren = true;
+                        hash = hash * 31 + property.propertyPath.GetHashCode();
+                        hash = hash * 31 + (int)property.propertyType;
+
+                        switch (property.propertyType)
+                        {
+                            case SerializedPropertyType.Integer:
+                            case SerializedPropertyType.Enum:
+                                hash = hash * 31 + property.intValue;
+                                break;
+                            case SerializedPropertyType.Boolean:
+                                hash = hash * 31 + (property.boolValue ? 1 : 0);
+                                break;
+                            case SerializedPropertyType.Float:
+                                hash = hash * 31 + Mathf.RoundToInt(property.floatValue * 10000f);
+                                break;
+                            case SerializedPropertyType.String:
+                                hash = hash * 31 + (property.stringValue ?? string.Empty).GetHashCode();
+                                break;
+                            case SerializedPropertyType.ObjectReference:
+                                hash = hash * 31 + (property.objectReferenceValue != null ? property.objectReferenceValue.GetInstanceID() : 0);
+                                break;
+                        }
+                    }
+                }
+                catch
+                {
+                    hash = hash * 31 + source.name.GetHashCode();
+                }
+
+                return hash;
+            }
         }
 
         private float[,] GeneratePreviewNoiseMap(SerializedObject noiseObject, int width, int height, int seed)
@@ -836,6 +1930,127 @@ namespace Kruty1918.Moyva.Units.Editor
             return noiseMap;
         }
 
+        private bool TryBuildHillGeneratorPreview(
+            float[,] heightMap,
+            IReadOnlyList<PreviewHeightLevel> fallbackLevels,
+            string fallbackTileId,
+            out string[,] tileMap,
+            out int[,] levelMap,
+            out string message)
+        {
+            tileMap = null;
+            levelMap = null;
+            message = string.Empty;
+
+            if (_hillGeneratorNodeAsset == null)
+                return false;
+
+            if (heightMap == null)
+            {
+                message = "HillGeneratorNode без HeightMap";
+                return false;
+            }
+
+            try
+            {
+                string[,] sourceTileMap = BuildHillSourceTileMap(heightMap, fallbackLevels, fallbackTileId);
+                var executeMethod = _hillGeneratorNodeAsset.GetType().GetMethod("Execute");
+                if (executeMethod == null)
+                {
+                    message = "HillGeneratorNode.Execute не знайдено";
+                    return false;
+                }
+
+                object[] inputs = { heightMap, sourceTileMap, null, null, null };
+                object output = executeMethod.Invoke(_hillGeneratorNodeAsset, new object[] { inputs, null });
+                if (!TryGetNodeOutputValues(output, out var values, out string status, out string nodeMessage))
+                {
+                    message = string.IsNullOrWhiteSpace(nodeMessage) ? "HillGeneratorNode не повернув outputs" : nodeMessage;
+                    return false;
+                }
+
+                if (string.Equals(status, "Error", StringComparison.OrdinalIgnoreCase))
+                {
+                    message = string.IsNullOrWhiteSpace(nodeMessage) ? "HillGeneratorNode error" : nodeMessage;
+                    return false;
+                }
+
+                var outputTileMap = values.Length > 0 ? values[0] as string[,] : null;
+                var outputLevelMap = values.Length > 1 ? values[1] as int[,] : null;
+                if (!HasSamePreviewSize(outputLevelMap, _generatorPreviewWidth, _generatorPreviewHeight))
+                {
+                    message = "HillGeneratorNode LevelMap має інший розмір";
+                    return false;
+                }
+
+                tileMap = HasSamePreviewSize(outputTileMap, _generatorPreviewWidth, _generatorPreviewHeight)
+                    ? outputTileMap
+                    : sourceTileMap;
+                levelMap = outputLevelMap;
+                message = string.Equals(status, "Warning", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(nodeMessage)
+                    ? nodeMessage
+                    : string.Empty;
+                return true;
+            }
+            catch (Exception e)
+            {
+                message = e.InnerException != null ? e.InnerException.Message : e.Message;
+                return false;
+            }
+        }
+
+        private string[,] BuildHillSourceTileMap(float[,] heightMap, IReadOnlyList<PreviewHeightLevel> fallbackLevels, string fallbackTileId)
+        {
+            int width = heightMap.GetLength(0);
+            int height = heightMap.GetLength(1);
+            var result = new string[width, height];
+            bool hasFallbackLevels = fallbackLevels != null && fallbackLevels.Count > 0;
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    if (hasFallbackLevels)
+                    {
+                        int levelIndex = ResolvePreviewLevel(fallbackLevels, heightMap[x, y]);
+                        var level = fallbackLevels[Mathf.Clamp(levelIndex, 0, fallbackLevels.Count - 1)];
+                        result[x, y] = SelectPreviewTile(level, x, y, _generatorPreviewSeed, fallbackTileId);
+                    }
+                    else
+                    {
+                        result[x, y] = fallbackTileId;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        private static bool TryGetNodeOutputValues(object output, out object[] values, out string status, out string message)
+        {
+            values = null;
+            status = string.Empty;
+            message = string.Empty;
+
+            if (output == null)
+                return false;
+
+            var outputType = output.GetType();
+            values = outputType.GetProperty("Values")?.GetValue(output) as object[];
+            object statusValue = outputType.GetProperty("Status")?.GetValue(output);
+            status = statusValue != null ? statusValue.ToString() : string.Empty;
+            message = outputType.GetProperty("Message")?.GetValue(output) as string ?? string.Empty;
+            return values != null;
+        }
+
+        private static bool HasSamePreviewSize(Array map, int width, int height)
+        {
+            return map != null
+                && map.Rank == 2
+                && map.GetLength(0) == width
+                && map.GetLength(1) == height;
+        }
+
         private List<PreviewHeightLevel> BuildPreviewLevels()
         {
             var result = new List<PreviewHeightLevel>();
@@ -857,6 +2072,53 @@ namespace Kruty1918.Moyva.Units.Editor
                     MaxHeight = Mathf.Clamp01(layer.FindPropertyRelative("MaxHeight")?.floatValue ?? 1f),
                     Variants = ReadWeightedVariants(layer),
                 });
+            }
+
+            return result;
+        }
+
+        private List<PreviewHeightLevel> BuildHillGeneratorPreviewLevels()
+        {
+            var result = new List<PreviewHeightLevel>();
+            if (_hillGeneratorNodeAsset == null)
+                return result;
+
+            try
+            {
+                var serializedNode = new SerializedObject(_hillGeneratorNodeAsset);
+                int levelCount = Mathf.Max(1, serializedNode.FindProperty("_levels")?.intValue ?? 1);
+                bool useCustomThresholds = serializedNode.FindProperty("_useCustomThresholds")?.boolValue ?? false;
+                var thresholds = serializedNode.FindProperty("_levelThresholds");
+                float previous = 0f;
+
+                for (int i = 0; i < levelCount; i++)
+                {
+                    float max = 1f;
+                    if (i < levelCount - 1)
+                    {
+                        max = useCustomThresholds && thresholds != null && thresholds.isArray && i < thresholds.arraySize
+                            ? Mathf.Clamp01(thresholds.GetArrayElementAtIndex(i).floatValue)
+                            : (float)(i + 1) / levelCount;
+                    }
+
+                    if (max < previous)
+                        max = previous;
+
+                    result.Add(new PreviewHeightLevel
+                    {
+                        TileId = $"Hill level {i + 1}",
+                        TileChance = 1f,
+                        MinHeight = previous,
+                        MaxHeight = max,
+                        Variants = Array.Empty<PreviewWeightedTile>(),
+                    });
+
+                    previous = max;
+                }
+            }
+            catch
+            {
+                return result;
             }
 
             return result;
@@ -977,18 +2239,559 @@ namespace Kruty1918.Moyva.Units.Editor
             return "ground";
         }
 
-        private bool IsInsideSelectedVision(int x, int y)
+        private void EnsureGeneratorScenarioInitialized()
         {
-            int radius = ResolveSelectedVisionRange();
-            int dx = x - _generatorPreviewUnitPosition.x;
-            int dy = y - _generatorPreviewUnitPosition.y;
-            float limit = (radius + 0.5f) * (radius + 0.5f);
-            return dx * dx + dy * dy <= limit;
+            if (_generatorScenarioUnits.Count > 0)
+            {
+                _generatorScenarioActiveIndex = Mathf.Clamp(_generatorScenarioActiveIndex, 0, _generatorScenarioUnits.Count - 1);
+                _generatorPreviewUnitPosition = _generatorScenarioUnits[_generatorScenarioActiveIndex].Position;
+                return;
+            }
+
+            _generatorScenarioUnits.Add(new PreviewScenarioUnit
+            {
+                TypeId = ResolveDefaultScenarioTypeId(),
+                Position = new Vector2Int(Mathf.Clamp(_generatorPreviewUnitPosition.x, 0, _generatorPreviewWidth - 1), Mathf.Clamp(_generatorPreviewUnitPosition.y, 0, _generatorPreviewHeight - 1))
+            });
+            _generatorScenarioActiveIndex = 0;
         }
 
-        private int ResolveSelectedVisionRange()
+        private PreviewScenarioUnit GetActiveScenarioUnit()
         {
-            return HasSelectedUnit() ? Mathf.Clamp(GetInt(SelectedUnitProperty(), "VisionRange"), 1, 64) : 1;
+            if (_generatorScenarioUnits.Count == 0)
+                return null;
+
+            _generatorScenarioActiveIndex = Mathf.Clamp(_generatorScenarioActiveIndex, 0, _generatorScenarioUnits.Count - 1);
+            return _generatorScenarioUnits[_generatorScenarioActiveIndex];
+        }
+
+        private void ClampScenarioUnitPositions()
+        {
+            EnsureGeneratorScenarioInitialized();
+            for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+            {
+                var unit = _generatorScenarioUnits[i];
+                unit.Position = new Vector2Int(
+                    Mathf.Clamp(unit.Position.x, 0, _generatorPreviewWidth - 1),
+                    Mathf.Clamp(unit.Position.y, 0, _generatorPreviewHeight - 1));
+            }
+
+            var active = GetActiveScenarioUnit();
+            if (active != null)
+                _generatorPreviewUnitPosition = active.Position;
+        }
+
+        private void AddScenarioUnit()
+        {
+            Vector2Int start = new Vector2Int(_generatorPreviewWidth / 2, _generatorPreviewHeight / 2);
+            if (_generatorScenarioUnits.Count > 0)
+            {
+                Vector2Int current = _generatorScenarioUnits[Mathf.Clamp(_generatorScenarioActiveIndex, 0, _generatorScenarioUnits.Count - 1)].Position;
+                start = new Vector2Int(Mathf.Clamp(current.x + 1, 0, _generatorPreviewWidth - 1), current.y);
+            }
+
+            _generatorScenarioUnits.Add(new PreviewScenarioUnit
+            {
+                TypeId = ResolveDefaultScenarioTypeId(),
+                Position = start
+            });
+            _generatorScenarioActiveIndex = _generatorScenarioUnits.Count - 1;
+            _generatorPreviewUnitPosition = start;
+            MarkGeneratorVisionDirty();
+        }
+
+        private void RemoveActiveScenarioUnit()
+        {
+            if (_generatorScenarioUnits.Count <= 1)
+                return;
+
+            _generatorScenarioUnits.RemoveAt(Mathf.Clamp(_generatorScenarioActiveIndex, 0, _generatorScenarioUnits.Count - 1));
+            _generatorScenarioActiveIndex = Mathf.Clamp(_generatorScenarioActiveIndex, 0, _generatorScenarioUnits.Count - 1);
+            var active = GetActiveScenarioUnit();
+            if (active != null)
+                _generatorPreviewUnitPosition = active.Position;
+            MarkGeneratorVisionDirty();
+        }
+
+        private string ResolveDefaultScenarioTypeId()
+        {
+            if (HasSelectedUnit())
+            {
+                string selectedTypeId = GetString(SelectedUnitProperty(), "TypeId");
+                if (!string.IsNullOrWhiteSpace(selectedTypeId))
+                    return selectedTypeId;
+            }
+
+            if (_configs != null)
+            {
+                for (int i = 0; i < _configs.arraySize; i++)
+                {
+                    var unit = _configs.GetArrayElementAtIndex(i);
+                    string typeId = GetString(unit, "TypeId");
+                    if (!string.IsNullOrWhiteSpace(typeId))
+                        return typeId;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private void BuildScenarioTypeOptions(out string[] typeIds, out string[] labels)
+        {
+            var ids = new List<string>();
+            var names = new List<string>();
+            if (_configs != null)
+            {
+                for (int i = 0; i < _configs.arraySize; i++)
+                {
+                    var unit = _configs.GetArrayElementAtIndex(i);
+                    string typeId = GetString(unit, "TypeId");
+                    if (string.IsNullOrWhiteSpace(typeId))
+                        continue;
+
+                    ids.Add(typeId);
+                    names.Add(typeId);
+                }
+            }
+
+            if (ids.Count == 0)
+            {
+                ids.Add(string.Empty);
+                names.Add("<немає юнітів>");
+            }
+
+            typeIds = ids.ToArray();
+            labels = names.ToArray();
+        }
+
+        private static int IndexOfTypeId(string[] typeIds, string typeId)
+        {
+            if (typeIds == null || typeIds.Length == 0)
+                return 0;
+
+            for (int i = 0; i < typeIds.Length; i++)
+            {
+                if (string.Equals(typeIds[i], typeId, StringComparison.Ordinal))
+                    return i;
+            }
+
+            return 0;
+        }
+
+        private string[] BuildScenarioUnitLabels()
+        {
+            string[] labels = new string[_generatorScenarioUnits.Count];
+            for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+                labels[i] = BuildScenarioUnitLabel(i);
+            return labels;
+        }
+
+        private string BuildScenarioUnitLabel(int scenarioIndex)
+        {
+            if (scenarioIndex < 0 || scenarioIndex >= _generatorScenarioUnits.Count)
+                return "<invalid>";
+
+            var unit = _generatorScenarioUnits[scenarioIndex];
+            string typeName = string.IsNullOrWhiteSpace(unit.TypeId) ? "<TypeId?>" : unit.TypeId;
+            return $"#{scenarioIndex + 1} {typeName} ({unit.Position.x},{unit.Position.y})";
+        }
+
+        private bool CanScenarioUnitSeeScenarioUnit(int observerIndex, int targetIndex)
+        {
+            if (observerIndex < 0 || targetIndex < 0 || observerIndex >= _generatorScenarioUnits.Count || targetIndex >= _generatorScenarioUnits.Count)
+                return false;
+
+            var observer = _generatorScenarioUnits[observerIndex];
+            var target = _generatorScenarioUnits[targetIndex];
+            return IsInsideSelectedVision(observer, target.Position.x, target.Position.y);
+        }
+
+        private SerializedProperty ResolveScenarioUnitConfig(PreviewScenarioUnit observer)
+        {
+            if (observer == null)
+                return null;
+
+            string typeId = observer.TypeId;
+            if (_configs != null && !string.IsNullOrWhiteSpace(typeId))
+            {
+                for (int i = 0; i < _configs.arraySize; i++)
+                {
+                    var unit = _configs.GetArrayElementAtIndex(i);
+                    if (string.Equals(GetString(unit, "TypeId"), typeId, StringComparison.Ordinal))
+                        return unit;
+                }
+            }
+
+            return HasSelectedUnit() ? SelectedUnitProperty() : null;
+        }
+
+        private static Color ResolveScenarioUnitColor(int index)
+        {
+            float hue = Mathf.Repeat(0.07f + index * 0.17f, 1f);
+            return Color.HSVToRGB(hue, 0.72f, 0.96f);
+        }
+
+        private bool IsInsideScenarioVision(int x, int y)
+        {
+            if (_generatorPreviewFogUnion)
+            {
+                for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+                {
+                    if (IsInsideSelectedVision(_generatorScenarioUnits[i], x, y))
+                        return true;
+                }
+
+                return false;
+            }
+
+            return IsInsideSelectedVision(GetActiveScenarioUnit(), x, y);
+        }
+
+        private void EvaluateScenarioVisionAtCell(int x, int y, out bool visible, out byte viewers)
+        {
+            int viewerCount = 0;
+            bool activeVisible = false;
+            int activeIndex = Mathf.Clamp(_generatorScenarioActiveIndex, 0, Mathf.Max(0, _generatorScenarioUnits.Count - 1));
+
+            for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+            {
+                if (!IsInsideSelectedVision(_generatorScenarioUnits[i], x, y))
+                    continue;
+
+                viewerCount++;
+                if (i == activeIndex)
+                    activeVisible = true;
+            }
+
+            visible = _generatorPreviewFogUnion ? viewerCount > 0 : activeVisible;
+            viewers = (byte)Mathf.Clamp(viewerCount, 0, byte.MaxValue);
+        }
+
+        private bool IsCachedScenarioVisible(int x, int y)
+        {
+            if (_generatorPreviewVisibleMap == null)
+                return IsInsideScenarioVision(x, y);
+
+            int cx = Mathf.Clamp(x, 0, _generatorPreviewVisibleMap.GetLength(0) - 1);
+            int cy = Mathf.Clamp(y, 0, _generatorPreviewVisibleMap.GetLength(1) - 1);
+            return _generatorPreviewVisibleMap[cx, cy];
+        }
+
+        private int GetCachedScenarioViewers(int x, int y)
+        {
+            if (_generatorPreviewViewerCountMap == null)
+                return CountScenarioViewers(x, y);
+
+            int cx = Mathf.Clamp(x, 0, _generatorPreviewViewerCountMap.GetLength(0) - 1);
+            int cy = Mathf.Clamp(y, 0, _generatorPreviewViewerCountMap.GetLength(1) - 1);
+            return _generatorPreviewViewerCountMap[cx, cy];
+        }
+
+        private int CountScenarioViewers(int x, int y)
+        {
+            int count = 0;
+            for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+            {
+                if (IsInsideSelectedVision(_generatorScenarioUnits[i], x, y))
+                    count++;
+            }
+
+            return count;
+        }
+
+        private bool IsInsideSelectedVision(PreviewScenarioUnit observer, int x, int y)
+        {
+            if (observer == null)
+                return false;
+
+            int radius = ResolveSelectedEffectiveVisionRange(observer);
+            int dx = x - observer.Position.x;
+            int dy = y - observer.Position.y;
+            float limit = (radius + 0.5f) * (radius + 0.5f);
+            if (dx * dx + dy * dy > limit)
+                return false;
+
+            return !_generatorVisionUseTerrainLos || HasTerrainLineOfSight(observer, x, y);
+        }
+
+        private int ResolveSelectedUnitVisionRange(PreviewScenarioUnit observer)
+        {
+            var unitConfig = ResolveScenarioUnitConfig(observer);
+            if (unitConfig == null)
+                return 1;
+
+            return Mathf.Clamp(GetInt(unitConfig, "VisionRange"), 1, 64);
+        }
+
+        private int ResolveSelectedUnitHeightLevel(PreviewScenarioUnit observer)
+        {
+            if (_generatorPreviewLevelMap == null || observer == null)
+                return 0;
+
+            int x = Mathf.Clamp(observer.Position.x, 0, _generatorPreviewWidth - 1);
+            int y = Mathf.Clamp(observer.Position.y, 0, _generatorPreviewHeight - 1);
+            return Mathf.Max(0, _generatorPreviewLevelMap[x, y]);
+        }
+
+        private float ResolveSelectedVisionBoostPerLevel(PreviewScenarioUnit observer)
+        {
+            float unitBoost = 0f;
+            var unitConfig = ResolveScenarioUnitConfig(observer);
+            if (unitConfig != null)
+            {
+                var unitBoostProp = unitConfig.FindPropertyRelative("VisionHeightBoostPerLevel");
+                if (unitBoostProp != null)
+                    unitBoost = Mathf.Max(0f, unitBoostProp.floatValue);
+            }
+
+            return Mathf.Max(0f, _generatorVisionGlobalBoost) + unitBoost;
+        }
+
+        private int ResolveSelectedEffectiveVisionRange(PreviewScenarioUnit observer)
+        {
+            int baseVision = ResolveSelectedUnitVisionRange(observer);
+            int heightLevel = ResolveSelectedUnitHeightLevel(observer);
+            float boostPerLevel = ResolveSelectedVisionBoostPerLevel(observer);
+            int extraVision = Mathf.RoundToInt(heightLevel * boostPerLevel);
+            return Mathf.Clamp(baseVision + Mathf.Max(0, extraVision), 1, 128);
+        }
+
+        private bool HasTerrainLineOfSight(PreviewScenarioUnit observer, int targetX, int targetY)
+        {
+            if (_generatorPreviewNoiseMap == null || observer == null)
+                return true;
+
+            int observerX = Mathf.Clamp(observer.Position.x, 0, _generatorPreviewWidth - 1);
+            int observerY = Mathf.Clamp(observer.Position.y, 0, _generatorPreviewHeight - 1);
+            if (observerX == targetX && observerY == targetY)
+                return true;
+
+            float observerHeight = SampleNoiseHeight(observerX, observerY);
+            float targetHeight = SampleNoiseHeight(targetX, targetY);
+            int observerLevel = ResolveSelectedUnitHeightLevel(observer);
+            int targetLevel = ResolveHeightLevelAt(targetX, targetY);
+            float edgeThreshold = GetGeneratorEdgeHeightThreshold();
+
+            float observerEyeHeight = observerHeight + observerLevel * 0.025f + 0.08f;
+            float targetEyeHeight = targetHeight + targetLevel * 0.015f + 0.04f;
+
+            int dx = targetX - observerX;
+            int dy = targetY - observerY;
+            int gridDistance = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
+            float distance = Mathf.Sqrt(dx * dx + dy * dy);
+            int ignoredTerrainSteps = 0;
+            if (observerHeight - targetHeight >= edgeThreshold)
+            {
+                if (TryFindGeneratorDownhillEdge(observerX, observerY, targetX, targetY, out int downhillEdgeStep, out int distanceToEdge))
+                {
+                    if (IsGeneratorTargetHiddenByDownhillEdge(gridDistance, downhillEdgeStep, distanceToEdge))
+                        return false;
+
+                    ignoredTerrainSteps = downhillEdgeStep;
+                }
+            }
+
+            int steps = Mathf.Clamp(Mathf.CeilToInt(distance * 0.8f), 2, 28);
+            float ignoredTerrainT = gridDistance > 0
+                ? Mathf.Clamp01((ignoredTerrainSteps + 0.1f) / gridDistance)
+                : 0f;
+            bool blockedByTerrain = false;
+            float firstBlockT = 0f;
+            float maxBlockExcess = 0f;
+
+            for (int i = 1; i < steps; i++)
+            {
+                float t = i / (float)steps;
+                if (t <= ignoredTerrainT)
+                    continue;
+
+                float px = Mathf.Lerp(observerX + 0.5f, targetX + 0.5f, t);
+                float py = Mathf.Lerp(observerY + 0.5f, targetY + 0.5f, t);
+                float terrainHeight = SampleNoiseHeight(px, py);
+                float expectedSightHeight = Mathf.Lerp(observerEyeHeight, targetEyeHeight, t);
+                float excess = terrainHeight - (expectedSightHeight + _generatorVisionOcclusionTolerance);
+                if (excess > 0f)
+                {
+                    blockedByTerrain = true;
+                    if (firstBlockT <= 0f)
+                        firstBlockT = t;
+                    maxBlockExcess = Mathf.Max(maxBlockExcess, excess);
+                }
+            }
+
+            if (blockedByTerrain)
+            {
+                float uphillDelta = targetHeight - observerHeight;
+                float uphillEdgeFactor = ResolveGeneratorUphillEdgePeekFactor(observerX, observerY, targetX, targetY, targetHeight);
+                bool canPeekUphill = uphillDelta > edgeThreshold
+                    && distance > 1.5f
+                    && uphillEdgeFactor > 0f;
+
+                if (!canPeekUphill)
+                    return false;
+
+                float nearTargetFactor = Mathf.Clamp01((firstBlockT - 0.45f) / 0.45f);
+                float allowedExcess = Mathf.Lerp(0.005f, 0.12f, _generatorVisionUphillPeekStrength * uphillEdgeFactor * nearTargetFactor);
+                if (maxBlockExcess > allowedExcess)
+                    return false;
+            }
+
+            return true;
+        }
+
+        private bool TryFindGeneratorDownhillEdge(int observerX, int observerY, int targetX, int targetY, out int edgeStep, out int distanceToEdge)
+        {
+            edgeStep = -1;
+            distanceToEdge = 0;
+
+            float previousHeight = SampleNoiseHeight(observerX, observerY);
+            int currentX = observerX;
+            int currentY = observerY;
+            int dx = Mathf.Abs(targetX - observerX);
+            int dy = Mathf.Abs(targetY - observerY);
+            int sx = observerX < targetX ? 1 : -1;
+            int sy = observerY < targetY ? 1 : -1;
+            int error = dx - dy;
+            int stepIndex = 0;
+            float edgeThreshold = GetGeneratorEdgeHeightThreshold();
+
+            while (currentX != targetX || currentY != targetY)
+            {
+                int twiceError = error * 2;
+                if (twiceError > -dy)
+                {
+                    error -= dy;
+                    currentX += sx;
+                }
+
+                if (twiceError < dx)
+                {
+                    error += dx;
+                    currentY += sy;
+                }
+
+                stepIndex++;
+                float currentHeight = SampleNoiseHeight(currentX, currentY);
+                if (previousHeight - currentHeight >= edgeThreshold)
+                {
+                    edgeStep = stepIndex;
+                    distanceToEdge = Mathf.Max(0, stepIndex - 1);
+                    return true;
+                }
+
+                previousHeight = currentHeight;
+            }
+
+            return false;
+        }
+
+        private bool IsGeneratorTargetHiddenByDownhillEdge(int gridDistance, int edgeStep, int distanceToEdge)
+        {
+            int blindZone = ResolveGeneratorDownhillBlindZoneTiles(distanceToEdge);
+            if (blindZone <= 0)
+                return false;
+
+            int distancePastEdge = Mathf.Max(1, gridDistance - edgeStep + 1);
+            return distancePastEdge <= blindZone;
+        }
+
+        private int ResolveGeneratorDownhillBlindZoneTiles(int distanceToEdge)
+        {
+            int peekDistance = Mathf.Max(0, _generatorVisionEdgePeekDistanceTiles);
+            if (distanceToEdge <= peekDistance)
+                return 0;
+
+            float strength = Mathf.Clamp01(_generatorVisionDownhillPenalty);
+            int baseBlindZone = Mathf.RoundToInt(Mathf.Max(0, _generatorVisionEdgeBlindZoneTiles) * Mathf.Lerp(0.5f, 1.25f, strength));
+            int maxBlindZone = Mathf.Max(baseBlindZone, _generatorVisionEdgeMaxBlindZoneTiles);
+            float extraBlindZone = Mathf.Max(0, distanceToEdge - peekDistance) * Mathf.Max(0f, _generatorVisionEdgeDistanceScale);
+            return Mathf.Clamp(Mathf.RoundToInt(baseBlindZone + extraBlindZone), 0, maxBlindZone);
+        }
+
+        private float ResolveGeneratorUphillEdgePeekFactor(int observerX, int observerY, int targetX, int targetY, float targetHeight)
+        {
+            int towardObserverX = Math.Sign(observerX - targetX);
+            int towardObserverY = Math.Sign(observerY - targetY);
+            if (towardObserverX == 0 && towardObserverY == 0)
+                return 0f;
+
+            int peekDistance = Mathf.Max(0, _generatorVisionEdgePeekDistanceTiles);
+            int maxSteps = Mathf.Max(1, peekDistance + 1);
+            float edgeThreshold = GetGeneratorEdgeHeightThreshold();
+            for (int step = 1; step <= maxSteps; step++)
+            {
+                int edgeX = targetX + towardObserverX * step;
+                int edgeY = targetY + towardObserverY * step;
+                if (!IsGeneratorCellInBounds(edgeX, edgeY))
+                    return 1f;
+
+                float edgeHeight = SampleNoiseHeight(edgeX, edgeY);
+                if (targetHeight - edgeHeight < edgeThreshold)
+                    continue;
+
+                int distanceToEdge = Mathf.Max(0, step - 1);
+                if (distanceToEdge > peekDistance)
+                    return 0f;
+
+                return 1f - distanceToEdge / (peekDistance + 1f);
+            }
+
+            return 0f;
+        }
+
+        private bool IsGeneratorCellInBounds(int x, int y)
+        {
+            return x >= 0 && x < _generatorPreviewWidth && y >= 0 && y < _generatorPreviewHeight;
+        }
+
+        private float GetGeneratorEdgeHeightThreshold()
+        {
+            return Mathf.Max(0.001f, _generatorVisionUphillEdgeDrop);
+        }
+
+        private int ResolveHeightLevelAt(int x, int y)
+        {
+            if (_generatorPreviewLevelMap == null)
+                return 0;
+
+            int cx = Mathf.Clamp(x, 0, _generatorPreviewWidth - 1);
+            int cy = Mathf.Clamp(y, 0, _generatorPreviewHeight - 1);
+            return Mathf.Max(0, _generatorPreviewLevelMap[cx, cy]);
+        }
+
+        private float SampleNoiseHeight(int x, int y)
+        {
+            if (_generatorPreviewNoiseMap == null)
+                return 0f;
+
+            int cx = Mathf.Clamp(x, 0, _generatorPreviewWidth - 1);
+            int cy = Mathf.Clamp(y, 0, _generatorPreviewHeight - 1);
+            return _generatorPreviewNoiseMap[cx, cy];
+        }
+
+        private float SampleNoiseHeight(float x, float y)
+        {
+            if (_generatorPreviewNoiseMap == null)
+                return 0f;
+
+            float fx = Mathf.Clamp(x - 0.5f, 0f, _generatorPreviewWidth - 1f);
+            float fy = Mathf.Clamp(y - 0.5f, 0f, _generatorPreviewHeight - 1f);
+
+            int x0 = Mathf.FloorToInt(fx);
+            int y0 = Mathf.FloorToInt(fy);
+            int x1 = Mathf.Min(x0 + 1, _generatorPreviewWidth - 1);
+            int y1 = Mathf.Min(y0 + 1, _generatorPreviewHeight - 1);
+            float tx = fx - x0;
+            float ty = fy - y0;
+
+            float h00 = _generatorPreviewNoiseMap[x0, y0];
+            float h10 = _generatorPreviewNoiseMap[x1, y0];
+            float h01 = _generatorPreviewNoiseMap[x0, y1];
+            float h11 = _generatorPreviewNoiseMap[x1, y1];
+
+            float hx0 = Mathf.Lerp(h00, h10, tx);
+            float hx1 = Mathf.Lerp(h01, h11, tx);
+            return Mathf.Lerp(hx0, hx1, ty);
         }
 
         private Color ResolvePreviewColor(int levelIndex, float heightValue)
@@ -1017,6 +2820,35 @@ namespace Kruty1918.Moyva.Units.Editor
                 wrapMode = TextureWrapMode.Clamp,
                 name = "UnitDesignerGeneratorFogPreview"
             };
+        }
+
+        private void EnsureGeneratorVisibilityOverlayTexture(int width, int height)
+        {
+            if (_generatorVisibilityOverlayTexture != null && _generatorVisibilityOverlayTexture.width == width && _generatorVisibilityOverlayTexture.height == height)
+                return;
+
+            if (_generatorVisibilityOverlayTexture != null)
+                DestroyImmediate(_generatorVisibilityOverlayTexture);
+
+            _generatorVisibilityOverlayTexture = new Texture2D(width, height, TextureFormat.RGBA32, false)
+            {
+                hideFlags = HideFlags.HideAndDontSave,
+                filterMode = FilterMode.Point,
+                wrapMode = TextureWrapMode.Clamp,
+                name = "UnitDesignerGeneratorVisibilityOverlay"
+            };
+        }
+
+        private void ClearGeneratorVisibilityOverlayTexture()
+        {
+            if (_generatorVisibilityOverlayTexture == null)
+                return;
+
+            int width = Mathf.Max(1, _generatorVisibilityOverlayTexture.width);
+            int height = Mathf.Max(1, _generatorVisibilityOverlayTexture.height);
+            var pixels = new Color32[width * height];
+            _generatorVisibilityOverlayTexture.SetPixels32(pixels);
+            _generatorVisibilityOverlayTexture.Apply(false, false);
         }
 
         private Rect FitTexture(Rect rect, int textureWidth, int textureHeight)
@@ -1053,6 +2885,8 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private void ExtractGeneratorReferencesFromAsset(bool applyMapSize)
         {
+            _hillGeneratorNodeAsset = null;
+
             if (_generatorAsset == null)
                 return;
 
@@ -1060,6 +2894,8 @@ namespace Kruty1918.Moyva.Units.Editor
                 _noiseSettingsAsset = _generatorAsset;
             if (IsObjectOfType(_generatorAsset, HeightMapSettingsTypeName))
                 _heightSettingsAsset = _generatorAsset;
+            if (IsObjectOfType(_generatorAsset, HillGeneratorNodeTypeName))
+                _hillGeneratorNodeAsset = _generatorAsset;
 
             string path = AssetDatabase.GetAssetPath(_generatorAsset);
             if (!string.IsNullOrEmpty(path))
@@ -1083,6 +2919,8 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 if (applyMapSize && IsObjectOfType(source, GraphAssetTypeName))
                     TryApplyGraphSharedMapSize(source);
+                if (_hillGeneratorNodeAsset == null && IsObjectOfType(source, HillGeneratorNodeTypeName))
+                    _hillGeneratorNodeAsset = source as ScriptableObject;
 
                 var serialized = new SerializedObject(source);
                 var property = serialized.GetIterator();
@@ -1101,6 +2939,8 @@ namespace Kruty1918.Moyva.Units.Editor
                         _noiseSettingsAsset = referenced;
                     if (_heightSettingsAsset == null && IsObjectOfType(referenced, HeightMapSettingsTypeName))
                         _heightSettingsAsset = referenced;
+                    if (_hillGeneratorNodeAsset == null && IsObjectOfType(referenced, HillGeneratorNodeTypeName))
+                        _hillGeneratorNodeAsset = referenced;
                 }
             }
             catch (Exception e)
@@ -1123,6 +2963,9 @@ namespace Kruty1918.Moyva.Units.Editor
                 _generatorPreviewWidth = Mathf.Clamp(width, 8, 256);
                 _generatorPreviewHeight = Mathf.Clamp(height, 8, 256);
                 _generatorPreviewUnitPosition = new Vector2Int(_generatorPreviewWidth / 2, _generatorPreviewHeight / 2);
+                var active = GetActiveScenarioUnit();
+                if (active != null)
+                    active.Position = _generatorPreviewUnitPosition;
             }
         }
 
@@ -1344,6 +3187,12 @@ namespace Kruty1918.Moyva.Units.Editor
             public float MinHeight;
             public float MaxHeight;
             public PreviewWeightedTile[] Variants;
+        }
+
+        private sealed class PreviewScenarioUnit
+        {
+            public string TypeId;
+            public Vector2Int Position;
         }
 
         private struct PreviewWeightedTile

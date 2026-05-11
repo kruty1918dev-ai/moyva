@@ -22,6 +22,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// Містить шари які SingleTileLayerNode(и) додали під час виконання графа.
         /// </summary>
         internal WorldLayerData[] LastLayerData { get; private set; }
+        internal int[,] LastTerrainLevelMap { get; private set; }
+        internal HillLevelDataMap LastHillLevelData { get; private set; }
 
         /// <summary>
         /// true, якщо BiomeMap цього запуску була зібрана виключно з layer-даних
@@ -38,6 +40,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IWFCService _wfcService;
         private readonly TileRegistrySO _tileRegistry;
         private readonly IGeneratorDataRegistry _generatorDataRegistry;
+        private readonly IGeneratorTerrainLevelService _terrainLevelService;
 
         public GraphBasedMapDataGenerator(
             GraphAsset graphAsset,
@@ -48,7 +51,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IRiverPathfinder riverPathfinder,
             IWFCService wfcService,
             [Zenject.InjectOptional] TileRegistrySO tileRegistry = null,
-            [Zenject.InjectOptional] IGeneratorDataRegistry generatorDataRegistry = null)
+            [Zenject.InjectOptional] IGeneratorDataRegistry generatorDataRegistry = null,
+            [Zenject.InjectOptional] IGeneratorTerrainLevelService terrainLevelService = null)
         {
             _graphAsset = graphAsset;
             _graphRunner = graphRunner;
@@ -59,6 +63,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _wfcService = wfcService;
             _tileRegistry = tileRegistry;
             _generatorDataRegistry = generatorDataRegistry;
+            _terrainLevelService = terrainLevelService;
         }
 
         public void GenerateMapData(int width, int height,
@@ -72,7 +77,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             try
             {
                 LastBiomeMapDerivedFromLayers = false;
+                LastTerrainLevelMap = null;
+                LastHillLevelData = null;
                 _generatorDataRegistry?.Clear();
+                _terrainLevelService?.Clear();
 
                 // Якщо GraphSharedSettings задає розмір мапи — використовуємо його,
                 // щоб розмір плей-моду збігався з розміром превью в редакторі.
@@ -142,6 +150,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     }
                     return;
                 }
+
+                CaptureHillTerrainLevelData(result);
 
                 // OutputNode і його мапи опціональні: граф може працювати лише side-effects (напр. LayerData).
                 var biomeMap = new string[width, height];
@@ -217,6 +227,72 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 UnityEngine.Random.state = previousRandomState;
             }
+        }
+
+        private void CaptureHillTerrainLevelData(GraphExecutionResult result)
+        {
+            if (result == null || _graphAsset?.Nodes == null)
+                return;
+
+            foreach (var node in _graphAsset.Nodes)
+            {
+                if (node is not Nodes.HillGeneratorNode)
+                    continue;
+
+                var outputs = result.GetOutputs(node.NodeId);
+                if (outputs == null || outputs.Length == 0)
+                    continue;
+
+                var levelMap = outputs.Length > 1 ? outputs[1] as int[,] : null;
+                var hillLevelData = outputs.Length > 2 ? outputs[2] as HillLevelDataMap : null;
+
+                if (hillLevelData != null)
+                {
+                    LastHillLevelData = hillLevelData.Clone();
+                    _terrainLevelService?.SetHillLevelData(hillLevelData);
+                    LastTerrainLevelMap = _terrainLevelService?.CopyLevelMap() ?? BuildLevelMapFromHillData(hillLevelData);
+                    _generatorDataRegistry?.Set("hill-levels", LastHillLevelData);
+                    _generatorDataRegistry?.Set($"hill-levels:{node.NodeId}", LastHillLevelData);
+                    return;
+                }
+
+                if (levelMap != null)
+                {
+                    LastTerrainLevelMap = CloneLevelMap(levelMap);
+                    _terrainLevelService?.SetLevelMap(LastTerrainLevelMap);
+                    _generatorDataRegistry?.Set("hill-level-map", CloneLevelMap(LastTerrainLevelMap));
+                    _generatorDataRegistry?.Set($"hill-level-map:{node.NodeId}", CloneLevelMap(LastTerrainLevelMap));
+                    return;
+                }
+            }
+        }
+
+        private static int[,] BuildLevelMapFromHillData(HillLevelDataMap data)
+        {
+            if (data == null)
+                return null;
+
+            var result = new int[data.Width, data.Height];
+            for (int x = 0; x < data.Width; x++)
+            for (int y = 0; y < data.Height; y++)
+                result[x, y] = Mathf.Max(0, data.GetTile(x, y).Level);
+
+            return result;
+        }
+
+        private static int[,] CloneLevelMap(int[,] source)
+        {
+            if (source == null)
+                return null;
+
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            var result = new int[width, height];
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                result[x, y] = Mathf.Max(0, source[x, y]);
+
+            return result;
         }
 
         private string BuildGraphDiagnostics(GraphExecutionResult result)

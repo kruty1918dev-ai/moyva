@@ -79,6 +79,16 @@ namespace Kruty1918.Moyva.Units.API
 
         public float BaseStamina;
         [Min(1)] public int VisionRange = 1;
+        [Tooltip("Індивідуальний бустер огляду за кожен рівень висоти в preview (Map + Fog).")]
+        [Min(0f)] public float VisionHeightBoostPerLevel = 0f;
+        [Tooltip("Чи може цей тип юніта знизу бачити верхній край пагорба/плато.")]
+        public bool CanSeeCrest = true;
+        [Tooltip("Множник сили бачення верхівок знизу. 0 = край майже не читається, 1 = повна сила.")]
+        [Range(0f, 1f)] public float CrestVisibilityFactor = 1f;
+        [Tooltip("Додаткова дальність у тайлах, коли юніт стоїть біля краю і дивиться вниз по схилу.")]
+        [Min(0f)] public float DownSlopeVisionBonus = 0f;
+        [Tooltip("Наскільки легко помітити цього юніта як силует на верхньому краї. 0 = без бонусу, 1 = дуже помітний.")]
+        [Range(0f, 1f)] public float SilhouettePenalty = 0f;
         [Min(1)] public int HitPoints = 100;
         [Min(1)] public int BaseLevel = 1;
 

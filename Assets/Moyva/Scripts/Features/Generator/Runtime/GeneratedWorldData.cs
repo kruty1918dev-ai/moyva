@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public string[,] BiomeMap;
         public string[,] ObjectMap;
         public float[,] HeightMap;
+        public int[,] TerrainLevelMap;
         public string[,] BuildingMap;
         public string WorldName;
         public int Seed;
@@ -36,6 +37,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BiomeMap = MapArrayUtils.CloneStringMap(BiomeMap),
                 ObjectMap = MapArrayUtils.CloneStringMap(ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(HeightMap),
+                TerrainLevelMap = MapArrayUtils.CloneIntMap(TerrainLevelMap),
                 BuildingMap = MapArrayUtils.CloneStringMap(BuildingMap),
                 WorldName = WorldName,
                 Seed = Seed,

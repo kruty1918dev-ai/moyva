@@ -18,18 +18,28 @@ namespace Kruty1918.Moyva.Units.Editor
         private const string RegistryLockKey = "UnitRegistrySO";
         private const string UnitListWidthPrefsKey = "Moyva.UnitDesigner.Layout.UnitListWidth";
         private const string UnitDetailsWidthPrefsKey = "Moyva.UnitDesigner.Layout.UnitDetailsWidth";
+        private const string UnitPreviewWidthPrefsKey = "Moyva.UnitDesigner.Layout.UnitPreviewWidth";
         private const string GeneratorListWidthPrefsKey = "Moyva.UnitDesigner.Layout.GeneratorListWidth";
         private const string GeneratorSettingsWidthPrefsKey = "Moyva.UnitDesigner.Layout.GeneratorSettingsWidth";
+        private const string GeneratorPreviewPanelWidthPrefsKey = "Moyva.UnitDesigner.Layout.GeneratorPreviewPanelWidth";
         private const string CombatListWidthPrefsKey = "Moyva.UnitDesigner.Layout.CombatListWidth";
         private const string CombatRulesWidthPrefsKey = "Moyva.UnitDesigner.Layout.CombatRulesWidth";
+        private const string CombatPreviewWidthPrefsKey = "Moyva.UnitDesigner.Layout.CombatPreviewWidth";
+        private const string WorkspaceTabsInlinePrefsKey = "Moyva.UnitDesigner.Layout.WorkspaceTabsInline";
+        private const string VerticalTabsInlinePrefsKey = "Moyva.UnitDesigner.Layout.VerticalTabsInline";
         private const float SplitterWidth = 6f;
+        private const float HorizontalLayoutPadding = 36f;
         private const float MinUnitListPanelWidth = 240f;
         private const float MinDetailsPanelWidth = 300f;
         private const float MinPreviewPanelWidth = 280f;
         private const float DefaultUnitListPanelWidth = 300f;
         private const float DefaultUnitDetailsPanelWidth = 440f;
+        private const float DefaultUnitPreviewPanelWidth = 360f;
         private const float DefaultGeneratorSettingsPanelWidth = 440f;
+        private const float DefaultGeneratorPreviewPanelWidth = 440f;
         private const float DefaultCombatRulesPanelWidth = 460f;
+        private const float DefaultCombatPreviewPanelWidth = 420f;
+        private const float MinimumHorizontalLayoutWidth = MinUnitListPanelWidth + MinDetailsPanelWidth + MinPreviewPanelWidth + SplitterWidth * 2f + HorizontalLayoutPadding;
 
         // Кольори для UI візуалізації
         private static readonly Color Accent = new Color(0.18f, 0.62f, 0.67f);
@@ -51,10 +61,13 @@ namespace Kruty1918.Moyva.Units.Editor
         private Vector2 _previewScroll;
         private float _unitListPanelWidth = DefaultUnitListPanelWidth;
         private float _unitDetailsPanelWidth = DefaultUnitDetailsPanelWidth;
+        private float _unitPreviewPanelWidth = DefaultUnitPreviewPanelWidth;
         private float _generatorListPanelWidth = DefaultUnitListPanelWidth;
         private float _generatorSettingsPanelWidth = DefaultGeneratorSettingsPanelWidth;
+        private float _generatorPreviewPanelWidth = DefaultGeneratorPreviewPanelWidth;
         private float _combatListPanelWidth = DefaultUnitListPanelWidth;
         private float _combatRulesPanelWidth = DefaultCombatRulesPanelWidth;
+        private float _combatPreviewPanelWidth = DefaultCombatPreviewPanelWidth;
 
         // Вибір та фільтрування
         private int _selectedIndex = -1;
@@ -68,9 +81,20 @@ namespace Kruty1918.Moyva.Units.Editor
         private bool _showStatsPreview = true;
         private bool _showAnimationPreview = true;
         private bool _showDetailedStatePreview = true;
+        private bool _showToolbarUnitTuning = true;
+        private bool _detailsQuickFoldout = true;
+        private bool _detailsVisualFoldout = true;
+        private bool _detailsIdentityFoldout = true;
+        private bool _detailsPrefabFoldout = true;
+        private bool _detailsStatsFoldout = true;
+        private bool _detailsCombatFoldout = true;
+        private bool _detailsAnimationFoldout = true;
+        private bool _detailsDangerFoldout;
 
         // Макет та вкладки для вузького вікна
         private int _verticalLayoutTab;
+        private bool _workspaceTabsInlineMenu;
+        private bool _verticalLayoutTabsInlineMenu;
         private bool _showBatchTools;
 
         // Пакетні операції
@@ -306,6 +330,8 @@ namespace Kruty1918.Moyva.Units.Editor
                 DrawCompactToolbar();
             else
                 DrawFullToolbar();
+
+            DrawToolbarUnitTuning(compactMode);
         }
 
         private void DrawFullToolbar()
@@ -355,7 +381,7 @@ namespace Kruty1918.Moyva.Units.Editor
                 SaveRegistryPreference();
             }
 
-            DrawWorkspaceModeToolbar();
+            DrawWorkspaceModeToolbar(compactMode: false);
 
             GUILayout.FlexibleSpace();
 
@@ -372,6 +398,100 @@ namespace Kruty1918.Moyva.Units.Editor
             _safeEditMode = GUILayout.Toggle(_safeEditMode, IconContent("", "Safe", EditorTooltipStandard.Build("Вмикає Safe Edit Mode для масових змін.", "Знижує ризик поломок балансу від batch-операцій.")), EditorStyles.toolbarButton, GUILayout.Width(56f));
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawToolbarUnitTuning(bool compactMode)
+        {
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+
+            _showToolbarUnitTuning = GUILayout.Toggle(
+                _showToolbarUnitTuning,
+                IconContent("d_UnityEditor.InspectorWindow", compactMode ? "Unit" : "Unit quick", EditorTooltipStandard.Build("Згортає або відкриває швидкі параметри активного юніта у toolbar.", "Це основні gameplay-поля, які найчастіше налаштовуються під час preview.")),
+                EditorStyles.toolbarButton,
+                GUILayout.Width(compactMode ? 54f : 88f));
+
+            if (!HasSelectedUnit())
+            {
+                GUILayout.Label("Оберіть юніта для швидкого налаштування", EditorStyles.miniLabel);
+                EditorGUILayout.EndHorizontal();
+                return;
+            }
+
+            var unit = SelectedUnitProperty();
+            string typeId = GetString(unit, "TypeId");
+            GUILayout.Label(string.IsNullOrWhiteSpace(typeId) ? "<без TypeId>" : typeId, ToolbarUnitTitleStyle(), GUILayout.Width(compactMode ? 110f : 160f));
+
+            if (!_showToolbarUnitTuning)
+            {
+                GUILayout.Label($"HP {Mathf.Max(1, GetInt(unit, "HitPoints"))} | Vision {Mathf.Max(1, GetInt(unit, "VisionRange"))} | DMG {GetCombatDamageTotal(unit)}", EditorStyles.miniLabel);
+                EditorGUILayout.EndHorizontal();
+                return;
+            }
+
+            DrawToolbarEnum(unit, "Role", compactMode ? 70f : 92f);
+            DrawToolbarIntSlider(unit, "HitPoints", "HP", 1, 300, compactMode ? 118f : 150f);
+            DrawToolbarIntSlider(unit, "VisionRange", "Огляд", 1, 20, compactMode ? 116f : 148f);
+
+            if (!compactMode)
+            {
+                DrawToolbarIntSlider(unit, "BaseLevel", "Рівень", 1, 10, 128f);
+                DrawToolbarFloatSlider(unit, "BaseStamina", "Стаміна", 0f, 300f, 150f);
+            }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.Label($"DMG {GetCombatDamageTotal(unit)}", EditorStyles.miniBoldLabel, GUILayout.Width(compactMode ? 58f : 72f));
+
+            if (GUILayout.Button(IconContent("d_scenevis_visible_hover", compactMode ? "Fog" : "Map+Fog", "Перейти до Map + Fog preview для перевірки огляду юніта."), EditorStyles.toolbarButton, GUILayout.Width(compactMode ? 46f : 72f)))
+            {
+                SetWorkspaceMode(WorkspaceMode.GeneratorMap);
+            }
+
+            if (!compactMode && GUILayout.Button(IconContent("d_Profiler.CPU", "Combat", "Перейти до бойової вкладки."), EditorStyles.toolbarButton, GUILayout.Width(72f)))
+            {
+                SetWorkspaceMode(WorkspaceMode.CombatSystem);
+            }
+
+            EditorGUILayout.EndHorizontal();
+        }
+
+        private static void DrawToolbarEnum(SerializedProperty unit, string propertyName, float width)
+        {
+            var property = unit?.FindPropertyRelative(propertyName);
+            if (property == null)
+                return;
+
+            Rect rect = EditorGUILayout.GetControlRect(false, 18f, EditorStyles.toolbarPopup, GUILayout.Width(width));
+            property.enumValueIndex = EditorGUI.Popup(rect, property.enumValueIndex, property.enumDisplayNames, EditorStyles.toolbarPopup);
+        }
+
+        private static void DrawToolbarIntSlider(SerializedProperty unit, string propertyName, string label, int min, int max, float width)
+        {
+            var property = unit?.FindPropertyRelative(propertyName);
+            if (property == null)
+                return;
+
+            Rect rect = EditorGUILayout.GetControlRect(false, 18f, GUILayout.Width(width));
+            Rect labelRect = new Rect(rect.x, rect.y + 1f, 44f, rect.height);
+            Rect sliderRect = new Rect(labelRect.xMax + 3f, rect.y + 1f, Mathf.Max(42f, rect.width - 74f), rect.height);
+            Rect valueRect = new Rect(rect.xMax - 26f, rect.y + 1f, 26f, rect.height);
+            GUI.Label(labelRect, label, EditorStyles.miniLabel);
+            property.intValue = EditorGUI.IntSlider(sliderRect, Mathf.Clamp(property.intValue, min, max), min, max);
+            GUI.Label(valueRect, property.intValue.ToString(CultureInfo.InvariantCulture), EditorStyles.miniBoldLabel);
+        }
+
+        private static void DrawToolbarFloatSlider(SerializedProperty unit, string propertyName, string label, float min, float max, float width)
+        {
+            var property = unit?.FindPropertyRelative(propertyName);
+            if (property == null)
+                return;
+
+            Rect rect = EditorGUILayout.GetControlRect(false, 18f, GUILayout.Width(width));
+            Rect labelRect = new Rect(rect.x, rect.y + 1f, 50f, rect.height);
+            Rect sliderRect = new Rect(labelRect.xMax + 3f, rect.y + 1f, Mathf.Max(42f, rect.width - 88f), rect.height);
+            Rect valueRect = new Rect(rect.xMax - 32f, rect.y + 1f, 32f, rect.height);
+            GUI.Label(labelRect, label, EditorStyles.miniLabel);
+            property.floatValue = EditorGUI.Slider(sliderRect, Mathf.Clamp(property.floatValue, min, max), min, max);
+            GUI.Label(valueRect, property.floatValue.ToString("0", CultureInfo.InvariantCulture), EditorStyles.miniBoldLabel);
         }
 
         private void DrawCompactToolbar()
@@ -420,6 +540,8 @@ namespace Kruty1918.Moyva.Units.Editor
                 SaveRegistryPreference();
             }
 
+            DrawWorkspaceModeToolbar(compactMode: true);
+
             GUILayout.FlexibleSpace();
 
             _autoPlayPreview = GUILayout.Toggle(_autoPlayPreview, IconContent("d_PlayButton", "Play", ""), EditorStyles.toolbarButton, GUILayout.Width(42f));
@@ -460,8 +582,7 @@ namespace Kruty1918.Moyva.Units.Editor
                 return;
             }
 
-            // Adaptive layout: horizontal for wide windows, vertical for narrow
-            bool useVerticalLayout = position.width < 700f;
+            bool useVerticalLayout = position.width < MinimumHorizontalLayoutWidth;
 
             if (useVerticalLayout)
                 DrawVerticalLayout();
@@ -470,10 +591,7 @@ namespace Kruty1918.Moyva.Units.Editor
         }
 
         /// <summary>
-        /// Трирівневий горизонтальний макет: список (25%), налаштування (35%), прев'ю (35%).
-        /// </summary>
-        /// <summary>
-        /// Трирівневий горизонтальний макет: список (25%), налаштування (35%), прев'ю (35%).
+        /// Трирівневий горизонтальний макет з керованими ширинами всіх колонок.
         /// </summary>
         private void DrawHorizontalLayout()
         {
@@ -481,10 +599,10 @@ namespace Kruty1918.Moyva.Units.Editor
 
             EditorGUILayout.BeginHorizontal();
             DrawUnitListPanel(GUILayout.Width(_unitListPanelWidth), GUILayout.ExpandHeight(true));
-            DrawColumnSplitter(ref _unitListPanelWidth, MinUnitListPanelWidth, ResolveMaxPanelWidth(MinDetailsPanelWidth + MinPreviewPanelWidth), UnitListWidthPrefsKey);
+            DrawColumnSplitter(ref _unitListPanelWidth, ref _unitDetailsPanelWidth, MinUnitListPanelWidth, MinDetailsPanelWidth, UnitListWidthPrefsKey, UnitDetailsWidthPrefsKey);
             DrawDetailsPanel(GUILayout.Width(_unitDetailsPanelWidth), GUILayout.MinWidth(MinDetailsPanelWidth), GUILayout.ExpandHeight(true));
-            DrawColumnSplitter(ref _unitDetailsPanelWidth, MinDetailsPanelWidth, ResolveMaxPanelWidth(MinUnitListPanelWidth + MinPreviewPanelWidth), UnitDetailsWidthPrefsKey);
-            DrawPreviewPanel(GUILayout.MinWidth(MinPreviewPanelWidth), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            DrawColumnSplitter(ref _unitDetailsPanelWidth, ref _unitPreviewPanelWidth, MinDetailsPanelWidth, MinPreviewPanelWidth, UnitDetailsWidthPrefsKey, UnitPreviewWidthPrefsKey);
+            DrawPreviewPanel(GUILayout.Width(_unitPreviewPanelWidth), GUILayout.MinWidth(MinPreviewPanelWidth), GUILayout.ExpandHeight(true));
             EditorGUILayout.EndHorizontal();
         }
 
@@ -495,13 +613,7 @@ namespace Kruty1918.Moyva.Units.Editor
         {
             EditorGUILayout.BeginVertical();
 
-            // Tabbed view for narrow windows
-            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            GUILayout.FlexibleSpace();
-            _verticalLayoutTab = GUILayout.Toolbar(_verticalLayoutTab, new[] { "Юніти", "Налаштування", "Preview" }, EditorStyles.toolbarButton,
-                GUILayout.Width(250f));
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
+            DrawVerticalLayoutTabSelector();
 
             if (_verticalLayoutTab == 0)
                 DrawUnitListPanel(GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
@@ -511,6 +623,42 @@ namespace Kruty1918.Moyva.Units.Editor
                 DrawPreviewPanel(GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
 
             EditorGUILayout.EndVertical();
+        }
+
+        private void DrawVerticalLayoutTabSelector()
+        {
+            string[] tabs = { "Юніти", "Налаштування", "Preview" };
+
+            EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
+            GUILayout.FlexibleSpace();
+
+            if (_verticalLayoutTabsInlineMenu)
+            {
+                if (GUILayout.Button(IconContent("d_FilterByLabel", "Tabs", EditorTooltipStandard.Build("Розгорнути вкладки назад у сегментований toolbar.", "Зараз вкладки показані як компактне inline меню.")), EditorStyles.toolbarButton, GUILayout.Width(54f)))
+                    _verticalLayoutTabsInlineMenu = false;
+
+                int next = EditorGUILayout.Popup(
+                    Mathf.Clamp(_verticalLayoutTab, 0, tabs.Length - 1),
+                    tabs,
+                    EditorStyles.toolbarPopup,
+                    GUILayout.Width(Mathf.Clamp(position.width - 120f, 150f, 230f)));
+                if (next != _verticalLayoutTab)
+                    _verticalLayoutTab = next;
+            }
+            else
+            {
+                _verticalLayoutTab = GUILayout.Toolbar(
+                    Mathf.Clamp(_verticalLayoutTab, 0, tabs.Length - 1),
+                    tabs,
+                    EditorStyles.toolbarButton,
+                    GUILayout.Width(250f));
+
+                if (GUILayout.Button(IconContent("d_FilterByLabel", "Menu", EditorTooltipStandard.Build("Згорнути вкладки у компактне inline меню.", "Корисно, коли потрібно більше вертикального місця для контенту.")), EditorStyles.toolbarButton, GUILayout.Width(56f)))
+                    _verticalLayoutTabsInlineMenu = true;
+            }
+
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawEmptyState()
@@ -639,15 +787,55 @@ namespace Kruty1918.Moyva.Units.Editor
             DrawValidationSummary(unit, _selectedIndex);
 
             _detailsScroll = EditorGUILayout.BeginScrollView(_detailsScroll);
-            DrawQuickUnitParametersSection(unit);
-            DrawUnitPresetSection();
-            _identityFacade.DrawSection(unit);
-            _prefabFacade.DrawSection(unit, typeId);
-            _prefabFacade.DrawComponentsSection(unit);
-            DrawStatsSection(unit);
-            _combatFacade.DrawCompactSection(unit);
-            _animationFacade.DrawSection(unit);
-            _identityFacade.DrawDangerSection(unit);
+            if (BeginFoldoutSection(ref _detailsQuickFoldout, "Швидке налаштування", "d_UnityEditor.InspectorWindow", "TypeId, роль, HP, огляд, стаміна і базові бойові числа."))
+            {
+                DrawQuickUnitParametersSection(unit);
+                DrawUnitPresetSection();
+                EndFoldoutSection();
+            }
+
+            if (BeginFoldoutSection(ref _detailsVisualFoldout, "Візуальні ручки", "d_SceneViewOrtho", "Кольорові sliders для швидкого балансування і preview."))
+            {
+                DrawVisualParameterTuningSection(unit);
+                EndFoldoutSection();
+            }
+
+            if (BeginFoldoutSection(ref _detailsIdentityFoldout, "Ідентичність", "d_FilterByType", "TypeId, роль і валідація класу юніта."))
+            {
+                _identityFacade.DrawSection(unit);
+                EndFoldoutSection();
+            }
+
+            if (BeginFoldoutSection(ref _detailsPrefabFoldout, "Візуал і prefab", "d_Prefab Icon", "Prefab, CustomSprite і компоненти візуалу."))
+            {
+                _prefabFacade.DrawSection(unit, typeId);
+                _prefabFacade.DrawComponentsSection(unit);
+                EndFoldoutSection();
+            }
+
+            if (BeginFoldoutSection(ref _detailsStatsFoldout, "Gameplay характеристики", "d_Profiler.CPU", "Стаміна, дальність огляду і runtime-метрики."))
+            {
+                DrawStatsSection(unit);
+                EndFoldoutSection();
+            }
+
+            if (BeginFoldoutSection(ref _detailsCombatFoldout, "Бій", "d_Profiler.CPU", "Стисле редагування бойових параметрів."))
+            {
+                _combatFacade.DrawCompactSection(unit);
+                EndFoldoutSection();
+            }
+
+            if (BeginFoldoutSection(ref _detailsAnimationFoldout, "Анімації", "d_AnimationClip Icon", "Рух, затримки та набори анімацій юніта."))
+            {
+                _animationFacade.DrawSection(unit);
+                EndFoldoutSection();
+            }
+
+            if (BeginFoldoutSection(ref _detailsDangerFoldout, "Реєстр", "d_TreeEditor.Trash", "Дублювання та видалення запису."))
+            {
+                _identityFacade.DrawDangerSection(unit);
+                EndFoldoutSection();
+            }
             EditorGUILayout.EndScrollView();
             EditorGUILayout.EndVertical();
         }
@@ -677,7 +865,8 @@ namespace Kruty1918.Moyva.Units.Editor
 
             var unit = SelectedUnitProperty();
             var prefab = GetObject<GameObject>(unit, "Prefab");
-            var sprite = ResolveSprite(prefab);
+            var customSprite = GetObject<Sprite>(unit, "CustomSprite");
+            var sprite = customSprite != null ? customSprite : ResolveSprite(prefab);
 
             _previewScroll = EditorGUILayout.BeginScrollView(_previewScroll);
 
@@ -706,9 +895,8 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.EndVertical();
 
-            // Adaptive preview size based on window width
-            float previewMinHeight = Mathf.Clamp(position.width * 0.4f, 180f, 320f);
-            Rect previewRect = GUILayoutUtility.GetRect(Mathf.Max(180f, position.width * 0.3f), previewMinHeight, GUILayout.ExpandWidth(true));
+            float previewMinHeight = Mathf.Clamp(_unitPreviewPanelWidth * 0.62f, 180f, 320f);
+            Rect previewRect = GUILayoutUtility.GetRect(180f, previewMinHeight, GUILayout.ExpandWidth(true));
             DrawAnimatedPreview(previewRect, unit, prefab, sprite);
 
             EditorGUILayout.Space(6f);
@@ -856,6 +1044,7 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorGUILayout.EndHorizontal();
 
             DrawQuickIntegerRow(unit, "База", "HitPoints", "HP", 1, 300, "BaseLevel", "Рівень", 1, 10, "VisionRange", "Огляд", 1, 20);
+            DrawTerrainVisionControls(unit);
 
             var staminaProp = unit.FindPropertyRelative("BaseStamina");
             var staminaRangeProp = unit.FindPropertyRelative("StaminaRandomRange");
@@ -905,7 +1094,152 @@ namespace Kruty1918.Moyva.Units.Editor
                 return;
 
             int value = Mathf.Clamp(property.intValue, min, max);
-            property.intValue = Mathf.Clamp(EditorGUILayout.IntField(new GUIContent(label), value, GUILayout.MinWidth(74f)), min, max);
+            Rect rect = EditorGUILayout.GetControlRect(false, 20f, GUILayout.MinWidth(74f));
+            Rect labelRect = new Rect(rect.x, rect.y, Mathf.Min(44f, rect.width * 0.45f), rect.height);
+            Rect fieldRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelRect.width - 4f, rect.height);
+            GUI.Label(labelRect, new GUIContent(label), EditorStyles.miniLabel);
+            property.intValue = Mathf.Clamp(EditorGUI.IntField(fieldRect, value), min, max);
+
+            Rect bar = new Rect(fieldRect.x, rect.yMax - 3f, fieldRect.width, 2f);
+            EditorGUI.DrawRect(bar, new Color(1f, 1f, 1f, 0.08f));
+            EditorGUI.DrawRect(new Rect(bar.x, bar.y, bar.width * Mathf.InverseLerp(min, max, property.intValue), bar.height), Accent);
+        }
+
+        private void DrawVisualParameterTuningSection(SerializedProperty unit)
+        {
+            BeginSection("Візуальні ручки", "d_SceneViewOrtho", "Кольорові контролі, які одразу змінюють preview юніта.");
+
+            DrawVisualIntSlider(unit, "HitPoints", "HP / розмір", 1, 300, Good, "Впливає на розмір юніта і зелену шкалу живучості у preview.");
+            DrawVisualIntSlider(unit, "BaseLevel", "Рівень / маса", 1, 10, Accent, "Впливає на масштаб та вагу юніта у preview.");
+            DrawVisualIntSlider(unit, "VisionRange", "Огляд / зона", 1, 20, VisionOutline, "Впливає на коло видимості навколо юніта.");
+            DrawVisualFloatSlider(unit, "VisionHeightBoostPerLevel", "Буст висоти", 0f, 4f, new Color(0.42f, 0.72f, 1f), "Додає візуально сильніший огляд на високому рельєфі у Map + Fog.");
+            DrawTerrainVisionControls(unit);
+
+            DrawVisualFloatSlider(unit, "BaseStamina", "Стаміна / запас", 0f, 300f, new Color(0.25f, 0.74f, 0.46f), "Впливає на зелену шкалу витривалості під юнітом.");
+            DrawVisualStaminaRangeControl(unit);
+
+            DrawVisualCombatTriple(unit, "Атака", "PenetratingDamage", "Колюча", PenetratingColor, "CuttingDamage", "Ріжуча", CuttingColor, "CrushingDamage", "Дроб.", CrushingColor, 300);
+            DrawCombatProfileStrip("Профіль атаки", GetInt(unit, "CuttingDamage"), GetInt(unit, "PenetratingDamage"), GetInt(unit, "CrushingDamage"), 300);
+
+            DrawVisualCombatTriple(unit, "Захист", "PenetratingDefense", "Колючий", PenetratingColor, "CuttingDefense", "Ріжучий", CuttingColor, "CrushingDefense", "Дроб.", CrushingColor, 300);
+            DrawCombatProfileStrip("Профіль захисту", GetInt(unit, "CuttingDefense"), GetInt(unit, "PenetratingDefense"), GetInt(unit, "CrushingDefense"), 300);
+
+            var animation = unit.FindPropertyRelative("AnimationSettings");
+            if (animation != null)
+            {
+                DrawVisualNestedFloatSlider(animation, "MoveDurationPerTile", "Тривалість кроку", 0.02f, 2f, new Color(0.68f, 0.48f, 1f), "Чим менше значення, тим швидше юніт рухається у preview.");
+                DrawVisualNestedFloatSlider(animation, "DelayOnTile", "Пауза на тайлі", 0f, 1f, Warn, "Чим більше значення, тим довше юніт стоїть на вузлах маршруту.");
+            }
+
+            EndSection();
+        }
+
+        private static void DrawVisualIntSlider(SerializedProperty unit, string propertyName, string label, int min, int max, Color color, string tooltip)
+        {
+            var property = unit.FindPropertyRelative(propertyName);
+            if (property == null)
+                return;
+
+            property.intValue = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), Mathf.Clamp(property.intValue, min, max), min, max);
+            DrawVisualValueTrack(property.intValue, min, max, color, property.intValue.ToString(CultureInfo.InvariantCulture));
+        }
+
+        private static void DrawVisualFloatSlider(SerializedProperty unit, string propertyName, string label, float min, float max, Color color, string tooltip)
+        {
+            var property = unit.FindPropertyRelative(propertyName);
+            if (property == null)
+                return;
+
+            property.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), Mathf.Clamp(property.floatValue, min, max), min, max);
+            DrawVisualValueTrack(property.floatValue, min, max, color, property.floatValue.ToString("0.##", CultureInfo.InvariantCulture));
+        }
+
+        private static void DrawVisualNestedFloatSlider(SerializedProperty parent, string propertyName, string label, float min, float max, Color color, string tooltip)
+        {
+            var property = parent.FindPropertyRelative(propertyName);
+            if (property == null)
+                return;
+
+            property.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), Mathf.Clamp(property.floatValue, min, max), min, max);
+            DrawVisualValueTrack(property.floatValue, min, max, color, property.floatValue.ToString("0.##s", CultureInfo.InvariantCulture));
+        }
+
+        private static void DrawVisualCombatTriple(
+            SerializedProperty unit,
+            string label,
+            string firstProperty,
+            string firstLabel,
+            Color firstColor,
+            string secondProperty,
+            string secondLabel,
+            Color secondColor,
+            string thirdProperty,
+            string thirdLabel,
+            Color thirdColor,
+            int max)
+        {
+            EditorGUILayout.LabelField(label, EditorStyles.miniBoldLabel);
+            DrawVisualIntSlider(unit, firstProperty, firstLabel, 0, max, firstColor, firstLabel);
+            DrawVisualIntSlider(unit, secondProperty, secondLabel, 0, max, secondColor, secondLabel);
+            DrawVisualIntSlider(unit, thirdProperty, thirdLabel, 0, max, thirdColor, thirdLabel);
+        }
+
+        private static void DrawVisualStaminaRangeControl(SerializedProperty unit)
+        {
+            var range = unit.FindPropertyRelative("StaminaRandomRange");
+            if (range == null)
+                return;
+
+            Vector2 value = range.vector2Value;
+            float min = Mathf.Clamp(Mathf.Min(value.x, value.y), -80f, 80f);
+            float max = Mathf.Clamp(Mathf.Max(value.x, value.y), -80f, 80f);
+            EditorGUILayout.MinMaxSlider(new GUIContent("Розкид стаміни", "Візуальний діапазон випадкового стартового запасу."), ref min, ref max, -80f, 80f);
+            range.vector2Value = new Vector2(min, max);
+
+            Rect rect = GUILayoutUtility.GetRect(0f, 16f, GUILayout.ExpandWidth(true));
+            Rect bar = new Rect(rect.x + 4f, rect.y + 5f, rect.width - 8f, 6f);
+            DrawPanelBackground(bar, EditorGUIUtility.isProSkin ? new Color(0.07f, 0.08f, 0.09f) : new Color(0.74f, 0.76f, 0.78f));
+            float left = Mathf.InverseLerp(-80f, 80f, min);
+            float right = Mathf.InverseLerp(-80f, 80f, max);
+            EditorGUI.DrawRect(new Rect(bar.x + bar.width * left, bar.y, bar.width * Mathf.Max(0.02f, right - left), bar.height), Good);
+            GUI.Label(new Rect(bar.x, rect.y, bar.width, rect.height), $"{min:0.#} .. {max:0.#}", EditorStyles.centeredGreyMiniLabel);
+        }
+
+        private static void DrawVisualValueTrack(float value, float min, float max, Color color, string text)
+        {
+            Rect rect = GUILayoutUtility.GetRect(0f, 12f, GUILayout.ExpandWidth(true));
+            Rect bar = new Rect(rect.x + 4f, rect.y + 3f, rect.width - 8f, 5f);
+            DrawPanelBackground(bar, EditorGUIUtility.isProSkin ? new Color(0.07f, 0.08f, 0.09f) : new Color(0.74f, 0.76f, 0.78f));
+            float t = Mathf.Clamp01(Mathf.InverseLerp(min, max, value));
+            EditorGUI.DrawRect(new Rect(bar.x, bar.y, bar.width * t, bar.height), color);
+            GUI.Label(new Rect(bar.x, rect.y - 2f, bar.width - 4f, rect.height + 4f), text, EditorStyles.centeredGreyMiniLabel);
+        }
+
+        private static void DrawTerrainVisionControls(SerializedProperty unit)
+        {
+            if (unit == null)
+                return;
+
+            var canSeeCrest = unit.FindPropertyRelative("CanSeeCrest");
+            var crestFactor = unit.FindPropertyRelative("CrestVisibilityFactor");
+            var downSlopeBonus = unit.FindPropertyRelative("DownSlopeVisionBonus");
+            var silhouettePenalty = unit.FindPropertyRelative("SilhouettePenalty");
+            if (canSeeCrest == null && crestFactor == null && downSlopeBonus == null && silhouettePenalty == null)
+                return;
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Рельєф і Fog of War", EditorStyles.miniBoldLabel);
+
+            if (canSeeCrest != null)
+                canSeeCrest.boolValue = EditorGUILayout.ToggleLeft(new GUIContent("Бачить верхівки знизу", "Дозволяє юніту бачити цілі, які стоять на верхньому краї схилу або плато."), canSeeCrest.boolValue);
+            if (crestFactor != null)
+                crestFactor.floatValue = EditorGUILayout.Slider(new GUIContent("Сила crest peeking", "Наскільки сильно цей юніт використовує край рельєфу для погляду вгору."), Mathf.Clamp01(crestFactor.floatValue), 0f, 1f);
+            if (downSlopeBonus != null)
+                downSlopeBonus.floatValue = EditorGUILayout.Slider(new GUIContent("Бонус вниз зі схилу", "Додаткова дальність огляду, коли юніт стоїть на краю і дивиться вниз."), Mathf.Max(0f, downSlopeBonus.floatValue), 0f, 6f);
+            if (silhouettePenalty != null)
+                silhouettePenalty.floatValue = EditorGUILayout.Slider(new GUIContent("Помітність силуету", "Наскільки легко ворог знизу бачить цього юніта на верхньому краї."), Mathf.Clamp01(silhouettePenalty.floatValue), 0f, 1f);
+
+            EditorGUILayout.EndVertical();
         }
 
         /// <summary>
@@ -1747,9 +2081,15 @@ namespace Kruty1918.Moyva.Units.Editor
                     : $"Рух ({phaseName}) | speed {effectiveSpeed:0.00} tile/s | t {moveT:0.00} | sim x{_previewSimulationSpeed:0.00}";
             }
 
-            float spriteSize = Mathf.Clamp(rect.width * 0.3f, 40f, 100f);
+            int hp = Mathf.Max(1, GetInt(unit, "HitPoints"));
+            int level = Mathf.Max(1, GetInt(unit, "BaseLevel"));
+            float hpScale = Mathf.Lerp(0.86f, 1.22f, Mathf.InverseLerp(1f, 300f, hp));
+            float levelScale = Mathf.Lerp(0.96f, 1.12f, Mathf.InverseLerp(1f, 10f, level));
+            float spriteSize = Mathf.Clamp(rect.width * 0.3f * hpScale * levelScale, 36f, Mathf.Min(rect.width * 0.42f, rect.height * 0.38f));
             Rect spriteRect = new Rect(centerPos.x - spriteSize * 0.5f, centerPos.y - spriteSize * 0.9f, spriteSize, spriteSize);
+            DrawUnitPreviewParameterEffects(rect, centerPos, spriteRect, unit);
             DrawSpriteOrPrefab(spriteRect, displaySprite, prefab, true);
+            DrawUnitPreviewParameterBadges(rect, spriteRect, unit);
 
             Rect labelRect = new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, 20f);
             string id = GetString(unit, "TypeId");
@@ -1762,6 +2102,78 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 GUI.Label(new Rect(rect.x + 16f, rect.center.y - 12f, rect.width - 32f, 24f), "Додайте prefab або створіть його", CenterMiniStyle());
             }
+        }
+
+        private void DrawUnitPreviewParameterEffects(Rect rect, Vector2 centerPos, Rect spriteRect, SerializedProperty unit)
+        {
+            int vision = Mathf.Clamp(GetInt(unit, "VisionRange"), 1, 20);
+            int attack = Mathf.Clamp(GetCombatDamageTotal(unit), 0, 900);
+            int defense = Mathf.Clamp(Mathf.Max(0, GetInt(unit, "PenetratingDefense")) + Mathf.Max(0, GetInt(unit, "CuttingDefense")) + Mathf.Max(0, GetInt(unit, "CrushingDefense")), 0, 900);
+
+            float visionT = Mathf.InverseLerp(1f, 20f, vision);
+            float attackT = Mathf.InverseLerp(0f, 900f, attack);
+            float defenseT = Mathf.InverseLerp(0f, 900f, defense);
+
+            Handles.BeginGUI();
+
+            float visionRadius = Mathf.Lerp(spriteRect.width * 0.68f, Mathf.Min(rect.width, rect.height) * 0.43f, visionT);
+            Handles.color = new Color(VisionFill.r, VisionFill.g, VisionFill.b, Mathf.Lerp(0.06f, 0.18f, visionT));
+            Handles.DrawSolidDisc(centerPos, Vector3.forward, visionRadius);
+            Handles.color = new Color(VisionOutline.r, VisionOutline.g, VisionOutline.b, Mathf.Lerp(0.36f, 0.85f, visionT));
+            Handles.DrawWireDisc(centerPos, Vector3.forward, visionRadius);
+
+            if (attack > 0)
+            {
+                int rays = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(4f, 16f, attackT)), 4, 16);
+                float baseRadius = spriteRect.width * 0.48f;
+                float rayLength = Mathf.Lerp(5f, 30f, attackT);
+                float rotation = _previewSimulationTime * Mathf.Lerp(0.4f, 1.4f, attackT);
+                Handles.color = Color.Lerp(new Color(0.95f, 0.48f, 0.24f, 0.35f), Bad, Mathf.Clamp01(attackT));
+                for (int i = 0; i < rays; i++)
+                {
+                    float angle = rotation + i * Mathf.PI * 2f / rays;
+                    Vector2 dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+                    Vector2 from = centerPos + dir * baseRadius;
+                    Vector2 to = centerPos + dir * (baseRadius + rayLength);
+                    Handles.DrawAAPolyLine(Mathf.Lerp(1f, 3f, attackT), from, to);
+                }
+            }
+
+            if (defense > 0)
+            {
+                int rings = Mathf.Clamp(1 + Mathf.RoundToInt(defenseT * 3f), 1, 4);
+                for (int i = 0; i < rings; i++)
+                {
+                    float radius = spriteRect.width * (0.56f + i * 0.08f);
+                    Handles.color = new Color(0.42f, 0.78f, 1f, Mathf.Lerp(0.28f, 0.72f, defenseT) / (i + 1));
+                    Handles.DrawWireDisc(centerPos, Vector3.forward, radius);
+                }
+            }
+
+            Handles.EndGUI();
+        }
+
+        private static void DrawUnitPreviewParameterBadges(Rect previewRect, Rect spriteRect, SerializedProperty unit)
+        {
+            int hp = Mathf.Max(1, GetInt(unit, "HitPoints"));
+            float stamina = Mathf.Max(0f, GetFloat(unit, "BaseStamina"));
+            int attack = Mathf.Clamp(GetCombatDamageTotal(unit), 0, 900);
+            int defense = Mathf.Clamp(Mathf.Max(0, GetInt(unit, "PenetratingDefense")) + Mathf.Max(0, GetInt(unit, "CuttingDefense")) + Mathf.Max(0, GetInt(unit, "CrushingDefense")), 0, 900);
+
+            float width = Mathf.Clamp(spriteRect.width * 1.28f, 88f, 150f);
+            float x = Mathf.Clamp(spriteRect.center.x - width * 0.5f, previewRect.x + 10f, previewRect.xMax - width - 10f);
+            float y = Mathf.Min(spriteRect.yMax + 4f, previewRect.yMax - 58f);
+
+            DrawPreviewMiniBar(new Rect(x, y, width, 7f), Mathf.InverseLerp(1f, 300f, hp), Good);
+            DrawPreviewMiniBar(new Rect(x, y + 9f, width, 7f), Mathf.InverseLerp(0f, 300f, stamina), new Color(0.28f, 0.75f, 0.46f));
+            DrawPreviewMiniBar(new Rect(x, y + 18f, width, 7f), Mathf.InverseLerp(0f, 900f, attack), Bad);
+            DrawPreviewMiniBar(new Rect(x, y + 27f, width, 7f), Mathf.InverseLerp(0f, 900f, defense), new Color(0.42f, 0.78f, 1f));
+        }
+
+        private static void DrawPreviewMiniBar(Rect rect, float value01, Color color)
+        {
+            EditorGUI.DrawRect(rect, new Color(0f, 0f, 0f, 0.52f));
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width * Mathf.Clamp01(value01), rect.height), color);
         }
 
         private void DrawDetailedStatePreview(SerializedProperty unit)
@@ -1850,11 +2262,20 @@ namespace Kruty1918.Moyva.Units.Editor
             Vector2 range = GetVector2(unit, "StaminaRandomRange");
             int vision = GetInt(unit, "VisionRange");
             float duration = GetNestedFloat(unit, "AnimationSettings", "MoveDurationPerTile", 0.3f);
+            int attack = GetCombatDamageTotal(unit);
+            int defense = Mathf.Max(0, GetInt(unit, "PenetratingDefense")) + Mathf.Max(0, GetInt(unit, "CuttingDefense")) + Mathf.Max(0, GetInt(unit, "CrushingDefense"));
 
             DrawMetricBar("Стаміна", stamina, 0f, 300f, Good, "Чим вище, тим довше юніт може виконувати дії до виснаження.");
             DrawMetricBar("Розкид", Mathf.Abs(range.x) + Mathf.Abs(range.y), 0f, 80f, Warn, "Ширина випадкового діапазону стартової стаміни.");
             DrawMetricBar("Огляд", vision, 1f, 20f, Accent, "Радіус активної видимості Fog of War.");
+            DrawMetricBar("Crest", GetFloat(unit, "CrestVisibilityFactor"), 0f, 1f, VisionOutline, "Сила бачення верхнього краю знизу.");
+            DrawMetricBar("Down slope", GetFloat(unit, "DownSlopeVisionBonus"), 0f, 6f, new Color(0.42f, 0.72f, 1f), "Додатковий огляд вниз зі схилу.");
+            DrawMetricBar("Silhouette", GetFloat(unit, "SilhouettePenalty"), 0f, 1f, Warn, "Помітність юніта на верхньому краї.");
+            DrawMetricBar("Атака", attack, 0f, 900f, Bad, "Сумарний тиск трьох типів шкоди.");
+            DrawMetricBar("Захист", defense, 0f, 900f, new Color(0.42f, 0.78f, 1f), "Сумарна стійкість проти трьох типів шкоди.");
             DrawMetricBar("Швидкість", 1f / Mathf.Max(0.02f, duration), 0.5f, 10f, new Color(0.7f, 0.48f, 1f), "Вища шкала означає швидший рух між тайлами.");
+            DrawCombatProfileStrip("Шкода", GetInt(unit, "CuttingDamage"), GetInt(unit, "PenetratingDamage"), GetInt(unit, "CrushingDamage"), 300);
+            DrawCombatProfileStrip("Захист", GetInt(unit, "CuttingDefense"), GetInt(unit, "PenetratingDefense"), GetInt(unit, "CrushingDefense"), 300);
         }
 
         private void DrawVisionGrid(SerializedProperty unit)
@@ -2202,6 +2623,10 @@ namespace Kruty1918.Moyva.Units.Editor
             unit.FindPropertyRelative("Role").enumValueIndex = (int)UnitRole.Worker;
             unit.FindPropertyRelative("BaseStamina").floatValue = 100f;
             unit.FindPropertyRelative("VisionRange").intValue = 3;
+            var visionHeightBoost = unit.FindPropertyRelative("VisionHeightBoostPerLevel");
+            if (visionHeightBoost != null)
+                visionHeightBoost.floatValue = 0f;
+            SetTerrainVisionDefaults(unit);
             unit.FindPropertyRelative("Prefab").objectReferenceValue = null;
             unit.FindPropertyRelative("StaminaRandomRange").vector2Value = new Vector2(-5f, 5f);
             SetCombatDefaults(unit);
@@ -2687,6 +3112,11 @@ namespace Kruty1918.Moyva.Units.Editor
             destination.FindPropertyRelative("Role").enumValueIndex = source.FindPropertyRelative("Role").enumValueIndex;
             destination.FindPropertyRelative("BaseStamina").floatValue = source.FindPropertyRelative("BaseStamina").floatValue;
             destination.FindPropertyRelative("VisionRange").intValue = source.FindPropertyRelative("VisionRange").intValue;
+            var srcVisionHeightBoost = source.FindPropertyRelative("VisionHeightBoostPerLevel");
+            var dstVisionHeightBoost = destination.FindPropertyRelative("VisionHeightBoostPerLevel");
+            if (srcVisionHeightBoost != null && dstVisionHeightBoost != null)
+                dstVisionHeightBoost.floatValue = Mathf.Max(0f, srcVisionHeightBoost.floatValue);
+            CopyTerrainVisionSerializedValues(source, destination);
             destination.FindPropertyRelative("Prefab").objectReferenceValue = source.FindPropertyRelative("Prefab").objectReferenceValue;
             destination.FindPropertyRelative("StaminaRandomRange").vector2Value = source.FindPropertyRelative("StaminaRandomRange").vector2Value;
             CopyCombatSerializedValues(source, destination);
@@ -2838,6 +3268,35 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorGUILayout.Space(4f);
         }
 
+        private static bool BeginFoldoutSection(ref bool expanded, string title, string iconName, string tooltip)
+        {
+            EditorGUILayout.BeginVertical(InlineFoldoutStyle());
+            EditorGUILayout.BeginHorizontal();
+
+            var icon = IconContent(iconName, string.Empty, tooltip);
+            if (icon.image != null)
+                GUILayout.Label(icon.image, GUILayout.Width(18f), GUILayout.Height(18f));
+
+            expanded = EditorGUILayout.Foldout(expanded, new GUIContent(title, tooltip), true, FoldoutHeaderStyle());
+            EditorGUILayout.EndHorizontal();
+
+            if (expanded)
+            {
+                EditorGUILayout.Space(3f);
+                return true;
+            }
+
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(3f);
+            return false;
+        }
+
+        private static void EndFoldoutSection()
+        {
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.Space(3f);
+        }
+
         private static void DrawMiniCounter(string label, int value, Color color)
         {
             Rect rect = GUILayoutUtility.GetRect(52f, 32f, GUILayout.ExpandWidth(true));
@@ -2917,10 +3376,15 @@ namespace Kruty1918.Moyva.Units.Editor
         {
             _unitListPanelWidth = EditorPrefs.GetFloat(UnitListWidthPrefsKey, DefaultUnitListPanelWidth);
             _unitDetailsPanelWidth = EditorPrefs.GetFloat(UnitDetailsWidthPrefsKey, DefaultUnitDetailsPanelWidth);
+            _unitPreviewPanelWidth = EditorPrefs.GetFloat(UnitPreviewWidthPrefsKey, DefaultUnitPreviewPanelWidth);
             _generatorListPanelWidth = EditorPrefs.GetFloat(GeneratorListWidthPrefsKey, DefaultUnitListPanelWidth);
             _generatorSettingsPanelWidth = EditorPrefs.GetFloat(GeneratorSettingsWidthPrefsKey, DefaultGeneratorSettingsPanelWidth);
+            _generatorPreviewPanelWidth = EditorPrefs.GetFloat(GeneratorPreviewPanelWidthPrefsKey, DefaultGeneratorPreviewPanelWidth);
             _combatListPanelWidth = EditorPrefs.GetFloat(CombatListWidthPrefsKey, DefaultUnitListPanelWidth);
             _combatRulesPanelWidth = EditorPrefs.GetFloat(CombatRulesWidthPrefsKey, DefaultCombatRulesPanelWidth);
+            _combatPreviewPanelWidth = EditorPrefs.GetFloat(CombatPreviewWidthPrefsKey, DefaultCombatPreviewPanelWidth);
+            _workspaceTabsInlineMenu = EditorPrefs.GetBool(WorkspaceTabsInlinePrefsKey, false);
+            _verticalLayoutTabsInlineMenu = EditorPrefs.GetBool(VerticalTabsInlinePrefsKey, false);
             ClampLayoutWidths();
         }
 
@@ -2929,40 +3393,79 @@ namespace Kruty1918.Moyva.Units.Editor
             ClampLayoutWidths();
             EditorPrefs.SetFloat(UnitListWidthPrefsKey, _unitListPanelWidth);
             EditorPrefs.SetFloat(UnitDetailsWidthPrefsKey, _unitDetailsPanelWidth);
+            EditorPrefs.SetFloat(UnitPreviewWidthPrefsKey, _unitPreviewPanelWidth);
             EditorPrefs.SetFloat(GeneratorListWidthPrefsKey, _generatorListPanelWidth);
             EditorPrefs.SetFloat(GeneratorSettingsWidthPrefsKey, _generatorSettingsPanelWidth);
+            EditorPrefs.SetFloat(GeneratorPreviewPanelWidthPrefsKey, _generatorPreviewPanelWidth);
             EditorPrefs.SetFloat(CombatListWidthPrefsKey, _combatListPanelWidth);
             EditorPrefs.SetFloat(CombatRulesWidthPrefsKey, _combatRulesPanelWidth);
+            EditorPrefs.SetFloat(CombatPreviewWidthPrefsKey, _combatPreviewPanelWidth);
+            EditorPrefs.SetBool(WorkspaceTabsInlinePrefsKey, _workspaceTabsInlineMenu);
+            EditorPrefs.SetBool(VerticalTabsInlinePrefsKey, _verticalLayoutTabsInlineMenu);
         }
 
         private void ResetLayoutPreferences()
         {
             _unitListPanelWidth = DefaultUnitListPanelWidth;
             _unitDetailsPanelWidth = DefaultUnitDetailsPanelWidth;
+            _unitPreviewPanelWidth = DefaultUnitPreviewPanelWidth;
             _generatorListPanelWidth = DefaultUnitListPanelWidth;
             _generatorSettingsPanelWidth = DefaultGeneratorSettingsPanelWidth;
+            _generatorPreviewPanelWidth = DefaultGeneratorPreviewPanelWidth;
             _combatListPanelWidth = DefaultUnitListPanelWidth;
             _combatRulesPanelWidth = DefaultCombatRulesPanelWidth;
+            _combatPreviewPanelWidth = DefaultCombatPreviewPanelWidth;
+            _workspaceTabsInlineMenu = false;
+            _verticalLayoutTabsInlineMenu = false;
             SaveLayoutPreferences();
             Repaint();
         }
 
         private void ClampLayoutWidths()
         {
-            _unitListPanelWidth = Mathf.Clamp(_unitListPanelWidth, MinUnitListPanelWidth, ResolveMaxPanelWidth(MinDetailsPanelWidth + MinPreviewPanelWidth));
-            _unitDetailsPanelWidth = Mathf.Clamp(_unitDetailsPanelWidth, MinDetailsPanelWidth, ResolveMaxPanelWidth(MinUnitListPanelWidth + MinPreviewPanelWidth));
-            _generatorListPanelWidth = Mathf.Clamp(_generatorListPanelWidth, MinUnitListPanelWidth, ResolveMaxPanelWidth(MinDetailsPanelWidth + MinPreviewPanelWidth));
-            _generatorSettingsPanelWidth = Mathf.Clamp(_generatorSettingsPanelWidth, MinDetailsPanelWidth, ResolveMaxPanelWidth(MinUnitListPanelWidth + MinPreviewPanelWidth));
-            _combatListPanelWidth = Mathf.Clamp(_combatListPanelWidth, MinUnitListPanelWidth, ResolveMaxPanelWidth(MinDetailsPanelWidth + MinPreviewPanelWidth));
-            _combatRulesPanelWidth = Mathf.Clamp(_combatRulesPanelWidth, MinDetailsPanelWidth, ResolveMaxPanelWidth(MinUnitListPanelWidth + MinPreviewPanelWidth));
+            NormalizeThreeColumnWidths(ref _unitListPanelWidth, ref _unitDetailsPanelWidth, ref _unitPreviewPanelWidth, MinUnitListPanelWidth, MinDetailsPanelWidth, MinPreviewPanelWidth);
+            NormalizeThreeColumnWidths(ref _generatorListPanelWidth, ref _generatorSettingsPanelWidth, ref _generatorPreviewPanelWidth, MinUnitListPanelWidth, MinDetailsPanelWidth, MinPreviewPanelWidth);
+            NormalizeThreeColumnWidths(ref _combatListPanelWidth, ref _combatRulesPanelWidth, ref _combatPreviewPanelWidth, MinUnitListPanelWidth, MinDetailsPanelWidth, MinPreviewPanelWidth);
         }
 
-        private float ResolveMaxPanelWidth(float reservedWidth)
+        private float ResolveThreeColumnContentWidth()
         {
-            return Mathf.Max(MinUnitListPanelWidth, position.width - reservedWidth - SplitterWidth * 2f - 36f);
+            float minTotalWidth = MinUnitListPanelWidth + MinDetailsPanelWidth + MinPreviewPanelWidth;
+            return Mathf.Max(minTotalWidth, position.width - SplitterWidth * 2f - HorizontalLayoutPadding);
         }
 
-        private void DrawColumnSplitter(ref float width, float minWidth, float maxWidth, string preferenceKey)
+        private void NormalizeThreeColumnWidths(ref float leftWidth, ref float middleWidth, ref float rightWidth, float leftMinWidth, float middleMinWidth, float rightMinWidth)
+        {
+            float availableWidth = ResolveThreeColumnContentWidth();
+            float minTotalWidth = leftMinWidth + middleMinWidth + rightMinWidth;
+            if (availableWidth <= minTotalWidth)
+            {
+                leftWidth = Mathf.Max(leftMinWidth, leftWidth);
+                middleWidth = Mathf.Max(middleMinWidth, middleWidth);
+                rightWidth = Mathf.Max(rightMinWidth, rightWidth);
+                return;
+            }
+
+            leftWidth = Mathf.Max(leftMinWidth, leftWidth);
+            middleWidth = Mathf.Max(middleMinWidth, middleWidth);
+            rightWidth = Mathf.Max(rightMinWidth, rightWidth);
+
+            float availableExtraWidth = availableWidth - minTotalWidth;
+            float currentExtraWidth = leftWidth - leftMinWidth + middleWidth - middleMinWidth + rightWidth - rightMinWidth;
+            if (currentExtraWidth <= 0.5f)
+            {
+                leftWidth = leftMinWidth + availableExtraWidth * 0.25f;
+                middleWidth = middleMinWidth + availableExtraWidth * 0.45f;
+                rightWidth = availableWidth - leftWidth - middleWidth;
+                return;
+            }
+
+            leftWidth = leftMinWidth + availableExtraWidth * ((leftWidth - leftMinWidth) / currentExtraWidth);
+            middleWidth = middleMinWidth + availableExtraWidth * ((middleWidth - middleMinWidth) / currentExtraWidth);
+            rightWidth = Mathf.Max(rightMinWidth, availableWidth - leftWidth - middleWidth);
+        }
+
+        private void DrawColumnSplitter(ref float leftWidth, ref float rightWidth, float leftMinWidth, float rightMinWidth, string leftPreferenceKey, string rightPreferenceKey)
         {
             Rect rect = GUILayoutUtility.GetRect(SplitterWidth, 1f, GUILayout.Width(SplitterWidth), GUILayout.ExpandHeight(true));
             EditorGUIUtility.AddCursorRect(rect, MouseCursor.ResizeHorizontal);
@@ -2982,7 +3485,9 @@ namespace Kruty1918.Moyva.Units.Editor
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == controlId)
                     {
-                        width = Mathf.Clamp(width + current.delta.x, minWidth, Mathf.Max(minWidth, maxWidth));
+                        float appliedDelta = Mathf.Clamp(current.delta.x, leftMinWidth - leftWidth, rightWidth - rightMinWidth);
+                        leftWidth += appliedDelta;
+                        rightWidth -= appliedDelta;
                         Repaint();
                         current.Use();
                     }
@@ -2992,7 +3497,8 @@ namespace Kruty1918.Moyva.Units.Editor
                     if (GUIUtility.hotControl == controlId)
                     {
                         GUIUtility.hotControl = 0;
-                        EditorPrefs.SetFloat(preferenceKey, width);
+                        EditorPrefs.SetFloat(leftPreferenceKey, leftWidth);
+                        EditorPrefs.SetFloat(rightPreferenceKey, rightWidth);
                         current.Use();
                     }
                     break;
@@ -3117,6 +3623,15 @@ namespace Kruty1918.Moyva.Units.Editor
             };
         }
 
+        private static GUIStyle InlineFoldoutStyle()
+        {
+            return new GUIStyle(EditorStyles.helpBox)
+            {
+                padding = new RectOffset(8, 8, 6, 7),
+                margin = new RectOffset(0, 0, 3, 4),
+            };
+        }
+
         private static GUIStyle HeaderTextStyle()
         {
             return new GUIStyle(EditorStyles.boldLabel)
@@ -3133,6 +3648,16 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 fontSize = 12,
                 clipping = TextClipping.Ellipsis,
+            };
+        }
+
+        private static GUIStyle ToolbarUnitTitleStyle()
+        {
+            return new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                alignment = TextAnchor.MiddleLeft,
+                clipping = TextClipping.Ellipsis,
+                normal = { textColor = EditorGUIUtility.isProSkin ? new Color(0.82f, 0.95f, 1f) : new Color(0.05f, 0.27f, 0.32f) },
             };
         }
 
@@ -3159,6 +3684,15 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 fontSize = 12,
                 alignment = TextAnchor.MiddleLeft,
+            };
+        }
+
+        private static GUIStyle FoldoutHeaderStyle()
+        {
+            return new GUIStyle(EditorStyles.foldout)
+            {
+                fontStyle = FontStyle.Bold,
+                fontSize = 12,
             };
         }
 

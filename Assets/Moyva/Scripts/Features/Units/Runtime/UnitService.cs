@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IGridService _gridService;
         private readonly ITileSettingsService _tileSettings;
         private readonly IUnitClassConfig _unitClassConfig;
+        private readonly IUnitGameplayProfileService _unitGameplayProfileService;
         private readonly IObjectsMapService _objectsMapService;
         private readonly ICalendarService _calendarService;
 
@@ -31,6 +32,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             IGridService gridService,
             ITileSettingsService tileSettings,
             IUnitClassConfig unitClassConfig,
+            IUnitGameplayProfileService unitGameplayProfileService,
             IObjectsMapService objectsMapService,
             ICalendarService calendarService = null)
         {
@@ -38,6 +40,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _gridService = gridService;
             _tileSettings = tileSettings;
             _unitClassConfig = unitClassConfig;
+            _unitGameplayProfileService = unitGameplayProfileService;
             _objectsMapService = objectsMapService;
             _calendarService = calendarService;
         }
@@ -65,8 +68,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return;
             }
 
-            float randomMod = UnityEngine.Random.Range(config.StaminaRandomRange.x, config.StaminaRandomRange.y);
-            float startStamina = config.BaseStamina + randomMod;
+            float startStamina = _unitGameplayProfileService.RollStartingStamina(signal.UnitTypeId);
 
             _unitStamina[signal.UnitId] = startStamina;
             _unitPositions[signal.UnitId] = signal.Position;

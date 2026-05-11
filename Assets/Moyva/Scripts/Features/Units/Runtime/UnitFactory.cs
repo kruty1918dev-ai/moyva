@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.Units.Runtime
     {
         private readonly DiContainer _container;
         private readonly IUnitClassConfig _unitClassConfig;
+        private readonly IUnitGameplayProfileService _unitGameplayProfileService;
         private readonly SignalBus _signalBus;
         private readonly IGridService _gridService;
         private readonly IObjectsMapService _objectsMapService;
@@ -21,12 +22,14 @@ namespace Kruty1918.Moyva.Units.Runtime
         public UnitFactory(
             DiContainer container,
             IUnitClassConfig unitClassConfig,
+            IUnitGameplayProfileService unitGameplayProfileService,
             SignalBus signalBus,
             IGridService gridService,
             IObjectsMapService objectsMapService)
         {
             _container = container;
             _unitClassConfig = unitClassConfig;
+            _unitGameplayProfileService = unitGameplayProfileService;
             _signalBus = signalBus;
             _gridService = gridService;
             _objectsMapService = objectsMapService;
@@ -70,13 +73,20 @@ namespace Kruty1918.Moyva.Units.Runtime
             // var view = unitObj.GetComponent<UnitView>();
             // if (view != null) view.Setup(finalUnitId);
 
+            var profile = _unitGameplayProfileService.GetOrDefault(typeId);
+
             // 5. Подія створення (UnitService її підхопить)
             _signalBus.Fire(new UnitCreatedSignal 
             { 
                 UnitId = finalUnitId, 
                 UnitTypeId = typeId, 
                 Position = gridPosition,
-                VisionRange = Mathf.Max(1, config.VisionRange),
+                VisionRange = profile.ResolveVisionRange(0),
+                HasCustomVisionModifiers = true,
+                CanSeeCrest = profile.CanSeeCrest,
+                CrestVisibilityFactor = profile.CrestVisibilityFactor,
+                DownSlopeVisionBonus = profile.DownSlopeVisionBonus,
+                SilhouettePenalty = profile.SilhouettePenalty,
                 UnitObject = unitObj,
                 OwnerId = ownerId
             });

@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private const string BuildingVisionAreaPrefix = "building:";
 
         private readonly IFogVisibilityResolver _resolver;
+        private readonly IHeightAwareVisionService _heightVisionService;
         private readonly IFogTextureUpdater     _textureUpdater;
         private readonly IFogSaveDataProvider   _saveProvider;
         private readonly SignalBus              _signalBus;
@@ -45,12 +46,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly Dictionary<string, Vector2Int> _unitPositions
             = new Dictionary<string, Vector2Int>();
 
+        private readonly Dictionary<string, FogVisionModifiers> _unitVisionModifiers
+            = new Dictionary<string, FogVisionModifiers>();
+
         private readonly Dictionary<string, FogRevealShape> _fixedVisionShapes
             = new Dictionary<string, FogRevealShape>();
 
         // unitId -> pending registration data received before Initialize(width,height)
-        private readonly Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape)> _pendingUnits
-            = new Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape)>();
+        private readonly Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape, FogVisionModifiers Modifiers)> _pendingUnits
+            = new Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape, FogVisionModifiers Modifiers)>();
 
         private HashSet<Vector2Int> _lastDirtyTiles = new HashSet<Vector2Int>();
 
@@ -59,12 +63,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         public FogOfWarService(
             IFogVisibilityResolver resolver,
+            IHeightAwareVisionService heightVisionService,
             IFogTextureUpdater     textureUpdater,
             IFogSaveDataProvider   saveProvider,
             SignalBus              signalBus,
             [InjectOptional] FogOfWarSettings settings)
         {
             _resolver       = resolver;
+            _heightVisionService = heightVisionService;
             _textureUpdater = textureUpdater;
             _saveProvider   = saveProvider;
             _signalBus      = signalBus;
@@ -124,7 +130,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_pendingUnits.Count > 0)
             {
                 foreach (var kvp in _pendingUnits)
-                    RegisterVisionArea(kvp.Key, kvp.Value.Position, kvp.Value.VisionRange, kvp.Value.Shape);
+                    RegisterVisionArea(kvp.Key, kvp.Value.Position, kvp.Value.VisionRange, kvp.Value.Shape, kvp.Value.Modifiers);
 
                 _pendingUnits.Clear();
             }
@@ -141,17 +147,58 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         public void RegisterUnit(string unitId, Vector2Int position, int visionRange)
             => RegisterVisionArea(unitId, position, visionRange, null);
 
+        public void UpdateUnitVisionRange(string unitId, int visionRange)
+        {
+            if (string.IsNullOrWhiteSpace(unitId))
+                return;
+
+            int clampedRange = ClampVisionRange(visionRange);
+
+            if (!_initialized)
+            {
+                if (_pendingUnits.TryGetValue(unitId, out var pending))
+                    _pendingUnits[unitId] = (pending.Position, clampedRange, pending.Shape, pending.Modifiers);
+                else
+                    _unitVisionRange[unitId] = clampedRange;
+                return;
+            }
+
+            if (!_unitPositions.TryGetValue(unitId, out var position))
+            {
+                _unitVisionRange[unitId] = clampedRange;
+                return;
+            }
+
+            if (_unitVisionRange.TryGetValue(unitId, out int current) && current == clampedRange)
+                return;
+
+            _unitVisionRange[unitId] = clampedRange;
+
+            RemoveVisibleTiles(unitId);
+            var tiles = ComputeVisibleTiles(unitId, position, clampedRange);
+            _unitVisibleTiles[unitId] = tiles;
+
+            foreach (var tile in tiles)
+            {
+                _visibilityCounters[tile.x, tile.y]++;
+                _exploredTiles[tile.x, tile.y] = true;
+                _lastDirtyTiles.Add(tile);
+            }
+
+            FlushTexture();
+        }
+
         public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape)
             => RegisterVisionArea(areaId, position, visionRange, shape);
 
-        private void RegisterVisionArea(string unitId, Vector2Int position, int visionRange, FogRevealShape? shape)
+        private void RegisterVisionArea(string unitId, Vector2Int position, int visionRange, FogRevealShape? shape, FogVisionModifiers modifiers = default)
         {
             if (string.IsNullOrWhiteSpace(unitId))
                 return;
 
             if (!_initialized)
             {
-                _pendingUnits[unitId] = (position, visionRange, shape);
+                _pendingUnits[unitId] = (position, visionRange, shape, modifiers);
                 return;
             }
 
@@ -160,6 +207,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             visionRange = ClampVisionRange(visionRange);
             _unitVisionRange[unitId] = visionRange;
             _unitPositions[unitId] = position;
+            _unitVisionModifiers[unitId] = modifiers;
 
             if (shape.HasValue)
                 _fixedVisionShapes[unitId] = shape.Value;
@@ -190,7 +238,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 FogRevealShape? shape = _fixedVisionShapes.TryGetValue(unitId, out var storedShape)
                     ? storedShape
                     : null;
-                _pendingUnits[unitId] = (newPosition, pendingRange, shape);
+                _pendingUnits[unitId] = (newPosition, pendingRange, shape, ResolveUnitVisionModifiers(unitId));
                 return;
             }
 
@@ -200,7 +248,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     ? storedRange
                     : _defaultVisionRange;
 
-                RegisterUnit(unitId, newPosition, fallbackRange);
+                RegisterVisionArea(unitId, newPosition, fallbackRange, null, ResolveUnitVisionModifiers(unitId));
                 return;
             }
 
@@ -239,6 +287,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _unitVisionRange.Remove(unitId);
                 _unitPositions.Remove(unitId);
                 _fixedVisionShapes.Remove(unitId);
+                _unitVisionModifiers.Remove(unitId);
                 return;
             }
 
@@ -248,6 +297,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _unitVisionRange.Remove(unitId);
             _unitPositions.Remove(unitId);
             _fixedVisionShapes.Remove(unitId);
+            _unitVisionModifiers.Remove(unitId);
 
             FlushTexture();
         }
@@ -312,7 +362,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private void OnUnitCreated(UnitCreatedSignal signal)
         {
             int requestedRange = signal.VisionRange > 0 ? signal.VisionRange : _defaultVisionRange;
-            RegisterUnit(signal.UnitId, signal.Position, ClampVisionRange(requestedRange));
+            var modifiers = signal.HasCustomVisionModifiers
+                ? new FogVisionModifiers(signal.CanSeeCrest, signal.CrestVisibilityFactor, signal.DownSlopeVisionBonus, signal.SilhouettePenalty)
+                : default;
+            RegisterVisionArea(signal.UnitId, signal.Position, ClampVisionRange(requestedRange), null, modifiers);
         }
 
         private void OnUnitMoved(UnitMovedSignal signal)
@@ -332,7 +385,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void OnWorldGeneratedData(WorldGeneratedDataSignal signal)
         {
-            _resolver.SetHeightMap(signal.HeightMap);
+            _resolver.SetHeightMap(BuildVisibilityHeightMap(signal.TerrainLevelMap, signal.HeightMap));
 
             int signalWidth = Mathf.Max(1, signal.Width);
             int signalHeight = Mathf.Max(1, signal.Height);
@@ -347,6 +400,22 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 ResizeToWorldDimensions(signalWidth, signalHeight);
 
             RecalculateAllVisibility();
+        }
+
+        private static float[,] BuildVisibilityHeightMap(int[,] terrainLevelMap, float[,] fallbackHeightMap)
+        {
+            if (terrainLevelMap == null)
+                return fallbackHeightMap;
+
+            int width = terrainLevelMap.GetLength(0);
+            int height = terrainLevelMap.GetLength(1);
+            var heightMap = new float[width, height];
+
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                heightMap[x, y] = Mathf.Max(0, terrainLevelMap[x, y]);
+
+            return heightMap;
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────
@@ -417,17 +486,64 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private IReadOnlyList<Vector2Int> ComputeInitialVisibleTiles(string unitId, Vector2Int position, int range)
         {
-            return _fixedVisionShapes.TryGetValue(unitId, out var shape)
-                ? ComputeShapeTiles(position, range, shape)
-                : ComputePixelCircleTiles(position, range);
+            return ComputeVisibleTiles(unitId, position, range);
         }
 
         private IReadOnlyList<Vector2Int> ComputeVisibleTiles(string unitId, Vector2Int position, int range)
         {
-            return _fixedVisionShapes.TryGetValue(unitId, out var shape)
-                ? ComputeShapeTiles(position, range, shape)
-                : _resolver.ComputeVisibleTiles(position, range, _width, _height);
+            if (_fixedVisionShapes.TryGetValue(unitId, out var shape))
+                return ComputeShapeTiles(position, range, shape);
+
+            var modifiers = ResolveUnitVisionModifiers(unitId);
+            var tiles = _resolver.ComputeVisibleTiles(position, range, _width, _height, modifiers);
+            return AddSilhouetteTargetTiles(unitId, position, range, modifiers, tiles);
         }
+
+        private IReadOnlyList<Vector2Int> AddSilhouetteTargetTiles(string observerUnitId, Vector2Int observerPosition, int range, FogVisionModifiers observerModifiers, IReadOnlyList<Vector2Int> sourceTiles)
+        {
+            if (_heightVisionService == null || _unitPositions.Count <= 1)
+                return sourceTiles;
+
+            int maxRange = _settings != null ? _settings.MaxVisionRange : 12;
+            int searchRadius = _heightVisionService.GetSearchRadius(observerPosition, range, maxRange, observerModifiers);
+            float threshold = _settings != null ? Mathf.Clamp(_settings.TerrainVisibilityThreshold, 0.01f, 1f) : 0.5f;
+            HashSet<Vector2Int> visible = null;
+
+            foreach (var targetEntry in _unitPositions)
+            {
+                if (string.Equals(targetEntry.Key, observerUnitId, StringComparison.Ordinal))
+                    continue;
+
+                var targetModifiers = ResolveUnitVisionModifiers(targetEntry.Key);
+                if (targetModifiers.EffectiveSilhouettePenalty <= 0f)
+                    continue;
+
+                Vector2Int targetPosition = targetEntry.Value;
+                if (!IsInBounds(targetPosition))
+                    continue;
+
+                int distance = Mathf.Max(Mathf.Abs(targetPosition.x - observerPosition.x), Mathf.Abs(targetPosition.y - observerPosition.y));
+                if (distance > searchRadius)
+                    continue;
+
+                visible ??= new HashSet<Vector2Int>(sourceTiles);
+                if (visible.Contains(targetPosition))
+                    continue;
+
+                float visibility = _heightVisionService.GetVisibilityFactor(observerPosition, targetPosition, range, maxRange, observerModifiers, targetModifiers);
+                if (visibility >= threshold)
+                    visible.Add(targetPosition);
+            }
+
+            return visible == null || visible.Count == sourceTiles.Count
+                ? sourceTiles
+                : new List<Vector2Int>(visible);
+        }
+
+        private FogVisionModifiers ResolveUnitVisionModifiers(string unitId)
+            => !string.IsNullOrWhiteSpace(unitId) && _unitVisionModifiers.TryGetValue(unitId, out var modifiers)
+                ? modifiers
+                : default;
 
         private static bool[,] CloneSnapshot(bool[,] source)
         {

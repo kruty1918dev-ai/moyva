@@ -23,6 +23,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IObjectsMapService _objectsMapService;
         private readonly SignalBus _signalBus;
         private readonly IUnitClassConfig _unitClassConfig;
+        private readonly IUnitGameplayProfileService _unitGameplayProfileService;
 
         private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 
@@ -34,7 +35,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             IGridService gridService,
             IObjectsMapService objectsMapService,
             SignalBus signalBus,
-            IUnitClassConfig unitClassConfig) // Додаємо залежність від конфігів юнітів, якщо потрібно
+            IUnitClassConfig unitClassConfig,
+            IUnitGameplayProfileService unitGameplayProfileService)
         {
             _unitService = unitService;
             _pathfinder = pathfinder;
@@ -44,6 +46,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _objectsMapService = objectsMapService;
             _signalBus = signalBus;
             _unitClassConfig = unitClassConfig;
+            _unitGameplayProfileService = unitGameplayProfileService;
         }
 
         public void Initialize()
@@ -135,7 +138,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 {
                     Debug.LogWarning($"[UnitMovement] Конфігурація для unitId='{unitId}' (typeId='{unitTypeId}') не знайдена. Використовую PathAnimationSettings.Default.");
                 }
-                var settings = config?.AnimationSettings ?? PathAnimationSettings.Default;
+                var settings = _unitGameplayProfileService.ResolveMovementAnimationSettings(unitTypeId);
 
                 // --- НОВА ЛОГІКА ПЕРЕВІРКИ КОЖНОГО КРОКУ ---
                 settings.CanPerformStep = (stepPos) =>

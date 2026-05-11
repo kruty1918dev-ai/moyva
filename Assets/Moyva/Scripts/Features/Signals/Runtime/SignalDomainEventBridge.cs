@@ -63,6 +63,11 @@ namespace Kruty1918.Moyva.Signals
                 UnitTypeId = signal.UnitTypeId,
                 Position = signal.Position,
                 VisionRange = signal.VisionRange,
+                HasCustomVisionModifiers = signal.HasCustomVisionModifiers,
+                CanSeeCrest = signal.CanSeeCrest,
+                CrestVisibilityFactor = signal.CrestVisibilityFactor,
+                DownSlopeVisionBonus = signal.DownSlopeVisionBonus,
+                SilhouettePenalty = signal.SilhouettePenalty,
                 UnitObject = signal.UnitObject,
                 OwnerId = signal.OwnerId
             });
