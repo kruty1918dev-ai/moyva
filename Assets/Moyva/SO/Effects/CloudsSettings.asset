@@ -13,10 +13,13 @@ MonoBehaviour:
   m_Name: CloudsSettings
   m_EditorClassIdentifier: Kruty1918.Moyva.Clouds::Kruty1918.Moyva.Clouds.API.CloudsSettings
   Enabled: 1
-  MaxActiveClouds: 10
-  InitialClouds: 3
+  MaxActiveClouds: 24
+  InitialClouds: 14
   InitialCloudsStartInView: 1
-  SpawnIntervalRange: {x: 1.5, y: 3}
+  SpawnIntervalRange: {x: 4, y: 9}
+  SpawnAreaMode: 1
+  MinimumSpawnDistance: 5
+  SpawnPlacementAttempts: 10
   CloudSprites:
   - Sprite: {fileID: 9026702686629719296, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
     Chance: 1
@@ -55,10 +58,15 @@ MonoBehaviour:
   MaskEdgeFadeWidth: 1.5
   MaskEdgeFadeSteps: 5
   LifetimeDissolveEnabled: 1
-  LifetimeRange: {x: 2, y: 230}
+  LifetimeRange: {x: 80, y: 180}
   DissolveDuration: 3
   CloudColor: {r: 1, g: 1, b: 1, a: 1}
   CloudAlpha: 0.85
+  SpriteMaterial: {fileID: 0}
+  CameraProximityFadeEnabled: 1
+  CameraFadeOrthographicRange: {x: 5, y: 14}
+  CloseCameraAlphaMultiplier: 0.28
+  CameraFadeSteps: 4
   SortingLayerName: Default
   SortingOrder: 50
   ShadowsEnabled: 1

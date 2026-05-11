@@ -13,20 +13,20 @@ MonoBehaviour:
   m_Name: DayNightScreenFilter
   m_EditorClassIdentifier: 
   m_Active: 1
-  _renderPassEvent: 1000
+  _renderPassEvent: 600
   _dayTint: {r: 1, g: 1, b: 1, a: 1}
-  _nightTint: {r: 0, g: 0, b: 0, a: 1}
-  _dawnTint: {r: 0.3944524, g: 0.23295008, b: 0.109299876, a: 1}
-  _duskTint: {r: 0.571803, g: 0.22160256, b: 0.62874615, a: 1}
-  _filterStrength: 1
-  _daySaturation: 0.95
-  _nightSaturation: 0.25
-  _dayContrast: 1.04
-  _nightContrast: 1.7
-  _dayExposure: 1
-  _nightExposure: 0.22
-  _phaseTintStrength: 1
-  _nightMinBrightness: 0.05
+  _nightTint: {r: 0.7, g: 0.78, b: 0.95, a: 1}
+  _dawnTint: {r: 1.05, g: 0.92, b: 0.82, a: 1}
+  _duskTint: {r: 0.92, g: 0.82, b: 1, a: 1}
+  _filterStrength: 0.5
+  _daySaturation: 1
+  _nightSaturation: 0.82
+  _dayContrast: 1
+  _nightContrast: 1.06
+  _dayExposure: 1.02
+  _nightExposure: 0.46
+  _phaseTintStrength: 0.85
+  _nightMinBrightness: 0.14
   _colorizeStrength: 0.75
 --- !u!114 &11400000
 MonoBehaviour:

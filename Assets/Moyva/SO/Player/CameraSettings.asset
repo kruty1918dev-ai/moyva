@@ -14,7 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Camera::Kruty1918.Moyva.Camera.API.CameraSettingsSO
   moveSpeed: 10
   smoothTime: 0.3
-  zoomSpeed: 100
+  zoomSpeed: 6
   minZoom: 5
   maxZoom: 50
   defaultCameraZ: -10
+  touchMoveSpeed: 1
+  touchPinchZoomSensitivity: 1
+  touchDragDeadZonePixels: 0.5
+  touchPinchDeadZonePixels: 2
+  maxTouchDeltaPixels: 96
+  useImmediateTouchGestures: 1
+  keepPinchFocusUnderFingers: 1
