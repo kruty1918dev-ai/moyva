@@ -1,0 +1,71 @@
+root = true
+
+# ============================================================
+# Moyva — editor + analyzer config
+# ============================================================
+
+[*]
+charset                   = utf-8
+end_of_line               = lf
+indent_style              = space
+indent_size               = 4
+insert_final_newline      = true
+trim_trailing_whitespace  = true
+
+# ---- C# files -----------------------------------------------
+[*.cs]
+# Nullable reference types — warn on potential null dereference
+dotnet_diagnostic.CS8600.severity = warning   # Converting null literal or possible null value
+dotnet_diagnostic.CS8601.severity = warning   # Possible null reference assignment
+dotnet_diagnostic.CS8602.severity = warning   # Dereference of a possibly null reference
+dotnet_diagnostic.CS8603.severity = warning   # Possible null reference return
+dotnet_diagnostic.CS8604.severity = warning   # Possible null reference argument
+dotnet_diagnostic.CS8618.severity = warning   # Non-nullable field must contain a non-null value
+dotnet_diagnostic.CS8625.severity = warning   # Cannot convert null literal to non-nullable reference type
+
+# Style: var / explicit type
+csharp_style_var_for_built_in_types       = false : suggestion
+csharp_style_var_when_type_is_apparent    = true  : suggestion
+csharp_style_var_elsewhere                = false : suggestion
+
+# Style: expression-bodied members
+csharp_style_expression_bodied_methods    = when_on_single_line : suggestion
+csharp_style_expression_bodied_properties = true : suggestion
+
+# Style: pattern matching
+csharp_style_pattern_matching_over_is_with_cast_check = true : warning
+csharp_style_pattern_matching_over_as_with_null_check  = true : warning
+
+# Style: prefer `is not null` over `!= null`
+dotnet_style_prefer_is_null_check_over_reference_equality_method = true : suggestion
+
+# Naming: interfaces must start with I
+dotnet_naming_rule.interface_should_be_prefixed_with_i.severity                  = warning
+dotnet_naming_rule.interface_should_be_prefixed_with_i.symbols                   = interface_types
+dotnet_naming_rule.interface_should_be_prefixed_with_i.style                     = prefix_interface_with_i
+dotnet_naming_symbols.interface_types.applicable_kinds                           = interface
+dotnet_naming_style.prefix_interface_with_i.required_prefix                     = I
+dotnet_naming_style.prefix_interface_with_i.capitalization                       = pascal_case
+
+# Naming: private fields — _camelCase
+dotnet_naming_rule.private_fields_underscored.severity = suggestion
+dotnet_naming_rule.private_fields_underscored.symbols  = private_fields
+dotnet_naming_rule.private_fields_underscored.style    = underscored_camel_case
+dotnet_naming_symbols.private_fields.applicable_kinds          = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+dotnet_naming_style.underscored_camel_case.required_prefix      = _
+dotnet_naming_style.underscored_camel_case.capitalization       = camel_case
+
+# Reliability: avoid unused variables
+dotnet_diagnostic.IDE0059.severity = suggestion  # Unnecessary assignment of a value
+
+# Reliability: avoid redundant casts
+dotnet_diagnostic.IDE0004.severity = suggestion
+
+# ---- JSON / YAML -------------------------------------------
+[*.{json,yml,yaml}]
+indent_size = 2
+
+# ---- Markdown ----------------------------------------------
+[*.md]
+trim_trailing_whitespace = false
