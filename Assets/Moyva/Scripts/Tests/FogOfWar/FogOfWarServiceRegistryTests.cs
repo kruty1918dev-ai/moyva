@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         {
             public void Initialize(int width, int height) { }
             public void RegisterUnit(string unitId, Vector2Int position, int visionRange) { }
+            public void UpdateUnitVisionRange(string unitId, int visionRange) { }
             public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape) { }
             public void UpdateUnitPosition(string unitId, Vector2Int newPosition) { }
             public void UnregisterUnit(string unitId) { }

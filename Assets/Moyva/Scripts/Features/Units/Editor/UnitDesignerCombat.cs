@@ -62,10 +62,10 @@ namespace Kruty1918.Moyva.Units.Editor
 
             EditorGUILayout.BeginHorizontal();
             DrawUnitListPanel(GUILayout.Width(_combatListPanelWidth), GUILayout.ExpandHeight(true));
-            DrawColumnSplitter(ref _combatListPanelWidth, MinUnitListPanelWidth, ResolveMaxPanelWidth(MinDetailsPanelWidth + MinPreviewPanelWidth), CombatListWidthPrefsKey);
+            DrawColumnSplitter(ref _combatListPanelWidth, ref _combatRulesPanelWidth, MinUnitListPanelWidth, MinDetailsPanelWidth, CombatListWidthPrefsKey, CombatRulesWidthPrefsKey);
             DrawCombatRulesPanel(GUILayout.Width(_combatRulesPanelWidth), GUILayout.MinWidth(MinDetailsPanelWidth), GUILayout.ExpandHeight(true));
-            DrawColumnSplitter(ref _combatRulesPanelWidth, MinDetailsPanelWidth, ResolveMaxPanelWidth(MinUnitListPanelWidth + MinPreviewPanelWidth), CombatRulesWidthPrefsKey);
-            DrawCombatPreviewPanel(GUILayout.MinWidth(MinPreviewPanelWidth), GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            DrawColumnSplitter(ref _combatRulesPanelWidth, ref _combatPreviewPanelWidth, MinDetailsPanelWidth, MinPreviewPanelWidth, CombatRulesWidthPrefsKey, CombatPreviewWidthPrefsKey);
+            DrawCombatPreviewPanel(GUILayout.Width(_combatPreviewPanelWidth), GUILayout.MinWidth(MinPreviewPanelWidth), GUILayout.ExpandHeight(true));
             EditorGUILayout.EndHorizontal();
         }
 

@@ -34,20 +34,36 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         }
 
         public IReadOnlyList<Vector2Int> ComputeVisibleTiles(
-            Vector2Int origin, int visionRange, int mapWidth, int mapHeight)
+            Vector2Int origin, int visionRange, int mapWidth, int mapHeight, FogVisionModifiers observerModifiers = default)
         {
-            var result = new HashSet<Vector2Int>();
+            var visibility = ComputeVisibility(origin, visionRange, mapWidth, mapHeight, observerModifiers);
+            var result = new List<Vector2Int>(visibility.Count);
+            float threshold = GetVisibilityThreshold();
+
+            for (int i = 0; i < visibility.Count; i++)
+            {
+                if (visibility[i].IsVisible(threshold))
+                    result.Add(visibility[i].Tile);
+            }
+
+            return result;
+        }
+
+        public IReadOnlyList<FogTileVisibility> ComputeVisibility(
+            Vector2Int origin, int visionRange, int mapWidth, int mapHeight, FogVisionModifiers observerModifiers = default)
+        {
+            var result = new List<FogTileVisibility>();
             int maxRange = _settings != null ? _settings.MaxVisionRange : 12;
             int safeRange = Mathf.Max(1, visionRange);
 
             if (IsInBounds(origin, mapWidth, mapHeight))
-                result.Add(origin);
+                result.Add(new FogTileVisibility(origin, 1f));
 
             if (safeRange <= 0)
-                return new List<Vector2Int>(result);
+                return result;
 
             int searchRadius = _heightVisionService != null
-                ? _heightVisionService.GetSearchRadius(origin, safeRange, maxRange)
+                ? _heightVisionService.GetSearchRadius(origin, safeRange, maxRange, observerModifiers)
                 : Mathf.Clamp(safeRange, 1, maxRange);
 
             for (int dx = -searchRadius; dx <= searchRadius; dx++)
@@ -63,21 +79,25 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
                     if (_heightVisionService != null)
                     {
-                        if (_heightVisionService.IsTargetVisible(origin, target, safeRange, maxRange))
-                            result.Add(target);
+                        float visibility = _heightVisionService.GetVisibilityFactor(origin, target, safeRange, maxRange, observerModifiers);
+                        if (visibility > 0f)
+                            result.Add(new FogTileVisibility(target, visibility));
 
                         continue;
                     }
 
                     if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) <= safeRange)
-                        result.Add(target);
+                        result.Add(new FogTileVisibility(target, 1f));
                 }
             }
 
-            return new List<Vector2Int>(result);
+            return result;
         }
 
         private static bool IsInBounds(Vector2Int pos, int w, int h)
             => pos.x >= 0 && pos.x < w && pos.y >= 0 && pos.y < h;
+
+        private float GetVisibilityThreshold()
+            => _settings != null ? Mathf.Clamp(_settings.TerrainVisibilityThreshold, 0.01f, 1f) : 0.5f;
     }
 }

@@ -20,6 +20,40 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Min(0)] public int MaxUphillVisionPenalty = 6;
         [Min(0f)] public float OcclusionSlopeBias = 0.02f;
 
+        [Header("Terrain Viewshed")]
+        [Tooltip("Maximum ray samples per target tile. 1 = center only, 5 = center + corners, 9 = center + corners + edge midpoints.")]
+        [Range(1, 9)] public int TerrainRaySamplesPerTile = 5;
+        [Tooltip("Minimum visibility coefficient required for a tile to count as visible in the boolean fog map.")]
+        [Range(0.01f, 1f)] public float TerrainVisibilityThreshold = 0.5f;
+        [Tooltip("Multiplier applied to partially visible targets. Use values below 1 to make detection harder through partial cover.")]
+        [Range(0f, 1f)] public float PartialVisibilityDetectionMultiplier = 1f;
+        [Tooltip("Distance in tiles between height samples along each ray. Lower values are more precise but costlier.")]
+        [Range(0.25f, 1f)] public float TerrainRayStepTiles = 0.5f;
+        [Tooltip("Additional eye height above the observer terrain height.")]
+        [Min(0f)] public float ObserverEyeHeightOffset = 0.35f;
+        [Tooltip("Sample height above the target tile terrain. Higher values make figures on edges easier to see.")]
+        [Min(0f)] public float TargetSampleHeightOffset = 0.1f;
+        [Tooltip("When distance reaches this fraction of the current search radius, far targets use fewer ray samples.")]
+        [Range(0.1f, 1f)] public float TerrainFarSampleDistanceRatio = 0.65f;
+        [Tooltip("Maximum cached terrain visibility ray results. Cache is cleared when the heightmap changes or settings change.")]
+        [Min(0)] public int TerrainVisibilityCacheCapacity = 24576;
+
+        [Header("Terrain Edge Vision")]
+        [Tooltip("Makes cliffs and steep terrain edges create a short blind zone behind the edge unless the observer stands close to it.")]
+        public bool EnableTerrainEdgeLineOfSight = true;
+        [Tooltip("Minimum height drop between neighbouring tiles that is treated as a terrain edge.")]
+        [Min(0.001f)] public float TerrainEdgeHeightThreshold = 0.12f;
+        [Tooltip("How many tiles from a steep edge still count as standing at the edge.")]
+        [Min(0)] public int TerrainEdgePeekDistanceTiles = 1;
+        [Tooltip("How many low-ground tiles immediately behind a steep edge are hidden from an observer who is not near the edge.")]
+        [Min(0)] public int TerrainEdgeBlindZoneTiles = 2;
+        [Tooltip("How much the blind zone grows as the observer stands farther from the edge.")]
+        [Min(0f)] public float TerrainEdgeBlindZoneDistanceScale = 0.35f;
+        [Tooltip("Maximum blind-zone depth caused by distance from the edge.")]
+        [Min(0)] public int TerrainEdgeMaxBlindZoneTiles = 4;
+        [Tooltip("Reduces uphill penalties when the target is standing on the upper edge facing the observer.")]
+        [Range(0f, 1f)] public float TerrainEdgeUphillPeekStrength = 0.65f;
+
         [Header("Fog Colors")]
         public Color UnexploredColor = new Color(0f, 0f, 0f, 1f);
         public Color ExploredColor   = new Color(0f, 0f, 0f, 0.5f);
@@ -77,6 +111,28 @@ namespace Kruty1918.Moyva.FogOfWar.API
 
         private void OnValidate()
         {
+            ElevationStep = Mathf.Max(0.01f, ElevationStep);
+            ObserverHeightBonusPerStep = Mathf.Max(0, ObserverHeightBonusPerStep);
+            DownhillVisionBonusPerStep = Mathf.Max(0, DownhillVisionBonusPerStep);
+            UphillVisionPenaltyPerStep = Mathf.Max(0, UphillVisionPenaltyPerStep);
+            MaxObserverHeightBonus = Mathf.Max(0, MaxObserverHeightBonus);
+            MaxDownhillVisionBonus = Mathf.Max(0, MaxDownhillVisionBonus);
+            MaxUphillVisionPenalty = Mathf.Max(0, MaxUphillVisionPenalty);
+            OcclusionSlopeBias = Mathf.Max(0f, OcclusionSlopeBias);
+            TerrainRaySamplesPerTile = Mathf.Clamp(TerrainRaySamplesPerTile, 1, 9);
+            TerrainVisibilityThreshold = Mathf.Clamp(TerrainVisibilityThreshold, 0.01f, 1f);
+            PartialVisibilityDetectionMultiplier = Mathf.Clamp01(PartialVisibilityDetectionMultiplier);
+            TerrainRayStepTiles = Mathf.Clamp(TerrainRayStepTiles, 0.25f, 1f);
+            ObserverEyeHeightOffset = Mathf.Max(0f, ObserverEyeHeightOffset);
+            TargetSampleHeightOffset = Mathf.Max(0f, TargetSampleHeightOffset);
+            TerrainFarSampleDistanceRatio = Mathf.Clamp(TerrainFarSampleDistanceRatio, 0.1f, 1f);
+            TerrainVisibilityCacheCapacity = Mathf.Max(0, TerrainVisibilityCacheCapacity);
+            TerrainEdgeHeightThreshold = Mathf.Max(0.001f, TerrainEdgeHeightThreshold);
+            TerrainEdgePeekDistanceTiles = Mathf.Max(0, TerrainEdgePeekDistanceTiles);
+            TerrainEdgeBlindZoneTiles = Mathf.Max(0, TerrainEdgeBlindZoneTiles);
+            TerrainEdgeBlindZoneDistanceScale = Mathf.Max(0f, TerrainEdgeBlindZoneDistanceScale);
+            TerrainEdgeMaxBlindZoneTiles = Mathf.Max(TerrainEdgeBlindZoneTiles, TerrainEdgeMaxBlindZoneTiles);
+            TerrainEdgeUphillPeekStrength = Mathf.Clamp01(TerrainEdgeUphillPeekStrength);
             FogTileSpritePixelSize = ClampSpritePixelSize(FogTileSpritePixelSize);
             FogTileSizeInCells = ClampTileSizeInCells(FogTileSizeInCells);
             FogTileSeamOverlapPixels = Mathf.Max(0f, FogTileSeamOverlapPixels);

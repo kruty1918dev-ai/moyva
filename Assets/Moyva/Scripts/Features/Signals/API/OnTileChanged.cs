@@ -9,6 +9,11 @@ namespace Kruty1918.Moyva.Signals
         public string UnitTypeId;   // "warrior" для пошуку в SO
         public UnityEngine.Vector2Int Position;
         public int VisionRange;
+        public bool HasCustomVisionModifiers;
+        public bool CanSeeCrest;
+        public float CrestVisibilityFactor;
+        public float DownSlopeVisionBonus;
+        public float SilhouettePenalty;
         public UnityEngine.GameObject UnitObject;
 
         /// <summary>
@@ -87,6 +92,7 @@ namespace Kruty1918.Moyva.Signals
         public string[,] TileMap;
         public string[,] ObjectMap;
         public float[,] HeightMap;
+        public int[,] TerrainLevelMap;
     }
 
     public struct SpawnPositionAssignment

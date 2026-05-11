@@ -28,8 +28,8 @@
   <Project Path="Kruty1918.Moyva.Units.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Camera.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.Editor.csproj" />
-  <Project Path="Kruty1918.Moyva.Calendar.csproj" />
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
+  <Project Path="Kruty1918.Moyva.Calendar.csproj" />
   <Project Path="Kruty1918.Moyva.InfoPanel.csproj" />
   <Project Path="Kruty1918.Moyva.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />

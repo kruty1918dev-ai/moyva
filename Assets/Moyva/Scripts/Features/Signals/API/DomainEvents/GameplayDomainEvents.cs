@@ -12,6 +12,11 @@ namespace Kruty1918.Moyva.Signals.DomainEvents
         public string UnitTypeId;
         public Vector2Int Position;
         public int VisionRange;
+        public bool HasCustomVisionModifiers;
+        public bool CanSeeCrest;
+        public float CrestVisibilityFactor;
+        public float DownSlopeVisionBonus;
+        public float SilhouettePenalty;
         public GameObject UnitObject;
         public string OwnerId;
     }

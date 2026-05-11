@@ -27,6 +27,10 @@ namespace Kruty1918.Moyva.Units.Runtime
                 .To<UnitClassConfigService>()
                 .AsSingle();
 
+            Container.Bind<IUnitGameplayProfileService>()
+                .To<UnitGameplayProfileService>()
+                .AsSingle();
+
             Container.Bind<IUnitCombatService>()
                 .To<UnitCombatService>()
                 .AsSingle();
