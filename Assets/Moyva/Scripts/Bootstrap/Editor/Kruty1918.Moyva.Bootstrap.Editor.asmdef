@@ -1,0 +1,21 @@
+{
+    "name": "Kruty1918.Moyva.Bootstrap.Editor",
+    "rootNamespace": "Kruty1918.Moyva.Bootstrap.Editor",
+    "references": [
+        "Kruty1918.Moyva.Bootstrap",
+        "Kruty1918.Moyva.FogOfWar",
+        "Kruty1918.Moyva.EditorShared",
+        "Zenject"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

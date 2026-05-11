@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Bootstrap.Runtime;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
 using UnityEditor;
@@ -36,10 +37,12 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
 
         private void OnEnable()
         {
+            _config ??= MoyvaProjectEditorContext.Get<BootstrapInstallerConfigSO>();
+
             if (_config == null)
                 TryAssignFromSelection();
 
-            _fogSettings ??= FindFogSettings();
+            _fogSettings ??= MoyvaProjectEditorContext.Get<FogOfWarSettings>() ?? FindFogSettings();
 
             EnsureSerializedObject();
             BuildStyles();
@@ -122,12 +125,14 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
                 if (newConfig != _config)
                 {
                     _config = newConfig;
+                    MoyvaProjectEditorContext.Set(_config);
                     EnsureSerializedObject();
                 }
 
                 if (GUILayout.Button("Use Selected", EditorStyles.toolbarButton, GUILayout.Width(92f)))
                 {
                     TryAssignFromSelection();
+                    MoyvaProjectEditorContext.Set(_config);
                     EnsureSerializedObject();
                 }
 
@@ -256,11 +261,18 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
+                    EditorGUI.BeginChangeCheck();
                     _fogSettings = (FogOfWarSettings)EditorGUILayout.ObjectField("Fog settings", _fogSettings, typeof(FogOfWarSettings), false);
+                    if (EditorGUI.EndChangeCheck())
+                        MoyvaProjectEditorContext.Set(_fogSettings);
+
                     if (GUILayout.Button(_fogSettings == null ? "Знайти" : "Ping", GUILayout.Width(70f)))
                     {
                         if (_fogSettings == null)
-                            _fogSettings = FindFogSettings();
+                        {
+                            _fogSettings = MoyvaProjectEditorContext.GetOrFindFirst<FogOfWarSettings>() ?? FindFogSettings();
+                            MoyvaProjectEditorContext.Set(_fogSettings);
+                        }
 
                         if (_fogSettings != null)
                             EditorGUIUtility.PingObject(_fogSettings);
@@ -414,7 +426,10 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
         private void TryAssignFromSelection()
         {
             if (Selection.activeObject is BootstrapInstallerConfigSO selected)
+            {
                 _config = selected;
+                MoyvaProjectEditorContext.Set(_config);
+            }
         }
 
         private void EnsureSerializedObject()
@@ -462,6 +477,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             AssetDatabase.SaveAssets();
 
             _config = created;
+            MoyvaProjectEditorContext.Set(_config);
             EnsureSerializedObject();
 
             Selection.activeObject = created;
