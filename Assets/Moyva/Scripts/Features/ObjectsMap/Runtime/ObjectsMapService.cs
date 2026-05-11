@@ -27,10 +27,10 @@ namespace Kruty1918.Moyva.ObjectsMap.Runtime
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<UnitCreatedSignal>(OnUnitCreated);
-            _signalBus.Unsubscribe<UnitMovedSignal>(OnUnitMoved);
-            _signalBus.Unsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
-            _signalBus.Unsubscribe<OnMapObjectSpawnedSignal>(OnMapObjectSpawned);
+            _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreated);
+            _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMoved);
+            _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.TryUnsubscribe<OnMapObjectSpawnedSignal>(OnMapObjectSpawned);
         }
 
         // --- Signal handlers ---
