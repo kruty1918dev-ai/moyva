@@ -380,11 +380,18 @@ namespace Kruty1918.Moyva.Economy.Editor
         private readonly EconomyAutoFixService _autoFixService = new EconomyAutoFixService();
         private readonly EconomySimulationService _simulationService = new EconomySimulationService();
         private readonly EconomyDataMigrationService _migrationService = new EconomyDataMigrationService();
+        private const string DatabaseLockKey = "EconomyDatabaseSO";
 
         private EconomyDatabaseSO _database;
         private SerializedObject _databaseSo;
         private EconomyRulesConfiguration _rulesConfiguration;
         private SerializedObject _rulesConfigurationSo;
+        private DesignerPresetLibrarySO _designerPresetLibrary;
+        private int _selectedEconomyPresetIndex;
+        private bool _diffBeforeSaveEnabled = true;
+        private string _lastSavedDatabaseSnapshot = string.Empty;
+        private readonly EditorAssetStaleTracker _staleTracker = new EditorAssetStaleTracker();
+        private readonly EditorWindowPerformanceProfiler _perfProfiler = new EditorWindowPerformanceProfiler();
 
         private Tab _tab;
         private TabGroup _tabGroup;
@@ -428,6 +435,7 @@ namespace Kruty1918.Moyva.Economy.Editor
         
         // Кеш для AssetPreview результатів
         private Dictionary<Sprite, Texture> _assetPreviewCache = new Dictionary<Sprite, Texture>();
+        private readonly EditorLivePreviewThrottle _livePreviewThrottle = new EditorLivePreviewThrottle(repaintFps: 24d, costlyTickHz: 8d);
     
         // Кеш для List сутностей щоб не переобчислювати кожний фрейм
         private struct EntityCacheEntry
@@ -488,26 +496,29 @@ namespace Kruty1918.Moyva.Economy.Editor
         private void OnEnable()
         {
             if (_database == null)
-                _database = FindFirstAsset<EconomyDatabaseSO>();
+                _database = MoyvaProjectEditorContext.GetOrFindFirst<EconomyDatabaseSO>();
 
             if (_rulesConfiguration == null)
-                _rulesConfiguration = FindFirstAsset<EconomyRulesConfiguration>();
+                _rulesConfiguration = MoyvaProjectEditorContext.GetOrFindFirst<EconomyRulesConfiguration>();
 
             if (_buildingRegistry == null)
-                _buildingRegistry = FindFirstAsset<BuildingRegistrySO>();
+                _buildingRegistry = MoyvaProjectEditorContext.GetOrFindFirst<BuildingRegistrySO>();
 
             if (_unitRegistry == null)
-                _unitRegistry = FindFirstAsset<UnitRegistrySO>();
+                _unitRegistry = MoyvaProjectEditorContext.GetOrFindFirst<UnitRegistrySO>();
 
             if (_tileRegistry == null)
-                _tileRegistry = FindFirstAsset<Kruty1918.Moyva.Grid.API.TileRegistrySO>();
+                _tileRegistry = MoyvaProjectEditorContext.GetOrFindFirst<Kruty1918.Moyva.Grid.API.TileRegistrySO>();
 
             if (_mapObjectRegistry == null)
-                _mapObjectRegistry = FindFirstAsset<MapObjectRegistrySO>();
+                _mapObjectRegistry = MoyvaProjectEditorContext.GetOrFindFirst<MapObjectRegistrySO>();
+
+            _designerPresetLibrary ??= MoyvaProjectEditorContext.GetOrFindFirst<DesignerPresetLibrarySO>();
 
             RefreshResourceCache();
             RefreshTileCache();
             RebuildSerializedObjects();
+            _staleTracker.Capture(_database);
             
                 // Ініціалізувати кеш сутностей
                 RebuildBuildingEntityCache();
@@ -532,8 +543,16 @@ namespace Kruty1918.Moyva.Economy.Editor
 
         private void OnGUI()
         {
+            _perfProfiler.BeginFrame();
+
+            _perfProfiler.BeginSection("Header");
             DrawHeader();
+            _perfProfiler.EndSection("Header");
+
+            _perfProfiler.BeginSection("DatabaseSelector");
             DrawDatabaseSelector();
+            _perfProfiler.EndSection("DatabaseSelector");
+
             DrawCrossSystemBar();
             DrawTabToolbar();
 
@@ -613,6 +632,12 @@ namespace Kruty1918.Moyva.Economy.Editor
                     DrawMapObjectsTab();
                     break;
             }
+
+            if (_staleTracker.IsStale(_database))
+                EditorWindowSharedUI.DrawWarning("Дані застарілі: EconomyDatabase змінено зовні. Перечитайте дані перед save.", MessageType.Warning);
+
+            EditorGUILayout.LabelField(_perfProfiler.BuildSummary(), EditorStyles.miniLabel);
+            _perfProfiler.EndFrame();
         }
 
         private void DrawOverridableParametersTab()
@@ -637,32 +662,42 @@ namespace Kruty1918.Moyva.Economy.Editor
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button(new GUIContent("Дозволити усе", Tips.AllowAllOverridesBtn), GUILayout.Width(160f)))
             {
-                Undo.RecordObject(_rulesConfiguration, "Economy: allow all overrides");
-                for (int i = 0; i < parameters.arraySize; i++)
-                {
-                    var element = parameters.GetArrayElementAtIndex(i);
-                    var overridableProp = element.FindPropertyRelative("_isOverridable");
-                    if (overridableProp != null)
-                        overridableProp.boolValue = true;
-                }
+                RunUndoSafeBulkEdit(
+                    "Economy: allow all overrides",
+                    () =>
+                    {
+                        for (int i = 0; i < parameters.arraySize; i++)
+                        {
+                            var element = parameters.GetArrayElementAtIndex(i);
+                            var overridableProp = element.FindPropertyRelative("_isOverridable");
+                            if (overridableProp != null)
+                                overridableProp.boolValue = true;
+                        }
 
-                if (_rulesConfigurationSo.ApplyModifiedProperties())
-                    EditorUtility.SetDirty(_rulesConfiguration);
+                        if (_rulesConfigurationSo.ApplyModifiedProperties())
+                            EditorUtility.SetDirty(_rulesConfiguration);
+                    },
+                    _rulesConfiguration);
             }
 
             if (GUILayout.Button(new GUIContent("Заборонити усе", Tips.DisallowAllOverridesBtn), GUILayout.Width(160f)))
             {
-                Undo.RecordObject(_rulesConfiguration, "Economy: disallow all overrides");
-                for (int i = 0; i < parameters.arraySize; i++)
-                {
-                    var element = parameters.GetArrayElementAtIndex(i);
-                    var overridableProp = element.FindPropertyRelative("_isOverridable");
-                    if (overridableProp != null)
-                        overridableProp.boolValue = false;
-                }
+                RunUndoSafeBulkEdit(
+                    "Economy: disallow all overrides",
+                    () =>
+                    {
+                        for (int i = 0; i < parameters.arraySize; i++)
+                        {
+                            var element = parameters.GetArrayElementAtIndex(i);
+                            var overridableProp = element.FindPropertyRelative("_isOverridable");
+                            if (overridableProp != null)
+                                overridableProp.boolValue = false;
+                        }
 
-                if (_rulesConfigurationSo.ApplyModifiedProperties())
-                    EditorUtility.SetDirty(_rulesConfiguration);
+                        if (_rulesConfigurationSo.ApplyModifiedProperties())
+                            EditorUtility.SetDirty(_rulesConfiguration);
+                    },
+                    _rulesConfiguration);
             }
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
@@ -853,6 +888,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             {
                 _rulesConfiguration = next;
                 _rulesConfigurationSo = _rulesConfiguration == null ? null : new SerializedObject(_rulesConfiguration);
+                MoyvaProjectEditorContext.Set(_rulesConfiguration);
             }
 
             if (GUILayout.Button("Показати", GUILayout.Width(90f)) && _rulesConfiguration != null)
@@ -882,7 +918,7 @@ namespace Kruty1918.Moyva.Economy.Editor
                 _rulesConfiguration.InitializeDefaults();
                 _rulesConfigurationSo = new SerializedObject(_rulesConfiguration);
                 EditorUtility.SetDirty(_rulesConfiguration);
-                AssetDatabase.SaveAssets();
+                SaveDatabaseWithDiffPreview("Rules Configuration Init Defaults");
             }
 
             return true;
@@ -990,7 +1026,7 @@ namespace Kruty1918.Moyva.Economy.Editor
         {
             EditorGUILayout.Space(6f);
             EditorGUILayout.LabelField("Редактор Економіки", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(Tips.WindowHeader, MessageType.Info);
+            EditorWindowSharedUI.DrawWarning(Tips.WindowHeader, MessageType.Info);
         }
 
         private void DrawDatabaseSelector()
@@ -1000,12 +1036,24 @@ namespace Kruty1918.Moyva.Economy.Editor
                 new GUIContent("Економічний Каталог", Tips.DatabaseField),
                 _database, typeof(EconomyDatabaseSO), false);
             if (EditorGUI.EndChangeCheck())
+            {
+                MoyvaProjectEditorContext.Set(_database);
                 RebuildSerializedObjects();
+                _staleTracker.Capture(_database);
+            }
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button(new GUIContent("Знайти", Tips.AutoFindBtn), GUILayout.Width(120f)))
             {
-                _database = FindFirstAsset<EconomyDatabaseSO>();
+                _database = MoyvaProjectEditorContext.GetOrFindFirst<EconomyDatabaseSO>();
+                RebuildSerializedObjects();
+                _staleTracker.Capture(_database);
+            }
+
+            if (GUILayout.Button("Очистити", GUILayout.Width(92f)))
+            {
+                _database = null;
+                MoyvaProjectEditorContext.Set<EconomyDatabaseSO>(null);
                 RebuildSerializedObjects();
             }
 
@@ -1019,10 +1067,114 @@ namespace Kruty1918.Moyva.Economy.Editor
             }
 
             GUILayout.FlexibleSpace();
+
+            _diffBeforeSaveEnabled = GUILayout.Toggle(
+                _diffBeforeSaveEnabled,
+                EditorTooltipStandard.Content("Diff Save", "Показує diff полів перед збереженням EconomyDatabaseSO.", "Зменшує ризик зіпсувати економічний баланс випадковими змінами."),
+                EditorStyles.toolbarButton,
+                GUILayout.Width(78f));
+
+            bool unlocked = EditorRegistryWriteLock.IsUnlocked(DatabaseLockKey);
+            bool nextUnlocked = GUILayout.Toggle(unlocked, "Unlock", EditorStyles.toolbarButton, GUILayout.Width(70f));
+            if (nextUnlocked != unlocked)
+                EditorRegistryWriteLock.SetUnlocked(DatabaseLockKey, nextUnlocked);
+
+            using (new EditorGUI.DisabledScope(_database == null))
+            {
+                if (GUILayout.Button(EditorTooltipStandard.Content("Зберегти", "Зберігає EconomyDatabaseSO після preview diff.", "Фіксує зміни економіки для runtime-симуляції."), GUILayout.Width(96f)))
+                    SaveDatabaseWithDiffPreview("Manual Save");
+            }
+
             EditorGUILayout.EndHorizontal();
 
             if (_database == null)
-                EditorGUILayout.HelpBox("Оберіть EconomyDatabaseSO щоб почати редагування.", MessageType.Warning);
+                EditorWindowSharedUI.DrawWarning("Оберіть EconomyDatabaseSO щоб почати редагування.", MessageType.Warning);
+
+            DrawEconomyPresetsToolbar();
+        }
+
+        private void DrawEconomyPresetsToolbar()
+        {
+            EditorGUILayout.Space(2f);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Designer Presets", EditorStyles.miniBoldLabel);
+
+            EditorGUI.BeginChangeCheck();
+            _designerPresetLibrary = (DesignerPresetLibrarySO)EditorGUILayout.ObjectField(
+                EditorTooltipStandard.Content("Preset Library", "Обирає спільну бібліотеку preset-ів.", "Прискорює узгоджене налаштування економіки між мапами."),
+                _designerPresetLibrary,
+                typeof(DesignerPresetLibrarySO),
+                false);
+            if (EditorGUI.EndChangeCheck())
+                MoyvaProjectEditorContext.Set(_designerPresetLibrary);
+
+            if (_designerPresetLibrary == null)
+            {
+                EditorGUILayout.HelpBox("Призначте DesignerPresetLibrarySO, щоб застосовувати economy preset-и.", MessageType.None);
+                EditorGUILayout.EndVertical();
+                return;
+            }
+
+            var presets = _designerPresetLibrary.EconomyPresets;
+            if (presets == null || presets.Count == 0)
+            {
+                EditorGUILayout.HelpBox("У бібліотеці немає Economy preset-ів.", MessageType.None);
+                EditorGUILayout.EndVertical();
+                return;
+            }
+
+            var labels = new string[presets.Count];
+            for (int i = 0; i < presets.Count; i++)
+            {
+                string presetName = presets[i] != null ? presets[i].Name : string.Empty;
+                labels[i] = string.IsNullOrWhiteSpace(presetName) ? $"Economy Preset {i + 1}" : presetName;
+            }
+
+            _selectedEconomyPresetIndex = Mathf.Clamp(_selectedEconomyPresetIndex, 0, presets.Count - 1);
+            _selectedEconomyPresetIndex = EditorGUILayout.Popup("Preset", _selectedEconomyPresetIndex, labels);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(_database == null))
+                {
+                    if (GUILayout.Button("Apply Preset", GUILayout.Width(140f)))
+                        ApplySelectedEconomyPreset();
+                }
+
+                if (GUILayout.Button("Ping Library", GUILayout.Width(120f)))
+                    EditorGUIUtility.PingObject(_designerPresetLibrary);
+            }
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private void ApplySelectedEconomyPreset()
+        {
+            if (_database == null || _designerPresetLibrary == null || _designerPresetLibrary.EconomyPresets == null || _designerPresetLibrary.EconomyPresets.Count == 0)
+                return;
+
+            int index = Mathf.Clamp(_selectedEconomyPresetIndex, 0, _designerPresetLibrary.EconomyPresets.Count - 1);
+            var preset = _designerPresetLibrary.EconomyPresets[index];
+            if (preset == null || preset.Template == null)
+            {
+                EditorUtility.DisplayDialog("Economy Preset", "Обраний preset порожній.", "OK");
+                return;
+            }
+
+            if (ReferenceEquals(preset.Template, _database))
+            {
+                EditorUtility.DisplayDialog("Economy Preset", "Обрано той самий EconomyDatabaseSO. Немає що застосовувати.", "OK");
+                return;
+            }
+
+            Undo.RecordObject(_database, $"Economy: apply preset {preset.Name}");
+            if (!DesignerPresetApplier.ApplyEconomyPreset(preset, _database))
+                return;
+
+            EditorUtility.SetDirty(_database);
+            RebuildSerializedObjects();
+            RefreshResourceCache();
+            RefreshTileCache();
         }
 
         private void DrawTabToolbar()
@@ -1066,7 +1218,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             {
                 EditorGUILayout.HelpBox(Tips.MapObjectsRegistryMissing, MessageType.Warning);
                 if (GUILayout.Button(new GUIContent("Знайти MapObjectRegistrySO", Tips.FindMapObjectRegistryBtn)))
-                    _mapObjectRegistry = FindFirstAsset<MapObjectRegistrySO>();
+                    _mapObjectRegistry = MoyvaProjectEditorContext.GetOrFindFirst<MapObjectRegistrySO>();
                 _databaseSo.ApplyModifiedProperties();
                 return;
             }
@@ -1426,7 +1578,11 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             if (isResourceTab && GUILayout.Button(new GUIContent("Додати всі", "Додати у базу всі ресурси (.asset), які знайдені в проєкті."), GUILayout.Width(95f)))
             {
-                int added = EconomyResourceEditorShared.AddAllResourcesToDatabase(_database);
+                int added = 0;
+                RunUndoSafeBulkEdit(
+                    "Economy: add all resources",
+                    () => { added = EconomyResourceEditorShared.AddAllResourcesToDatabase(_database); },
+                    _database);
                 ShowNotification(new GUIContent($"Додано ресурсів: {added}"));
             }
 
@@ -1593,7 +1749,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             else
             {
                 if (AssetPreview.IsLoadingAssetPreview(sprite.GetInstanceID()))
-                    Repaint();
+                    _livePreviewThrottle.TryRepaint(this);
 
                 DrawSpriteRectDirect(rect, sprite);
             }
@@ -2017,19 +2173,24 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             if (GUILayout.Button(new GUIContent("Виправити Помилки", Tips.FixIssuesBtn), GUILayout.Height(28f)))
             {
-                Undo.RecordObject(_database, "Економіка: виправлення помилок");
-                var fixedCount = _autoFixService.FixCommonIssues(_database);
+                int fixedCount = 0;
+                RunUndoSafeBulkEdit(
+                    "Економіка: виправлення помилок",
+                    () => { fixedCount = _autoFixService.FixCommonIssues(_database); },
+                    _database);
                 _validationIssues = _validationService.Validate(_database, _buildingRegistry).ToList();
                 ShowNotification(new GUIContent($"Виправлено {fixedCount} проблем."));
-                AssetDatabase.SaveAssets();
+                SaveDatabaseWithDiffPreview("Validation AutoFix");
             }
 
             if (GUILayout.Button(new GUIContent("Мігрувати Схему", Tips.RunMigrationBtn), GUILayout.Height(28f)))
             {
-                Undo.RecordObject(_database, "Економіка: міграція даних");
-                _migrationReport = _migrationService.Migrate(_database);
+                RunUndoSafeBulkEdit(
+                    "Економіка: міграція даних",
+                    () => { _migrationReport = _migrationService.Migrate(_database); },
+                    _database);
                 _databaseSo?.Update();
-                AssetDatabase.SaveAssets();
+                SaveDatabaseWithDiffPreview("Schema Migration");
             }
 
             EditorGUILayout.EndHorizontal();
@@ -2047,6 +2208,14 @@ namespace Kruty1918.Moyva.Economy.Editor
                     var messageType = issue.Severity == EconomyValidationSeverity.Error ? MessageType.Error : MessageType.Warning;
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.HelpBox(issue.Message, messageType);
+                    if (GUILayout.Button(
+                            EditorTooltipStandard.Content("Quick Fix", "Запускає контекстне автовиправлення для типових проблем валідації.", "Скорочує час на ручне виправлення економічних конфігів."),
+                            GUILayout.Width(82f),
+                            GUILayout.Height(38f)))
+                    {
+                        QuickFixValidationIssue(issue);
+                    }
+
                     if (issue.Context != null && GUILayout.Button(new GUIContent("Показати", Tips.PingBtn), GUILayout.Width(64f), GUILayout.Height(38f)))
                         EditorGUIUtility.PingObject(issue.Context);
                     EditorGUILayout.EndHorizontal();
@@ -2056,6 +2225,50 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             EditorGUILayout.Space(6f);
             DrawMigrationStatus();
+        }
+
+        private void QuickFixValidationIssue(EconomyValidationIssue issue)
+        {
+            if (_database == null)
+                return;
+
+            int fixedCount = 0;
+            RunUndoSafeBulkEdit(
+                "Економіка: quick-fix проблеми",
+                () =>
+                {
+                    fixedCount = _autoFixService.FixCommonIssues(_database);
+
+                    // Contextual fallback: assign first rules config when issue is clearly about missing rules config.
+                    if (fixedCount == 0 && issue.Message != null && issue.Message.IndexOf("rules config", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        var rulesProp = _databaseSo?.FindProperty("_rulesConfig");
+                        if (rulesProp != null && rulesProp.objectReferenceValue == null)
+                        {
+                            string[] guids = AssetDatabase.FindAssets($"t:{nameof(EconomyRulesConfigSO)}");
+                            if (guids.Length > 0)
+                            {
+                                string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+                                var config = AssetDatabase.LoadAssetAtPath<EconomyRulesConfigSO>(path);
+                                if (config != null)
+                                {
+                                    rulesProp.objectReferenceValue = config;
+                                    _databaseSo.ApplyModifiedProperties();
+                                    fixedCount++;
+                                }
+                            }
+                        }
+                    }
+                },
+                _database);
+
+            _validationIssues = _validationService.Validate(_database, _buildingRegistry).ToList();
+            ShowNotification(new GUIContent(fixedCount > 0
+                ? $"Quick-fix: виправлено {fixedCount} проблем."
+                : "Quick-fix: типових рішень для цієї проблеми не знайдено."));
+
+            if (fixedCount > 0)
+                SaveDatabaseWithDiffPreview("Validation Issue Quick Fix");
         }
 
         private void DrawMigrationStatus()
@@ -2230,11 +2443,14 @@ namespace Kruty1918.Moyva.Economy.Editor
                 typeof(BuildingRegistrySO),
                 false);
             if (EditorGUI.EndChangeCheck())
+            {
                 _buildingRegistrySo = _buildingRegistry == null ? null : new SerializedObject(_buildingRegistry);
+                MoyvaProjectEditorContext.Set(_buildingRegistry);
+            }
 
             if (GUILayout.Button("Знайти", GUILayout.Width(80f)))
             {
-                _buildingRegistry = FindFirstAsset<BuildingRegistrySO>();
+                _buildingRegistry = MoyvaProjectEditorContext.GetOrFindFirst<BuildingRegistrySO>();
                 _buildingRegistrySo = _buildingRegistry == null ? null : new SerializedObject(_buildingRegistry);
             }
 
@@ -2346,11 +2562,14 @@ namespace Kruty1918.Moyva.Economy.Editor
                 typeof(UnitRegistrySO),
                 false);
             if (EditorGUI.EndChangeCheck())
+            {
                 _unitRegistrySo = _unitRegistry == null ? null : new SerializedObject(_unitRegistry);
+                MoyvaProjectEditorContext.Set(_unitRegistry);
+            }
 
             if (GUILayout.Button("Знайти", GUILayout.Width(80f)))
             {
-                _unitRegistry = FindFirstAsset<UnitRegistrySO>();
+                _unitRegistry = MoyvaProjectEditorContext.GetOrFindFirst<UnitRegistrySO>();
                 _unitRegistrySo = _unitRegistry == null ? null : new SerializedObject(_unitRegistry);
             }
 
@@ -2584,6 +2803,72 @@ namespace Kruty1918.Moyva.Economy.Editor
             _bulkSelection.Clear();
             _selectedByTab.Clear();
             _multiSelectedByTab.Clear();
+            RefreshDatabaseSavedSnapshot();
+        }
+
+        private void SaveDatabaseWithDiffPreview(string source)
+        {
+            if (!EditorRegistryWriteLock.IsUnlocked(DatabaseLockKey))
+            {
+                EditorUtility.DisplayDialog("Readonly lock", "EconomyDatabase заблокований. Увімкніть Unlock для збереження.", "OK");
+                return;
+            }
+
+            if (_staleTracker.IsStale(_database))
+            {
+                EditorUtility.DisplayDialog("Дані застарілі", "EconomyDatabase змінено зовні. Оновіть дані перед save.", "OK");
+                return;
+            }
+
+            if (_databaseSo != null)
+                _databaseSo.ApplyModifiedProperties();
+
+            var changesForLog = _database != null
+                ? SerializedDiffPreviewUtility.BuildDiff(_database, _lastSavedDatabaseSnapshot, maxItems: 240)
+                : new List<string>();
+
+            if (_database != null)
+            {
+                if (_diffBeforeSaveEnabled)
+                {
+                    if (!ConfirmEconomySaveWithDiff(source, changesForLog))
+                        return;
+                }
+
+                EditorUtility.SetDirty(_database);
+            }
+
+            AssetDatabase.SaveAssets();
+            EditorContentChangeLog.Write("EconomyDesigner", source, _database, changesForLog);
+            RefreshDatabaseSavedSnapshot();
+            _staleTracker.Capture(_database);
+        }
+
+        private void RefreshDatabaseSavedSnapshot()
+        {
+            _lastSavedDatabaseSnapshot = SerializedDiffPreviewUtility.CaptureSnapshot(_database);
+        }
+
+        private static bool ConfirmEconomySaveWithDiff(string source, List<string> changes)
+        {
+            if (changes == null || changes.Count == 0)
+                return true;
+
+            const int previewLimit = 18;
+            int shown = Mathf.Min(previewLimit, changes.Count);
+            var lines = new List<string>(shown + 2);
+            for (int i = 0; i < shown; i++)
+                lines.Add($"- {changes[i]}");
+
+            if (changes.Count > shown)
+                lines.Add($"... ще {changes.Count - shown} змін.");
+
+            string message =
+                $"Операція: {source}\n" +
+                $"Змінені поля: {changes.Count}\n\n" +
+                string.Join("\n", lines);
+
+            return EditorUtility.DisplayDialog("Diff before save", message, "Зберегти", "Скасувати");
         }
 
         private void CreateDatabaseAsset()
@@ -2597,6 +2882,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             AssetDatabase.CreateAsset(asset, path);
             AssetDatabase.SaveAssets();
             _database = asset;
+            MoyvaProjectEditorContext.Set(_database);
             RebuildSerializedObjects();
             EditorGUIUtility.PingObject(asset);
         }
@@ -3006,26 +3292,69 @@ namespace Kruty1918.Moyva.Economy.Editor
             if (_bulkSelection.Count == 0)
                 return;
 
-            Undo.RecordObject(_database, "Економіка: мультивидалення");
-            _databaseSo.Update();
-
-            foreach (var def in BulkCategoryDefs)
-            {
-                var prop = _databaseSo.FindProperty(def.PropertyName);
-                if (prop == null || !prop.isArray)
-                    continue;
-
-                for (var i = prop.arraySize - 1; i >= 0; i--)
+            RunUndoSafeBulkEdit(
+                "Економіка: мультивидалення",
+                () =>
                 {
-                    var element = prop.GetArrayElementAtIndex(i);
-                    if (element.objectReferenceValue != null && _bulkSelection.Contains(element.objectReferenceValue))
-                        prop.DeleteArrayElementAtIndex(i);
+                    _databaseSo.Update();
+
+                    foreach (var def in BulkCategoryDefs)
+                    {
+                        var prop = _databaseSo.FindProperty(def.PropertyName);
+                        if (prop == null || !prop.isArray)
+                            continue;
+
+                        for (var i = prop.arraySize - 1; i >= 0; i--)
+                        {
+                            var element = prop.GetArrayElementAtIndex(i);
+                            if (element.objectReferenceValue != null && _bulkSelection.Contains(element.objectReferenceValue))
+                                prop.DeleteArrayElementAtIndex(i);
+                        }
+                    }
+
+                    _databaseSo.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(_database);
+                },
+                _database);
+
+            SaveDatabaseWithDiffPreview("Bulk Remove Selected");
+        }
+
+        private static int BeginUndoGroup(string groupName, params UnityEngine.Object[] targets)
+        {
+            Undo.IncrementCurrentGroup();
+            int group = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName(groupName);
+
+            if (targets != null)
+            {
+                for (int i = 0; i < targets.Length; i++)
+                {
+                    var target = targets[i];
+                    if (target != null)
+                        Undo.RecordObject(target, groupName);
                 }
             }
 
-            _databaseSo.ApplyModifiedProperties();
-            EditorUtility.SetDirty(_database);
-            AssetDatabase.SaveAssets();
+            return group;
+        }
+
+        private static void EndUndoGroup(int group)
+        {
+            Undo.CollapseUndoOperations(group);
+        }
+
+        private static void RunUndoSafeBulkEdit(string groupName, Action action, params UnityEngine.Object[] targets)
+        {
+            int group = BeginUndoGroup(groupName, targets);
+            try
+            {
+                action?.Invoke();
+            }
+            finally
+            {
+                EndUndoGroup(group);
+            }
         }
 
         // ═══════════════════════════════════════════════════════
@@ -3194,7 +3523,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             else
             {
                 if (AssetPreview.IsLoadingAssetPreview(sprite.GetInstanceID()))
-                    Repaint();
+                    _livePreviewThrottle.TryRepaint(this);
 
                 DrawSpriteRectDirect(iconRect, sprite);
             }
