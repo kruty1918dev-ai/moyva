@@ -21,6 +21,30 @@ namespace Kruty1918.Moyva.Construction.API
             return HasEnabledModule<CastleBuildingModule>(definition);
         }
 
+        public static int GetInfluenceRadius(BuildingDefinition definition, int fallbackRadius)
+        {
+            int normalizedFallback = Math.Max(0, fallbackRadius);
+            if (definition == null)
+                return normalizedFallback;
+
+            if (definition.TownHallProximityRadiusOverride > 0)
+                return definition.TownHallProximityRadiusOverride;
+
+            if (TryGetEnabledModule(definition, out TownHallBuildingModule townHall)
+                && townHall.BuildRadius > 0)
+            {
+                return townHall.BuildRadius;
+            }
+
+            if (TryGetEnabledModule(definition, out CastleBuildingModule castle)
+                && castle.ExclusionRadius > 0)
+            {
+                return castle.ExclusionRadius;
+            }
+
+            return normalizedFallback;
+        }
+
         public static bool IsWarehouse(BuildingDefinition definition)
         {
             if (definition == null)
