@@ -23,6 +23,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesAndSelfTo<FogRendererCullingService>()
+                .AsSingle()
+                .NonLazy();
+
             Container.Bind<ISaveModule>()
                 .To<FogOfWarSaveModule>()
                 .AsSingle();
@@ -38,6 +42,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .AsSingle();
 
             Container.BindExecutionOrder<FogOfWarService>(-5);
+            Container.BindExecutionOrder<FogRendererCullingService>(-4);
         }
     }
 }

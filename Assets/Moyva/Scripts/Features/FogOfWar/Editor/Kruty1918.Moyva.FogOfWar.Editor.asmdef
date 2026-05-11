@@ -3,7 +3,8 @@
     "rootNamespace": "Kruty1918.Moyva.FogOfWar.Editor",
     "references": [
         "Kruty1918.Moyva.FogOfWar",
-        "Kruty1918.Moyva.Units"
+        "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.EditorShared"
     ],
     "includePlatforms": [
         "Editor"
