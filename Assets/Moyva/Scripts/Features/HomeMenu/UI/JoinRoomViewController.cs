@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.API;
+using Kruty1918.Moyva.Shared.Common;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,6 +18,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         [SerializeField] private Transform _roomsContainer;
         [SerializeField] private RoomItemViewComponent _roomPrefab;
 
+        public event Action OnJoinRequested;
         public event Action OnJoinCodeChanged;
         public event Action OnListRoomsRefresh;
         public event Action<RoomInfo> OnRoomSelected;
@@ -24,11 +26,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         // Track spawned room items by provider-aware display key
         private readonly Dictionary<string, RoomItemViewComponent> _spawned = new Dictionary<string, RoomItemViewComponent>(StringComparer.Ordinal);
         private readonly Dictionary<string, RoomInfo> _roomInfos = new Dictionary<string, RoomInfo>(StringComparer.Ordinal);
+        private UnityEngine.Events.UnityAction _joinButtonAction;
         private UnityEngine.Events.UnityAction _refreshButtonAction;
         private bool _bound;
 
         public string JoinCode { get; set; }
-        public Button JoinToRoomButton { get => _joinRoomButton; set => _joinRoomButton = value; }
 
         public void Initialize()
         {
@@ -52,7 +54,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             if (_joinRoomButton != null)
             {
-                // keep field reference; service will attach actual join handler
+                _joinButtonAction = () => OnJoinRequested?.Invoke();
+                _joinRoomButton.onClick.AddListener(_joinButtonAction);
             }
 
             if (_refreshButton != null)
@@ -73,6 +76,8 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         {
             if (_joinCodeInput != null)
                 _joinCodeInput.onValueChanged.RemoveListener(OnJoinCodeEdited);
+            if (_joinRoomButton != null && _joinButtonAction != null)
+                _joinRoomButton.onClick.RemoveListener(_joinButtonAction);
             if (_refreshButton != null && _refreshButtonAction != null)
                 _refreshButton.onClick.RemoveListener(_refreshButtonAction);
 
@@ -126,7 +131,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private static string ToSafeGameObjectName(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
-                return Guid.NewGuid().ToString("N");
+                return MoyvaId.NewGuidN();
 
             var chars = value.ToCharArray();
             for (int i = 0; i < chars.Length; i++)
@@ -154,6 +159,12 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         public void RefreshRoomList()
         {
             OnListRoomsRefresh?.Invoke();
+        }
+
+        public void SetJoinInteractable(bool interactable)
+        {
+            if (_joinRoomButton != null)
+                _joinRoomButton.interactable = interactable;
         }
 
         // This class would be implemented by the actual MonoBehaviour that has the UI elements.
