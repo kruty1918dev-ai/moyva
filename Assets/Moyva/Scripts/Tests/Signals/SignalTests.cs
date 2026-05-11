@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.Signals.DomainEvents;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -767,6 +768,59 @@ namespace Kruty1918.Moyva.Tests.Signals
         public void Unit_IsTwo()
         {
             Assert.AreEqual(2, (int)WorldInfoSelectionKind.Unit);
+        }
+    }
+
+    [TestFixture]
+    public sealed class UnitMovedDomainEventTests
+    {
+        [Test]
+        public void Fields_SetCorrectly()
+        {
+            var evt = new UnitMovedDomainEvent
+            {
+                UnitId = "u1",
+                NewPosition = new Vector2Int(3, 9),
+                Cost = 2.0f,
+                SourceFactionId = "f1"
+            };
+
+            Assert.AreEqual("u1", evt.UnitId);
+            Assert.AreEqual(new Vector2Int(3, 9), evt.NewPosition);
+            Assert.AreEqual(2.0f, evt.Cost, 0.001f);
+            Assert.AreEqual("f1", evt.SourceFactionId);
+        }
+    }
+
+    [TestFixture]
+    public sealed class BuildingPlacedDomainEventTests
+    {
+        [Test]
+        public void Fields_SetCorrectly()
+        {
+            var evt = new BuildingPlacedDomainEvent
+            {
+                BuildingId = "townhall",
+                Position = new Vector2Int(4, 4),
+                OwnerId = "p0",
+                SourceFactionId = "f0"
+            };
+
+            Assert.AreEqual("townhall", evt.BuildingId);
+            Assert.AreEqual(new Vector2Int(4, 4), evt.Position);
+            Assert.AreEqual("p0", evt.OwnerId);
+            Assert.AreEqual("f0", evt.SourceFactionId);
+        }
+    }
+
+    [TestFixture]
+    public sealed class GamePausedDomainEventTests
+    {
+        [Test]
+        public void IsPaused_SetCorrectly()
+        {
+            var evt = new GamePausedDomainEvent { IsPaused = true };
+            Assert.IsTrue(evt.IsPaused);
         }
     }
 }
