@@ -1,0 +1,45 @@
+name: multiplayer-smoke
+
+on:
+  pull_request:
+    paths:
+      - Assets/Moyva/Scripts/Features/Multiplayer/**
+      - Assets/Moyva/Scripts/Features/HomeMenu/**
+      - Assets/Moyva/Scripts/Shared/**
+      - Assets/Moyva/Scripts/Tests/Multiplayer/**
+      - .github/workflows/multiplayer-smoke.yml
+  push:
+    branches:
+      - main
+      - feature/**
+
+jobs:
+  smoke-and-performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore multiplayer tests
+        run: dotnet restore Kruty1918.Moyva.Tests.Multiplayer.csproj
+
+      - name: Run multiplayer smoke scenarios (host/join/start/reconnect)
+        run: >
+          dotnet test Kruty1918.Moyva.Tests.Multiplayer.csproj
+          --configuration Release
+          --no-restore
+          --filter "TestCategory=SmokeMultiplayer"
+
+      - name: Run performance acceptance tests
+        run: >
+          dotnet test Kruty1918.Moyva.Tests.Multiplayer.csproj
+          --configuration Release
+          --no-restore
+          --filter "TestCategory=PerformanceAcceptance"

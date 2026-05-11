@@ -1,0 +1,24 @@
+name: Tech Debt Register
+
+on:
+  pull_request:
+    paths:
+      - 'docs/architecture/tech-debt-register.md'
+      - 'docs/standarts/tech-debt-register.md'
+      - 'tools/quality/validate-tech-debt-register.py'
+      - '.github/workflows/tech-debt-register.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-tech-debt-register:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate register format and priority order
+        run: |
+          python3 tools/quality/validate-tech-debt-register.py --file docs/architecture/tech-debt-register.md
