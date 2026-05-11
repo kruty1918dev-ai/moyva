@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using UnityEngine.UI;
 
@@ -47,6 +48,7 @@ namespace Kruty1918.Moyva.HomeMenu.API
         public bool HasPassword;
         /// <summary>True, якщо кімната позначена як приватна (не видна у списку).</summary>
         public bool IsPrivate;
+        public RoomCapabilityFlags CapabilityFlags;
 
         public bool HasJoinCode => !string.IsNullOrWhiteSpace(JoinCode);
         public bool HasLobbyId => !string.IsNullOrWhiteSpace(LobbyId);

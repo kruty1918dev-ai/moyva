@@ -29,6 +29,13 @@ namespace Kruty1918.Moyva.HomeMenu.API
             if (string.IsNullOrWhiteSpace(value))
                 return new JoinRoomTarget(JoinRoomTargetKind.None, string.Empty);
 
+            if (value.StartsWith("lan:", System.StringComparison.OrdinalIgnoreCase))
+                return new JoinRoomTarget(JoinRoomTargetKind.JoinCode, value);
+
+            // Relay join codes are 6-12 chars; longer manual input is treated as lobby id.
+            if (value.Length > 12)
+                return new JoinRoomTarget(JoinRoomTargetKind.LobbyId, value);
+
             return new JoinRoomTarget(JoinRoomTargetKind.JoinCode, value);
         }
 
