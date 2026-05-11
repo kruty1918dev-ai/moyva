@@ -116,3 +116,8 @@ MonoBehaviour:
   _nightSaturation: 0.82
   _dayContrast: 1
   _nightContrast: 1.06
+  _dayExposure: 1.02
+  _nightExposure: 0.46
+  _phaseTintStrength: 0.85
+  _nightMinBrightness: 0.14
+  _colorizeStrength: 0.75
