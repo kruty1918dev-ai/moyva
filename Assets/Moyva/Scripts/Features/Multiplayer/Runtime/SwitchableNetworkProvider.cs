@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     {
         private readonly MultiplayerConfig _config;
         private readonly IMultiplayerLogger _logger;
+        private readonly IMultiplayerQosMonitorService _qosMonitor;
 
         private INetworkProvider _inner;
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
@@ -28,13 +29,14 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         public NetworkProviderType CurrentType { get; private set; }
 
-        public SwitchableNetworkProvider(MultiplayerConfig config, IMultiplayerLogger logger)
+        public SwitchableNetworkProvider(MultiplayerConfig config, IMultiplayerLogger logger, IMultiplayerQosMonitorService qosMonitor = null)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _qosMonitor = qosMonitor;
 
             // Create initial provider based on config
-            _inner = NetworkProviderFactory.CreateByType(_config.ProviderType, _config, _logger);
+            _inner = NetworkProviderFactory.CreateByType(_config.ProviderType, _config, _logger, _qosMonitor);
             CurrentType = _config.ProviderType;
             HookInner(_inner);
         }
@@ -66,17 +68,31 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             await _switchLock.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                if (type == CurrentType) return;
+                if (type == CurrentType)
+                {
+                    _logger.Trace($"[SwitchableNetworkProvider] SwitchToAsync skipped: current={CurrentType}.");
+                    return;
+                }
+
+                _logger.Info($"[SwitchableNetworkProvider] Switching network provider: {CurrentType} -> {type}. Current impl={_inner.GetType().Name}.");
+
                 // Gracefully leave existing session
                 try { await _inner.LeaveSessionAsync(ct).ConfigureAwait(false); }
                 catch (Exception e) { _logger.Warn($"[Switchable] Leave failed: {e.Message}"); }
 
                 DisposeProvider(_inner);
                 UnhookInner(_inner);
-                var next = NetworkProviderFactory.CreateByType(type, _config, _logger);
+                var next = NetworkProviderFactory.CreateByType(type, _config, _logger, _qosMonitor);
                 _inner = next;
                 CurrentType = type;
                 HookInner(_inner);
+
+                _logger.Info($"[SwitchableNetworkProvider] Network provider switched: current={CurrentType}, impl={_inner.GetType().Name}.");
+            }
+            catch (Exception e)
+            {
+                _logger.Error($"[SwitchableNetworkProvider] SwitchToAsync failed: {e}");
+                throw;
             }
             finally { _switchLock.Release(); }
         }
