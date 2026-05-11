@@ -213,6 +213,71 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
 
         [Test]
+        public void GetVisibilityFactor_UphillCrestVisibility_UsesActualRayDirection()
+        {
+            _settings.TerrainEdgeUphillPeekStrength = 1f;
+            _settings.TerrainEdgePeekDistanceTiles = 1;
+
+            var heightMap = new float[MapW, MapH];
+            heightMap[7, 9] = 1f;
+            heightMap[8, 9] = 1f;
+            heightMap[9, 9] = 1f;
+            _resolver.SetHeightMap(heightMap);
+
+            var observer = new Vector2Int(4, 8);
+            var target = new Vector2Int(8, 9);
+
+            float visibility = _heightVisionService.GetVisibilityFactor(observer, target, 4, 8);
+
+            Assert.Less(visibility, _settings.TerrainVisibilityThreshold, "The observer should not see a crest through a different diagonal edge than the actual ray crosses.");
+        }
+
+        [Test]
+        public void GetVisibilityFactor_TargetSilhouette_ExposesUpperEdgeWhenObserverCannotSeeCrest()
+        {
+            _settings.TerrainEdgeUphillPeekStrength = 1f;
+
+            var heightMap = new float[MapW, MapH];
+            for (int x = 8; x <= 12; x++)
+                heightMap[x, 10] = 1f;
+
+            _resolver.SetHeightMap(heightMap);
+
+            var observer = new Vector2Int(6, 10);
+            var target = new Vector2Int(8, 10);
+            var observerCannotSeeCrest = new FogVisionModifiers(false, 0f, 0f, 0f);
+            var exposedTarget = new FogVisionModifiers(false, 0f, 0f, 1f);
+
+            float hidden = _heightVisionService.GetVisibilityFactor(observer, target, 4, 8, observerCannotSeeCrest);
+            float exposed = _heightVisionService.GetVisibilityFactor(observer, target, 4, 8, observerCannotSeeCrest, exposedTarget);
+
+            Assert.Less(hidden, _settings.TerrainVisibilityThreshold);
+            Assert.GreaterOrEqual(exposed, _settings.TerrainVisibilityThreshold, "A high silhouette on the upper edge should be visible from below even when the observer cannot normally see crests.");
+        }
+
+        [Test]
+        public void GetVisibilityFactor_SameGeometry_ReturnsSameResultEveryTime()
+        {
+            var heightMap = new float[MapW, MapH];
+            for (int x = 8; x <= 12; x++)
+                heightMap[x, 10] = 1f;
+            heightMap[9, 9] = 0.5f;
+            _resolver.SetHeightMap(heightMap);
+
+            var observer = new Vector2Int(6, 10);
+            var target = new Vector2Int(10, 10);
+            var observerModifiers = new FogVisionModifiers(true, 0.75f, 1f, 0f);
+            var targetModifiers = new FogVisionModifiers(false, 0f, 0f, 0.6f);
+
+            float first = _heightVisionService.GetVisibilityFactor(observer, target, 5, 8, observerModifiers, targetModifiers);
+            for (int i = 0; i < 8; i++)
+            {
+                float next = _heightVisionService.GetVisibilityFactor(observer, target, 5, 8, observerModifiers, targetModifiers);
+                Assert.AreEqual(first, next, 0.0001f);
+            }
+        }
+
+        [Test]
         public void GetVisibilityFactor_ThinPartialCover_ReturnsFractionalVisibility()
         {
             _settings.EnableTerrainEdgeLineOfSight = false;

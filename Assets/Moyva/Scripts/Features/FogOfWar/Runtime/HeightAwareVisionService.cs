@@ -462,31 +462,61 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (targetHeight - GetHeight(origin) < GetTerrainEdgeHeightThreshold())
                 return 0f;
 
-            int stepX = origin.x == target.x ? 0 : (origin.x > target.x ? 1 : -1);
-            int stepY = origin.y == target.y ? 0 : (origin.y > target.y ? 1 : -1);
-            if (stepX == 0 && stepY == 0)
+            int peekDistance = GetTerrainEdgePeekDistanceTiles();
+            if (!TryFindUphillEdgeTowardObserver(origin, target, targetHeight, out int distanceToEdge))
                 return 0f;
 
-            int peekDistance = GetTerrainEdgePeekDistanceTiles();
-            int maxSteps = Mathf.Max(1, peekDistance + 1);
-            for (int step = 1; step <= maxSteps; step++)
+            if (distanceToEdge > peekDistance)
+                return 0f;
+
+            return 1f - distanceToEdge / (peekDistance + 1f);
+        }
+
+        private bool TryFindUphillEdgeTowardObserver(Vector2Int origin, Vector2Int target, float targetHeight, out int distanceToEdge)
+        {
+            distanceToEdge = 0;
+
+            var current = target;
+            int dx = Mathf.Abs(origin.x - target.x);
+            int dy = Mathf.Abs(origin.y - target.y);
+            if (dx == 0 && dy == 0)
+                return false;
+
+            int sx = target.x < origin.x ? 1 : -1;
+            int sy = target.y < origin.y ? 1 : -1;
+            int error = dx - dy;
+            int maxSteps = Mathf.Max(1, GetTerrainEdgePeekDistanceTiles() + 1);
+            float threshold = GetTerrainEdgeHeightThreshold();
+
+            for (int step = 1; step <= maxSteps && current != origin; step++)
             {
-                var sample = new Vector2Int(target.x + stepX * step, target.y + stepY * step);
-                if (!IsHeightMapInBounds(sample))
-                    return 1f;
+                int twiceError = error * 2;
+                if (twiceError > -dy)
+                {
+                    error -= dy;
+                    current.x += sx;
+                }
 
-                float sampleHeight = GetHeight(sample);
-                if (targetHeight - sampleHeight < GetTerrainEdgeHeightThreshold())
-                    continue;
+                if (twiceError < dx)
+                {
+                    error += dx;
+                    current.y += sy;
+                }
 
-                int distanceToEdge = Mathf.Max(0, step - 1);
-                if (distanceToEdge > peekDistance)
-                    return 0f;
+                if (!IsHeightMapInBounds(current))
+                {
+                    distanceToEdge = Mathf.Max(0, step - 1);
+                    return true;
+                }
 
-                return 1f - distanceToEdge / (peekDistance + 1f);
+                if (targetHeight - GetHeight(current) >= threshold)
+                {
+                    distanceToEdge = Mathf.Max(0, step - 1);
+                    return true;
+                }
             }
 
-            return 0f;
+            return false;
         }
 
         private float GetHeight(Vector2Int position)

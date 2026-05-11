@@ -41,6 +41,24 @@ namespace Kruty1918.Moyva.Units.Editor
         private const float DefaultCombatPreviewPanelWidth = 420f;
         private const float MinimumHorizontalLayoutWidth = MinUnitListPanelWidth + MinDetailsPanelWidth + MinPreviewPanelWidth + SplitterWidth * 2f + HorizontalLayoutPadding;
 
+        private enum UnitDesignerPreviewFocus
+        {
+            Overview,
+            Identity,
+            Visual,
+            Health,
+            Level,
+            Vision,
+            TerrainVision,
+            Stamina,
+            Combat,
+            Defense,
+            Movement,
+            Animation,
+            Fog,
+            MultiUnit
+        }
+
         // Кольори для UI візуалізації
         private static readonly Color Accent = new Color(0.18f, 0.62f, 0.67f);
         private static readonly Color Good = new Color(0.1f, 0.72f, 0.42f);
@@ -90,6 +108,9 @@ namespace Kruty1918.Moyva.Units.Editor
         private bool _detailsCombatFoldout = true;
         private bool _detailsAnimationFoldout = true;
         private bool _detailsDangerFoldout;
+        private UnitDesignerPreviewFocus _previewFocus = UnitDesignerPreviewFocus.Overview;
+        private string _previewFocusProperty = string.Empty;
+        private double _previewFocusChangedAt;
 
         // Макет та вкладки для вузького вікна
         private int _verticalLayoutTab;
@@ -899,6 +920,9 @@ namespace Kruty1918.Moyva.Units.Editor
             Rect previewRect = GUILayoutUtility.GetRect(180f, previewMinHeight, GUILayout.ExpandWidth(true));
             DrawAnimatedPreview(previewRect, unit, prefab, sprite);
 
+            EditorGUILayout.Space(4f);
+            DrawFocusedParameterDocCard(unit);
+
             EditorGUILayout.Space(6f);
             if (_showStatsPreview)
                 DrawStatVisualization(unit);
@@ -1109,62 +1133,79 @@ namespace Kruty1918.Moyva.Units.Editor
         {
             BeginSection("Візуальні ручки", "d_SceneViewOrtho", "Кольорові контролі, які одразу змінюють preview юніта.");
 
-            DrawVisualIntSlider(unit, "HitPoints", "HP / розмір", 1, 300, Good, "Впливає на розмір юніта і зелену шкалу живучості у preview.");
-            DrawVisualIntSlider(unit, "BaseLevel", "Рівень / маса", 1, 10, Accent, "Впливає на масштаб та вагу юніта у preview.");
-            DrawVisualIntSlider(unit, "VisionRange", "Огляд / зона", 1, 20, VisionOutline, "Впливає на коло видимості навколо юніта.");
-            DrawVisualFloatSlider(unit, "VisionHeightBoostPerLevel", "Буст висоти", 0f, 4f, new Color(0.42f, 0.72f, 1f), "Додає візуально сильніший огляд на високому рельєфі у Map + Fog.");
+            DrawVisualIntSlider(unit, "HitPoints", "HP / розмір", 1, 300, Good, "Впливає на розмір юніта і зелену шкалу живучості у preview.", UnitDesignerPreviewFocus.Health);
+            DrawVisualIntSlider(unit, "BaseLevel", "Рівень / маса", 1, 10, Accent, "Впливає на масштаб та вагу юніта у preview.", UnitDesignerPreviewFocus.Level);
+            DrawVisualIntSlider(unit, "VisionRange", "Огляд / зона", 1, 20, VisionOutline, "Впливає на коло видимості навколо юніта.", UnitDesignerPreviewFocus.Vision);
+            DrawVisualFloatSlider(unit, "VisionHeightBoostPerLevel", "Буст висоти", 0f, 4f, new Color(0.42f, 0.72f, 1f), "Додає візуально сильніший огляд на високому рельєфі у Map + Fog.", UnitDesignerPreviewFocus.TerrainVision);
             DrawTerrainVisionControls(unit);
 
-            DrawVisualFloatSlider(unit, "BaseStamina", "Стаміна / запас", 0f, 300f, new Color(0.25f, 0.74f, 0.46f), "Впливає на зелену шкалу витривалості під юнітом.");
+            DrawVisualFloatSlider(unit, "BaseStamina", "Стаміна / запас", 0f, 300f, new Color(0.25f, 0.74f, 0.46f), "Впливає на зелену шкалу витривалості під юнітом.", UnitDesignerPreviewFocus.Stamina);
             DrawVisualStaminaRangeControl(unit);
 
             DrawVisualCombatTriple(unit, "Атака", "PenetratingDamage", "Колюча", PenetratingColor, "CuttingDamage", "Ріжуча", CuttingColor, "CrushingDamage", "Дроб.", CrushingColor, 300);
+            DrawInlineParameterDoc("CuttingDamage");
             DrawCombatProfileStrip("Профіль атаки", GetInt(unit, "CuttingDamage"), GetInt(unit, "PenetratingDamage"), GetInt(unit, "CrushingDamage"), 300);
 
             DrawVisualCombatTriple(unit, "Захист", "PenetratingDefense", "Колючий", PenetratingColor, "CuttingDefense", "Ріжучий", CuttingColor, "CrushingDefense", "Дроб.", CrushingColor, 300);
+            DrawInlineParameterDoc("CuttingDefense");
             DrawCombatProfileStrip("Профіль захисту", GetInt(unit, "CuttingDefense"), GetInt(unit, "PenetratingDefense"), GetInt(unit, "CrushingDefense"), 300);
 
             var animation = unit.FindPropertyRelative("AnimationSettings");
             if (animation != null)
             {
-                DrawVisualNestedFloatSlider(animation, "MoveDurationPerTile", "Тривалість кроку", 0.02f, 2f, new Color(0.68f, 0.48f, 1f), "Чим менше значення, тим швидше юніт рухається у preview.");
-                DrawVisualNestedFloatSlider(animation, "DelayOnTile", "Пауза на тайлі", 0f, 1f, Warn, "Чим більше значення, тим довше юніт стоїть на вузлах маршруту.");
+                DrawVisualNestedFloatSlider(animation, "MoveDurationPerTile", "Тривалість кроку", 0.02f, 2f, new Color(0.68f, 0.48f, 1f), "Чим менше значення, тим швидше юніт рухається у preview.", UnitDesignerPreviewFocus.Movement);
+                DrawVisualNestedFloatSlider(animation, "DelayOnTile", "Пауза на тайлі", 0f, 1f, Warn, "Чим більше значення, тим довше юніт стоїть на вузлах маршруту.", UnitDesignerPreviewFocus.Movement);
             }
 
             EndSection();
         }
 
-        private static void DrawVisualIntSlider(SerializedProperty unit, string propertyName, string label, int min, int max, Color color, string tooltip)
+        private void DrawVisualIntSlider(SerializedProperty unit, string propertyName, string label, int min, int max, Color color, string tooltip, UnitDesignerPreviewFocus focus, bool showDoc = true)
         {
             var property = unit.FindPropertyRelative(propertyName);
             if (property == null)
                 return;
 
+            EditorGUI.BeginChangeCheck();
             property.intValue = EditorGUILayout.IntSlider(new GUIContent(label, tooltip), Mathf.Clamp(property.intValue, min, max), min, max);
+            bool changed = EditorGUI.EndChangeCheck();
+            TrackParameterFocus(GUILayoutUtility.GetLastRect(), propertyName, focus, changed);
             DrawVisualValueTrack(property.intValue, min, max, color, property.intValue.ToString(CultureInfo.InvariantCulture));
+            if (showDoc)
+                DrawInlineParameterDoc(propertyName);
         }
 
-        private static void DrawVisualFloatSlider(SerializedProperty unit, string propertyName, string label, float min, float max, Color color, string tooltip)
+        private void DrawVisualFloatSlider(SerializedProperty unit, string propertyName, string label, float min, float max, Color color, string tooltip, UnitDesignerPreviewFocus focus, bool showDoc = true)
         {
             var property = unit.FindPropertyRelative(propertyName);
             if (property == null)
                 return;
 
+            EditorGUI.BeginChangeCheck();
             property.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), Mathf.Clamp(property.floatValue, min, max), min, max);
+            bool changed = EditorGUI.EndChangeCheck();
+            TrackParameterFocus(GUILayoutUtility.GetLastRect(), propertyName, focus, changed);
             DrawVisualValueTrack(property.floatValue, min, max, color, property.floatValue.ToString("0.##", CultureInfo.InvariantCulture));
+            if (showDoc)
+                DrawInlineParameterDoc(propertyName);
         }
 
-        private static void DrawVisualNestedFloatSlider(SerializedProperty parent, string propertyName, string label, float min, float max, Color color, string tooltip)
+        private void DrawVisualNestedFloatSlider(SerializedProperty parent, string propertyName, string label, float min, float max, Color color, string tooltip, UnitDesignerPreviewFocus focus, bool showDoc = true)
         {
             var property = parent.FindPropertyRelative(propertyName);
             if (property == null)
                 return;
 
+            EditorGUI.BeginChangeCheck();
             property.floatValue = EditorGUILayout.Slider(new GUIContent(label, tooltip), Mathf.Clamp(property.floatValue, min, max), min, max);
+            bool changed = EditorGUI.EndChangeCheck();
+            TrackParameterFocus(GUILayoutUtility.GetLastRect(), propertyName, focus, changed);
             DrawVisualValueTrack(property.floatValue, min, max, color, property.floatValue.ToString("0.##s", CultureInfo.InvariantCulture));
+            if (showDoc)
+                DrawInlineParameterDoc(propertyName);
         }
 
-        private static void DrawVisualCombatTriple(
+        private void DrawVisualCombatTriple(
             SerializedProperty unit,
             string label,
             string firstProperty,
@@ -1179,12 +1220,13 @@ namespace Kruty1918.Moyva.Units.Editor
             int max)
         {
             EditorGUILayout.LabelField(label, EditorStyles.miniBoldLabel);
-            DrawVisualIntSlider(unit, firstProperty, firstLabel, 0, max, firstColor, firstLabel);
-            DrawVisualIntSlider(unit, secondProperty, secondLabel, 0, max, secondColor, secondLabel);
-            DrawVisualIntSlider(unit, thirdProperty, thirdLabel, 0, max, thirdColor, thirdLabel);
+            UnitDesignerPreviewFocus focus = label == "Захист" ? UnitDesignerPreviewFocus.Defense : UnitDesignerPreviewFocus.Combat;
+            DrawVisualIntSlider(unit, firstProperty, firstLabel, 0, max, firstColor, firstLabel, focus, showDoc: false);
+            DrawVisualIntSlider(unit, secondProperty, secondLabel, 0, max, secondColor, secondLabel, focus, showDoc: false);
+            DrawVisualIntSlider(unit, thirdProperty, thirdLabel, 0, max, thirdColor, thirdLabel, focus, showDoc: false);
         }
 
-        private static void DrawVisualStaminaRangeControl(SerializedProperty unit)
+        private void DrawVisualStaminaRangeControl(SerializedProperty unit)
         {
             var range = unit.FindPropertyRelative("StaminaRandomRange");
             if (range == null)
@@ -1193,7 +1235,10 @@ namespace Kruty1918.Moyva.Units.Editor
             Vector2 value = range.vector2Value;
             float min = Mathf.Clamp(Mathf.Min(value.x, value.y), -80f, 80f);
             float max = Mathf.Clamp(Mathf.Max(value.x, value.y), -80f, 80f);
+            EditorGUI.BeginChangeCheck();
             EditorGUILayout.MinMaxSlider(new GUIContent("Розкид стаміни", "Візуальний діапазон випадкового стартового запасу."), ref min, ref max, -80f, 80f);
+            bool changed = EditorGUI.EndChangeCheck();
+            TrackParameterFocus(GUILayoutUtility.GetLastRect(), "StaminaRandomRange", UnitDesignerPreviewFocus.Stamina, changed);
             range.vector2Value = new Vector2(min, max);
 
             Rect rect = GUILayoutUtility.GetRect(0f, 16f, GUILayout.ExpandWidth(true));
@@ -1203,6 +1248,7 @@ namespace Kruty1918.Moyva.Units.Editor
             float right = Mathf.InverseLerp(-80f, 80f, max);
             EditorGUI.DrawRect(new Rect(bar.x + bar.width * left, bar.y, bar.width * Mathf.Max(0.02f, right - left), bar.height), Good);
             GUI.Label(new Rect(bar.x, rect.y, bar.width, rect.height), $"{min:0.#} .. {max:0.#}", EditorStyles.centeredGreyMiniLabel);
+            DrawInlineParameterDoc("StaminaRandomRange");
         }
 
         private static void DrawVisualValueTrack(float value, float min, float max, Color color, string text)
@@ -1215,7 +1261,7 @@ namespace Kruty1918.Moyva.Units.Editor
             GUI.Label(new Rect(bar.x, rect.y - 2f, bar.width - 4f, rect.height + 4f), text, EditorStyles.centeredGreyMiniLabel);
         }
 
-        private static void DrawTerrainVisionControls(SerializedProperty unit)
+        private void DrawTerrainVisionControls(SerializedProperty unit)
         {
             if (unit == null)
                 return;
@@ -1231,13 +1277,33 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorGUILayout.LabelField("Рельєф і Fog of War", EditorStyles.miniBoldLabel);
 
             if (canSeeCrest != null)
+            {
+                EditorGUI.BeginChangeCheck();
                 canSeeCrest.boolValue = EditorGUILayout.ToggleLeft(new GUIContent("Бачить верхівки знизу", "Дозволяє юніту бачити цілі, які стоять на верхньому краї схилу або плато."), canSeeCrest.boolValue);
+                TrackParameterFocus(GUILayoutUtility.GetLastRect(), "CanSeeCrest", UnitDesignerPreviewFocus.TerrainVision, EditorGUI.EndChangeCheck());
+                DrawInlineParameterDoc("CanSeeCrest");
+            }
             if (crestFactor != null)
+            {
+                EditorGUI.BeginChangeCheck();
                 crestFactor.floatValue = EditorGUILayout.Slider(new GUIContent("Сила crest peeking", "Наскільки сильно цей юніт використовує край рельєфу для погляду вгору."), Mathf.Clamp01(crestFactor.floatValue), 0f, 1f);
+                TrackParameterFocus(GUILayoutUtility.GetLastRect(), "CrestVisibilityFactor", UnitDesignerPreviewFocus.TerrainVision, EditorGUI.EndChangeCheck());
+                DrawInlineParameterDoc("CrestVisibilityFactor");
+            }
             if (downSlopeBonus != null)
+            {
+                EditorGUI.BeginChangeCheck();
                 downSlopeBonus.floatValue = EditorGUILayout.Slider(new GUIContent("Бонус вниз зі схилу", "Додаткова дальність огляду, коли юніт стоїть на краю і дивиться вниз."), Mathf.Max(0f, downSlopeBonus.floatValue), 0f, 6f);
+                TrackParameterFocus(GUILayoutUtility.GetLastRect(), "DownSlopeVisionBonus", UnitDesignerPreviewFocus.TerrainVision, EditorGUI.EndChangeCheck());
+                DrawInlineParameterDoc("DownSlopeVisionBonus");
+            }
             if (silhouettePenalty != null)
+            {
+                EditorGUI.BeginChangeCheck();
                 silhouettePenalty.floatValue = EditorGUILayout.Slider(new GUIContent("Помітність силуету", "Наскільки легко ворог знизу бачить цього юніта на верхньому краї."), Mathf.Clamp01(silhouettePenalty.floatValue), 0f, 1f);
+                TrackParameterFocus(GUILayoutUtility.GetLastRect(), "SilhouettePenalty", UnitDesignerPreviewFocus.TerrainVision, EditorGUI.EndChangeCheck());
+                DrawInlineParameterDoc("SilhouettePenalty");
+            }
 
             EditorGUILayout.EndVertical();
         }
@@ -2090,6 +2156,7 @@ namespace Kruty1918.Moyva.Units.Editor
             DrawUnitPreviewParameterEffects(rect, centerPos, spriteRect, unit);
             DrawSpriteOrPrefab(spriteRect, displaySprite, prefab, true);
             DrawUnitPreviewParameterBadges(rect, spriteRect, unit);
+            DrawFocusedPreviewOverlay(rect, centerPos, spriteRect, unit);
 
             Rect labelRect = new Rect(rect.x + 12f, rect.y + 8f, rect.width - 24f, 20f);
             string id = GetString(unit, "TypeId");
@@ -2102,6 +2169,119 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 GUI.Label(new Rect(rect.x + 16f, rect.center.y - 12f, rect.width - 32f, 24f), "Додайте prefab або створіть його", CenterMiniStyle());
             }
+        }
+
+        private void DrawFocusedPreviewOverlay(Rect previewRect, Vector2 centerPos, Rect spriteRect, SerializedProperty unit)
+        {
+            if (_previewFocus == UnitDesignerPreviewFocus.Overview)
+                return;
+
+            string propertyName = string.IsNullOrWhiteSpace(_previewFocusProperty)
+                ? ResolveDefaultFocusProperty(unit)
+                : _previewFocusProperty;
+
+            if (!TryGetParameterDoc(propertyName, out var doc))
+                return;
+
+            float pulse = 0.5f + Mathf.Sin((float)(EditorApplication.timeSinceStartup - _previewFocusChangedAt) * 5.5f) * 0.5f;
+            Color focusColor = new Color(doc.Color.r, doc.Color.g, doc.Color.b, Mathf.Lerp(0.45f, 0.88f, pulse));
+
+            Handles.BeginGUI();
+            Handles.color = focusColor;
+
+            switch (_previewFocus)
+            {
+                case UnitDesignerPreviewFocus.Health:
+                case UnitDesignerPreviewFocus.Level:
+                case UnitDesignerPreviewFocus.Visual:
+                    Handles.DrawWireDisc(spriteRect.center, Vector3.forward, Mathf.Max(spriteRect.width, spriteRect.height) * Mathf.Lerp(0.58f, 0.72f, pulse));
+                    DrawPreviewCallout(previewRect, new Vector2(spriteRect.xMax + 10f, spriteRect.y + 8f), doc.Title, "Масштаб і силует змінюються одразу.", doc.Color);
+                    break;
+                case UnitDesignerPreviewFocus.Vision:
+                    float vision = Mathf.Clamp(GetInt(unit, "VisionRange"), 1, 20);
+                    float radius = Mathf.Lerp(spriteRect.width * 0.68f, Mathf.Min(previewRect.width, previewRect.height) * 0.43f, Mathf.InverseLerp(1f, 20f, vision));
+                    Handles.DrawWireDisc(centerPos, Vector3.forward, radius + Mathf.Lerp(2f, 8f, pulse));
+                    DrawPreviewCallout(previewRect, centerPos + new Vector2(radius * 0.35f, -radius * 0.55f), doc.Title, $"Радіус: {vision:0} тайлів до LOS-фільтра.", doc.Color);
+                    break;
+                case UnitDesignerPreviewFocus.TerrainVision:
+                case UnitDesignerPreviewFocus.Fog:
+                    DrawTerrainVisionMiniOverlay(previewRect, centerPos, spriteRect, unit, doc, pulse);
+                    break;
+                case UnitDesignerPreviewFocus.Stamina:
+                    Vector2 staminaPoint = new Vector2(spriteRect.center.x, Mathf.Min(spriteRect.yMax + 18f, previewRect.yMax - 42f));
+                    Handles.DrawAAPolyLine(3f, staminaPoint + Vector2.left * 52f, staminaPoint + Vector2.right * 52f);
+                    DrawPreviewCallout(previewRect, staminaPoint + new Vector2(18f, 16f), doc.Title, "Зелена шкала показує запас і розкид.", doc.Color);
+                    break;
+                case UnitDesignerPreviewFocus.Combat:
+                    DrawPreviewCallout(previewRect, centerPos + new Vector2(24f, -spriteRect.height * 0.75f), doc.Title, "Помаранчеві промені показують тиск атаки.", doc.Color);
+                    break;
+                case UnitDesignerPreviewFocus.Defense:
+                    Handles.DrawWireDisc(centerPos, Vector3.forward, spriteRect.width * Mathf.Lerp(0.68f, 0.86f, pulse));
+                    DrawPreviewCallout(previewRect, centerPos + new Vector2(28f, spriteRect.height * 0.3f), doc.Title, "Сині кільця показують стійкість.", doc.Color);
+                    break;
+                case UnitDesignerPreviewFocus.Movement:
+                case UnitDesignerPreviewFocus.Animation:
+                    DrawPreviewCallout(previewRect, new Vector2(previewRect.x + 18f, previewRect.yMax - 68f), doc.Title, "Шлях A-B-C змінює темп і паузу.", doc.Color);
+                    break;
+                case UnitDesignerPreviewFocus.MultiUnit:
+                    DrawPreviewCallout(previewRect, centerPos + new Vector2(24f, -spriteRect.height * 0.65f), doc.Title, "Перевіряйте взаємну видимість у Map + Fog.", doc.Color);
+                    break;
+            }
+
+            Handles.EndGUI();
+        }
+
+        private void DrawTerrainVisionMiniOverlay(Rect previewRect, Vector2 centerPos, Rect spriteRect, SerializedProperty unit, UnitParameterDoc doc, float pulse)
+        {
+            float baseY = Mathf.Clamp(spriteRect.yMax + 32f, previewRect.y + 82f, previewRect.yMax - 44f);
+            Vector2 low = new Vector2(previewRect.x + previewRect.width * 0.18f, baseY);
+            Vector2 edge = new Vector2(previewRect.center.x, baseY - Mathf.Clamp(previewRect.height * 0.18f, 24f, 54f));
+            Vector2 high = new Vector2(previewRect.x + previewRect.width * 0.82f, edge.y - 2f);
+            Color terrainColor = new Color(doc.Color.r, doc.Color.g, doc.Color.b, Mathf.Lerp(0.38f, 0.78f, pulse));
+
+            Handles.color = new Color(0f, 0f, 0f, 0.35f);
+            Handles.DrawAAPolyLine(7f, low, edge, high);
+            Handles.color = terrainColor;
+            Handles.DrawAAPolyLine(3f, low, edge, high);
+
+            if (GetBool(unit, "CanSeeCrest", true))
+            {
+                Handles.DrawAAPolyLine(2f, centerPos, edge + Vector2.up * 5f);
+                Handles.DrawWireDisc(edge, Vector3.forward, Mathf.Lerp(7f, 12f, pulse));
+            }
+
+            float downBonus = Mathf.Max(0f, GetFloat(unit, "DownSlopeVisionBonus"));
+            if (downBonus > 0.01f)
+            {
+                float fan = Mathf.Lerp(24f, 66f, Mathf.InverseLerp(0f, 6f, downBonus));
+                Handles.DrawAAPolyLine(2f, edge, edge + new Vector2(-fan, 22f));
+                Handles.DrawAAPolyLine(2f, edge, edge + new Vector2(-fan * 0.55f, 34f));
+            }
+
+            float silhouette = Mathf.Clamp01(GetFloat(unit, "SilhouettePenalty"));
+            if (silhouette > 0.01f)
+            {
+                Vector2 target = high + new Vector2(-18f, -18f);
+                Handles.DrawWireDisc(target, Vector3.forward, Mathf.Lerp(5f, 18f, silhouette));
+                Handles.DrawAAPolyLine(2f, target, low + Vector2.up * 8f);
+            }
+
+            DrawPreviewCallout(previewRect, new Vector2(previewRect.x + 16f, previewRect.y + 34f), doc.Title, doc.Preview, doc.Color);
+        }
+
+        private static void DrawPreviewCallout(Rect bounds, Vector2 anchor, string title, string body, Color color)
+        {
+            float width = Mathf.Clamp(bounds.width * 0.42f, 132f, 220f);
+            float bodyHeight = Mathf.Clamp(EditorStyles.wordWrappedMiniLabel.CalcHeight(new GUIContent(body), Mathf.Max(64f, width - 14f)), 18f, 48f);
+            Rect rect = new Rect(anchor.x, anchor.y, width, bodyHeight + 26f);
+            rect.x = Mathf.Clamp(rect.x, bounds.x + 8f, bounds.xMax - rect.width - 8f);
+            rect.y = Mathf.Clamp(rect.y, bounds.y + 8f, bounds.yMax - rect.height - 8f);
+
+            Color bg = EditorGUIUtility.isProSkin ? new Color(0.03f, 0.05f, 0.06f, 0.86f) : new Color(0.96f, 0.98f, 0.98f, 0.9f);
+            DrawPanelBackground(rect, bg);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, 3f, rect.height), color);
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 4f, rect.width - 14f, 14f), title, EditorStyles.miniBoldLabel);
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 19f, rect.width - 14f, bodyHeight), body, EditorStyles.wordWrappedMiniLabel);
         }
 
         private void DrawUnitPreviewParameterEffects(Rect rect, Vector2 centerPos, Rect spriteRect, SerializedProperty unit)
@@ -3299,6 +3479,159 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorGUILayout.Space(4f);
         }
 
+        private void TrackParameterFocus(Rect rect, string propertyName, UnitDesignerPreviewFocus focus, bool force = false)
+        {
+            if (string.IsNullOrWhiteSpace(propertyName))
+                return;
+
+            var evt = Event.current;
+            bool hovered = evt != null
+                && rect.Contains(evt.mousePosition)
+                && (evt.type == EventType.MouseMove || evt.type == EventType.MouseDown || evt.type == EventType.MouseDrag || evt.type == EventType.Repaint);
+
+            if (!force && !hovered)
+                return;
+
+            if (_previewFocus == focus && string.Equals(_previewFocusProperty, propertyName, StringComparison.Ordinal))
+                return;
+
+            _previewFocus = focus;
+            _previewFocusProperty = propertyName;
+            _previewFocusChangedAt = EditorApplication.timeSinceStartup;
+            Repaint();
+        }
+
+        private void DrawInlineParameterDoc(string propertyName)
+        {
+            if (!TryGetParameterDoc(propertyName, out var doc))
+                return;
+
+            Rect rect = GUILayoutUtility.GetRect(0f, 62f, GUILayout.ExpandWidth(true));
+            Color bg = EditorGUIUtility.isProSkin ? new Color(0.09f, 0.12f, 0.13f) : new Color(0.84f, 0.9f, 0.91f);
+            DrawPanelBackground(rect, bg);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, 3f, rect.height), doc.Color);
+
+            GUI.Label(new Rect(rect.x + 9f, rect.y + 4f, rect.width - 18f, 15f), doc.Title, EditorStyles.miniBoldLabel);
+            GUI.Label(new Rect(rect.x + 9f, rect.y + 20f, rect.width - 18f, 38f), doc.Inline, EditorStyles.wordWrappedMiniLabel);
+        }
+
+        private void DrawFocusedParameterDocCard(SerializedProperty unit)
+        {
+            string propertyName = string.IsNullOrWhiteSpace(_previewFocusProperty)
+                ? ResolveDefaultFocusProperty(unit)
+                : _previewFocusProperty;
+
+            if (!TryGetParameterDoc(propertyName, out var doc))
+                return;
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                Rect swatch = GUILayoutUtility.GetRect(10f, 18f, GUILayout.Width(10f));
+                EditorGUI.DrawRect(new Rect(swatch.x, swatch.y + 3f, swatch.width, 12f), doc.Color);
+                EditorGUILayout.LabelField(doc.Title, EditorStyles.boldLabel);
+            }
+
+            EditorGUILayout.LabelField(doc.Meaning, EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.LabelField(doc.Preview, EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.LabelField(doc.Example, EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.EndVertical();
+        }
+
+        private static string ResolveDefaultFocusProperty(SerializedProperty unit)
+        {
+            if (unit == null)
+                return "VisionRange";
+
+            if (GetInt(unit, "VisionRange") > 1)
+                return "VisionRange";
+
+            return "HitPoints";
+        }
+
+        private static bool TryGetParameterDoc(string propertyName, out UnitParameterDoc doc)
+        {
+            switch (propertyName)
+            {
+                case "TypeId":
+                    doc = new UnitParameterDoc("TypeId", "Унікальний код класу юніта.", "Використовується фабрикою, registry lookup і save/runtime подіями.", "У preview це підпис активного юніта та назва сценарного профілю.", "Корисно тримати коротким і стабільним: worker, scout, archer.", Accent);
+                    return true;
+                case "Role":
+                    doc = new UnitParameterDoc("Роль", "Визначає основний gameplay-намір юніта.", "Допомагає фільтрувати список, підбирати presets і читати баланс.", "У preview роль впливає на контекстні підказки та список сценаріїв.", "Worker для економічних юнітів, Military для бойових.", Accent);
+                    return true;
+                case "Prefab":
+                case "CustomSprite":
+                    doc = new UnitParameterDoc("Візуал", "Prefab або sprite, який гравець реально бачить на мапі.", "Впливає на читабельність силуету, масштаб і анімаційне preview.", "У центрі preview одразу показується фактичний sprite/prefab.", "Корисно перевіряти на фоні рельєфу, щоб силует не губився у fog.", Accent);
+                    return true;
+                case "HitPoints":
+                    doc = new UnitParameterDoc("HP", "Скільки шкоди витримує юніт.", "Більше HP робить юніта масивнішим у preview і збільшує зелену шкалу живучості.", "У центрі збільшується масштаб маркера, а під ним росте HP bar.", "Корисно для важких юнітів, які мають довго тримати лінію.", Good);
+                    return true;
+                case "BaseLevel":
+                    doc = new UnitParameterDoc("Рівень", "Базова вага/клас юніта для балансу.", "Підсилює візуальну вагу й використовується у бойових зіставленнях.", "У preview юніт виглядає масивніше, а у Map+Fog може мати сильніший height profile.", "Корисно для елітних або великих одиниць.", Accent);
+                    return true;
+                case "VisionRange":
+                    doc = new UnitParameterDoc("Vision Range", "Базова кількість тайлів, які юніт може перевіряти на видимість.", "Змінює коло огляду, fog reveal і список тайлів, які проходять LOS.", "У preview росте бірюзова зона огляду; у Map+Fog одразу змінюється видимий контур.", "Корисно для scout-юнітів або башт спостереження.", VisionOutline);
+                    return true;
+                case "VisionHeightBoostPerLevel":
+                    doc = new UnitParameterDoc("Height Boost", "Додає огляд за кожен рівень висоти під юнітом.", "Пагорби стають реальною перевагою, але LOS все одно може блокуватися краями.", "У Map+Fog видно, як юніт на висоті відкриває більше тайлів, ніж на рівнині.", "Корисно для юнітів, які добре використовують висоту: розвідники, лучники.", new Color(0.42f, 0.72f, 1f));
+                    return true;
+                case "CanSeeCrest":
+                    doc = new UnitParameterDoc("Can See Crest", "Дозволяє бачити верхній край схилу знизу.", "Якщо вимкнено, ціль на плато частіше лишається схованою, якщо не видає себе силуетом.", "У Map+Fog підсвічуються верхні edge-тайли, які юніт може або не може читати.", "Корисно вимикати для важких/повільних юнітів без доброго огляду.", VisionOutline);
+                    return true;
+                case "CrestVisibilityFactor":
+                    doc = new UnitParameterDoc("Crest Factor", "Сила читання верхнього краю при погляді вгору.", "Зменшує uphill penalty тільки тоді, коли край лежить у напрямку погляду.", "У Map+Fog видно, як знизу відкривається лише край, а не вся платформа.", "Корисно для тонкого балансу між укриттям і контрспостереженням.", VisionOutline);
+                    return true;
+                case "DownSlopeVisionBonus":
+                    doc = new UnitParameterDoc("Down Slope Bonus", "Додаткова дальність, коли юніт стоїть біля edge і дивиться вниз.", "Дає ефект 'виглянув через край', але не прибирає blind zone, якщо юніт далеко від краю.", "У Map+Fog низ схилу відкривається ширше тільки з правильної позиції.", "Корисно для сторожових юнітів на висотах.", new Color(0.42f, 0.72f, 1f));
+                    return true;
+                case "SilhouettePenalty":
+                    doc = new UnitParameterDoc("Silhouette", "Наскільки помітним стає юніт на верхньому краю.", "Вищий силует допомагає ворогам знизу побачити цього юніта, навіть якщо вони погано бачать crest.", "У Map+Fog зв'язок між нижнім спостерігачем і ціллю на edge стає зеленішим.", "Корисно для великих юнітів: вони бачать більше, але й самі ризикують бути поміченими.", Warn);
+                    return true;
+                case "BaseStamina":
+                case "StaminaRandomRange":
+                    doc = new UnitParameterDoc("Стаміна", "Запас дій і випадковий стартовий розкид.", "Впливає на тривалість активності юніта і стабільність стартового стану.", "У preview росте зелена шкала витривалості та показується діапазон roll.", "Корисно для юнітів, які мають багато рухатися або працювати довгими циклами.", Good);
+                    return true;
+                case "CuttingDamage":
+                case "PenetratingDamage":
+                case "CrushingDamage":
+                    doc = new UnitParameterDoc("Атака", "Три типи шкоди формують бойовий профіль юніта.", "Змінює бойову симуляцію і візуальні промені загрози навколо юніта.", "У preview збільшується кількість і довжина помаранчевих attack rays.", "Корисно розділяти ролі: spear проти cavalry, crushing проти armored.", Bad);
+                    return true;
+                case "CuttingDefense":
+                case "PenetratingDefense":
+                case "CrushingDefense":
+                    doc = new UnitParameterDoc("Захист", "Опір проти трьох типів шкоди.", "Змінює survival у бойовому workspace і сині defensive rings у preview.", "У preview навколо юніта з'являються щільніші захисні кільця.", "Корисно для щитників, важких юнітів або спеціалізованого counterplay.", new Color(0.42f, 0.78f, 1f));
+                    return true;
+                case "MoveDurationPerTile":
+                case "DelayOnTile":
+                    doc = new UnitParameterDoc("Рух", "Тривалість кроку і пауза на тайлі.", "Менші значення роблять юніта швидшим у live animation preview.", "У preview маркер швидше проходить маршрут A-B-C, а статус показує tile/s.", "Корисно для налаштування відчуття ваги й темпу покрокового руху.", new Color(0.68f, 0.48f, 1f));
+                    return true;
+            }
+
+            doc = default(UnitParameterDoc);
+            return false;
+        }
+
+        private readonly struct UnitParameterDoc
+        {
+            public UnitParameterDoc(string title, string meaning, string impact, string preview, string example, Color color)
+            {
+                Title = title;
+                Meaning = meaning;
+                Impact = impact;
+                Preview = preview;
+                Example = example;
+                Color = color;
+            }
+
+            public string Title { get; }
+            public string Meaning { get; }
+            public string Impact { get; }
+            public string Preview { get; }
+            public string Example { get; }
+            public Color Color { get; }
+            public string Inline => $"{Meaning} {Preview}";
+        }
+
         private static bool BeginFoldoutSection(ref bool expanded, string title, string iconName, string tooltip)
         {
             EditorGUILayout.BeginVertical(InlineFoldoutStyle());
@@ -3613,6 +3946,12 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private static int GetInt(SerializedProperty property, string relativeName)
             => property?.FindPropertyRelative(relativeName)?.intValue ?? 0;
+
+        private static bool GetBool(SerializedProperty property, string relativeName, bool fallback = false)
+        {
+            var relative = property?.FindPropertyRelative(relativeName);
+            return relative != null ? relative.boolValue : fallback;
+        }
 
         private static int GetEnumIndex(SerializedProperty property, string relativeName)
             => property?.FindPropertyRelative(relativeName)?.enumValueIndex ?? 0;
