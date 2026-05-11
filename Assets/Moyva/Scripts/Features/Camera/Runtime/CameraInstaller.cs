@@ -28,6 +28,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             // Використовуємо BindInterfacesAndSelfTo, щоб підхопити ITickable, IInitializable та самі інтерфейси API
             Container.BindInterfacesAndSelfTo<CameraMovement>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraZoom>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraMapRenderMaskService>().AsSingle();
             
             // CameraFocused не має Tick/Initializable, тому можна просто до інтерфейсу
             Container.BindInterfacesTo<CameraFocused>().AsSingle();
