@@ -3,6 +3,19 @@ using System.Collections.Generic;
 
 namespace Kruty1918.Moyva.Multiplayer.Lobbies
 {
+    [Flags]
+    public enum RoomCapabilityFlags
+    {
+        None = 0,
+        PasswordProtectedJoin = 1 << 0,
+        ReconnectWindow = 1 << 1,
+        HostMigration = 1 << 2,
+        KickPlayers = 1 << 3,
+        BanPlayers = 1 << 4,
+        DeterministicSeedHandshake = 1 << 5,
+        SynchronizedMatchStart = 1 << 6,
+    }
+
     /// <summary>Життєвий стан lobby: відкрита, гра вже стартувала, або lobby закрита.</summary>
     public enum LobbyState
     {
@@ -28,6 +41,8 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public LobbyState State { get; }
         public IReadOnlyList<LobbyReconnectRecord> ReconnectRecords { get; }
         public byte[] StartedWorldSettingsBytes { get; }
+        public IReadOnlyList<string> BannedPlayerIds { get; }
+        public RoomCapabilityFlags CapabilityFlags { get; }
 
         /// <summary>Хеш пароля кімнати (SHA-256 hex). Порожній = кімната без пароля.</summary>
         public string PasswordHash { get; }
@@ -47,7 +62,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             string passwordHash = null,
             LobbyState state = LobbyState.Open,
             IReadOnlyList<LobbyReconnectRecord> reconnectRecords = null,
-            byte[] startedWorldSettingsBytes = null)
+            byte[] startedWorldSettingsBytes = null,
+            IReadOnlyList<string> bannedPlayerIds = null,
+            RoomCapabilityFlags capabilityFlags = RoomCapabilityFlags.ReconnectWindow | RoomCapabilityFlags.HostMigration | RoomCapabilityFlags.KickPlayers | RoomCapabilityFlags.BanPlayers | RoomCapabilityFlags.DeterministicSeedHandshake | RoomCapabilityFlags.SynchronizedMatchStart)
         {
             LobbyId = lobbyId ?? string.Empty;
             LobbyCode = lobbyCode ?? string.Empty;
@@ -61,6 +78,11 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             State = state;
             ReconnectRecords = reconnectRecords ?? Array.Empty<LobbyReconnectRecord>();
             StartedWorldSettingsBytes = startedWorldSettingsBytes ?? Array.Empty<byte>();
+            BannedPlayerIds = bannedPlayerIds ?? Array.Empty<string>();
+            CapabilityFlags = capabilityFlags;
+
+            if (HasPassword)
+                CapabilityFlags |= RoomCapabilityFlags.PasswordProtectedJoin;
         }
     }
 
