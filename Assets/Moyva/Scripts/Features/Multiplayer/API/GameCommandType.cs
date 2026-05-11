@@ -11,5 +11,9 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         StartGame        = 6,
         EndTurn          = 7,
         StartingPositions = 8,
+        QosPing          = 9,
+        QosPong          = 10,
+        WorldSeedHandshake = 11,
+        MatchStartSync   = 12,
     }
 }
