@@ -53,7 +53,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<InterruptMovementSignal>(OnInterruptRequested);
+            _signalBus.TryUnsubscribe<InterruptMovementSignal>(OnInterruptRequested);
 
             foreach (var cts in _activeMovements.Values)
             {
