@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Kruty1918.Moyva.Bootstrap;
 using Kruty1918.Moyva.Bootstrap.Runtime;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
 using Kruty1918.Moyva.HomeMenu.Runtime;
@@ -103,12 +104,16 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                 EditorGUI.BeginChangeCheck();
                 _worldDefaults = (WorldCreationDefaultsSO)EditorGUILayout.ObjectField("World defaults", _worldDefaults, typeof(WorldCreationDefaultsSO), false);
                 if (EditorGUI.EndChangeCheck())
+                {
+                    MoyvaProjectEditorContext.Set(_worldDefaults);
                     RebuildSerializedObjects();
+                }
 
                 if (GUILayout.Button(_worldDefaults == null ? "Створити" : "Ping", GUILayout.Width(92f)))
                 {
                     if (_worldDefaults == null)
                         _worldDefaults = CreateAsset<WorldCreationDefaultsSO>(DefaultWorldAssetPath);
+                    MoyvaProjectEditorContext.Set(_worldDefaults);
                     EditorGUIUtility.PingObject(_worldDefaults);
                     RebuildSerializedObjects();
                 }
@@ -119,12 +124,16 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                 EditorGUI.BeginChangeCheck();
                 _bootstrapConfig = (BootstrapInstallerConfigSO)EditorGUILayout.ObjectField("Bootstrap config", _bootstrapConfig, typeof(BootstrapInstallerConfigSO), false);
                 if (EditorGUI.EndChangeCheck())
+                {
+                    MoyvaProjectEditorContext.Set(_bootstrapConfig);
                     RebuildSerializedObjects();
+                }
 
                 if (GUILayout.Button(_bootstrapConfig == null ? "Створити" : "Ping", GUILayout.Width(92f)))
                 {
                     if (_bootstrapConfig == null)
                         _bootstrapConfig = CreateAsset<BootstrapInstallerConfigSO>(DefaultBootstrapAssetPath);
+                    MoyvaProjectEditorContext.Set(_bootstrapConfig);
                     EditorGUIUtility.PingObject(_bootstrapConfig);
                     RebuildSerializedObjects();
                 }
@@ -132,12 +141,18 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
 
             using (new EditorGUILayout.HorizontalScope())
             {
+                EditorGUI.BeginChangeCheck();
                 _fogSettings = (FogOfWarSettings)EditorGUILayout.ObjectField("Fog settings", _fogSettings, typeof(FogOfWarSettings), false);
+                if (EditorGUI.EndChangeCheck())
+                    MoyvaProjectEditorContext.Set(_fogSettings);
 
                 if (GUILayout.Button(_fogSettings == null ? "Знайти" : "Ping", GUILayout.Width(92f)))
                 {
                     if (_fogSettings == null)
-                        _fogSettings = FindFogSettings();
+                    {
+                        _fogSettings = MoyvaProjectEditorContext.GetOrFindFirst<FogOfWarSettings>() ?? FindFogSettings();
+                        MoyvaProjectEditorContext.Set(_fogSettings);
+                    }
 
                     if (_fogSettings != null)
                         EditorGUIUtility.PingObject(_fogSettings);
@@ -585,9 +600,11 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
 
         private void TryAutoLoadAssets()
         {
-            _worldDefaults = AssetDatabase.LoadAssetAtPath<WorldCreationDefaultsSO>(DefaultWorldAssetPath);
-            _bootstrapConfig = AssetDatabase.LoadAssetAtPath<BootstrapInstallerConfigSO>(DefaultBootstrapAssetPath);
-            _fogSettings = FindFogSettings();
+            _worldDefaults = MoyvaProjectEditorContext.Get<WorldCreationDefaultsSO>()
+                ?? AssetDatabase.LoadAssetAtPath<WorldCreationDefaultsSO>(DefaultWorldAssetPath);
+            _bootstrapConfig = MoyvaProjectEditorContext.Get<BootstrapInstallerConfigSO>()
+                ?? AssetDatabase.LoadAssetAtPath<BootstrapInstallerConfigSO>(DefaultBootstrapAssetPath);
+            _fogSettings = MoyvaProjectEditorContext.Get<FogOfWarSettings>() ?? FindFogSettings();
         }
 
         private static FogOfWarSettings FindFogSettings()

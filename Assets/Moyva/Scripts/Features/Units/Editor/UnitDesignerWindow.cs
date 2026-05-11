@@ -95,7 +95,7 @@ namespace Kruty1918.Moyva.Units.Editor
         private bool _pauseSimulation;
         private DesignerPresetLibrarySO _designerPresetLibrary;
         private int _selectedUnitPresetIndex;
-        
+
         // Прев'ю анімацій
         private int _previewAnimationIndex = -1;
         private float _animationPlaybackTime = 0f;
@@ -494,7 +494,7 @@ namespace Kruty1918.Moyva.Units.Editor
         private void DrawVerticalLayout()
         {
             EditorGUILayout.BeginVertical();
-            
+
             // Tabbed view for narrow windows
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             GUILayout.FlexibleSpace();
@@ -502,14 +502,14 @@ namespace Kruty1918.Moyva.Units.Editor
                 GUILayout.Width(250f));
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
-            
+
             if (_verticalLayoutTab == 0)
                 DrawUnitListPanel(GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
             else if (_verticalLayoutTab == 1)
                 DrawDetailsPanel(GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
             else
                 DrawPreviewPanel(GUILayout.ExpandHeight(true), GUILayout.ExpandWidth(true));
-            
+
             EditorGUILayout.EndVertical();
         }
 
@@ -771,7 +771,7 @@ namespace Kruty1918.Moyva.Units.Editor
             // Adaptive row height and layout
             bool compactMode = position.width < 400f;
             float rowHeight = compactMode ? 48f : 62f;
-            
+
             Rect row = GUILayoutUtility.GetRect(0f, rowHeight, GUILayout.ExpandWidth(true));
             Color bg = selected
                 ? new Color(Accent.r, Accent.g, Accent.b, EditorGUIUtility.isProSkin ? 0.42f : 0.25f)
@@ -1029,7 +1029,7 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                 EditorGUILayout.LabelField("Animator параметри", EditorStyles.boldLabel);
-                
+
                 // Show animator parameters from the controller
                 var controller = animator.runtimeAnimatorController;
                 EditorGUILayout.HelpBox($"Animator контролер: {controller.name}\n\nПараметри можна редагувати у контролері або у редакторі префабу.", MessageType.Info);
@@ -1593,7 +1593,7 @@ namespace Kruty1918.Moyva.Units.Editor
             // Preview button
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
-            
+
             bool isCurrentlyPlaying = _isPlayingAnimation && _previewAnimationIndex == index;
             Color btnColor = GUI.backgroundColor;
             if (isCurrentlyPlaying)
@@ -1615,7 +1615,7 @@ namespace Kruty1918.Moyva.Units.Editor
                 }
             }
             GUI.backgroundColor = btnColor;
-            
+
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.EndVertical();
@@ -1642,7 +1642,7 @@ namespace Kruty1918.Moyva.Units.Editor
         private void DrawAnimatedPreview(Rect rect, SerializedProperty unit, GameObject prefab, Sprite sprite)
         {
             DrawPanelBackground(rect, EditorGUIUtility.isProSkin ? new Color(0.12f, 0.13f, 0.15f) : new Color(0.78f, 0.82f, 0.86f));
-            
+
             float gridSize = Mathf.Clamp(rect.width / 12f, 16f, 24f);
             DrawPreviewGrid(rect, gridSize);
 
@@ -1667,7 +1667,7 @@ namespace Kruty1918.Moyva.Units.Editor
             float normalizedTime = _autoPlayPreview && _showAnimationPreview && cycleTime > 0.001f
                 ? _previewSimulationTime % cycleTime
                 : 0f;
-            
+
             if (_isPlayingAnimation && _previewAnimationIndex >= 0)
             {
                 var animationClips = unit.FindPropertyRelative("AnimationClips");
@@ -1680,7 +1680,7 @@ namespace Kruty1918.Moyva.Units.Editor
                     var durationRef = clip.FindPropertyRelative("Duration");
                     var fpsRef = clip.FindPropertyRelative("SpriteFPS");
                     var loopRef = clip.FindPropertyRelative("Loop");
-                    
+
                     string clipName = nameRef != null ? nameRef.stringValue : "Unknown";
                     string clipType = typeRef != null ? typeRef.enumDisplayNames[Mathf.Clamp(typeRef.enumValueIndex, 0, typeRef.enumDisplayNames.Length - 1)] : "Unknown";
                     int fps = fpsRef != null ? Mathf.Max(1, fpsRef.intValue) : 0;
@@ -1860,7 +1860,7 @@ namespace Kruty1918.Moyva.Units.Editor
         private void DrawVisionGrid(SerializedProperty unit)
         {
             int radius = Mathf.Clamp(GetInt(unit, "VisionRange"), 1, 12);
-            
+
             // Adaptive height based on window width
             float minHeight = Mathf.Clamp(position.width * 0.3f, 120f, 200f);
             Rect rect = GUILayoutUtility.GetRect(120f, minHeight, GUILayout.ExpandWidth(true));
@@ -1957,7 +1957,7 @@ namespace Kruty1918.Moyva.Units.Editor
             }
 
             EditorGUILayout.HelpBox(validation, MessageType.Error);
-            
+
             EditorGUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(new GUIContent("🔧 Автоправка", "Спробувати автоматично вирішити помилку."), GUILayout.Height(24f), GUILayout.Width(140f)))
@@ -2538,7 +2538,7 @@ namespace Kruty1918.Moyva.Units.Editor
         private bool TryAutoFixUnit(SerializedProperty unit, int index)
         {
             bool fixed_something = false;
-            
+
             // Fix 1: Empty TypeId
             string id = GetString(unit, "TypeId");
             if (string.IsNullOrWhiteSpace(id))
