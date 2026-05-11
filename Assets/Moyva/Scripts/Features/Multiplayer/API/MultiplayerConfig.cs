@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Multiplayer.Config
     /// </summary>
     public sealed class MultiplayerConfig
     {
-        public const int CurrentSchemaVersion = 3;
+        public const int CurrentSchemaVersion = 5;
 
         public int SchemaVersion { get; }
         public NetworkProviderType ProviderType { get; }
@@ -31,6 +31,9 @@ namespace Kruty1918.Moyva.Multiplayer.Config
         public bool EnforceConfigConsistency { get; }
         public bool MatchmakingEnabled { get; }
         public float ReconnectLocalTimeToleranceSeconds { get; }
+        public float GracefulReconnectWindowSeconds { get; }
+        public bool EnableRelayProvider { get; }
+        public bool EnableHostMigration { get; }
 
         public MultiplayerConfig(
             int schemaVersion,
@@ -42,7 +45,10 @@ namespace Kruty1918.Moyva.Multiplayer.Config
             RelayProviderSettings relaySettings = null,
             WebSocketProviderSettings webSocketSettings = null,
             NetworkProviderType fallbackProviderType = NetworkProviderType.Offline,
-            float reconnectLocalTimeToleranceSeconds = 120f)
+            float reconnectLocalTimeToleranceSeconds = 120f,
+            float gracefulReconnectWindowSeconds = 8f,
+            bool enableRelayProvider = true,
+            bool enableHostMigration = true)
         {
             SchemaVersion = schemaVersion;
             ProviderType = providerType;
@@ -54,6 +60,9 @@ namespace Kruty1918.Moyva.Multiplayer.Config
             EnforceConfigConsistency = enforceConfigConsistency;
             MatchmakingEnabled = matchmakingEnabled;
             ReconnectLocalTimeToleranceSeconds = reconnectLocalTimeToleranceSeconds < 0f ? 0f : reconnectLocalTimeToleranceSeconds;
+            GracefulReconnectWindowSeconds = gracefulReconnectWindowSeconds < 1f ? 1f : gracefulReconnectWindowSeconds;
+            EnableRelayProvider = enableRelayProvider;
+            EnableHostMigration = enableHostMigration;
         }
 
         public static MultiplayerConfig Default() =>
@@ -67,6 +76,9 @@ namespace Kruty1918.Moyva.Multiplayer.Config
                 relaySettings: RelayProviderSettings.Default(),
                 webSocketSettings: WebSocketProviderSettings.Default(),
                 fallbackProviderType: NetworkProviderType.Offline,
-                reconnectLocalTimeToleranceSeconds: 120f);
+                reconnectLocalTimeToleranceSeconds: 120f,
+                gracefulReconnectWindowSeconds: 8f,
+                enableRelayProvider: true,
+                enableHostMigration: true);
     }
 }
