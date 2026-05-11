@@ -111,6 +111,27 @@ Moyva - це покрокова 2D-стратегія про розбудову 
 ### 13) Стандарти і модульні індекси
 - [Модульний індекс](modules/README.md)
 - [TDD стандарт](standarts/TDD.md)
+- [Naming Policy](standarts/naming-policy.md)
+- [Ліміти розміру файлів](standarts/file-size-limits.md)
+- [Common Utilities](standarts/common-utilities.md)
+- [ProjectContext Data Policy](standarts/project-context-data-policy.md)
+- [Runtime Config Lifecycle](standarts/runtime-config-lifecycle.md)
+- [Domain Result Pattern](standarts/domain-result-pattern.md)
+- [Reflection Startup Validation](standarts/reflection-startup-validation.md)
+- [Service Mode Profiles](standarts/service-mode-profiles.md)
+- [Feature Toggles for Risky Features](standarts/feature-toggles-risky-features.md)
+- [Multiplayer Config Schema + Migration Pipeline](standarts/multiplayer-config-schema-migration.md)
+- [Domain Events Layer](standarts/domain-events-layer.md)
+- [Tech Debt Register](standarts/tech-debt-register.md)
+- [Tech Debt Register Items](architecture/tech-debt-register.md)
+- [Unit Designer Modular Facades](standarts/unit-designer-modular-facades.md)
+- [Unit Designer Safe Edit Mode](standarts/unit-designer-safe-edit-mode.md)
+- [Unit Designer Pre-Save Validation](standarts/unit-designer-pre-save-validation.md)
+- [Unit Designer Batch Operations](standarts/unit-designer-batch-operations.md)
+- [Designer Preset System](standarts/designer-preset-system.md)
+- [Semantic Folders для Editor Tools](standarts/editor-tools-semantic-folders.md)
+- [Dependency Map фіч-модулів](architecture/feature-dependency-map.md)
+- [ADR Journal](architecture/adr/README.md)
 
 ## Суть ігрового циклу
 
