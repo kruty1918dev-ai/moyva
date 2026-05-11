@@ -51,9 +51,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<UnitCreatedSignal>(OnUnitCreated);
-            _signalBus.Unsubscribe<UnitMovedSignal>(OnUnitMoved);
-            _signalBus.Unsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
+            _signalBus.TryUnsubscribe<UnitCreatedSignal>(OnUnitCreated);
+            _signalBus.TryUnsubscribe<UnitMovedSignal>(OnUnitMoved);
+            _signalBus.TryUnsubscribe<UnitDestroyedSignal>(OnUnitDestroyed);
         }
 
         private void OnUnitCreated(UnitCreatedSignal signal)
