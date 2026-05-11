@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.API;
@@ -49,8 +50,12 @@ namespace Kruty1918.Moyva.Editor.Shared
         {
             private UnityEditorInternal.ReorderableList _list;
             private SerializedProperty _currentProperty;
-            private Dictionary<string, EconomyDatabaseSO> _dbCache = new();
-            private Dictionary<string, string[]> _idsCache = new();
+            private readonly Dictionary<string, Sprite> _spriteCache = new Dictionary<string, Sprite>();
+            private readonly Dictionary<string, string> _displayNameCache = new Dictionary<string, string>();
+            private EconomyDatabaseSO _cachedDatabase;
+            private string[] _cachedIds = Array.Empty<string>();
+            private double _cacheTime;
+            private const double CacheTTL = 1.0;
 
             public float GetPropertyHeight(SerializedProperty property, GUIContent label)
             {
@@ -72,7 +77,6 @@ namespace Kruty1918.Moyva.Editor.Shared
 
                 _currentProperty = property;
 
-                var elementProp = property.GetArrayElementAtIndex(0);
                 _list = new UnityEditorInternal.ReorderableList(
                     property.serializedObject,
                     property,
@@ -178,18 +182,8 @@ namespace Kruty1918.Moyva.Editor.Shared
 
             private string[] GetResourceIds()
             {
-                var db = FindDatabase();
-                if (db == null)
-                    return System.Array.Empty<string>();
-
-                var ids = new List<string>();
-                foreach (var resource in db.Resources)
-                {
-                    if (!string.IsNullOrEmpty(resource.Id))
-                        ids.Add(resource.Id);
-                }
-                ids.Sort();
-                return ids.ToArray();
+                EnsureCache();
+                return _cachedIds;
             }
 
             private Sprite GetSpriteForResourceId(string id)
@@ -197,17 +191,8 @@ namespace Kruty1918.Moyva.Editor.Shared
                 if (string.IsNullOrEmpty(id))
                     return null;
 
-                var db = FindDatabase();
-                if (db == null)
-                    return null;
-
-                foreach (var resource in db.Resources)
-                {
-                    if (resource.Id == id)
-                        return resource.Icon;
-                }
-
-                return null;
+                EnsureCache();
+                return _spriteCache.TryGetValue(id, out var sprite) ? sprite : null;
             }
 
             private string GetResourceDisplayName(string id)
@@ -215,20 +200,44 @@ namespace Kruty1918.Moyva.Editor.Shared
                 if (string.IsNullOrEmpty(id))
                     return id;
 
-                var db = FindDatabase();
-                if (db == null)
-                    return id;
-
-                foreach (var resource in db.Resources)
-                {
-                    if (resource.Id == id)
-                        return resource.DisplayName ?? id;
-                }
-
-                return id;
+                EnsureCache();
+                return _displayNameCache.TryGetValue(id, out var displayName) ? displayName : id;
             }
 
-            private EconomyDatabaseSO FindDatabase()
+            private void EnsureCache()
+            {
+                double now = EditorApplication.timeSinceStartup;
+                if (now - _cacheTime < CacheTTL)
+                    return;
+
+                _cacheTime = now;
+                _cachedDatabase = FindDatabaseInternal();
+                _spriteCache.Clear();
+                _displayNameCache.Clear();
+
+                if (_cachedDatabase?.Resources == null)
+                {
+                    _cachedIds = Array.Empty<string>();
+                    return;
+                }
+
+                var ids = new List<string>();
+                foreach (var resource in _cachedDatabase.Resources)
+                {
+                    if (resource == null || string.IsNullOrEmpty(resource.Id))
+                        continue;
+
+                    ids.Add(resource.Id);
+                    if (resource.Icon != null)
+                        _spriteCache[resource.Id] = resource.Icon;
+                    _displayNameCache[resource.Id] = resource.DisplayName ?? resource.Id;
+                }
+
+                ids.Sort(StringComparer.Ordinal);
+                _cachedIds = ids.ToArray();
+            }
+
+            private EconomyDatabaseSO FindDatabaseInternal()
             {
                 string[] guids = AssetDatabase.FindAssets("t:EconomyDatabaseSO");
                 if (guids.Length == 0)
