@@ -24,9 +24,13 @@ namespace Kruty1918.Moyva.Calendar.Runtime
 
         public override void InstallBindings()
         {
-            CalendarConfig config = _sessionConfig != null
+            CalendarConfig rawConfig = _sessionConfig != null
                 ? _sessionConfig.BuildConfig()
                 : CalendarConfig.Default();
+
+            CalendarConfig config = CalendarConfigLifecycle.ValidateAndFreeze(
+                rawConfig,
+                message => Debug.LogWarning($"[CalendarInstaller] {message}"));
 
             var service = new GameCalendarService(config);
             Container.BindInstance(service).AsSingle();
