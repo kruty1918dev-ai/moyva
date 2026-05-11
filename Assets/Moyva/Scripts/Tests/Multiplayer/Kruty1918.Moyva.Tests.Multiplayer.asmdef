@@ -6,7 +6,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "Kruty1918.Moyva.Signals",
-        "Kruty1918.Moyva.Multiplayer"
+        "Kruty1918.Moyva.Multiplayer",
+        "Kruty1918.Moyva.Shared"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],
