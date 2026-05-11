@@ -48,6 +48,8 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Container.DeclareSignal<UnitCreatedSignal>();
             Container.DeclareSignal<UnitMovedSignal>();
             Container.DeclareSignal<UnitDestroyedSignal>();
+            Container.DeclareSignal<BuildingPlacedSignal>();
+            Container.DeclareSignal<BuildingDemolishedSignal>();
             Container.DeclareSignal<WorldGeneratedDataSignal>();
 
             Container.BindInstance<IGridService>(new StubGrid()).AsSingle();
@@ -219,6 +221,120 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             _service.UpdateUnitPosition("u1", new Vector2Int(15, 15));
             Assert.IsTrue(_service.IsVisible(new Vector2Int(15, 15)));
             Assert.IsFalse(_service.IsVisible(new Vector2Int(2, 2)));
+        }
+    }
+
+    [TestFixture]
+    public sealed class FogRendererCullingEvaluatorTests
+    {
+        [Test]
+        public void ShouldRender_FullyUnexploredBounds_ReturnsFalse()
+        {
+            var fog = new StubFogService();
+            var grid = new StubGridService(4, 4);
+            var bounds = new Bounds(new Vector3(1f, 1f, 0f), Vector3.one);
+
+            bool shouldRender = FogRendererCullingEvaluator.ShouldRender(bounds, fog, grid, 0f);
+
+            Assert.IsFalse(shouldRender);
+        }
+
+        [Test]
+        public void ShouldRender_ExploredTileInsideBounds_ReturnsTrue()
+        {
+            var fog = new StubFogService();
+            fog.SetState(new Vector2Int(1, 1), FogStateType.Explored);
+            var grid = new StubGridService(4, 4);
+            var bounds = new Bounds(new Vector3(1f, 1f, 0f), Vector3.one);
+
+            bool shouldRender = FogRendererCullingEvaluator.ShouldRender(bounds, fog, grid, 0f);
+
+            Assert.IsTrue(shouldRender);
+        }
+
+        [Test]
+        public void ShouldRender_VisibleTileInsideBounds_ReturnsTrue()
+        {
+            var fog = new StubFogService();
+            fog.SetState(new Vector2Int(2, 2), FogStateType.Visible);
+            var grid = new StubGridService(4, 4);
+            var bounds = new Bounds(new Vector3(2f, 2f, 0f), Vector3.one);
+
+            bool shouldRender = FogRendererCullingEvaluator.ShouldRender(bounds, fog, grid, 0f);
+
+            Assert.IsTrue(shouldRender);
+        }
+
+        [Test]
+        public void ShouldRender_OutsideMap_ReturnsTrue()
+        {
+            var fog = new StubFogService();
+            var grid = new StubGridService(4, 4);
+            var bounds = new Bounds(new Vector3(-10f, -10f, 0f), Vector3.one);
+
+            bool shouldRender = FogRendererCullingEvaluator.ShouldRender(bounds, fog, grid, 0f);
+
+            Assert.IsTrue(shouldRender);
+        }
+
+        [Test]
+        public void ShouldRender_TileSizedBounds_DoNotBleedIntoNeighbor()
+        {
+            var fog = new StubFogService();
+            fog.SetState(new Vector2Int(1, 0), FogStateType.Explored);
+            var grid = new StubGridService(3, 3);
+            var bounds = new Bounds(new Vector3(0f, 0f, 0f), Vector3.one);
+
+            bool shouldRender = FogRendererCullingEvaluator.ShouldRender(bounds, fog, grid, 0f);
+
+            Assert.IsFalse(shouldRender);
+
+            fog.SetState(new Vector2Int(0, 0), FogStateType.Explored);
+            shouldRender = FogRendererCullingEvaluator.ShouldRender(bounds, fog, grid, 0f);
+
+            Assert.IsTrue(shouldRender);
+        }
+
+        private sealed class StubGridService : IGridService
+        {
+            public StubGridService(int width, int height)
+            {
+                GridWidth = width;
+                GridHeight = height;
+            }
+
+            public int GridWidth { get; }
+            public int GridHeight { get; }
+            public string GetTileData(Vector2Int position) => "grass";
+            public bool TryGetTileData(Vector2Int position, out string tileTypeId)
+            {
+                tileTypeId = "grass";
+                return true;
+            }
+            public void SetTileData(Vector2Int position, string tileTypeId) { }
+        }
+
+        private sealed class StubFogService : IFogOfWarService
+        {
+            private readonly Dictionary<Vector2Int, FogStateType> _states = new Dictionary<Vector2Int, FogStateType>();
+
+            public void SetState(Vector2Int position, FogStateType state)
+            {
+                _states[position] = state;
+            }
+
+            public void Initialize(int width, int height) { }
+            public void RegisterUnit(string unitId, Vector2Int position, int visionRange) { }
+            public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape) { }
+            public void UpdateUnitPosition(string unitId, Vector2Int newPosition) { }
+            public void UnregisterUnit(string unitId) { }
+            public FogStateType GetFogState(Vector2Int position)
+                => _states.TryGetValue(position, out var state) ? state : FogStateType.Unexplored;
+            public bool IsVisible(Vector2Int position) => GetFogState(position) == FogStateType.Visible;
+            public bool IsExplored(Vector2Int position) => GetFogState(position) != FogStateType.Unexplored;
+            public bool[,] GetExploredSnapshot() => null;
+            public void LoadFromSnapshot(bool[,] explored) { }
+            public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles() => System.Array.Empty<Vector2Int>();
         }
     }
 }

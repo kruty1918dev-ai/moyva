@@ -62,6 +62,8 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Container.DeclareSignal<UnitCreatedSignal>();
             Container.DeclareSignal<UnitMovedSignal>();
             Container.DeclareSignal<UnitDestroyedSignal>();
+            Container.DeclareSignal<BuildingPlacedSignal>();
+            Container.DeclareSignal<BuildingDemolishedSignal>();
             Container.DeclareSignal<WorldGeneratedDataSignal>();
 
             _gridService     = new TestGridService();
@@ -194,6 +196,50 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.IsTrue(_service.IsVisible(new Vector2Int(5, 7)));
             Assert.IsTrue(_service.IsVisible(new Vector2Int(6, 6)));
             Assert.IsFalse(_service.IsVisible(new Vector2Int(7, 7)));
+        }
+
+        [Test]
+        public void BuildingPlacedSignal_RegistersFixedVisionArea()
+        {
+            InitMap();
+
+            _signalBus.Fire(new BuildingPlacedSignal
+            {
+                BuildingId = "house",
+                Position = new Vector2Int(5, 5),
+                OwnerId = "player",
+                SourceFactionId = "player",
+            });
+
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(5, 5)));
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(6, 5)));
+            Assert.IsFalse(_service.IsVisible(new Vector2Int(7, 5)));
+        }
+
+        [Test]
+        public void BuildingDemolishedSignal_RemovesFixedVisionAreaButKeepsExplored()
+        {
+            InitMap();
+            var position = new Vector2Int(5, 5);
+
+            _signalBus.Fire(new BuildingPlacedSignal
+            {
+                BuildingId = "house",
+                Position = position,
+                OwnerId = "player",
+                SourceFactionId = "player",
+            });
+
+            _signalBus.Fire(new BuildingDemolishedSignal
+            {
+                BuildingId = "house",
+                Position = position,
+                OwnerId = "player",
+                SourceFactionId = "player",
+            });
+
+            Assert.IsFalse(_service.IsVisible(position));
+            Assert.AreEqual(FogStateType.Explored, _service.GetFogState(position));
         }
 
         [Test]
