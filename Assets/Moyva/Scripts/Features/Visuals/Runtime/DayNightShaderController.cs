@@ -25,6 +25,9 @@ namespace Kruty1918.Moyva.Visuals
         private float _targetTimeOfDay01;
         private float _currentPhaseEncoded;
         private float _targetPhaseEncoded;
+        private float _lastPushedDayNightLerp = float.NaN;
+        private float _lastPushedTimeOfDay01 = float.NaN;
+        private float _lastPushedPhaseEncoded = float.NaN;
         private bool _isInitialized;
 
         public DayNightShaderController([InjectOptional] ICalendarService calendar = null)
@@ -46,12 +49,15 @@ namespace Kruty1918.Moyva.Visuals
             _calendar.OnHourChanged += Apply;
             _calendar.OnDayPhaseChanged += OnDayPhaseChanged;
             Apply();
-            PushToShader();
+            PushToShaderIfChanged(force: true);
         }
 
         public void Tick()
         {
             if (_calendar == null)
+                return;
+
+            if (HasReachedTargets())
                 return;
 
             float smoothingFactor = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.01f, TransitionDurationSeconds));
@@ -69,7 +75,7 @@ namespace Kruty1918.Moyva.Visuals
             if (Mathf.Abs(_currentPhaseEncoded - _targetPhaseEncoded) <= Epsilon)
                 _currentPhaseEncoded = _targetPhaseEncoded;
 
-            PushToShader();
+            PushToShaderIfChanged();
         }
 
         public void Dispose()
@@ -107,11 +113,27 @@ namespace Kruty1918.Moyva.Visuals
             }
         }
 
-        private void PushToShader()
+        private bool HasReachedTargets()
         {
+            return Mathf.Abs(_currentDayNightLerp - _targetDayNightLerp) <= Epsilon
+                && Mathf.Abs(_currentTimeOfDay01 - _targetTimeOfDay01) <= Epsilon
+                && Mathf.Abs(_currentPhaseEncoded - _targetPhaseEncoded) <= Epsilon;
+        }
+
+        private void PushToShaderIfChanged(bool force = false)
+        {
+            if (!force
+                && Mathf.Abs(_lastPushedDayNightLerp - _currentDayNightLerp) <= Epsilon
+                && Mathf.Abs(_lastPushedPhaseEncoded - _currentPhaseEncoded) <= Epsilon
+                && Mathf.Abs(_lastPushedTimeOfDay01 - _currentTimeOfDay01) <= Epsilon)
+                return;
+
             Shader.SetGlobalFloat(DayNightLerpId, _currentDayNightLerp);
             Shader.SetGlobalFloat(DayPhaseId, _currentPhaseEncoded);
             Shader.SetGlobalFloat(TimeOfDay01Id, _currentTimeOfDay01);
+            _lastPushedDayNightLerp = _currentDayNightLerp;
+            _lastPushedPhaseEncoded = _currentPhaseEncoded;
+            _lastPushedTimeOfDay01 = _currentTimeOfDay01;
         }
 
         private static float EncodePhase(DayPhase phase)
