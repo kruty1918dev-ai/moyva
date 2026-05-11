@@ -37,7 +37,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
 
         public void Dispose()
         {
-            _signalBus.Unsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+            _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
         }
 
         private void OnGameModeChanged(GameModeChangedSignal signal)
