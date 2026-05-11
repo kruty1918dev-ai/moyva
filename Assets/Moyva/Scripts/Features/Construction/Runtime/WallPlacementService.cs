@@ -87,6 +87,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void ShowWallHandles(Vector2Int wallPosition)
         {
+            _dragStartPosition = wallPosition;
             _signalBus.Fire(new ShowWallHandlesSignal { Center = wallPosition, Hide = false });
         }
 
