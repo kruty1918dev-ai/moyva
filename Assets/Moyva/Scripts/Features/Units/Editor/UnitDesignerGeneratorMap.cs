@@ -654,16 +654,55 @@ namespace Kruty1918.Moyva.Units.Editor
                         var hp = activeConfig.FindPropertyRelative("HitPoints");
                         var level = activeConfig.FindPropertyRelative("BaseLevel");
                         var boost = activeConfig.FindPropertyRelative("VisionHeightBoostPerLevel");
+                        var canSeeCrest = activeConfig.FindPropertyRelative("CanSeeCrest");
+                        var crestFactor = activeConfig.FindPropertyRelative("CrestVisibilityFactor");
+                        var downSlopeBonus = activeConfig.FindPropertyRelative("DownSlopeVisionBonus");
+                        var silhouettePenalty = activeConfig.FindPropertyRelative("SilhouettePenalty");
 
                         EditorGUI.BeginChangeCheck();
                         if (vision != null)
+                        {
                             vision.intValue = EditorGUILayout.IntSlider(new GUIContent("Огляд", "Базовий радіус огляду вибраного юніта."), Mathf.Clamp(vision.intValue, 1, 64), 1, 20);
+                            TrackParameterFocus(GUILayoutUtility.GetLastRect(), "VisionRange", UnitDesignerPreviewFocus.Vision);
+                        }
                         if (hp != null)
+                        {
                             hp.intValue = EditorGUILayout.IntSlider(new GUIContent("HP", "Очки здоров'я вибраного юніта."), Mathf.Max(1, hp.intValue), 1, 300);
+                            TrackParameterFocus(GUILayoutUtility.GetLastRect(), "HitPoints", UnitDesignerPreviewFocus.Health);
+                        }
                         if (level != null)
+                        {
                             level.intValue = EditorGUILayout.IntSlider(new GUIContent("Рівень", "Базовий рівень вибраного юніта."), Mathf.Max(1, level.intValue), 1, 10);
+                            TrackParameterFocus(GUILayoutUtility.GetLastRect(), "BaseLevel", UnitDesignerPreviewFocus.Level);
+                        }
                         if (boost != null)
+                        {
                             boost.floatValue = EditorGUILayout.Slider(new GUIContent("Буст огляду за висоту", "Індивідуальний бустер огляду за кожен рівень висоти."), Mathf.Max(0f, boost.floatValue), 0f, 4f);
+                            TrackParameterFocus(GUILayoutUtility.GetLastRect(), "VisionHeightBoostPerLevel", UnitDesignerPreviewFocus.TerrainVision);
+                        }
+
+                        EditorGUILayout.Space(2f);
+                        EditorGUILayout.LabelField("Рельєфна видимість активного юніта", EditorStyles.miniBoldLabel);
+                        if (canSeeCrest != null)
+                        {
+                            canSeeCrest.boolValue = EditorGUILayout.ToggleLeft(new GUIContent("Бачить crest знизу", "Дозволяє бачити верхній край схилу по реальному LOS-променю."), canSeeCrest.boolValue);
+                            TrackParameterFocus(GUILayoutUtility.GetLastRect(), "CanSeeCrest", UnitDesignerPreviewFocus.TerrainVision);
+                        }
+                        if (crestFactor != null)
+                        {
+                            crestFactor.floatValue = EditorGUILayout.Slider(new GUIContent("Сила crest", "Скільки видимості дає верхній край при погляді знизу."), Mathf.Clamp01(crestFactor.floatValue), 0f, 1f);
+                            TrackParameterFocus(GUILayoutUtility.GetLastRect(), "CrestVisibilityFactor", UnitDesignerPreviewFocus.TerrainVision);
+                        }
+                        if (downSlopeBonus != null)
+                        {
+                            downSlopeBonus.floatValue = EditorGUILayout.Slider(new GUIContent("Бонус вниз", "Додатковий радіус, коли спостерігач дивиться вниз зі схилу."), Mathf.Max(0f, downSlopeBonus.floatValue), 0f, 6f);
+                            TrackParameterFocus(GUILayoutUtility.GetLastRect(), "DownSlopeVisionBonus", UnitDesignerPreviewFocus.TerrainVision);
+                        }
+                        if (silhouettePenalty != null)
+                        {
+                            silhouettePenalty.floatValue = EditorGUILayout.Slider(new GUIContent("Силует", "Наскільки легко побачити цього юніта на верхньому краю."), Mathf.Clamp01(silhouettePenalty.floatValue), 0f, 1f);
+                            TrackParameterFocus(GUILayoutUtility.GetLastRect(), "SilhouettePenalty", UnitDesignerPreviewFocus.TerrainVision);
+                        }
 
                         if (EditorGUI.EndChangeCheck())
                         {
@@ -676,6 +715,12 @@ namespace Kruty1918.Moyva.Units.Editor
                             hp != null ? Mathf.Max(1, hp.intValue) : 1,
                             level != null ? Mathf.Max(1, level.intValue) : 1,
                             boost != null ? Mathf.Max(0f, boost.floatValue) : 0f);
+                        DrawScenarioTerrainQuickBars(
+                            canSeeCrest == null || canSeeCrest.boolValue,
+                            crestFactor != null ? Mathf.Clamp01(crestFactor.floatValue) : 0f,
+                            downSlopeBonus != null ? Mathf.Max(0f, downSlopeBonus.floatValue) : 0f,
+                            silhouettePenalty != null ? Mathf.Clamp01(silhouettePenalty.floatValue) : 0f);
+                        DrawFocusedParameterDocCard(activeConfig);
                     }
 
                     if (changed)
@@ -690,6 +735,13 @@ namespace Kruty1918.Moyva.Units.Editor
             DrawScenarioQuickBar("HP", Mathf.InverseLerp(1f, 300f, hp), new Color(0.2f, 0.72f, 0.45f), hp.ToString(CultureInfo.InvariantCulture));
             DrawScenarioQuickBar("Level", Mathf.InverseLerp(1f, 10f, level), new Color(0.2f, 0.62f, 0.67f), level.ToString(CultureInfo.InvariantCulture));
             DrawScenarioQuickBar("Boost", Mathf.InverseLerp(0f, 4f, boost), new Color(0.42f, 0.72f, 1f), boost.ToString("0.00", CultureInfo.InvariantCulture));
+        }
+
+        private static void DrawScenarioTerrainQuickBars(bool canSeeCrest, float crestFactor, float downSlopeBonus, float silhouettePenalty)
+        {
+            DrawScenarioQuickBar("Crest", crestFactor, canSeeCrest ? VisionOutline : new Color(0.45f, 0.45f, 0.45f), canSeeCrest ? crestFactor.ToString("0.00", CultureInfo.InvariantCulture) : "off");
+            DrawScenarioQuickBar("Down", Mathf.InverseLerp(0f, 6f, downSlopeBonus), new Color(0.42f, 0.72f, 1f), downSlopeBonus.ToString("0.0", CultureInfo.InvariantCulture));
+            DrawScenarioQuickBar("Silh", silhouettePenalty, Warn, silhouettePenalty.ToString("0.00", CultureInfo.InvariantCulture));
         }
 
         private void DrawGeneratorVisionFogControls()
@@ -809,11 +861,12 @@ namespace Kruty1918.Moyva.Units.Editor
             int heightLevel = ResolveSelectedUnitHeightLevel(activeScenarioUnit);
             float totalBoostPerLevel = ResolveSelectedVisionBoostPerLevel(activeScenarioUnit);
             int vision = ResolveSelectedEffectiveVisionRange(activeScenarioUnit);
+            int maxVision = ResolveSelectedMaximumVisionRange(activeScenarioUnit);
             float visiblePercent = _generatorPreviewTotalCells > 0
                 ? (float)_generatorPreviewVisibleCells / _generatorPreviewTotalCells * 100f
                 : 0f;
 
-            DrawGeneratorSummaryRow("База", baseVision.ToString(CultureInfo.InvariantCulture), "Рівень", (heightLevel + 1).ToString(CultureInfo.InvariantCulture), "Ефективний", vision.ToString(CultureInfo.InvariantCulture));
+            DrawGeneratorSummaryRow("База", baseVision.ToString(CultureInfo.InvariantCulture), "Рівень", (heightLevel + 1).ToString(CultureInfo.InvariantCulture), "Еф./макс", maxVision > vision ? $"{vision}/{maxVision}" : vision.ToString(CultureInfo.InvariantCulture));
             DrawGeneratorSummaryRow("Fog", _generatorPreviewFogUnion ? "усі" : "активний", "Visible", $"{visiblePercent:0.0}%", "LOS", _generatorVisionUseTerrainLos ? "terrain" : "radius");
             EditorGUILayout.LabelField($"Level source: {_generatorPreviewLevelSource} | Boost/level {totalBoostPerLevel:0.00} | edge peek {_generatorVisionEdgePeekDistanceTiles}, blind {_generatorVisionEdgeBlindZoneTiles}-{_generatorVisionEdgeMaxBlindZoneTiles} | noise min {_generatorPreviewMinHeight:0.000}, avg {_generatorPreviewAverageHeight:0.000}, max {_generatorPreviewMaxHeight:0.000}", EditorStyles.wordWrappedMiniLabel);
         }
@@ -964,10 +1017,64 @@ namespace Kruty1918.Moyva.Units.Editor
                 Handles.DrawWireDisc(center, Vector3.forward, radiusPx);
             }
 
+            DrawGeneratorScenarioVisibilityLinks(drawRect, cellW, cellH);
+
             Handles.EndGUI();
 
             for (int i = 0; i < _generatorScenarioUnits.Count; i++)
                 DrawGeneratorScenarioUnitMarker(i, drawRect, cellW, cellH);
+        }
+
+        private void DrawGeneratorScenarioVisibilityLinks(Rect drawRect, float cellW, float cellH)
+        {
+            if (_generatorScenarioUnits.Count <= 1)
+                return;
+
+            int activeIndex = Mathf.Clamp(_generatorScenarioActiveIndex, 0, _generatorScenarioUnits.Count - 1);
+            for (int i = 0; i < _generatorScenarioUnits.Count; i++)
+            {
+                for (int j = i + 1; j < _generatorScenarioUnits.Count; j++)
+                {
+                    bool involvesActive = i == activeIndex || j == activeIndex;
+                    bool iSeesJ = CanScenarioUnitSeeScenarioUnit(i, j);
+                    bool jSeesI = CanScenarioUnitSeeScenarioUnit(j, i);
+                    Vector2 from = PreviewCellCenter(drawRect, _generatorScenarioUnits[i].Position, cellW, cellH);
+                    Vector2 to = PreviewCellCenter(drawRect, _generatorScenarioUnits[j].Position, cellW, cellH);
+
+                    Color linkColor;
+                    string label;
+                    if (iSeesJ && jSeesI)
+                    {
+                        linkColor = new Color(0.28f, 0.92f, 0.58f, involvesActive ? 0.86f : 0.42f);
+                        label = "mutual";
+                    }
+                    else if (iSeesJ || jSeesI)
+                    {
+                        linkColor = new Color(1f, 0.72f, 0.24f, involvesActive ? 0.82f : 0.34f);
+                        label = iSeesJ ? $"{i + 1}->{j + 1}" : $"{j + 1}->{i + 1}";
+                    }
+                    else
+                    {
+                        linkColor = new Color(0.9f, 0.9f, 0.9f, involvesActive ? 0.22f : 0.08f);
+                        label = "blocked";
+                    }
+
+                    Handles.color = linkColor;
+                    Handles.DrawAAPolyLine(involvesActive ? 3f : 1.4f, from, to);
+
+                    if (!involvesActive)
+                        continue;
+
+                    Vector2 mid = Vector2.Lerp(from, to, 0.5f);
+                    Vector2 dir = (to - from).normalized;
+                    if (dir.sqrMagnitude < 0.001f)
+                        dir = Vector2.right;
+                    Vector2 normal = new Vector2(-dir.y, dir.x);
+                    Rect labelRect = new Rect(mid.x + normal.x * 9f - 34f, mid.y + normal.y * 9f - 9f, 68f, 18f);
+                    EditorGUI.DrawRect(labelRect, new Color(0f, 0f, 0f, 0.68f));
+                    GUI.Label(labelRect, label, EditorStyles.centeredGreyMiniLabel);
+                }
+            }
         }
 
         private bool HandleGeneratorPreviewInput(Rect viewportRect, Rect drawRect, float contentWidth, float contentHeight, float cellSize)
@@ -1208,7 +1315,11 @@ namespace Kruty1918.Moyva.Units.Editor
                 return;
 
             string typeLabel = string.IsNullOrWhiteSpace(unit.TypeId) ? "<TypeId?>" : unit.TypeId;
-            string visionLabel = $"{typeLabel} | огляд {ResolveSelectedEffectiveVisionRange(unit)}";
+            int effectiveVision = ResolveSelectedEffectiveVisionRange(unit);
+            int maximumVision = ResolveSelectedMaximumVisionRange(unit);
+            string visionLabel = maximumVision > effectiveVision
+                ? $"{typeLabel} | огляд {effectiveVision}/{maximumVision}"
+                : $"{typeLabel} | огляд {effectiveVision}";
             var labelStyle = new GUIStyle(EditorStyles.miniBoldLabel)
             {
                 normal = { textColor = Color.white },
@@ -1279,23 +1390,67 @@ namespace Kruty1918.Moyva.Units.Editor
             int level = _generatorPreviewLevelMap != null ? _generatorPreviewLevelMap[cell.x, cell.y] : -1;
             bool visible = IsCachedScenarioVisible(cell.x, cell.y);
             int viewers = GetCachedScenarioViewers(cell.x, cell.y);
+            var active = GetActiveScenarioUnit();
+            bool activeSees = IsInsideSelectedVision(active, cell.x, cell.y);
+            int activeRange = ResolveSelectedEffectiveVisionRange(active, cell.x, cell.y);
+            string terrainHint = ResolveGeneratorTerrainHoverHint(active, cell.x, cell.y);
             string source = _generatorPreviewUsesHillNodeLevels ? "hill" : "height";
-            string text = $"[{cell.x}, {cell.y}] h={h:0.000} level={level + 1} ({source}) tile={tile} {(visible ? "visible" : "fog")}, viewers={viewers}/{Mathf.Max(1, _generatorScenarioUnits.Count)}";
+            string text = $"[{cell.x}, {cell.y}] h={h:0.000} level={level + 1} ({source}) tile={tile} {(visible ? "visible" : "fog")}, viewers={viewers}/{Mathf.Max(1, _generatorScenarioUnits.Count)} | active {(activeSees ? "sees" : "blocked")} r={activeRange} {terrainHint}";
 
             var style = new GUIStyle(EditorStyles.label)
             {
                 normal = { textColor = Color.white },
                 fontSize = 11,
-                padding = new RectOffset(6, 6, 3, 3)
+                padding = new RectOffset(6, 6, 3, 3),
+                wordWrap = true
             };
 
             var content = new GUIContent(text);
             Vector2 size = style.CalcSize(content);
+            size.x = Mathf.Min(Mathf.Max(220f, size.x), Mathf.Max(220f, viewportRect.width - 16f));
+            size.y = style.CalcHeight(content, size.x);
             float x = Mathf.Min(_generatorPreviewMouse.x + 14f, viewportRect.xMax - size.x - 8f);
             float y = Mathf.Clamp(_generatorPreviewMouse.y - size.y - 6f, viewportRect.y + 8f, viewportRect.yMax - size.y - 8f);
             Rect bg = new Rect(x - 2f, y - 2f, size.x + 4f, size.y + 4f);
             EditorGUI.DrawRect(bg, new Color(0f, 0f, 0f, 0.78f));
             GUI.Label(new Rect(x, y, size.x, size.y), content, style);
+        }
+
+        private string ResolveGeneratorTerrainHoverHint(PreviewScenarioUnit observer, int targetX, int targetY)
+        {
+            if (!_generatorVisionUseTerrainLos || observer == null || _generatorPreviewNoiseMap == null)
+                return "radius";
+
+            int observerX = Mathf.Clamp(observer.Position.x, 0, _generatorPreviewWidth - 1);
+            int observerY = Mathf.Clamp(observer.Position.y, 0, _generatorPreviewHeight - 1);
+            if (observerX == targetX && observerY == targetY)
+                return "self";
+
+            float observerHeight = SampleNoiseHeight(observerX, observerY);
+            float targetHeight = SampleNoiseHeight(targetX, targetY);
+            float threshold = GetGeneratorEdgeHeightThreshold();
+            int dx = targetX - observerX;
+            int dy = targetY - observerY;
+            int gridDistance = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
+
+            if (observerHeight - targetHeight >= threshold
+                && TryFindGeneratorDownhillEdge(observerX, observerY, targetX, targetY, out int downhillEdgeStep, out int distanceToEdge))
+            {
+                if (IsGeneratorTargetHiddenByDownhillEdge(gridDistance, downhillEdgeStep, distanceToEdge))
+                    return "blind zone";
+
+                float bonus = ResolveDirectionalDownSlopeVisionBonus(observer, targetX, targetY);
+                return bonus > 0.01f ? $"down +{bonus:0.#}" : "down slope";
+            }
+
+            if (targetHeight - observerHeight >= threshold)
+            {
+                float crest = ResolveGeneratorUphillEdgePeekFactor(observerX, observerY, targetX, targetY, targetHeight);
+                if (crest > 0f)
+                    return ResolveScenarioCanSeeCrest(observer) ? $"crest {crest:0.##}" : "crest hidden";
+            }
+
+            return HasTerrainLineOfSight(observer, targetX, targetY) ? "LOS" : "terrain block";
         }
 
         private Vector2 ViewportToContentPoint(Rect viewportRect, Vector2 mousePosition)
@@ -1659,7 +1814,7 @@ namespace Kruty1918.Moyva.Units.Editor
                 if (observer == null)
                     continue;
 
-                int radius = ResolveSelectedEffectiveVisionRange(observer);
+                int radius = ResolveSelectedMaximumVisionRange(observer);
                 int minX = Mathf.Max(0, observer.Position.x - radius - 1);
                 int maxX = Mathf.Min(width - 1, observer.Position.x + radius + 1);
                 int minY = Mathf.Max(0, observer.Position.y - radius - 1);
@@ -1817,6 +1972,10 @@ namespace Kruty1918.Moyva.Units.Editor
                     hash = hash * 31 + Mathf.Clamp(GetInt(config, "VisionRange"), 1, 64);
                     var boost = config?.FindPropertyRelative("VisionHeightBoostPerLevel");
                     hash = hash * 31 + Mathf.RoundToInt(Mathf.Max(0f, boost != null ? boost.floatValue : 0f) * 1000f);
+                    hash = hash * 31 + (GetBool(config, "CanSeeCrest", true) ? 1 : 0);
+                    hash = hash * 31 + Mathf.RoundToInt(Mathf.Clamp01(GetFloat(config, "CrestVisibilityFactor")) * 1000f);
+                    hash = hash * 31 + Mathf.RoundToInt(Mathf.Max(0f, GetFloat(config, "DownSlopeVisionBonus")) * 1000f);
+                    hash = hash * 31 + Mathf.RoundToInt(Mathf.Clamp01(GetFloat(config, "SilhouettePenalty")) * 1000f);
                 }
 
                 return hash;
@@ -2403,7 +2562,7 @@ namespace Kruty1918.Moyva.Units.Editor
 
             var observer = _generatorScenarioUnits[observerIndex];
             var target = _generatorScenarioUnits[targetIndex];
-            return IsInsideSelectedVision(observer, target.Position.x, target.Position.y);
+            return IsInsideSelectedVision(observer, target.Position.x, target.Position.y, target);
         }
 
         private SerializedProperty ResolveScenarioUnitConfig(PreviewScenarioUnit observer)
@@ -2499,19 +2658,19 @@ namespace Kruty1918.Moyva.Units.Editor
             return count;
         }
 
-        private bool IsInsideSelectedVision(PreviewScenarioUnit observer, int x, int y)
+        private bool IsInsideSelectedVision(PreviewScenarioUnit observer, int x, int y, PreviewScenarioUnit targetUnit = null)
         {
             if (observer == null)
                 return false;
 
-            int radius = ResolveSelectedEffectiveVisionRange(observer);
+            int radius = ResolveSelectedEffectiveVisionRange(observer, x, y);
             int dx = x - observer.Position.x;
             int dy = y - observer.Position.y;
             float limit = (radius + 0.5f) * (radius + 0.5f);
             if (dx * dx + dy * dy > limit)
                 return false;
 
-            return !_generatorVisionUseTerrainLos || HasTerrainLineOfSight(observer, x, y);
+            return !_generatorVisionUseTerrainLos || HasTerrainLineOfSight(observer, x, y, targetUnit);
         }
 
         private int ResolveSelectedUnitVisionRange(PreviewScenarioUnit observer)
@@ -2549,14 +2708,56 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private int ResolveSelectedEffectiveVisionRange(PreviewScenarioUnit observer)
         {
+            if (observer == null)
+                return 1;
+
+            return ResolveSelectedEffectiveVisionRange(observer, observer.Position.x, observer.Position.y);
+        }
+
+        private int ResolveSelectedMaximumVisionRange(PreviewScenarioUnit observer)
+        {
+            int baseVision = ResolveSelectedEffectiveVisionRange(observer);
+            float downSlopeBonus = ResolveScenarioDownSlopeVisionBonus(observer);
+            return Mathf.Clamp(baseVision + Mathf.CeilToInt(downSlopeBonus), 1, 128);
+        }
+
+        private int ResolveSelectedEffectiveVisionRange(PreviewScenarioUnit observer, int targetX, int targetY)
+        {
             int baseVision = ResolveSelectedUnitVisionRange(observer);
             int heightLevel = ResolveSelectedUnitHeightLevel(observer);
             float boostPerLevel = ResolveSelectedVisionBoostPerLevel(observer);
             int extraVision = Mathf.RoundToInt(heightLevel * boostPerLevel);
-            return Mathf.Clamp(baseVision + Mathf.Max(0, extraVision), 1, 128);
+            int downSlopeVision = Mathf.CeilToInt(ResolveDirectionalDownSlopeVisionBonus(observer, targetX, targetY));
+            return Mathf.Clamp(baseVision + Mathf.Max(0, extraVision) + Mathf.Max(0, downSlopeVision), 1, 128);
         }
 
-        private bool HasTerrainLineOfSight(PreviewScenarioUnit observer, int targetX, int targetY)
+        private float ResolveDirectionalDownSlopeVisionBonus(PreviewScenarioUnit observer, int targetX, int targetY)
+        {
+            if (!_generatorVisionUseTerrainLos || _generatorPreviewNoiseMap == null || observer == null)
+                return 0f;
+
+            int observerX = Mathf.Clamp(observer.Position.x, 0, _generatorPreviewWidth - 1);
+            int observerY = Mathf.Clamp(observer.Position.y, 0, _generatorPreviewHeight - 1);
+            if (observerX == targetX && observerY == targetY)
+                return 0f;
+
+            float observerHeight = SampleNoiseHeight(observerX, observerY);
+            float targetHeight = SampleNoiseHeight(targetX, targetY);
+            if (observerHeight - targetHeight < GetGeneratorEdgeHeightThreshold())
+                return 0f;
+
+            if (!TryFindGeneratorDownhillEdge(observerX, observerY, targetX, targetY, out _, out int distanceToEdge))
+                return 0f;
+
+            int peekDistance = Mathf.Max(0, _generatorVisionEdgePeekDistanceTiles);
+            if (distanceToEdge > peekDistance)
+                return 0f;
+
+            float distanceFactor = 1f - distanceToEdge / (peekDistance + 1f);
+            return ResolveScenarioDownSlopeVisionBonus(observer) * Mathf.Clamp01(distanceFactor);
+        }
+
+        private bool HasTerrainLineOfSight(PreviewScenarioUnit observer, int targetX, int targetY, PreviewScenarioUnit targetUnit = null)
         {
             if (_generatorPreviewNoiseMap == null || observer == null)
                 return true;
@@ -2571,9 +2772,10 @@ namespace Kruty1918.Moyva.Units.Editor
             int observerLevel = ResolveSelectedUnitHeightLevel(observer);
             int targetLevel = ResolveHeightLevelAt(targetX, targetY);
             float edgeThreshold = GetGeneratorEdgeHeightThreshold();
+            float targetSilhouette = ResolveScenarioSilhouettePenalty(targetUnit);
 
             float observerEyeHeight = observerHeight + observerLevel * 0.025f + 0.08f;
-            float targetEyeHeight = targetHeight + targetLevel * 0.015f + 0.04f;
+            float targetEyeHeight = targetHeight + targetLevel * 0.015f + 0.04f + targetSilhouette * 0.065f;
 
             int dx = targetX - observerX;
             int dy = targetY - observerY;
@@ -2623,20 +2825,56 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 float uphillDelta = targetHeight - observerHeight;
                 float uphillEdgeFactor = ResolveGeneratorUphillEdgePeekFactor(observerX, observerY, targetX, targetY, targetHeight);
+                bool canSeeCrest = ResolveScenarioCanSeeCrest(observer);
+                float crestFactor = ResolveScenarioCrestVisibilityFactor(observer);
+                bool silhouetteRevealsTarget = targetSilhouette > 0.01f && uphillEdgeFactor > 0f;
                 bool canPeekUphill = uphillDelta > edgeThreshold
                     && distance > 1.5f
-                    && uphillEdgeFactor > 0f;
+                    && uphillEdgeFactor > 0f
+                    && (canSeeCrest || silhouetteRevealsTarget);
 
                 if (!canPeekUphill)
                     return false;
 
                 float nearTargetFactor = Mathf.Clamp01((firstBlockT - 0.45f) / 0.45f);
-                float allowedExcess = Mathf.Lerp(0.005f, 0.12f, _generatorVisionUphillPeekStrength * uphillEdgeFactor * nearTargetFactor);
+                float crestStrength = canSeeCrest ? Mathf.Clamp01(_generatorVisionUphillPeekStrength * crestFactor) : 0f;
+                float silhouetteStrength = Mathf.Clamp01(targetSilhouette * 0.55f);
+                float allowedExcess = Mathf.Lerp(0.005f, 0.12f, Mathf.Clamp01(crestStrength + silhouetteStrength) * uphillEdgeFactor * nearTargetFactor);
                 if (maxBlockExcess > allowedExcess)
                     return false;
             }
 
             return true;
+        }
+
+        private bool ResolveScenarioCanSeeCrest(PreviewScenarioUnit observer)
+        {
+            var config = ResolveScenarioUnitConfig(observer);
+            return GetBool(config, "CanSeeCrest", true);
+        }
+
+        private float ResolveScenarioCrestVisibilityFactor(PreviewScenarioUnit observer)
+        {
+            var config = ResolveScenarioUnitConfig(observer);
+            var crest = config?.FindPropertyRelative("CrestVisibilityFactor");
+            return Mathf.Clamp01(crest != null ? crest.floatValue : 0.65f);
+        }
+
+        private float ResolveScenarioDownSlopeVisionBonus(PreviewScenarioUnit observer)
+        {
+            var config = ResolveScenarioUnitConfig(observer);
+            var bonus = config?.FindPropertyRelative("DownSlopeVisionBonus");
+            return Mathf.Max(0f, bonus != null ? bonus.floatValue : 0f);
+        }
+
+        private float ResolveScenarioSilhouettePenalty(PreviewScenarioUnit targetUnit)
+        {
+            if (targetUnit == null)
+                return 0f;
+
+            var config = ResolveScenarioUnitConfig(targetUnit);
+            var silhouette = config?.FindPropertyRelative("SilhouettePenalty");
+            return Mathf.Clamp01(silhouette != null ? silhouette.floatValue : 0f);
         }
 
         private bool TryFindGeneratorDownhillEdge(int observerX, int observerY, int targetX, int targetY, out int edgeStep, out int distanceToEdge)
@@ -2710,33 +2948,65 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private float ResolveGeneratorUphillEdgePeekFactor(int observerX, int observerY, int targetX, int targetY, float targetHeight)
         {
-            int towardObserverX = Math.Sign(observerX - targetX);
-            int towardObserverY = Math.Sign(observerY - targetY);
-            if (towardObserverX == 0 && towardObserverY == 0)
+            if (observerX == targetX && observerY == targetY)
                 return 0f;
 
             int peekDistance = Mathf.Max(0, _generatorVisionEdgePeekDistanceTiles);
-            int maxSteps = Mathf.Max(1, peekDistance + 1);
-            float edgeThreshold = GetGeneratorEdgeHeightThreshold();
-            for (int step = 1; step <= maxSteps; step++)
+            if (!TryFindGeneratorUphillEdgeTowardObserver(observerX, observerY, targetX, targetY, targetHeight, out int distanceToEdge))
+                return 0f;
+
+            if (distanceToEdge > peekDistance)
+                return 0f;
+
+            return 1f - distanceToEdge / (peekDistance + 1f);
+        }
+
+        private bool TryFindGeneratorUphillEdgeTowardObserver(int observerX, int observerY, int targetX, int targetY, float targetHeight, out int distanceToEdge)
+        {
+            distanceToEdge = 0;
+
+            int currentX = targetX;
+            int currentY = targetY;
+            int dx = Mathf.Abs(observerX - targetX);
+            int dy = Mathf.Abs(observerY - targetY);
+            if (dx == 0 && dy == 0)
+                return false;
+
+            int sx = targetX < observerX ? 1 : -1;
+            int sy = targetY < observerY ? 1 : -1;
+            int error = dx - dy;
+            int maxSteps = Mathf.Max(1, _generatorVisionEdgePeekDistanceTiles + 1);
+            float threshold = GetGeneratorEdgeHeightThreshold();
+
+            for (int step = 1; step <= maxSteps && (currentX != observerX || currentY != observerY); step++)
             {
-                int edgeX = targetX + towardObserverX * step;
-                int edgeY = targetY + towardObserverY * step;
-                if (!IsGeneratorCellInBounds(edgeX, edgeY))
-                    return 1f;
+                int twiceError = error * 2;
+                if (twiceError > -dy)
+                {
+                    error -= dy;
+                    currentX += sx;
+                }
 
-                float edgeHeight = SampleNoiseHeight(edgeX, edgeY);
-                if (targetHeight - edgeHeight < edgeThreshold)
-                    continue;
+                if (twiceError < dx)
+                {
+                    error += dx;
+                    currentY += sy;
+                }
 
-                int distanceToEdge = Mathf.Max(0, step - 1);
-                if (distanceToEdge > peekDistance)
-                    return 0f;
+                if (!IsGeneratorCellInBounds(currentX, currentY))
+                {
+                    distanceToEdge = Mathf.Max(0, step - 1);
+                    return true;
+                }
 
-                return 1f - distanceToEdge / (peekDistance + 1f);
+                if (targetHeight - SampleNoiseHeight(currentX, currentY) >= threshold)
+                {
+                    distanceToEdge = Mathf.Max(0, step - 1);
+                    return true;
+                }
             }
 
-            return 0f;
+            return false;
         }
 
         private bool IsGeneratorCellInBounds(int x, int y)

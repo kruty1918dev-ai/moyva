@@ -45,6 +45,42 @@
 | `MaxUphillVisionPenalty` | int | `6` | Максимальний штраф при погляді вгору |
 | `OcclusionSlopeBias` | float | `0.02` | Малий допуск, щоб дрібні коливання висоти не блокували видимість занадто агресивно |
 
+### Terrain Viewshed
+
+| Поле | Тип | Рекомендація | Опис |
+|---|---|---|---|
+| `TerrainRaySamplesPerTile` | int | `5` | Скільки точок тайла цілі перевіряється променями. `1` = тільки центр, `5` = центр + кути, `9` = центр + кути + середини країв |
+| `TerrainVisibilityThreshold` | float | `0.5` | Мінімальна частка видимості, щоб тайл вважався видимим у boolean fog map |
+| `PartialVisibilityDetectionMultiplier` | float | `1.0` | Множник для частково відкритих цілей. Менше значення робить cover сильнішим |
+| `TerrainRayStepTiles` | float | `0.5` | Крок семплування рельєфу вздовж променя |
+| `ObserverEyeHeightOffset` | float | `0.35` | Висота очей юніта над поверхнею тайла |
+| `TargetSampleHeightOffset` | float | `0.1` | Висота sample point цілі над поверхнею тайла |
+| `TerrainFarSampleDistanceRatio` | float | `0.65` | На дальніх цілях система бере менше sample rays для продуктивності |
+| `TerrainVisibilityCacheCapacity` | int | `24576` | Максимальна кількість cached LOS-запитів |
+
+### Terrain Edge Vision
+
+| Поле | Тип | Рекомендація | Опис |
+|---|---|---|---|
+| `EnableTerrainEdgeLineOfSight` | bool | `true` | Вмикає локальний горизонт на різких краях висоти |
+| `TerrainEdgeHeightThreshold` | float | `0.12` | Мінімальний перепад висоти між сусідніми тайлами, який вважається edge |
+| `TerrainEdgePeekDistanceTiles` | int | `1` | Скільки тайлів від edge ще дозволяють “виглядати через край” |
+| `TerrainEdgeBlindZoneTiles` | int | `2` | Скільки нижніх тайлів за edge ховаються, якщо спостерігач не біля краю |
+| `TerrainEdgeBlindZoneDistanceScale` | float | `0.35` | Як blind zone росте, коли юніт стоїть далі від краю |
+| `TerrainEdgeMaxBlindZoneTiles` | int | `4` | Максимальна глибина blind zone |
+| `TerrainEdgeUphillPeekStrength` | float | `0.65` | Наскільки сильно верхній край/силует зменшує uphill penalty |
+
+### Unit Terrain Vision
+
+Ці поля налаштовуються в `UnitClassConfig` через Unit Designer і передаються у runtime як `FogVisionModifiers`:
+
+| Поле | Рекомендація | Опис |
+|---|---|---|
+| `CanSeeCrest` | `true` для розвідників, `false` для слабких/важких юнітів | Чи бачить юніт верхній край схилу знизу |
+| `CrestVisibilityFactor` | `0.5..1.0` | Сила crest visibility при погляді вгору |
+| `DownSlopeVisionBonus` | `0..2` | Додаткова дальність при погляді вниз з краю |
+| `SilhouettePenalty` | `0..1` | Наскільки юніт ризикує бути поміченим, коли стоїть на верхньому краю |
+
 ### Практичне правило
 
 Якщо у вас нормалізована `HeightMap` у діапазоні `0..1`, зазвичай варто почати з таких значень:
