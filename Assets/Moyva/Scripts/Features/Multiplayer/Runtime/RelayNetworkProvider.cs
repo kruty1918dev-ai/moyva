@@ -53,6 +53,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             }
         }
 
+        public static bool TryValidateReflectionBindings(out string error)
+        {
+            return RelayReflectionCache.TryValidate(out error);
+        }
+
         public const uint ProtocolVersion = 1;
         private const byte FrameHello = 1;
         private const byte FrameIdentity = 2;
@@ -183,13 +188,17 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 if (string.IsNullOrWhiteSpace(joinCode))
                     return SessionResult.Fail("Relay join code is empty.");
 
+                var normalizedJoinCode = joinCode.Trim();
+                if (!RelayJoinCodeUtility.IsValid(normalizedJoinCode))
+                    return SessionResult.Fail($"Relay join code '{normalizedJoinCode}' is invalid. Expected 6-12 chars from '6789BCDFGHJKLMNPQRTW'.");
+
                 await EnsureRelayReadyAsync();
                 _localPeerId = AuthenticationService.Instance.PlayerId ?? $"local-{Guid.NewGuid():N}";
 
                 await ShutdownTransportAsync();
 
                 var relayService = ResolveRelayServiceInstance();
-                var joinAllocation = await JoinAllocationAsync(relayService, joinCode);
+                var joinAllocation = await JoinAllocationAsync(relayService, normalizedJoinCode);
 
                 var relayServerData = BuildRelayServerData(joinAllocation, RelayConnectionType, isHostAllocation: false);
                 var netSettings = new NetworkSettings();
@@ -216,7 +225,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 }
 
                 _logger.Info($"[Relay] Joined allocation. Host={_hostPeerId}");
-                return SessionResult.Ok(joinCode);
+                return SessionResult.Ok(normalizedJoinCode);
             }
             catch (OperationCanceledException)
             {
@@ -314,18 +323,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private static object ResolveRelayServiceInstance()
         {
-            var relayServiceType =
-                Type.GetType("Unity.Services.Relay.RelayService, Unity.Services.Relay")
-                ?? Type.GetType("Unity.Services.Relay.RelayService, Unity.Services.Multiplayer");
-
-            if (relayServiceType == null)
-                throw new InvalidOperationException("RelayService type is not available in loaded assemblies.");
-
-            var instance = relayServiceType.GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
-            if (instance == null)
-                throw new InvalidOperationException("RelayService.Instance is null.");
-
-            return instance;
+            return RelayReflectionCache.GetRelayServiceInstance();
         }
 
         private static async Task<object> CreateAllocationAsync(object relayService, int maxConnections, string region)
@@ -349,41 +347,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             if (relayService == null)
                 throw new ArgumentNullException(nameof(relayService));
 
-            var methods = relayService.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance);
-            MethodInfo method = null;
-            foreach (var candidate in methods)
-            {
-                if (!string.Equals(candidate.Name, methodName, StringComparison.Ordinal))
-                    continue;
-
-                var parameters = candidate.GetParameters();
-                if (parameters.Length != args.Length)
-                    continue;
-
-                var compatible = true;
-                for (int i = 0; i < parameters.Length; i++)
-                {
-                    var arg = args[i];
-                    if (arg == null)
-                        continue;
-
-                    if (!parameters[i].ParameterType.IsInstanceOfType(arg)
-                        && parameters[i].ParameterType != arg.GetType())
-                    {
-                        compatible = false;
-                        break;
-                    }
-                }
-
-                if (compatible)
-                {
-                    method = candidate;
-                    break;
-                }
-            }
-
-            if (method == null)
-                throw new MissingMethodException(relayService.GetType().FullName, methodName);
+            var method = RelayReflectionCache.ResolveRelayMethod(methodName, args);
 
             var invoked = method.Invoke(relayService, args);
             if (invoked is not Task task)
@@ -441,21 +405,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private static T GetPropertyValue<T>(object source, string propertyName)
         {
-            if (source == null)
-                throw new ArgumentNullException(nameof(source));
-
-            var property = source.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-            if (property == null)
-                throw new MissingMemberException(source.GetType().FullName, propertyName);
-
-            var value = property.GetValue(source);
-            if (value is T typed)
-                return typed;
-
-            if (value == null)
-                throw new InvalidOperationException($"Property {propertyName} is null on {source.GetType().FullName}.");
-
-            return (T)Convert.ChangeType(value, typeof(T));
+            return RelayReflectionCache.ReadProperty<T>(source, propertyName);
         }
 
         private void StartPumpLoop(CancellationToken externalCt)

@@ -38,6 +38,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private readonly IFailureHandlingPolicy _failurePolicy;
         private readonly IHostMigrationService _hostMigration;
         private readonly IParticipantFallbackService _participantFallback;
+        private readonly IHostMigrationCheckpointService _hostMigrationCheckpoint;
 
         private readonly List<Participant> _participants = new List<Participant>();
         private MultiplayerConfig _config;
@@ -47,6 +48,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private SessionRules _currentRules;
         private bool _isHost;
         private string _localPlayerId;
+        private readonly Dictionary<string, CancellationTokenSource> _pendingDisconnects = new Dictionary<string, CancellationTokenSource>(StringComparer.Ordinal);
 
         public IReadOnlyList<Participant> Participants => _participants;
 
@@ -69,7 +71,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             IMultiplayerLogger logger,
             IFailureHandlingPolicy failurePolicy,
             IHostMigrationService hostMigration,
-            IParticipantFallbackService participantFallback)
+            IParticipantFallbackService participantFallback,
+            IHostMigrationCheckpointService hostMigrationCheckpoint = null)
         {
             _network             = network             ?? throw new ArgumentNullException(nameof(network));
             _lobby               = lobby               ?? throw new ArgumentNullException(nameof(lobby));
@@ -81,6 +84,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _failurePolicy       = failurePolicy       ?? throw new ArgumentNullException(nameof(failurePolicy));
             _hostMigration       = hostMigration       ?? throw new ArgumentNullException(nameof(hostMigration));
             _participantFallback = participantFallback ?? throw new ArgumentNullException(nameof(participantFallback));
+            _hostMigrationCheckpoint = hostMigrationCheckpoint;
 
             _network.PeerConnected    += OnPeerConnected;
             _network.PeerDisconnected += OnPeerDisconnected;
@@ -94,6 +98,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _network.PeerDisconnected -= OnPeerDisconnected;
             _lobby.LobbyUpdated       -= OnLobbyUpdated;
             _lobby.KickedFromLobby    -= OnKickedFromLobby;
+            CancelAllPendingDisconnects();
         }
 
         // ── Session API ───────────────────────────────────────────────────────────
@@ -102,7 +107,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
 
-            _config = _configStore.Load();
+            _config = MultiplayerConfigLifecycle.LoadValidateFreeze(_configStore, _logger);
             var opts = NormalizeOptions(options);
             _localPlayerId = opts.LocalIdentity.PlayerId;
 
@@ -187,6 +192,14 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 return await FallbackToOfflineSoloAsync(opts, hostResult.ErrorMessage, ct);
             }
 
+            if (_config.ProviderType == NetworkProviderType.Relay && !RelayJoinCodeUtility.IsValid(hostResult.SessionId))
+            {
+                var error = $"Relay host returned invalid join code '{hostResult.SessionId ?? string.Empty}'.";
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, error);
+                try { await _lobby.LeaveAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after invalid Relay join code failed: {leaveError.Message}"); }
+                return await FallbackToOfflineSoloAsync(opts, error, ct);
+            }
+
             // Relay join code → lobby data so clients can discover it.
             await _lobby.SetRelayJoinCodeAsync(hostResult.SessionId, ct);
 
@@ -195,6 +208,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
             UpsertLocalParticipant(opts.LocalIdentity, isHost: true);
             CleanupHostAliasParticipants();
+            SaveMigrationCheckpoint();
             _logger.Info($"Session hosted. LobbyCode={_currentLobbyCode} RelayCode={_currentSessionId}");
             return true;
         }
@@ -233,6 +247,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _currentRules = opts.Rules;
 
             UpsertLocalParticipant(opts.LocalIdentity, isHost: false);
+            SaveMigrationCheckpoint();
             _logger.Info($"Session joined. Lobby={_currentLobbyCode}");
             return true;
         }
@@ -266,6 +281,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private void OnLobbyUpdated(LobbyRoom snapshot)
         {
             if (snapshot == null) return;
+
+            SaveMigrationCheckpoint();
 
             // Add missing remote participants from the lobby's player list.
             foreach (var p in snapshot.Players)
@@ -310,6 +327,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private void OnPeerConnected(string peerId)
         {
             if (string.IsNullOrEmpty(peerId) || peerId == _localPlayerId) return;
+            CancelPendingDisconnect(peerId);
             _logger.Info($"[Net] Peer connected: {peerId}");
             // Lobby update will fill identity; nothing to add here unless missing.
         }
@@ -317,6 +335,20 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private void OnPeerDisconnected(string peerId)
         {
             if (string.IsNullOrEmpty(peerId)) return;
+
+            if (!_participants.Exists(p => p.Identity.PlayerId == peerId))
+            {
+                _logger.Warn($"OnPeerDisconnected: unknown peer '{peerId}' - ignoring.");
+                return;
+            }
+
+            ScheduleDisconnectFinalization(peerId);
+        }
+
+        private void FinalizePeerDisconnect(string peerId)
+        {
+            if (string.IsNullOrEmpty(peerId))
+                return;
 
             var leaving = _participants.Find(p => p.Identity.PlayerId == peerId);
             if (leaving == null)
@@ -330,6 +362,14 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
             if (leaving.IsHost && _participants.Count > 0)
             {
+                if (_config != null && !_config.EnableHostMigration)
+                {
+                    _logger.Warn("Host disconnected and host migration feature toggle is disabled. Ending session.");
+                    _failurePolicy.HandleNonRecoverable(FailureCategory.HostMigrationFailed, "Host migration is disabled by feature toggle.");
+                    _ = SafeCleanupAsync();
+                    return;
+                }
+
                 var migrated = _hostMigration.ChooseNewHost(_participants);
                 if (migrated == null)
                 {
@@ -344,6 +384,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                     _participants[index] = migrated;
 
                 _isHost = string.Equals(migrated.Identity.PlayerId, _localPlayerId, StringComparison.Ordinal);
+                SaveMigrationCheckpoint();
                 _logger.Warn($"Host disconnected. Migrated host to '{migrated.Identity.PlayerId}'.");
                 return;
             }
@@ -356,12 +397,15 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 _participants.Add(fallback);
                 _logger.Info($"Bot fallback added: '{fallback.Identity.PlayerId}' replaces '{peerId}'.");
             }
+
+            SaveMigrationCheckpoint();
         }
 
         // ── Cleanup & helpers ─────────────────────────────────────────────────────
 
         private async Task SafeCleanupAsync(CancellationToken ct = default)
         {
+            CancelAllPendingDisconnects();
             try { await _network.LeaveSessionAsync(ct); } catch (Exception e) { _logger.Warn($"Net leave: {e.Message}"); }
             try { await _lobby.LeaveAsync(ct); } catch (Exception e) { _logger.Warn($"Lobby leave: {e.Message}"); }
 
@@ -371,6 +415,84 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _currentLobbyCode = null;
             _currentRules = null;
             _isHost = false;
+        }
+
+        private void SaveMigrationCheckpoint()
+        {
+            if (_hostMigrationCheckpoint == null)
+                return;
+
+            var snapshot = !string.IsNullOrWhiteSpace(_currentSessionId) && _snapshotStore.Exists(_currentSessionId)
+                ? _snapshotStore.Load(_currentSessionId)
+                : null;
+
+            _hostMigrationCheckpoint.Save(new HostMigrationCheckpoint(
+                _currentSessionId,
+                _currentLobbyId,
+                _isHost ? _localPlayerId : ResolveHostPlayerId(),
+                new List<Participant>(_participants),
+                snapshot,
+                DateTime.UtcNow));
+        }
+
+        private string ResolveHostPlayerId()
+        {
+            foreach (var participant in _participants)
+            {
+                if (participant.IsHost)
+                    return participant.Identity.PlayerId;
+            }
+
+            return string.Empty;
+        }
+
+        private void ScheduleDisconnectFinalization(string peerId)
+        {
+            CancelPendingDisconnect(peerId);
+            var cts = new CancellationTokenSource();
+            _pendingDisconnects[peerId] = cts;
+            var delay = TimeSpan.FromSeconds(Math.Max(1f, _config?.GracefulReconnectWindowSeconds ?? 8f));
+            _logger.Warn($"Peer '{peerId}' disconnected. Waiting {delay.TotalSeconds:0.#}s graceful reconnect window.");
+            _ = FinalizeDisconnectAfterDelayAsync(peerId, cts.Token, delay);
+        }
+
+        private async Task FinalizeDisconnectAfterDelayAsync(string peerId, CancellationToken ct, TimeSpan delay)
+        {
+            try
+            {
+                await Task.Delay(delay, ct);
+                if (!ct.IsCancellationRequested)
+                    FinalizePeerDisconnect(peerId);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                if (_pendingDisconnects.TryGetValue(peerId, out var cts) && cts.Token == ct)
+                    _pendingDisconnects.Remove(peerId);
+            }
+        }
+
+        private void CancelPendingDisconnect(string peerId)
+        {
+            if (!_pendingDisconnects.TryGetValue(peerId, out var cts))
+                return;
+
+            try { cts.Cancel(); } catch { }
+            cts.Dispose();
+            _pendingDisconnects.Remove(peerId);
+        }
+
+        private void CancelAllPendingDisconnects()
+        {
+            foreach (var pair in _pendingDisconnects)
+            {
+                try { pair.Value.Cancel(); } catch { }
+                pair.Value.Dispose();
+            }
+
+            _pendingDisconnects.Clear();
         }
 
         private bool StartOfflineSolo(SessionConnectOptions opts)
