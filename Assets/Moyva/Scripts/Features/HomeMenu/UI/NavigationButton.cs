@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         [Inject]
         public void Construct(
-            INavigation navigation,
+            [InjectOptional] INavigation navigation = null,
             [InjectOptional] IJoinRoomPanelService joinRoomPanelService = null,
             [InjectOptional] MultiplayerMenuModeService multiplayerMenuModeService = null,
             [Inject(Id = "JoinRoomPanelName", Optional = true)] string joinRoomPanelName = null)
@@ -55,7 +55,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private async void OnButtonClicked()
         {
-            if (_isOpening)
+            if (_isOpening || _navigation == null)
                 return;
 
             if (_openLast)

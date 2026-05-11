@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Shared.Common;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -144,7 +145,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private static string ToSafeGameObjectName(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
-                return Guid.NewGuid().ToString("N");
+                return MoyvaId.NewGuidN();
 
             var chars = value.ToCharArray();
             for (int index = 0; index < chars.Length; index++)
