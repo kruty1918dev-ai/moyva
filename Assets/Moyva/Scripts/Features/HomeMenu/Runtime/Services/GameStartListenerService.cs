@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime.Services;
 using Kruty1918.Moyva.Multiplayer.Core;
@@ -28,9 +29,14 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private IMultiplayerModeSelector _modeSelector = default;
         [InjectOptional] private IHomeMenuGameStarter _gameStarter = default;
         [InjectOptional] private IInfoPanelService _infoPanel = default;
+        private CancellationTokenSource _lifecycleCts;
 
         public void Initialize()
         {
+            _lifecycleCts?.Cancel();
+            _lifecycleCts?.Dispose();
+            _lifecycleCts = new CancellationTokenSource();
+
             if (_commandSync == null) return;
             _commandSync.RegisterHandler(GameCommandType.StartGame, OnStartGameCommand);
             Debug.Log($"{Prefix} Registered handler for StartGame.");
@@ -39,6 +45,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public void Dispose()
         {
             // IGameCommandSyncService не має Unregister — лишаємо в зареєстрованому стані до перезавантаження сесії.
+            _lifecycleCts?.Cancel();
+            _lifecycleCts?.Dispose();
+            _lifecycleCts = null;
         }
 
         private void OnStartGameCommand(string senderId, byte[] payload)
@@ -76,7 +85,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                         Debug.LogWarning($"{Prefix} IHomeMenuGameStarter не підключений — гра не запущена.");
                         return;
                     }
-                    _ = _gameStarter.StartGameAsync();
+
+                    var ct = _lifecycleCts?.Token ?? CancellationToken.None;
+                    _ = _gameStarter.StartGameAsync(ct);
                 });
             }
             catch (Exception e)
