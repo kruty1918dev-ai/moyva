@@ -3206,7 +3206,51 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private void OpenUnitCreationWizard()
         {
-            UnitCreationWizardWindow.Open(this, _registry);
+            Type wizardType = null;
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                try
+                {
+                    var candidate = assemblies[i].GetType("Kruty1918.Moyva.Units.Editor.UnitCreationWizardWindow", throwOnError: false);
+                    if (candidate != null && typeof(EditorWindow).IsAssignableFrom(candidate))
+                    {
+                        wizardType = candidate;
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Ignore transient reflection issues from editor/runtime assembly reloads.
+                }
+            }
+
+            if (wizardType == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Unit Creation Wizard",
+                    "Не вдалося знайти вікно майстра створення юніта. Перекомпілюйте editor assembly або перевірте UnitCreationWizardWindow.cs.",
+                    "OK");
+                return;
+            }
+
+            var openMethod = wizardType.GetMethod(
+                "Open",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
+                null,
+                new[] { typeof(UnitDesignerWindow), typeof(UnitRegistrySO) },
+                null);
+
+            if (openMethod == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Unit Creation Wizard",
+                    "У UnitCreationWizardWindow відсутній очікуваний статичний метод Open(UnitDesignerWindow, UnitRegistrySO).",
+                    "OK");
+                return;
+            }
+
+            openMethod.Invoke(null, new object[] { this, _registry });
         }
 
         internal bool TryCreateUnitFromWizard(UnitClassConfig draft, Sprite previewSprite, bool createPrefabFromSprite, out string error)
