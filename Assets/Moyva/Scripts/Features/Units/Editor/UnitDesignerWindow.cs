@@ -97,6 +97,8 @@ namespace Kruty1918.Moyva.Units.Editor
         private bool _autoPlayPreview = true;
         private bool _showVisionPreview = true;
         private bool _showStatsPreview = true;
+        private readonly List<string> _visionMapTypeIds = new List<string>();
+        private bool _visionMapIncludeAll;
         private bool _showAnimationPreview = true;
         private bool _showDetailedStatePreview = true;
         private bool _showToolbarUnitTuning = true;
@@ -2569,6 +2571,294 @@ namespace Kruty1918.Moyva.Units.Editor
             Handles.color = VisionOutline;
             Handles.DrawWireDisc(new Vector3(rect.center.x, start.y + radius * cellSize + cellSize * 0.5f, 0f), Vector3.forward, radius * cellSize + cellSize * 0.5f);
             Handles.EndGUI();
+
+            EditorGUILayout.Space(4f);
+            DrawVisionRelationsMap(unit);
+        }
+
+        private void DrawVisionRelationsMap(SerializedProperty unit)
+        {
+            if (unit == null || _configs == null)
+                return;
+
+            int total = _configs.arraySize;
+            if (total <= 0)
+                return;
+
+            int selected = Mathf.Clamp(_selectedIndex, 0, total - 1);
+            if (selected >= total)
+                return;
+
+            selected = DrawVisionMapToolbar(selected, total);
+            if (selected < 0 || selected >= total)
+                return;
+
+            unit = _configs.GetArrayElementAtIndex(selected);
+
+            // Складаємо актуальний список TypeId, дотримуючись вибору користувача.
+            var (otherUnits, otherNames) = ResolveVisionMapOtherUnits(selected, total);
+
+            float height = Mathf.Clamp(position.width * 0.32f, 150f, 260f);
+            Rect rect = GUILayoutUtility.GetRect(120f, height, GUILayout.ExpandWidth(true));
+            DrawPanelBackground(rect, EditorGUIUtility.isProSkin ? new Color(0.11f, 0.14f, 0.16f) : new Color(0.84f, 0.89f, 0.92f));
+
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 6f, rect.width - 20f, 18f), $"Map + Fog: хто кого бачить ({otherUnits.Count} юнітів)", EditorStyles.boldLabel);
+
+            const float legendHeight = 16f;
+            Rect mapRect = new Rect(rect.x + 8f, rect.y + 26f, rect.width - 16f, rect.height - 34f - legendHeight);
+            if (mapRect.width < 40f || mapRect.height < 40f)
+                return;
+
+            Color fogColor = EditorGUIUtility.isProSkin ? new Color(0f, 0f, 0f, 0.38f) : new Color(0.12f, 0.18f, 0.22f, 0.18f);
+            EditorGUI.DrawRect(mapRect, fogColor);
+
+            if (otherUnits.Count == 0)
+            {
+                GUI.Label(new Rect(mapRect.x, mapRect.center.y - 10f, mapRect.width, 20f),
+                    "Додайте юнітів через '➕ Додати' зверху.", CenterMiniStyle());
+                return;
+            }
+
+            int selectedVision = Mathf.Clamp(GetInt(unit, "VisionRange"), 1, 20);
+            Vector2 center = mapRect.center;
+            float ringRadius = Mathf.Min(mapRect.width, mapRect.height) * 0.36f;
+
+            var nodePositions = new List<Vector2>(otherUnits.Count + 1) { center };
+            var nodeUnits = new List<SerializedProperty>(otherUnits.Count + 1) { unit };
+            var nodeNames = new List<string>(otherUnits.Count + 1)
+            {
+                string.IsNullOrWhiteSpace(GetString(unit, "TypeId")) ? "Selected" : GetString(unit, "TypeId")
+            };
+            for (int i = 0; i < otherUnits.Count; i++)
+            {
+                float angle = i / (float)otherUnits.Count * Mathf.PI * 2f - Mathf.PI * 0.5f;
+                Vector2 pos = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * ringRadius;
+                nodePositions.Add(pos);
+                nodeUnits.Add(otherUnits[i]);
+                nodeNames.Add(otherNames[i]);
+            }
+
+            Handles.BeginGUI();
+            for (int i = 1; i < nodePositions.Count; i++)
+            {
+                SerializedProperty other = nodeUnits[i];
+                int otherVision = Mathf.Clamp(GetInt(other, "VisionRange"), 1, 20);
+                float mapDistance = Vector2.Distance(nodePositions[0], nodePositions[i]);
+                float normalizedDistance = Mathf.Lerp(1f, 20f, Mathf.InverseLerp(0f, ringRadius, mapDistance));
+
+                bool selectedSeesOther = normalizedDistance <= selectedVision;
+                bool otherSeesSelected = normalizedDistance <= otherVision;
+
+                Color relationColor = selectedSeesOther && otherSeesSelected
+                    ? new Color(0.25f, 0.86f, 0.48f, 0.9f)
+                    : (selectedSeesOther || otherSeesSelected
+                        ? new Color(1f, 0.75f, 0.2f, 0.9f)
+                        : new Color(0.9f, 0.26f, 0.26f, 0.82f));
+
+                Handles.color = relationColor;
+                Handles.DrawAAPolyLine(2.2f, nodePositions[0], nodePositions[i]);
+
+                Vector2 mid = (nodePositions[0] + nodePositions[i]) * 0.5f;
+                string relation = selectedSeesOther && otherSeesSelected
+                    ? "2-way"
+                    : (selectedSeesOther ? "You->Them" : (otherSeesSelected ? "Them->You" : "No LOS"));
+                GUI.Label(new Rect(mid.x - 38f, mid.y - 9f, 76f, 18f), relation, EditorStyles.centeredGreyMiniLabel);
+            }
+            Handles.EndGUI();
+
+            float selectedDisc = Mathf.Lerp(10f, 22f, Mathf.InverseLerp(1f, 20f, selectedVision));
+            EditorGUI.DrawRect(new Rect(center.x - selectedDisc, center.y - selectedDisc, selectedDisc * 2f, selectedDisc * 2f), new Color(0.1f, 0.72f, 0.86f, 0.14f));
+
+            for (int i = 1; i < nodePositions.Count; i++)
+            {
+                int otherVision = Mathf.Clamp(GetInt(nodeUnits[i], "VisionRange"), 1, 20);
+                float r = Mathf.Lerp(6f, 14f, Mathf.InverseLerp(1f, 20f, otherVision));
+                EditorGUI.DrawRect(new Rect(nodePositions[i].x - r, nodePositions[i].y - r, r * 2f, r * 2f), new Color(0.95f, 0.95f, 1f, 0.12f));
+            }
+
+            for (int i = 0; i < nodePositions.Count; i++)
+            {
+                bool isSelected = i == 0;
+                Color nodeColor = isSelected ? Accent : new Color(0.75f, 0.82f, 0.9f, 0.95f);
+                float size = isSelected ? 9f : 7f;
+                EditorGUI.DrawRect(new Rect(nodePositions[i].x - size * 0.5f, nodePositions[i].y - size * 0.5f, size, size), nodeColor);
+                GUI.Label(new Rect(nodePositions[i].x + 6f, nodePositions[i].y - 8f, 120f, 16f), nodeNames[i], EditorStyles.miniLabel);
+            }
+
+            Rect legendRect = new Rect(rect.x + 10f, rect.yMax - 18f, rect.width - 20f, 14f);
+            GUI.Label(legendRect, "Green: взаємно бачать | Yellow: одностороння видимість | Red: не бачать", EditorStyles.centeredGreyMiniLabel);
+        }
+
+        private (List<SerializedProperty> Units, List<string> Names) ResolveVisionMapOtherUnits(int selectedIndex, int total)
+        {
+            var units = new List<SerializedProperty>();
+            var names = new List<string>();
+
+            if (_visionMapIncludeAll)
+            {
+                for (int i = 0; i < total; i++)
+                {
+                    if (i == selectedIndex)
+                        continue;
+                    var other = _configs.GetArrayElementAtIndex(i);
+                    units.Add(other);
+                    string id = GetString(other, "TypeId");
+                    names.Add(string.IsNullOrWhiteSpace(id) ? $"Unit {i + 1}" : id);
+                }
+                return (units, names);
+            }
+
+            // Прибираємо невалідні TypeId зі збереженого списку.
+            _visionMapTypeIds.RemoveAll(id => string.IsNullOrWhiteSpace(id) || FindUnitIndexByTypeId(id) < 0);
+
+            foreach (string id in _visionMapTypeIds)
+            {
+                int idx = FindUnitIndexByTypeId(id);
+                if (idx < 0 || idx == selectedIndex)
+                    continue;
+
+                var other = _configs.GetArrayElementAtIndex(idx);
+                units.Add(other);
+                names.Add(id);
+            }
+            return (units, names);
+        }
+
+        private int DrawVisionMapToolbar(int selectedIndex, int total)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            string[] unitNames = new string[total];
+            for (int i = 0; i < total; i++)
+            {
+                string id = GetString(_configs.GetArrayElementAtIndex(i), "TypeId");
+                unitNames[i] = string.IsNullOrWhiteSpace(id) ? $"#{i + 1}" : id;
+            }
+
+            int nextSelected = EditorGUILayout.Popup(
+                new GUIContent("Центр", "Який юніт є основним (центральним) у Map + Fog прев'ю."),
+                Mathf.Clamp(selectedIndex, 0, total - 1),
+                unitNames,
+                GUILayout.Width(210f));
+            if (nextSelected != selectedIndex && nextSelected >= 0 && nextSelected < total)
+            {
+                selectedIndex = nextSelected;
+                _selectedIndex = nextSelected;
+                SaveSelectedPreference();
+                GUI.FocusControl(null);
+            }
+
+            using (new EditorGUI.DisabledScope(_visionMapIncludeAll))
+            {
+                if (GUILayout.Button(new GUIContent("➕ Додати юніта", "Додати юніта з реєстру на превʼю Map + Fog."), EditorStyles.miniButton, GUILayout.Height(20f)))
+                    ShowVisionMapAddUnitMenu(selectedIndex, total);
+            }
+
+            if (GUILayout.Button(new GUIContent("Очистити", "Прибрати всіх інших юнітів з прев'ю."), EditorStyles.miniButton, GUILayout.Width(80f), GUILayout.Height(20f)))
+                _visionMapTypeIds.Clear();
+
+            GUILayout.FlexibleSpace();
+
+            bool prevAll = _visionMapIncludeAll;
+            _visionMapIncludeAll = GUILayout.Toggle(_visionMapIncludeAll,
+                new GUIContent("Усі юніти", "Показувати всіх юнітів реєстру, ігноруючи вибірку."),
+                EditorStyles.miniButton, GUILayout.Width(86f), GUILayout.Height(20f));
+            if (prevAll != _visionMapIncludeAll && !_visionMapIncludeAll)
+            {
+                // При вимиканні режиму "усі" — лишаємо поточну вибірку як стартову.
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            if (_visionMapIncludeAll)
+                return selectedIndex;
+
+            // Чіпи з юнітами на прев'ю.
+            if (_visionMapTypeIds.Count == 0)
+            {
+                EditorGUILayout.LabelField("Жоден юніт ще не доданий на прев'ю. Натисніть «➕ Додати юніта».", EditorStyles.miniLabel);
+                return selectedIndex;
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            string toRemove = null;
+            foreach (string id in _visionMapTypeIds)
+            {
+                int idx = FindUnitIndexByTypeId(id);
+                bool valid = idx >= 0 && idx != selectedIndex;
+                using (new EditorGUI.DisabledScope(!valid))
+                {
+                    if (GUILayout.Button(new GUIContent($"{id} ✕", valid ? "Натисніть, щоб прибрати юніта з прев'ю." : "Юніта вже немає в реєстрі або це обраний юніт."), EditorStyles.miniButton))
+                        toRemove = id;
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+            if (toRemove != null)
+                _visionMapTypeIds.Remove(toRemove);
+
+            return selectedIndex;
+        }
+
+        private void ShowVisionMapAddUnitMenu(int selectedIndex, int total)
+        {
+            var menu = new GenericMenu();
+            bool any = false;
+            for (int i = 0; i < total; i++)
+            {
+                if (i == selectedIndex)
+                    continue;
+
+                var other = _configs.GetArrayElementAtIndex(i);
+                string id = GetString(other, "TypeId");
+                if (string.IsNullOrWhiteSpace(id))
+                    continue;
+
+                bool already = _visionMapTypeIds.Contains(id);
+                string capturedId = id;
+                menu.AddItem(new GUIContent(id + (already ? "  (вже на прев'ю)" : string.Empty)), already, () =>
+                {
+                    if (already)
+                        _visionMapTypeIds.Remove(capturedId);
+                    else
+                        _visionMapTypeIds.Add(capturedId);
+                });
+                any = true;
+            }
+
+            if (!any)
+                menu.AddDisabledItem(new GUIContent("Немає інших юнітів з валідним TypeId"));
+            else
+            {
+                menu.AddSeparator(string.Empty);
+                menu.AddItem(new GUIContent("Додати всіх"), false, () =>
+                {
+                    for (int i = 0; i < total; i++)
+                    {
+                        if (i == selectedIndex)
+                            continue;
+                        var other = _configs.GetArrayElementAtIndex(i);
+                        string id = GetString(other, "TypeId");
+                        if (string.IsNullOrWhiteSpace(id) || _visionMapTypeIds.Contains(id))
+                            continue;
+                        _visionMapTypeIds.Add(id);
+                    }
+                });
+            }
+
+            menu.ShowAsContext();
+        }
+
+        private int FindUnitIndexByTypeId(string typeId)
+        {
+            if (_configs == null || string.IsNullOrWhiteSpace(typeId))
+                return -1;
+            for (int i = 0; i < _configs.arraySize; i++)
+            {
+                var item = _configs.GetArrayElementAtIndex(i);
+                if (string.Equals(GetString(item, "TypeId"), typeId, StringComparison.Ordinal))
+                    return i;
+            }
+            return -1;
         }
 
         private void DrawQuickHints(SerializedProperty unit, GameObject prefab, Sprite sprite)
