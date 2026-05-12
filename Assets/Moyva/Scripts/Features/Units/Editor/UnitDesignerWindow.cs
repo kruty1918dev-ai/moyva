@@ -756,8 +756,8 @@ namespace Kruty1918.Moyva.Units.Editor
 
             EditorGUILayout.Space(4f);
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button(new GUIContent("Новий", "Додати нового юніта з унікальним TypeId."), GUILayout.Height(24f)))
-                AddNewUnit();
+            if (GUILayout.Button(new GUIContent("Новий", "Відкрити майстер створення нового юніта."), GUILayout.Height(24f)))
+                OpenUnitCreationWizard();
             EditorGUI.BeginDisabledGroup(!HasSelectedUnit());
             if (GUILayout.Button(new GUIContent("Дубль", "Скопіювати вибраного юніта з новим TypeId."), GUILayout.Height(24f)))
                 DuplicateSelectedUnit();
@@ -1040,13 +1040,15 @@ namespace Kruty1918.Moyva.Units.Editor
             BeginSection("Ідентичність", "d_FilterByType", "TypeId, роль і базова класифікація юніта.");
 
             var idProp = unit.FindPropertyRelative("TypeId");
-            EditorGUILayout.PropertyField(idProp, new GUIContent("Код типу", "Унікальний ID класу юніта. Не використовуйте '_', бо цей символ зарезервований для instance ID."));
+            EditorGUILayout.PropertyField(idProp, new GUIContent("Код типу", "Унікальний ID класу юніта (приклад: archer, worker-heavy). Мін: 1 символ, рекомендовано до 64. '_' заборонено, бо зарезервовано для instance ID."));
+            DrawInlineParameterDoc("TypeId");
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(unit.FindPropertyRelative("Role"), new GUIContent("Роль", "Worker для економічних юнітів, Military для бойових."));
+            EditorGUILayout.PropertyField(unit.FindPropertyRelative("Role"), new GUIContent("Роль", "Worker для економічних юнітів, Military для бойових. Потрібно для фільтрів, балансу і сценаріїв."));
             if (GUILayout.Button(new GUIContent("Авто", "Визначити роль."), GUILayout.Width(56f), GUILayout.Height(18f)))
                 ApplyAutoRole(unit);
             EditorGUILayout.EndHorizontal();
+            DrawInlineParameterDoc("Role");
 
             string validation = ValidateUnit(unit, _selectedIndex);
             if (validation != null)
@@ -1061,15 +1063,17 @@ namespace Kruty1918.Moyva.Units.Editor
 
             var idProp = unit.FindPropertyRelative("TypeId");
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(idProp, new GUIContent("TypeId", "Унікальний ID класу юніта. Це поле зберігається у UnitRegistrySO."));
+            EditorGUILayout.PropertyField(idProp, new GUIContent("TypeId", "Унікальний ID класу юніта (приклад: scout01). Мін: 1 символ, рекомендовано до 64. '_' заборонено."));
             if (GUILayout.Button(new GUIContent("Унік.", "Згенерувати унікальний TypeId на основі поточного значення."), GUILayout.Width(58f), GUILayout.Height(18f)))
                 idProp.stringValue = GenerateUniqueId(string.IsNullOrWhiteSpace(idProp.stringValue) ? "unit" : idProp.stringValue);
             EditorGUILayout.EndHorizontal();
+            DrawInlineParameterDoc("TypeId");
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(unit.FindPropertyRelative("Role"), new GUIContent("Роль", "Основна роль юніта у gameplay."));
-            EditorGUILayout.PropertyField(unit.FindPropertyRelative("CombatType"), new GUIContent("Клас бою", "Піхота, кавалерія або облогова машина."));
+            EditorGUILayout.PropertyField(unit.FindPropertyRelative("Role"), new GUIContent("Роль", "Основна роль юніта у gameplay: Worker або Military."));
+            EditorGUILayout.PropertyField(unit.FindPropertyRelative("CombatType"), new GUIContent("Клас бою", "Infantry/Cavalry/SiegeMachine. Потрібно для бойових сценаріїв і балансу."));
             EditorGUILayout.EndHorizontal();
+            DrawInlineParameterDoc("Role");
 
             DrawQuickIntegerRow(unit, "База", "HitPoints", "HP", 1, 300, "BaseLevel", "Рівень", 1, 10, "VisionRange", "Огляд", 1, 20);
             DrawTerrainVisionControls(unit);
@@ -1077,9 +1081,10 @@ namespace Kruty1918.Moyva.Units.Editor
             var staminaProp = unit.FindPropertyRelative("BaseStamina");
             var staminaRangeProp = unit.FindPropertyRelative("StaminaRandomRange");
             if (staminaProp != null)
-                staminaProp.floatValue = EditorGUILayout.Slider(new GUIContent("Стаміна", "Середній запас стаміни юніта."), Mathf.Max(0f, staminaProp.floatValue), 0f, 300f);
+                staminaProp.floatValue = EditorGUILayout.Slider(new GUIContent("Стаміна [0..300]", "Мін: 0, макс: 300. Визначає запас дій юніта (приклад: 60-120 для базових, 150+ для витривалих)."), Mathf.Max(0f, staminaProp.floatValue), 0f, 300f);
             if (staminaRangeProp != null)
-                staminaRangeProp.vector2Value = EditorGUILayout.Vector2Field(new GUIContent("Розкид стаміни", "Мінімальний/максимальний випадковий зсув до базової стаміни."), staminaRangeProp.vector2Value);
+                staminaRangeProp.vector2Value = EditorGUILayout.Vector2Field(new GUIContent("Розкид стаміни", "Зсув до базової стаміни. Рекомендований діапазон: [-80..80]. Потрібно для варіативності стартових станів."), staminaRangeProp.vector2Value);
+            DrawInlineParameterDoc("BaseStamina");
 
             DrawQuickIntegerRow(unit, "Сила атаки", "PenetratingDamage", "Колюча", 0, 300, "CuttingDamage", "Ріжуча", 0, 300, "CrushingDamage", "Дроб.", 0, 300);
             DrawQuickIntegerRow(unit, "Захист", "PenetratingDefense", "Колючий", 0, 300, "CuttingDefense", "Ріжучий", 0, 300, "CrushingDefense", "Дроб.", 0, 300);
@@ -1125,12 +1130,35 @@ namespace Kruty1918.Moyva.Units.Editor
             Rect rect = EditorGUILayout.GetControlRect(false, 20f, GUILayout.MinWidth(74f));
             Rect labelRect = new Rect(rect.x, rect.y, Mathf.Min(44f, rect.width * 0.45f), rect.height);
             Rect fieldRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelRect.width - 4f, rect.height);
-            GUI.Label(labelRect, new GUIContent(label), EditorStyles.miniLabel);
+            GUI.Label(labelRect, new GUIContent(label, ResolveQuickFieldTooltip(propertyName, min, max)), EditorStyles.miniLabel);
             property.intValue = Mathf.Clamp(EditorGUI.IntField(fieldRect, value), min, max);
 
             Rect bar = new Rect(fieldRect.x, rect.yMax - 3f, fieldRect.width, 2f);
             EditorGUI.DrawRect(bar, new Color(1f, 1f, 1f, 0.08f));
             EditorGUI.DrawRect(new Rect(bar.x, bar.y, bar.width * Mathf.InverseLerp(min, max, property.intValue), bar.height), Accent);
+        }
+
+        private static string ResolveQuickFieldTooltip(string propertyName, int min, int max)
+        {
+            switch (propertyName)
+            {
+                case "HitPoints":
+                    return $"HP юніта. Мін: {min}, макс: {max}. Впливає на виживання і розмір у preview.";
+                case "BaseLevel":
+                    return $"Базовий рівень юніта. Мін: {min}, макс: {max}. Впливає на вагу/масштаб і баланс.";
+                case "VisionRange":
+                    return $"Базова дальність огляду. Мін: {min}, макс: {max}. Впливає на Fog of War і LOS-перевірки.";
+                case "PenetratingDamage":
+                case "CuttingDamage":
+                case "CrushingDamage":
+                    return $"Атакувальний параметр. Мін: {min}, макс: {max}. Формує профіль шкоди юніта.";
+                case "PenetratingDefense":
+                case "CuttingDefense":
+                case "CrushingDefense":
+                    return $"Захисний параметр. Мін: {min}, макс: {max}. Формує стійкість проти відповідного типу шкоди.";
+                default:
+                    return $"Діапазон: {min}..{max}.";
+            }
         }
 
         private void DrawVisualParameterTuningSection(SerializedProperty unit)
@@ -1475,11 +1503,13 @@ namespace Kruty1918.Moyva.Units.Editor
             var rangeProp = unit.FindPropertyRelative("StaminaRandomRange");
             var visionProp = unit.FindPropertyRelative("VisionRange");
 
-            staminaProp.floatValue = EditorGUILayout.Slider(new GUIContent("Базова стаміна", "Середній запас стаміни юніта."), Mathf.Max(0f, staminaProp.floatValue), 0f, 300f);
-            rangeProp.vector2Value = EditorGUILayout.Vector2Field(new GUIContent("Розкид стаміни", "Мінімальний/максимальний випадковий зсув до базової стаміни."), rangeProp.vector2Value);
-            visionProp.intValue = EditorGUILayout.IntSlider(new GUIContent("Дальність огляду", "Скільки тайлів юніт відкриває у Fog of War."), Mathf.Max(1, visionProp.intValue), 1, 20);
+            staminaProp.floatValue = EditorGUILayout.Slider(new GUIContent("Базова стаміна [0..300]", "Мін: 0, макс: 300. Визначає тривалість активності юніта."), Mathf.Max(0f, staminaProp.floatValue), 0f, 300f);
+            rangeProp.vector2Value = EditorGUILayout.Vector2Field(new GUIContent("Розкид стаміни", "Мін/макс зміщення до BaseStamina. Рекомендовано тримати в межах [-80..80] для стабільного балансу."), rangeProp.vector2Value);
+            visionProp.intValue = EditorGUILayout.IntSlider(new GUIContent("Дальність огляду [1..20]", "Мін: 1, макс: 20. Визначає скільки тайлів юніт потенційно перевіряє на видимість."), Mathf.Max(1, visionProp.intValue), 1, 20);
 
             DrawStaminaRangePreview(staminaProp.floatValue, rangeProp.vector2Value);
+            DrawInlineParameterDoc("BaseStamina");
+            DrawInlineParameterDoc("VisionRange");
             EndSection();
         }
 
@@ -1498,10 +1528,12 @@ namespace Kruty1918.Moyva.Units.Editor
             var delay = animation?.FindPropertyRelative("DelayOnTile");
 
             if (duration != null)
-                duration.floatValue = EditorGUILayout.Slider(new GUIContent("Тривалість кроку", "Скільки секунд займає рух між двома сусідніми тайлами."), Mathf.Max(0.02f, duration.floatValue), 0.02f, 2f);
+                duration.floatValue = EditorGUILayout.Slider(new GUIContent("Тривалість кроку [0.02..2.0]", "Мін: 0.02, макс: 2.0 сек/тайл. Менше значення = швидший рух."), Mathf.Max(0.02f, duration.floatValue), 0.02f, 2f);
 
             if (delay != null)
-                delay.floatValue = EditorGUILayout.Slider(new GUIContent("Затримка на тайлі", "Пауза після завершення кроку перед наступним рухом."), Mathf.Max(0f, delay.floatValue), 0f, 1f);
+                delay.floatValue = EditorGUILayout.Slider(new GUIContent("Затримка на тайлі [0..1.0]", "Мін: 0, макс: 1 сек. Потрібно для керування темпом анімації руху."), Mathf.Max(0f, delay.floatValue), 0f, 1f);
+
+            DrawInlineParameterDoc("MoveDurationPerTile");
 
             EditorGUILayout.BeginHorizontal();
             _showAnimationPreview = EditorGUILayout.ToggleLeft(new GUIContent("Програвати preview", "Показувати рух по маршруту."), _showAnimationPreview);
@@ -2821,6 +2853,110 @@ namespace Kruty1918.Moyva.Units.Editor
                 _selectedIndex = index;
                 SaveSelectedPreference();
             }
+        }
+
+        private void OpenUnitCreationWizard()
+        {
+            UnitCreationWizardWindow.Open(this, _registry);
+        }
+
+        internal bool TryCreateUnitFromWizard(UnitClassConfig draft, Sprite previewSprite, bool createPrefabFromSprite, out string error)
+        {
+            error = null;
+            if (_registry == null)
+            {
+                error = "UnitRegistrySO не вибрано.";
+                return false;
+            }
+
+            if (draft == null)
+            {
+                error = "Чернетка юніта відсутня.";
+                return false;
+            }
+
+            string typeId = string.IsNullOrWhiteSpace(draft.TypeId) ? string.Empty : draft.TypeId.Trim();
+            if (string.IsNullOrWhiteSpace(typeId))
+            {
+                error = "TypeId не може бути порожнім.";
+                return false;
+            }
+
+            if (typeId.Contains("_"))
+            {
+                error = "TypeId не може містити '_' (символ зарезервований для instance ID).";
+                return false;
+            }
+
+            if (!IsTypeIdUnique(typeId))
+            {
+                error = $"TypeId '{typeId}' вже існує в реєстрі.";
+                return false;
+            }
+
+            if (draft.HitPoints < 1 || draft.BaseLevel < 1 || draft.VisionRange < 1 || draft.BaseStamina < 0f)
+            {
+                error = "Перевірте базові параметри: HP >= 1, Level >= 1, Vision >= 1, Stamina >= 0.";
+                return false;
+            }
+
+            if (createPrefabFromSprite && previewSprite != null && draft.Prefab == null)
+            {
+                EnsureFolder(UnitPrefabFolder);
+                string safeId = SanitizeAssetName(typeId);
+                string prefabPath = AssetDatabase.GenerateUniqueAssetPath($"{UnitPrefabFolder}/{safeId}.prefab");
+                var go = new GameObject(safeId);
+                go.AddComponent<SpriteRenderer>().sprite = previewSprite;
+                draft.Prefab = PrefabUtility.SaveAsPrefabAsset(go, prefabPath);
+                DestroyImmediate(go);
+            }
+
+            if (draft.CustomSprite == null && previewSprite != null)
+                draft.CustomSprite = previewSprite;
+
+            draft.TypeId = typeId;
+            draft.HitPoints = Mathf.Max(1, draft.HitPoints);
+            draft.BaseLevel = Mathf.Max(1, draft.BaseLevel);
+            draft.VisionRange = Mathf.Max(1, draft.VisionRange);
+            draft.BaseStamina = Mathf.Max(0f, draft.BaseStamina);
+            draft.PenetratingDamage = Mathf.Max(0, draft.PenetratingDamage);
+            draft.CuttingDamage = Mathf.Max(0, draft.CuttingDamage);
+            draft.CrushingDamage = Mathf.Max(0, draft.CrushingDamage);
+            draft.PenetratingDefense = Mathf.Max(0, draft.PenetratingDefense);
+            draft.CuttingDefense = Mathf.Max(0, draft.CuttingDefense);
+            draft.CrushingDefense = Mathf.Max(0, draft.CrushingDefense);
+
+            if (_registry.Configs == null)
+                _registry.Configs = new List<UnitClassConfig>();
+
+            Undo.RecordObject(_registry, "Create Unit from Wizard");
+            _registry.Configs.Add(draft);
+            EditorUtility.SetDirty(_registry);
+            AssetDatabase.SaveAssets();
+
+            RefreshSerializedObject();
+            SelectByTypeId(typeId);
+            SaveSelectedPreference();
+            Repaint();
+            return true;
+        }
+
+        private bool IsTypeIdUnique(string typeId)
+        {
+            if (string.IsNullOrWhiteSpace(typeId))
+                return false;
+
+            if (_configs == null)
+                return true;
+
+            for (int i = 0; i < _configs.arraySize; i++)
+            {
+                string existing = GetString(_configs.GetArrayElementAtIndex(i), "TypeId");
+                if (string.Equals(existing, typeId, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            return true;
         }
 
         private void DuplicateSelectedUnit()
