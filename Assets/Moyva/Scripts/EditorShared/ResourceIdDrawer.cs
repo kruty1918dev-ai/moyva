@@ -135,6 +135,7 @@ namespace Kruty1918.Moyva.Editor.Shared
             private readonly Action<string> _onSelected;
             private Vector2 _materialsScroll;
             private Vector2 _foodScroll;
+            private Vector2 _moneyScroll;
 
             public ResourcePickerPopup(string currentValue, Action<string> onSelected)
             {
@@ -155,12 +156,14 @@ namespace Kruty1918.Moyva.Editor.Shared
                     rect.height - (Padding * 3 + RowHeight)
                 );
 
-                float columnWidth = (columnsRect.width - ColumnGap) * 0.5f;
+                float columnWidth = (columnsRect.width - ColumnGap * 2f) / 3f;
                 Rect leftRect = new Rect(columnsRect.x, columnsRect.y, columnWidth, columnsRect.height);
-                Rect rightRect = new Rect(columnsRect.x + columnWidth + ColumnGap, columnsRect.y, columnWidth, columnsRect.height);
+                Rect middleRect = new Rect(columnsRect.x + columnWidth + ColumnGap, columnsRect.y, columnWidth, columnsRect.height);
+                Rect rightRect = new Rect(columnsRect.x + (columnWidth + ColumnGap) * 2f, columnsRect.y, columnWidth, columnsRect.height);
 
                 DrawCategoryColumn(leftRect, "Materials", EconomyResourceCategory.Materials, ref _materialsScroll);
-                DrawCategoryColumn(rightRect, "Food", EconomyResourceCategory.Food, ref _foodScroll);
+                DrawCategoryColumn(middleRect, "Food", EconomyResourceCategory.Food, ref _foodScroll);
+                DrawCategoryColumn(rightRect, "Money", EconomyResourceCategory.Money, ref _moneyScroll);
             }
 
             private void DrawNoneButton()
