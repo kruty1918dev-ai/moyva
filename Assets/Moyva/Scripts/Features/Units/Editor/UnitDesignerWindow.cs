@@ -245,7 +245,9 @@ namespace Kruty1918.Moyva.Units.Editor
         private void OnGUI()
         {
             _perfProfiler.BeginFrame();
-            if (_registryObject != null)
+            // Do not pull data from the asset while there are pending local edits.
+            // Otherwise Update() can overwrite just-typed values before ApplyModifiedProperties().
+            if (_registryObject != null && !_registryObject.hasModifiedProperties)
                 _registryObject.Update();
 
             _perfProfiler.BeginSection("GeneratorMap");
@@ -760,6 +762,8 @@ namespace Kruty1918.Moyva.Units.Editor
             if (GUILayout.Button(new GUIContent("Дубль", "Скопіювати вибраного юніта з новим TypeId."), GUILayout.Height(24f)))
                 DuplicateSelectedUnit();
             EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button(new GUIContent("Registry Hub", "Відкрити Registry Hub одразу на вкладці юнітів."), GUILayout.Height(24f)))
+                OpenRegistryHubUnitsTab();
             EditorGUILayout.EndHorizontal();
 
             DrawBatchOperationsPanel();
@@ -895,7 +899,7 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorGUILayout.LabelField("Швидкість симуляції", EditorStyles.boldLabel);
 
             EditorGUILayout.BeginHorizontal();
-            _previewSimulationSpeed = EditorGUILayout.Slider(new GUIContent("Множник", "Керує швидкістю preview для руху та анімацій."), _previewSimulationSpeed, 0.05f, 4f);
+            _previewSimulationSpeed = EditorGUILayout.Slider(new GUIContent("Множник [0.05..4.0]", "Мін: 0.05, макс: 4.0. Керує швидкістю preview для руху та анімацій; 1.0 = реальний темп."), _previewSimulationSpeed, 0.05f, 4f);
             if (GUILayout.Button(_pauseSimulation ? "▶" : "⏸", GUILayout.Width(32f), GUILayout.Height(18f)))
                 _pauseSimulation = !_pauseSimulation;
             if (GUILayout.Button("Reset", GUILayout.Width(54f), GUILayout.Height(18f)))
@@ -1585,7 +1589,7 @@ namespace Kruty1918.Moyva.Units.Editor
             _autoAnimationPrefix = EditorGUILayout.TextField(
                 new GUIContent("Префікс імені", "Спільна частина імен спрайтів. Напр.: archer, worker, cossack."),
                 _autoAnimationPrefix);
-            _autoAnimationFps = EditorGUILayout.IntSlider(new GUIContent("FPS", "Буде застосовано до автогенерованих спрайт-анімацій."), Mathf.Clamp(_autoAnimationFps, 1, 60), 1, 60);
+            _autoAnimationFps = EditorGUILayout.IntSlider(new GUIContent("FPS [1..60]", "Мін: 1, макс: 60. Використовується для автогенерованих спрайт-анімацій; 8-15 зазвичай достатньо для 2D."), Mathf.Clamp(_autoAnimationFps, 1, 60), 1, 60);
             _autoAnimationReplaceByType = EditorGUILayout.ToggleLeft(
                 new GUIContent("Заміняти існуючі за типом", "Якщо ввімкнено - оновить існуючі Idle/Move/... замість дублювання."),
                 _autoAnimationReplaceByType);
@@ -1957,12 +1961,12 @@ namespace Kruty1918.Moyva.Units.Editor
 
             // Type and name
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(typeRef, new GUIContent("Тип", "Категорія анімації (Idle, Move, Attack, TakeDamage, Die)"), GUILayout.MaxWidth(200f));
-            EditorGUILayout.PropertyField(nameRef, new GUIContent("Назва", "Унікальна назва анімації"), GUILayout.MinWidth(150f));
+            EditorGUILayout.PropertyField(typeRef, new GUIContent("Тип", "Категорія анімації (Idle, Move, Attack, TakeDamage, Die). Потрібно для вибору кліпу в runtime-станах."), GUILayout.MaxWidth(200f));
+            EditorGUILayout.PropertyField(nameRef, new GUIContent("Назва", "Людинозрозуміла назва (приклад: WalkNorth, AttackHeavy). Потрібна для фільтрації та читабельності."), GUILayout.MinWidth(150f));
             EditorGUILayout.EndHorizontal();
 
             // Animation clip or sprite frames
-            EditorGUILayout.PropertyField(animClipRef, new GUIContent("Клип Animator", "Клип зі встановленого Animator контролера"));
+            EditorGUILayout.PropertyField(animClipRef, new GUIContent("Клип Animator", "Клип зі встановленого Animator-контролера. Якщо не задано, буде використано sprite frames (за наявності)."));
 
             if (GUILayout.Button(new GUIContent("Або вибрати спрайти", "Замість AnimationClip можна використовувати простий список спрайтів для побудови анімації"), GUILayout.Height(20f)))
             {
@@ -1972,22 +1976,22 @@ namespace Kruty1918.Moyva.Units.Editor
             // Show sprite frames if available
             if (spritesRef != null && spritesRef.arraySize > 0)
             {
-                EditorGUILayout.PropertyField(spritesRef, new GUIContent("Спрайти", "Список спрайтів для анімації"), true);
+                EditorGUILayout.PropertyField(spritesRef, new GUIContent("Спрайти", "Список кадрів для sprite-анімації. Приклад: idle_01..idle_08."), true);
                 if (spritesRef.arraySize > 0)
                 {
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField("FPS", GUILayout.MaxWidth(40f));
                     var fpsRef = clip.FindPropertyRelative("SpriteFPS");
                     if (fpsRef != null)
-                        fpsRef.intValue = EditorGUILayout.IntSlider(new GUIContent("", "Кількість кадрів на секунду для спрайт-анімації"), Mathf.Max(1, fpsRef.intValue), 1, 60, GUILayout.MinWidth(100f));
+                        fpsRef.intValue = EditorGUILayout.IntSlider(new GUIContent("", "FPS [1..60] для sprite-анімації; 8-15 зазвичай виглядає стабільно в 2D."), Mathf.Max(1, fpsRef.intValue), 1, 60, GUILayout.MinWidth(100f));
                     EditorGUILayout.EndHorizontal();
                 }
             }
 
             // Loop and duration
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(loopRef, new GUIContent("Зациклити", "Повторювати анімацію нескінченно"), GUILayout.MaxWidth(200f));
-            EditorGUILayout.PropertyField(durationRef, new GUIContent("Тривалість (сек)", "Приблизна середня тривалість однієї проходки анімації"), GUILayout.MinWidth(150f));
+            EditorGUILayout.PropertyField(loopRef, new GUIContent("Зациклити", "Повторювати анімацію нескінченно. Корисно для Idle/Move, зазвичай вимкнено для Attack/Die."), GUILayout.MaxWidth(200f));
+            EditorGUILayout.PropertyField(durationRef, new GUIContent("Тривалість (сек)", "Рекомендовано 0.1..5.0 сек. Впливає на тривалість відтворення та таймінги preview."), GUILayout.MinWidth(150f));
             EditorGUILayout.EndHorizontal();
 
             // Preview button
@@ -2617,8 +2621,8 @@ namespace Kruty1918.Moyva.Units.Editor
             _batchApplyAnimationDefaults = EditorGUILayout.ToggleLeft(new GUIContent("Застосувати animation defaults"), _batchApplyAnimationDefaults);
             using (new EditorGUI.DisabledGroupScope(!_batchApplyAnimationDefaults))
             {
-                _batchAnimationDuration = EditorGUILayout.Slider(new GUIContent("Move Duration / Tile"), Mathf.Max(0.02f, _batchAnimationDuration), 0.02f, 2f);
-                _batchAnimationDelay = EditorGUILayout.Slider(new GUIContent("Delay On Tile"), Mathf.Max(0f, _batchAnimationDelay), 0f, 1f);
+                _batchAnimationDuration = EditorGUILayout.Slider(new GUIContent("Move Duration / Tile [0.02..2.0]", "Мін: 0.02, макс: 2.0 сек/тайл. Пакетно застосовується до вибраних юнітів."), Mathf.Max(0.02f, _batchAnimationDuration), 0.02f, 2f);
+                _batchAnimationDelay = EditorGUILayout.Slider(new GUIContent("Delay On Tile [0..1.0]", "Мін: 0, макс: 1 сек. Пакетна пауза між кроками для вибраних юнітів."), Mathf.Max(0f, _batchAnimationDelay), 0f, 1f);
             }
 
             int targetCount = CollectBatchTargetIndices().Count;
@@ -2861,6 +2865,47 @@ namespace Kruty1918.Moyva.Units.Editor
             }
         }
 
+        private static void OpenRegistryHubUnitsTab()
+        {
+            Type hubType = null;
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                try
+                {
+                    var candidate = assemblies[i].GetType("Kruty1918.Moyva.Editor.RegistryHubWindow", throwOnError: false);
+                    if (candidate != null && typeof(EditorWindow).IsAssignableFrom(candidate))
+                    {
+                        hubType = candidate;
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Ignore reflection errors from transient assemblies.
+                }
+            }
+
+            if (hubType != null)
+            {
+                var openWithTab = hubType.GetMethod("Open", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static, null, new[] { typeof(int) }, null);
+                if (openWithTab != null)
+                {
+                    openWithTab.Invoke(null, new object[] { 2 });
+                    return;
+                }
+
+                var open = hubType.GetMethod("Open", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static, null, Type.EmptyTypes, null);
+                if (open != null)
+                {
+                    open.Invoke(null, null);
+                    return;
+                }
+            }
+
+            EditorApplication.ExecuteMenuItem("Moyva/Tools/Registry Hub");
+        }
+
         private void CreatePrefabForSelected(SerializedProperty unit, string typeId)
         {
             SpritePickerPopup.Show(spriteAsset =>
@@ -3051,9 +3096,9 @@ namespace Kruty1918.Moyva.Units.Editor
                         "Валідація перед збереженням",
                         $"Операція '{source}' скасована: {criticalValidation}",
                         "OK");
-                }
 
-                return false;
+                    return false;
+                }
             }
 
             if (blockOnCriticalValidation && _diffBeforeApplyEnabled)
