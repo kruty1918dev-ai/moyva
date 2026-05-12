@@ -392,6 +392,18 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .To<GameCommandSyncService>()
                     .AsSingle();
             }
+                // Синхронізація ігрових команд
+                if (!container.HasBinding(typeof(IGameCommandSyncService)))
+                {
+                    container.Bind<IGameCommandSyncService>()
+                        .To<GameCommandSyncService>()
+                        .AsSingle();
+                }
+
+                // Авторитативний хост-роутер: маршрутизує дії гравця через хоста
+                container.Bind<MultiplayerAuthorityService>()
+                    .AsSingle()
+                    .NonLazy();
 
             // Identity-сервіс (UGS Auth коли доступно, інакше device id).
             container.Bind<IMultiplayerIdentityService>()

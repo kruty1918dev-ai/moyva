@@ -240,57 +240,25 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             }
         }
 
-        private async void StartMove(string unitId, Vector2Int target)
+        private void StartMove(string unitId, Vector2Int target)
         {
             if (string.IsNullOrEmpty(unitId))
                 return;
 
-            // Скасовуємо попередній рух, якщо він ще тривав
+            // Скасовуємо попередній рух (InterruptMovementSignal надіслано в CancelMovement).
             CancelMovement(MovementCancelReason.NewCommand);
-            _moveCts = new CancellationTokenSource();
+            _moveCts = new CancellationTokenSource(); // sentinel: рух активний (для queue-логіки)
             _activeMoveUnitId = unitId;
             _activeMoveTarget = target;
             _cancelReason = MovementCancelReason.None;
 
-            try
-            {
-                // Викликаємо асинхронний рух
-                await _unitMovementService.MoveUnitAsync(unitId, target, _moveCts.Token);
+            // Маршрутизуємо через MultiplayerAuthorityService:
+            // офлайн/хост → виконає MoveUnitAsync локально;
+            // клієнт → надішле Request до хоста.
+            _signalBus.Fire(new MoveUnitRequestSignal { UnitId = unitId, TargetPosition = target });
 
-                if (VerboseLogs)
-                    Debug.Log($"[Interaction] Movement completed for {unitId} to {target}");
-            }
-            catch (OperationCanceledException)
-            {
-                if (VerboseLogs)
-                    Debug.Log($"[Interaction] Movement canceled for {unitId}. reason={_cancelReason}");
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[Interaction] Помилка під час руху: {e.Message}");
-            }
-            finally
-            {
-                if (_moveCts != null)
-                {
-                    _moveCts.Dispose();
-                    _moveCts = null;
-                }
-
-                _activeMoveUnitId = null;
-
-                // Після успішного завершення руху — повертаємо юніта до поточного стану вибраного.
-                // Це дозволяє гравцю відразу дати наступну команду без повторного кліку для вибору.
-                if (_cancelReason == MovementCancelReason.None
-                    && !string.IsNullOrEmpty(unitId)
-                    && _inspectedKind == WorldInfoSelectionKind.Unit
-                    && string.Equals(_inspectedObjectId, unitId, StringComparison.Ordinal))
-                {
-                    _selectedUnitId = unitId;
-                }
-
-                _cancelReason = MovementCancelReason.None;
-            }
+            if (VerboseLogs)
+                Debug.Log($"[Interaction] Move requested for {unitId} to {target}");
         }
 
         private void OnWorldInfoSelectionChanged(WorldInfoSelectionChangedSignal signal)
@@ -310,7 +278,12 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             if (_moveCts != null)
             {
                 _moveCts.Cancel();
+                _moveCts.Dispose();
+                _moveCts = null;
             }
+
+            if (!string.IsNullOrEmpty(_activeMoveUnitId))
+                _signalBus.Fire(new InterruptMovementSignal { UnitId = _activeMoveUnitId });
         }
     }
 }
