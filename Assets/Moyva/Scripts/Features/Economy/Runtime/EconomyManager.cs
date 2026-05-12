@@ -67,6 +67,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _calendar.OnHourChanged += OnTurnAdvanced;
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _signalBus.Subscribe<GrantStarterPackResourcesSignal>(OnGrantStarterPackResources);
         }
 
         public void Dispose()
@@ -74,6 +75,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             _calendar.OnHourChanged -= OnTurnAdvanced;
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
+            _signalBus.TryUnsubscribe<GrantStarterPackResourcesSignal>(OnGrantStarterPackResources);
         }
 
         // ───────────────────────── Turn Processing
@@ -357,6 +359,32 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private static string NormalizeOwnerId(string ownerId)
         {
             return string.IsNullOrWhiteSpace(ownerId) ? DefaultOwnerId : ownerId.Trim();
+        }
+
+        private void OnGrantStarterPackResources(GrantStarterPackResourcesSignal signal)
+        {
+            if (string.IsNullOrWhiteSpace(signal.SettlementId) || signal.Entries == null || signal.Entries.Length == 0)
+                return;
+
+            if (!_settlements.TryGetValue(signal.SettlementId, out var state) || state == null || !state.IsActive)
+                return;
+
+            string ownerFromSignal = NormalizeOwnerId(signal.OwnerId);
+            string ownerFromSettlement = NormalizeOwnerId(state.OwnerId);
+            if (!string.Equals(ownerFromSignal, ownerFromSettlement, StringComparison.Ordinal))
+            {
+                Debug.LogWarning($"[Economy] Пропущено стартовий пакет: owner mismatch signal='{ownerFromSignal}', settlement='{ownerFromSettlement}'.");
+                return;
+            }
+
+            for (int index = 0; index < signal.Entries.Length; index++)
+            {
+                var entry = signal.Entries[index];
+                if (string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0f)
+                    continue;
+
+                AddResource(signal.SettlementId, entry.ResourceId.Trim(), entry.Amount);
+            }
         }
 
         // ───────────────────────── Public API for UI / other systems

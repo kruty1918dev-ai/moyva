@@ -58,6 +58,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<SettlementDeactivatedSignal>().OptionalSubscriber();
             Container.DeclareSignal<SettlementResourceChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<ResourceDeficitSignal>().OptionalSubscriber();
+            Container.DeclareSignal<GrantStarterPackResourcesSignal>().OptionalSubscriber();
 
             // SaveSystem
             Container.DeclareSignal<SaveRequestedSignal>();

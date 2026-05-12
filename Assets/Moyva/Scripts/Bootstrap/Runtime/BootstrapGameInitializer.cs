@@ -27,6 +27,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private WorldGeneratedDataSignal _pendingWorldGeneratedSignal;
         private bool _hasPendingWorldGeneratedSignal;
         private bool _bootstrapApplied;
+        private bool _starterPackGrantEnabled;
+        private readonly HashSet<string> _ownersWithGrantedStarterPack = new HashSet<string>(StringComparer.Ordinal);
 
     #pragma warning disable CS0649
         [InjectOptional] private ISessionManager _sessionManager;
@@ -51,12 +53,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
+            _signalBus.Subscribe<SettlementCreatedSignal>(OnSettlementCreated);
         }
 
         public void Dispose()
         {
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
+            _signalBus.TryUnsubscribe<SettlementCreatedSignal>(OnSettlementCreated);
         }
 
         // ─────────────────────────────────────────────────────────────
@@ -86,9 +90,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int slot = GameLaunchContext.SaveSlot;
             if (GameLaunchContext.IsAutoLoadEnabled() && _saveService.HasSave(slot))
             {
+                _starterPackGrantEnabled = false;
                 _bootstrapApplied = true;
                 return;
             }
+
+            _starterPackGrantEnabled = ShouldGrantStarterPackForCurrentLaunch();
 
             if (!CanRunBootstrapLogic())
                 return;
@@ -129,6 +136,73 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             _bootstrapApplied = true;
+        }
+
+        private void OnSettlementCreated(SettlementCreatedSignal signal)
+        {
+            if (!_starterPackGrantEnabled)
+                return;
+
+            if (string.IsNullOrWhiteSpace(signal.SettlementId))
+                return;
+
+            string ownerId = NormalizeOwnerId(signal.OwnerId);
+            if (_ownersWithGrantedStarterPack.Contains(ownerId))
+                return;
+
+            if (!TryGrantStarterPack(signal.SettlementId, ownerId))
+                return;
+
+            _ownersWithGrantedStarterPack.Add(ownerId);
+        }
+
+        private bool TryGrantStarterPack(string settlementId, string ownerId)
+        {
+            var entries = _settings.InitialResources;
+            if (entries == null || entries.Count == 0)
+                return true;
+
+            var payload = new List<StarterPackResourceEntrySignal>();
+            bool grantedAny = false;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                var entry = entries[index];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0f)
+                    continue;
+
+                payload.Add(new StarterPackResourceEntrySignal
+                {
+                    ResourceId = entry.ResourceId.Trim(),
+                    Amount = entry.Amount,
+                });
+                grantedAny = true;
+            }
+
+            if (grantedAny)
+            {
+                _signalBus.Fire(new GrantStarterPackResourcesSignal
+                {
+                    SettlementId = settlementId,
+                    OwnerId = ownerId,
+                    Entries = payload.ToArray(),
+                });
+                Debug.Log($"[Bootstrap] Видано стартовий пакет owner='{ownerId}' для settlement='{settlementId}'.");
+            }
+
+            return true;
+        }
+
+        private static string NormalizeOwnerId(string ownerId)
+        {
+            return string.IsNullOrWhiteSpace(ownerId)
+                ? "player_0"
+                : ownerId.Trim();
+        }
+
+        private static bool ShouldGrantStarterPackForCurrentLaunch()
+        {
+            return GameLaunchContext.Mode == GameLaunchMode.MenuNewGame
+                || GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
         }
 
         // ─── Спіральний пошук вільного тайлу ─────────────────────────────────

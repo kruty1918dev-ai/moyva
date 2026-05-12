@@ -62,4 +62,26 @@ namespace Kruty1918.Moyva.Signals
         public string OwnerId;
         public string ResourceId;
     }
+
+    /// <summary>
+    /// Елемент стартового пакету ресурсів (id + кількість).
+    /// Використовується у <see cref="GrantStarterPackResourcesSignal"/>.
+    /// </summary>
+    public struct StarterPackResourceEntrySignal
+    {
+        public string ResourceId;
+        public float Amount;
+    }
+
+    /// <summary>
+    /// Надсилається Bootstrap після створення стартового поселення в НОВОМУ світі.
+    /// Отримується: EconomyManager для фактичного нарахування стартових ресурсів.
+    /// Не використовується при продовженні збереженої гри.
+    /// </summary>
+    public struct GrantStarterPackResourcesSignal
+    {
+        public string SettlementId;
+        public string OwnerId;
+        public StarterPackResourceEntrySignal[] Entries;
+    }
 }
