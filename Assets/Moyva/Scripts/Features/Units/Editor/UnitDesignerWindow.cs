@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Units.Editor
         private const string UnitListWidthPrefsKey = "Moyva.UnitDesigner.Layout.UnitListWidth";
         private const string UnitDetailsWidthPrefsKey = "Moyva.UnitDesigner.Layout.UnitDetailsWidth";
         private const string UnitPreviewWidthPrefsKey = "Moyva.UnitDesigner.Layout.UnitPreviewWidth";
+        private const string AutoSaveRegistryPrefsKey = "Moyva.UnitDesigner.AutoSaveRegistry";
         private const string GeneratorListWidthPrefsKey = "Moyva.UnitDesigner.Layout.GeneratorListWidth";
         private const string GeneratorSettingsWidthPrefsKey = "Moyva.UnitDesigner.Layout.GeneratorSettingsWidth";
         private const string GeneratorPreviewPanelWidthPrefsKey = "Moyva.UnitDesigner.Layout.GeneratorPreviewPanelWidth";
@@ -151,7 +152,9 @@ namespace Kruty1918.Moyva.Units.Editor
         private float _pendingPreviewDelta;
         private Sprite _currentPreviewSprite;
         private string _lastBlockedApplyReason = string.Empty;
+        private string _lastSaveStatus = "save: idle";
         private bool _diffBeforeApplyEnabled = true;
+        private bool _autoSaveRegistry = true;
 
         // Утиліти для оптимізації редактора
         private readonly EditorLivePreviewThrottle _livePreviewThrottle = new EditorLivePreviewThrottle(repaintFps: 30d, costlyTickHz: 30d);
@@ -197,6 +200,7 @@ namespace Kruty1918.Moyva.Units.Editor
         private void OnEnable()
         {
             LoadRegistryPreference();
+            _autoSaveRegistry = EditorPrefs.GetBool(AutoSaveRegistryPrefsKey, true);
             if (_registry == null)
                 _registry = FindFirstRegistry();
 
@@ -226,6 +230,7 @@ namespace Kruty1918.Moyva.Units.Editor
             SaveRegistryPreference();
             SaveSelectedPreference();
             SaveLayoutPreferences();
+            EditorPrefs.SetBool(AutoSaveRegistryPrefsKey, _autoSaveRegistry);
             DisposeSafeEditMode();
             DisposeGeneratorMapDesigner();
             _combatFacade?.Dispose();
@@ -278,7 +283,7 @@ namespace Kruty1918.Moyva.Units.Editor
 
             DrawStatusBar();
 
-            if (TryCommitRegistryChanges("Auto UI Apply", blockOnCriticalValidation: false))
+            if (_autoSaveRegistry && TryCommitRegistryChanges("Auto UI Apply", blockOnCriticalValidation: false))
                 SaveSelectedPreference();
 
             _perfProfiler.EndFrame();
@@ -404,7 +409,16 @@ namespace Kruty1918.Moyva.Units.Editor
                 EditorGUIUtility.PingObject(_registry);
                 Selection.activeObject = _registry;
             }
+
+            if (GUILayout.Button(IconContent("SaveActive", "Save", EditorTooltipStandard.Build("Зберегти зміни в UnitRegistrySO прямо зараз.", "Застосовує pending SerializedObject-правки, записує dirty asset на диск і перевіряє, що registry більше не dirty.")), EditorStyles.toolbarButton, GUILayout.Width(56f)))
+                RequestManualRegistrySave();
             EditorGUI.EndDisabledGroup();
+
+            _autoSaveRegistry = GUILayout.Toggle(
+                _autoSaveRegistry,
+                IconContent("d_Refresh", "AutoSave", EditorTooltipStandard.Build("Автоматично зберігати зміни UnitRegistrySO під час редагування.", "Якщо вимкнено, використовуйте кнопку Save для ручного запису в asset.")),
+                EditorStyles.toolbarButton,
+                GUILayout.Width(78f));
 
             if (GUILayout.Button(IconContent("", "Clear", EditorTooltipStandard.Build("Очищає активний registry у цьому вікні.", "Дозволяє швидко переключитися на інший реєстр.")), EditorStyles.toolbarButton, GUILayout.Width(56f)))
             {
@@ -563,7 +577,12 @@ namespace Kruty1918.Moyva.Units.Editor
                 EditorGUIUtility.PingObject(_registry);
                 Selection.activeObject = _registry;
             }
+
+            if (GUILayout.Button(IconContent("SaveActive", "Sav", "Зберегти UnitRegistrySO зараз."), EditorStyles.toolbarButton, GUILayout.Width(42f)))
+                RequestManualRegistrySave();
             EditorGUI.EndDisabledGroup();
+
+            _autoSaveRegistry = GUILayout.Toggle(_autoSaveRegistry, IconContent("d_Refresh", "Auto", "Автозбереження UnitRegistrySO."), EditorStyles.toolbarButton, GUILayout.Width(42f));
 
             if (GUILayout.Button(IconContent("", "Clr", ""), EditorStyles.toolbarButton, GUILayout.Width(42f)))
             {
@@ -3538,10 +3557,23 @@ namespace Kruty1918.Moyva.Units.Editor
             if (_registryObject == null)
                 return false;
 
+            bool isAutoUiApply = string.Equals(source, "Auto UI Apply", StringComparison.Ordinal);
             if (!EditorRegistryWriteLock.IsUnlocked(RegistryLockKey))
             {
-                _lastBlockedApplyReason = "Реєстр заблокований. Увімкніть Unlock для редагування.";
-                return false;
+                if (!isAutoUiApply && EditorUtility.DisplayDialog(
+                        "UnitRegistrySO заблокований",
+                        "Реєстр юнітів зараз у readonly-режимі. Розблокувати його і зберегти зміни в asset?",
+                        "Unlock + Save",
+                        "Скасувати"))
+                {
+                    EditorRegistryWriteLock.SetUnlocked(RegistryLockKey, true);
+                }
+                else
+                {
+                    _lastBlockedApplyReason = "Реєстр заблокований. Увімкніть Unlock для редагування.";
+                    SetRegistrySaveStatus("save: blocked readonly");
+                    return false;
+                }
             }
 
             if (_staleTracker.IsStale(_registry))
@@ -3549,14 +3581,17 @@ namespace Kruty1918.Moyva.Units.Editor
                 // Якщо немає локальних правок — це лише наслідок зовнішнього/Unity-авто-збереження
                 // ассета. Тихо синхронізуємось і продовжуємо, інакше блокуємо.
                 bool hasPendingEdits = _registryObject.hasModifiedProperties;
-                if (hasPendingEdits)
+                if (hasPendingEdits && !isAutoUiApply)
                 {
                     _lastBlockedApplyReason = "Дані застарілі: ассет змінено зовні.";
+                    SetRegistrySaveStatus("save: blocked stale");
                     return false;
                 }
 
                 _staleTracker.Capture(_registry);
             }
+
+            _lastBlockedApplyReason = string.Empty;
 
             string baselineSnapshot = SerializedDiffPreviewUtility.CaptureSnapshot(_registry);
 
@@ -3571,6 +3606,7 @@ namespace Kruty1918.Moyva.Units.Editor
                         $"Операція '{source}' скасована: {criticalValidation}",
                         "OK");
 
+                    SetRegistrySaveStatus("save: blocked validation");
                     return false;
                 }
             }
@@ -3579,26 +3615,66 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 var changes = SerializedDiffPreviewUtility.BuildDiff(_registryObject, baselineSnapshot, maxItems: 220);
                 if (!ConfirmDiffBeforeApply(source, changes))
+                {
+                    SetRegistrySaveStatus("save: canceled");
                     return false;
+                }
             }
 
+            bool wasDirty = _registry != null && EditorUtility.IsDirty(_registry);
             bool changed = _registryObject.ApplyModifiedProperties();
             if (changed && _registry != null)
                 EditorUtility.SetDirty(_registry);
 
-            if (changed)
+            bool isDirty = _registry != null && EditorUtility.IsDirty(_registry);
+            if (changed || wasDirty || isDirty)
             {
                 var changeRows = SerializedDiffPreviewUtility.BuildDiff(_registryObject, baselineSnapshot, maxItems: 120);
                 EditorContentChangeLog.Write("UnitDesigner", source, _registry, changeRows);
-                // Зберігаємо ассет одразу, щоб timestamp на диску збігся зі знімком трекера —
-                // інакше відкладене авто-збереження Unity вважатиметься "зовнішньою" зміною.
+                // Save dirty registry objects even when the change came from direct _registry.Configs edits
+                // rather than pending SerializedProperty modifications.
                 if (_registry != null)
                     AssetDatabase.SaveAssetIfDirty(_registry);
                 _staleTracker.Capture(_registry);
                 _lastBlockedApplyReason = string.Empty;
+                SetRegistrySaveStatus(VerifyRegistrySaved() ? $"save: verified {DateTime.Now:HH:mm:ss}" : "save: pending");
             }
 
-            return changed;
+            return changed || wasDirty || isDirty;
+        }
+
+        private void RequestManualRegistrySave()
+        {
+            if (_registryObject == null || _registry == null)
+                return;
+
+            bool saved = TryCommitRegistryChanges("Manual Save", blockOnCriticalValidation: true);
+            if (saved)
+            {
+                RefreshSerializedObject();
+                ShowNotification(new GUIContent("UnitRegistrySO збережено і перевірено."));
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_lastBlockedApplyReason))
+                return;
+
+            _registryObject.ApplyModifiedProperties();
+            AssetDatabase.SaveAssetIfDirty(_registry);
+            _staleTracker.Capture(_registry);
+            SetRegistrySaveStatus(VerifyRegistrySaved() ? $"save: already verified {DateTime.Now:HH:mm:ss}" : "save: pending");
+            RefreshSerializedObject();
+            ShowNotification(new GUIContent("UnitRegistrySO вже актуальний."));
+        }
+
+        private bool VerifyRegistrySaved()
+        {
+            return _registry != null && !EditorUtility.IsDirty(_registry) && !_staleTracker.IsStale(_registry);
+        }
+
+        private void SetRegistrySaveStatus(string status)
+        {
+            _lastSaveStatus = string.IsNullOrWhiteSpace(status) ? "save: idle" : status;
         }
 
         private static bool ConfirmDiffBeforeApply(string source, List<string> changes)
@@ -4213,12 +4289,12 @@ namespace Kruty1918.Moyva.Units.Editor
 
             string validationInfo = string.IsNullOrWhiteSpace(_lastBlockedApplyReason)
                 ? "validation: OK"
-                : "validation: BLOCKED";
+                : $"blocked: {_lastBlockedApplyReason}";
             bool stale = _staleTracker.IsStale(_registry);
             string lockInfo = EditorRegistryWriteLock.IsUnlocked(RegistryLockKey) ? "lock: UNLOCKED" : "lock: READONLY";
             string staleInfo = stale ? "stale: YES" : "stale: no";
             string perfInfo = _perfProfiler.BuildSummary();
-            GUI.Label(new Rect(rect.x + 8f, rect.y + 2f, rect.width - 16f, rect.height - 4f), $"{registryPath}  |  вибрано: {selected}  |  {validationInfo}  |  {lockInfo}  |  {staleInfo}  |  {perfInfo}", EditorStyles.miniLabel);
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 2f, rect.width - 16f, rect.height - 4f), $"{registryPath}  |  вибрано: {selected}  |  {_lastSaveStatus}  |  {validationInfo}  |  {lockInfo}  |  {staleInfo}  |  {perfInfo}", EditorStyles.miniLabel);
         }
 
         private void LoadRegistryPreference()
