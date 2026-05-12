@@ -83,8 +83,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private float ComputeVisibilityFactorUncached(Vector2Int origin, Vector2Int target, int safeBaseRange, int safeMaxRange, int distance, FogVisionModifiers observerModifiers, FogVisionModifiers targetModifiers)
         {
+            // Observer-altitude bonus applies only when looking downhill: the higher the observer's tile,
+            // the further they see toward lower-elevation targets. At equal or higher target levels the
+            // base vision range is preserved, while cliff shadow and LOS keep gating the result downstream.
+            bool lookingDown = GetLevel(target) < GetLevel(origin);
+            int observerBonus = lookingDown ? GetObserverBonus(origin) : 0;
+
             int effectiveRange = Mathf.Clamp(
-                safeBaseRange + GetObserverBonus(origin) + GetDownhillBonus(origin, target) + GetDirectionalDownSlopeVisionBonus(origin, target, observerModifiers) - GetUphillPenalty(origin, target, observerModifiers, targetModifiers),
+                safeBaseRange + observerBonus + GetDownhillBonus(origin, target) + GetDirectionalDownSlopeVisionBonus(origin, target, observerModifiers) - GetUphillPenalty(origin, target, observerModifiers, targetModifiers),
                 0,
                 safeMaxRange);
 
