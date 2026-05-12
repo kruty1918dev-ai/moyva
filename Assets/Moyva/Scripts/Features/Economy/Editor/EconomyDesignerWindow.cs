@@ -464,6 +464,13 @@ namespace Kruty1918.Moyva.Economy.Editor
         private float _simulationDurationMinutes = 10f;
         private readonly HashSet<EconomyProductionProfile> _simulationProfiles = new HashSet<EconomyProductionProfile>();
         private EconomySimulationResult _simulationResult;
+        private float _economyForecastCurrentMoney = 250f;
+        private float _economyForecastIncomePerTurn;
+        private float _economyForecastSpendingPerTurn;
+        private float _economyForecastTurnDurationMinutes = 1f;
+        private int _economyForecastTurns = 5;
+        private string _economyForecastBuildingId = string.Empty;
+        private int _economyForecastBuildCount = 1;
         private readonly StringBuilder _buildingInfoBuffer = new StringBuilder(256);
         private readonly StringBuilder _unitInfoBuffer = new StringBuilder(256);
 
@@ -1476,6 +1483,52 @@ namespace Kruty1918.Moyva.Economy.Editor
                 : $"{resource.Id} - {resource.DisplayName}";
         }
 
+        private void DrawMainCurrencyOverview()
+        {
+            var moneyResource = _cachedResources.FirstOrDefault(r => r != null && r.Category == EconomyResourceCategory.Money);
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Головна валюта", EditorStyles.boldLabel);
+
+                if (moneyResource == null)
+                {
+                    EditorGUILayout.HelpBox("Головну валюту не призначено. Створіть Money resource, щоб економіка, будівництво і UI читали одну базову валюту.", MessageType.Warning);
+                    if (GUILayout.Button("Створити ресурс Money", GUILayout.Height(24f)))
+                        CreateMainCurrencyResource();
+                    return;
+                }
+
+                EditorGUILayout.LabelField(new GUIContent(GetResourceDisplayLabel(moneyResource.Id), "Головний ресурс економіки."), EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("Категорія: Money", EditorStyles.miniLabel);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("Показати", GUILayout.Width(82f)))
+                        EditorGUIUtility.PingObject(moneyResource);
+
+                    if (GUILayout.Button("Вибрати", GUILayout.Width(82f)))
+                        Selection.activeObject = moneyResource;
+                }
+            }
+        }
+
+        private void CreateMainCurrencyResource()
+        {
+            var resource = EconomyResourceEditorShared.CreateMoneyResourceAssetInProjectFolder();
+            if (resource == null)
+                return;
+
+            if (EconomyResourceEditorShared.AddResourceToDatabase(_database, resource))
+                EditorUtility.SetDirty(_database);
+
+            _resourceCacheDirty = true;
+            RefreshResourceCache();
+            Selection.activeObject = resource;
+            EditorGUIUtility.PingObject(resource);
+            Repaint();
+        }
+
         private static Sprite GetMapObjectPreviewSprite(MapObjectDefinition definition)
         {
             if (definition?.VisualPrefab == null)
@@ -1514,6 +1567,8 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             EditorGUILayout.LabelField(title, EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(hint, MessageType.None);
+            if (typeof(T) == typeof(EconomyResourceDefinition))
+                DrawMainCurrencyOverview();
             EditorGUILayout.LabelField("Підказка: Ctrl/Cmd + клік для мультивибору.", EditorStyles.miniLabel);
 
             EditorGUILayout.BeginHorizontal();
@@ -2303,6 +2358,7 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             EditorGUILayout.LabelField("Симуляція (Preview)", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(Tips.SimulationTab, MessageType.Info);
+            DrawEconomyBuildForecastPanel();
 
             _simulationSettlement = (EconomySettlementDefinition)EditorGUILayout.ObjectField(
                 new GUIContent("Поселення", Tips.SimSettlementField),
@@ -2370,6 +2426,172 @@ namespace Kruty1918.Moyva.Economy.Editor
             }
 
             DrawSimulationResults();
+        }
+
+        private void DrawEconomyBuildForecastPanel()
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Money Forecast (після будівництва)", EditorStyles.boldLabel);
+
+            var moneyResource = _cachedResources.FirstOrDefault(r => r != null && r.Category == EconomyResourceCategory.Money);
+            if (moneyResource == null)
+            {
+                EditorGUILayout.HelpBox("Не знайдено Money-ресурс. Створіть його у вкладці 'Ресурси', щоб увімкнути фінансовий прогноз.", MessageType.Warning);
+                EditorGUILayout.EndVertical();
+                return;
+            }
+
+            if (_buildingRegistry == null)
+                _buildingRegistry = MoyvaProjectEditorContext.GetOrFindFirst<BuildingRegistrySO>();
+
+            _economyForecastCurrentMoney = EditorGUILayout.FloatField("Current money", Mathf.Max(0f, _economyForecastCurrentMoney));
+            _economyForecastTurnDurationMinutes = EditorGUILayout.FloatField("Тривалість ходу (хв)", Mathf.Max(0.1f, _economyForecastTurnDurationMinutes));
+            _economyForecastTurns = EditorGUILayout.IntField("Горизонт прогнозу (ходів)", Mathf.Max(1, _economyForecastTurns));
+
+            float suggestedIncomePerTurn = GetSuggestedMoneyIncomePerTurn(moneyResource.Id);
+            if (suggestedIncomePerTurn > 0f)
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField($"Підказка із симуляції: {suggestedIncomePerTurn:0.##} / хід", EditorStyles.miniLabel);
+                if (GUILayout.Button("Застосувати", GUILayout.Width(96f)))
+                    _economyForecastIncomePerTurn = suggestedIncomePerTurn;
+                EditorGUILayout.EndHorizontal();
+            }
+
+            _economyForecastIncomePerTurn = EditorGUILayout.FloatField("Income / turn", _economyForecastIncomePerTurn);
+            _economyForecastSpendingPerTurn = EditorGUILayout.FloatField("Spending / turn", Mathf.Max(0f, _economyForecastSpendingPerTurn));
+
+            var selectedBuilding = DrawEconomyForecastBuildingPicker();
+            _economyForecastBuildCount = EditorGUILayout.IntField("К-сть будівель до побудови", Mathf.Max(1, _economyForecastBuildCount));
+
+            float directMoneyCost;
+            float equivalentMoneyCost;
+            var totalBuildCost = EvaluateBuildingCostInMoney(selectedBuilding, moneyResource.Id, _economyForecastBuildCount, out directMoneyCost, out equivalentMoneyCost);
+
+            float turnDelta = _economyForecastIncomePerTurn - _economyForecastSpendingPerTurn;
+            float projectedMoney = _economyForecastCurrentMoney + turnDelta * _economyForecastTurns - totalBuildCost;
+
+            EditorGUILayout.Space(2f);
+            EditorGUILayout.LabelField($"Building costs (direct money): {directMoneyCost:0.##}", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField($"Building costs (resource equivalent): {equivalentMoneyCost:0.##}", EditorStyles.miniLabel);
+            EditorGUILayout.LabelField($"Building costs (total): {totalBuildCost:0.##}", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField($"Δ за {_economyForecastTurns} ходів (дохід-витрати): {(turnDelta * _economyForecastTurns):+0.##;-0.##;0}", EditorStyles.miniLabel);
+
+            var projectedStyle = new GUIStyle(EditorStyles.boldLabel)
+            {
+                normal = { textColor = projectedMoney >= 0f ? new Color(0.24f, 0.65f, 0.28f) : new Color(0.82f, 0.24f, 0.24f) }
+            };
+            EditorGUILayout.LabelField($"Projected money: {projectedMoney:0.##}", projectedStyle);
+
+            EditorGUILayout.EndVertical();
+        }
+
+        private BuildingDefinition DrawEconomyForecastBuildingPicker()
+        {
+            var buildings = _buildingRegistry?.GetAll() ?? Array.Empty<BuildingDefinition>();
+            var options = buildings
+                .Where(def => def != null && !string.IsNullOrWhiteSpace(def.Id))
+                .OrderBy(def => string.IsNullOrWhiteSpace(def.DisplayName) ? def.Id : def.DisplayName, StringComparer.Ordinal)
+                .ToList();
+
+            if (options.Count == 0)
+            {
+                EditorGUILayout.HelpBox("BuildingRegistry порожній. Призначте/перевірте реєстр, щоб рахувати вартість будівництва.", MessageType.Info);
+                return null;
+            }
+
+            int selectedIndex = 0;
+            if (!string.IsNullOrWhiteSpace(_economyForecastBuildingId))
+            {
+                int index = options.FindIndex(def => string.Equals(def.Id, _economyForecastBuildingId, StringComparison.Ordinal));
+                if (index >= 0)
+                    selectedIndex = index;
+            }
+
+            var labels = options
+                .Select(def => string.IsNullOrWhiteSpace(def.DisplayName) ? def.Id : $"{def.DisplayName} ({def.Id})")
+                .ToArray();
+
+            selectedIndex = EditorGUILayout.Popup("Будівля для прогнозу", selectedIndex, labels);
+            selectedIndex = Mathf.Clamp(selectedIndex, 0, options.Count - 1);
+            var selected = options[selectedIndex];
+            _economyForecastBuildingId = selected.Id;
+            return selected;
+        }
+
+        private float GetSuggestedMoneyIncomePerTurn(string moneyResourceId)
+        {
+            if (_simulationResult == null
+                || _simulationResult.ResourceTotals == null
+                || _simulationResult.DurationMinutes <= 0.0001f
+                || string.IsNullOrWhiteSpace(moneyResourceId))
+            {
+                return 0f;
+            }
+
+            if (!_simulationResult.ResourceTotals.TryGetValue(moneyResourceId, out var totalMoney))
+                return 0f;
+
+            float moneyPerMinute = totalMoney / _simulationResult.DurationMinutes;
+            return moneyPerMinute * _economyForecastTurnDurationMinutes;
+        }
+
+        private float EvaluateBuildingCostInMoney(
+            BuildingDefinition definition,
+            string moneyResourceId,
+            int buildCount,
+            out float directMoneyCost,
+            out float equivalentMoneyCost)
+        {
+            directMoneyCost = 0f;
+            equivalentMoneyCost = 0f;
+
+            if (definition == null || string.IsNullOrWhiteSpace(moneyResourceId) || buildCount <= 0)
+                return 0f;
+
+            var costs = BuildingDefinitionCapabilities.GetConstructionCost(definition);
+            for (int i = 0; i < costs.Count; i++)
+            {
+                var entry = costs[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0)
+                    continue;
+
+                var resourceId = entry.ResourceId.Trim();
+                float amount = entry.Amount * buildCount;
+
+                if (string.Equals(resourceId, moneyResourceId, StringComparison.Ordinal))
+                {
+                    directMoneyCost += amount;
+                }
+                else
+                {
+                    equivalentMoneyCost += amount * GetResourceBasePrice(resourceId);
+                }
+            }
+
+            return directMoneyCost + equivalentMoneyCost;
+        }
+
+        private float GetResourceBasePrice(string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(resourceId) || _database == null || _database.RulesConfig == null || _database.RulesConfig.Market == null)
+                return 1f;
+
+            var basePrices = _database.RulesConfig.Market.ResourceBasePrices;
+            if (basePrices == null)
+                return 1f;
+
+            for (int i = 0; i < basePrices.Count; i++)
+            {
+                var entry = basePrices[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId))
+                    continue;
+
+                if (string.Equals(entry.ResourceId.Trim(), resourceId, StringComparison.Ordinal))
+                    return Mathf.Max(1f, entry.BasePrice);
+            }
+
+            return 1f;
         }
 
         private void DrawSimulationResults()
