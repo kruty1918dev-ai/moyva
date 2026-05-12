@@ -12,8 +12,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
     {
         private const string MaterialsFormatParameterId = "ui-summary-materials-format";
         private const string FoodFormatParameterId = "ui-summary-food-format";
+        private const string MoneyFormatParameterId = "ui-summary-money-format";
         private const string DefaultMaterialsFormat = "Матеріали: {0:0.#}";
         private const string DefaultFoodFormat = "Їжа: {0:0.#}";
+        private const string DefaultMoneyFormat = "Гроші: {0:0.#}";
 
         private readonly EconomyManager _economyManager;
         private readonly EconomyDatabaseSO _database;
@@ -54,6 +56,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
             var normalizedOwnerId = NormalizeOwnerId(ownerId);
             float food = 0f;
             float materials = 0f;
+            float money = 0f;
 
             foreach (var kvp in _economyManager.Settlements)
             {
@@ -64,10 +67,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 if (!string.Equals(NormalizeOwnerId(state.OwnerId), normalizedOwnerId, StringComparison.Ordinal))
                     continue;
 
-                AccumulateCategoryTotals(state.ResourcePool, ref food, ref materials);
+                AccumulateCategoryTotals(state.ResourcePool, ref food, ref materials, ref money);
             }
 
-            return new EconomyCategoryTotals(food, materials);
+            return new EconomyCategoryTotals(food, materials, money);
         }
 
         public EconomyFormattedCategoryTotals GetFormattedOwnerCategoryTotals(string ownerId)
@@ -75,7 +78,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
             var totals = GetOwnerCategoryTotals(ownerId);
             return new EconomyFormattedCategoryTotals(
                 FormatFood(totals.FoodTotal),
-                FormatMaterials(totals.MaterialsTotal));
+                FormatMaterials(totals.MaterialsTotal),
+                FormatMoney(totals.MoneyTotal));
         }
 
         public Dictionary<string, float> GetOwnerResourceTotals(string ownerId)
@@ -102,12 +106,13 @@ namespace Kruty1918.Moyva.Economy.Runtime
         {
             var state = _economyManager.GetSettlement(settlementId);
             if (state == null)
-                return new EconomyCategoryTotals(0f, 0f);
+                return new EconomyCategoryTotals(0f, 0f, 0f);
 
             float food = 0f;
             float materials = 0f;
-            AccumulateCategoryTotals(state.ResourcePool, ref food, ref materials);
-            return new EconomyCategoryTotals(food, materials);
+            float money = 0f;
+            AccumulateCategoryTotals(state.ResourcePool, ref food, ref materials, ref money);
+            return new EconomyCategoryTotals(food, materials, money);
         }
 
         public EconomyFormattedCategoryTotals GetFormattedSettlementCategoryTotals(string settlementId)
@@ -115,7 +120,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
             var totals = GetSettlementCategoryTotals(settlementId);
             return new EconomyFormattedCategoryTotals(
                 FormatFood(totals.FoodTotal),
-                FormatMaterials(totals.MaterialsTotal));
+                FormatMaterials(totals.MaterialsTotal),
+                FormatMoney(totals.MoneyTotal));
         }
 
         public Dictionary<string, float> GetSettlementResourceTotals(string settlementId)
@@ -149,7 +155,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private void AccumulateCategoryTotals(
             Dictionary<string, float> source,
             ref float food,
-            ref float materials)
+            ref float materials,
+            ref float money)
         {
             if (source == null)
                 return;
@@ -163,6 +170,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
                         break;
                     case EconomyResourceCategory.Materials:
                         materials += resource.Value;
+                        break;
+                    case EconomyResourceCategory.Money:
+                        money += resource.Value;
                         break;
                 }
             }
@@ -203,6 +213,12 @@ namespace Kruty1918.Moyva.Economy.Runtime
         {
             var template = GetFormatTemplate(FoodFormatParameterId, DefaultFoodFormat);
             return FormatValue(template, value, DefaultFoodFormat);
+        }
+
+        private string FormatMoney(float value)
+        {
+            var template = GetFormatTemplate(MoneyFormatParameterId, DefaultMoneyFormat);
+            return FormatValue(template, value, DefaultMoneyFormat);
         }
 
         private string GetFormatTemplate(string parameterId, string fallback)

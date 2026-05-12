@@ -183,7 +183,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
 
         [Test]
-        public void ComputeVisibleTiles_ObserverAtEdge_SeesLowGroundImmediatelyBelow()
+        public void ComputeVisibleTiles_ObserverAtEdge_HidesLowGroundImmediatelyBelow()
         {
             var heightMap = new float[MapW, MapH];
             for (int x = 2; x <= 7; x++)
@@ -193,8 +193,9 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
             var result = new List<Vector2Int>(_resolver.ComputeVisibleTiles(new Vector2Int(7, 10), 8, MapW, MapH));
 
-            Assert.Contains(new Vector2Int(8, 10), result, "Standing on the edge should collapse the blind zone directly below the edge.");
-            Assert.Contains(new Vector2Int(9, 10), result);
+            Assert.IsFalse(result.Contains(new Vector2Int(8, 10)), "Standing on the upper edge should not reveal the first low tile directly below the cliff.");
+            Assert.IsFalse(result.Contains(new Vector2Int(9, 10)), "The immediate blind zone below the upper edge should remain hidden.");
+            Assert.Contains(new Vector2Int(11, 10), result, "Farther low-ground tiles can still become visible after the cliff shadow ends.");
         }
 
         [Test]
@@ -336,6 +337,109 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.IsTrue(found, "Partially visible tiles should be returned by coefficient API.");
             Assert.Greater(targetVisibility.Visibility, 0f);
             Assert.Less(targetVisibility.Visibility, 1f);
+        }
+
+        // ─── Level-based shadow casting ─────────────────────────────────────
+
+        [Test]
+        public void LevelWall_SameLevel_HigherWallBetweenBlocksLineOfSight()
+        {
+            var heightMap = new float[MapW, MapH];
+            heightMap[7, 5] = 5f;
+            _resolver.SetHeightMap(heightMap);
+
+            float visibility = _heightVisionService.GetVisibilityFactor(new Vector2Int(5, 5), new Vector2Int(9, 5), 6, 12);
+
+            Assert.AreEqual(0f, visibility, 0.0001f, "A wall higher than both endpoints must fully block the line of sight.");
+        }
+
+        [Test]
+        public void LevelWall_UphillTargetBehindWallOfSameLevel_RemainsHidden()
+        {
+            var heightMap = new float[MapW, MapH];
+            heightMap[6, 5] = 5f;
+            heightMap[7, 5] = 5f;
+            heightMap[8, 5] = 5f;
+            _resolver.SetHeightMap(heightMap);
+
+            float visibility = _heightVisionService.GetVisibilityFactor(new Vector2Int(5, 5), new Vector2Int(8, 5), 6, 12);
+
+            Assert.AreEqual(0f, visibility, 0.0001f, "Only the first edge tile of a higher level should be visible from below.");
+        }
+
+        [Test]
+        public void LevelWall_UphillFirstEdgeTile_IsVisibleFromBelow()
+        {
+            var heightMap = new float[MapW, MapH];
+            heightMap[6, 5] = 5f;
+            heightMap[7, 5] = 5f;
+            heightMap[8, 5] = 5f;
+            _resolver.SetHeightMap(heightMap);
+
+            float visibility = _heightVisionService.GetVisibilityFactor(new Vector2Int(5, 5), new Vector2Int(6, 5), 6, 12);
+
+            Assert.Greater(visibility, 0f, "The first edge tile of a higher level should remain visible from a lower observer.");
+        }
+
+        [Test]
+        public void CliffShadow_ObserverOnEdge_SeesTileDirectlyBelow()
+        {
+            var heightMap = new float[MapW, MapH];
+            for (int x = 2; x <= 7; x++)
+                heightMap[x, 10] = 5f;
+            _resolver.SetHeightMap(heightMap);
+
+            float visibility = _heightVisionService.GetVisibilityFactor(new Vector2Int(7, 10), new Vector2Int(8, 10), 6, 12);
+
+            Assert.Greater(visibility, 0f, "Standing on the cliff edge collapses the blind zone — the tile directly past the edge must be visible.");
+        }
+
+        [Test]
+        public void CliffShadow_ObserverFarFromEdge_HidesTilesPastEdge()
+        {
+            var heightMap = new float[MapW, MapH];
+            for (int x = 2; x <= 7; x++)
+                heightMap[x, 10] = 5f;
+            _resolver.SetHeightMap(heightMap);
+
+            float visibility = _heightVisionService.GetVisibilityFactor(new Vector2Int(3, 10), new Vector2Int(8, 10), 8, 12);
+
+            Assert.AreEqual(0f, visibility, 0.0001f, "Deep on the plateau the tile right past the cliff edge must be hidden by the cliff shadow.");
+        }
+
+        [Test]
+        public void CliffShadow_BiggerDrop_LongerShadow()
+        {
+            var heightMapShallow = new float[MapW, MapH];
+            for (int x = 2; x <= 5; x++)
+                heightMapShallow[x, 10] = 1f;
+            _resolver.SetHeightMap(heightMapShallow);
+            float shallow = _heightVisionService.GetVisibilityFactor(new Vector2Int(3, 10), new Vector2Int(9, 10), 8, 12);
+
+            var heightMapTall = new float[MapW, MapH];
+            for (int x = 2; x <= 5; x++)
+                heightMapTall[x, 10] = 4f;
+            _resolver.SetHeightMap(heightMapTall);
+            float tall = _heightVisionService.GetVisibilityFactor(new Vector2Int(3, 10), new Vector2Int(9, 10), 8, 12);
+
+            Assert.AreEqual(0f, tall, 0.0001f, "A tall cliff must cast a long shadow past the edge.");
+            Assert.GreaterOrEqual(shallow, 0f);
+            Assert.IsTrue(tall <= shallow + 0.0001f, "Bigger drop must not produce more visibility than a shallow drop.");
+        }
+
+        [Test]
+        public void CliffShadow_PlateauWidthDoesNotChangeShadowWhenObserverPositionDoes()
+        {
+            var heightMap = new float[MapW, MapH];
+            for (int x = 2; x <= 7; x++)
+                heightMap[x, 10] = 3f;
+            _resolver.SetHeightMap(heightMap);
+
+            float fromEdge = _heightVisionService.GetVisibilityFactor(new Vector2Int(7, 10), new Vector2Int(8, 10), 6, 12);
+            float fromCenter = _heightVisionService.GetVisibilityFactor(new Vector2Int(3, 10), new Vector2Int(8, 10), 6, 12);
+
+            Assert.Greater(fromEdge, 0f, "On the edge the tile past the cliff must be visible.");
+            Assert.AreEqual(0f, fromCenter, 0.0001f, "Far from the edge the same tile must be hidden by the cliff shadow.");
         }
     }
 }

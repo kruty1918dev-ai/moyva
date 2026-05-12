@@ -18,6 +18,11 @@ MonoBehaviour:
     CombatType: 0
     BaseStamina: 15
     VisionRange: 2
+    VisionHeightBoostPerLevel: 0
+    CanSeeCrest: 1
+    CrestVisibilityFactor: 1
+    DownSlopeVisionBonus: 0
+    SilhouettePenalty: 0
     HitPoints: 100
     BaseLevel: 1
     CuttingDamage: 15
@@ -36,8 +41,83 @@ MonoBehaviour:
     - Type: 0
       Name: Animation 1
       AnimationClip: {fileID: 0}
-      AnimatorParameterName:
+      AnimatorParameterName: 
       SpriteFrames: []
       SpriteFPS: 0
       Loop: 1
       Duration: 1
+  - TypeId: Spearman
+    Role: 1
+    CombatType: 0
+    BaseStamina: 100
+    VisionRange: 3
+    VisionHeightBoostPerLevel: 0
+    CanSeeCrest: 1
+    CrestVisibilityFactor: 1
+    DownSlopeVisionBonus: 0
+    SilhouettePenalty: 0
+    HitPoints: 100
+    BaseLevel: 1
+    CuttingDamage: 15
+    PenetratingDamage: 0
+    CrushingDamage: 0
+    CuttingDefense: 0
+    PenetratingDefense: 0
+    CrushingDefense: 0
+    Prefab: {fileID: 804881041722963365, guid: f6eca2d1e3131f6d69c2b40f8a22f1d0, type: 3}
+    StaminaRandomRange: {x: -5, y: 5}
+    AnimationSettings:
+      MoveDurationPerTile: 0.3
+      DelayOnTile: 0.05
+    CustomSprite: {fileID: 1618817777, guid: 24f577213f615d54ca31f1d5da309e46, type: 3}
+    AnimationClips: []
+  - TypeId: Archer
+    Role: 1
+    CombatType: 0
+    BaseStamina: 100
+    VisionRange: 3
+    VisionHeightBoostPerLevel: 0
+    CanSeeCrest: 1
+    CrestVisibilityFactor: 1
+    DownSlopeVisionBonus: 0
+    SilhouettePenalty: 0
+    HitPoints: 100
+    BaseLevel: 1
+    CuttingDamage: 15
+    PenetratingDamage: 0
+    CrushingDamage: 0
+    CuttingDefense: 0
+    PenetratingDefense: 0
+    CrushingDefense: 0
+    Prefab: {fileID: 3893281008883271442, guid: 6e123bcf7098822d4a01e669ab0f8b46, type: 3}
+    StaminaRandomRange: {x: -5, y: 5}
+    AnimationSettings:
+      MoveDurationPerTile: 0.3
+      DelayOnTile: 0.05
+    CustomSprite: {fileID: 518154196223322196, guid: 53dd6007514ce6947aa259b0acb750fc, type: 3}
+    AnimationClips: []
+  - TypeId: Light-cavalry
+    Role: 1
+    CombatType: 0
+    BaseStamina: 100
+    VisionRange: 3
+    VisionHeightBoostPerLevel: 0
+    CanSeeCrest: 1
+    CrestVisibilityFactor: 1
+    DownSlopeVisionBonus: 0
+    SilhouettePenalty: 0
+    HitPoints: 100
+    BaseLevel: 1
+    CuttingDamage: 15
+    PenetratingDamage: 0
+    CrushingDamage: 0
+    CuttingDefense: 0
+    PenetratingDefense: 0
+    CrushingDefense: 0
+    Prefab: {fileID: 4789759872813502532, guid: c98063cb2ac50f4fe98a1a114ea55281, type: 3}
+    StaminaRandomRange: {x: -5, y: 5}
+    AnimationSettings:
+      MoveDurationPerTile: 0.3
+      DelayOnTile: 0.05
+    CustomSprite: {fileID: -1276854379, guid: 24f577213f615d54ca31f1d5da309e46, type: 3}
+    AnimationClips: []

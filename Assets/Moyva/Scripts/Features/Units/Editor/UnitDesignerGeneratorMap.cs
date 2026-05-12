@@ -81,6 +81,34 @@ namespace Kruty1918.Moyva.Units.Editor
         private bool _generatorPreviewFogUnion;
         private Rect _lastGeneratorPreviewRect;
         private Vector2 _generatorPreviewMouse;
+        private Vector2Int? _generatorPreviewHoveredCell;
+        private Vector2Int? _generatorPreviewSelectedCell;
+        private bool _generatorTileInspectorFoldout = true;
+
+        private struct TileInspectorData
+        {
+            public bool HasMap;
+            public bool HasCell;
+            public int CX, CY;
+            public float Noise;
+            public int Level;
+            public string TileId;
+            public string LevelSource;
+            public bool Visible;
+            public int Viewers;
+            public int TotalUnits;
+            public bool HasActiveUnit;
+            public string DistanceText;
+            public bool ActiveSees;
+            public int ActiveRange;
+            public string LosHint;
+            public bool HasCliffShadow;
+            public string CliffD;
+            public string CliffDh;
+            public string CliffS;
+        }
+
+        private TileInspectorData _tileInspectorCache;
         private bool _generatorPreviewIsPanning;
         private Vector2 _generatorPreviewPanLastMouse;
         private bool _generatorPreviewIsDraggingUnit;
@@ -278,6 +306,7 @@ namespace Kruty1918.Moyva.Units.Editor
             DrawGeneratorAssetSection();
             DrawNoiseSettingsSection();
             DrawHeightLevelsSection();
+            DrawGeneratorPreviewControls();
             EditorGUILayout.EndScrollView();
 
             EditorGUILayout.EndVertical();
@@ -467,19 +496,175 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorGUILayout.BeginVertical(PanelStyle(), options);
             DrawPanelHeader("Map + Fog Preview", IconContent("d_scenevis_visible_hover", string.Empty, "Preview згенерованої мапи з Fog of War та радіусом огляду вибраного юніта."));
 
+            _generatorPreviewScroll = EditorGUILayout.BeginScrollView(_generatorPreviewScroll);
+
             DrawGeneratorPreviewNavigationStrip();
             DrawGeneratorPreviewTexture();
 
-            _generatorPreviewScroll = EditorGUILayout.BeginScrollView(_generatorPreviewScroll);
-            DrawGeneratorPreviewControls();
+            if (BeginFoldoutSection(ref _generatorTileInspectorFoldout, "Інспектор тайла", "d_UnityEditor.InspectorWindow", "Деталі тайла, який вибрано кліком на preview."))
+            {
+                DrawGeneratorTileInspectorPanel();
+                EndFoldoutSection();
+            }
+
             if (BeginFoldoutSection(ref _generatorLegendFoldout, "Легенда висот", "d_FilterByLabel", "Поточні рівні висоти та їхні кольори у preview."))
             {
                 DrawGeneratorPreviewLegend();
                 EndFoldoutSection();
             }
+
             EditorGUILayout.EndScrollView();
 
             EditorGUILayout.EndVertical();
+        }
+
+        private void DrawGeneratorTileInspectorPanel()
+        {
+            // Snapshot during Layout so both Layout and Repaint draw an identical control sequence.
+            // Recalculating during Repaint would vary the control count if hover/active changes
+            // between the two IMGUI passes, causing Unity's "Getting control N position" crash.
+            if (Event.current.type == EventType.Layout)
+                _tileInspectorCache = BuildTileInspectorData();
+
+            var d = _tileInspectorCache;
+
+            if (!d.HasMap)
+            {
+                EditorGUILayout.HelpBox("Згенеруйте мапу, щоб побачити деталі тайла.", MessageType.Info);
+                return;
+            }
+
+            if (!d.HasCell)
+            {
+                EditorGUILayout.HelpBox("Клацніть на тайл, щоб зафіксувати його дані в панелі.", MessageType.None);
+                return;
+            }
+
+            DrawInspectorSectionHeader("Координати");
+            DrawInspectorField("Позиція", $"[{d.CX}, {d.CY}]");
+            DrawInspectorField("Відстань", d.DistanceText);
+
+            DrawInspectorSectionHeader("Висота");
+            DrawInspectorField("Рівень", d.Level >= 0 ? $"{d.Level + 1} ({d.LevelSource})" : "—");
+            DrawInspectorField("Шум", d.Noise.ToString("0.000"));
+
+            DrawInspectorSectionHeader("Тайл");
+            DrawInspectorField("Ідентифікатор", string.IsNullOrEmpty(d.TileId) ? "—" : d.TileId);
+
+            DrawInspectorSectionHeader("Туман");
+            DrawInspectorField("Стан", d.Visible ? "видимий" : "у тумані");
+            DrawInspectorField("Глядачів", $"{d.Viewers} / {d.TotalUnits}");
+
+            DrawInspectorSectionHeader("Активний юніт");
+            if (!d.HasActiveUnit)
+            {
+                EditorGUILayout.HelpBox("Оберіть юніта зі списку сценарію, щоб побачити деталі огляду.", MessageType.None);
+            }
+            else
+            {
+                DrawInspectorField("Бачить", d.ActiveSees ? "так" : "ні");
+                DrawInspectorField("Ефективна дальність", $"r = {d.ActiveRange}");
+                DrawInspectorField("LOS", d.LosHint);
+
+                if (d.HasCliffShadow)
+                {
+                    DrawInspectorSectionHeader("Тінь обриву");
+                    DrawInspectorField("Відстань до краю (D)", d.CliffD);
+                    DrawInspectorField("Перепад (Δh)", d.CliffDh);
+                    DrawInspectorField("Довжина тіні (s)", d.CliffS);
+                }
+            }
+        }
+
+        private TileInspectorData BuildTileInspectorData()
+        {
+            var data = new TileInspectorData();
+            data.HasMap = _generatorPreviewNoiseMap != null;
+            if (!data.HasMap)
+                return data;
+
+            data.HasCell = _generatorPreviewSelectedCell.HasValue;
+            if (!data.HasCell)
+                return data;
+
+            Vector2Int cell = _generatorPreviewSelectedCell.Value;
+            data.CX = Mathf.Clamp(cell.x, 0, _generatorPreviewWidth - 1);
+            data.CY = Mathf.Clamp(cell.y, 0, _generatorPreviewHeight - 1);
+            data.Noise = _generatorPreviewNoiseMap[data.CX, data.CY];
+            data.Level = _generatorPreviewLevelMap != null ? _generatorPreviewLevelMap[data.CX, data.CY] : -1;
+            data.TileId = _generatorPreviewTileMap != null ? _generatorPreviewTileMap[data.CX, data.CY] : string.Empty;
+            data.LevelSource = _generatorPreviewUsesHillNodeLevels ? "пагорб" : "висота";
+            data.Visible = IsCachedScenarioVisible(data.CX, data.CY);
+            data.Viewers = GetCachedScenarioViewers(data.CX, data.CY);
+            data.TotalUnits = Mathf.Max(1, _generatorScenarioUnits.Count);
+
+            var active = GetActiveScenarioUnit();
+            data.HasActiveUnit = active != null;
+            if (!data.HasActiveUnit)
+            {
+                data.DistanceText = "—";
+                return data;
+            }
+
+            int dxA = data.CX - active.Position.x;
+            int dyA = data.CY - active.Position.y;
+            data.DistanceText = $"Δ = {Mathf.Max(Mathf.Abs(dxA), Mathf.Abs(dyA))} тайл.";
+            data.ActiveSees = IsInsideSelectedVision(active, data.CX, data.CY);
+            data.ActiveRange = ResolveSelectedEffectiveVisionRange(active, data.CX, data.CY);
+            data.LosHint = LocalizeTerrainHoverHint(ResolveGeneratorTerrainHoverHint(active, data.CX, data.CY));
+
+            int observerX = Mathf.Clamp(active.Position.x, 0, _generatorPreviewWidth - 1);
+            int observerY = Mathf.Clamp(active.Position.y, 0, _generatorPreviewHeight - 1);
+            int observerLevel = ResolveSelectedUnitHeightLevel(active);
+            int targetLevel = ResolveHeightLevelAt(data.CX, data.CY);
+            if (targetLevel < observerLevel && _generatorPreviewLevelMap != null
+                && TryFindGeneratorDownhillCliffEdge(observerX, observerY, data.CX, data.CY, observerLevel, out int edgeStep, out int cliffDropLevels))
+            {
+                int shadow = ResolveGeneratorCliffShadowTiles(edgeStep, cliffDropLevels);
+                data.HasCliffShadow = true;
+                data.CliffD = edgeStep.ToString();
+                data.CliffDh = $"{cliffDropLevels} рівн.";
+                data.CliffS = shadow > 0 ? $"{shadow} тайл." : "0 (видно)";
+            }
+
+            return data;
+        }
+
+        private void DrawInspectorSectionHeader(string title)
+        {
+            EditorGUILayout.Space(4f);
+            Rect rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
+            EditorGUI.LabelField(rect, title, EditorStyles.miniBoldLabel);
+        }
+
+        private void DrawInspectorField(string label, string value)
+        {
+            Rect rect = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
+            float labelWidth = Mathf.Min(150f, rect.width * 0.42f);
+            Rect labelRect = new Rect(rect.x, rect.y, labelWidth, rect.height);
+            Rect valueRect = new Rect(rect.x + labelWidth + 6f, rect.y, rect.width - labelWidth - 6f, rect.height);
+            EditorGUI.LabelField(labelRect, label);
+            EditorGUI.SelectableLabel(valueRect, value, EditorStyles.label);
+        }
+
+        private static string LocalizeTerrainHoverHint(string raw)
+        {
+            switch (raw)
+            {
+                case "radius": return "поза радіусом";
+                case "self": return "ця ж клітина";
+                case "blind zone": return "тінь обриву";
+                case "down slope": return "схил вниз";
+                case "crest hidden": return "край прихований";
+                case "terrain block": return "блокує рельєф";
+                case "LOS": return "відкритий";
+                default:
+                    if (raw != null && raw.StartsWith("down +"))
+                        return $"схил вниз ({raw.Substring(5)})";
+                    if (raw != null && raw.StartsWith("crest "))
+                        return $"край ({raw.Substring(6)})";
+                    return raw ?? "—";
+            }
         }
 
         private void DrawGeneratorPreviewNavigationStrip()
@@ -532,7 +717,7 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private void DrawGeneratorPreviewControls()
         {
-            BeginSection("Control center", "d_SceneViewCamera", "Згортні блоки для мапи, сценарію, видимості та туману.");
+            BeginSection("Map + Fog", "d_scenevis_visible_hover", "Інлайн-керування мапою, сценарієм, оглядом, туманом і visibility summary.");
 
             if (BeginFoldoutSection(ref _generatorMapSettingsFoldout, "Мапа", "d_Terrain Icon", "Розмір, seed і rebuild preview texture."))
             {
@@ -775,19 +960,6 @@ namespace Kruty1918.Moyva.Units.Editor
             _generatorVisionEdgeMaxBlindZoneTiles = EditorGUILayout.IntSlider(new GUIContent("Макс. сліпа зона", "Верхня межа blind zone, коли юніт стоїть далеко від краю."), Mathf.Max(_generatorVisionEdgeBlindZoneTiles, _generatorVisionEdgeMaxBlindZoneTiles), _generatorVisionEdgeBlindZoneTiles, 10);
             _generatorVisionEdgeDistanceScale = EditorGUILayout.Slider(new GUIContent("Вплив відстані до краю", "Наскільки blind zone росте, якщо юніт стоїть глибше на плато."), _generatorVisionEdgeDistanceScale, 0f, 1.5f);
 
-            var activeScenario = GetActiveScenarioUnit();
-            var activeScenarioUnitConfig = ResolveScenarioUnitConfig(activeScenario);
-            if (activeScenarioUnitConfig != null)
-            {
-                var unitVisionBoost = activeScenarioUnitConfig.FindPropertyRelative("VisionHeightBoostPerLevel");
-                if (unitVisionBoost != null)
-                {
-                    float nextUnitBoost = EditorGUILayout.Slider(new GUIContent("Індивідуальний бустер юніта", "Додається тільки для профілю активного юніта."), Mathf.Max(0f, unitVisionBoost.floatValue), 0f, 4f);
-                    if (!Mathf.Approximately(nextUnitBoost, unitVisionBoost.floatValue))
-                        unitVisionBoost.floatValue = nextUnitBoost;
-                }
-            }
-
             if (EditorGUI.EndChangeCheck())
             {
                 PersistGeneratorVisionPrefs();
@@ -1002,6 +1174,7 @@ namespace Kruty1918.Moyva.Units.Editor
 
             DrawGeneratorVisibilityCellsOverlay(drawRect, viewportSize, cellW, cellH);
             DrawGeneratorPreviewGridOverlay(drawRect, viewportSize, cellW, cellH);
+            DrawGeneratorCellHighlights(drawRect, cellW, cellH);
 
             Handles.BeginGUI();
             for (int i = 0; i < _generatorScenarioUnits.Count; i++)
@@ -1083,7 +1256,7 @@ namespace Kruty1918.Moyva.Units.Editor
             if (evt == null)
                 return false;
 
-            if (evt.type == EventType.MouseMove || evt.type == EventType.Repaint)
+            if (evt.type == EventType.MouseMove || evt.type == EventType.Repaint || evt.type == EventType.MouseDown)
                 _generatorPreviewMouse = evt.mousePosition;
 
             if (evt.type == EventType.ScrollWheel && viewportRect.Contains(evt.mousePosition))
@@ -1154,6 +1327,8 @@ namespace Kruty1918.Moyva.Units.Editor
 
             if (evt.type == EventType.MouseDown)
             {
+                _generatorPreviewSelectedCell = cell;
+
                 if (TryGetScenarioUnitIndexAtCell(cell, out int clickedIndex))
                 {
                     if (_generatorScenarioActiveIndex != clickedIndex)
@@ -1173,6 +1348,7 @@ namespace Kruty1918.Moyva.Units.Editor
                 }
 
                 evt.Use();
+                Repaint();
                 return false;
             }
 
@@ -1230,6 +1406,38 @@ namespace Kruty1918.Moyva.Units.Editor
             float centerY = (_generatorPreviewHeight - active.Position.y - 0.5f) * cellSize;
             Vector2 target = new Vector2(centerX - viewportRect.width * 0.5f, centerY - viewportRect.height * 0.5f);
             return ClampGeneratorScroll(target, viewportRect, contentWidth, contentHeight);
+        }
+
+        private void DrawGeneratorCellHighlights(Rect drawRect, float cellW, float cellH)
+        {
+            if (cellW < 1f || cellH < 1f)
+                return;
+
+            Handles.BeginGUI();
+
+            // hover — прозора підсвітка
+            if (_generatorPreviewHoveredCell.HasValue)
+            {
+                var h = _generatorPreviewHoveredCell.Value;
+                float hx = drawRect.x + h.x * cellW;
+                float hy = drawRect.yMax - (h.y + 1) * cellH;
+                var hoverRect = new Rect(hx, hy, cellW, cellH);
+                Handles.color = new Color(1f, 1f, 1f, 0.15f);
+                Handles.DrawSolidRectangleWithOutline(hoverRect, new Color(1f, 1f, 1f, 0.08f), new Color(1f, 1f, 1f, 0.55f));
+            }
+
+            // selected — яскравіша рамка жовтого кольору
+            if (_generatorPreviewSelectedCell.HasValue)
+            {
+                var s = _generatorPreviewSelectedCell.Value;
+                float sx = drawRect.x + s.x * cellW;
+                float sy = drawRect.yMax - (s.y + 1) * cellH;
+                var selRect = new Rect(sx, sy, cellW, cellH);
+                Handles.color = new Color(1f, 0.85f, 0f, 1f);
+                Handles.DrawSolidRectangleWithOutline(selRect, new Color(1f, 0.85f, 0f, 0.18f), new Color(1f, 0.85f, 0f, 1f));
+            }
+
+            Handles.EndGUI();
         }
 
         private void DrawGeneratorVisibilityCellsOverlay(Rect drawRect, Vector2 viewportSize, float cellW, float cellH)
@@ -1374,46 +1582,33 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private void DrawGeneratorPreviewHover(Rect viewportRect, Rect drawRect)
         {
-            if (_generatorPreviewTexture == null || !viewportRect.Contains(_generatorPreviewMouse))
+            if (_generatorPreviewTexture == null || _generatorPreviewNoiseMap == null)
+            {
+                _generatorPreviewHoveredCell = null;
                 return;
+            }
+
+            if (!viewportRect.Contains(_generatorPreviewMouse))
+            {
+                _generatorPreviewHoveredCell = null;
+                return;
+            }
 
             Vector2 contentMouse = ViewportToContentPoint(viewportRect, _generatorPreviewMouse);
             if (!drawRect.Contains(contentMouse))
+            {
+                _generatorPreviewHoveredCell = null;
                 return;
+            }
 
             Vector2Int cell = ScreenToPreviewCell(drawRect, contentMouse);
-            if (_generatorPreviewNoiseMap == null)
-                return;
-
-            float h = _generatorPreviewNoiseMap[cell.x, cell.y];
-            string tile = _generatorPreviewTileMap != null ? _generatorPreviewTileMap[cell.x, cell.y] : string.Empty;
-            int level = _generatorPreviewLevelMap != null ? _generatorPreviewLevelMap[cell.x, cell.y] : -1;
-            bool visible = IsCachedScenarioVisible(cell.x, cell.y);
-            int viewers = GetCachedScenarioViewers(cell.x, cell.y);
-            var active = GetActiveScenarioUnit();
-            bool activeSees = IsInsideSelectedVision(active, cell.x, cell.y);
-            int activeRange = ResolveSelectedEffectiveVisionRange(active, cell.x, cell.y);
-            string terrainHint = ResolveGeneratorTerrainHoverHint(active, cell.x, cell.y);
-            string source = _generatorPreviewUsesHillNodeLevels ? "hill" : "height";
-            string text = $"[{cell.x}, {cell.y}] h={h:0.000} level={level + 1} ({source}) tile={tile} {(visible ? "visible" : "fog")}, viewers={viewers}/{Mathf.Max(1, _generatorScenarioUnits.Count)} | active {(activeSees ? "sees" : "blocked")} r={activeRange} {terrainHint}";
-
-            var style = new GUIStyle(EditorStyles.label)
+            if (cell.x < 0 || cell.y < 0 || cell.x >= _generatorPreviewWidth || cell.y >= _generatorPreviewHeight)
             {
-                normal = { textColor = Color.white },
-                fontSize = 11,
-                padding = new RectOffset(6, 6, 3, 3),
-                wordWrap = true
-            };
+                _generatorPreviewHoveredCell = null;
+                return;
+            }
 
-            var content = new GUIContent(text);
-            Vector2 size = style.CalcSize(content);
-            size.x = Mathf.Min(Mathf.Max(220f, size.x), Mathf.Max(220f, viewportRect.width - 16f));
-            size.y = style.CalcHeight(content, size.x);
-            float x = Mathf.Min(_generatorPreviewMouse.x + 14f, viewportRect.xMax - size.x - 8f);
-            float y = Mathf.Clamp(_generatorPreviewMouse.y - size.y - 6f, viewportRect.y + 8f, viewportRect.yMax - size.y - 8f);
-            Rect bg = new Rect(x - 2f, y - 2f, size.x + 4f, size.y + 4f);
-            EditorGUI.DrawRect(bg, new Color(0f, 0f, 0f, 0.78f));
-            GUI.Label(new Rect(x, y, size.x, size.y), content, style);
+            _generatorPreviewHoveredCell = cell;
         }
 
         private string ResolveGeneratorTerrainHoverHint(PreviewScenarioUnit observer, int targetX, int targetY)
@@ -1429,14 +1624,16 @@ namespace Kruty1918.Moyva.Units.Editor
             float observerHeight = SampleNoiseHeight(observerX, observerY);
             float targetHeight = SampleNoiseHeight(targetX, targetY);
             float threshold = GetGeneratorEdgeHeightThreshold();
+            int observerLevel = ResolveSelectedUnitHeightLevel(observer);
+            int targetLevel = ResolveHeightLevelAt(targetX, targetY);
             int dx = targetX - observerX;
             int dy = targetY - observerY;
             int gridDistance = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
 
-            if (observerHeight - targetHeight >= threshold
-                && TryFindGeneratorDownhillEdge(observerX, observerY, targetX, targetY, out int downhillEdgeStep, out int distanceToEdge))
+            if (targetLevel < observerLevel
+                && TryFindGeneratorDownhillCliffEdge(observerX, observerY, targetX, targetY, observerLevel, out int downhillEdgeStep, out int cliffDropLevels))
             {
-                if (IsGeneratorTargetHiddenByDownhillEdge(gridDistance, downhillEdgeStep, distanceToEdge))
+                if (IsGeneratorHiddenByCliffShadow(gridDistance, downhillEdgeStep, cliffDropLevels))
                     return "blind zone";
 
                 float bonus = ResolveDirectionalDownSlopeVisionBonus(observer, targetX, targetY);
@@ -2743,17 +2940,19 @@ namespace Kruty1918.Moyva.Units.Editor
 
             float observerHeight = SampleNoiseHeight(observerX, observerY);
             float targetHeight = SampleNoiseHeight(targetX, targetY);
-            if (observerHeight - targetHeight < GetGeneratorEdgeHeightThreshold())
+            int observerLevel = ResolveSelectedUnitHeightLevel(observer);
+            int targetLevel = ResolveHeightLevelAt(targetX, targetY);
+            if (targetLevel >= observerLevel)
                 return 0f;
 
-            if (!TryFindGeneratorDownhillEdge(observerX, observerY, targetX, targetY, out _, out int distanceToEdge))
+            if (!TryFindGeneratorDownhillCliffEdge(observerX, observerY, targetX, targetY, observerLevel, out int edgeStep, out _))
                 return 0f;
 
             int peekDistance = Mathf.Max(0, _generatorVisionEdgePeekDistanceTiles);
-            if (distanceToEdge > peekDistance)
+            if (edgeStep > peekDistance)
                 return 0f;
 
-            float distanceFactor = 1f - distanceToEdge / (peekDistance + 1f);
+            float distanceFactor = 1f - edgeStep / (peekDistance + 1f);
             return ResolveScenarioDownSlopeVisionBonus(observer) * Mathf.Clamp01(distanceFactor);
         }
 
@@ -2782,16 +2981,19 @@ namespace Kruty1918.Moyva.Units.Editor
             int gridDistance = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
             float distance = Mathf.Sqrt(dx * dx + dy * dy);
             int ignoredTerrainSteps = 0;
-            if (observerHeight - targetHeight >= edgeThreshold)
+            if (targetLevel < observerLevel)
             {
-                if (TryFindGeneratorDownhillEdge(observerX, observerY, targetX, targetY, out int downhillEdgeStep, out int distanceToEdge))
+                if (TryFindGeneratorDownhillCliffEdge(observerX, observerY, targetX, targetY, observerLevel, out int downhillEdgeStep, out int cliffDropLevels))
                 {
-                    if (IsGeneratorTargetHiddenByDownhillEdge(gridDistance, downhillEdgeStep, distanceToEdge))
+                    if (IsGeneratorHiddenByCliffShadow(gridDistance, downhillEdgeStep, cliffDropLevels))
                         return false;
 
                     ignoredTerrainSteps = downhillEdgeStep;
                 }
             }
+
+            if (IsGeneratorBlockedByLevelWall(observerX, observerY, targetX, targetY, observerLevel, targetLevel))
+                return false;
 
             int steps = Mathf.Clamp(Mathf.CeilToInt(distance * 0.8f), 2, 28);
             float ignoredTerrainT = gridDistance > 0
@@ -2877,12 +3079,18 @@ namespace Kruty1918.Moyva.Units.Editor
             return Mathf.Clamp01(silhouette != null ? silhouette.floatValue : 0f);
         }
 
-        private bool TryFindGeneratorDownhillEdge(int observerX, int observerY, int targetX, int targetY, out int edgeStep, out int distanceToEdge)
+        /// <summary>
+        /// Locates the first downhill cliff edge along origin→target using integer level grid.
+        /// edgeStep is the 1-based Bresenham step of the cliff-top tile (so D = edgeStep, where
+        /// D is observer-to-edge distance in tiles). cliffDropLevels is the level drop at the edge.
+        /// </summary>
+        private bool TryFindGeneratorDownhillCliffEdge(int observerX, int observerY, int targetX, int targetY, int observerLevel, out int edgeStep, out int cliffDropLevels)
         {
             edgeStep = -1;
-            distanceToEdge = 0;
+            cliffDropLevels = 0;
 
-            float previousHeight = SampleNoiseHeight(observerX, observerY);
+            int previousLevel = observerLevel;
+            int previousStep = 0;
             int currentX = observerX;
             int currentY = observerY;
             int dx = Mathf.Abs(targetX - observerX);
@@ -2891,7 +3099,6 @@ namespace Kruty1918.Moyva.Units.Editor
             int sy = observerY < targetY ? 1 : -1;
             int error = dx - dy;
             int stepIndex = 0;
-            float edgeThreshold = GetGeneratorEdgeHeightThreshold();
 
             while (currentX != targetX || currentY != targetY)
             {
@@ -2909,41 +3116,93 @@ namespace Kruty1918.Moyva.Units.Editor
                 }
 
                 stepIndex++;
-                float currentHeight = SampleNoiseHeight(currentX, currentY);
-                if (previousHeight - currentHeight >= edgeThreshold)
+                int currentLevel = ResolveHeightLevelAt(currentX, currentY);
+                if (currentLevel < previousLevel)
                 {
-                    edgeStep = stepIndex;
-                    distanceToEdge = Mathf.Max(0, stepIndex - 1);
+                    edgeStep = previousStep;
+                    cliffDropLevels = previousLevel - currentLevel;
                     return true;
                 }
 
-                previousHeight = currentHeight;
+                previousLevel = currentLevel;
+                previousStep = stepIndex;
             }
 
             return false;
         }
 
-        private bool IsGeneratorTargetHiddenByDownhillEdge(int gridDistance, int edgeStep, int distanceToEdge)
+        private bool IsGeneratorHiddenByCliffShadow(int gridDistance, int edgeStep, int cliffDropLevels)
         {
-            int blindZone = ResolveGeneratorDownhillBlindZoneTiles(distanceToEdge);
-            if (blindZone <= 0)
+            int shadow = ResolveGeneratorCliffShadowTiles(edgeStep, cliffDropLevels);
+            if (shadow <= 0)
                 return false;
 
-            int distancePastEdge = Mathf.Max(1, gridDistance - edgeStep + 1);
-            return distancePastEdge <= blindZone;
+            int distancePastEdge = Mathf.Max(0, gridDistance - edgeStep);
+            return distancePastEdge <= shadow;
         }
 
-        private int ResolveGeneratorDownhillBlindZoneTiles(int distanceToEdge)
+        /// <summary>
+        /// Level-based wall check that mirrors HeightAwareVisionService: tiles higher than both
+        /// endpoints fully block the line of sight, and uphill rays can see only the first edge
+        /// tile of the higher level.
+        /// </summary>
+        private bool IsGeneratorBlockedByLevelWall(int observerX, int observerY, int targetX, int targetY, int observerLevel, int targetLevel)
         {
-            int peekDistance = Mathf.Max(0, _generatorVisionEdgePeekDistanceTiles);
-            if (distanceToEdge <= peekDistance)
+            if (_generatorPreviewLevelMap == null)
+                return false;
+
+            int walledLevel = Mathf.Max(observerLevel, targetLevel);
+            bool uphill = targetLevel > observerLevel;
+
+            int cx = observerX;
+            int cy = observerY;
+            int dx = Mathf.Abs(targetX - observerX);
+            int dy = Mathf.Abs(targetY - observerY);
+            int sx = observerX < targetX ? 1 : -1;
+            int sy = observerY < targetY ? 1 : -1;
+            int error = dx - dy;
+
+            while (cx != targetX || cy != targetY)
+            {
+                int twiceError = error * 2;
+                if (twiceError > -dy)
+                {
+                    error -= dy;
+                    cx += sx;
+                }
+
+                if (twiceError < dx)
+                {
+                    error += dx;
+                    cy += sy;
+                }
+
+                if (cx == targetX && cy == targetY)
+                    break;
+
+                int stepLevel = ResolveHeightLevelAt(cx, cy);
+                if (stepLevel > walledLevel)
+                    return true;
+
+                if (uphill && stepLevel >= targetLevel)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private int ResolveGeneratorCliffShadowTiles(int distanceToEdge, int cliffDropLevels)
+        {
+            if (cliffDropLevels <= 0 || distanceToEdge <= 0)
                 return 0;
 
             float strength = Mathf.Clamp01(_generatorVisionDownhillPenalty);
-            int baseBlindZone = Mathf.RoundToInt(Mathf.Max(0, _generatorVisionEdgeBlindZoneTiles) * Mathf.Lerp(0.5f, 1.25f, strength));
-            int maxBlindZone = Mathf.Max(baseBlindZone, _generatorVisionEdgeMaxBlindZoneTiles);
-            float extraBlindZone = Mathf.Max(0, distanceToEdge - peekDistance) * Mathf.Max(0f, _generatorVisionEdgeDistanceScale);
-            return Mathf.Clamp(Mathf.RoundToInt(baseBlindZone + extraBlindZone), 0, maxBlindZone);
+            float eye = Mathf.Lerp(1.6f, 0.4f, strength);
+            int geometricShadow = Mathf.CeilToInt(distanceToEdge * cliffDropLevels / Mathf.Max(0.1f, eye));
+
+            int minBlindZone = Mathf.Max(0, _generatorVisionEdgeBlindZoneTiles);
+            int maxBlindZone = Mathf.Max(minBlindZone, _generatorVisionEdgeMaxBlindZoneTiles);
+            return Mathf.Clamp(Mathf.Max(geometricShadow, minBlindZone), 0, maxBlindZone);
         }
 
         private float ResolveGeneratorUphillEdgePeekFactor(int observerX, int observerY, int targetX, int targetY, float targetHeight)
