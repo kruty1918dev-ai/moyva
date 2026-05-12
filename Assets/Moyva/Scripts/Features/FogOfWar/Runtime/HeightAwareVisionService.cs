@@ -94,6 +94,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (TryResolveDownhillEdgeOcclusion(origin, target, distance, out int ignoredTerrainSteps))
                 return 0f;
 
+            if (IsBlockedByLevelWall(origin, target))
+                return 0f;
+
             int sampleCount = ResolveRaySampleCount(distance, safeBaseRange, effectiveRange);
             int passed = 0;
             for (int i = 0; i < sampleCount; i++)
@@ -139,13 +142,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (bonus <= 0f)
                 return 0;
 
-            if (GetHeight(origin) - GetHeight(target) < GetTerrainEdgeHeightThreshold())
+            int originLevel = GetLevel(origin);
+            int targetLevel = GetLevel(target);
+            if (targetLevel >= originLevel)
                 return 0;
 
-            if (!TryFindDownhillEdge(origin, target, out _, out int distanceToEdge))
+            if (!TryFindDownhillCliffEdge(origin, target, originLevel, out int edgeStep, out _))
                 return 0;
 
-            return distanceToEdge <= GetTerrainEdgePeekDistanceTiles()
+            return edgeStep <= GetTerrainEdgePeekDistanceTiles()
                 ? Mathf.CeilToInt(bonus)
                 : 0;
         }
@@ -188,15 +193,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             float originHeight = GetHeight(origin);
             float targetHeight = GetHeight(target);
+            int originLevel = GetLevel(origin);
+            int targetLevel = GetLevel(target);
             int ignoredTerrainSteps = 0;
-            if (IsTerrainEdgeLineOfSightEnabled() && originHeight - targetHeight >= GetTerrainEdgeHeightThreshold())
+            if (IsTerrainEdgeLineOfSightEnabled() && targetLevel < originLevel)
             {
-                if (TryFindDownhillEdge(origin, target, out int downhillEdgeStep, out int distanceToEdge))
+                if (TryFindDownhillCliffEdge(origin, target, originLevel, out int edgeStep, out int cliffDropLevels))
                 {
-                    if (IsHiddenByDownhillEdge(distance, downhillEdgeStep, distanceToEdge))
+                    int distancePastEdge = Mathf.Max(0, distance - edgeStep);
+                    if (IsHiddenByCliffShadow(edgeStep, distancePastEdge, cliffDropLevels))
                         return false;
 
-                    ignoredTerrainSteps = downhillEdgeStep;
+                    ignoredTerrainSteps = edgeStep;
                 }
             }
 
@@ -252,18 +260,19 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (!IsTerrainEdgeLineOfSightEnabled())
                 return false;
 
-            float originHeight = GetHeight(origin);
-            float targetHeight = GetHeight(target);
-            if (originHeight - targetHeight < GetTerrainEdgeHeightThreshold())
+            int originLevel = GetLevel(origin);
+            int targetLevel = GetLevel(target);
+            if (targetLevel >= originLevel)
                 return false;
 
-            if (!TryFindDownhillEdge(origin, target, out int downhillEdgeStep, out int distanceToEdge))
+            if (!TryFindDownhillCliffEdge(origin, target, originLevel, out int edgeStep, out int cliffDropLevels))
                 return false;
 
-            if (IsHiddenByDownhillEdge(distance, downhillEdgeStep, distanceToEdge))
+            int distancePastEdge = Mathf.Max(0, distance - edgeStep);
+            if (IsHiddenByCliffShadow(edgeStep, distancePastEdge, cliffDropLevels))
                 return true;
 
-            ignoredTerrainSteps = downhillEdgeStep;
+            ignoredTerrainSteps = edgeStep;
             return false;
         }
 
@@ -386,13 +395,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
         }
 
-        private bool TryFindDownhillEdge(Vector2Int origin, Vector2Int target, out int edgeStep, out int distanceToEdge)
+        /// <summary>
+        /// Walks origin→target on integer level grid and locates the first downhill cliff edge —
+        /// a tile whose level is strictly lower than the previous tile (cliff top).
+        /// Returns the 1-based Bresenham step index of the cliff-top tile and the cliff drop in level units.
+        /// </summary>
+        private bool TryFindDownhillCliffEdge(Vector2Int origin, Vector2Int target, int originLevel, out int edgeStep, out int cliffDropLevels)
         {
             edgeStep = -1;
-            distanceToEdge = 0;
+            cliffDropLevels = 0;
 
-            float threshold = GetTerrainEdgeHeightThreshold();
-            float previousHeight = GetHeight(origin);
+            int previousLevel = originLevel;
+            int previousStep = 0;
             var current = origin;
             int dx = Mathf.Abs(target.x - origin.x);
             int dy = Mathf.Abs(target.y - origin.y);
@@ -417,40 +431,104 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 }
 
                 stepIndex++;
-                float currentHeight = GetHeight(current);
-                if (previousHeight - currentHeight >= threshold)
+                int currentLevel = GetLevel(current);
+                if (currentLevel < previousLevel)
                 {
-                    edgeStep = stepIndex;
-                    distanceToEdge = Mathf.Max(0, stepIndex - 1);
+                    edgeStep = previousStep;
+                    cliffDropLevels = previousLevel - currentLevel;
                     return true;
                 }
 
-                previousHeight = currentHeight;
+                previousLevel = currentLevel;
+                previousStep = stepIndex;
             }
 
             return false;
         }
 
-        private bool IsHiddenByDownhillEdge(int distance, int edgeStep, int distanceToEdge)
+        /// <summary>
+        /// Geometric cliff shadow length in tiles: s = ceil(D · Δh / eye).
+        /// D — distance in tiles from observer to the cliff-top tile.
+        /// Δh — cliff drop in level units. eye — observer eye height above the plateau.
+        /// When D == 0 (observer on the very edge), shadow collapses to zero. Result is clamped to
+        /// [TerrainEdgeBlindZoneTiles when D &gt; peek, TerrainEdgeMaxBlindZoneTiles].
+        /// </summary>
+        private bool IsHiddenByCliffShadow(int edgeStep, int distancePastEdge, int cliffDropLevels)
         {
-            int blindZone = ResolveDownhillBlindZoneTiles(distanceToEdge);
-            if (blindZone <= 0)
+            int shadow = ResolveCliffShadowTiles(edgeStep, cliffDropLevels);
+            if (shadow <= 0)
                 return false;
 
-            int distancePastEdge = Mathf.Max(1, distance - edgeStep + 1);
-            return distancePastEdge <= blindZone;
+            return distancePastEdge <= shadow;
         }
 
-        private int ResolveDownhillBlindZoneTiles(int distanceToEdge)
+        private int ResolveCliffShadowTiles(int distanceToEdge, int cliffDropLevels)
         {
-            int peekDistance = GetTerrainEdgePeekDistanceTiles();
-            if (distanceToEdge <= peekDistance)
+            if (cliffDropLevels <= 0 || distanceToEdge <= 0)
                 return 0;
 
-            int baseBlindZone = GetTerrainEdgeBlindZoneTiles();
-            int maxBlindZone = Mathf.Max(baseBlindZone, GetTerrainEdgeMaxBlindZoneTiles());
-            float extraBlindZone = Mathf.Max(0, distanceToEdge - peekDistance) * GetTerrainEdgeBlindZoneDistanceScale();
-            return Mathf.Clamp(Mathf.RoundToInt(baseBlindZone + extraBlindZone), 0, maxBlindZone);
+            float eye = Mathf.Max(0.05f, GetObserverEyeHeightOffset());
+            int geometricShadow = Mathf.CeilToInt(distanceToEdge * cliffDropLevels / eye);
+
+            int minBlindZone = GetTerrainEdgeBlindZoneTiles();
+            int maxBlindZone = Mathf.Max(minBlindZone, GetTerrainEdgeMaxBlindZoneTiles());
+            return Mathf.Clamp(Mathf.Max(geometricShadow, minBlindZone), 0, maxBlindZone);
+        }
+
+        /// <summary>
+        /// Level-based shadow casting: any tile higher than both endpoints fully blocks the ray.
+        /// For uphill rays, intermediate tiles at or above the target level also block — only
+        /// the first edge tile of the higher level can be seen from below.
+        /// </summary>
+        private bool IsBlockedByLevelWall(Vector2Int origin, Vector2Int target)
+        {
+            if (_heightMap == null)
+                return false;
+
+            int originLevel = GetLevel(origin);
+            int targetLevel = GetLevel(target);
+            int walledLevel = Mathf.Max(originLevel, targetLevel);
+            bool uphill = targetLevel > originLevel;
+
+            var current = origin;
+            int dx = Mathf.Abs(target.x - origin.x);
+            int dy = Mathf.Abs(target.y - origin.y);
+            int sx = origin.x < target.x ? 1 : -1;
+            int sy = origin.y < target.y ? 1 : -1;
+            int error = dx - dy;
+
+            while (current != target)
+            {
+                int twiceError = error * 2;
+                if (twiceError > -dy)
+                {
+                    error -= dy;
+                    current.x += sx;
+                }
+
+                if (twiceError < dx)
+                {
+                    error += dx;
+                    current.y += sy;
+                }
+
+                if (current == target)
+                    break;
+
+                int stepLevel = GetLevel(current);
+                if (stepLevel > walledLevel)
+                    return true;
+
+                if (uphill && stepLevel >= targetLevel)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private int GetLevel(Vector2Int position)
+        {
+            return Mathf.Max(0, Mathf.RoundToInt(GetHeight(position)));
         }
 
         private float ResolveUphillEdgePeekFactor(Vector2Int origin, Vector2Int target)
