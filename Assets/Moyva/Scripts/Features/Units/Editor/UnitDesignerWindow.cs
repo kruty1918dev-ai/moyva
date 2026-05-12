@@ -239,7 +239,15 @@ namespace Kruty1918.Moyva.Units.Editor
             RefreshGeneratorMapSerializedObjects();
 
             if (_staleTracker.IsStale(_registry))
-                ShowNotification(new GUIContent("Дані застарілі: ассет змінено зовні. Оновіть/збережіть зміни."));
+            {
+                // Якщо у нас немає локальних незбережених правок — тихо приймаємо зовнішній стан,
+                // щоб не спамити нотифікацією про застарілість після власних авто-збережень Unity.
+                bool hasPendingEdits = _registryObject != null && _registryObject.hasModifiedProperties;
+                if (hasPendingEdits)
+                    ShowNotification(new GUIContent("Дані застарілі: ассет змінено зовні. Оновіть/збережіть зміни."));
+                else
+                    _staleTracker.Capture(_registry);
+            }
         }
 
         private void OnGUI()
@@ -925,6 +933,9 @@ namespace Kruty1918.Moyva.Units.Editor
             DrawAnimatedPreview(previewRect, unit, prefab, sprite);
 
             EditorGUILayout.Space(4f);
+            DrawInlinePreviewTuningSliders(unit);
+
+            EditorGUILayout.Space(4f);
             DrawFocusedParameterDocCard(unit);
 
             EditorGUILayout.Space(6f);
@@ -1159,6 +1170,35 @@ namespace Kruty1918.Moyva.Units.Editor
                 default:
                     return $"Діапазон: {min}..{max}.";
             }
+        }
+
+        private void DrawInlinePreviewTuningSliders(SerializedProperty unit)
+        {
+            if (unit == null)
+                return;
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField(
+                new GUIContent("Швидке редагування під превʼю", "Змінюйте ключові параметри юніта прямо тут — preview оновиться миттєво."),
+                EditorStyles.boldLabel);
+
+            DrawVisualIntSlider(unit, "HitPoints", "HP", 1, 300, Good, "Очки життя. Впливає на розмір юніта та зелену шкалу у preview.", UnitDesignerPreviewFocus.Health, showDoc: false);
+            DrawVisualIntSlider(unit, "BaseLevel", "Рівень", 1, 10, Accent, "Базовий рівень юніта. Впливає на масштаб у preview.", UnitDesignerPreviewFocus.Level, showDoc: false);
+            DrawVisualIntSlider(unit, "VisionRange", "Огляд", 1, 20, VisionOutline, "Радіус видимості (у тайлах).", UnitDesignerPreviewFocus.Vision, showDoc: false);
+            DrawVisualFloatSlider(unit, "BaseStamina", "Стаміна", 0f, 300f, new Color(0.25f, 0.74f, 0.46f), "Запас витривалості юніта.", UnitDesignerPreviewFocus.Stamina, showDoc: false);
+
+            EditorGUILayout.Space(2f);
+            EditorGUILayout.LabelField("Атака", EditorStyles.miniBoldLabel);
+            DrawVisualIntSlider(unit, "PenetratingDamage", "Колюча", 0, 300, PenetratingColor, "Колюча атака.", UnitDesignerPreviewFocus.Combat, showDoc: false);
+            DrawVisualIntSlider(unit, "CuttingDamage", "Ріжуча", 0, 300, CuttingColor, "Ріжуча атака.", UnitDesignerPreviewFocus.Combat, showDoc: false);
+            DrawVisualIntSlider(unit, "CrushingDamage", "Дроб.", 0, 300, CrushingColor, "Дробильна атака.", UnitDesignerPreviewFocus.Combat, showDoc: false);
+
+            EditorGUILayout.LabelField("Захист", EditorStyles.miniBoldLabel);
+            DrawVisualIntSlider(unit, "PenetratingDefense", "Колючий", 0, 300, PenetratingColor, "Захист від колючих атак.", UnitDesignerPreviewFocus.Defense, showDoc: false);
+            DrawVisualIntSlider(unit, "CuttingDefense", "Ріжучий", 0, 300, CuttingColor, "Захист від ріжучих атак.", UnitDesignerPreviewFocus.Defense, showDoc: false);
+            DrawVisualIntSlider(unit, "CrushingDefense", "Дроб.", 0, 300, CrushingColor, "Захист від дробильних атак.", UnitDesignerPreviewFocus.Defense, showDoc: false);
+
+            EditorGUILayout.EndVertical();
         }
 
         private void DrawVisualParameterTuningSection(SerializedProperty unit)
@@ -3216,8 +3256,16 @@ namespace Kruty1918.Moyva.Units.Editor
 
             if (_staleTracker.IsStale(_registry))
             {
-                _lastBlockedApplyReason = "Дані застарілі: ассет змінено зовні.";
-                return false;
+                // Якщо немає локальних правок — це лише наслідок зовнішнього/Unity-авто-збереження
+                // ассета. Тихо синхронізуємось і продовжуємо, інакше блокуємо.
+                bool hasPendingEdits = _registryObject.hasModifiedProperties;
+                if (hasPendingEdits)
+                {
+                    _lastBlockedApplyReason = "Дані застарілі: ассет змінено зовні.";
+                    return false;
+                }
+
+                _staleTracker.Capture(_registry);
             }
 
             string baselineSnapshot = SerializedDiffPreviewUtility.CaptureSnapshot(_registry);
@@ -3252,6 +3300,10 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 var changeRows = SerializedDiffPreviewUtility.BuildDiff(_registryObject, baselineSnapshot, maxItems: 120);
                 EditorContentChangeLog.Write("UnitDesigner", source, _registry, changeRows);
+                // Зберігаємо ассет одразу, щоб timestamp на диску збігся зі знімком трекера —
+                // інакше відкладене авто-збереження Unity вважатиметься "зовнішньою" зміною.
+                if (_registry != null)
+                    AssetDatabase.SaveAssetIfDirty(_registry);
                 _staleTracker.Capture(_registry);
                 _lastBlockedApplyReason = string.Empty;
             }
