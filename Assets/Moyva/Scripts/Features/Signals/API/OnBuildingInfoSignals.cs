@@ -49,4 +49,38 @@ namespace Kruty1918.Moyva.Signals
         public string ObjectId;
         public Vector2Int Position;
     }
+
+    /// <summary>
+    /// Сигнал для фокусування камери на позицію будівлі. Закриває панель замку.
+    /// </summary>
+    public struct CameraFocusBuildingSignal
+    {
+        public Vector2Int Position;
+        public string BuildingId;
+    }
+
+    public struct SettlementStatisticsMenuRequestedSignal
+    {
+        public string SettlementId;
+        public string OwnerId;
+    }
+
+    public struct KingdomStatisticsMenuRequestedSignal
+    {
+        public string OwnerId;
+        public string PreferredSettlementId;
+    }
+
+    public struct StatisticsMenuClosedSignal
+    {
+    }
+
+    /// <summary>
+    /// Нейтральний провайдер локального playerId. Реалізується мультиплеєрним шаром,
+    /// а інші модулі можуть інжектити його як optional dependency.
+    /// </summary>
+    public interface ILocalPlayerIdentityProvider
+    {
+        string LocalPlayerId { get; }
+    }
 }

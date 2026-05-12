@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Units.API;
+using Kruty1918.Moyva.Faction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -31,6 +32,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private readonly IMapObjectRegistryService _mapObjectRegistryService;
         private readonly IMapObjectEconomyService _mapObjectEconomyService;
         private readonly IUnitMovementService _unitMovementService;
+        private readonly IUnitCombatService _unitCombatService;
+        private readonly IFactionOwnershipService _factionOwnershipService;
+        private readonly IFactionRegistry _factionRegistry;
+        private readonly IEconomyInfoMediator _economyInfoMediator;
+        private readonly ILocalPlayerIdentityProvider _localPlayerIdentityProvider;
         private readonly SignalBus _signalBus;
         private GameModeType _currentMode = GameModeType.Normal;
         
@@ -52,6 +58,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             IMapObjectRegistryService mapObjectRegistryService,
             IMapObjectEconomyService mapObjectEconomyService,
             IUnitMovementService unitMovementService, 
+            IUnitCombatService unitCombatService,
+            IFactionOwnershipService factionOwnershipService,
+            IFactionRegistry factionRegistry,
+            [InjectOptional] IEconomyInfoMediator economyInfoMediator,
+            [InjectOptional] ILocalPlayerIdentityProvider localPlayerIdentityProvider,
             SignalBus signalBus)
         {
             _gridService = gridService;
@@ -60,6 +71,11 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             _mapObjectRegistryService = mapObjectRegistryService;
             _mapObjectEconomyService = mapObjectEconomyService;
             _unitMovementService = unitMovementService;
+            _unitCombatService = unitCombatService;
+            _factionOwnershipService = factionOwnershipService;
+            _factionRegistry = factionRegistry;
+            _economyInfoMediator = economyInfoMediator;
+            _localPlayerIdentityProvider = localPlayerIdentityProvider;
             _signalBus = signalBus;
         }
 
@@ -149,6 +165,14 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             // --- Клік на будівлю ---
             if (isBuilding)
             {
+                // Перевіряємо, чи це власна будівля гравця
+                if (!CanSelectBuilding(occupantId, position))
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[Interaction] Building '{occupantId}' at {position} is not selectable by local player.");
+                    return;
+                }
+
                 // Повторний клік на вже відкриту будівлю — закрити панель (toggle)
                 if (_inspectedKind == WorldInfoSelectionKind.Building
                     && string.Equals(_inspectedObjectId, occupantId, StringComparison.Ordinal))
@@ -179,6 +203,12 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 {
                     if (VerboseLogs)
                         Debug.Log($"[Interaction] Map object '{occupantId}' at {position} is not interactable. Ignored.");
+                    
+                    // Закриваємо панель інформації при кліку на неінтерактивний об'єкт
+                    if (_inspectedKind != WorldInfoSelectionKind.None)
+                    {
+                        _signalBus.Fire(new WorldInfoPanelClosedSignal());
+                    }
                     return;
                 }
 
@@ -208,6 +238,13 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             // --- Клік на юніта ---
             if (isUnit)
             {
+                if (!string.IsNullOrEmpty(_selectedUnitId)
+                    && !string.Equals(occupantId, _selectedUnitId, StringComparison.Ordinal)
+                    && TryHandleAttack(_selectedUnitId, occupantId))
+                {
+                    return;
+                }
+
                 // Повторний клік на вже вибраного юніта — зняти вибір (toggle)
                 if (string.Equals(occupantId, _selectedUnitId, StringComparison.Ordinal))
                 {
@@ -218,6 +255,13 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 }
 
                 // Вибрати нового юніта (замість попереднього)
+                if (!CanSelectUnit(occupantId))
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[Interaction] Unit '{occupantId}' is not selectable by local player.");
+                    return;
+                }
+
                 _selectedUnitId = occupantId;
                 _signalBus.Fire(new UnitInfoPanelRequestedSignal
                 {
@@ -238,6 +282,73 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
                 StartMove(unitToMove, position);
             }
+
+            // Закриваємо панель інформації при кліку на порожній тайл
+            if (_inspectedKind != WorldInfoSelectionKind.None)
+            {
+                _signalBus.Fire(new WorldInfoPanelClosedSignal());
+            }
+        }
+
+        private bool TryHandleAttack(string attackerUnitId, string defenderUnitId)
+        {
+            if (!CanSelectUnit(attackerUnitId))
+                return false;
+
+            var attackerOwner = _factionOwnershipService.GetOwner(attackerUnitId);
+            var defenderOwner = _factionOwnershipService.GetOwner(defenderUnitId);
+            if (!attackerOwner.IsEmpty && attackerOwner == defenderOwner)
+                return false;
+
+            if (!_unitCombatService.CanUnitAttackNow(attackerUnitId))
+            {
+                if (VerboseLogs)
+                    Debug.Log($"[Interaction] Attack denied: it's not '{attackerUnitId}' side turn.");
+                return false;
+            }
+
+            if (_unitCombatService.TryExecuteAttack(attackerUnitId, defenderUnitId, out var breakdown))
+            {
+                if (VerboseLogs)
+                    Debug.Log($"[Interaction] Attack: {attackerUnitId} -> {defenderUnitId}, dmg={breakdown.TotalDamage}");
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool CanSelectUnit(string unitId)
+        {
+            var localFaction = _factionRegistry?.LocalPlayerFaction;
+            if (localFaction == null)
+                return true;
+
+            var owner = _factionOwnershipService.GetOwner(unitId);
+            if (owner.IsEmpty)
+                return false;
+
+            return owner == localFaction.FactionId;
+        }
+
+        private bool CanSelectBuilding(string buildingId, Vector2Int position)
+        {
+            if (_localPlayerIdentityProvider == null)
+                return true;
+
+            string localPlayerId = _localPlayerIdentityProvider.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localPlayerId))
+                return true;
+
+            if (_economyInfoMediator == null)
+                return true;
+
+            if (!_economyInfoMediator.TryGetBuildingContext(position, out _, out var ownerId))
+                return true;
+
+            if (string.IsNullOrWhiteSpace(ownerId))
+                return true;
+
+            return string.Equals(ownerId, localPlayerId, StringComparison.Ordinal);
         }
 
         private void StartMove(string unitId, Vector2Int target)

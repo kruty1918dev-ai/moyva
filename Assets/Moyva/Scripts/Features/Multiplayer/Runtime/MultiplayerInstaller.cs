@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Unity.Services.Core;
 using Unity.Services.Authentication;
@@ -397,6 +398,13 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 {
                     container.Bind<IGameCommandSyncService>()
                         .To<GameCommandSyncService>()
+                        .AsSingle();
+                }
+
+                if (!container.HasBinding(typeof(ILocalPlayerIdentityProvider)))
+                {
+                    container.Bind<ILocalPlayerIdentityProvider>()
+                        .To<MultiplayerLocalPlayerIdentityProvider>()
                         .AsSingle();
                 }
 

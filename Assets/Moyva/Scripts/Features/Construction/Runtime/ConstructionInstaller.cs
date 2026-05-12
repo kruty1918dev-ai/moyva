@@ -76,6 +76,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesAndSelfTo<CastleDetailedInfoPresenter>()
+                .AsSingle()
+                .NonLazy();
+
             Container.BindInstance(_settlementLabelSettings).AsSingle();
             Container.BindInterfacesAndSelfTo<SettlementLabelService>()
                 .AsSingle()
@@ -90,6 +94,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Container.BindExecutionOrder<ConstructionInputService>(5);
             Container.BindExecutionOrder<ConstructionVisualService>(10);
             Container.BindExecutionOrder<BuildingWorldInfoPresenter>(15);
+            Container.BindExecutionOrder<CastleDetailedInfoPresenter>(16);
             Container.BindExecutionOrder<SettlementLabelService>(20);
         }
 

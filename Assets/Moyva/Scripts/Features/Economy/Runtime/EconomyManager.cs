@@ -558,6 +558,29 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return totals;
         }
 
+        /// <summary>Отримати словник позицій -> buildingId для всіх будівель поселення.</summary>
+        public Dictionary<Vector2Int, string> GetSettlementBuildingPositions(string settlementId)
+        {
+            var result = new Dictionary<Vector2Int, string>();
+
+            if (string.IsNullOrWhiteSpace(settlementId))
+                return result;
+
+            // Пройти через всі позиції і знайти ті що належать цьому поселенню
+            foreach (var positionEntry in _positionToSettlement)
+            {
+                if (string.Equals(positionEntry.Value, settlementId, StringComparison.Ordinal))
+                {
+                    if (_positionToBuildingId.TryGetValue(positionEntry.Key, out var buildingId))
+                    {
+                        result[positionEntry.Key] = buildingId;
+                    }
+                }
+            }
+
+            return result;
+        }
+
         /// <summary>Додати ресурс до поселення вручну (караван, чіт, тестування).</summary>
         public void AddResource(string settlementId, string resourceId, float amount)
         {

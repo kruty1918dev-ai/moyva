@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90194a033d73900ebb2fbf7cc43140c7, type: 3}
+  m_Name: WorldUIConfig
+  m_EditorClassIdentifier: 
+  _worldInfoPanelPrefab: {fileID: 900000, guid: 73d0f1dd3d7a44d8b7c67f5d8f6b31f1, type: 3}
+  _castleDetailedPanelPrefab: {fileID: 0}
+  _panelParentName: Canvas

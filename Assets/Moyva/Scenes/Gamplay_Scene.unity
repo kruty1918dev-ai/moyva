@@ -3503,6 +3503,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1b6eab8f5e24c98b63d5ee6db3b912a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _uiConfig: {fileID: 11400000, guid: 64db4f8b32874f0ba4d45f8f5f9d154a, type: 2}
   panelPrefab: {fileID: 900000, guid: 73d0f1dd3d7a44d8b7c67f5d8f6b31f1, type: 3}
   panelParent: {fileID: 1800989655}
 --- !u!4 &1215295425

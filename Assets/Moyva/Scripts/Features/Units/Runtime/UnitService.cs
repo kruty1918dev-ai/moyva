@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly ICalendarService _calendarService;
 
         private readonly Dictionary<string, float> _unitStamina = new();
+        private readonly Dictionary<string, int> _unitHitPoints = new();
         private readonly Dictionary<string, Vector2Int> _unitPositions = new();
         private readonly Dictionary<string, string> _unitTypeIds = new();
 
@@ -71,6 +72,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             float startStamina = _unitGameplayProfileService.RollStartingStamina(signal.UnitTypeId);
 
             _unitStamina[signal.UnitId] = startStamina;
+            _unitHitPoints[signal.UnitId] = Mathf.Max(1, config.HitPoints);
             _unitPositions[signal.UnitId] = signal.Position;
             _unitTypeIds[signal.UnitId] = signal.UnitTypeId;
 
@@ -124,6 +126,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private void OnUnitDestroyed(UnitDestroyedSignal signal)
         {
             _unitStamina.Remove(signal.UnitId);
+            _unitHitPoints.Remove(signal.UnitId);
             _unitPositions.Remove(signal.UnitId);
             _unitTypeIds.Remove(signal.UnitId);
             _unitObjects.Remove(signal.UnitId); // Видаляємо посилання
@@ -141,6 +144,33 @@ namespace Kruty1918.Moyva.Units.Runtime
         }
 
         public float GetStamina(string unitId) => _unitStamina.GetValueOrDefault(unitId, 0);
+
+        public int GetHitPoints(string unitId) => _unitHitPoints.GetValueOrDefault(unitId, 0);
+
+        public bool TryApplyDamage(string unitId, int damage, out int remainingHitPoints, out bool destroyed)
+        {
+            remainingHitPoints = 0;
+            destroyed = false;
+
+            if (string.IsNullOrWhiteSpace(unitId) || !_unitHitPoints.TryGetValue(unitId, out int currentHp))
+                return false;
+
+            int appliedDamage = Mathf.Max(0, damage);
+            int nextHp = Mathf.Max(0, currentHp - appliedDamage);
+            _unitHitPoints[unitId] = nextHp;
+            remainingHitPoints = nextHp;
+
+            if (nextHp > 0)
+                return true;
+
+            destroyed = true;
+            _signalBus.Fire(new UnitDestroyedSignal { UnitId = unitId });
+
+            if (_unitObjects.TryGetValue(unitId, out var unitObject) && unitObject != null)
+                UnityEngine.Object.Destroy(unitObject);
+
+            return true;
+        }
 
         public void SetStamina(string unitId, float stamina)
         {

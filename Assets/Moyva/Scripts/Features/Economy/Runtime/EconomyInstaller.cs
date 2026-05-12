@@ -78,6 +78,20 @@ namespace Kruty1918.Moyva.Economy
                     .AsSingle();
             }
 
+            if (!Container.HasBinding<EconomyStatisticsService>())
+            {
+                Container.BindInterfacesAndSelfTo<EconomyStatisticsService>()
+                    .AsSingle()
+                    .NonLazy();
+            }
+
+            if (!Container.HasBinding<IEconomyStatisticsMediator>())
+            {
+                Container.Bind<IEconomyStatisticsMediator>()
+                    .To<EconomyStatisticsMediator>()
+                    .AsSingle();
+            }
+
             if (!Container.HasBinding<IMapObjectEconomyService>())
             {
                 Container.Bind<IMapObjectEconomyService>()

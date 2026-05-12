@@ -32,6 +32,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
         private readonly IFactionOwnershipService _ownership;
         private readonly IUnitService             _unitService;
         private readonly IUnitMovementService     _movementService;
+        private readonly IUnitCombatService       _unitCombatService;
         private readonly IBotDifficultySettings   _settings;
 
         private IFogOfWarServiceRegistry _fogRegistry;
@@ -51,6 +52,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             IFactionOwnershipService ownership,
             IUnitService             unitService,
             IUnitMovementService     movementService,
+            IUnitCombatService       unitCombatService,
             IBotDifficultySettings   settings)
         {
             _definition      = definition;
@@ -59,6 +61,7 @@ namespace Kruty1918.Moyva.BotAI.Runtime
             _ownership       = ownership;
             _unitService     = unitService;
             _movementService = movementService;
+            _unitCombatService = unitCombatService;
             _settings        = settings;
         }
 
@@ -169,6 +172,16 @@ namespace Kruty1918.Moyva.BotAI.Runtime
 
                 var target = FindNearestVisibleEnemy(myPos, enemyPositions);
                 if (target == null) continue;
+
+                if (ChebyshevDist(myPos, target.Value) <= 1)
+                {
+                    if (_objectsMapService.TryGetOccupant(target.Value, out var defenderUnitId)
+                        && !string.IsNullOrWhiteSpace(defenderUnitId))
+                    {
+                        _unitCombatService.TryExecuteAttack(uid, defenderUnitId, out _);
+                        continue;
+                    }
+                }
 
                 IssueMoveOrder(uid, target.Value);
             }

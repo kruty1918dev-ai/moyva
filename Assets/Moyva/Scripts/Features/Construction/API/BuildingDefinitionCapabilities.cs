@@ -50,8 +50,23 @@ namespace Kruty1918.Moyva.Construction.API
             if (definition == null)
                 return false;
 
-            return HasEnabledModule<WarehouseBuildingModule>(definition)
-                || HasEnabledModule<BarnBuildingModule>(definition);
+            return HasEnabledModule<WarehouseBuildingModule>(definition);
+        }
+
+        public static bool IsBarn(BuildingDefinition definition)
+        {
+            if (definition == null)
+                return false;
+
+            return HasEnabledModule<BarnBuildingModule>(definition);
+        }
+
+        public static bool IsHouse(BuildingDefinition definition)
+        {
+            if (definition == null)
+                return false;
+
+            return HasEnabledModule<HousingBuildingModule>(definition);
         }
 
         public static bool IsHousing(BuildingDefinition definition)

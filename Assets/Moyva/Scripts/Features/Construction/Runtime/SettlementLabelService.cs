@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly ConstructionVisualService _visualService;
         private readonly IEconomyInfoMediator _economyInfo;
         private readonly SettlementLabelSettings _settings;
+        private readonly ILocalPlayerIdentityProvider _localPlayerIdentityProvider;
 
         private readonly Dictionary<Vector2Int, GameObject> _labels = new();
 
@@ -25,13 +26,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IBuildingRegistry buildingRegistry,
             ConstructionVisualService visualService,
             IEconomyInfoMediator economyInfo,
-            SettlementLabelSettings settings)
+            SettlementLabelSettings settings,
+            [InjectOptional] ILocalPlayerIdentityProvider localPlayerIdentityProvider)
         {
             _signalBus = signalBus;
             _buildingRegistry = buildingRegistry;
             _visualService = visualService;
             _economyInfo = economyInfo;
             _settings = settings;
+            _localPlayerIdentityProvider = localPlayerIdentityProvider;
         }
 
         public void Initialize()
@@ -57,6 +60,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
+            if (!CanLocalPlayerSeeBuilding(signal.OwnerId))
+                return;
+
             var def = _buildingRegistry.GetById(signal.BuildingId);
             if (def == null) return;
 
@@ -111,6 +117,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 tm.text = ctx.SettlementName;
             else
                 tm.text = string.Empty;
+        }
+
+        private bool CanLocalPlayerSeeBuilding(string ownerId)
+        {
+            if (_localPlayerIdentityProvider == null)
+                return true;
+
+            string localPlayerId = _localPlayerIdentityProvider.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localPlayerId))
+                return true;
+
+            if (string.IsNullOrWhiteSpace(ownerId))
+                return true;
+
+            return string.Equals(ownerId, localPlayerId, StringComparison.Ordinal);
         }
 
         private static GameObject CreateLabel(Transform parent, Vector2Int position, SettlementLabelTextSettings s)

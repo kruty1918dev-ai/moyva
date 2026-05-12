@@ -311,7 +311,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return FogStateType.Visible;
 
             if (_exploredTiles[position.x, position.y])
-                return FogStateType.Explored;
+                return FogStateType.Forgotten;
 
             return FogStateType.Unexplored;
         }

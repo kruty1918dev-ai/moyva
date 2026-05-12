@@ -50,6 +50,9 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<UnitInfoPanelRequestedSignal>().OptionalSubscriber();
             Container.DeclareSignal<MapObjectInfoPanelRequestedSignal>().OptionalSubscriber();
             Container.DeclareSignal<WorldInfoSelectionChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<SettlementStatisticsMenuRequestedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<KingdomStatisticsMenuRequestedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<StatisticsMenuClosedSignal>().OptionalSubscriber();
 
             // FogOfWar
             Container.DeclareSignal<FogStateChangedSignal>();

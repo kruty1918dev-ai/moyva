@@ -27,5 +27,10 @@ namespace Kruty1918.Moyva.Signals
         IReadOnlyDictionary<string, float> GetSettlementWarehousesTotal(string settlementId);
         IReadOnlyDictionary<string, float> GetSettlementResourceTotals(string settlementId);
         IReadOnlyDictionary<string, float> GetOwnerResourceTotals(string ownerId);
+        
+        /// <summary>
+        /// Отримати позиції всіх будівель у поселенні. Ключ = позиція, Значення = buildingId
+        /// </summary>
+        IReadOnlyDictionary<Vector2Int, string> GetSettlementBuildingPositions(string settlementId);
     }
 }

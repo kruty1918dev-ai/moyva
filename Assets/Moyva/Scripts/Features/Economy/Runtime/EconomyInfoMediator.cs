@@ -78,5 +78,13 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         public IReadOnlyDictionary<string, float> GetOwnerResourceTotals(string ownerId)
             => _economyManager?.GetOwnerResourceTotals(ownerId) ?? EmptyResources;
+
+        public IReadOnlyDictionary<Vector2Int, string> GetSettlementBuildingPositions(string settlementId)
+        {
+            if (_economyManager == null || string.IsNullOrWhiteSpace(settlementId))
+                return new Dictionary<Vector2Int, string>();
+
+            return _economyManager.GetSettlementBuildingPositions(settlementId);
+        }
     }
 }

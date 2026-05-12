@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Kruty1918.Moyva.Multiplayer.Config;
@@ -48,7 +49,15 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private SessionRules _currentRules;
         private bool _isHost;
         private string _localPlayerId;
-        private readonly Dictionary<string, CancellationTokenSource> _pendingDisconnects = new Dictionary<string, CancellationTokenSource>(StringComparer.Ordinal);
+        private readonly Dictionary<string, PlayerStabilityState> _stabilityByPlayerId = new Dictionary<string, PlayerStabilityState>(StringComparer.Ordinal);
+        private int _stabilityJoinOrderCounter;
+
+        private sealed class PlayerStabilityState
+        {
+            public int JoinOrder;
+            public int FinalDisconnects;
+            public int GraceReconnects;
+        }
 
         public IReadOnlyList<Participant> Participants => _participants;
 
@@ -98,7 +107,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _network.PeerDisconnected -= OnPeerDisconnected;
             _lobby.LobbyUpdated       -= OnLobbyUpdated;
             _lobby.KickedFromLobby    -= OnKickedFromLobby;
-            CancelAllPendingDisconnects();
         }
 
         // ── Session API ───────────────────────────────────────────────────────────
@@ -276,6 +284,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             var existing = _participants.Find(p => p.Identity.PlayerId == identity.PlayerId);
             if (existing == null)
                 _participants.Add(new Participant(identity, isBot: false, isHost));
+
+            MarkParticipantSeen(identity.PlayerId);
         }
 
         private void OnLobbyUpdated(LobbyRoom snapshot)
@@ -298,6 +308,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
                 var identity = new ParticipantIdentity(p.PlayerId, p.DisplayName);
                 _participants.Add(new Participant(identity, isBot: false, isHost: p.IsHost));
+                MarkParticipantSeen(p.PlayerId);
                 _logger.Info($"[Lobby] Participant added: {p.PlayerId} ({p.DisplayName})");
             }
 
@@ -327,7 +338,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private void OnPeerConnected(string peerId)
         {
             if (string.IsNullOrEmpty(peerId) || peerId == _localPlayerId) return;
-            CancelPendingDisconnect(peerId);
+            MarkParticipantSeen(peerId);
             _logger.Info($"[Net] Peer connected: {peerId}");
             // Lobby update will fill identity; nothing to add here unless missing.
         }
@@ -342,7 +353,26 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 return;
             }
 
-            ScheduleDisconnectFinalization(peerId);
+            if (_isHost)
+                _ = TryKickDisconnectedPlayerFromLobbyAsync(peerId);
+
+            FinalizePeerDisconnect(peerId);
+        }
+
+        private async Task TryKickDisconnectedPlayerFromLobbyAsync(string playerId)
+        {
+            if (string.IsNullOrWhiteSpace(playerId) || string.Equals(playerId, _localPlayerId, StringComparison.Ordinal))
+                return;
+
+            try
+            {
+                await _lobby.KickAsync(playerId);
+                _logger.Info($"Disconnected player '{playerId}' was kicked from lobby (reconnect denied).");
+            }
+            catch (Exception exception)
+            {
+                _logger.Warn($"Failed to kick disconnected player '{playerId}' from lobby: {exception.Message}");
+            }
         }
 
         private void FinalizePeerDisconnect(string peerId)
@@ -360,8 +390,18 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _participants.Remove(leaving);
             _logger.Info($"Participant '{peerId}' left. Remaining: {_participants.Count}");
 
-            if (leaving.IsHost && _participants.Count > 0)
+            if (leaving.IsHost)
             {
+                RegisterFinalDisconnect(peerId);
+
+                int humansRemaining = CountHumanParticipants(_participants);
+                if (humansRemaining <= 0)
+                {
+                    _logger.Warn("Host disconnected and no human players remain. Closing lobby/session.");
+                    _ = SafeCleanupAsync();
+                    return;
+                }
+
                 if (_config != null && !_config.EnableHostMigration)
                 {
                     _logger.Warn("Host disconnected and host migration feature toggle is disabled. Ending session.");
@@ -370,7 +410,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                     return;
                 }
 
-                var migrated = _hostMigration.ChooseNewHost(_participants);
+                var migrationCandidates = BuildHostMigrationCandidates();
+                var migrated = _hostMigration.ChooseNewHost(migrationCandidates);
                 if (migrated == null)
                 {
                     _logger.Warn("Host disconnected and migration failed. Ending session.");
@@ -379,9 +420,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                     return;
                 }
 
-                int index = _participants.FindIndex(p => p.Identity.PlayerId == migrated.Identity.PlayerId);
-                if (index >= 0)
-                    _participants[index] = migrated;
+                ReplaceHost(migrated.Identity.PlayerId);
 
                 _isHost = string.Equals(migrated.Identity.PlayerId, _localPlayerId, StringComparison.Ordinal);
                 SaveMigrationCheckpoint();
@@ -398,6 +437,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 _logger.Info($"Bot fallback added: '{fallback.Identity.PlayerId}' replaces '{peerId}'.");
             }
 
+            RegisterFinalDisconnect(peerId);
+
             SaveMigrationCheckpoint();
         }
 
@@ -405,7 +446,6 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
         private async Task SafeCleanupAsync(CancellationToken ct = default)
         {
-            CancelAllPendingDisconnects();
             try { await _network.LeaveSessionAsync(ct); } catch (Exception e) { _logger.Warn($"Net leave: {e.Message}"); }
             try { await _lobby.LeaveAsync(ct); } catch (Exception e) { _logger.Warn($"Lobby leave: {e.Message}"); }
 
@@ -415,6 +455,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _currentLobbyCode = null;
             _currentRules = null;
             _isHost = false;
+            _stabilityByPlayerId.Clear();
+            _stabilityJoinOrderCounter = 0;
         }
 
         private void SaveMigrationCheckpoint()
@@ -446,62 +488,16 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             return string.Empty;
         }
 
-        private void ScheduleDisconnectFinalization(string peerId)
-        {
-            CancelPendingDisconnect(peerId);
-            var cts = new CancellationTokenSource();
-            _pendingDisconnects[peerId] = cts;
-            var delay = TimeSpan.FromSeconds(Math.Max(1f, _config?.GracefulReconnectWindowSeconds ?? 8f));
-            _logger.Warn($"Peer '{peerId}' disconnected. Waiting {delay.TotalSeconds:0.#}s graceful reconnect window.");
-            _ = FinalizeDisconnectAfterDelayAsync(peerId, cts.Token, delay);
-        }
-
-        private async Task FinalizeDisconnectAfterDelayAsync(string peerId, CancellationToken ct, TimeSpan delay)
-        {
-            try
-            {
-                await Task.Delay(delay, ct);
-                if (!ct.IsCancellationRequested)
-                    FinalizePeerDisconnect(peerId);
-            }
-            catch (OperationCanceledException)
-            {
-            }
-            finally
-            {
-                if (_pendingDisconnects.TryGetValue(peerId, out var cts) && cts.Token == ct)
-                    _pendingDisconnects.Remove(peerId);
-            }
-        }
-
-        private void CancelPendingDisconnect(string peerId)
-        {
-            if (!_pendingDisconnects.TryGetValue(peerId, out var cts))
-                return;
-
-            try { cts.Cancel(); } catch { }
-            cts.Dispose();
-            _pendingDisconnects.Remove(peerId);
-        }
-
-        private void CancelAllPendingDisconnects()
-        {
-            foreach (var pair in _pendingDisconnects)
-            {
-                try { pair.Value.Cancel(); } catch { }
-                pair.Value.Dispose();
-            }
-
-            _pendingDisconnects.Clear();
-        }
-
         private bool StartOfflineSolo(SessionConnectOptions opts)
         {
             var roomId = $"{SoloSessionPrefix}-{Guid.NewGuid():N}";
             _participants.Clear();
+            _stabilityByPlayerId.Clear();
+            _stabilityJoinOrderCounter = 0;
             _currentSessionId = roomId;
             _currentRules = opts.Rules ?? SoloFallbackRules;
             _participants.Add(new Participant(opts.LocalIdentity, isBot: false, isHost: true));
+            MarkParticipantSeen(opts.LocalIdentity.PlayerId);
             _logger.Info($"Offline solo session '{roomId}' started.");
             return true;
         }
@@ -563,6 +559,87 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             int localIndex = _participants.FindIndex(p => string.Equals(p.Identity.PlayerId, _localPlayerId, StringComparison.Ordinal));
             if (localIndex >= 0 && !_participants[localIndex].IsHost)
                 _participants[localIndex] = _participants[localIndex].AsHost();
+        }
+
+        private void MarkParticipantSeen(string playerId)
+        {
+            if (string.IsNullOrWhiteSpace(playerId))
+                return;
+
+            if (_stabilityByPlayerId.ContainsKey(playerId))
+                return;
+
+            _stabilityByPlayerId[playerId] = new PlayerStabilityState
+            {
+                JoinOrder = _stabilityJoinOrderCounter++,
+                FinalDisconnects = 0,
+                GraceReconnects = 0
+            };
+        }
+
+        private void RegisterFinalDisconnect(string playerId)
+        {
+            if (string.IsNullOrWhiteSpace(playerId))
+                return;
+
+            MarkParticipantSeen(playerId);
+            _stabilityByPlayerId[playerId].FinalDisconnects++;
+        }
+
+        private int CountHumanParticipants(IReadOnlyList<Participant> participants)
+        {
+            int humans = 0;
+            for (int i = 0; i < participants.Count; i++)
+            {
+                if (!participants[i].IsBot)
+                    humans++;
+            }
+
+            return humans;
+        }
+
+        private IReadOnlyList<Participant> BuildHostMigrationCandidates()
+        {
+            var orderedHumans = _participants
+                .Where(p => p != null && !p.IsBot)
+                .OrderBy(p => GetFinalDisconnects(p.Identity.PlayerId))
+                .ThenBy(p => GetGraceReconnects(p.Identity.PlayerId))
+                .ThenBy(p => GetJoinOrder(p.Identity.PlayerId))
+                .Select(p => p.AsHost())
+                .ToList();
+
+            return orderedHumans;
+        }
+
+        private int GetFinalDisconnects(string playerId)
+        {
+            return _stabilityByPlayerId.TryGetValue(playerId, out var state)
+                ? state.FinalDisconnects
+                : int.MaxValue;
+        }
+
+        private int GetGraceReconnects(string playerId)
+        {
+            return _stabilityByPlayerId.TryGetValue(playerId, out var state)
+                ? state.GraceReconnects
+                : int.MaxValue;
+        }
+
+        private int GetJoinOrder(string playerId)
+        {
+            return _stabilityByPlayerId.TryGetValue(playerId, out var state)
+                ? state.JoinOrder
+                : int.MaxValue;
+        }
+
+        private void ReplaceHost(string newHostPlayerId)
+        {
+            for (int i = 0; i < _participants.Count; i++)
+            {
+                var participant = _participants[i];
+                bool isHost = string.Equals(participant.Identity.PlayerId, newHostPlayerId, StringComparison.Ordinal);
+                _participants[i] = new Participant(participant.Identity, participant.IsBot, isHost);
+            }
         }
     }
 }

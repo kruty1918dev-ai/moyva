@@ -3,6 +3,7 @@ using System.IO;
 using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.Multiplayer.Runtime;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.Shared.Audio;
 using UnityEngine;
 using UnityEngine.Audio;
 using Zenject;
@@ -14,7 +15,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     /// Гучності маршрутизуються через AudioMixerBindingsSO (за наявності), інакше — лише AudioListener.volume для master.
     /// Версія файлу = 2 (додані Music/Sfx/Ui/IsMuted).
     /// </summary>
-    internal sealed class LocalGameSettingsService : ILocalGameSettingsService, IInitializable
+    internal sealed class LocalGameSettingsService : ILocalGameSettingsService, IAudioSettingsService, IInitializable
     {
         private const int Version = 2;
         private const float DefaultMaster = 1f;
@@ -28,6 +29,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private AudioMixerBindingsSO _mixerBindings;
 
         public event Action<LocalGameSettings> OnSettingsChanged;
+        public event Action<float, float, float> OnVolumesChanged;
 
         public LocalGameSettings Settings { get; private set; }
         public string PlayerName => Settings.PlayerName;
@@ -49,6 +51,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             ApplyAll(Settings);
             Save(Settings);
             OnSettingsChanged?.Invoke(Settings);
+            OnVolumesChanged?.Invoke(Settings.MasterVolume, Settings.MusicVolume, Settings.SfxVolume);
         }
 
         public void SetPlayerName(string playerName)
@@ -154,6 +157,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             Save(Settings);
             OnSettingsChanged?.Invoke(Settings);
+            OnVolumesChanged?.Invoke(Settings.MasterVolume, Settings.MusicVolume, Settings.SfxVolume);
         }
 
         private void Save(LocalGameSettings s)

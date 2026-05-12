@@ -168,6 +168,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
+            if (IsBlockedUntilCastleExists(buildingId))
+            {
+                Debug.LogWarning($"[Construction] SelectBuilding: '{buildingId}' заборонено, доки не збудовано замок.");
+                return;
+            }
+
             try
             {
                 // Вибір будівлі завжди переводить UX у режим розміщення.
@@ -213,6 +219,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (string.IsNullOrWhiteSpace(_selectedBuildingId))
             {
                 Debug.LogWarning("[Construction] TryPreviewAt: _selectedBuildingId порожній або null");
+                return false;
+            }
+
+            if (IsBlockedUntilCastleExists(_selectedBuildingId))
+            {
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = position,
+                    BuildingId = _selectedBuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] TryPreviewAt({position}) -> BLOCKED: спочатку треба збудувати замок.");
+
                 return false;
             }
 
@@ -677,6 +698,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            if (IsBlockedUntilCastleExists(buildingId, placedByFactionId))
+            {
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}) -> BLOCKED: спочатку треба збудувати замок.");
+                return false;
+            }
+
             if (_objectsMapService.IsOccupied(position))
             {
                 if (VerboseLogs) Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}): тайл зайнятий.");
@@ -903,6 +931,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (VerboseLogs)
                 Debug.Log($"[Construction] CanPlaceAt({position}, buildingId={buildingId}) проверка ПОЧАЛАСЬ");
+
+            if (IsBlockedUntilCastleExists(buildingId))
+            {
+                tileOccupied = false;
+                spacingBlocked = false;
+                fogBlocked = false;
+                influenceZoneBlocked = false;
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] CanPlaceAt({position}): BLOCKED because no castle exists yet.");
+                return false;
+            }
 
             try
             {
@@ -1241,6 +1280,48 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return candidate != null && candidate.TownHallProximityRadiusOverride > 0
                 ? candidate.TownHallProximityRadiusOverride
                 : 0;
+        }
+
+        private bool IsBlockedUntilCastleExists(string buildingId, string factionId = null)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId) || _buildingRegistry == null)
+                return false;
+
+            var definition = _buildingRegistry.GetById(buildingId);
+            if (definition == null)
+                return false;
+
+            if (BuildingDefinitionCapabilities.IsCastle(definition))
+                return false;
+
+            return !HasCastleForActiveOwner(factionId);
+        }
+
+        private bool HasCastleForActiveOwner(string factionId = null)
+        {
+            string ownerId = string.IsNullOrWhiteSpace(factionId) ? _activeOwnerId : factionId.Trim();
+
+            foreach (var kv in _factionPlacedBuildings)
+            {
+                if (!string.Equals(kv.Value.FactionId, ownerId, StringComparison.Ordinal))
+                    continue;
+
+                var definition = _buildingRegistry?.GetById(kv.Value.BuildingId);
+                if (BuildingDefinitionCapabilities.IsCastle(definition))
+                    return true;
+            }
+
+            if (!string.IsNullOrWhiteSpace(factionId))
+                return false;
+
+            foreach (var kv in _playerPlacedBuildings)
+            {
+                var definition = _buildingRegistry?.GetById(kv.Value);
+                if (BuildingDefinitionCapabilities.IsCastle(definition))
+                    return true;
+            }
+
+            return false;
         }
 
         private int ResolveInfluenceRadius(BuildingDefinition definition)

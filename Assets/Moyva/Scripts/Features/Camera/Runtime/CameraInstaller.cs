@@ -29,6 +29,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             Container.BindInterfacesAndSelfTo<CameraMovement>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraZoom>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraMapRenderMaskService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraFocusService>().AsSingle();
             
             // CameraFocused не має Tick/Initializable, тому можна просто до інтерфейсу
             Container.BindInterfacesTo<CameraFocused>().AsSingle();

@@ -196,14 +196,14 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 EditorGUILayout.PropertyField(_unexploredColorProp,
                     new GUIContent("Колір «Не досліджено»", "Колір повністю закритих клітинок (ще не відвіданих)"));
                 EditorGUILayout.PropertyField(_exploredColorProp,
-                    new GUIContent("Колір «Досліджено»", "Колір клітинок, що були видимі, але зараз поза зоною огляду"));
+                    new GUIContent("Колір «Забутий туман»", "Колір клітинок, що були видимі, але зараз поза зоною огляду (останній відомий стан)"));
 
                 EditorGUILayout.Space(4);
 
                 EditorGUILayout.PropertyField(_unexploredAlphaProp,
                     new GUIContent("Альфа «Не досліджено»", "Непрозорість туману для невідвіданих клітинок (0 = повністю прозоро)"));
                 EditorGUILayout.PropertyField(_exploredAlphaProp,
-                    new GUIContent("Альфа «Досліджено»", "Непрозорість туману для відвіданих, але наразі невидимих клітинок"));
+                    new GUIContent("Альфа «Забутий туман»", "Непрозорість туману для відвіданих, але наразі невидимих клітинок"));
 
                 DrawColorPreview();
 
@@ -225,7 +225,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
 
             GUILayout.FlexibleSpace();
 
-            DrawColorSwatch("Досліджено",
+            DrawColorSwatch("Забутий туман",
                 _exploredColorProp.colorValue,
                 _exploredAlphaProp.floatValue);
 
@@ -415,10 +415,10 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                 1f);
 
             bool isVisible = _previewFogValue >= 0.9f;
-            bool isExplored = _previewFogValue >= 0.3f && _previewFogValue < 0.9f;
+            bool isForgotten = _previewFogValue >= 0.3f && _previewFogValue < 0.9f;
             bool isUnexplored = _previewFogValue < 0.3f;
 
-            string stateLabel = isVisible ? "Visible" : (isExplored ? "Explored" : "Unexplored (black)");
+            string stateLabel = isVisible ? "Visible" : (isForgotten ? "Forgotten" : "Unexplored (black)");
             bool rendererCullingEnabled = _enableRendererCullingProp != null && _enableRendererCullingProp.boolValue;
             bool requireOpaque = _requireOpaqueUnexploredForCullingProp != null && _requireOpaqueUnexploredForCullingProp.boolValue;
             bool opaqueCondition = !requireOpaque || _unexploredAlphaProp.floatValue >= 0.99f;

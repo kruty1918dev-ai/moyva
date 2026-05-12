@@ -7,6 +7,8 @@ namespace Kruty1918.Moyva.Units.API
     {
         float GetStamina(string unitId);
         void SetStamina(string unitId, float stamina);
+        int GetHitPoints(string unitId);
+        bool TryApplyDamage(string unitId, int damage, out int remainingHitPoints, out bool destroyed);
         bool TryGetUnitPosition(string unitId, out UnityEngine.Vector2Int position);
         GameObject GetUnitObject(string unitId);
 

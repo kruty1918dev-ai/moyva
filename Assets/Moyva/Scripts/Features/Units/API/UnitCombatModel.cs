@@ -108,9 +108,9 @@ namespace Kruty1918.Moyva.Units.API
 
     public static class UnitCombatCalculator
     {
-        public const float LevelMultiplierStep = 0.1f;
-        public const float MinLevelMultiplier = 0.5f;
-        public const float MaxLevelMultiplier = 1.5f;
+        public const float LevelMultiplierStep = 0f;
+        public const float MinLevelMultiplier = 1f;
+        public const float MaxLevelMultiplier = 1f;
 
         public static UnitCombatBreakdown CalculateAttack(UnitClassConfig attacker, UnitClassConfig defender)
         {
@@ -119,33 +119,25 @@ namespace Kruty1918.Moyva.Units.API
             if (defender == null)
                 throw new ArgumentNullException(nameof(defender));
 
-            int cuttingRaw = Mathf.Max(0, attacker.CuttingDamage);
-            int penetratingRaw = Mathf.Max(0, attacker.PenetratingDamage);
-            int crushingRaw = Mathf.Max(0, attacker.CrushingDamage);
-            int cuttingDefense = Mathf.Max(0, defender.CuttingDefense);
-            int penetratingDefense = Mathf.Max(0, defender.PenetratingDefense);
-            int crushingDefense = Mathf.Max(0, defender.CrushingDefense);
-
-            int cuttingEffective = Mathf.Max(0, cuttingRaw - cuttingDefense);
-            int penetratingEffective = Mathf.Max(0, penetratingRaw - penetratingDefense);
-            int crushingEffective = Mathf.Max(0, crushingRaw - crushingDefense);
-            int effectiveBeforeLevel = cuttingEffective + penetratingEffective + crushingEffective;
-            float levelMultiplier = CalculateLevelMultiplier(attacker.BaseLevel, defender.BaseLevel);
-            int totalDamage = Mathf.RoundToInt(effectiveBeforeLevel * levelMultiplier);
-
-            if (totalDamage <= 0 && cuttingRaw + penetratingRaw + crushingRaw > 0)
-                totalDamage = 1;
+            int totalAttack = Mathf.Max(0, attacker.CuttingDamage)
+                            + Mathf.Max(0, attacker.PenetratingDamage)
+                            + Mathf.Max(0, attacker.CrushingDamage);
+            int totalDefense = Mathf.Max(0, defender.CuttingDefense)
+                             + Mathf.Max(0, defender.PenetratingDefense)
+                             + Mathf.Max(0, defender.CrushingDefense);
+            int totalDamage = Mathf.Max(0, totalAttack - totalDefense);
+            float levelMultiplier = 1f;
 
             return new UnitCombatBreakdown(
-                cuttingRaw,
-                penetratingRaw,
-                crushingRaw,
-                cuttingDefense,
-                penetratingDefense,
-                crushingDefense,
-                cuttingEffective,
-                penetratingEffective,
-                crushingEffective,
+                totalAttack,
+                0,
+                0,
+                totalDefense,
+                0,
+                0,
+                totalDamage,
+                0,
+                0,
                 levelMultiplier,
                 totalDamage,
                 defender.HitPoints);
@@ -153,9 +145,24 @@ namespace Kruty1918.Moyva.Units.API
 
         public static UnitCombatDuel CalculateDuel(UnitClassConfig attacker, UnitClassConfig defender)
         {
+            var attack = CalculateAttack(attacker, defender);
+            var noCounter = new UnitCombatBreakdown(
+                0,
+                0,
+                0,
+                Mathf.Max(0, attacker.CuttingDefense),
+                Mathf.Max(0, attacker.PenetratingDefense),
+                Mathf.Max(0, attacker.CrushingDefense),
+                0,
+                0,
+                0,
+                1f,
+                0,
+                attacker.HitPoints);
+
             return new UnitCombatDuel(
-                CalculateAttack(attacker, defender),
-                CalculateAttack(defender, attacker));
+                attack,
+                noCounter);
         }
 
         public static float CalculateLevelMultiplier(int attackerLevel, int defenderLevel)

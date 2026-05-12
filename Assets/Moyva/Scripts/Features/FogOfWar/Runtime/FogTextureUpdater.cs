@@ -117,7 +117,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             switch (state)
             {
                 case FogStateType.Visible:  return 255;
-                case FogStateType.Explored: return 128;
+                case FogStateType.Forgotten:
+                case FogStateType.Explored: return 160;
                 default:                    return 0;
             }
         }

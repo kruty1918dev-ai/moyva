@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -13,15 +15,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly SignalBus _signalBus;
         private readonly IBuildingRegistry _buildingRegistry;
         private readonly IEconomyInfoMediator _economyInfoMediator;
+        private readonly ILocalPlayerIdentityProvider _localPlayerIdentityProvider;
+        private readonly EconomyDatabaseSO _economyDatabase;
+        private readonly EconomyManager _economyManager;
 
         public BuildingWorldInfoPresenter(
             SignalBus signalBus,
             IBuildingRegistry buildingRegistry,
-            [InjectOptional] IEconomyInfoMediator economyInfoMediator)
+            [InjectOptional] IEconomyInfoMediator economyInfoMediator,
+            [InjectOptional] ILocalPlayerIdentityProvider localPlayerIdentityProvider,
+            [InjectOptional] EconomyDatabaseSO economyDatabase,
+            [InjectOptional] EconomyManager economyManager)
         {
             _signalBus = signalBus;
             _buildingRegistry = buildingRegistry;
             _economyInfoMediator = economyInfoMediator;
+            _localPlayerIdentityProvider = localPlayerIdentityProvider;
+            _economyDatabase = economyDatabase;
+            _economyManager = economyManager;
         }
 
         public void Initialize()
@@ -41,6 +52,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 var definition = _buildingRegistry?.GetById(signal.BuildingId);
                 if (definition == null)
                     return;
+
+                if (!CanLocalPlayerSeeBuilding(signal.Position))
+                {
+                    _signalBus.Fire(new WorldInfoPanelClosedSignal());
+                    return;
+                }
 
                 var hasEconomyContext = false;
                 EconomySettlementContext settlementContext = default;
@@ -67,6 +84,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     Subtitle = subtitle,
                     Content = content,
                 });
+
+                if (hasEconomyContext && (BuildingDefinitionCapabilities.IsCastle(definition) || BuildingDefinitionCapabilities.IsBarn(definition)))
+                {
+                    _signalBus.Fire(new SettlementStatisticsMenuRequestedSignal
+                    {
+                        SettlementId = settlementContext.SettlementId,
+                        OwnerId = settlementContext.OwnerId,
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -107,6 +133,27 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return details.ToString().TrimEnd();
         }
 
+        private bool CanLocalPlayerSeeBuilding(Vector2Int position)
+        {
+            if (_localPlayerIdentityProvider == null)
+                return true;
+
+            string localPlayerId = _localPlayerIdentityProvider.LocalPlayerId;
+            if (string.IsNullOrWhiteSpace(localPlayerId))
+                return true;
+
+            if (_economyInfoMediator == null)
+                return true;
+
+            if (!_economyInfoMediator.TryGetBuildingContext(position, out _, out var ownerId))
+                return true;
+
+            if (string.IsNullOrWhiteSpace(ownerId))
+                return true;
+
+            return string.Equals(ownerId, localPlayerId, StringComparison.Ordinal);
+        }
+
         private string BuildResourcesText(BuildingDefinition definition, EconomySettlementContext settlementContext, Vector2Int position)
         {
             IReadOnlyDictionary<string, float> resources;
@@ -114,6 +161,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (BuildingDefinitionCapabilities.IsWarehouse(definition))
             {
                 resources = _economyInfoMediator.GetWarehouseResourceTotals(position);
+                
+                // Використовуємо спеціалізований форматер для складів з категоризацією
+                if (_economyDatabase != null)
+                    return WarehouseInfoFormatter.FormatWarehouseResources(resources, _economyDatabase, "Ресурси складу");
+                
+                // Fallback на стандартний формат якщо база не доступна
                 return FormatResources(resources, "Ресурси складу");
             }
 
@@ -125,8 +178,41 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (BuildingDefinitionCapabilities.IsCastle(definition))
             {
+                // Детальна інформація про замок з статистикою поселення
                 resources = _economyInfoMediator.GetOwnerResourceTotals(settlementContext.OwnerId);
+                
+                // Отримати позиції будівель для детальної інформації
+                var buildingPositions = _economyInfoMediator.GetSettlementBuildingPositions(settlementContext.SettlementId);
+                
+                // Отримати повне стан поселення для статистики
+                var settlements = _economyManager?.Settlements;
+                EconomySettlementState settlementState = null;
+                
+                if (settlements != null && settlements.TryGetValue(settlementContext.SettlementId, out settlementState))
+                {
+                    return CastleSettlementStatistics.FormatCastleInfoDetailed(
+                        settlementState,
+                        _buildingRegistry,
+                        buildingPositions?.ToDictionary(kvp => kvp.Key, kvp => kvp.Value) ?? new Dictionary<Vector2Int, string>());
+                }
+                
+                // Fallback якщо не можна отримати детальну інформацію
                 return FormatResources(resources, "Зведення по капіталу власника");
+            }
+
+            if (BuildingDefinitionCapabilities.IsBarn(definition))
+            {
+                // Детальна інформація про амбар з інформацією про жителів
+                var settlements = _economyManager?.Settlements;
+                EconomySettlementState settlementState = null;
+                
+                if (settlements != null && settlements.TryGetValue(settlementContext.SettlementId, out settlementState))
+                {
+                    return BarnSettlementStatistics.FormatBarnInfoDetailed(settlementState);
+                }
+                
+                // Fallback якщо не можна отримати деталі
+                return "Інформація про жителів недоступна.";
             }
 
             resources = _economyInfoMediator.GetSettlementResourceTotals(settlementContext.SettlementId);

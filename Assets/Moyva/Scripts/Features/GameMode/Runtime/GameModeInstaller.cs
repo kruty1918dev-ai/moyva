@@ -35,6 +35,20 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 Debug.LogWarning("[GameModeInstaller] GameModeUIController не знайдено у сцені. Кнопки перемикання режимів не будуть ініціалізовані.");
             }
 
+            var pauseMenuController = Object.FindFirstObjectByType<InGamePauseMenuController>(FindObjectsInactive.Include);
+            if (pauseMenuController != null)
+            {
+                Container.QueueForInject(pauseMenuController);
+                Container.BindInterfacesAndSelfTo<InGamePauseMenuController>()
+                    .FromInstance(pauseMenuController)
+                    .AsSingle()
+                    .NonLazy();
+            }
+            else
+            {
+                Debug.LogWarning("[GameModeInstaller] InGamePauseMenuController не знайдено у сцені. Внутрішньоігрове меню паузи не буде ініціалізовано.");
+            }
+
             // Явний порядок Initialize() — менше число = раніше.
             Container.Bind<IGameStateService>()
                 .To<GameStateService>()
@@ -43,6 +57,7 @@ namespace Kruty1918.Moyva.GameMode.Runtime
             Container.BindExecutionOrder<GameModeChangeRequestRouter>(-10);
             Container.BindExecutionOrder<GameModePanelController>(-10);
             Container.BindExecutionOrder<GameModeUIController>(-5);
+            Container.BindExecutionOrder<InGamePauseMenuController>(-5);
         }
     }
 }
