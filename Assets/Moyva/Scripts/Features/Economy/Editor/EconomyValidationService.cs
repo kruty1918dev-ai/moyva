@@ -99,6 +99,9 @@ namespace Kruty1918.Moyva.Economy.Editor
                     issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Warning, $"Resource '{id}' has no category.", resource));
             }
 
+            if (!database.Resources.Any(r => r != null && r.Category == EconomyResourceCategory.Money))
+                issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Warning, "No Money resource found in EconomyDatabase.", database));
+
             foreach (var duplicateId in duplicates)
                 issues.Add(new EconomyValidationIssue(EconomyValidationSeverity.Error, $"Duplicate resource Id: '{duplicateId}'.", database));
         }

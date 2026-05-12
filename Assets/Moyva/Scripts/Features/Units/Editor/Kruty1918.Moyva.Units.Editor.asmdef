@@ -3,6 +3,7 @@
     "rootNamespace": "Kruty1918.Moyva.Units.Editor",
     "references": [
         "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.Animations",
         "Kruty1918.Moyva.EditorShared"
     ],
     "includePlatforms": [

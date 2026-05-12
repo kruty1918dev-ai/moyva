@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.ObjectsMap.API;
@@ -381,6 +382,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
+            _lastActionMessage = string.Empty;
+
             if (VerboseLogs)
                 Debug.Log($"[Construction] Confirm requested. count={_pendingPlacements.Count}");
 
@@ -413,6 +416,40 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     }
 
                     _objectsMapService.Unregister(pos);
+                }
+
+                var buildingDef = _buildingRegistry?.GetById(id);
+                var resourceCosts = BuildConstructionCostMap(buildingDef);
+                if (resourceCosts.Count > 0 && _economyInfoMediator != null)
+                {
+                    if (!_economyInfoMediator.TryResolveConstructionSettlement(pos, _activeOwnerId, out var context))
+                    {
+                        _lastActionMessage = $"Не знайдено активне поселення для списання вартості '{id}' на позиції {pos}.";
+                        Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: {_lastActionMessage}");
+                        _signalBus.Fire(new BuildingPreviewChangedSignal
+                        {
+                            Position = pos,
+                            BuildingId = id,
+                            PreviewState = BuildingPreviewState.None
+                        });
+                        continue;
+                    }
+
+                    if (!_economyInfoMediator.TryConsumeSettlementResources(context.SettlementId, resourceCosts, out var errorMessage))
+                    {
+                        _lastActionMessage = string.IsNullOrWhiteSpace(errorMessage)
+                            ? $"Недостатньо ресурсів для будівлі '{id}' ({context.SettlementName})."
+                            : errorMessage;
+
+                        Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: {_lastActionMessage}");
+                        _signalBus.Fire(new BuildingPreviewChangedSignal
+                        {
+                            Position = pos,
+                            BuildingId = id,
+                            PreviewState = BuildingPreviewState.None
+                        });
+                        continue;
+                    }
                 }
 
                 _objectsMapService.Register(pos, id);
@@ -713,7 +750,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool TryGetPendingPlacementStatus(Vector2Int position, out ConstructionPendingPlacementStatus status)
         {
-            // Перевіряємо, чи є непідтверджена будівля на цій позиції
             int index = FindPendingPlacementIndex(position);
             if (index < 0)
             {
@@ -722,37 +758,43 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             var placement = _pendingPlacements[index];
-            var buildingDef = _buildingRegistry?.GetById(placement.BuildingId);
-            
-            // Намагаємось отримати информацію про поселення з EconomyInfoMediator
-            string settlementId = null;
-            string settlementName = "Unknown";
             bool hasSettlement = false;
             bool isAffordable = true;
             string errorMessage = string.Empty;
+            string settlementId = "Unknown";
+            string settlementName = "Unknown";
 
-            if (_economyInfoMediator != null)
+            try
             {
-                // Попытка отримати інформацію про поселення з EconomyInfoMediator
-                // За умовою, це має бути settlement-scoped check
-                try
+                if (_economyInfoMediator != null
+                    && _economyInfoMediator.TryResolveConstructionSettlement(position, _activeOwnerId, out var context))
                 {
-                    // Placeholder для майбутньої інтеграції з EconomyInfoMediator
-                    // Коли будуть інтегровані методи для перевірки affordability
-                    hasSettlement = true; // Визначається EconomyInfoMediator
-                    isAffordable = true;  // Визначається EconomyInfoMediator
+                    hasSettlement = true;
+                    settlementId = context.SettlementId;
+                    settlementName = string.IsNullOrWhiteSpace(context.SettlementName) ? context.SettlementId : context.SettlementName;
+
+                    var projection = BuildSettlementProjection(index, context);
+                    isAffordable = !projection.HasDeficit;
+                    errorMessage = projection.Message;
                 }
-                catch (System.Exception ex)
+                else if (HasConstructionCost(placement.BuildingId))
                 {
-                    errorMessage = $"Error checking affordability: {ex.Message}";
-                    if (VerboseLogs) Debug.LogWarning($"[Construction] TryGetPendingPlacementStatus: {errorMessage}");
+                    isAffordable = false;
+                    errorMessage = "Поселення для списання будівельної вартості не знайдено.";
                 }
+            }
+            catch (Exception ex)
+            {
+                isAffordable = false;
+                errorMessage = $"Помилка перевірки affordability: {ex.Message}";
+                if (VerboseLogs)
+                    Debug.LogWarning($"[Construction] TryGetPendingPlacementStatus: {errorMessage}");
             }
 
             status = new ConstructionPendingPlacementStatus(
                 position: position,
                 buildingId: placement.BuildingId,
-                settlementId: settlementId ?? "Unknown",
+                settlementId: settlementId,
                 settlementName: settlementName,
                 hasSettlement: hasSettlement,
                 isAffordable: isAffordable,
@@ -764,38 +806,151 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public ConstructionResourceProjection GetResourceProjection(Vector2Int position)
         {
-            // Якщо цій позиції немає предпросмотру, повертаємо Empty
             if (!HasPendingPlacementAt(position))
                 return ConstructionResourceProjection.Empty;
 
             if (_economyInfoMediator == null)
                 return ConstructionResourceProjection.Empty;
 
-            // Placeholder для майбутньої реалізації з EconomyInfoMediator
-            // Потрібно:
-            // 1. Знайти поселення на цій позиції
-            // 2. Отримати його поточні ресурси
-            // 3. Відняти запас від попередніх pending-будівель на позиціях 0..index
-            // 4. Повернути баланс для кожного ресурсу з інформацією про дефіцит
-
             try
             {
-                if (!TryGetPendingBuildingIdAt(position, out var buildingId))
+                int index = FindPendingPlacementIndex(position);
+                if (index < 0)
                     return ConstructionResourceProjection.Empty;
 
-                var buildingDef = _buildingRegistry?.GetById(buildingId);
-                if (buildingDef == null)
-                    return ConstructionResourceProjection.Empty;
+                if (!_economyInfoMediator.TryResolveConstructionSettlement(position, _activeOwnerId, out var context))
+                {
+                    return new ConstructionResourceProjection(
+                        _activeOwnerId,
+                        null,
+                        null,
+                        false,
+                        false,
+                        "Поселення для цієї позиції не знайдено.",
+                        new List<ConstructionResourceBalance>());
+                }
 
-                // Тимчасово повертаємо Empty проекцію
-                // Буде повністю реалізовано при інтеграції з Economy
-                return ConstructionResourceProjection.Empty;
+                var projection = BuildSettlementProjection(index, context);
+
+                return new ConstructionResourceProjection(
+                    _activeOwnerId,
+                    context.SettlementId,
+                    string.IsNullOrWhiteSpace(context.SettlementName) ? context.SettlementId : context.SettlementName,
+                    true,
+                    projection.HasDeficit,
+                    projection.Message,
+                    projection.Balances);
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Debug.LogWarning($"[Construction] GetResourceProjection error: {ex.Message}");
                 return ConstructionResourceProjection.Empty;
             }
+        }
+
+        private SettlementProjection BuildSettlementProjection(int requestedIndex, EconomySettlementContext context)
+        {
+            var available = _economyInfoMediator.GetSettlementResourceTotals(context.SettlementId);
+            var reserved = new Dictionary<string, float>(StringComparer.Ordinal);
+
+            for (int i = 0; i <= requestedIndex && i < _pendingPlacements.Count; i++)
+            {
+                var pending = _pendingPlacements[i];
+                if (!_economyInfoMediator.TryResolveConstructionSettlement(pending.Position, _activeOwnerId, out var pendingContext))
+                    continue;
+
+                if (!string.Equals(pendingContext.SettlementId, context.SettlementId, StringComparison.Ordinal))
+                    continue;
+
+                var pendingCosts = BuildConstructionCostMap(_buildingRegistry?.GetById(pending.BuildingId));
+                foreach (var pair in pendingCosts)
+                {
+                    if (reserved.ContainsKey(pair.Key))
+                        reserved[pair.Key] += pair.Value;
+                    else
+                        reserved[pair.Key] = pair.Value;
+                }
+            }
+
+            var allResourceIds = new HashSet<string>(StringComparer.Ordinal);
+            if (available != null)
+            {
+                foreach (var pair in available)
+                    allResourceIds.Add(pair.Key);
+            }
+
+            foreach (var pair in reserved)
+                allResourceIds.Add(pair.Key);
+
+            var balances = new List<ConstructionResourceBalance>(allResourceIds.Count);
+            var deficits = new List<string>();
+
+            foreach (var resourceId in allResourceIds.OrderBy(x => x, StringComparer.Ordinal))
+            {
+                float availableAmount = 0f;
+                float reservedAmount = 0f;
+
+                if (available != null && available.TryGetValue(resourceId, out var a))
+                    availableAmount = a;
+
+                if (reserved.TryGetValue(resourceId, out var r))
+                    reservedAmount = r;
+
+                var balance = new ConstructionResourceBalance(resourceId, availableAmount, reservedAmount);
+                balances.Add(balance);
+
+                if (balance.IsDeficit)
+                    deficits.Add($"{resourceId}: {-balance.Remaining:0.#}");
+            }
+
+            bool hasDeficit = deficits.Count > 0;
+            string message = hasDeficit
+                ? $"Дефіцит ресурсів: {string.Join(", ", deficits)}"
+                : "Ресурсів достатньо.";
+
+            return new SettlementProjection(balances, hasDeficit, message);
+        }
+
+        private bool HasConstructionCost(string buildingId)
+        {
+            var definition = _buildingRegistry?.GetById(buildingId);
+            var costs = BuildConstructionCostMap(definition);
+            return costs.Count > 0;
+        }
+
+        private static Dictionary<string, float> BuildConstructionCostMap(BuildingDefinition definition)
+        {
+            var map = new Dictionary<string, float>(StringComparer.Ordinal);
+            var entries = BuildingDefinitionCapabilities.GetConstructionCost(definition);
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                var entry = entries[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0)
+                    continue;
+
+                var resourceId = entry.ResourceId.Trim();
+                if (map.ContainsKey(resourceId))
+                    map[resourceId] += entry.Amount;
+                else
+                    map[resourceId] = entry.Amount;
+            }
+
+            return map;
+        }
+
+        private readonly struct SettlementProjection
+        {
+            public SettlementProjection(IReadOnlyList<ConstructionResourceBalance> balances, bool hasDeficit, string message)
+            {
+                Balances = balances;
+                HasDeficit = hasDeficit;
+                Message = message;
+            }
+
+            public IReadOnlyList<ConstructionResourceBalance> Balances { get; }
+            public bool HasDeficit { get; }
+            public string Message { get; }
         }
 
         public string GetLastActionMessage()

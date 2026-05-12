@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 {
     /// <summary>
     /// UI-контролер, що показує сумарні ресурси по всіх поселеннях конкретного owner.
-    /// Виводить лише 2 агрегати: Food і Materials.
+    /// Виводить агрегати: Food, Materials і Money.
     /// Owner визначається автоматично системою (без поля в Inspector).
     /// </summary>
     public sealed class EconomyPlayerResourceSummaryUIController : MonoBehaviour
@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
         [SerializeField] private GameObject _textsRoot;
         [SerializeField] private TextMeshProUGUI _totalMaterialsText;
         [SerializeField] private TextMeshProUGUI _totalFoodText;
+        [SerializeField] private TextMeshProUGUI _totalMoneyText;
 
         private IEconomyRuntimeApi _economyApi;
         private SignalBus _signalBus;
@@ -130,6 +131,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             if (_totalFoodText != null)
                 _totalFoodText.text = totals.FoodText;
+
+            if (_totalMoneyText != null)
+                _totalMoneyText.text = totals.MoneyText;
         }
 
         private void ResolveOwnerFromSystems()

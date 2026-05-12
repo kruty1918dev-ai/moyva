@@ -35,6 +35,9 @@ namespace Kruty1918.Moyva.Units.Editor
         private string _combatDefenderTypeId = string.Empty;
         private bool _combatShowMatrix = true;
         private int _combatPresetIndex;
+        private int _combatPreviewDistance = 1;
+        private int _combatPreviewAttackerHeight;
+        private int _combatPreviewDefenderHeight;
 
         private void InitializeCombatDesigner()
         {
@@ -211,13 +214,17 @@ namespace Kruty1918.Moyva.Units.Editor
             var defenderProperty = _configs.GetArrayElementAtIndex(defenderIndex);
             var attacker = BuildCombatConfig(attackerProperty);
             var defender = BuildCombatConfig(defenderProperty);
-            var duel = UnitCombatCalculator.CalculateDuel(attacker, defender);
+            var baseDuel = UnitCombatCalculator.CalculateDuel(attacker, defender);
 
-            DrawBattlefieldPreview(attackerProperty, defenderProperty, duel);
+            var tactical = DrawTacticalPositioningControls(attacker, defender);
+            var duel = ApplyTacticalModifiers(baseDuel, attacker, defender, tactical);
+
+            DrawBattlefieldPreview(attackerProperty, defenderProperty, duel, tactical);
             DrawCombatOutcomeSummary(attacker, defender, duel);
             DrawAttackBreakdown("Атака вибраного юніта", attacker, defender, duel.AttackerAttack);
             DrawAttackBreakdown("Контратака захисника", defender, attacker, duel.DefenderCounterAttack);
             DrawCombatNuances(attacker, defender, duel);
+            DrawTacticalRangeNotes(attacker, defender, tactical);
             DrawCombatMatrixSection();
 
             EditorGUILayout.EndScrollView();
@@ -238,7 +245,7 @@ namespace Kruty1918.Moyva.Units.Editor
             return defenderIndex;
         }
 
-        private void DrawBattlefieldPreview(SerializedProperty attackerProperty, SerializedProperty defenderProperty, UnitCombatDuel duel)
+        private void DrawBattlefieldPreview(SerializedProperty attackerProperty, SerializedProperty defenderProperty, UnitCombatDuel duel, CombatTacticalContext tactical)
         {
             Rect rect = GUILayoutUtility.GetRect(360f, 250f, GUILayout.ExpandWidth(true));
             DrawPanelBackground(rect, EditorGUIUtility.isProSkin ? new Color(0.12f, 0.13f, 0.14f) : new Color(0.78f, 0.82f, 0.84f));
@@ -251,6 +258,19 @@ namespace Kruty1918.Moyva.Units.Editor
 
             Rect attackerFrame = new Rect(rect.x + 34f, rect.y + 54f, 112f, 112f);
             Rect defenderFrame = new Rect(rect.xMax - 146f, rect.y + 54f, 112f, 112f);
+
+            // Підняти спрайти відповідно до висоти, щоб видно було перевагу по терену.
+            float maxHeightLift = 38f;
+            int maxHeightLevel = Mathf.Max(1, Mathf.Max(tactical.AttackerHeight, tactical.DefenderHeight, 1));
+            float attackerLift = Mathf.Lerp(0f, maxHeightLift, tactical.AttackerHeight / (float)maxHeightLevel);
+            float defenderLift = Mathf.Lerp(0f, maxHeightLift, tactical.DefenderHeight / (float)maxHeightLevel);
+            attackerFrame.y -= attackerLift;
+            defenderFrame.y -= defenderLift;
+
+            // Малюємо підставки/пагорби під юнітами.
+            DrawTerrainPlatform(new Rect(attackerFrame.x - 6f, attackerFrame.yMax, attackerFrame.width + 12f, 16f + attackerLift), tactical.AttackerHeight);
+            DrawTerrainPlatform(new Rect(defenderFrame.x - 6f, defenderFrame.yMax, defenderFrame.width + 12f, 16f + defenderLift), tactical.DefenderHeight);
+
             DrawSpriteOrPrefab(attackerFrame, attackerSprite, attackerPrefab, true);
             DrawSpriteOrPrefab(defenderFrame, defenderSprite, defenderPrefab, true);
 
@@ -259,10 +279,21 @@ namespace Kruty1918.Moyva.Units.Editor
             Vector2 counterStart = new Vector2(defenderFrame.xMin - 18f, defenderFrame.center.y + 22f);
             Vector2 counterEnd = new Vector2(attackerFrame.xMax + 18f, attackerFrame.center.y + 22f);
 
-            DrawArrow(attackStart, attackEnd, Good, 3f);
-            DrawArrow(counterStart, counterEnd, Warn, 2f);
-            DrawDamageBubble(new Rect((attackStart.x + attackEnd.x) * 0.5f - 42f, attackStart.y - 30f, 84f, 24f), duel.AttackerAttack.TotalDamage, Good);
-            DrawDamageBubble(new Rect((counterStart.x + counterEnd.x) * 0.5f - 42f, counterStart.y + 8f, 84f, 24f), duel.DefenderCounterAttack.TotalDamage, Warn);
+            Color attackArrowColor = tactical.AttackerCanReach ? Good : new Color(0.55f, 0.55f, 0.55f, 0.6f);
+            Color counterArrowColor = tactical.DefenderCanReach ? Warn : new Color(0.55f, 0.55f, 0.55f, 0.5f);
+
+            if (tactical.AttackerIsRanged && tactical.AttackerCanReach)
+                DrawArcedArrow(attackStart, attackEnd, attackArrowColor, 3f);
+            else
+                DrawArrow(attackStart, attackEnd, attackArrowColor, 3f);
+
+            if (tactical.DefenderIsRanged && tactical.DefenderCanReach)
+                DrawArcedArrow(counterStart, counterEnd, counterArrowColor, 2f);
+            else
+                DrawArrow(counterStart, counterEnd, counterArrowColor, 2f);
+
+            DrawDamageBubble(new Rect((attackStart.x + attackEnd.x) * 0.5f - 42f, attackStart.y - 30f, 84f, 24f), duel.AttackerAttack.TotalDamage, attackArrowColor);
+            DrawDamageBubble(new Rect((counterStart.x + counterEnd.x) * 0.5f - 42f, counterStart.y + 8f, 84f, 24f), duel.DefenderCounterAttack.TotalDamage, counterArrowColor);
 
             string attackerName = GetString(attackerProperty, "TypeId");
             string defenderName = GetString(defenderProperty, "TypeId");
@@ -274,7 +305,40 @@ namespace Kruty1918.Moyva.Units.Editor
             DrawHpBar(new Rect(attackerFrame.x, attackerFrame.yMax + 12f, attackerFrame.width, 18f), attackerHp - duel.DefenderCounterAttack.TotalDamage, attackerHp, "після контратаки");
             DrawHpBar(new Rect(defenderFrame.x, defenderFrame.yMax + 12f, defenderFrame.width, 18f), defenderHp - duel.AttackerAttack.TotalDamage, defenderHp, "після удару");
 
+            string distanceLabel = $"Дистанція: {tactical.Distance} тайл(ів) | Висоти: атакер h{tactical.AttackerHeight} ↔ захисник h{tactical.DefenderHeight}";
+            GUI.Label(new Rect(rect.x + 12f, rect.yMax - 44f, rect.width - 24f, 16f), distanceLabel, EditorStyles.centeredGreyMiniLabel);
             GUI.Label(new Rect(rect.x + 12f, rect.yMax - 28f, rect.width - 24f, 18f), ResolveOutcomeText(duel), EditorStyles.centeredGreyMiniLabel);
+        }
+
+        private void DrawTerrainPlatform(Rect rect, int heightLevel)
+        {
+            if (rect.height <= 0f)
+                return;
+            Color baseTone = heightLevel <= 0
+                ? new Color(0.30f, 0.40f, 0.34f, 0.55f)
+                : Color.Lerp(new Color(0.30f, 0.40f, 0.34f, 0.55f), new Color(0.62f, 0.46f, 0.28f, 0.85f), Mathf.Clamp01(heightLevel / 5f));
+            EditorGUI.DrawRect(rect, baseTone);
+            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 2f), new Color(0f, 0f, 0f, 0.35f));
+        }
+
+        private void DrawArcedArrow(Vector2 from, Vector2 to, Color color, float width)
+        {
+            // Параболічна стрілка для дальніх атак.
+            const int segments = 14;
+            float arcHeight = Mathf.Min(40f, Vector2.Distance(from, to) * 0.35f);
+            Vector2 prev = from;
+            for (int i = 1; i <= segments; i++)
+            {
+                float t = i / (float)segments;
+                float arc = -arcHeight * 4f * t * (1f - t);
+                Vector2 point = Vector2.Lerp(from, to, t) + new Vector2(0f, arc);
+                DrawLine(prev, point, color, width);
+                prev = point;
+            }
+            Vector2 dir = (prev - Vector2.Lerp(from, to, 0.9f)).normalized;
+            Vector2 side = new Vector2(-dir.y, dir.x);
+            DrawLine(to, to - dir * 12f + side * 6f, color, width);
+            DrawLine(to, to - dir * 12f - side * 6f, color, width);
         }
 
         private void DrawCombatOutcomeSummary(UnitClassConfig attacker, UnitClassConfig defender, UnitCombatDuel duel)
@@ -553,6 +617,205 @@ namespace Kruty1918.Moyva.Units.Editor
             fallback = Mathf.Clamp(fallback, 0, _configs.arraySize - 1);
             _combatDefenderTypeId = GetString(_configs.GetArrayElementAtIndex(fallback), "TypeId");
             return fallback;
+        }
+
+        private readonly struct CombatTacticalContext
+        {
+            public CombatTacticalContext(
+                int distance,
+                int attackerHeight,
+                int defenderHeight,
+                bool attackerIsRanged,
+                bool defenderIsRanged,
+                int attackerRange,
+                int defenderRange,
+                bool attackerCanReach,
+                bool defenderCanReach,
+                float attackerMultiplier,
+                float defenderMultiplier)
+            {
+                Distance = distance;
+                AttackerHeight = attackerHeight;
+                DefenderHeight = defenderHeight;
+                AttackerIsRanged = attackerIsRanged;
+                DefenderIsRanged = defenderIsRanged;
+                AttackerRange = attackerRange;
+                DefenderRange = defenderRange;
+                AttackerCanReach = attackerCanReach;
+                DefenderCanReach = defenderCanReach;
+                AttackerMultiplier = attackerMultiplier;
+                DefenderMultiplier = defenderMultiplier;
+            }
+
+            public int Distance { get; }
+            public int AttackerHeight { get; }
+            public int DefenderHeight { get; }
+            public bool AttackerIsRanged { get; }
+            public bool DefenderIsRanged { get; }
+            public int AttackerRange { get; }
+            public int DefenderRange { get; }
+            public bool AttackerCanReach { get; }
+            public bool DefenderCanReach { get; }
+            public float AttackerMultiplier { get; }
+            public float DefenderMultiplier { get; }
+        }
+
+        private static bool IsRangedCombatProfile(UnitClassConfig config)
+        {
+            if (config == null)
+                return false;
+
+            if (config.CombatType == UnitCombatType.SiegeMachine)
+                return true;
+
+            int cutting = Mathf.Max(0, config.CuttingDamage);
+            int penetrating = Mathf.Max(0, config.PenetratingDamage);
+            int crushing = Mathf.Max(0, config.CrushingDamage);
+            int total = cutting + penetrating + crushing;
+            if (total <= 0)
+                return false;
+
+            bool penetratingDominant = penetrating > cutting && penetrating >= crushing && penetrating >= 15;
+            bool largeCrushingOnly = crushing >= 40 && crushing > cutting;
+            return penetratingDominant || largeCrushingOnly;
+        }
+
+        private static int ResolveAttackRange(UnitClassConfig config)
+        {
+            if (config == null)
+                return 1;
+
+            if (!IsRangedCombatProfile(config))
+                return 1;
+
+            int range = Mathf.Max(2, config.VisionRange / 2);
+            if (config.CombatType == UnitCombatType.SiegeMachine)
+                range = Mathf.Max(range, Mathf.Max(3, config.VisionRange));
+            return Mathf.Clamp(range, 1, 20);
+        }
+
+        private CombatTacticalContext DrawTacticalPositioningControls(UnitClassConfig attacker, UnitClassConfig defender)
+        {
+            int attackerRange = ResolveAttackRange(attacker);
+            int defenderRange = ResolveAttackRange(defender);
+            int maxDistance = Mathf.Clamp(Mathf.Max(attackerRange, defenderRange) + 2, 2, 20);
+
+            BeginSection("Тактика: дистанція і висота", "d_Mountain", "Дальнобійні юніти отримують бонус від висоти і дистанції; ближній бій безсилий, якщо не дістає.");
+
+            _combatPreviewDistance = EditorGUILayout.IntSlider(
+                new GUIContent("Дистанція до цілі (тайлів)", "1 = рукопашна. Більше за дальність атаки = удар не доходить."),
+                Mathf.Clamp(_combatPreviewDistance, 1, maxDistance), 1, maxDistance);
+            _combatPreviewAttackerHeight = EditorGUILayout.IntSlider(
+                new GUIContent("Висота атакера", "0 = рівнина, 5 = вершина. Стрільці й катапульти отримують бонус коли вищі за ціль."),
+                Mathf.Clamp(_combatPreviewAttackerHeight, 0, 5), 0, 5);
+            _combatPreviewDefenderHeight = EditorGUILayout.IntSlider(
+                new GUIContent("Висота захисника", "0 = рівнина, 5 = вершина."),
+                Mathf.Clamp(_combatPreviewDefenderHeight, 0, 5), 0, 5);
+
+            bool attackerIsRanged = IsRangedCombatProfile(attacker);
+            bool defenderIsRanged = IsRangedCombatProfile(defender);
+            bool attackerCanReach = _combatPreviewDistance <= attackerRange;
+            bool defenderCanReach = _combatPreviewDistance <= defenderRange;
+
+            int heightDelta = _combatPreviewAttackerHeight - _combatPreviewDefenderHeight;
+            float attackerMultiplier = CalculateTacticalMultiplier(attackerIsRanged, attackerCanReach, _combatPreviewDistance, heightDelta);
+            float defenderMultiplier = CalculateTacticalMultiplier(defenderIsRanged, defenderCanReach, _combatPreviewDistance, -heightDelta);
+
+            EditorGUILayout.LabelField(
+                $"Атакер: {(attackerIsRanged ? "далекобійний" : "ближній бій")}, дальність {attackerRange} | множник x{attackerMultiplier:0.00}{(attackerCanReach ? string.Empty : " (не дістає)")}",
+                EditorStyles.miniLabel);
+            EditorGUILayout.LabelField(
+                $"Захисник: {(defenderIsRanged ? "далекобійний" : "ближній бій")}, дальність {defenderRange} | множник x{defenderMultiplier:0.00}{(defenderCanReach ? string.Empty : " (не дістає)")}",
+                EditorStyles.miniLabel);
+
+            EndSection();
+
+            return new CombatTacticalContext(
+                _combatPreviewDistance,
+                _combatPreviewAttackerHeight,
+                _combatPreviewDefenderHeight,
+                attackerIsRanged,
+                defenderIsRanged,
+                attackerRange,
+                defenderRange,
+                attackerCanReach,
+                defenderCanReach,
+                attackerMultiplier,
+                defenderMultiplier);
+        }
+
+        private static float CalculateTacticalMultiplier(bool isRanged, bool canReach, int distance, int heightDelta)
+        {
+            if (!canReach)
+                return 0f;
+
+            float multiplier = 1f;
+            if (isRanged)
+            {
+                multiplier += Mathf.Clamp(0.04f * (distance - 1), 0f, 0.25f);
+                multiplier += Mathf.Clamp(0.07f * heightDelta, -0.25f, 0.35f);
+            }
+            else
+            {
+                multiplier += Mathf.Clamp(0.03f * heightDelta, -0.12f, 0.15f);
+            }
+            return Mathf.Clamp(multiplier, 0.4f, 1.8f);
+        }
+
+        private static UnitCombatDuel ApplyTacticalModifiers(UnitCombatDuel baseDuel, UnitClassConfig attacker, UnitClassConfig defender, CombatTacticalContext tactical)
+        {
+            var attackerAttack = ScaleBreakdown(baseDuel.AttackerAttack, tactical.AttackerMultiplier, defender);
+            var defenderCounter = ScaleBreakdown(baseDuel.DefenderCounterAttack, tactical.DefenderMultiplier, attacker);
+            return new UnitCombatDuel(attackerAttack, defenderCounter);
+        }
+
+        private static UnitCombatBreakdown ScaleBreakdown(UnitCombatBreakdown breakdown, float multiplier, UnitClassConfig defender)
+        {
+            int cuttingEff = Mathf.Max(0, Mathf.RoundToInt(breakdown.CuttingEffectiveDamage * multiplier));
+            int penetratingEff = Mathf.Max(0, Mathf.RoundToInt(breakdown.PenetratingEffectiveDamage * multiplier));
+            int crushingEff = Mathf.Max(0, Mathf.RoundToInt(breakdown.CrushingEffectiveDamage * multiplier));
+            int totalDamage = Mathf.Max(0, Mathf.RoundToInt(breakdown.TotalDamage * multiplier));
+            if (totalDamage <= 0 && multiplier > 0f && breakdown.CanDealDamage && breakdown.EffectiveDamageBeforeLevel > 0)
+                totalDamage = 1;
+
+            return new UnitCombatBreakdown(
+                breakdown.CuttingRawDamage,
+                breakdown.PenetratingRawDamage,
+                breakdown.CrushingRawDamage,
+                breakdown.CuttingDefense,
+                breakdown.PenetratingDefense,
+                breakdown.CrushingDefense,
+                cuttingEff,
+                penetratingEff,
+                crushingEff,
+                breakdown.LevelMultiplier * multiplier,
+                totalDamage,
+                defender != null ? Mathf.Max(1, defender.HitPoints) : breakdown.DefenderHitPoints);
+        }
+
+        private void DrawTacticalRangeNotes(UnitClassConfig attacker, UnitClassConfig defender, CombatTacticalContext tactical)
+        {
+            BeginSection("Тактичні висновки", "d_console.infoicon", "Як дистанція і висота вплинули на цей бій.");
+            if (tactical.AttackerIsRanged)
+                EditorGUILayout.HelpBox($"{attacker.TypeId}: далекобійний (дальність {tactical.AttackerRange}). Бонус за висоту і дистанцію застосовано.", MessageType.None);
+            else
+                EditorGUILayout.HelpBox($"{attacker.TypeId}: ближній бій. Поза дистанцією 1 тайл — не дістає до цілі.", MessageType.None);
+
+            if (!tactical.AttackerCanReach)
+                EditorGUILayout.HelpBox($"Атакер не дістає до цілі: дистанція {tactical.Distance} > дальність {tactical.AttackerRange}.", MessageType.Warning);
+
+            if (tactical.DefenderIsRanged && !tactical.DefenderCanReach)
+                EditorGUILayout.HelpBox($"Захисник далекобійний, але дистанція {tactical.Distance} перевищує його дальність {tactical.DefenderRange}. Безкарний удар атакера.", MessageType.Info);
+            else if (!tactical.DefenderIsRanged && tactical.Distance > 1)
+                EditorGUILayout.HelpBox("Захисник у ближньому бою не може контратакувати на дистанції — атакер обстрілює його безкарно.", MessageType.Info);
+
+            int heightDelta = tactical.AttackerHeight - tactical.DefenderHeight;
+            if (heightDelta != 0)
+            {
+                string who = heightDelta > 0 ? "атакера" : "захисника";
+                EditorGUILayout.HelpBox($"Перевага по висоті у {who} (Δ {Mathf.Abs(heightDelta)}). Для дальнього бою це додає або забирає шкоди.", MessageType.None);
+            }
+            EndSection();
         }
 
         private UnitClassConfig BuildCombatConfig(SerializedProperty unit)

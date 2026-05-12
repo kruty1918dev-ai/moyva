@@ -415,6 +415,10 @@ namespace Kruty1918.Moyva.Tests.Economy
             => Assert.AreEqual(2, (int)EconomyResourceCategory.Materials);
 
         [Test]
+        public void ResourceCategory_Money_IsThree()
+            => Assert.AreEqual(3, (int)EconomyResourceCategory.Money);
+
+        [Test]
         public void SettlementType_Village_IsZero()
             => Assert.AreEqual(0, (int)EconomySettlementType.Village);
 
