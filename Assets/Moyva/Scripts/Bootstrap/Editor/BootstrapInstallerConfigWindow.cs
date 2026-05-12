@@ -179,9 +179,24 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             {
                 EditorGUILayout.LabelField("Initial Resources", EditorStyles.boldLabel);
                 EditorGUILayout.Space(3f);
-                var resources = settings.FindPropertyRelative("InitialResources");
-                EditorGUILayout.PropertyField(resources, new GUIContent("Ресурси на старті"), includeChildren: true);
+                EditorGUILayout.HelpBox(
+                    "Редагування стартових ресурсів винесено в Economy Designer, щоб уникнути дублювання між редакторами.",
+                    MessageType.Info);
+                if (GUILayout.Button("Відкрити Economy Designer → Стартова економіка", GUILayout.Height(24f)))
+                    OpenEconomyDesignerAtStartingEconomy();
             }
+        }
+
+        private static void OpenEconomyDesignerAtStartingEconomy()
+        {
+            var type = System.Type.GetType("Kruty1918.Moyva.Economy.Editor.EconomyDesignerWindow, Kruty1918.Moyva.Economy.Editor");
+            if (type == null || !typeof(EditorWindow).IsAssignableFrom(type))
+            {
+                Debug.LogWarning("[Bootstrap] EconomyDesignerWindow не знайдено.");
+                return;
+            }
+
+            EditorWindow.GetWindow(type, false, "Редактор Економіки");
         }
 
         private void DrawStartPositionTab()

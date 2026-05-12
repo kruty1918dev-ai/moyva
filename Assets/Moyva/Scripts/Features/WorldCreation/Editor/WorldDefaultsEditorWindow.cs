@@ -233,7 +233,11 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
             BeginCard();
             EditorGUILayout.LabelField("Стартова взаємодія", _sectionStyle);
             EditorGUILayout.PropertyField(gameSettings.FindPropertyRelative("DefaultBuildingId"), new GUIContent("Стартова будівля"));
-            EditorGUILayout.PropertyField(gameSettings.FindPropertyRelative("InitialResources"), new GUIContent("Стартові ресурси"), true);
+            EditorGUILayout.HelpBox(
+                "Стартові ресурси централізовано редагуються в Economy Designer (Single Source of Truth).",
+                MessageType.Info);
+            if (GUILayout.Button("Відкрити Economy Designer → Стартова економіка", GUILayout.Height(24f)))
+                OpenEconomyDesignerAtStartingEconomy();
             EndCard();
 
             var startSettings = _bootstrapSerialized.FindProperty("_startingPositionSettings");
@@ -249,6 +253,18 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
             DrawRelative(startSettings, "startCandidateAttempts", "Спроб пошуку старту");
             DrawRelative(startSettings, "cameraZ", "Camera Z");
             EndCard();
+        }
+
+        private static void OpenEconomyDesignerAtStartingEconomy()
+        {
+            var type = Type.GetType("Kruty1918.Moyva.Economy.Editor.EconomyDesignerWindow, Kruty1918.Moyva.Economy.Editor");
+            if (type == null || !typeof(EditorWindow).IsAssignableFrom(type))
+            {
+                Debug.LogWarning("[WorldDefaults] EconomyDesignerWindow не знайдено.");
+                return;
+            }
+
+            EditorWindow.GetWindow(type, false, "Редактор Економіки");
         }
 
         private void DrawFogTab()
