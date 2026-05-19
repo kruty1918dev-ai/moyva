@@ -9,6 +9,22 @@ using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
+    internal readonly struct FogFixedVisionAreaSnapshot
+    {
+        public FogFixedVisionAreaSnapshot(string areaId, Vector2Int position, int visionRange, FogRevealShape shape)
+        {
+            AreaId = areaId;
+            Position = position;
+            VisionRange = visionRange;
+            Shape = shape;
+        }
+
+        public string AreaId { get; }
+        public Vector2Int Position { get; }
+        public int VisionRange { get; }
+        public FogRevealShape Shape { get; }
+    }
+
     /// <summary>
     /// Ядро служби "туману війни" (Fog of War).
     /// Підтримує матрицю лічильників видимості (int[,]) та масив позначок досліджених клітин (bool[,]).
@@ -481,12 +497,50 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int copyW = Mathf.Min(w, _width);
             int copyH = Mathf.Min(h, _height);
 
+            Array.Clear(_exploredTiles, 0, _exploredTiles.Length);
+
             for (int x = 0; x < copyW; x++)
                 for (int y = 0; y < copyH; y++)
                     _exploredTiles[x, y] = explored[x, y];
 
             _textureUpdater?.RebuildFullTexture(this);
             BumpVersion();
+        }
+
+        internal IReadOnlyList<FogFixedVisionAreaSnapshot> GetFixedVisionAreasSnapshot()
+        {
+            var snapshot = new List<FogFixedVisionAreaSnapshot>(_fixedVisionShapes.Count);
+            foreach (var shapePair in _fixedVisionShapes)
+            {
+                string areaId = shapePair.Key;
+                if (string.IsNullOrWhiteSpace(areaId))
+                    continue;
+
+                if (!_unitPositions.TryGetValue(areaId, out Vector2Int position))
+                    continue;
+
+                if (!_unitVisionRange.TryGetValue(areaId, out int visionRange))
+                    continue;
+
+                snapshot.Add(new FogFixedVisionAreaSnapshot(areaId, position, visionRange, shapePair.Value));
+            }
+
+            return snapshot;
+        }
+
+        internal void LoadFixedVisionAreasSnapshot(IReadOnlyList<FogFixedVisionAreaSnapshot> areas)
+        {
+            if (areas == null || areas.Count == 0)
+                return;
+
+            for (int index = 0; index < areas.Count; index++)
+            {
+                var area = areas[index];
+                if (string.IsNullOrWhiteSpace(area.AreaId) || area.VisionRange <= 0)
+                    continue;
+
+                RegisterFixedVisionArea(area.AreaId, area.Position, area.VisionRange, area.Shape);
+            }
         }
 
         /// <summary>

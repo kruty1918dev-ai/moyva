@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.SaveSystem
         bool HasBlock(int slot, Type moduleType);
         bool HasBlock<TModule>(int slot = 0);
         bool HasBlock(int slot, string moduleTypeFullName);
+        bool TryGetBlockPayload(int slot, string moduleTypeFullName, out byte[] payload);
         /// <summary>
         /// Try to read FogOfWar snapshot from slot without loading the whole game.
         /// Returns true and sets <paramref name="snapshot"/> when the fog block exists and could be parsed.

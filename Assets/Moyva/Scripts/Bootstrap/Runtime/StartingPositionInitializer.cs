@@ -858,23 +858,56 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int explored = 0;
             int required = Mathf.Max(1, _settings.minimumExploredTilesBeforeRepair);
             bool hasEnoughExplored = false;
-            bool hasVisibleTile = false;
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    var position = new Vector2Int(x, y);
-                    if (_fogOfWarService.IsVisible(position))
-                        hasVisibleTile = true;
-
                     if (snapshot[x, y])
                     {
                         explored++;
                         if (explored >= required)
+                        {
                             hasEnoughExplored = true;
+                            break;
+                        }
                     }
+                }
 
-                    if (hasEnoughExplored && hasVisibleTile)
+                if (hasEnoughExplored)
+                    break;
+            }
+
+            if (!hasEnoughExplored)
+                return false;
+
+            if (!_settings.keepCoreFullyVisible)
+                return true;
+
+            Vector2Int center = ResolveRepairCenter(snapshot, width, height);
+            int radius = Mathf.Max(1, _settings.ResolveCoreVisibleRadius(width, height));
+            return HasVisibleTileNear(center, width, height, radius, _settings.ResolveRevealShape());
+        }
+
+        private bool HasVisibleTileNear(Vector2Int center, int width, int height, int radius, FogRevealShape shape)
+        {
+            float radiusWithCellCoverage = radius + 0.5f;
+            float radiusSqr = radiusWithCellCoverage * radiusWithCellCoverage;
+
+            int minX = Mathf.Max(0, center.x - radius);
+            int maxX = Mathf.Min(width - 1, center.x + radius);
+            int minY = Mathf.Max(0, center.y - radius);
+            int maxY = Mathf.Min(height - 1, center.y + radius);
+
+            for (int x = minX; x <= maxX; x++)
+            {
+                int deltaX = x - center.x;
+                for (int y = minY; y <= maxY; y++)
+                {
+                    int deltaY = y - center.y;
+                    if (!IsInsideRevealShape(deltaX, deltaY, radius, radiusSqr, shape))
+                        continue;
+
+                    if (_fogOfWarService.IsVisible(new Vector2Int(x, y)))
                         return true;
                 }
             }

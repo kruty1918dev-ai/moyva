@@ -12,6 +12,8 @@ namespace Kruty1918.Moyva.SaveSystem
     /// </summary>
     internal sealed class SaveInspectorService : ISaveInspectorService
     {
+        private const int FogFormatVersionWithFixedVisionAreas = -2;
+
         public bool HasBlock(int slot, string moduleTypeFullName)
         {
             if (string.IsNullOrWhiteSpace(moduleTypeFullName))
@@ -32,10 +34,10 @@ namespace Kruty1918.Moyva.SaveSystem
         public bool HasBlock<TModule>(int slot = 0)
             => HasBlock(slot, typeof(TModule));
 
-        public bool TryGetFogSnapshot(int slot, out bool[,] snapshot)
+        public bool TryGetBlockPayload(int slot, string moduleTypeFullName, out byte[] payload)
         {
-            snapshot = null;
-            if (!SavePipelineHelper.ValidateSlot(slot))
+            payload = null;
+            if (!SavePipelineHelper.ValidateSlot(slot) || string.IsNullOrWhiteSpace(moduleTypeFullName))
                 return false;
 
             string path = SaveService.GetPath(slot);
@@ -50,37 +52,62 @@ namespace Kruty1918.Moyva.SaveSystem
             if (result != SaveFileCodec.DecodeError.None || blocks == null)
                 return false;
 
-            uint fogId = SaveFileCodec.ComputeBlockId("Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarSaveModule");
-
-            foreach (var (blockId, payload) in blocks)
+            uint targetBlockId = SaveFileCodec.ComputeBlockId(moduleTypeFullName);
+            foreach (var (blockId, blockPayload) in blocks)
             {
-                if (blockId != fogId) continue;
+                if (blockId != targetBlockId)
+                    continue;
 
-                try
-                {
-                    using var ms = new MemoryStream(payload);
-                    using var br = new BinaryReader(ms);
-
-                    int width = br.ReadInt32();
-                    int height = br.ReadInt32();
-                    if (width <= 0 || height <= 0)
-                        return false;
-
-                    var snap = new bool[width, height];
-                    for (int x = 0; x < width; x++)
-                        for (int y = 0; y < height; y++)
-                            snap[x, y] = br.ReadBoolean();
-
-                    snapshot = snap;
-                    return true;
-                }
-                catch
-                {
-                    return false;
-                }
+                payload = blockPayload;
+                return true;
             }
 
             return false;
+        }
+
+        public bool TryGetFogSnapshot(int slot, out bool[,] snapshot)
+        {
+            snapshot = null;
+            if (!TryGetBlockPayload(slot, "Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarSaveModule", out byte[] payload))
+                return false;
+
+            try
+            {
+                using var ms = new MemoryStream(payload);
+                using var br = new BinaryReader(ms);
+
+                int markerOrWidth = br.ReadInt32();
+                int width;
+                int height;
+                if (markerOrWidth < 0)
+                {
+                    if (markerOrWidth != FogFormatVersionWithFixedVisionAreas)
+                        return false;
+
+                    width = br.ReadInt32();
+                    height = br.ReadInt32();
+                }
+                else
+                {
+                    width = markerOrWidth;
+                    height = br.ReadInt32();
+                }
+
+                if (width <= 0 || height <= 0)
+                    return false;
+
+                var snap = new bool[width, height];
+                for (int x = 0; x < width; x++)
+                    for (int y = 0; y < height; y++)
+                        snap[x, y] = br.ReadBoolean();
+
+                snapshot = snap;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static bool HasBlockById(int slot, uint targetBlockId)
