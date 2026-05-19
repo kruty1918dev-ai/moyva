@@ -90,6 +90,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string activeOwnerId = ResolveBootstrapOwnerId();
             _constructionService.SetActiveOwner(activeOwnerId);
 
+            // Multiplayer client guard: only the host grants the starter pack.
+            // Joining clients receive the host's economy state via the world snapshot
+            // (see EconomyMultiplayerBridge) and must not duplicate starter resources.
+            if (IsMultiplayerClient())
+            {
+                _starterPackGrantEnabled = false;
+                _bootstrapApplied = true;
+                Debug.Log("[Bootstrap] Multiplayer client detected — skipping starter pack grant; awaiting host snapshot.");
+                return;
+            }
+
             // Якщо є сучасне збереження економіки — не робимо bootstrap.
             // Старі сейви не мають EconomySaveModule, тому їм потрібна одноразова міграція стартових ресурсів.
             int slot = GameLaunchContext.SaveSlot;
@@ -338,6 +349,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return string.IsNullOrWhiteSpace(ownerId)
                 ? "player_0"
                 : ownerId.Trim();
+        }
+
+        /// <summary>
+        /// True when the local participant is connected to a multiplayer session
+        /// (more than one participant in the lobby) and is not the host.
+        /// </summary>
+        private bool IsMultiplayerClient()
+        {
+            if (_sessionManager == null)
+                return false;
+            if (_sessionManager.Participants == null || _sessionManager.Participants.Count <= 1)
+                return false;
+            return !_sessionManager.IsLocalPlayerHost;
         }
 
         private static bool ShouldGrantStarterPackForCurrentLaunch()
