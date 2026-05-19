@@ -23,6 +23,10 @@ namespace Kruty1918.Moyva.Tests.Economy
             SetString(resourceB, "_id", "food");
             SetEnum(resourceB, "_category", EconomyResourceCategory.Materials);
 
+            var moneyResource = ScriptableObject.CreateInstance<EconomyResourceDefinition>();
+            SetString(moneyResource, "_id", "money");
+            SetEnum(moneyResource, "_category", EconomyResourceCategory.Money);
+
             var settlement = ScriptableObject.CreateInstance<EconomySettlementDefinition>();
             SetString(settlement, "_settlementId", "village_01");
             SetString(settlement, "_centerBuildingId", "");
@@ -42,6 +46,7 @@ namespace Kruty1918.Moyva.Tests.Economy
 
             AddToList(database, "_resources", resourceA);
             AddToList(database, "_resources", resourceB);
+            AddToList(database, "_resources", moneyResource);
             AddToList(database, "_settlements", settlement);
             AddToList(database, "_warehousePolicies", warehouse);
             AddToList(database, "_productionProfiles", production);

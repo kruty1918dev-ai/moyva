@@ -114,6 +114,25 @@ namespace Kruty1918.Moyva.Editor.Shared
             return asset;
         }
 
+        public static EconomyResourceDefinition CreateMoneyResourceAssetInProjectFolder(string defaultFileName = "MoneyResource")
+        {
+            var asset = CreateResourceAssetInProjectFolder(defaultFileName);
+            if (asset == null)
+                return null;
+
+            var so = new SerializedObject(asset);
+            so.Update();
+            so.FindProperty("_id").stringValue = "money";
+            so.FindProperty("_displayName").stringValue = "Гроші";
+            so.FindProperty("_category").enumValueIndex = (int)EconomyResourceCategory.Money;
+            so.FindProperty("_stackLimit").intValue = 999999;
+            so.FindProperty("_weightGrams").intValue = 1;
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(asset);
+            AssetDatabase.SaveAssets();
+            return asset;
+        }
+
         public static int AddAllResourcesToDatabase(EconomyDatabaseSO database)
         {
             if (database == null)

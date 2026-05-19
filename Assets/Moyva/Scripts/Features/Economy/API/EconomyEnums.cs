@@ -5,6 +5,7 @@ namespace Kruty1918.Moyva.Economy.API
         None = 0,
         Food = 1,
         Materials = 2,
+        Money = 3,
     }
 
     public enum EconomySettlementType

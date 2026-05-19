@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Units.Editor
         private const string UnitListWidthPrefsKey = "Moyva.UnitDesigner.Layout.UnitListWidth";
         private const string UnitDetailsWidthPrefsKey = "Moyva.UnitDesigner.Layout.UnitDetailsWidth";
         private const string UnitPreviewWidthPrefsKey = "Moyva.UnitDesigner.Layout.UnitPreviewWidth";
+        private const string AutoSaveRegistryPrefsKey = "Moyva.UnitDesigner.AutoSaveRegistry";
         private const string GeneratorListWidthPrefsKey = "Moyva.UnitDesigner.Layout.GeneratorListWidth";
         private const string GeneratorSettingsWidthPrefsKey = "Moyva.UnitDesigner.Layout.GeneratorSettingsWidth";
         private const string GeneratorPreviewPanelWidthPrefsKey = "Moyva.UnitDesigner.Layout.GeneratorPreviewPanelWidth";
@@ -97,6 +98,8 @@ namespace Kruty1918.Moyva.Units.Editor
         private bool _autoPlayPreview = true;
         private bool _showVisionPreview = true;
         private bool _showStatsPreview = true;
+        private readonly List<string> _visionMapTypeIds = new List<string>();
+        private bool _visionMapIncludeAll;
         private bool _showAnimationPreview = true;
         private bool _showDetailedStatePreview = true;
         private bool _showToolbarUnitTuning = true;
@@ -149,7 +152,9 @@ namespace Kruty1918.Moyva.Units.Editor
         private float _pendingPreviewDelta;
         private Sprite _currentPreviewSprite;
         private string _lastBlockedApplyReason = string.Empty;
+        private string _lastSaveStatus = "save: idle";
         private bool _diffBeforeApplyEnabled = true;
+        private bool _autoSaveRegistry = true;
 
         // Утиліти для оптимізації редактора
         private readonly EditorLivePreviewThrottle _livePreviewThrottle = new EditorLivePreviewThrottle(repaintFps: 30d, costlyTickHz: 30d);
@@ -195,6 +200,7 @@ namespace Kruty1918.Moyva.Units.Editor
         private void OnEnable()
         {
             LoadRegistryPreference();
+            _autoSaveRegistry = EditorPrefs.GetBool(AutoSaveRegistryPrefsKey, true);
             if (_registry == null)
                 _registry = FindFirstRegistry();
 
@@ -224,6 +230,7 @@ namespace Kruty1918.Moyva.Units.Editor
             SaveRegistryPreference();
             SaveSelectedPreference();
             SaveLayoutPreferences();
+            EditorPrefs.SetBool(AutoSaveRegistryPrefsKey, _autoSaveRegistry);
             DisposeSafeEditMode();
             DisposeGeneratorMapDesigner();
             _combatFacade?.Dispose();
@@ -239,13 +246,23 @@ namespace Kruty1918.Moyva.Units.Editor
             RefreshGeneratorMapSerializedObjects();
 
             if (_staleTracker.IsStale(_registry))
-                ShowNotification(new GUIContent("Дані застарілі: ассет змінено зовні. Оновіть/збережіть зміни."));
+            {
+                // Якщо у нас немає локальних незбережених правок — тихо приймаємо зовнішній стан,
+                // щоб не спамити нотифікацією про застарілість після власних авто-збережень Unity.
+                bool hasPendingEdits = _registryObject != null && _registryObject.hasModifiedProperties;
+                if (hasPendingEdits)
+                    ShowNotification(new GUIContent("Дані застарілі: ассет змінено зовні. Оновіть/збережіть зміни."));
+                else
+                    _staleTracker.Capture(_registry);
+            }
         }
 
         private void OnGUI()
         {
             _perfProfiler.BeginFrame();
-            if (_registryObject != null)
+            // Do not pull data from the asset while there are pending local edits.
+            // Otherwise Update() can overwrite just-typed values before ApplyModifiedProperties().
+            if (_registryObject != null && !_registryObject.hasModifiedProperties)
                 _registryObject.Update();
 
             _perfProfiler.BeginSection("GeneratorMap");
@@ -266,7 +283,7 @@ namespace Kruty1918.Moyva.Units.Editor
 
             DrawStatusBar();
 
-            if (TryCommitRegistryChanges("Auto UI Apply", blockOnCriticalValidation: false))
+            if (_autoSaveRegistry && TryCommitRegistryChanges("Auto UI Apply", blockOnCriticalValidation: false))
                 SaveSelectedPreference();
 
             _perfProfiler.EndFrame();
@@ -392,7 +409,16 @@ namespace Kruty1918.Moyva.Units.Editor
                 EditorGUIUtility.PingObject(_registry);
                 Selection.activeObject = _registry;
             }
+
+            if (GUILayout.Button(IconContent("SaveActive", "Save", EditorTooltipStandard.Build("Зберегти зміни в UnitRegistrySO прямо зараз.", "Застосовує pending SerializedObject-правки, записує dirty asset на диск і перевіряє, що registry більше не dirty.")), EditorStyles.toolbarButton, GUILayout.Width(56f)))
+                RequestManualRegistrySave();
             EditorGUI.EndDisabledGroup();
+
+            _autoSaveRegistry = GUILayout.Toggle(
+                _autoSaveRegistry,
+                IconContent("d_Refresh", "AutoSave", EditorTooltipStandard.Build("Автоматично зберігати зміни UnitRegistrySO під час редагування.", "Якщо вимкнено, використовуйте кнопку Save для ручного запису в asset.")),
+                EditorStyles.toolbarButton,
+                GUILayout.Width(78f));
 
             if (GUILayout.Button(IconContent("", "Clear", EditorTooltipStandard.Build("Очищає активний registry у цьому вікні.", "Дозволяє швидко переключитися на інший реєстр.")), EditorStyles.toolbarButton, GUILayout.Width(56f)))
             {
@@ -551,7 +577,12 @@ namespace Kruty1918.Moyva.Units.Editor
                 EditorGUIUtility.PingObject(_registry);
                 Selection.activeObject = _registry;
             }
+
+            if (GUILayout.Button(IconContent("SaveActive", "Sav", "Зберегти UnitRegistrySO зараз."), EditorStyles.toolbarButton, GUILayout.Width(42f)))
+                RequestManualRegistrySave();
             EditorGUI.EndDisabledGroup();
+
+            _autoSaveRegistry = GUILayout.Toggle(_autoSaveRegistry, IconContent("d_Refresh", "Auto", "Автозбереження UnitRegistrySO."), EditorStyles.toolbarButton, GUILayout.Width(42f));
 
             if (GUILayout.Button(IconContent("", "Clr", ""), EditorStyles.toolbarButton, GUILayout.Width(42f)))
             {
@@ -754,12 +785,14 @@ namespace Kruty1918.Moyva.Units.Editor
 
             EditorGUILayout.Space(4f);
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button(new GUIContent("Новий", "Додати нового юніта з унікальним TypeId."), GUILayout.Height(24f)))
-                AddNewUnit();
+            if (GUILayout.Button(new GUIContent("Новий", "Відкрити майстер створення нового юніта."), GUILayout.Height(24f)))
+                OpenUnitCreationWizard();
             EditorGUI.BeginDisabledGroup(!HasSelectedUnit());
             if (GUILayout.Button(new GUIContent("Дубль", "Скопіювати вибраного юніта з новим TypeId."), GUILayout.Height(24f)))
                 DuplicateSelectedUnit();
             EditorGUI.EndDisabledGroup();
+            if (GUILayout.Button(new GUIContent("Registry Hub", "Відкрити Registry Hub одразу на вкладці юнітів."), GUILayout.Height(24f)))
+                OpenRegistryHubUnitsTab();
             EditorGUILayout.EndHorizontal();
 
             DrawBatchOperationsPanel();
@@ -895,7 +928,7 @@ namespace Kruty1918.Moyva.Units.Editor
             EditorGUILayout.LabelField("Швидкість симуляції", EditorStyles.boldLabel);
 
             EditorGUILayout.BeginHorizontal();
-            _previewSimulationSpeed = EditorGUILayout.Slider(new GUIContent("Множник", "Керує швидкістю preview для руху та анімацій."), _previewSimulationSpeed, 0.05f, 4f);
+            _previewSimulationSpeed = EditorGUILayout.Slider(new GUIContent("Множник [0.05..4.0]", "Мін: 0.05, макс: 4.0. Керує швидкістю preview для руху та анімацій; 1.0 = реальний темп."), _previewSimulationSpeed, 0.05f, 4f);
             if (GUILayout.Button(_pauseSimulation ? "▶" : "⏸", GUILayout.Width(32f), GUILayout.Height(18f)))
                 _pauseSimulation = !_pauseSimulation;
             if (GUILayout.Button("Reset", GUILayout.Width(54f), GUILayout.Height(18f)))
@@ -919,6 +952,9 @@ namespace Kruty1918.Moyva.Units.Editor
             float previewMinHeight = Mathf.Clamp(_unitPreviewPanelWidth * 0.62f, 180f, 320f);
             Rect previewRect = GUILayoutUtility.GetRect(180f, previewMinHeight, GUILayout.ExpandWidth(true));
             DrawAnimatedPreview(previewRect, unit, prefab, sprite);
+
+            EditorGUILayout.Space(4f);
+            DrawInlinePreviewTuningSliders(unit);
 
             EditorGUILayout.Space(4f);
             DrawFocusedParameterDocCard(unit);
@@ -1036,13 +1072,15 @@ namespace Kruty1918.Moyva.Units.Editor
             BeginSection("Ідентичність", "d_FilterByType", "TypeId, роль і базова класифікація юніта.");
 
             var idProp = unit.FindPropertyRelative("TypeId");
-            EditorGUILayout.PropertyField(idProp, new GUIContent("Код типу", "Унікальний ID класу юніта. Не використовуйте '_', бо цей символ зарезервований для instance ID."));
+            EditorGUILayout.PropertyField(idProp, new GUIContent("Код типу", "Унікальний ID класу юніта (приклад: archer, worker-heavy). Мін: 1 символ, рекомендовано до 64. '_' заборонено, бо зарезервовано для instance ID."));
+            DrawInlineParameterDoc("TypeId");
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(unit.FindPropertyRelative("Role"), new GUIContent("Роль", "Worker для економічних юнітів, Military для бойових."));
+            EditorGUILayout.PropertyField(unit.FindPropertyRelative("Role"), new GUIContent("Роль", "Worker для економічних юнітів, Military для бойових. Потрібно для фільтрів, балансу і сценаріїв."));
             if (GUILayout.Button(new GUIContent("Авто", "Визначити роль."), GUILayout.Width(56f), GUILayout.Height(18f)))
                 ApplyAutoRole(unit);
             EditorGUILayout.EndHorizontal();
+            DrawInlineParameterDoc("Role");
 
             string validation = ValidateUnit(unit, _selectedIndex);
             if (validation != null)
@@ -1057,15 +1095,17 @@ namespace Kruty1918.Moyva.Units.Editor
 
             var idProp = unit.FindPropertyRelative("TypeId");
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(idProp, new GUIContent("TypeId", "Унікальний ID класу юніта. Це поле зберігається у UnitRegistrySO."));
+            EditorGUILayout.PropertyField(idProp, new GUIContent("TypeId", "Унікальний ID класу юніта (приклад: scout01). Мін: 1 символ, рекомендовано до 64. '_' заборонено."));
             if (GUILayout.Button(new GUIContent("Унік.", "Згенерувати унікальний TypeId на основі поточного значення."), GUILayout.Width(58f), GUILayout.Height(18f)))
                 idProp.stringValue = GenerateUniqueId(string.IsNullOrWhiteSpace(idProp.stringValue) ? "unit" : idProp.stringValue);
             EditorGUILayout.EndHorizontal();
+            DrawInlineParameterDoc("TypeId");
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(unit.FindPropertyRelative("Role"), new GUIContent("Роль", "Основна роль юніта у gameplay."));
-            EditorGUILayout.PropertyField(unit.FindPropertyRelative("CombatType"), new GUIContent("Клас бою", "Піхота, кавалерія або облогова машина."));
+            EditorGUILayout.PropertyField(unit.FindPropertyRelative("Role"), new GUIContent("Роль", "Основна роль юніта у gameplay: Worker або Military."));
+            EditorGUILayout.PropertyField(unit.FindPropertyRelative("CombatType"), new GUIContent("Клас бою", "Infantry/Cavalry/SiegeMachine. Потрібно для бойових сценаріїв і балансу."));
             EditorGUILayout.EndHorizontal();
+            DrawInlineParameterDoc("Role");
 
             DrawQuickIntegerRow(unit, "База", "HitPoints", "HP", 1, 300, "BaseLevel", "Рівень", 1, 10, "VisionRange", "Огляд", 1, 20);
             DrawTerrainVisionControls(unit);
@@ -1073,9 +1113,10 @@ namespace Kruty1918.Moyva.Units.Editor
             var staminaProp = unit.FindPropertyRelative("BaseStamina");
             var staminaRangeProp = unit.FindPropertyRelative("StaminaRandomRange");
             if (staminaProp != null)
-                staminaProp.floatValue = EditorGUILayout.Slider(new GUIContent("Стаміна", "Середній запас стаміни юніта."), Mathf.Max(0f, staminaProp.floatValue), 0f, 300f);
+                staminaProp.floatValue = EditorGUILayout.Slider(new GUIContent("Стаміна [0..300]", "Мін: 0, макс: 300. Визначає запас дій юніта (приклад: 60-120 для базових, 150+ для витривалих)."), Mathf.Max(0f, staminaProp.floatValue), 0f, 300f);
             if (staminaRangeProp != null)
-                staminaRangeProp.vector2Value = EditorGUILayout.Vector2Field(new GUIContent("Розкид стаміни", "Мінімальний/максимальний випадковий зсув до базової стаміни."), staminaRangeProp.vector2Value);
+                staminaRangeProp.vector2Value = EditorGUILayout.Vector2Field(new GUIContent("Розкид стаміни", "Зсув до базової стаміни. Рекомендований діапазон: [-80..80]. Потрібно для варіативності стартових станів."), staminaRangeProp.vector2Value);
+            DrawInlineParameterDoc("BaseStamina");
 
             DrawQuickIntegerRow(unit, "Сила атаки", "PenetratingDamage", "Колюча", 0, 300, "CuttingDamage", "Ріжуча", 0, 300, "CrushingDamage", "Дроб.", 0, 300);
             DrawQuickIntegerRow(unit, "Захист", "PenetratingDefense", "Колючий", 0, 300, "CuttingDefense", "Ріжучий", 0, 300, "CrushingDefense", "Дроб.", 0, 300);
@@ -1121,12 +1162,64 @@ namespace Kruty1918.Moyva.Units.Editor
             Rect rect = EditorGUILayout.GetControlRect(false, 20f, GUILayout.MinWidth(74f));
             Rect labelRect = new Rect(rect.x, rect.y, Mathf.Min(44f, rect.width * 0.45f), rect.height);
             Rect fieldRect = new Rect(labelRect.xMax + 4f, rect.y, rect.width - labelRect.width - 4f, rect.height);
-            GUI.Label(labelRect, new GUIContent(label), EditorStyles.miniLabel);
+            GUI.Label(labelRect, new GUIContent(label, ResolveQuickFieldTooltip(propertyName, min, max)), EditorStyles.miniLabel);
             property.intValue = Mathf.Clamp(EditorGUI.IntField(fieldRect, value), min, max);
 
             Rect bar = new Rect(fieldRect.x, rect.yMax - 3f, fieldRect.width, 2f);
             EditorGUI.DrawRect(bar, new Color(1f, 1f, 1f, 0.08f));
             EditorGUI.DrawRect(new Rect(bar.x, bar.y, bar.width * Mathf.InverseLerp(min, max, property.intValue), bar.height), Accent);
+        }
+
+        private static string ResolveQuickFieldTooltip(string propertyName, int min, int max)
+        {
+            switch (propertyName)
+            {
+                case "HitPoints":
+                    return $"HP юніта. Мін: {min}, макс: {max}. Впливає на виживання і розмір у preview.";
+                case "BaseLevel":
+                    return $"Базовий рівень юніта. Мін: {min}, макс: {max}. Впливає на вагу/масштаб і баланс.";
+                case "VisionRange":
+                    return $"Базова дальність огляду. Мін: {min}, макс: {max}. Впливає на Fog of War і LOS-перевірки.";
+                case "PenetratingDamage":
+                case "CuttingDamage":
+                case "CrushingDamage":
+                    return $"Атакувальний параметр. Мін: {min}, макс: {max}. Формує профіль шкоди юніта.";
+                case "PenetratingDefense":
+                case "CuttingDefense":
+                case "CrushingDefense":
+                    return $"Захисний параметр. Мін: {min}, макс: {max}. Формує стійкість проти відповідного типу шкоди.";
+                default:
+                    return $"Діапазон: {min}..{max}.";
+            }
+        }
+
+        private void DrawInlinePreviewTuningSliders(SerializedProperty unit)
+        {
+            if (unit == null)
+                return;
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField(
+                new GUIContent("Швидке редагування під превʼю", "Змінюйте ключові параметри юніта прямо тут — preview оновиться миттєво."),
+                EditorStyles.boldLabel);
+
+            DrawVisualIntSlider(unit, "HitPoints", "HP", 1, 300, Good, "Очки життя. Впливає на розмір юніта та зелену шкалу у preview.", UnitDesignerPreviewFocus.Health, showDoc: false);
+            DrawVisualIntSlider(unit, "BaseLevel", "Рівень", 1, 10, Accent, "Базовий рівень юніта. Впливає на масштаб у preview.", UnitDesignerPreviewFocus.Level, showDoc: false);
+            DrawVisualIntSlider(unit, "VisionRange", "Огляд", 1, 20, VisionOutline, "Радіус видимості (у тайлах).", UnitDesignerPreviewFocus.Vision, showDoc: false);
+            DrawVisualFloatSlider(unit, "BaseStamina", "Стаміна", 0f, 300f, new Color(0.25f, 0.74f, 0.46f), "Запас витривалості юніта.", UnitDesignerPreviewFocus.Stamina, showDoc: false);
+
+            EditorGUILayout.Space(2f);
+            EditorGUILayout.LabelField("Атака", EditorStyles.miniBoldLabel);
+            DrawVisualIntSlider(unit, "PenetratingDamage", "Колюча", 0, 300, PenetratingColor, "Колюча атака.", UnitDesignerPreviewFocus.Combat, showDoc: false);
+            DrawVisualIntSlider(unit, "CuttingDamage", "Ріжуча", 0, 300, CuttingColor, "Ріжуча атака.", UnitDesignerPreviewFocus.Combat, showDoc: false);
+            DrawVisualIntSlider(unit, "CrushingDamage", "Дроб.", 0, 300, CrushingColor, "Дробильна атака.", UnitDesignerPreviewFocus.Combat, showDoc: false);
+
+            EditorGUILayout.LabelField("Захист", EditorStyles.miniBoldLabel);
+            DrawVisualIntSlider(unit, "PenetratingDefense", "Колючий", 0, 300, PenetratingColor, "Захист від колючих атак.", UnitDesignerPreviewFocus.Defense, showDoc: false);
+            DrawVisualIntSlider(unit, "CuttingDefense", "Ріжучий", 0, 300, CuttingColor, "Захист від ріжучих атак.", UnitDesignerPreviewFocus.Defense, showDoc: false);
+            DrawVisualIntSlider(unit, "CrushingDefense", "Дроб.", 0, 300, CrushingColor, "Захист від дробильних атак.", UnitDesignerPreviewFocus.Defense, showDoc: false);
+
+            EditorGUILayout.EndVertical();
         }
 
         private void DrawVisualParameterTuningSection(SerializedProperty unit)
@@ -1471,11 +1564,13 @@ namespace Kruty1918.Moyva.Units.Editor
             var rangeProp = unit.FindPropertyRelative("StaminaRandomRange");
             var visionProp = unit.FindPropertyRelative("VisionRange");
 
-            staminaProp.floatValue = EditorGUILayout.Slider(new GUIContent("Базова стаміна", "Середній запас стаміни юніта."), Mathf.Max(0f, staminaProp.floatValue), 0f, 300f);
-            rangeProp.vector2Value = EditorGUILayout.Vector2Field(new GUIContent("Розкид стаміни", "Мінімальний/максимальний випадковий зсув до базової стаміни."), rangeProp.vector2Value);
-            visionProp.intValue = EditorGUILayout.IntSlider(new GUIContent("Дальність огляду", "Скільки тайлів юніт відкриває у Fog of War."), Mathf.Max(1, visionProp.intValue), 1, 20);
+            staminaProp.floatValue = EditorGUILayout.Slider(new GUIContent("Базова стаміна [0..300]", "Мін: 0, макс: 300. Визначає тривалість активності юніта."), Mathf.Max(0f, staminaProp.floatValue), 0f, 300f);
+            rangeProp.vector2Value = EditorGUILayout.Vector2Field(new GUIContent("Розкид стаміни", "Мін/макс зміщення до BaseStamina. Рекомендовано тримати в межах [-80..80] для стабільного балансу."), rangeProp.vector2Value);
+            visionProp.intValue = EditorGUILayout.IntSlider(new GUIContent("Дальність огляду [1..20]", "Мін: 1, макс: 20. Визначає скільки тайлів юніт потенційно перевіряє на видимість."), Mathf.Max(1, visionProp.intValue), 1, 20);
 
             DrawStaminaRangePreview(staminaProp.floatValue, rangeProp.vector2Value);
+            DrawInlineParameterDoc("BaseStamina");
+            DrawInlineParameterDoc("VisionRange");
             EndSection();
         }
 
@@ -1494,10 +1589,12 @@ namespace Kruty1918.Moyva.Units.Editor
             var delay = animation?.FindPropertyRelative("DelayOnTile");
 
             if (duration != null)
-                duration.floatValue = EditorGUILayout.Slider(new GUIContent("Тривалість кроку", "Скільки секунд займає рух між двома сусідніми тайлами."), Mathf.Max(0.02f, duration.floatValue), 0.02f, 2f);
+                duration.floatValue = EditorGUILayout.Slider(new GUIContent("Тривалість кроку [0.02..2.0]", "Мін: 0.02, макс: 2.0 сек/тайл. Менше значення = швидший рух."), Mathf.Max(0.02f, duration.floatValue), 0.02f, 2f);
 
             if (delay != null)
-                delay.floatValue = EditorGUILayout.Slider(new GUIContent("Затримка на тайлі", "Пауза після завершення кроку перед наступним рухом."), Mathf.Max(0f, delay.floatValue), 0f, 1f);
+                delay.floatValue = EditorGUILayout.Slider(new GUIContent("Затримка на тайлі [0..1.0]", "Мін: 0, макс: 1 сек. Потрібно для керування темпом анімації руху."), Mathf.Max(0f, delay.floatValue), 0f, 1f);
+
+            DrawInlineParameterDoc("MoveDurationPerTile");
 
             EditorGUILayout.BeginHorizontal();
             _showAnimationPreview = EditorGUILayout.ToggleLeft(new GUIContent("Програвати preview", "Показувати рух по маршруту."), _showAnimationPreview);
@@ -1585,7 +1682,7 @@ namespace Kruty1918.Moyva.Units.Editor
             _autoAnimationPrefix = EditorGUILayout.TextField(
                 new GUIContent("Префікс імені", "Спільна частина імен спрайтів. Напр.: archer, worker, cossack."),
                 _autoAnimationPrefix);
-            _autoAnimationFps = EditorGUILayout.IntSlider(new GUIContent("FPS", "Буде застосовано до автогенерованих спрайт-анімацій."), Mathf.Clamp(_autoAnimationFps, 1, 60), 1, 60);
+            _autoAnimationFps = EditorGUILayout.IntSlider(new GUIContent("FPS [1..60]", "Мін: 1, макс: 60. Використовується для автогенерованих спрайт-анімацій; 8-15 зазвичай достатньо для 2D."), Mathf.Clamp(_autoAnimationFps, 1, 60), 1, 60);
             _autoAnimationReplaceByType = EditorGUILayout.ToggleLeft(
                 new GUIContent("Заміняти існуючі за типом", "Якщо ввімкнено - оновить існуючі Idle/Move/... замість дублювання."),
                 _autoAnimationReplaceByType);
@@ -1957,12 +2054,12 @@ namespace Kruty1918.Moyva.Units.Editor
 
             // Type and name
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(typeRef, new GUIContent("Тип", "Категорія анімації (Idle, Move, Attack, TakeDamage, Die)"), GUILayout.MaxWidth(200f));
-            EditorGUILayout.PropertyField(nameRef, new GUIContent("Назва", "Унікальна назва анімації"), GUILayout.MinWidth(150f));
+            EditorGUILayout.PropertyField(typeRef, new GUIContent("Тип", "Категорія анімації (Idle, Move, Attack, TakeDamage, Die). Потрібно для вибору кліпу в runtime-станах."), GUILayout.MaxWidth(200f));
+            EditorGUILayout.PropertyField(nameRef, new GUIContent("Назва", "Людинозрозуміла назва (приклад: WalkNorth, AttackHeavy). Потрібна для фільтрації та читабельності."), GUILayout.MinWidth(150f));
             EditorGUILayout.EndHorizontal();
 
             // Animation clip or sprite frames
-            EditorGUILayout.PropertyField(animClipRef, new GUIContent("Клип Animator", "Клип зі встановленого Animator контролера"));
+            EditorGUILayout.PropertyField(animClipRef, new GUIContent("Клип Animator", "Клип зі встановленого Animator-контролера. Якщо не задано, буде використано sprite frames (за наявності)."));
 
             if (GUILayout.Button(new GUIContent("Або вибрати спрайти", "Замість AnimationClip можна використовувати простий список спрайтів для побудови анімації"), GUILayout.Height(20f)))
             {
@@ -1972,22 +2069,22 @@ namespace Kruty1918.Moyva.Units.Editor
             // Show sprite frames if available
             if (spritesRef != null && spritesRef.arraySize > 0)
             {
-                EditorGUILayout.PropertyField(spritesRef, new GUIContent("Спрайти", "Список спрайтів для анімації"), true);
+                EditorGUILayout.PropertyField(spritesRef, new GUIContent("Спрайти", "Список кадрів для sprite-анімації. Приклад: idle_01..idle_08."), true);
                 if (spritesRef.arraySize > 0)
                 {
                     EditorGUILayout.BeginHorizontal();
                     EditorGUILayout.LabelField("FPS", GUILayout.MaxWidth(40f));
                     var fpsRef = clip.FindPropertyRelative("SpriteFPS");
                     if (fpsRef != null)
-                        fpsRef.intValue = EditorGUILayout.IntSlider(new GUIContent("", "Кількість кадрів на секунду для спрайт-анімації"), Mathf.Max(1, fpsRef.intValue), 1, 60, GUILayout.MinWidth(100f));
+                        fpsRef.intValue = EditorGUILayout.IntSlider(new GUIContent("", "FPS [1..60] для sprite-анімації; 8-15 зазвичай виглядає стабільно в 2D."), Mathf.Max(1, fpsRef.intValue), 1, 60, GUILayout.MinWidth(100f));
                     EditorGUILayout.EndHorizontal();
                 }
             }
 
             // Loop and duration
             EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.PropertyField(loopRef, new GUIContent("Зациклити", "Повторювати анімацію нескінченно"), GUILayout.MaxWidth(200f));
-            EditorGUILayout.PropertyField(durationRef, new GUIContent("Тривалість (сек)", "Приблизна середня тривалість однієї проходки анімації"), GUILayout.MinWidth(150f));
+            EditorGUILayout.PropertyField(loopRef, new GUIContent("Зациклити", "Повторювати анімацію нескінченно. Корисно для Idle/Move, зазвичай вимкнено для Attack/Die."), GUILayout.MaxWidth(200f));
+            EditorGUILayout.PropertyField(durationRef, new GUIContent("Тривалість (сек)", "Рекомендовано 0.1..5.0 сек. Впливає на тривалість відтворення та таймінги preview."), GUILayout.MinWidth(150f));
             EditorGUILayout.EndHorizontal();
 
             // Preview button
@@ -2493,6 +2590,294 @@ namespace Kruty1918.Moyva.Units.Editor
             Handles.color = VisionOutline;
             Handles.DrawWireDisc(new Vector3(rect.center.x, start.y + radius * cellSize + cellSize * 0.5f, 0f), Vector3.forward, radius * cellSize + cellSize * 0.5f);
             Handles.EndGUI();
+
+            EditorGUILayout.Space(4f);
+            DrawVisionRelationsMap(unit);
+        }
+
+        private void DrawVisionRelationsMap(SerializedProperty unit)
+        {
+            if (unit == null || _configs == null)
+                return;
+
+            int total = _configs.arraySize;
+            if (total <= 0)
+                return;
+
+            int selected = Mathf.Clamp(_selectedIndex, 0, total - 1);
+            if (selected >= total)
+                return;
+
+            selected = DrawVisionMapToolbar(selected, total);
+            if (selected < 0 || selected >= total)
+                return;
+
+            unit = _configs.GetArrayElementAtIndex(selected);
+
+            // Складаємо актуальний список TypeId, дотримуючись вибору користувача.
+            var (otherUnits, otherNames) = ResolveVisionMapOtherUnits(selected, total);
+
+            float height = Mathf.Clamp(position.width * 0.32f, 150f, 260f);
+            Rect rect = GUILayoutUtility.GetRect(120f, height, GUILayout.ExpandWidth(true));
+            DrawPanelBackground(rect, EditorGUIUtility.isProSkin ? new Color(0.11f, 0.14f, 0.16f) : new Color(0.84f, 0.89f, 0.92f));
+
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 6f, rect.width - 20f, 18f), $"Map + Fog: хто кого бачить ({otherUnits.Count} юнітів)", EditorStyles.boldLabel);
+
+            const float legendHeight = 16f;
+            Rect mapRect = new Rect(rect.x + 8f, rect.y + 26f, rect.width - 16f, rect.height - 34f - legendHeight);
+            if (mapRect.width < 40f || mapRect.height < 40f)
+                return;
+
+            Color fogColor = EditorGUIUtility.isProSkin ? new Color(0f, 0f, 0f, 0.38f) : new Color(0.12f, 0.18f, 0.22f, 0.18f);
+            EditorGUI.DrawRect(mapRect, fogColor);
+
+            if (otherUnits.Count == 0)
+            {
+                GUI.Label(new Rect(mapRect.x, mapRect.center.y - 10f, mapRect.width, 20f),
+                    "Додайте юнітів через '➕ Додати' зверху.", CenterMiniStyle());
+                return;
+            }
+
+            int selectedVision = Mathf.Clamp(GetInt(unit, "VisionRange"), 1, 20);
+            Vector2 center = mapRect.center;
+            float ringRadius = Mathf.Min(mapRect.width, mapRect.height) * 0.36f;
+
+            var nodePositions = new List<Vector2>(otherUnits.Count + 1) { center };
+            var nodeUnits = new List<SerializedProperty>(otherUnits.Count + 1) { unit };
+            var nodeNames = new List<string>(otherUnits.Count + 1)
+            {
+                string.IsNullOrWhiteSpace(GetString(unit, "TypeId")) ? "Selected" : GetString(unit, "TypeId")
+            };
+            for (int i = 0; i < otherUnits.Count; i++)
+            {
+                float angle = i / (float)otherUnits.Count * Mathf.PI * 2f - Mathf.PI * 0.5f;
+                Vector2 pos = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * ringRadius;
+                nodePositions.Add(pos);
+                nodeUnits.Add(otherUnits[i]);
+                nodeNames.Add(otherNames[i]);
+            }
+
+            Handles.BeginGUI();
+            for (int i = 1; i < nodePositions.Count; i++)
+            {
+                SerializedProperty other = nodeUnits[i];
+                int otherVision = Mathf.Clamp(GetInt(other, "VisionRange"), 1, 20);
+                float mapDistance = Vector2.Distance(nodePositions[0], nodePositions[i]);
+                float normalizedDistance = Mathf.Lerp(1f, 20f, Mathf.InverseLerp(0f, ringRadius, mapDistance));
+
+                bool selectedSeesOther = normalizedDistance <= selectedVision;
+                bool otherSeesSelected = normalizedDistance <= otherVision;
+
+                Color relationColor = selectedSeesOther && otherSeesSelected
+                    ? new Color(0.25f, 0.86f, 0.48f, 0.9f)
+                    : (selectedSeesOther || otherSeesSelected
+                        ? new Color(1f, 0.75f, 0.2f, 0.9f)
+                        : new Color(0.9f, 0.26f, 0.26f, 0.82f));
+
+                Handles.color = relationColor;
+                Handles.DrawAAPolyLine(2.2f, nodePositions[0], nodePositions[i]);
+
+                Vector2 mid = (nodePositions[0] + nodePositions[i]) * 0.5f;
+                string relation = selectedSeesOther && otherSeesSelected
+                    ? "2-way"
+                    : (selectedSeesOther ? "You->Them" : (otherSeesSelected ? "Them->You" : "No LOS"));
+                GUI.Label(new Rect(mid.x - 38f, mid.y - 9f, 76f, 18f), relation, EditorStyles.centeredGreyMiniLabel);
+            }
+            Handles.EndGUI();
+
+            float selectedDisc = Mathf.Lerp(10f, 22f, Mathf.InverseLerp(1f, 20f, selectedVision));
+            EditorGUI.DrawRect(new Rect(center.x - selectedDisc, center.y - selectedDisc, selectedDisc * 2f, selectedDisc * 2f), new Color(0.1f, 0.72f, 0.86f, 0.14f));
+
+            for (int i = 1; i < nodePositions.Count; i++)
+            {
+                int otherVision = Mathf.Clamp(GetInt(nodeUnits[i], "VisionRange"), 1, 20);
+                float r = Mathf.Lerp(6f, 14f, Mathf.InverseLerp(1f, 20f, otherVision));
+                EditorGUI.DrawRect(new Rect(nodePositions[i].x - r, nodePositions[i].y - r, r * 2f, r * 2f), new Color(0.95f, 0.95f, 1f, 0.12f));
+            }
+
+            for (int i = 0; i < nodePositions.Count; i++)
+            {
+                bool isSelected = i == 0;
+                Color nodeColor = isSelected ? Accent : new Color(0.75f, 0.82f, 0.9f, 0.95f);
+                float size = isSelected ? 9f : 7f;
+                EditorGUI.DrawRect(new Rect(nodePositions[i].x - size * 0.5f, nodePositions[i].y - size * 0.5f, size, size), nodeColor);
+                GUI.Label(new Rect(nodePositions[i].x + 6f, nodePositions[i].y - 8f, 120f, 16f), nodeNames[i], EditorStyles.miniLabel);
+            }
+
+            Rect legendRect = new Rect(rect.x + 10f, rect.yMax - 18f, rect.width - 20f, 14f);
+            GUI.Label(legendRect, "Green: взаємно бачать | Yellow: одностороння видимість | Red: не бачать", EditorStyles.centeredGreyMiniLabel);
+        }
+
+        private (List<SerializedProperty> Units, List<string> Names) ResolveVisionMapOtherUnits(int selectedIndex, int total)
+        {
+            var units = new List<SerializedProperty>();
+            var names = new List<string>();
+
+            if (_visionMapIncludeAll)
+            {
+                for (int i = 0; i < total; i++)
+                {
+                    if (i == selectedIndex)
+                        continue;
+                    var other = _configs.GetArrayElementAtIndex(i);
+                    units.Add(other);
+                    string id = GetString(other, "TypeId");
+                    names.Add(string.IsNullOrWhiteSpace(id) ? $"Unit {i + 1}" : id);
+                }
+                return (units, names);
+            }
+
+            // Прибираємо невалідні TypeId зі збереженого списку.
+            _visionMapTypeIds.RemoveAll(id => string.IsNullOrWhiteSpace(id) || FindUnitIndexByTypeId(id) < 0);
+
+            foreach (string id in _visionMapTypeIds)
+            {
+                int idx = FindUnitIndexByTypeId(id);
+                if (idx < 0 || idx == selectedIndex)
+                    continue;
+
+                var other = _configs.GetArrayElementAtIndex(idx);
+                units.Add(other);
+                names.Add(id);
+            }
+            return (units, names);
+        }
+
+        private int DrawVisionMapToolbar(int selectedIndex, int total)
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            string[] unitNames = new string[total];
+            for (int i = 0; i < total; i++)
+            {
+                string id = GetString(_configs.GetArrayElementAtIndex(i), "TypeId");
+                unitNames[i] = string.IsNullOrWhiteSpace(id) ? $"#{i + 1}" : id;
+            }
+
+            int nextSelected = EditorGUILayout.Popup(
+                new GUIContent("Центр", "Який юніт є основним (центральним) у Map + Fog прев'ю."),
+                Mathf.Clamp(selectedIndex, 0, total - 1),
+                unitNames,
+                GUILayout.Width(210f));
+            if (nextSelected != selectedIndex && nextSelected >= 0 && nextSelected < total)
+            {
+                selectedIndex = nextSelected;
+                _selectedIndex = nextSelected;
+                SaveSelectedPreference();
+                GUI.FocusControl(null);
+            }
+
+            using (new EditorGUI.DisabledScope(_visionMapIncludeAll))
+            {
+                if (GUILayout.Button(new GUIContent("➕ Додати юніта", "Додати юніта з реєстру на превʼю Map + Fog."), EditorStyles.miniButton, GUILayout.Height(20f)))
+                    ShowVisionMapAddUnitMenu(selectedIndex, total);
+            }
+
+            if (GUILayout.Button(new GUIContent("Очистити", "Прибрати всіх інших юнітів з прев'ю."), EditorStyles.miniButton, GUILayout.Width(80f), GUILayout.Height(20f)))
+                _visionMapTypeIds.Clear();
+
+            GUILayout.FlexibleSpace();
+
+            bool prevAll = _visionMapIncludeAll;
+            _visionMapIncludeAll = GUILayout.Toggle(_visionMapIncludeAll,
+                new GUIContent("Усі юніти", "Показувати всіх юнітів реєстру, ігноруючи вибірку."),
+                EditorStyles.miniButton, GUILayout.Width(86f), GUILayout.Height(20f));
+            if (prevAll != _visionMapIncludeAll && !_visionMapIncludeAll)
+            {
+                // При вимиканні режиму "усі" — лишаємо поточну вибірку як стартову.
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            if (_visionMapIncludeAll)
+                return selectedIndex;
+
+            // Чіпи з юнітами на прев'ю.
+            if (_visionMapTypeIds.Count == 0)
+            {
+                EditorGUILayout.LabelField("Жоден юніт ще не доданий на прев'ю. Натисніть «➕ Додати юніта».", EditorStyles.miniLabel);
+                return selectedIndex;
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            string toRemove = null;
+            foreach (string id in _visionMapTypeIds)
+            {
+                int idx = FindUnitIndexByTypeId(id);
+                bool valid = idx >= 0 && idx != selectedIndex;
+                using (new EditorGUI.DisabledScope(!valid))
+                {
+                    if (GUILayout.Button(new GUIContent($"{id} ✕", valid ? "Натисніть, щоб прибрати юніта з прев'ю." : "Юніта вже немає в реєстрі або це обраний юніт."), EditorStyles.miniButton))
+                        toRemove = id;
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+            if (toRemove != null)
+                _visionMapTypeIds.Remove(toRemove);
+
+            return selectedIndex;
+        }
+
+        private void ShowVisionMapAddUnitMenu(int selectedIndex, int total)
+        {
+            var menu = new GenericMenu();
+            bool any = false;
+            for (int i = 0; i < total; i++)
+            {
+                if (i == selectedIndex)
+                    continue;
+
+                var other = _configs.GetArrayElementAtIndex(i);
+                string id = GetString(other, "TypeId");
+                if (string.IsNullOrWhiteSpace(id))
+                    continue;
+
+                bool already = _visionMapTypeIds.Contains(id);
+                string capturedId = id;
+                menu.AddItem(new GUIContent(id + (already ? "  (вже на прев'ю)" : string.Empty)), already, () =>
+                {
+                    if (already)
+                        _visionMapTypeIds.Remove(capturedId);
+                    else
+                        _visionMapTypeIds.Add(capturedId);
+                });
+                any = true;
+            }
+
+            if (!any)
+                menu.AddDisabledItem(new GUIContent("Немає інших юнітів з валідним TypeId"));
+            else
+            {
+                menu.AddSeparator(string.Empty);
+                menu.AddItem(new GUIContent("Додати всіх"), false, () =>
+                {
+                    for (int i = 0; i < total; i++)
+                    {
+                        if (i == selectedIndex)
+                            continue;
+                        var other = _configs.GetArrayElementAtIndex(i);
+                        string id = GetString(other, "TypeId");
+                        if (string.IsNullOrWhiteSpace(id) || _visionMapTypeIds.Contains(id))
+                            continue;
+                        _visionMapTypeIds.Add(id);
+                    }
+                });
+            }
+
+            menu.ShowAsContext();
+        }
+
+        private int FindUnitIndexByTypeId(string typeId)
+        {
+            if (_configs == null || string.IsNullOrWhiteSpace(typeId))
+                return -1;
+            for (int i = 0; i < _configs.arraySize; i++)
+            {
+                var item = _configs.GetArrayElementAtIndex(i);
+                if (string.Equals(GetString(item, "TypeId"), typeId, StringComparison.Ordinal))
+                    return i;
+            }
+            return -1;
         }
 
         private void DrawQuickHints(SerializedProperty unit, GameObject prefab, Sprite sprite)
@@ -2617,8 +3002,8 @@ namespace Kruty1918.Moyva.Units.Editor
             _batchApplyAnimationDefaults = EditorGUILayout.ToggleLeft(new GUIContent("Застосувати animation defaults"), _batchApplyAnimationDefaults);
             using (new EditorGUI.DisabledGroupScope(!_batchApplyAnimationDefaults))
             {
-                _batchAnimationDuration = EditorGUILayout.Slider(new GUIContent("Move Duration / Tile"), Mathf.Max(0.02f, _batchAnimationDuration), 0.02f, 2f);
-                _batchAnimationDelay = EditorGUILayout.Slider(new GUIContent("Delay On Tile"), Mathf.Max(0f, _batchAnimationDelay), 0f, 1f);
+                _batchAnimationDuration = EditorGUILayout.Slider(new GUIContent("Move Duration / Tile [0.02..2.0]", "Мін: 0.02, макс: 2.0 сек/тайл. Пакетно застосовується до вибраних юнітів."), Mathf.Max(0.02f, _batchAnimationDuration), 0.02f, 2f);
+                _batchAnimationDelay = EditorGUILayout.Slider(new GUIContent("Delay On Tile [0..1.0]", "Мін: 0, макс: 1 сек. Пакетна пауза між кроками для вибраних юнітів."), Mathf.Max(0f, _batchAnimationDelay), 0f, 1f);
             }
 
             int targetCount = CollectBatchTargetIndices().Count;
@@ -2819,6 +3204,154 @@ namespace Kruty1918.Moyva.Units.Editor
             }
         }
 
+        private void OpenUnitCreationWizard()
+        {
+            Type wizardType = null;
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                try
+                {
+                    var candidate = assemblies[i].GetType("Kruty1918.Moyva.Units.Editor.UnitCreationWizardWindow", throwOnError: false);
+                    if (candidate != null && typeof(EditorWindow).IsAssignableFrom(candidate))
+                    {
+                        wizardType = candidate;
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Ignore transient reflection issues from editor/runtime assembly reloads.
+                }
+            }
+
+            if (wizardType == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Unit Creation Wizard",
+                    "Не вдалося знайти вікно майстра створення юніта. Перекомпілюйте editor assembly або перевірте UnitCreationWizardWindow.cs.",
+                    "OK");
+                return;
+            }
+
+            var openMethod = wizardType.GetMethod(
+                "Open",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
+                null,
+                new[] { typeof(UnitDesignerWindow), typeof(UnitRegistrySO) },
+                null);
+
+            if (openMethod == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Unit Creation Wizard",
+                    "У UnitCreationWizardWindow відсутній очікуваний статичний метод Open(UnitDesignerWindow, UnitRegistrySO).",
+                    "OK");
+                return;
+            }
+
+            openMethod.Invoke(null, new object[] { this, _registry });
+        }
+
+        internal bool TryCreateUnitFromWizard(UnitClassConfig draft, Sprite previewSprite, bool createPrefabFromSprite, out string error)
+        {
+            error = null;
+            if (_registry == null)
+            {
+                error = "UnitRegistrySO не вибрано.";
+                return false;
+            }
+
+            if (draft == null)
+            {
+                error = "Чернетка юніта відсутня.";
+                return false;
+            }
+
+            string typeId = string.IsNullOrWhiteSpace(draft.TypeId) ? string.Empty : draft.TypeId.Trim();
+            if (string.IsNullOrWhiteSpace(typeId))
+            {
+                error = "TypeId не може бути порожнім.";
+                return false;
+            }
+
+            if (typeId.Contains("_"))
+            {
+                error = "TypeId не може містити '_' (символ зарезервований для instance ID).";
+                return false;
+            }
+
+            if (!IsTypeIdUnique(typeId))
+            {
+                error = $"TypeId '{typeId}' вже існує в реєстрі.";
+                return false;
+            }
+
+            if (draft.HitPoints < 1 || draft.BaseLevel < 1 || draft.VisionRange < 1 || draft.BaseStamina < 0f)
+            {
+                error = "Перевірте базові параметри: HP >= 1, Level >= 1, Vision >= 1, Stamina >= 0.";
+                return false;
+            }
+
+            if (createPrefabFromSprite && previewSprite != null && draft.Prefab == null)
+            {
+                EnsureFolder(UnitPrefabFolder);
+                string safeId = SanitizeAssetName(typeId);
+                string prefabPath = AssetDatabase.GenerateUniqueAssetPath($"{UnitPrefabFolder}/{safeId}.prefab");
+                var go = new GameObject(safeId);
+                go.AddComponent<SpriteRenderer>().sprite = previewSprite;
+                draft.Prefab = PrefabUtility.SaveAsPrefabAsset(go, prefabPath);
+                DestroyImmediate(go);
+            }
+
+            if (draft.CustomSprite == null && previewSprite != null)
+                draft.CustomSprite = previewSprite;
+
+            draft.TypeId = typeId;
+            draft.HitPoints = Mathf.Max(1, draft.HitPoints);
+            draft.BaseLevel = Mathf.Max(1, draft.BaseLevel);
+            draft.VisionRange = Mathf.Max(1, draft.VisionRange);
+            draft.BaseStamina = Mathf.Max(0f, draft.BaseStamina);
+            draft.PenetratingDamage = Mathf.Max(0, draft.PenetratingDamage);
+            draft.CuttingDamage = Mathf.Max(0, draft.CuttingDamage);
+            draft.CrushingDamage = Mathf.Max(0, draft.CrushingDamage);
+            draft.PenetratingDefense = Mathf.Max(0, draft.PenetratingDefense);
+            draft.CuttingDefense = Mathf.Max(0, draft.CuttingDefense);
+            draft.CrushingDefense = Mathf.Max(0, draft.CrushingDefense);
+
+            if (_registry.Configs == null)
+                _registry.Configs = new List<UnitClassConfig>();
+
+            Undo.RecordObject(_registry, "Create Unit from Wizard");
+            _registry.Configs.Add(draft);
+            EditorUtility.SetDirty(_registry);
+            AssetDatabase.SaveAssets();
+
+            RefreshSerializedObject();
+            SelectByTypeId(typeId);
+            SaveSelectedPreference();
+            Repaint();
+            return true;
+        }
+
+        private bool IsTypeIdUnique(string typeId)
+        {
+            if (string.IsNullOrWhiteSpace(typeId))
+                return false;
+
+            if (_configs == null)
+                return true;
+
+            for (int i = 0; i < _configs.arraySize; i++)
+            {
+                string existing = GetString(_configs.GetArrayElementAtIndex(i), "TypeId");
+                if (string.Equals(existing, typeId, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+
+            return true;
+        }
+
         private void DuplicateSelectedUnit()
         {
             if (!HasSelectedUnit())
@@ -2859,6 +3392,47 @@ namespace Kruty1918.Moyva.Units.Editor
                 _selectedIndex = Mathf.Clamp(_selectedIndex, 0, _configs.arraySize - 1);
                 SaveSelectedPreference();
             }
+        }
+
+        private static void OpenRegistryHubUnitsTab()
+        {
+            Type hubType = null;
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                try
+                {
+                    var candidate = assemblies[i].GetType("Kruty1918.Moyva.Editor.RegistryHubWindow", throwOnError: false);
+                    if (candidate != null && typeof(EditorWindow).IsAssignableFrom(candidate))
+                    {
+                        hubType = candidate;
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Ignore reflection errors from transient assemblies.
+                }
+            }
+
+            if (hubType != null)
+            {
+                var openWithTab = hubType.GetMethod("Open", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static, null, new[] { typeof(int) }, null);
+                if (openWithTab != null)
+                {
+                    openWithTab.Invoke(null, new object[] { 2 });
+                    return;
+                }
+
+                var open = hubType.GetMethod("Open", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static, null, Type.EmptyTypes, null);
+                if (open != null)
+                {
+                    open.Invoke(null, null);
+                    return;
+                }
+            }
+
+            EditorApplication.ExecuteMenuItem("Moyva/Tools/Registry Hub");
         }
 
         private void CreatePrefabForSelected(SerializedProperty unit, string typeId)
@@ -3027,17 +3601,41 @@ namespace Kruty1918.Moyva.Units.Editor
             if (_registryObject == null)
                 return false;
 
+            bool isAutoUiApply = string.Equals(source, "Auto UI Apply", StringComparison.Ordinal);
             if (!EditorRegistryWriteLock.IsUnlocked(RegistryLockKey))
             {
-                _lastBlockedApplyReason = "Реєстр заблокований. Увімкніть Unlock для редагування.";
-                return false;
+                if (!isAutoUiApply && EditorUtility.DisplayDialog(
+                        "UnitRegistrySO заблокований",
+                        "Реєстр юнітів зараз у readonly-режимі. Розблокувати його і зберегти зміни в asset?",
+                        "Unlock + Save",
+                        "Скасувати"))
+                {
+                    EditorRegistryWriteLock.SetUnlocked(RegistryLockKey, true);
+                }
+                else
+                {
+                    _lastBlockedApplyReason = "Реєстр заблокований. Увімкніть Unlock для редагування.";
+                    SetRegistrySaveStatus("save: blocked readonly");
+                    return false;
+                }
             }
 
             if (_staleTracker.IsStale(_registry))
             {
-                _lastBlockedApplyReason = "Дані застарілі: ассет змінено зовні.";
-                return false;
+                // Якщо немає локальних правок — це лише наслідок зовнішнього/Unity-авто-збереження
+                // ассета. Тихо синхронізуємось і продовжуємо, інакше блокуємо.
+                bool hasPendingEdits = _registryObject.hasModifiedProperties;
+                if (hasPendingEdits && !isAutoUiApply)
+                {
+                    _lastBlockedApplyReason = "Дані застарілі: ассет змінено зовні.";
+                    SetRegistrySaveStatus("save: blocked stale");
+                    return false;
+                }
+
+                _staleTracker.Capture(_registry);
             }
+
+            _lastBlockedApplyReason = string.Empty;
 
             string baselineSnapshot = SerializedDiffPreviewUtility.CaptureSnapshot(_registry);
 
@@ -3051,31 +3649,76 @@ namespace Kruty1918.Moyva.Units.Editor
                         "Валідація перед збереженням",
                         $"Операція '{source}' скасована: {criticalValidation}",
                         "OK");
-                }
 
-                return false;
+                    SetRegistrySaveStatus("save: blocked validation");
+                    return false;
+                }
             }
 
             if (blockOnCriticalValidation && _diffBeforeApplyEnabled)
             {
                 var changes = SerializedDiffPreviewUtility.BuildDiff(_registryObject, baselineSnapshot, maxItems: 220);
                 if (!ConfirmDiffBeforeApply(source, changes))
+                {
+                    SetRegistrySaveStatus("save: canceled");
                     return false;
+                }
             }
 
+            bool wasDirty = _registry != null && EditorUtility.IsDirty(_registry);
             bool changed = _registryObject.ApplyModifiedProperties();
             if (changed && _registry != null)
                 EditorUtility.SetDirty(_registry);
 
-            if (changed)
+            bool isDirty = _registry != null && EditorUtility.IsDirty(_registry);
+            if (changed || wasDirty || isDirty)
             {
                 var changeRows = SerializedDiffPreviewUtility.BuildDiff(_registryObject, baselineSnapshot, maxItems: 120);
                 EditorContentChangeLog.Write("UnitDesigner", source, _registry, changeRows);
+                // Save dirty registry objects even when the change came from direct _registry.Configs edits
+                // rather than pending SerializedProperty modifications.
+                if (_registry != null)
+                    AssetDatabase.SaveAssetIfDirty(_registry);
                 _staleTracker.Capture(_registry);
                 _lastBlockedApplyReason = string.Empty;
+                SetRegistrySaveStatus(VerifyRegistrySaved() ? $"save: verified {DateTime.Now:HH:mm:ss}" : "save: pending");
             }
 
-            return changed;
+            return changed || wasDirty || isDirty;
+        }
+
+        private void RequestManualRegistrySave()
+        {
+            if (_registryObject == null || _registry == null)
+                return;
+
+            bool saved = TryCommitRegistryChanges("Manual Save", blockOnCriticalValidation: true);
+            if (saved)
+            {
+                RefreshSerializedObject();
+                ShowNotification(new GUIContent("UnitRegistrySO збережено і перевірено."));
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_lastBlockedApplyReason))
+                return;
+
+            _registryObject.ApplyModifiedProperties();
+            AssetDatabase.SaveAssetIfDirty(_registry);
+            _staleTracker.Capture(_registry);
+            SetRegistrySaveStatus(VerifyRegistrySaved() ? $"save: already verified {DateTime.Now:HH:mm:ss}" : "save: pending");
+            RefreshSerializedObject();
+            ShowNotification(new GUIContent("UnitRegistrySO вже актуальний."));
+        }
+
+        private bool VerifyRegistrySaved()
+        {
+            return _registry != null && !EditorUtility.IsDirty(_registry) && !_staleTracker.IsStale(_registry);
+        }
+
+        private void SetRegistrySaveStatus(string status)
+        {
+            _lastSaveStatus = string.IsNullOrWhiteSpace(status) ? "save: idle" : status;
         }
 
         private static bool ConfirmDiffBeforeApply(string source, List<string> changes)
@@ -3690,12 +4333,12 @@ namespace Kruty1918.Moyva.Units.Editor
 
             string validationInfo = string.IsNullOrWhiteSpace(_lastBlockedApplyReason)
                 ? "validation: OK"
-                : "validation: BLOCKED";
+                : $"blocked: {_lastBlockedApplyReason}";
             bool stale = _staleTracker.IsStale(_registry);
             string lockInfo = EditorRegistryWriteLock.IsUnlocked(RegistryLockKey) ? "lock: UNLOCKED" : "lock: READONLY";
             string staleInfo = stale ? "stale: YES" : "stale: no";
             string perfInfo = _perfProfiler.BuildSummary();
-            GUI.Label(new Rect(rect.x + 8f, rect.y + 2f, rect.width - 16f, rect.height - 4f), $"{registryPath}  |  вибрано: {selected}  |  {validationInfo}  |  {lockInfo}  |  {staleInfo}  |  {perfInfo}", EditorStyles.miniLabel);
+            GUI.Label(new Rect(rect.x + 8f, rect.y + 2f, rect.width - 16f, rect.height - 4f), $"{registryPath}  |  вибрано: {selected}  |  {_lastSaveStatus}  |  {validationInfo}  |  {lockInfo}  |  {staleInfo}  |  {perfInfo}", EditorStyles.miniLabel);
         }
 
         private void LoadRegistryPreference()
