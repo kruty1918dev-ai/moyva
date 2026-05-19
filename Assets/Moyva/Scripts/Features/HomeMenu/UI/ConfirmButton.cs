@@ -5,6 +5,10 @@ using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
+    /// <summary>
+    /// Базова кнопка підтвердження, що піднімає <see cref="ConfirmationRequest"/> у confirmation flow.
+    /// Залежності: використовується <see cref="IConfirmationService"/> та UI-панеллю підтвердження.
+    /// </summary>
     [RequireComponent(typeof(Button))]
     public class ConfirmButton : MonoBehaviour, IConfirmationButton
     {
@@ -18,27 +22,34 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         public event Action<ConfirmationRequest> OnClicked;
 
+        /// <summary>Ініціалізація кнопки й підписка на click.</summary>
         void Awake()
         {
+            // 1: Якщо Button не проставлено вручну, беремо компонент з цього GameObject.
             if (_button == null)
                 _button = GetComponent<Button>();
 
+            // 2: Логуємо попередження для порожніх текстів запиту, щоб не губити UX-контекст.
             if (string.IsNullOrWhiteSpace(_label) || string.IsNullOrWhiteSpace(_message))
             {
                 Debug.LogWarning($"[ConfirmButton] Label or message is empty. Please set them in the inspector.");
             }
 
+            // 3: Підписуємо обробник натискання.
             _button.onClick.AddListener(OnButtonClicked);
         }
 
+        /// <summary>Безпечна відписка від click-події.</summary>
         private void OnDestroy()
         {
             if (_button != null)
                 _button.onClick.RemoveListener(OnButtonClicked);
         }
 
+        /// <summary>Побудувати і відправити запит підтвердження за замовчуванням.</summary>
         protected virtual void OnButtonClicked()
         {
+            // 1: Формуємо confirmation request з текстами і стандартними debug-колбеками.
             RaiseOnClicked(new ConfirmationRequest
             {
                 LabelText = _label,
@@ -48,11 +59,13 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             });
         }
 
+        /// <summary>Підняти подію OnClicked з підготовленим запитом.</summary>
         protected void RaiseOnClicked(ConfirmationRequest request)
         {
             OnClicked?.Invoke(request);
         }
 
+        /// <summary>Увімкнути або вимкнути кнопку.</summary>
         public void SetInteractable(bool interactable)
         {   
             _button.interactable = interactable;

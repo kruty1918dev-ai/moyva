@@ -10,6 +10,10 @@ using Zenject;
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
     // TODO:    Implement view controllers for each menu panel (Solo, Multiplayer, CreateRoom, JoinRoom, Continue, WorldSetup) following the pattern of IBotViewController and BotViewController.
+    /// <summary>
+    /// Контролер екрана Join Room: керує кодом входу, списком кімнат і вибором кімнати.
+    /// Залежності: <see cref="RoomItemViewComponent"/> для рендеру елементів списку.
+    /// </summary>
     public class JoinRoomViewController : MonoBehaviour, IJoinRoomViewController, IInitializable
     {
         [SerializeField] private TMP_InputField _joinCodeInput;
@@ -44,9 +48,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private void Bind()
         {
+            // 1: Не перев'язуємо UI повторно.
             if (_bound)
                 return;
 
+            // 2: Підписуємо інпут і кнопки на події API.
             if (_joinCodeInput != null)
             {
                 _joinCodeInput.onValueChanged.AddListener(OnJoinCodeEdited);
@@ -69,6 +75,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_roomPrefab == null)
                 Debug.LogWarning("[JoinRoomViewController] _roomPrefab is not assigned.");
 
+            // 3: Позначаємо контролер як ініціалізований.
             _bound = true;
         }
 
@@ -92,10 +99,12 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         public void AddRoomToList(RoomInfo room)
         {
+            // 1: Перевіряємо, чи маємо всі необхідні prefab/container залежності.
             if (_roomPrefab == null || _roomsContainer == null) return;
 
             var key = BuildRoomKey(room);
 
+            // 2: Якщо елемент вже існує, просто оновлюємо його контент.
             if (_spawned.TryGetValue(key, out var existing) && existing != null)
             {
                 _roomInfos[key] = room;
@@ -103,6 +112,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return;
             }
 
+            // 3: Інакше інстанціюємо новий view-елемент і реєструємо його.
             var instance = Instantiate(_roomPrefab, _roomsContainer);
             instance.name = $"room-{ToSafeGameObjectName(key)}";
             instance.Initialize(room, r => HandleRoomSelected(r));

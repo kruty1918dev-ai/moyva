@@ -76,7 +76,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                         .FirstOrDefault(r => r != null && string.Equals(r.Id, entry.HarvestResourceId, StringComparison.Ordinal));
 
                     if (resource != null && !string.IsNullOrWhiteSpace(resource.DisplayName))
-                        resourceLabel = $"{resource.Id} - {resource.DisplayName}";
+                        resourceLabel = resource.DisplayName;
                 }
 
                 sb.AppendLine($"Ресурс добування: {resourceLabel}");

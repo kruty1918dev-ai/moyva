@@ -98,6 +98,15 @@ namespace Kruty1918.Moyva.Tests.BotAI
                 SpawnedUnitIds.Add(id);
                 return id;
             }
+
+            public string CreateUnitWithId(string forcedUnitId, string typeId, Vector2Int gridPosition, string ownerId)
+            {
+                var id = string.IsNullOrWhiteSpace(forcedUnitId)
+                    ? $"{typeId}_{++_counter}"
+                    : forcedUnitId;
+                SpawnedUnitIds.Add(id);
+                return id;
+            }
         }
 
         private sealed class FakeMovementService : IUnitMovementService

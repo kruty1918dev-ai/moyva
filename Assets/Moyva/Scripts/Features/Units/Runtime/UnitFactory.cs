@@ -40,6 +40,43 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         public string CreateUnit(string typeId, Vector2Int gridPosition, string ownerId)
         {
+            // Generate an ID the normal way, then delegate.
+            if (!_typeCounters.ContainsKey(typeId)) _typeCounters[typeId] = 0;
+            _typeCounters[typeId]++;
+
+            var config = _unitClassConfig.GetConfig(typeId);
+            if (config == null || config.Prefab == null)
+            {
+                Debug.LogError($"[UnitFactory] Cannot find config or prefab for {typeId}");
+                _typeCounters[typeId]--;
+                return null;
+            }
+
+            if (_objectsMapService.IsOccupied(gridPosition))
+            {
+                _objectsMapService.TryGetOccupant(gridPosition, out var occupantId);
+                Debug.LogWarning($"[UnitFactory] Cannot create unit '{typeId}' at {gridPosition}: tile is already occupied by '{occupantId}'.");
+                _typeCounters[typeId]--;
+                return null;
+            }
+
+            Vector3 worldPos = new Vector3(gridPosition.x, gridPosition.y);
+            GameObject unitObj = _container.InstantiatePrefab(config.Prefab, worldPos, Quaternion.identity, null);
+
+            string instanceId = unitObj.GetInstanceID().ToString().Replace("-", "");
+            string finalUnitId = $"{typeId}_{_typeCounters[typeId]:D2}_{instanceId}";
+
+            return FireUnitCreated(finalUnitId, typeId, gridPosition, unitObj, ownerId);
+        }
+
+        public string CreateUnitWithId(string forcedUnitId, string typeId, Vector2Int gridPosition, string ownerId)
+        {
+            if (string.IsNullOrEmpty(forcedUnitId))
+            {
+                Debug.LogError("[UnitFactory] CreateUnitWithId called with null/empty forcedUnitId.");
+                return null;
+            }
+
             var config = _unitClassConfig.GetConfig(typeId);
             if (config == null || config.Prefab == null)
             {
@@ -50,48 +87,36 @@ namespace Kruty1918.Moyva.Units.Runtime
             if (_objectsMapService.IsOccupied(gridPosition))
             {
                 _objectsMapService.TryGetOccupant(gridPosition, out var occupantId);
-                Debug.LogWarning($"[UnitFactory] Cannot create unit '{typeId}' at {gridPosition}: tile is already occupied by '{occupantId}'.");
+                Debug.LogWarning($"[UnitFactory] CreateUnitWithId: tile {gridPosition} already occupied by '{occupantId}'.");
                 return null;
             }
 
-            // 1. Розрахунок World Position через GridService (якщо є такий метод) 
-            // або просто Vector3 для тесту
-            Vector3 worldPos = new Vector3(gridPosition.x, gridPosition.y); 
-
-            // 2. Спавн через Zenject для підтримки ін'єкцій у сам юніт
+            Vector3 worldPos = new Vector3(gridPosition.x, gridPosition.y);
             GameObject unitObj = _container.InstantiatePrefab(config.Prefab, worldPos, Quaternion.identity, null);
-            
 
-            // 3. Генерація унікального ID: warior-01_12345
-            if (!_typeCounters.ContainsKey(typeId)) _typeCounters[typeId] = 0;
-            _typeCounters[typeId]++;
-            
-            string instanceId = unitObj.GetInstanceID().ToString().Replace("-", "");
-            string finalUnitId = $"{typeId}_{_typeCounters[typeId]:D2}_{instanceId}";
+            return FireUnitCreated(forcedUnitId, typeId, gridPosition, unitObj, ownerId);
+        }
 
-            // // 4. Налаштування View
-            // var view = unitObj.GetComponent<UnitView>();
-            // if (view != null) view.Setup(finalUnitId);
-
+        private string FireUnitCreated(string unitId, string typeId, Vector2Int gridPosition, GameObject unitObj, string ownerId)
+        {
             var profile = _unitGameplayProfileService.GetOrDefault(typeId);
 
-            // 5. Подія створення (UnitService її підхопить)
-            _signalBus.Fire(new UnitCreatedSignal 
-            { 
-                UnitId = finalUnitId, 
-                UnitTypeId = typeId, 
-                Position = gridPosition,
-                VisionRange = profile.ResolveVisionRange(0),
+            _signalBus.Fire(new UnitCreatedSignal
+            {
+                UnitId                   = unitId,
+                UnitTypeId               = typeId,
+                Position                 = gridPosition,
+                VisionRange              = profile.ResolveVisionRange(0),
                 HasCustomVisionModifiers = true,
-                CanSeeCrest = profile.CanSeeCrest,
-                CrestVisibilityFactor = profile.CrestVisibilityFactor,
-                DownSlopeVisionBonus = profile.DownSlopeVisionBonus,
-                SilhouettePenalty = profile.SilhouettePenalty,
-                UnitObject = unitObj,
-                OwnerId = ownerId
+                CanSeeCrest              = profile.CanSeeCrest,
+                CrestVisibilityFactor    = profile.CrestVisibilityFactor,
+                DownSlopeVisionBonus     = profile.DownSlopeVisionBonus,
+                SilhouettePenalty        = profile.SilhouettePenalty,
+                UnitObject               = unitObj,
+                OwnerId                  = ownerId
             });
 
-            return finalUnitId;
+            return unitId;
         }
     }
 }

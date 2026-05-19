@@ -68,6 +68,31 @@ namespace Kruty1918.Moyva.InfoPanel.UI
             Container.Bind<TMP_Text>().WithId("BuildingInfoResourcesText").FromInstance(resources).AsTransient();
             Container.Bind<Button>().WithId("BuildingInfoCloseButton").FromInstance(closeButton).AsTransient();
 
+            // Контейнер для відображення вартості будівництва з іконками ресурсів.
+            // Шукаємо "ConstructionCostContainer" в ієрархії панелі; якщо відсутній — створюємо програмно.
+            var costContainerTransform = panelInstance.transform.Find("ConstructionCostContainer");
+            if (costContainerTransform == null)
+            {
+                var containerGO = new GameObject("ConstructionCostContainer", typeof(RectTransform));
+                containerGO.transform.SetParent(panelInstance.transform, false);
+
+                var vlg = containerGO.AddComponent<VerticalLayoutGroup>();
+                vlg.spacing = 2f;
+                vlg.childAlignment = TextAnchor.UpperLeft;
+                vlg.childControlHeight = true;
+                vlg.childControlWidth = true;
+                vlg.childForceExpandWidth = true;
+                vlg.childForceExpandHeight = false;
+                vlg.padding = new RectOffset(0, 0, 4, 0);
+
+                var csf = containerGO.AddComponent<ContentSizeFitter>();
+                csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                costContainerTransform = containerGO.transform;
+            }
+
+            Container.Bind<Transform>().WithId("ConstructionCostContainer").FromInstance(costContainerTransform).AsTransient();
+
             var controllerType = Type.GetType("Kruty1918.Moyva.InfoPanel.UI.WorldInfoPanelController, Kruty1918.Moyva.InfoPanel");
             if (controllerType == null)
             {

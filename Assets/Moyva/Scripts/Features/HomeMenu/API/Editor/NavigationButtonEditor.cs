@@ -5,6 +5,10 @@ using Kruty1918.Moyva.HomeMenu.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.Editor
 {
+    /// <summary>
+    /// Кастомний інспектор для <see cref="NavigationButton"/>.
+    /// Формує список menu-імен зі сцен і надає popup-вибір для open/close полів.
+    /// </summary>
     [CustomEditor(typeof(NavigationButton))]
     [CanEditMultipleObjects]
     public class NavigationButtonEditor : UnityEditor.Editor

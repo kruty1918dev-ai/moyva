@@ -4,6 +4,10 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.HomeMenu.Editor
 {
+    /// <summary>
+    /// Кастомний інспектор для <see cref="NavigationPanel"/>.
+    /// Автоматично заповнює порожній <c>MenuName</c> ім'ям GameObject як fallback.
+    /// </summary>
     [CustomEditor(typeof(NavigationPanel))]
     [CanEditMultipleObjects]
     public class NavigationPanelEditor : UnityEditor.Editor

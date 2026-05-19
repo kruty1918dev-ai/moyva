@@ -4,24 +4,6 @@ using Kruty1918.Moyva.WorldCreation.API;
 
 namespace Kruty1918.Moyva.HomeMenu.API
 {
-    /// <summary>
-    /// Учасник ігрової сесії — мінімальний знімок гравця для шару геймплея.
-    /// </summary>
-    public readonly struct GameplayPlayer
-    {
-        public string PlayerId { get; }
-        public string DisplayName { get; }
-        public bool IsHost { get; }
-        public bool IsLocal { get; }
-
-        public GameplayPlayer(string playerId, string displayName, bool isHost, bool isLocal)
-        {
-            PlayerId = playerId ?? string.Empty;
-            DisplayName = displayName ?? string.Empty;
-            IsHost = isHost;
-            IsLocal = isLocal;
-        }
-    }
 
     /// <summary>
     /// Контейнер стану ігрової сесії, заповнюється до завантаження сцени геймплея.

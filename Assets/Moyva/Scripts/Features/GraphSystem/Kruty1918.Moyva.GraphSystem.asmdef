@@ -1,7 +1,9 @@
 {
     "name": "Kruty1918.Moyva.GraphSystem",
     "rootNamespace": "Kruty1918.Moyva.GraphSystem",
-    "references": [],
+    "references": [
+        "Kruty1918.Moyva.Grid"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

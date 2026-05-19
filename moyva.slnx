@@ -35,6 +35,7 @@
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Multiplayer.csproj" />
   <Project Path="Kruty1918.Moyva.Shared.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Economy.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
   <Project Path="Kruty1918.Moyva.BotAI.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
@@ -48,7 +49,6 @@
   <Project Path="Kruty1918.Moyva.GameMode.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Units.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
-  <Project Path="Kruty1918.Moyva.Tests.Economy.csproj" />
   <Project Path="Kruty1918.Moyva.Faction.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />

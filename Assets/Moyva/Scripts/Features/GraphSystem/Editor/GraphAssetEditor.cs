@@ -21,6 +21,15 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 graphAsset.Version.ToString());
 
             EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Shared Settings", EditorStyles.boldLabel);
+
+            serializedObject.Update();
+            var sharedSettings = serializedObject.FindProperty("_sharedSettings");
+            if (sharedSettings != null)
+                EditorGUILayout.PropertyField(sharedSettings, includeChildren: true);
+            serializedObject.ApplyModifiedProperties();
+
+            EditorGUILayout.Space();
 
             if (GUILayout.Button("Open Graph Editor", GUILayout.Height(32)))
             {

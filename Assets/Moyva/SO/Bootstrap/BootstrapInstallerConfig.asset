@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: BootstrapInstallerConfig
   m_EditorClassIdentifier: Kruty1918.Moyva.Bootstrap::Kruty1918.Moyva.Bootstrap.Runtime.BootstrapInstallerConfigSO
   _gameSettings:
-    DefaultBuildingId: castle-01
     InitialResources:
     - ResourceId: steak-food-resources
-      Amount: 50
-    - ResourceId: copper-ore-materials-resources
+      Amount: 45
+    - ResourceId: walnut-wood-materials-resources
+      Amount: 10
+    - ResourceId: hardwood-materials-resources
       Amount: 30
   _startingPositionSettings:
     minMarginFromBorder: 3
@@ -40,7 +41,7 @@ MonoBehaviour:
       RevealedRadius: 15
       CoreVisibleRadius: 18
     keepCoreFullyVisible: 1
-    coreVisibleRadiusOverride: 1
+    coreVisibleRadiusOverride: 16
     multiplayerStartSlots: 4
     minAStarDistanceBetweenPlayers: 30
     startCandidateAttempts: 512

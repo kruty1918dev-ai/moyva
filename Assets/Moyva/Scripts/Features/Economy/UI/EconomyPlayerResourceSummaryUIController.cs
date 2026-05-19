@@ -97,25 +97,25 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         private void OnEconomyTickCompleted(EconomyTickCompletedSignal signal)
         {
-            if (signal.OwnerId == _ownerId)
+            if (IsCurrentOwner(signal.OwnerId))
                 RefreshTotals();
         }
 
         private void OnSettlementCreated(SettlementCreatedSignal signal)
         {
-            if (signal.OwnerId == _ownerId)
+            if (IsCurrentOwner(signal.OwnerId))
                 RefreshTotals();
         }
 
         private void OnSettlementDeactivated(SettlementDeactivatedSignal signal)
         {
-            if (signal.OwnerId == _ownerId)
+            if (IsCurrentOwner(signal.OwnerId))
                 RefreshTotals();
         }
 
         private void OnSettlementResourceChanged(SettlementResourceChangedSignal signal)
         {
-            if (signal.OwnerId == _ownerId)
+            if (IsCurrentOwner(signal.OwnerId))
                 RefreshTotals();
         }
 
@@ -146,6 +146,19 @@ namespace Kruty1918.Moyva.Economy.Runtime
             }
 
             _ownerId = owner.Trim();
+        }
+
+        private bool IsCurrentOwner(string ownerId)
+        {
+            ResolveOwnerFromSystems();
+            return string.Equals(NormalizeOwnerId(ownerId), NormalizeOwnerId(_ownerId), System.StringComparison.Ordinal);
+        }
+
+        private static string NormalizeOwnerId(string ownerId)
+        {
+            return string.IsNullOrWhiteSpace(ownerId)
+                ? EconomyManager.DefaultOwnerId
+                : ownerId.Trim();
         }
 
         private void SetTextsVisible(bool isVisible)

@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.GraphSystem.Runtime;
@@ -60,9 +61,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
 			Container.Bind<IMapLayerRegistry>().To<MapLayerRegistry>().AsSingle();
 			Container.Bind<IGeneratorDataRegistry>().To<GeneratorDataRegistry>().AsSingle();
 			Container.Bind<IGeneratorTerrainLevelService>().To<GeneratorTerrainLevelService>().AsSingle();
+			Container.Bind<IGeneratedTerrainLevelQuery>().To<GeneratedTerrainLevelQueryService>().AsSingle();
 
 			Container.BindInterfacesAndSelfTo<MapVisualInstantiator>().AsSingle();
-			Container.Bind<ISaveModule>().To<GeneratedWorldSaveModule>().AsSingle();
+			Container.BindInterfacesAndSelfTo<GeneratedWorldSaveModule>().AsSingle();
+			Container.BindInterfacesTo<SaveModuleRegistrar<GeneratedWorldSaveModule>>().AsSingle().NonLazy();
 			Container.BindInstance(_waterLayerMaterialSettings).AsSingle();
 
 			Container.Bind<ShoreMaskPrepass>()

@@ -8,6 +8,10 @@ using Zenject;
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
     // TODO: Implement view controllers for each menu panel (Solo, Multiplayer, CreateRoom, JoinRoom, Continue, WorldSetup) following the pattern of IBotViewController and BotViewController.
+    /// <summary>
+    /// Контролер екрана Continue зі списком слотів збережень.
+    /// Підтримує додавання, видалення, очищення та refresh елементів слотів.
+    /// </summary>
     public class ContinueViewController : MonoBehaviour, IContinueViewController, IInitializable
     {
         [SerializeField] private Transform _slotsContainer;
@@ -38,10 +42,12 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         public void AddSlot(GameSlotInfo slot)
         {
+            // 1: Без префаба або контейнера не можемо відрендерити слот.
             if (_slotPrefab == null || _slotsContainer == null) return;
 
             string key = BuildSlotKey(slot);
 
+            // 2: Якщо слот уже існує в UI, перев'язуємо його на оновлені дані.
             // If already exists, update it
             if (_spawned.TryGetValue(key, out var existing))
             {
@@ -50,6 +56,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return;
             }
 
+            // 3: Інакше створюємо новий елемент списку і перебудовуємо layout.
             var instance = Instantiate(_slotPrefab, _slotsContainer);
             instance.name = key;
             instance.Initialize(slot, s => OnSlotSelected?.Invoke(s));

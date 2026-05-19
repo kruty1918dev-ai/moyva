@@ -167,21 +167,26 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
 
             using (new EditorGUILayout.VerticalScope(_cardStyle))
             {
-                EditorGUILayout.LabelField("Default Building", EditorStyles.boldLabel);
-                EditorGUILayout.Space(3f);
-                var defaultBuildingId = settings.FindPropertyRelative("DefaultBuildingId");
-                EditorGUILayout.PropertyField(defaultBuildingId, new GUIContent("Building ID"));
-            }
-
-            EditorGUILayout.Space(8f);
-
-            using (new EditorGUILayout.VerticalScope(_cardStyle))
-            {
                 EditorGUILayout.LabelField("Initial Resources", EditorStyles.boldLabel);
                 EditorGUILayout.Space(3f);
-                var resources = settings.FindPropertyRelative("InitialResources");
-                EditorGUILayout.PropertyField(resources, new GUIContent("Ресурси на старті"), includeChildren: true);
+                EditorGUILayout.HelpBox(
+                    "Редагування стартових ресурсів винесено в Economy Designer, щоб уникнути дублювання між редакторами.",
+                    MessageType.Info);
+                if (GUILayout.Button("Відкрити Economy Designer → Стартова економіка", GUILayout.Height(24f)))
+                    OpenEconomyDesignerAtStartingEconomy();
             }
+        }
+
+        private static void OpenEconomyDesignerAtStartingEconomy()
+        {
+            var type = System.Type.GetType("Kruty1918.Moyva.Economy.Editor.EconomyDesignerWindow, Kruty1918.Moyva.Economy.Editor");
+            if (type == null || !typeof(EditorWindow).IsAssignableFrom(type))
+            {
+                Debug.LogWarning("[Bootstrap] EconomyDesignerWindow не знайдено.");
+                return;
+            }
+
+            EditorWindow.GetWindow(type, false, "Редактор Економіки");
         }
 
         private void DrawStartPositionTab()
@@ -211,6 +216,8 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
                 settings,
                 "revealShape",
                 "revealedCircleRadius",
+                "useMapSizeScaledFog",
+                "fogScaleByMapSize",
                 "minimumExploredTilesBeforeRepair",
                 "keepCoreFullyVisible",
                 "coreVisibleRadiusOverride");
@@ -279,13 +286,12 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
                     }
                 }
 
-                int configuredRadius = Mathf.Max(1, settings.FindPropertyRelative("revealedCircleRadius")?.intValue ?? 8);
                 _fogPreviewMapSide = EditorGUILayout.IntSlider("Preview map side", Mathf.Max(5, _fogPreviewMapSide), 9, 65);
                 _fogPreviewRadiusOverride = EditorGUILayout.IntSlider("Preview radius override", _fogPreviewRadiusOverride, 0, Mathf.Max(1, _fogPreviewMapSide / 2));
                 _fogPreviewCellPixels = EditorGUILayout.IntSlider("Preview cell size", Mathf.Max(4, _fogPreviewCellPixels), 4, 22);
 
                 var rect = GUILayoutUtility.GetRect(0f, 260f, GUILayout.ExpandWidth(true));
-                DrawFogShapePreview(rect, settings, ResolveFogPreviewRadius(configuredRadius));
+                DrawFogShapePreview(rect, settings, ResolveFogPreviewRadius(settings));
             }
 
             EditorGUILayout.Space(8f);
@@ -357,9 +363,59 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             GUI.color = previous;
         }
 
-        private int ResolveFogPreviewRadius(int configuredRadius)
+        private int ResolveFogPreviewRadius(SerializedProperty settings)
         {
-            return Mathf.Max(1, _fogPreviewRadiusOverride > 0 ? _fogPreviewRadiusOverride : configuredRadius);
+            if (_fogPreviewRadiusOverride > 0)
+                return Mathf.Max(1, _fogPreviewRadiusOverride);
+
+            return ResolveConfiguredPreviewRadius(settings);
+        }
+
+        private int ResolveConfiguredPreviewRadius(SerializedProperty settings)
+        {
+            int fallback = Mathf.Max(1, settings.FindPropertyRelative("revealedCircleRadius")?.intValue ?? 8);
+            var useScaledProperty = settings.FindPropertyRelative("useMapSizeScaledFog");
+            var scalePoints = settings.FindPropertyRelative("fogScaleByMapSize");
+            if (useScaledProperty == null || !useScaledProperty.boolValue || scalePoints == null || !scalePoints.isArray || scalePoints.arraySize == 0)
+                return fallback;
+
+            int side = Mathf.Max(1, _fogPreviewMapSide);
+            SerializedProperty lower = null;
+            SerializedProperty upper = null;
+
+            for (int i = 0; i < scalePoints.arraySize; i++)
+            {
+                var point = scalePoints.GetArrayElementAtIndex(i);
+                if (point == null)
+                    continue;
+
+                int pointSide = point.FindPropertyRelative("MapSideTiles")?.intValue ?? 0;
+                if (pointSide <= 0)
+                    continue;
+
+                if (pointSide <= side && (lower == null || pointSide > (lower.FindPropertyRelative("MapSideTiles")?.intValue ?? 0)))
+                    lower = point;
+
+                if (pointSide >= side && (upper == null || pointSide < (upper.FindPropertyRelative("MapSideTiles")?.intValue ?? int.MaxValue)))
+                    upper = point;
+            }
+
+            lower ??= upper;
+            upper ??= lower;
+
+            if (lower == null)
+                return fallback;
+
+            int lowerSide = lower.FindPropertyRelative("MapSideTiles")?.intValue ?? side;
+            int upperSide = upper.FindPropertyRelative("MapSideTiles")?.intValue ?? lowerSide;
+            int lowerRadius = Mathf.Max(1, lower.FindPropertyRelative("RevealedRadius")?.intValue ?? fallback);
+            int upperRadius = Mathf.Max(1, upper.FindPropertyRelative("RevealedRadius")?.intValue ?? lowerRadius);
+
+            if (lower == upper || lowerSide == upperSide)
+                return lowerRadius;
+
+            float t = Mathf.InverseLerp(lowerSide, upperSide, side);
+            return Mathf.Max(1, Mathf.RoundToInt(Mathf.Lerp(lowerRadius, upperRadius, t)));
         }
 
         private string ResolveFogSpriteName()

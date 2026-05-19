@@ -105,6 +105,9 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
                 {
                     ["Food"] = 33f,
                 };
+
+            public string GetResourceDisplayName(string resourceId)
+                => resourceId;
         }
 
         private SignalBus _signalBus;

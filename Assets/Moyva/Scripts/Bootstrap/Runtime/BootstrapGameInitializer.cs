@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.SaveSystem;
@@ -10,26 +11,27 @@ using Zenject;
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
     /// <summary>
-    /// На старті нової гри розміщує дефолтну будівлю на стартовій позиції
-    /// та видає стартові ресурси гравцю.
+    /// На старті нового світу готує owner-контекст і видає стартові ресурси гравцю.
     ///
-    /// При завантаженні збереження — не втручається.
+    /// При завантаженні сучасного збереження не втручається; старі сейви без economy-блоку мігрує.
     /// </summary>
     internal sealed class BootstrapGameInitializer : IInitializable, IDisposable
     {
-        private const int MaxSearchRadius = 20;
+        private const string EconomySaveModuleFullName = "Kruty1918.Moyva.Economy.Runtime.EconomySaveModule";
 
         private readonly IConstructionService _constructionService;
         private readonly SignalBus _signalBus;
         private readonly BootstrapGameSettings _settings;
         private readonly ISaveService _saveService;
         private readonly BootstrapStartingPositionState _startingPositionState;
-        private WorldGeneratedDataSignal _pendingWorldGeneratedSignal;
+        private readonly BootstrapStarterPackState _starterPackState;
         private bool _hasPendingWorldGeneratedSignal;
         private bool _bootstrapApplied;
+        private bool _starterPackGrantEnabled;
 
     #pragma warning disable CS0649
         [InjectOptional] private ISessionManager _sessionManager;
+        [InjectOptional] private ISaveInspectorService _saveInspectorService;
     #pragma warning restore CS0649
 
         [Inject]
@@ -38,32 +40,35 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             SignalBus signalBus,
             BootstrapGameSettings settings,
             ISaveService saveService,
-            BootstrapStartingPositionState startingPositionState)
+            BootstrapStartingPositionState startingPositionState,
+            BootstrapStarterPackState starterPackState)
         {
             _constructionService   = constructionService;
             _signalBus             = signalBus;
             _settings              = settings;
             _saveService           = saveService;
             _startingPositionState = startingPositionState;
+            _starterPackState      = starterPackState;
         }
 
         public void Initialize()
         {
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
+            _signalBus.Subscribe<SettlementCreatedSignal>(OnSettlementCreated);
         }
 
         public void Dispose()
         {
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.TryUnsubscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
+            _signalBus.TryUnsubscribe<SettlementCreatedSignal>(OnSettlementCreated);
         }
 
         // ─────────────────────────────────────────────────────────────
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
-            _pendingWorldGeneratedSignal = signal;
             _hasPendingWorldGeneratedSignal = true;
 
             TryApplyBootstrap();
@@ -82,131 +87,306 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_bootstrapApplied || !_hasPendingWorldGeneratedSignal)
                 return;
 
-            // Якщо є збереження — не робимо bootstrap
+            string activeOwnerId = ResolveBootstrapOwnerId();
+            _constructionService.SetActiveOwner(activeOwnerId);
+
+            // Якщо є сучасне збереження економіки — не робимо bootstrap.
+            // Старі сейви не мають EconomySaveModule, тому їм потрібна одноразова міграція стартових ресурсів.
             int slot = GameLaunchContext.SaveSlot;
             if (GameLaunchContext.IsAutoLoadEnabled() && _saveService.HasSave(slot))
             {
-                _bootstrapApplied = true;
-                return;
+                if (_starterPackState.HasGranted(activeOwnerId))
+                {
+                    _starterPackGrantEnabled = false;
+                    _bootstrapApplied = true;
+                    return;
+                }
+
+                if (HasAnyPersistedOwnerResources(slot, activeOwnerId))
+                {
+                    _starterPackState.MarkGranted(activeOwnerId);
+                    _starterPackGrantEnabled = false;
+                    _bootstrapApplied = true;
+                    return;
+                }
+
+                _starterPackGrantEnabled = true;
+                Debug.LogWarning($"[Bootstrap] Save slot {slot} не має підтверджених economy-ресурсів для owner '{activeOwnerId}'. Виконується міграційна видача стартових ресурсів.");
+            }
+            else
+            {
+                _starterPackGrantEnabled = ShouldGrantStarterPackForCurrentLaunch();
+            }
+
+            if (_starterPackGrantEnabled && !_starterPackState.HasGranted(activeOwnerId))
+            {
+                TryGrantStarterPack(string.Empty, activeOwnerId);
+                TryPersistStarterGrant(slot, activeOwnerId, "після видачі стартових ресурсів");
             }
 
             if (!CanRunBootstrapLogic())
                 return;
 
-            if (!string.IsNullOrEmpty(_settings.DefaultBuildingId))
+            _bootstrapApplied = true;
+        }
+
+        private void OnSettlementCreated(SettlementCreatedSignal signal)
+        {
+            if (!_starterPackGrantEnabled)
+                return;
+
+            if (string.IsNullOrWhiteSpace(signal.SettlementId))
+                return;
+
+            string ownerId = NormalizeOwnerId(signal.OwnerId);
+            if (_starterPackState.HasGranted(ownerId))
+                return;
+
+            if (!TryGrantStarterPack(signal.SettlementId, ownerId))
+                return;
+
+            int slot = GameLaunchContext.SaveSlot;
+            TryPersistStarterGrant(slot, ownerId, "після видачі стартових ресурсів (поселення)");
+        }
+
+        private bool TryPersistStarterGrant(int slot, string ownerId, string contextLabel)
+        {
+            bool hasStarterEntries = HasStarterPackEntries();
+            if (!GameLaunchContext.IsAutoSaveEnabled())
             {
-                // Центр ядра розкриття туману, встановлений StartingPositionInitializer (order 101).
-                // Ми маємо order 102, тому значення вже є.
-                var fallback = _startingPositionState.IsSet
-                    ? _startingPositionState.StartPosition
-                    : new Vector2Int(_pendingWorldGeneratedSignal.Width / 2, _pendingWorldGeneratedSignal.Height / 2);
-                var targets = ResolveActiveSpawnAssignments(fallback);
-                int placedCount = 0;
+                _starterPackState.MarkGranted(ownerId);
+                return true;
+            }
+
+            try
+            {
+                _saveService?.Save(slot);
+                Debug.Log($"[Bootstrap] Автосейв {contextLabel} у слот {slot}.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Bootstrap] Не вдалося зберегти {contextLabel}: {ex}");
+                return false;
+            }
+
+            if (hasStarterEntries && !HasPersistedStarterResources(slot, ownerId))
+            {
+                Debug.LogWarning($"[Bootstrap] Після автосейву economy-блок у слоті {slot} не містить очікуваних стартових ресурсів owner '{ownerId}'. Маркер granted не записано.");
+                return false;
+            }
+
+            _starterPackState.MarkGranted(ownerId);
+
+            try
+            {
+                _saveService?.Save(slot);
+                Debug.Log($"[Bootstrap] Маркер стартового пакета збережено для owner '{ownerId}' у слот {slot}.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Bootstrap] Не вдалося зберегти маркер стартового пакета для owner '{ownerId}': {ex}");
+                return false;
+            }
+        }
+
+        private bool HasAnyPersistedOwnerResources(int slot, string ownerId)
+        {
+            if (!TryReadEconomyOwnerResources(slot, ownerId, out var resources))
+                return false;
+
+            foreach (var resource in resources)
+            {
+                if (resource.Value > 0.0001f)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool HasPersistedStarterResources(int slot, string ownerId)
+        {
+            if (!HasStarterPackEntries())
+                return true;
+
+            if (!TryReadEconomyOwnerResources(slot, ownerId, out var resources))
+                return false;
+
+            bool hasExpectedEntry = false;
+            var entries = _settings.InitialResources;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                var entry = entries[index];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0f)
+                    continue;
+
+                hasExpectedEntry = true;
+                string resourceId = entry.ResourceId.Trim();
+                if (!resources.TryGetValue(resourceId, out float amount) || amount + 0.0001f < entry.Amount)
+                    return false;
+            }
+
+            return hasExpectedEntry;
+        }
+
+        private bool TryReadEconomyOwnerResources(int slot, string ownerId, out Dictionary<string, float> resources)
+        {
+            resources = new Dictionary<string, float>(StringComparer.Ordinal);
+            if (_saveInspectorService == null || !_saveInspectorService.TryGetBlockPayload(slot, EconomySaveModuleFullName, out byte[] payload))
+                return false;
+
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            try
+            {
+                using var stream = new MemoryStream(payload);
+                using var reader = new BinaryReader(stream);
+
+                int schemaVersion = reader.ReadInt32();
+                if (schemaVersion != 1)
+                    return false;
+
+                int ownerCount = reader.ReadInt32();
+                for (int ownerIndex = 0; ownerIndex < ownerCount; ownerIndex++)
+                {
+                    string savedOwnerId = NormalizeOwnerId(reader.ReadString());
+                    int resourceCount = reader.ReadInt32();
+                    bool isTargetOwner = string.Equals(savedOwnerId, normalizedOwnerId, StringComparison.Ordinal);
+
+                    for (int resourceIndex = 0; resourceIndex < resourceCount; resourceIndex++)
+                    {
+                        string resourceId = reader.ReadString();
+                        float amount = reader.ReadSingle();
+                        if (!isTargetOwner || string.IsNullOrWhiteSpace(resourceId) || amount <= 0f)
+                            continue;
+
+                        string normalizedResourceId = resourceId.Trim();
+                        if (resources.TryGetValue(normalizedResourceId, out float current))
+                            resources[normalizedResourceId] = current + amount;
+                        else
+                            resources[normalizedResourceId] = amount;
+                    }
+                }
+
+                return resources.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Bootstrap] Не вдалося прочитати economy-блок слота {slot}: {ex.Message}");
+                resources.Clear();
+                return false;
+            }
+        }
+
+        private bool HasStarterPackEntries()
+        {
+            var entries = _settings.InitialResources;
+            if (entries == null || entries.Count == 0)
+                return false;
+
+            for (int index = 0; index < entries.Count; index++)
+            {
+                var entry = entries[index];
+                if (entry != null && !string.IsNullOrWhiteSpace(entry.ResourceId) && entry.Amount > 0f)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool TryGrantStarterPack(string settlementId, string ownerId)
+        {
+            var entries = _settings.InitialResources;
+            if (entries == null || entries.Count == 0)
+                return true;
+
+            var payload = new List<StarterPackResourceEntrySignal>();
+            bool grantedAny = false;
+            for (int index = 0; index < entries.Count; index++)
+            {
+                var entry = entries[index];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0f)
+                    continue;
+
+                payload.Add(new StarterPackResourceEntrySignal
+                {
+                    ResourceId = entry.ResourceId.Trim(),
+                    Amount = entry.Amount,
+                });
+                grantedAny = true;
+            }
+
+            if (grantedAny)
+            {
+                _signalBus.Fire(new GrantStarterPackResourcesSignal
+                {
+                    SettlementId = settlementId,
+                    OwnerId = ownerId,
+                    Entries = payload.ToArray(),
+                });
+
+                string target = string.IsNullOrWhiteSpace(settlementId)
+                    ? "owner pool"
+                    : $"settlement='{settlementId}'";
+                Debug.Log($"[Bootstrap] Видано стартовий пакет owner='{ownerId}' для {target}.");
+            }
+
+            return true;
+        }
+
+        private static string NormalizeOwnerId(string ownerId)
+        {
+            return string.IsNullOrWhiteSpace(ownerId)
+                ? "player_0"
+                : ownerId.Trim();
+        }
+
+        private static bool ShouldGrantStarterPackForCurrentLaunch()
+        {
+            switch (GameLaunchContext.Mode)
+            {
+                case GameLaunchMode.MenuLoadGame:
+                case GameLaunchMode.MenuJoinGame:
+                    return false;
+                case GameLaunchMode.DirectGameplayTest:
+                case GameLaunchMode.MenuNewGame:
+                case GameLaunchMode.MenuMultiplayerGame:
+                case GameLaunchMode.Unknown:
+                default:
+                    return true;
+            }
+        }
+
+        private string ResolveLocalActiveOwnerId(IReadOnlyList<SpawnPositionAssignment> targets)
+        {
+            string localPlayerId = _sessionManager?.LocalPlayerId;
+
+            if (targets != null)
+            {
+                for (int index = 0; index < targets.Count; index++)
+                {
+                    var target = targets[index];
+                    if (target.IsBot)
+                        continue;
+
+                    if (!string.IsNullOrWhiteSpace(localPlayerId)
+                        && string.Equals(target.ParticipantId, localPlayerId, StringComparison.Ordinal))
+                    {
+                        return ResolveSpawnOwnerId(target, index);
+                    }
+                }
 
                 for (int index = 0; index < targets.Count; index++)
                 {
                     var target = targets[index];
-                    string ownerId = ResolveSpawnOwnerId(target, index);
-                    bool placed = TryPlaceWithSpiralSearch(_settings.DefaultBuildingId, target.Position, _pendingWorldGeneratedSignal.Width, _pendingWorldGeneratedSignal.Height, ownerId, out Vector2Int placedPosition);
-
-                    if (placed)
-                    {
-                        placedCount++;
-                        Debug.Log($"[Bootstrap] '{_settings.DefaultBuildingId}' розміщено для slot {target.SlotIndex} ({ownerId}) на {placedPosition} (центр {target.Position})");
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[Bootstrap] Не вдалось розмістити '{_settings.DefaultBuildingId}' для slot {target.SlotIndex} в радіусі {MaxSearchRadius} від {target.Position}");
-                    }
+                    if (!target.IsBot)
+                        return ResolveSpawnOwnerId(target, index);
                 }
 
-                if (targets.Count > 1)
-                    Debug.Log($"[Bootstrap] Стартові будівлі розміщено: {placedCount}/{targets.Count}.");
-            }
-            else
-            {
-                Debug.LogWarning("[Bootstrap] DefaultBuildingId не установлено");
+                if (targets.Count > 0)
+                    return ResolveSpawnOwnerId(targets[0], 0);
             }
 
-            _bootstrapApplied = true;
-        }
-
-        // ─── Спіральний пошук вільного тайлу ─────────────────────────────────
-
-        private bool TryPlaceWithSpiralSearch(string buildingId, Vector2Int center, int mapWidth, int mapHeight, string ownerId, out Vector2Int placedPosition)
-        {
-            for (int radius = 0; radius <= MaxSearchRadius; radius++)
-            {
-                for (int dx = -radius; dx <= radius; dx++)
-                {
-                    for (int dy = -radius; dy <= radius; dy++)
-                    {
-                        // Тільки оболонка поточного радіусу
-                        if (Mathf.Abs(dx) != radius && Mathf.Abs(dy) != radius)
-                            continue;
-
-                        var pos = new Vector2Int(center.x + dx, center.y + dy);
-                        if (pos.x < 0 || pos.x >= mapWidth || pos.y < 0 || pos.y >= mapHeight)
-                            continue;
-
-                        if (_constructionService.TryDirectPlace(buildingId, pos, ownerId))
-                        {
-                            placedPosition = pos;
-                            return true;
-                        }
-                    }
-                }
-            }
-            placedPosition = default;
-            return false;
-        }
-
-        private IReadOnlyList<SpawnPositionAssignment> ResolveActiveSpawnAssignments(Vector2Int fallback)
-        {
-            var assignments = _startingPositionState.SpawnAssignments;
-
-            var result = new List<SpawnPositionAssignment>();
-            if (assignments == null || assignments.Count == 0)
-            {
-                result.Add(new SpawnPositionAssignment { SlotIndex = 0, Position = fallback });
-                return result;
-            }
-
-            string localPlayerId = _sessionManager?.LocalPlayerId;
-            bool isHost = _sessionManager == null || _sessionManager.IsLocalPlayerHost;
-
-            for (int index = 0; index < assignments.Count; index++)
-            {
-                var assignment = assignments[index];
-
-                if (!string.IsNullOrEmpty(localPlayerId) && string.Equals(assignment.ParticipantId, localPlayerId, StringComparison.Ordinal))
-                {
-                    result.Add(assignment);
-                    continue;
-                }
-
-                if (isHost && assignment.IsBot)
-                {
-                    result.Add(assignment);
-                }
-            }
-
-            if (result.Count == 0)
-            {
-                for (int index = 0; index < assignments.Count; index++)
-                {
-                    if (!assignments[index].IsBot)
-                    {
-                        result.Add(assignments[index]);
-                        break;
-                    }
-                }
-
-                if (result.Count == 0)
-                    result.Add(assignments[0]);
-            }
-
-            return result;
+            return "player_0";
         }
 
         private static string ResolveSpawnOwnerId(SpawnPositionAssignment assignment, int fallbackIndex)
@@ -217,7 +397,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (assignment.IsBot)
                 return $"bot-{assignment.SlotIndex:00}";
 
-            return fallbackIndex == 0 ? "bootstrap" : $"spawn-slot-{assignment.SlotIndex:00}";
+            return fallbackIndex == 0 ? "player_0" : $"spawn-slot-{assignment.SlotIndex:00}";
+        }
+
+        private string ResolveBootstrapOwnerId()
+        {
+            var assignments = _startingPositionState.SpawnAssignments;
+            if (assignments != null && assignments.Count > 0)
+                return NormalizeOwnerId(ResolveLocalActiveOwnerId(assignments));
+
+            if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
+                return NormalizeOwnerId(_sessionManager.LocalPlayerId);
+
+            return NormalizeOwnerId(_constructionService.GetActiveOwner());
         }
 
         private bool CanRunBootstrapLogic()
@@ -227,6 +419,84 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return true;
 
             return _startingPositionState.IsSet;
+        }
+    }
+
+    internal sealed class BootstrapStarterPackState
+    {
+        private readonly HashSet<string> _ownersWithGrantedStarterPack = new HashSet<string>(StringComparer.Ordinal);
+
+        public bool HasGranted(string ownerId)
+            => _ownersWithGrantedStarterPack.Contains(NormalizeOwnerId(ownerId));
+
+        public void MarkGranted(string ownerId)
+            => _ownersWithGrantedStarterPack.Add(NormalizeOwnerId(ownerId));
+
+        public string[] GetGrantedOwnersSnapshot()
+        {
+            var owners = new string[_ownersWithGrantedStarterPack.Count];
+            _ownersWithGrantedStarterPack.CopyTo(owners);
+            return owners;
+        }
+
+        public void RestoreGrantedOwners(IEnumerable<string> owners)
+        {
+            _ownersWithGrantedStarterPack.Clear();
+            if (owners == null)
+                return;
+
+            foreach (string ownerId in owners)
+            {
+                if (string.IsNullOrWhiteSpace(ownerId))
+                    continue;
+
+                _ownersWithGrantedStarterPack.Add(NormalizeOwnerId(ownerId));
+            }
+        }
+
+        private static string NormalizeOwnerId(string ownerId)
+            => string.IsNullOrWhiteSpace(ownerId) ? "player_0" : ownerId.Trim();
+    }
+
+    internal sealed class BootstrapStarterPackSaveModule : ISaveModule
+    {
+        private const int SchemaVersion = 1;
+
+        private readonly BootstrapStarterPackState _state;
+
+        public BootstrapStarterPackSaveModule(BootstrapStarterPackState state)
+        {
+            _state = state;
+        }
+
+        public void OnSave(ISaveContext context)
+        {
+            var owners = _state.GetGrantedOwnersSnapshot();
+            context.Writer.Write(SchemaVersion);
+            context.Writer.Write(owners.Length);
+            for (int index = 0; index < owners.Length; index++)
+                context.Writer.Write(owners[index] ?? string.Empty);
+        }
+
+        public void OnLoad(ISaveContext context)
+        {
+            int version = context.Reader.ReadInt32();
+            if (version != SchemaVersion)
+            {
+                Debug.LogWarning($"[Bootstrap] Непідтримувана версія starter-pack блоку: {version}.");
+                return;
+            }
+
+            int ownerCount = context.Reader.ReadInt32();
+            var owners = new List<string>(ownerCount);
+            for (int index = 0; index < ownerCount; index++)
+            {
+                string ownerId = context.Reader.ReadString();
+                if (!string.IsNullOrWhiteSpace(ownerId))
+                    owners.Add(ownerId);
+            }
+
+            _state.RestoreGrantedOwners(owners);
         }
     }
 }

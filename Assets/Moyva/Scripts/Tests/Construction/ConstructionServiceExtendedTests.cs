@@ -69,6 +69,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         private int _cancelledCount;
         private int _demolishedCount;
         private int _previewChangedCount;
+        private BuildingPlacedSignal _lastPlacedSignal;
         private BuildingPreviewChangedSignal _lastPreview;
 
         public override void Setup()
@@ -117,7 +118,11 @@ namespace Kruty1918.Moyva.Tests.Construction
             _cancelledCount = 0;
             _demolishedCount = 0;
             _previewChangedCount = 0;
-            _signalBus.Subscribe<BuildingPlacedSignal>(_ => _placedCount++);
+            _signalBus.Subscribe<BuildingPlacedSignal>(s =>
+            {
+                _placedCount++;
+                _lastPlacedSignal = s;
+            });
             _signalBus.Subscribe<BuildingCancelledSignal>(_ => _cancelledCount++);
             _signalBus.Subscribe<BuildingDemolishedSignal>(_ => _demolishedCount++);
             _signalBus.Subscribe<BuildingPreviewChangedSignal>(s =>
@@ -249,6 +254,16 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.IsFalse(_service.TryDirectPlace("house", Vector2Int.zero, null));
         }
 
+        [Test]
+        public void TryDirectPlace_FiresOwnerIdFromFaction()
+        {
+            Assert.IsTrue(_service.TryDirectPlace("castle", Vector2Int.zero, " local-player "));
+
+            Assert.AreEqual(1, _placedCount);
+            Assert.AreEqual("local-player", _lastPlacedSignal.OwnerId);
+            Assert.AreEqual("local-player", _lastPlacedSignal.SourceFactionId);
+        }
+
         // --- TryDemolishByFaction ---
         [Test]
         public void TryDemolishByFaction_EmptyPos_ReturnsFalse()
@@ -276,6 +291,21 @@ namespace Kruty1918.Moyva.Tests.Construction
         {
             Assert.DoesNotThrow(() => _service.Confirm());
             Assert.AreEqual(0, _placedCount);
+        }
+
+        [Test]
+        public void GetPendingPlacements_ReturnsPreviewBeforeConfirm()
+        {
+            var position = new Vector2Int(3, 8);
+
+            _service.SelectBuilding("castle");
+            Assert.IsTrue(_service.TryPreviewAt(position));
+
+            var pending = _service.GetPendingPlacements();
+
+            Assert.AreEqual(1, pending.Count);
+            Assert.AreEqual("castle", pending[position]);
+            Assert.AreEqual(0, _service.GetPlayerPlacedBuildings().Count);
         }
 
         // --- GetPendingCount ---

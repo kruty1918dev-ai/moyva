@@ -17,7 +17,10 @@ namespace Kruty1918.Moyva.Construction.API
 
         private static readonly Func<BuildingDefinition, bool?> MaintenanceAccessor = BuildMaintenanceAccessor();
 
-        public static bool AppendMeaningfulFacts(BuildingDefinition definition, StringBuilder output)
+        public static bool AppendMeaningfulFacts(
+            BuildingDefinition definition,
+            StringBuilder output,
+            Func<string, string> resourceDisplayNameResolver = null)
         {
             if (definition == null || output == null)
                 return false;
@@ -67,7 +70,7 @@ namespace Kruty1918.Moyva.Construction.API
             if (!disablesEconomyService && !string.IsNullOrWhiteSpace(industrialResourceId))
             {
                 output.AppendLine("Прапорець: виготовляє/працює з ресурсом");
-                output.AppendLine($"Промисловий ресурс: {industrialResourceId}");
+                output.AppendLine($"Промисловий ресурс: {ResolveResourceDisplayName(industrialResourceId, resourceDisplayNameResolver)}");
             }
 
             if (!disablesEconomyService && definition.UseCustomTownHallRules)
@@ -84,7 +87,7 @@ namespace Kruty1918.Moyva.Construction.API
                         if (cost == null || string.IsNullOrWhiteSpace(cost.ResourceId) || cost.Amount <= 0)
                             continue;
 
-                        output.AppendLine($"- {cost.ResourceId}: {cost.Amount}");
+                        output.AppendLine($"- {ResolveResourceDisplayName(cost.ResourceId, resourceDisplayNameResolver)}: {cost.Amount}");
                     }
                 }
                 else
@@ -143,6 +146,16 @@ namespace Kruty1918.Moyva.Construction.API
             }
 
             return output.Length > startLength;
+        }
+
+        private static string ResolveResourceDisplayName(string resourceId, Func<string, string> resolver)
+        {
+            string fallback = string.IsNullOrWhiteSpace(resourceId) ? string.Empty : resourceId.Trim();
+            if (resolver == null || string.IsNullOrEmpty(fallback))
+                return fallback;
+
+            string resolved = resolver(fallback);
+            return string.IsNullOrWhiteSpace(resolved) ? fallback : resolved;
         }
 
         private static bool TryGetMaintenanceFlag(BuildingDefinition definition, out bool value)

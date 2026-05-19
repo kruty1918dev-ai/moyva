@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Economy.Runtime
 {
@@ -11,10 +13,14 @@ namespace Kruty1918.Moyva.Economy.Runtime
             new Dictionary<string, float>(StringComparer.Ordinal);
 
         private readonly EconomyManager _economyManager;
+        private readonly EconomyDatabaseSO _database;
 
-        public EconomyInfoMediator(EconomyManager economyManager)
+        public EconomyInfoMediator(
+            EconomyManager economyManager,
+            [InjectOptional] EconomyDatabaseSO database)
         {
             _economyManager = economyManager;
+            _database = database;
         }
 
         public bool TryGetSettlementContext(Vector2Int position, out EconomySettlementContext context)
@@ -78,5 +84,25 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         public IReadOnlyDictionary<string, float> GetOwnerResourceTotals(string ownerId)
             => _economyManager?.GetOwnerResourceTotals(ownerId) ?? EmptyResources;
+
+        public string GetResourceDisplayName(string resourceId)
+        {
+            string fallback = string.IsNullOrWhiteSpace(resourceId) ? string.Empty : resourceId.Trim();
+            if (_database?.Resources == null || string.IsNullOrWhiteSpace(fallback))
+                return fallback;
+
+            for (int i = 0; i < _database.Resources.Count; i++)
+            {
+                var resource = _database.Resources[i];
+                if (resource == null || !string.Equals(resource.Id, fallback, StringComparison.Ordinal))
+                    continue;
+
+                return string.IsNullOrWhiteSpace(resource.DisplayName)
+                    ? fallback
+                    : resource.DisplayName;
+            }
+
+            return fallback;
+        }
     }
 }

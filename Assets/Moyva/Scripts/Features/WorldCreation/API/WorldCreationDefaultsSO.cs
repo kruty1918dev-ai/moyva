@@ -1,7 +1,17 @@
 using UnityEngine;
+using System.Collections.Generic;
+using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Grid.API;
 
 namespace Kruty1918.Moyva.WorldCreation.API
 {
+    [System.Serializable]
+    public sealed class TerrainLevelRestrictionRange
+    {
+        [Min(1)] public int MinLevel = 1;
+        [Min(1)] public int MaxLevel = 1;
+    }
+
     [System.Serializable]
     public sealed class WorldSizePresetDefinition
     {
@@ -93,6 +103,25 @@ namespace Kruty1918.Moyva.WorldCreation.API
 
         [Tooltip("Застосовувати WFC-полірування тайлів за замовчуванням.")]
         public bool DefaultApplyWFC = true;
+
+        [Header("Обмеження розміщення (через редактор світу)")]
+        [Tooltip("Граф генерації (GraphAsset), який використовується для читання TileRegistry та параметрів HillGenerator у World Defaults Editor.")]
+        public GraphAsset PlacementRulesGraph;
+
+        [Tooltip("Реєстр тайлів для обмежень розміщення. Якщо задано — перекриває TileRegistry з GraphAsset.")]
+        public TileRegistrySO TileRegistry;
+
+        [Tooltip("Tile ID, на яких не можна будувати.")]
+        public List<string> BlockedBuildingTileIds = new();
+
+        [Tooltip("Діапазони рівнів HillGenerator, на яких не можна будувати (включно).")]
+        public List<TerrainLevelRestrictionRange> BlockedBuildingHillLevelRanges = new();
+
+        [Tooltip("Tile ID, на яких не можна розміщувати/рухати юнітів.")]
+        public List<string> BlockedUnitTileIds = new();
+
+        [Tooltip("Діапазони рівнів HillGenerator, на яких не можна розміщувати/рухати юнітів (включно).")]
+        public List<TerrainLevelRestrictionRange> BlockedUnitHillLevelRanges = new();
 
         /// <summary>
         /// Створює <see cref="WorldCreationConfig"/> з усіма значеннями з цього SO.

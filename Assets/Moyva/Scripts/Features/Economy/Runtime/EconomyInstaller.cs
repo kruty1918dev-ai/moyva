@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using Zenject;
@@ -78,11 +79,49 @@ namespace Kruty1918.Moyva.Economy
                     .AsSingle();
             }
 
+            if (!Container.HasBinding<IEconomyOwnerResourcePoolService>())
+            {
+                Container.Bind<IEconomyOwnerResourcePoolService>()
+                    .To<EconomyOwnerResourcePoolService>()
+                    .AsSingle();
+            }
+
+            if (!Container.HasBinding<ISettlementRegistry>())
+            {
+                Container.Bind<ISettlementRegistry>()
+                    .To<EconomySettlementRegistryService>()
+                    .AsSingle();
+            }
+
+            if (!Container.HasBinding<IEconomyBuildingIntegration>())
+            {
+                Container.Bind<IEconomyBuildingIntegration>()
+                    .To<EconomyBuildingIntegrationService>()
+                    .AsSingle();
+            }
+
+            if (!Container.HasBinding<IEconomyTurnProcessor>())
+            {
+                Container.Bind<IEconomyTurnProcessor>()
+                    .To<EconomyTurnProcessorService>()
+                    .AsSingle();
+            }
+
             if (!Container.HasBinding<IMapObjectEconomyService>())
             {
                 Container.Bind<IMapObjectEconomyService>()
                     .To<MapObjectEconomyService>()
                     .AsSingle();
+            }
+
+            if (!Container.HasBinding<EconomySaveModule>())
+            {
+                Container.BindInterfacesAndSelfTo<EconomySaveModule>()
+                    .AsSingle();
+
+                Container.BindInterfacesTo<SaveModuleRegistrar<EconomySaveModule>>()
+                    .AsSingle()
+                    .NonLazy();
             }
         }
     }

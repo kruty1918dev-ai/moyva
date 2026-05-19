@@ -199,6 +199,27 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
 
         [Test]
+        public void FixedVisionAreasSnapshot_RestoresStarterAnchorVisibility()
+        {
+            InitMap();
+            var center = new Vector2Int(5, 5);
+            _service.RegisterFixedVisionArea("bootstrap-start-vision-anchor", center, 2, FogRevealShape.Diamond);
+
+            var exploredSnapshot = _service.GetExploredSnapshot();
+            var fixedAreas = _service.GetFixedVisionAreasSnapshot();
+
+            _service.UnregisterUnit("bootstrap-start-vision-anchor");
+            Assert.IsFalse(_service.IsVisible(center));
+
+            _service.LoadFromSnapshot(exploredSnapshot);
+            _service.LoadFixedVisionAreasSnapshot(fixedAreas);
+
+            Assert.IsTrue(_service.IsVisible(center));
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(6, 6)));
+            Assert.IsFalse(_service.IsVisible(new Vector2Int(7, 7)));
+        }
+
+        [Test]
         public void BuildingPlacedSignal_RegistersFixedVisionArea()
         {
             InitMap();

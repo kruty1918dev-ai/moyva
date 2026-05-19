@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
@@ -131,6 +132,47 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             Assert.IsTrue(module.OnSaveCalled);
             Assert.IsTrue(module.OnLoadCalled);
             Assert.AreEqual(99, module.LoadedValue);
+        }
+
+        [Test]
+        public void SaveLoad_ModuleRegisteredAfterServiceConstruction_Roundtrip()
+        {
+            var registry = new SaveModuleRegistry();
+            var module = new AlwaysWriteModule { Value = 321 };
+
+            _signalBus = Container.Resolve<SignalBus>();
+            _service = new SaveService(new List<ISaveModule>(), _signalBus, moduleRegistry: registry);
+            _service.Initialize();
+
+            registry.Register(module);
+            _service.Save(TestSlot);
+            module.Value = 0;
+
+            _service.Load(TestSlot);
+
+            Assert.IsTrue(module.OnSaveCalled);
+            Assert.IsTrue(module.OnLoadCalled);
+            Assert.AreEqual(321, module.LoadedValue);
+        }
+
+        [Test]
+        public void BootstrapStarterPackSaveModule_Roundtrip()
+        {
+            var sourceState = new BootstrapStarterPackState();
+            sourceState.MarkGranted("player_0");
+            var sourceModule = new BootstrapStarterPackSaveModule(sourceState);
+
+            using var stream = new MemoryStream();
+            using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true))
+                sourceModule.OnSave(new SaveContext(writer, null));
+
+            stream.Position = 0;
+            var restoredState = new BootstrapStarterPackState();
+            var restoredModule = new BootstrapStarterPackSaveModule(restoredState);
+            using (var reader = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true))
+                restoredModule.OnLoad(new SaveContext(null, reader));
+
+            Assert.IsTrue(restoredState.HasGranted("player_0"));
         }
 
         // ─── 4. Module exception on save doesn't stop others ─────────────

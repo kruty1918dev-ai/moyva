@@ -26,11 +26,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             int slot = GameLaunchContext.SaveSlot;
-            bool hasSavedWorld = _saveService.HasSave(slot) &&
-                _saveInspectorService.HasBlock(slot, "Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule");
-            if (hasSavedWorld)
+            bool hasSave = _saveService.HasSave(slot);
+            if (hasSave)
             {
-                Debug.Log($"[Bootstrap] Знайдено збереження зі збереженими даними генератора — запускаємо завантаження слота {slot}.");
+                bool hasSavedWorld = _saveInspectorService.HasBlock(slot, "Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule");
+                if (!hasSavedWorld)
+                    Debug.LogWarning($"[Bootstrap] Save slot {slot} не має блоку генератора. SaveService спробує .bak перед завантаженням.");
+
+                Debug.Log($"[Bootstrap] Знайдено збереження — запускаємо завантаження слота {slot}.");
                 _saveService.Load(slot);
             }
             else

@@ -22,6 +22,8 @@ namespace Kruty1918.Moyva.Tests.BotAI
         {
             public string CreateUnit(string typeId, Vector2Int gridPosition) => "unit_1";
             public string CreateUnit(string typeId, Vector2Int gridPosition, string ownerId) => "unit_1";
+            public string CreateUnitWithId(string forcedUnitId, string typeId, Vector2Int gridPosition, string ownerId)
+                => string.IsNullOrWhiteSpace(forcedUnitId) ? "unit_1" : forcedUnitId;
         }
 
         private sealed class FakeOwnershipService : IFactionOwnershipService
