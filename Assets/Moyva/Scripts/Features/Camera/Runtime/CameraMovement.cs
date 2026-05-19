@@ -141,7 +141,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             float minX, maxX;
             if (bounds.Width <= halfW * 2f)
             {
-                // Світ вужчий ніж viewport — центруємо.
+                // Якщо viewport ширший за bounds, єдина валідна позиція — центр.
                 minX = maxX = bounds.Center.x;
             }
             else
