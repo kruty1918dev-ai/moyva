@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private ILocalGameSettingsService _localGameSettings;
         [InjectOptional] private INetworkProvider _networkProvider;
         [InjectOptional] private IInfoPanelService _infoPanelService;
+        [InjectOptional] private IOverlayLoader _overlayLoader;
         [Inject] private INavigation _navigation;
         [Inject(Id = "WorldSetupPanelName")] private string _worldSetupPanelName;
 
@@ -71,6 +72,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_viewController.NextButton != null)
                 _viewController.NextButton.interactable = false;
 
+            try { _overlayLoader?.LoadOverlay(0f, 100f, "%"); } catch { }
+
             var transportHostStarted = false;
             try
             {
@@ -120,6 +123,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             finally
             {
                 _isCreating = false;
+                // Приховуємо loading-overlay (якщо був показаний)
+                try { _overlayLoader?.StopOverlay(true); } catch { }
                 // Refresh UI state (re-enable button state if needed) on main thread
                 MainThreadDispatcher.Enqueue(() => Refresh());
             }

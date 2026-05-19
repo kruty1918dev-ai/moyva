@@ -11,6 +11,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
     public class LobbyPanelViewController : MonoBehaviour, ILobbyPanelViewController, IInitializable
     {
         [SerializeField] private Button _startGameButton;
+        [SerializeField] private Button _backButton;
         [SerializeField] private TextMeshProUGUI _inviteCodeText;
         [SerializeField] private Transform _userListContainer;
         [SerializeField] private LobbyPlayerInfoView _userListItemPrefab;
@@ -21,6 +22,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private bool _bound;
 
         public Button StartGameButton => _startGameButton;
+        public Button BackButton => _backButton;
 
         public void SetLobbyInvateCode(string code)
         {

@@ -38,6 +38,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [InjectOptional] private IGameplaySession _gameplaySession;
         [InjectOptional] private WorldCreationDefaultsSO _worldCreationDefaults;
         [InjectOptional] private IHomeMenuGameStarter _gameStarter;
+        [InjectOptional] private IOverlayLoader _overlayLoader;
+        [InjectOptional] private IConfirmationService _confirmationService;
 
         // --- Внутрішній стан
         private string _localPlayerId = string.Empty;
@@ -60,6 +62,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _lobbyPanelViewController.StartGameButton.onClick.AddListener(OnStartGameClicked);
             }
 
+            // Підписка на кнопку Back — показуємо модальне вікно підтвердження виходу
+            if (_lobbyPanelViewController.BackButton != null)
+            {
+                _lobbyPanelViewController.BackButton.onClick.RemoveListener(OnBackClicked);
+                _lobbyPanelViewController.BackButton.onClick.AddListener(OnBackClicked);
+            }
+
             // Слухаємо оновлення лобі
             _lobbyService.LobbyUpdated -= OnLobbyUpdated;
             _lobbyService.LobbyUpdated += OnLobbyUpdated;
@@ -80,6 +89,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_lobbyPanelViewController?.StartGameButton != null)
                 _lobbyPanelViewController.StartGameButton.onClick.RemoveListener(OnStartGameClicked);
+            if (_lobbyPanelViewController?.BackButton != null)
+                _lobbyPanelViewController.BackButton.onClick.RemoveListener(OnBackClicked);
             if (_lobbyService != null)
             {
                 _lobbyService.LobbyUpdated -= OnLobbyUpdated;
@@ -254,6 +265,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_lobbyPanelViewController.StartGameButton != null)
                 _lobbyPanelViewController.StartGameButton.interactable = false;
 
+            try { _overlayLoader?.LoadOverlay(0f, 100f, "%"); } catch { }
+
             var worldSettings = BuildWorldSettingsDto();
                 var worldSettingsBytes = worldSettings.ToBytes();
 
@@ -310,6 +323,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             finally
             {
                 _isStartingGame = false;
+                try { _overlayLoader?.StopOverlay(true); } catch { }
                 UpdateViewFromLobby(_currentLobby);
             }
         }
@@ -457,6 +471,52 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return "Лобі закрито або гру вже розпочато. Оберіть іншу кімнату.";
 
             return $"Підключення до лобі втрачено: {reason}";
+        }
+
+        /// <summary>
+        /// Обробка кнопки Back у лобі — показуємо confirmation і виходимо з лобі при підтвердженні.
+        /// </summary>
+        private void OnBackClicked()
+        {
+            // Якщо confirmation service не зареєстровано — fallback: виходимо одразу.
+            if (_confirmationService == null)
+            {
+                _ = LeaveLobbyAndNavigateBackAsync();
+                return;
+            }
+
+            var request = new ConfirmationRequest
+            {
+                LabelText = "Покинути лобі?",
+                MessageText = "Ви дійсно хочете покинути лобі?",
+                OnConfirm = () => { _ = LeaveLobbyAndNavigateBackAsync(); },
+                OnCancel = null
+            };
+            _confirmationService.Show(request);
+        }
+
+        /// <summary>
+        /// Покинути лобі та повернутися на попередню панель.
+        /// </summary>
+        private async Task LeaveLobbyAndNavigateBackAsync()
+        {
+            try
+            {
+                if (_sessionManager != null)
+                {
+                    await _sessionManager.LeaveSessionAsync();
+                }
+                else if (_lobbyService != null)
+                {
+                    await _lobbyService.LeaveAsync();
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.LogWarning($"[LobbyPanelService] LeaveLobby failed: {e.Message}");
+            }
+
+            await MainThreadDispatcher.EnqueueAsync(() => _navigation.OpenLast());
         }
         #endregion
     }

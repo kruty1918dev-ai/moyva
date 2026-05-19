@@ -348,6 +348,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .To<SessionManager>()
                 .AsSingle();
 
+            // Автоматичний leave сесії при виході з гри (Application.quitting / wantsToQuit).
+            container.BindInterfacesAndSelfTo<MultiplayerExitDisconnect>()
+                .AsSingle()
+                .NonLazy();
+
             container.Bind<IParticipantPolicyService>()
                 .To<ParticipantPolicyService>()
                 .AsSingle();
