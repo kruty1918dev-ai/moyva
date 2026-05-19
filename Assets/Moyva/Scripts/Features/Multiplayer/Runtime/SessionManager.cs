@@ -171,13 +171,43 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         {
             _logger.Info($"Host flow: room='{opts.RoomId}' max={opts.Rules.MaxParticipants}");
 
-            var createOpts = new CreateRoomOptions(opts.RoomId, opts.Rules.MaxParticipants, isPrivate: false,
-                displayName: opts.LocalIdentity.Nickname);
+            var hostSessionId = BuildTransportHostSessionId(_config.ProviderType, opts.RoomId);
+            var hostResult = await _network.HostSessionAsync(hostSessionId, ct);
+            if (hostResult == null || !hostResult.Success)
+            {
+                var error = hostResult?.ErrorMessage ?? "Failed to host network session.";
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, error);
+                return await FallbackToOfflineSoloAsync(opts, error, ct);
+            }
 
-            var lobby = await _lobby.CreateRoomAsync(createOpts, ct);
+            var transportJoinCode = hostResult.SessionId?.Trim() ?? string.Empty;
+            if (_config.ProviderType == NetworkProviderType.Relay && !RelayJoinCodeUtility.IsValid(transportJoinCode))
+            {
+                var error = $"Relay host returned invalid join code '{transportJoinCode}'.";
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, error);
+                try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after invalid Relay join code failed: {leaveError.Message}"); }
+                return await FallbackToOfflineSoloAsync(opts, error, ct);
+            }
+
+            var createOpts = new CreateRoomOptions(opts.RoomId, opts.Rules.MaxParticipants, isPrivate: false,
+                displayName: opts.LocalIdentity.Nickname, relayJoinCode: transportJoinCode);
+
+            LobbyRoom lobby;
+            try
+            {
+                lobby = await _lobby.CreateRoomAsync(createOpts, ct);
+            }
+            catch (Exception e)
+            {
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, e.Message);
+                try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after failed lobby create failed: {leaveError.Message}"); }
+                return await FallbackToOfflineSoloAsync(opts, e.Message, ct);
+            }
+
             if (lobby == null)
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Failed to create lobby.");
+                try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after failed lobby create failed: {leaveError.Message}"); }
                 return await FallbackToOfflineSoloAsync(opts, "Failed to create lobby.", ct);
             }
 
@@ -185,25 +215,20 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _currentLobbyCode = lobby.LobbyCode;
             _isHost = true;
 
-            var hostResult = await _network.HostSessionAsync(lobby.LobbyId, ct);
-            if (!hostResult.Success)
-            {
-                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, hostResult.ErrorMessage);
-                return await FallbackToOfflineSoloAsync(opts, hostResult.ErrorMessage, ct);
-            }
-
-            if (_config.ProviderType == NetworkProviderType.Relay && !RelayJoinCodeUtility.IsValid(hostResult.SessionId))
-            {
-                var error = $"Relay host returned invalid join code '{hostResult.SessionId ?? string.Empty}'.";
-                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, error);
-                try { await _lobby.LeaveAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after invalid Relay join code failed: {leaveError.Message}"); }
-                return await FallbackToOfflineSoloAsync(opts, error, ct);
-            }
-
             // Relay join code → lobby data so clients can discover it.
-            await _lobby.SetRelayJoinCodeAsync(hostResult.SessionId, ct);
+            try
+            {
+                await _lobby.SetRelayJoinCodeAsync(transportJoinCode, ct);
+            }
+            catch (Exception e)
+            {
+                _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, e.Message);
+                try { await _lobby.LeaveAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Lobby leave after Relay code publish failed: {leaveError.Message}"); }
+                try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Network leave after Relay code publish failed: {leaveError.Message}"); }
+                return await FallbackToOfflineSoloAsync(opts, e.Message, ct);
+            }
 
-            _currentSessionId = hostResult.SessionId;
+            _currentSessionId = transportJoinCode;
             _currentRules = opts.Rules;
 
             UpsertLocalParticipant(opts.LocalIdentity, isHost: true);
@@ -211,6 +236,16 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             SaveMigrationCheckpoint();
             _logger.Info($"Session hosted. LobbyCode={_currentLobbyCode} RelayCode={_currentSessionId}");
             return true;
+        }
+
+        private static string BuildTransportHostSessionId(NetworkProviderType providerType, string roomId)
+        {
+            if (providerType == NetworkProviderType.Relay)
+                return string.Empty;
+
+            return string.IsNullOrWhiteSpace(roomId)
+                ? Guid.NewGuid().ToString("N")
+                : roomId.Trim();
         }
 
         private async Task<bool> JoinFlowAsync(SessionConnectOptions opts, CancellationToken ct)

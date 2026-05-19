@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System;
 using Kruty1918.Moyva.Calendar.Core;
+using Kruty1918.Moyva.Combat.API;
+using Kruty1918.Moyva.Combat.Runtime;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
@@ -27,6 +29,9 @@ namespace Kruty1918.Moyva.Units.Runtime
         // Словник для зберігання посилань на GameObject юнітів
         private readonly Dictionary<string, GameObject> _unitObjects = new();
 
+        // Система здоров'я юнітів
+        private readonly IHealthRegistry _healthRegistry;
+
         public UnitService(
             SignalBus signalBus,
             IGridService gridService,
@@ -34,6 +39,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             IUnitClassConfig unitClassConfig,
             IUnitGameplayProfileService unitGameplayProfileService,
             IObjectsMapService objectsMapService,
+            IHealthRegistry healthRegistry = null,
             ICalendarService calendarService = null)
         {
             _signalBus = signalBus;
@@ -42,6 +48,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _unitClassConfig = unitClassConfig;
             _unitGameplayProfileService = unitGameplayProfileService;
             _objectsMapService = objectsMapService;
+            _healthRegistry = healthRegistry;
             _calendarService = calendarService;
         }
 
@@ -76,6 +83,16 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             // Зберігаємо GameObject
             _unitObjects[signal.UnitId] = signal.UnitObject;
+
+            // Реєструємо health
+            if (_healthRegistry != null)
+            {
+                int maxHp = Math.Max(1, config.HitPoints);
+                var health = new HealthComponent();
+                health.Initialize(signal.UnitId, maxHp);
+                health.OnDestroyed += entityId => Debug.Log($"[UnitService] Юніт '{entityId}' знищений (HP = 0).");
+                _healthRegistry.Register(health);
+            }
 
             Debug.Log($"[UnitService] Unit {signal.UnitId} registered and cached. Stamina: {startStamina}, Position: {signal.Position}  ");
         }
@@ -127,6 +144,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _unitPositions.Remove(signal.UnitId);
             _unitTypeIds.Remove(signal.UnitId);
             _unitObjects.Remove(signal.UnitId); // Видаляємо посилання
+            _healthRegistry?.Unregister(signal.UnitId);
         }
 
         // --- API методи ---

@@ -21,12 +21,14 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
         private IDisposable _activeSub;
         private readonly SemaphoreSlim _switchLock = new SemaphoreSlim(1, 1);
+        private NetworkProviderType _requestedType;
 
         public event Action<string> PeerConnected;
         public event Action<string> PeerDisconnected;
 
         public IObservable<NetworkMessage> Messages => new MessageObservable(_observers);
 
+        public NetworkProviderType RequestedType => _requestedType;
         public NetworkProviderType CurrentType { get; private set; }
 
         public SwitchableNetworkProvider(MultiplayerConfig config, IMultiplayerLogger logger, IMultiplayerQosMonitorService qosMonitor = null)
@@ -36,8 +38,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             _qosMonitor = qosMonitor;
 
             // Create initial provider based on config
-            _inner = NetworkProviderFactory.CreateByType(_config.ProviderType, _config, _logger, _qosMonitor);
-            CurrentType = _config.ProviderType;
+            _requestedType = _config.ProviderType;
+            _inner = NetworkProviderFactory.CreateByType(_requestedType, _config, _logger, _qosMonitor);
+            CurrentType = ResolveEffectiveType(_inner, _requestedType);
             HookInner(_inner);
         }
 
@@ -68,13 +71,13 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             await _switchLock.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                if (type == CurrentType)
+                if (type == _requestedType && CurrentType == ResolveConfiguredEffectiveType(type))
                 {
-                    _logger.Trace($"[SwitchableNetworkProvider] SwitchToAsync skipped: current={CurrentType}.");
+                    _logger.Trace($"[SwitchableNetworkProvider] SwitchToAsync skipped: requested={_requestedType}, current={CurrentType}.");
                     return;
                 }
 
-                _logger.Info($"[SwitchableNetworkProvider] Switching network provider: {CurrentType} -> {type}. Current impl={_inner.GetType().Name}.");
+                _logger.Info($"[SwitchableNetworkProvider] Switching network provider: requested={_requestedType}, current={CurrentType} -> requested={type}. Current impl={_inner.GetType().Name}.");
 
                 // Gracefully leave existing session
                 try { await _inner.LeaveSessionAsync(ct).ConfigureAwait(false); }
@@ -84,10 +87,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 UnhookInner(_inner);
                 var next = NetworkProviderFactory.CreateByType(type, _config, _logger, _qosMonitor);
                 _inner = next;
-                CurrentType = type;
+                _requestedType = type;
+                CurrentType = ResolveEffectiveType(_inner, type);
                 HookInner(_inner);
 
-                _logger.Info($"[SwitchableNetworkProvider] Network provider switched: current={CurrentType}, impl={_inner.GetType().Name}.");
+                _logger.Info($"[SwitchableNetworkProvider] Network provider switched: requested={_requestedType}, current={CurrentType}, impl={_inner.GetType().Name}.");
             }
             catch (Exception e)
             {
@@ -124,6 +128,30 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 try { disposable.Dispose(); }
                 catch { }
             }
+        }
+
+        private NetworkProviderType ResolveConfiguredEffectiveType(NetworkProviderType requestedType)
+        {
+            if (requestedType != NetworkProviderType.Relay)
+                return requestedType;
+
+            if (!_config.EnableRelayProvider || !RelayNetworkProvider.TryValidateReflectionBindings(out _))
+                return NetworkProviderType.Offline;
+
+            return RelayNetworkProvider.IsRuntimeAvailable ? NetworkProviderType.Relay : NetworkProviderType.Offline;
+        }
+
+        private static NetworkProviderType ResolveEffectiveType(INetworkProvider provider, NetworkProviderType requestedType)
+        {
+            return provider switch
+            {
+                RelayNetworkProvider => NetworkProviderType.Relay,
+                LanNetworkProvider => NetworkProviderType.Lan,
+                WebSocketNetworkProvider => NetworkProviderType.WebSocket,
+                OfflineNetworkProvider => NetworkProviderType.Offline,
+                FallbackNetworkProvider => requestedType,
+                _ => requestedType
+            };
         }
 
         private sealed class ForwardObserver : IObserver<NetworkMessage>

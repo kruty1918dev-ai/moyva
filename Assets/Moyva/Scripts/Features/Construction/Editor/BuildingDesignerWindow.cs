@@ -170,6 +170,7 @@ namespace Kruty1918.Moyva.Construction.Editor
         private int _newBuildingWorkers;
         private int _newBuildingInfluence = 0;
         private int _newBuildingFogReveal = 0;
+        private int _newBuildingMaxHp = 100;
         private int _newBuildingHousingCapacity = 4;
         private int _newBuildingStorageCapacity = 200;
         private string _newBuildingProductionResourceId = "logs";
@@ -675,6 +676,10 @@ namespace Kruty1918.Moyva.Construction.Editor
                 _newBuildingFogReveal = EditorGUILayout.IntSlider("Туман", _newBuildingFogReveal, 0, 8);
             }
 
+            _newBuildingMaxHp = EditorGUILayout.IntSlider(
+                new GUIContent("Max HP", "Максимальне здоров'я будівлі (1–10000). Ініціалізує IHealth при spawn."),
+                _newBuildingMaxHp, 1, 10000);
+
             if (_newBuildingRole == BuildingCreationRole.Housing)
                 _newBuildingHousingCapacity = EditorGUILayout.IntSlider("Місткість житла", _newBuildingHousingCapacity, 1, 40);
             if (_newBuildingRole == BuildingCreationRole.Storage)
@@ -921,6 +926,18 @@ namespace Kruty1918.Moyva.Construction.Editor
                 BuildingConstructionCostEditorShared.DrawCostList(
                     buildingProperty.FindPropertyRelative("ConstructionCost"),
                     "Додати ресурс");
+            }
+
+            using (new EditorGUILayout.VerticalScope(CardStyle()))
+            {
+                EditorGUILayout.LabelField("Здоров'я", EditorStyles.boldLabel);
+                var maxHpProp = buildingProperty.FindPropertyRelative("MaxHp");
+                if (maxHpProp != null)
+                {
+                    maxHpProp.intValue = EditorGUILayout.IntSlider(
+                        new GUIContent("Max HP", "Максимальне здоров'я будівлі. Ініціалізує IHealth компонент при spawn."),
+                        maxHpProp.intValue, 1, 10000);
+                }
             }
 
             using (new EditorGUILayout.VerticalScope(CardStyle()))
@@ -2881,6 +2898,10 @@ namespace Kruty1918.Moyva.Construction.Editor
             buildingProperty.FindPropertyRelative("BlockIfTownHallAlreadyInRange").boolValue = _newBuildingRole == BuildingCreationRole.SettlementCenter || _newBuildingRole == BuildingCreationRole.Defense;
             buildingProperty.FindPropertyRelative("TownHallProximityRadiusOverride").intValue = _newBuildingInfluence;
 
+            var maxHpPropWizard = buildingProperty.FindPropertyRelative("MaxHp");
+            if (maxHpPropWizard != null)
+                maxHpPropWizard.intValue = Mathf.Max(1, _newBuildingMaxHp);
+
             _selectedIndex = index;
             _registryObject.ApplyModifiedProperties();
             SaveRegistry();
@@ -2898,6 +2919,7 @@ namespace Kruty1918.Moyva.Construction.Editor
             _newBuildingWorkers = 0;
             _newBuildingInfluence = 0;
             _newBuildingFogReveal = 0;
+            _newBuildingMaxHp = 100;
             _newBuildingHousingCapacity = 4;
             _newBuildingStorageCapacity = 200;
             _newBuildingProductionResourceId = "logs";

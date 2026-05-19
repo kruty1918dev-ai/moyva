@@ -43,7 +43,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             };
 
             _current = new LobbyRoom(lobbyId, code, options.Name, options.MaxPlayers,
-                options.IsPrivate, hostId, relayJoinCode: string.Empty, players: players);
+                options.IsPrivate, hostId, relayJoinCode: options.RelayJoinCode, players: players);
 
             _logger?.Info($"[OfflineLobby] Created room '{options.Name}' code={code}");
             LobbyUpdated?.Invoke(_current);

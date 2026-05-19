@@ -68,6 +68,53 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             }
         }
 
+        private sealed class CapturingNetworkProvider : INetworkProvider
+        {
+            private readonly string _hostResult;
+            private readonly bool _echoHostInput;
+
+            public string LastHostedSessionId { get; private set; }
+            public int LeaveCalls { get; private set; }
+
+            public IObservable<NetworkMessage> Messages => new EmptyObservable();
+            public event System.Action<string> PeerConnected { add { } remove { } }
+            public event System.Action<string> PeerDisconnected { add { } remove { } }
+
+            public CapturingNetworkProvider(string hostResult, bool echoHostInput = false)
+            {
+                _hostResult = hostResult;
+                _echoHostInput = echoHostInput;
+            }
+
+            public Task<SessionResult> HostSessionAsync(string sessionId, System.Threading.CancellationToken ct = default)
+            {
+                LastHostedSessionId = sessionId;
+                return Task.FromResult(SessionResult.Ok(_echoHostInput ? sessionId : _hostResult));
+            }
+
+            public Task<SessionResult> JoinSessionAsync(string sessionId, System.Threading.CancellationToken ct = default)
+                => Task.FromResult(SessionResult.Ok(sessionId));
+
+            public Task LeaveSessionAsync(System.Threading.CancellationToken ct = default)
+            {
+                LeaveCalls++;
+                return Task.CompletedTask;
+            }
+
+            public Task SendMessageAsync(string targetPeerId, byte[] payload, System.Threading.CancellationToken ct = default)
+                => Task.CompletedTask;
+
+            private sealed class EmptyObservable : IObservable<NetworkMessage>
+            {
+                public IDisposable Subscribe(IObserver<NetworkMessage> observer) => new NoopDisposable();
+            }
+
+            private sealed class NoopDisposable : IDisposable
+            {
+                public void Dispose() { }
+            }
+        }
+
         private sealed class FakeConfigStore : IConfigStore
         {
             public MultiplayerConfig Config { get; set; } = MultiplayerConfig.Default();
@@ -79,15 +126,27 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         private sealed class FakeLobbyService : ILobbyService
         {
             private readonly Dictionary<string, LobbyRoom> _roomsByCode = new Dictionary<string, LobbyRoom>();
+            private readonly string _createdLobbyId;
             public LobbyRoom Current { get; private set; }
             public LobbyState State { get; private set; } = LobbyState.Closed;
+            public CreateRoomOptions LastCreateOptions { get; private set; }
+            public string LastRelayJoinCodeSet { get; private set; }
+            public int CreateRoomCalls { get; private set; }
             public event Action<LobbyRoom> LobbyUpdated;
             public event Action<string> KickedFromLobby { add { } remove { } }
             public event Action<LobbyState> StateChanged;
 
+            public FakeLobbyService(string createdLobbyId = null)
+            {
+                _createdLobbyId = createdLobbyId;
+            }
+
             public Task<LobbyRoom> CreateRoomAsync(CreateRoomOptions options, System.Threading.CancellationToken ct = default)
             {
-                var lobbyId = Guid.NewGuid().ToString("N");
+                CreateRoomCalls++;
+                LastCreateOptions = options;
+
+                var lobbyId = _createdLobbyId ?? Guid.NewGuid().ToString("N");
                 var code = lobbyId.Substring(0, 6).ToUpperInvariant();
                 var hostId = "host";
                 var room = new LobbyRoom(
@@ -97,7 +156,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
                     options.MaxPlayers,
                     options.IsPrivate,
                     hostId,
-                    string.Empty,
+                    options.RelayJoinCode,
                     new List<LobbyPlayer> { new LobbyPlayer(hostId, options.DisplayName, true) });
                 _roomsByCode[code] = room;
                 Current = room;
@@ -139,7 +198,26 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
                 => Task.FromResult<IReadOnlyList<LobbyRoom>>(Array.Empty<LobbyRoom>());
             public Task LeaveAsync(System.Threading.CancellationToken ct = default) { Current = null; PublishState(LobbyState.Closed); return Task.CompletedTask; }
             public Task KickAsync(string playerId, System.Threading.CancellationToken ct = default) => Task.CompletedTask;
-            public Task SetRelayJoinCodeAsync(string relayJoinCode, System.Threading.CancellationToken ct = default) => Task.CompletedTask;
+            public Task SetRelayJoinCodeAsync(string relayJoinCode, System.Threading.CancellationToken ct = default)
+            {
+                LastRelayJoinCodeSet = relayJoinCode;
+                if (Current != null)
+                {
+                    Current = new LobbyRoom(
+                        Current.LobbyId,
+                        Current.LobbyCode,
+                        Current.Name,
+                        Current.MaxPlayers,
+                        Current.IsPrivate,
+                        Current.HostPlayerId,
+                        relayJoinCode,
+                        Current.Players,
+                        Current.PasswordHash,
+                        Current.State);
+                }
+
+                return Task.CompletedTask;
+            }
             public Task LockAsync(bool locked, byte[] startedWorldSettingsBytes = null, System.Threading.CancellationToken ct = default) { PublishState(locked ? LobbyState.Started : LobbyState.Open); return Task.CompletedTask; }
 
             private void PublishState(LobbyState state)
@@ -172,7 +250,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
 
         // Helpers
 
-        private SessionManager BuildManager(INetworkProvider network = null, IConfigStore configStore = null, IWorldSnapshotStore snapshotStore = null)
+        private SessionManager BuildManager(INetworkProvider network = null, IConfigStore configStore = null, IWorldSnapshotStore snapshotStore = null, ILobbyService lobby = null)
         {
             var logger = new FakeLogger();
             var failPolicy = new FakeFailurePolicy();
@@ -183,9 +261,9 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             var netProvider = network ?? new OfflineNetworkProvider();
             var hostMigration = new FakeHostMigrationService();
             var participantFallback = new FakeParticipantFallbackService();
-            var lobby = new FakeLobbyService();
+            var lobbyService = lobby ?? new FakeLobbyService();
 
-            return new SessionManager(netProvider, lobby, participantPolicy, consistencyService, snapStore, cfgStore, logger, failPolicy, hostMigration, participantFallback);
+            return new SessionManager(netProvider, lobbyService, participantPolicy, consistencyService, snapStore, cfgStore, logger, failPolicy, hostMigration, participantFallback);
         }
 
         private SessionConnectOptions MakeOptions(string roomId = "room-1", bool create = true)
@@ -219,6 +297,41 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
 
             Assert.IsTrue(manager.Participants[0].IsHost);
             Assert.AreEqual("p1", manager.Participants[0].Identity.PlayerId);
+        }
+
+        [Test]
+        public async Task CreateOrJoin_RelayHost_ShouldStartTransportBeforeLobby_AndPublishRelayCode()
+        {
+            const string relayJoinCode = "BCDFGH";
+            const string lobbyId = "eRFAKp5N2J9rwkFewHhEGU";
+            var network = new CapturingNetworkProvider(relayJoinCode);
+            var lobby = new FakeLobbyService(lobbyId);
+            var manager = BuildManager(network: network, lobby: lobby);
+
+            var result = await manager.CreateOrJoinSessionAsync(MakeOptions(roomId: "room-with-relay", create: true));
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(string.Empty, network.LastHostedSessionId);
+            Assert.AreNotEqual(lobbyId, network.LastHostedSessionId);
+            Assert.AreEqual(1, lobby.CreateRoomCalls);
+            Assert.AreEqual(relayJoinCode, lobby.LastCreateOptions.RelayJoinCode);
+            Assert.AreEqual(relayJoinCode, lobby.Current.RelayJoinCode);
+            Assert.AreEqual(relayJoinCode, lobby.LastRelayJoinCodeSet);
+        }
+
+        [Test]
+        public async Task CreateOrJoin_RelayHost_ShouldNotCreateLobby_WhenTransportDoesNotReturnRelayCode()
+        {
+            var network = new CapturingNetworkProvider(hostResult: null, echoHostInput: true);
+            var lobby = new FakeLobbyService("eRFAKp5N2J9rwkFewHhEGU");
+            var manager = BuildManager(network: network, lobby: lobby);
+
+            var result = await manager.CreateOrJoinSessionAsync(MakeOptions(roomId: "room-with-relay", create: true));
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(string.Empty, network.LastHostedSessionId);
+            Assert.AreEqual(0, lobby.CreateRoomCalls);
+            Assert.AreEqual(1, network.LeaveCalls);
         }
 
         [Test]

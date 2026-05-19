@@ -1,5 +1,7 @@
 using UnityEngine;
 using Zenject;
+using Kruty1918.Moyva.Combat;
+using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.WorldCreation.API;
 
@@ -13,6 +15,10 @@ namespace Kruty1918.Moyva.Units.Runtime
         public override void InstallBindings()
         {
             Container.BindInstance(_unitRegistry).AsSingle();
+
+            // IHealthRegistry — забезпечується CombatInstaller
+            if (!Container.HasBinding(typeof(IHealthRegistry)))
+                CombatInstaller.Install(Container);
 
             if (_worldDefaults != null)
             {

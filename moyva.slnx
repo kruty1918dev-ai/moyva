@@ -43,6 +43,7 @@
   <Project Path="Kruty1918.Moyva.Clouds.csproj" />
   <Project Path="Kruty1918.Moyva.WorldCreation.UI.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Calendar.csproj" />
+  <Project Path="Kruty1918.Moyva.Combat.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.InfoPanel.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />

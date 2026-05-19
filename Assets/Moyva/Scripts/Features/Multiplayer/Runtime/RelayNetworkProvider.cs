@@ -152,6 +152,9 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
                 var allocationId = GetPropertyValue<Guid>(allocation, "AllocationId");
                 var joinCode = await GetJoinCodeAsync(relayService, allocationId);
+                if (!RelayJoinCodeUtility.IsValid(joinCode))
+                    return await FailAndShutdownAsync($"Relay GetJoinCodeAsync returned invalid join code '{joinCode ?? string.Empty}'.");
+
                 _logger.Info($"[Relay] Hosted allocation. Join code: {joinCode}");
 
                 var relayServerData = BuildRelayServerData(allocation, RelayConnectionType, isHostAllocation: true);
@@ -339,7 +342,37 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private static async Task<object> JoinAllocationAsync(object relayService, string joinCode)
         {
-            return await InvokeRelayMethodAsync(relayService, "JoinAllocationAsync", joinCode);
+            // SDK 1.1+: JoinAllocationAsync(string joinCode) — try direct string overload first.
+            // SDK 1.0.x: JoinAllocationAsync(JoinAllocationArgs args) — fall back if string overload not found.
+            try
+            {
+                return await InvokeRelayMethodAsync(relayService, "JoinAllocationAsync", joinCode);
+            }
+            catch (MissingMethodException)
+            {
+                var joinArgs = CreateJoinAllocationArgs(joinCode);
+                return await InvokeRelayMethodAsync(relayService, "JoinAllocationAsync", joinArgs);
+            }
+        }
+
+        private static object CreateJoinAllocationArgs(string joinCode)
+        {
+            var argsType =
+                Type.GetType("Unity.Services.Relay.Models.JoinAllocationArgs, Unity.Services.Relay")
+                ?? Type.GetType("Unity.Services.Relay.Models.JoinAllocationArgs, Unity.Services.Multiplayer");
+
+            if (argsType == null)
+                throw new InvalidOperationException(
+                    "JoinAllocationArgs type not found. Cannot join Relay allocation.");
+
+            var instance = Activator.CreateInstance(argsType);
+            var joinCodeProp = argsType.GetProperty("JoinCode",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            if (joinCodeProp == null)
+                throw new InvalidOperationException("JoinAllocationArgs.JoinCode property not found.");
+
+            joinCodeProp.SetValue(instance, joinCode);
+            return instance;
         }
 
         private static async Task<object> InvokeRelayMethodAsync(object relayService, string methodName, params object[] args)
