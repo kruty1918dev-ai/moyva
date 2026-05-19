@@ -1,0 +1,27 @@
+Module,Scripts,Status,Recommendation
+Animations,4,✅ Stable,No changes needed
+BotAI,10,🔧 Refactor,Split decision tree evaluator
+Calendar,15,✅ Stable,No changes needed
+Camera,10,✅ Stable,No changes needed
+Clouds,7,✅ Stable,No changes needed
+Construction,58,🔧 Refactor,"Split GridService, ValidationService"
+Economy,52,🔴 Rewrite,"Architecture overhaul in progress"
+Faction,10,✅ Stable,No changes needed
+FogOfWar,22,🔧 Refactor,Optimize visibility algorithm
+GameMode,10,✅ Stable,No changes needed
+Generator,168,🚀 Active,"Optimize algorithms, refactor nodes"
+GraphSystem,37,🚀 Active,"Add caching, improve performance"
+Grid,8,✅ Stable,Foundation - Do not change
+HomeMenu,114,🔧 Refactor,"Split large controllers into components"
+InfoPanel,2,✅ Stable,Minimal module - stable
+Interactions,7,✅ Stable,No changes needed
+Multiplayer,76,🚀 Active,"Optimize sync, refactor commands"
+ObjectsMap,3,✅ Stable,Minimal module - stable
+Pathfinding,3,✅ Stable,Minimal module - stable
+SaveSystem,17,✅ Stable,No changes needed
+Signals,15,✅ Stable,Foundation - Do not change
+Units,30,🔧 Refactor,"Split UnitController into services"
+Visuals,5,✅ Stable,Decorative - stable
+WorldCreation,14,🔧 Refactor,"Split by phases: Terrain, Building, Population"
+Bootstrap,5,✅ Stable,DI initialization - do not change
+Shared,55,✅ Stable,Common utilities - stable

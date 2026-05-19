@@ -7,8 +7,13 @@ namespace Kruty1918.Moyva.HomeMenu.API
     /// </summary>
     public interface IMenuApi
     {
+        /// <summary>Стан/контекст активної gameplay-сесії, підготовлений у HomeMenu.</summary>
         IGameplaySession GameplaySession { get; }
+
+        /// <summary>Локальні налаштування гравця (ім'я, гучність, mute, тощо).</summary>
         ILocalGameSettingsService LocalGameSettings { get; }
+
+        /// <summary>Сервіс інфопанелі для показу повідомлень користувачу.</summary>
         IInfoPanelService InfoPanel { get; }
     }
 }

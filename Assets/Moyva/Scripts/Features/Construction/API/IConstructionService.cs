@@ -48,6 +48,12 @@ namespace Kruty1918.Moyva.Construction.API
         bool TryGetPendingBuildingIdAt(Vector2Int position, out string buildingId);
 
         /// <summary>
+        /// Повертає snapshot усіх непідтверджених preview-розміщень поточної сесії.
+        /// Ключ — позиція тайлу, значення — buildingId.
+        /// </summary>
+        IReadOnlyDictionary<Vector2Int, string> GetPendingPlacements();
+
+        /// <summary>
         /// Перемістити непідтверджену будівлю з одного тайлу на інший.
         /// Повертає true при успіху, false якщо нова позиція заблокована або preview не знайдено.
         /// </summary>
@@ -135,5 +141,11 @@ namespace Kruty1918.Moyva.Construction.API
         /// Повертає true якщо успішно.
         /// </summary>
         bool TryDemolishByFaction(Vector2Int position, string factionId);
+
+        /// <summary>
+        /// Повертає true, якщо будівлю з вказаним ID вже розміщено.
+        /// Якщо ownerId задано, перевірка виконується для конкретного власника.
+        /// </summary>
+        bool HasPlacedBuilding(string buildingId, string ownerId = null);
     }
 }

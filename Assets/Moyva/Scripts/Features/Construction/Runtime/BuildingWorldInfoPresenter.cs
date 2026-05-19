@@ -66,6 +66,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     Title = title,
                     Subtitle = subtitle,
                     Content = content,
+                    ConstructionCostItems = BuildConstructionCostItems(definition),
                 });
             }
             catch (Exception ex)
@@ -94,14 +95,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return $"Будівля • {settlementName}";
         }
 
-        private static string BuildFallbackText(BuildingDefinition definition)
+        private string BuildFallbackText(BuildingDefinition definition)
         {
             var details = new StringBuilder();
             details.AppendLine("Базова інформація");
             details.AppendLine($"ID: {definition.Id}");
             details.AppendLine($"Категорія: {definition.Category}");
 
-            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, details))
+            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, details, ResolveResourceDisplayName))
                 return details.ToString().TrimEnd();
 
             return details.ToString().TrimEnd();
@@ -134,7 +135,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             details.AppendLine(FormatResources(resources, "Ресурси поселення"));
 
             int beforeFacts = details.Length;
-            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, details))
+            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, details, ResolveResourceDisplayName))
             {
                 if (beforeFacts > 0)
                     details.Insert(beforeFacts, Environment.NewLine);
@@ -143,7 +144,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return details.ToString().TrimEnd();
         }
 
-        private static string FormatResources(IReadOnlyDictionary<string, float> resources, string title)
+        private string FormatResources(IReadOnlyDictionary<string, float> resources, string title)
         {
             var sb = new StringBuilder();
             sb.AppendLine(title);
@@ -155,9 +156,41 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             foreach (var entry in resources)
-                sb.AppendLine($"- {entry.Key}: {entry.Value:0.#}");
+                sb.AppendLine($"- {ResolveResourceDisplayName(entry.Key)}: {entry.Value:0.#}");
 
             return sb.ToString().TrimEnd();
         }
+
+        private BuildingConstructionCostItemData[] BuildConstructionCostItems(BuildingDefinition definition)
+        {
+            if (definition.ConstructionCost == null || definition.ConstructionCost.Count == 0)
+                return System.Array.Empty<BuildingConstructionCostItemData>();
+
+            var items = new List<BuildingConstructionCostItemData>(definition.ConstructionCost.Count);
+            for (int i = 0; i < definition.ConstructionCost.Count; i++)
+            {
+                var entry = definition.ConstructionCost[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0)
+                    continue;
+
+                string resourceId = entry.ResourceId.Trim();
+                string displayName = ResolveResourceDisplayName(resourceId);
+                items.Add(new BuildingConstructionCostItemData
+                {
+                    ResourceId = resourceId,
+                    DisplayName = displayName,
+                    Amount = entry.Amount,
+                    Icon = null,
+                });
+            }
+
+            return items.Count == 0
+                ? System.Array.Empty<BuildingConstructionCostItemData>()
+                : items.ToArray();
+        }
+
+        private string ResolveResourceDisplayName(string resourceId)
+            => _economyInfoMediator?.GetResourceDisplayName(resourceId)
+               ?? (string.IsNullOrWhiteSpace(resourceId) ? string.Empty : resourceId.Trim());
     }
 }

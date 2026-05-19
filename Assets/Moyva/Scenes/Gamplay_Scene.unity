@@ -6112,9 +6112,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f99540aed5077c59a895fdaa0858276b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Bootstrap::Kruty1918.Moyva.Bootstrap.BootstrapInstaller
-  _config: {fileID: 0}
+  _config: {fileID: 11400000, guid: ffbfa0b8da1df2ee09606da8300526fc, type: 2}
   _legacyGameSettings:
-    DefaultBuildingId: 
     InitialResources:
     - ResourceId: food
       Amount: 50

@@ -12,7 +12,12 @@ namespace Kruty1918.Moyva.Construction.UI
     /// </summary>
     public sealed class BuildingMenuFactory
     {
-        public List<BuildingListItemData> BuildMenuItems(BuildingDefinition[] allBuildings, IBuildingRegistry buildingRegistry, UnityEngine.Object context)
+        public List<BuildingListItemData> BuildMenuItems(
+            BuildingDefinition[] allBuildings,
+            IBuildingRegistry buildingRegistry,
+            UnityEngine.Object context,
+            Func<BuildingDefinition, bool> isInteractableSelector = null,
+            Func<BuildingDefinition, bool> includeSelector = null)
         {
             Debug.Log($"[BuildMenuItems] START: allBuildings.Length={(allBuildings?.Length ?? 0)}, registry={(buildingRegistry != null ? "ok" : "NULL")}");
             
@@ -27,8 +32,8 @@ namespace Kruty1918.Moyva.Construction.UI
                 string className = category.ToString();
 
                 var categoryBuildings = source
-                    .Where(x => x != null && x.Category == category)
-                    .OrderBy(x => x.DisplayName)
+                    .Where(x => x != null && x.Category == category && (includeSelector == null || includeSelector(x)))
+                    .OrderBy(GetDisplayName)
                     .ThenBy(x => x.Id)
                     .ToArray();
 
@@ -43,19 +48,23 @@ namespace Kruty1918.Moyva.Construction.UI
                 foreach (var building in categoryBuildings)
                 {
                     var sprite = ExtractSpriteForMenu(building, buildingRegistry, context);
+                    bool isInteractable = isInteractableSelector == null || isInteractableSelector(building);
                     Debug.Log(
                         $"[Construction UI] → id='{building.Id}' display='{building.DisplayName}' " +
                         $"category={building.Category} prefab={(building.Prefab != null ? building.Prefab.name : "NULL")} " +
                         $"icon={(building.Icon != null ? building.Icon.name : "NULL")} " +
                         $"extractedSprite={(sprite != null ? sprite.name : "NULL")}",
                         context);
-                    result.Add(new BuildingListItemData(building.Id, building.DisplayName, building.Category, sprite));
+                    result.Add(new BuildingListItemData(building.Id, GetDisplayName(building), building.Category, sprite, isInteractable));
                 }
             }
 
             Debug.Log($"[BuildMenuItems] FINISH: result.Count = {result.Count}");
             return result;
         }
+
+        private static string GetDisplayName(BuildingDefinition building)
+            => string.IsNullOrWhiteSpace(building?.DisplayName) ? building?.Id : building.DisplayName;
 
         private static BuildingDefinition[] BuildCompleteSource(BuildingDefinition[] allBuildings, IBuildingRegistry buildingRegistry)
         {

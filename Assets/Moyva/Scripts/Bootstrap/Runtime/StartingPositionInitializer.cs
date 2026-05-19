@@ -24,17 +24,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private const string StartVisionAnchorId = "bootstrap-start-vision-anchor";
 
         private readonly IFogOfWarService _fogOfWarService;
-        private readonly ISaveService     _saveService;
-        private readonly SignalBus        _signalBus;
+        private readonly ISaveService _saveService;
+        private readonly SignalBus _signalBus;
         private readonly StartingPositionInitializerSettings _settings;
         private readonly BootstrapStartingPositionState _startingPositionState;
         private readonly ICameraMovement _cameraMovement;
 
-    #pragma warning disable CS0649
+#pragma warning disable CS0649
         [InjectOptional] private ISessionManager _sessionManager;
         [InjectOptional] private IPathfinder _pathfinder;
         [InjectOptional] private IUnitService _unitService;
-    #pragma warning restore CS0649
+#pragma warning restore CS0649
 
         private bool _startAnchorRegistered;
         private int _registeredStartAnchorCount;
@@ -44,18 +44,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public StartingPositionInitializer(
             IFogOfWarService fogOfWarService,
-            ISaveService     saveService,
-            SignalBus        signalBus,
+            ISaveService saveService,
+            SignalBus signalBus,
             StartingPositionInitializerSettings settings,
             BootstrapStartingPositionState startingPositionState,
             ICameraMovement cameraMovement)
         {
-            _fogOfWarService       = fogOfWarService;
-            _saveService           = saveService;
-            _signalBus             = signalBus;
-            _settings              = settings;
+            _fogOfWarService = fogOfWarService;
+            _saveService = saveService;
+            _signalBus = signalBus;
+            _settings = settings;
             _startingPositionState = startingPositionState;
-            _cameraMovement        = cameraMovement;
+            _cameraMovement = cameraMovement;
         }
 
         public void Initialize()
@@ -436,35 +436,50 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return 1;
         }
 
+
+        /// <summary>
+        /// У багатокористувацькій грі хост відповідає за вибір стартових позицій для всіх гравців. Якщо дані про сесію недоступні, припускаємо, що це не мультиплеєр або локальна гра, і дозволяємо застосувати логіку стартової позиції.
+        /// </summary>
+        /// <param name="positions">Список стартових позицій для призначення.</param>
+        /// <returns>Масив призначень стартових позицій.</returns>
         private SpawnPositionAssignment[] BuildSpawnAssignments(IReadOnlyList<Vector2Int> positions)
         {
-            var participants = _sessionManager?.Participants;
-            var assignments = new SpawnPositionAssignment[positions.Count];
-            int participantCount = participants?.Count ?? 0;
-            int launchParticipantCount = GameLaunchContext.HasWorldSettings
-                ? Mathf.Max(1, GameLaunchContext.MaxPlayers)
+
+            var participants = _sessionManager?.Participants;  // Отримуємо список учасників сесії, якщо доступно. Якщо дані про сесію недоступні, participants буде null.             
+            var assignments = new SpawnPositionAssignment[positions.Count]; // Створюємо масив призначень стартових позицій з розміром, що відповідає кількості позицій у списку. Кожен елемент масиву буде заповнений відповідним призначенням для кожної стартової позиції.
+            int participantCount = participants?.Count ?? 0;                // Визначаємо кількість учасників сесії. Якщо дані про сесію недоступні, participantCount буде 0. Це дозволяє нам коректно обробляти випадки, коли гра не є багатокористувацькою або дані про сесію недоступні.
+            int launchParticipantCount = GameLaunchContext.HasWorldSettings // Визначаємо кількість учасників, яку слід враховувати при призначенні стартових позицій. Якщо у контексті запуску є налаштування світу і максимальна кількість гравців більше 1, використовуємо це значення. Інакше, якщо дані про сесію недоступні або гра не є багатокористувацькою, вважаємо, що є лише 1 учасник (локальний гравець).
+                ? Mathf.Max(1, GameLaunchContext.MaxPlayers)                // Якщо у контексті запуску є налаштування світу і максимальна кількість гравців більше 1, використовуємо це значення. Це дозволяє враховувати налаштування світу при визначенні кількості стартових позицій для призначення.
                 : 1;
 
+
+            // Проходимо по кожній стартовій позиції і створюємо відповідне призначення для кожного учасника. Якщо дані про сесію недоступні, припускаємо, що це не мультиплеєр або локальна гра, і дозволяємо застосувати логіку стартової позиції. У цьому випадку перша позиція буде призначена локальному гравцю, а інші позиції будуть призначені ботам (якщо їх кількість перевищує 1).
             for (int index = 0; index < positions.Count; index++)
             {
+                // Ініціалізуємо змінні для зберігання ідентифікатора учасника та інформації про те, чи є він ботом. За замовчуванням, якщо дані про сесію недоступні, вважаємо, що це локальна гра, і перша позиція буде призначена локальному гравцю, а інші позиції будуть призначені ботам (якщо їх кількість перевищує 1).
                 string participantId = string.Empty;
                 bool isBot = false;
 
+                // Якщо дані про сесію доступні і індекс позиції менший за кількість учасників, призначаємо позицію відповідному учаснику. Інакше, якщо індекс позиції дорівнює 0, призначаємо її локальному гравцю. Якщо індекс позиції менший за кількість учасників, призначаємо її боту з унікальним ідентифікатором. Це дозволяє коректно обробляти випадки, коли гра є багатокористувацькою або локальною, і забезпечує правильне призначення стартових позицій для кожного учасника.
                 if (participants != null && index < participantCount)
                 {
+                    // Якщо дані про сесію доступні і індекс позиції менший за кількість учасників, призначаємо позицію відповідному учаснику. Це дозволяє коректно обробляти випадки, коли гра є багатокористувацькою, і забезпечує правильне призначення стартових позицій для кожного учасника на основі їх порядку у списку учасників.
                     participantId = participants[index].Identity?.PlayerId ?? string.Empty;
                     isBot = participants[index].IsBot;
                 }
-                else if (index == 0)
+                else if (index == 0) // Якщо індекс позиції дорівнює 0, призначаємо її локальному гравцю. Це дозволяє коректно обробляти випадки, коли гра є локальною або дані про сесію недоступні, і забезпечує правильне призначення стартової позиції для локального гравця.       
                 {
+                    // Якщо індекс позиції дорівнює 0, призначаємо її локальному гравцю. Це дозволяє коректно обробляти випадки, коли гра є локальною або дані про сесію недоступні, і забезпечує правильне призначення стартової позиції для локального гравця. Ідентифікатор локального гравця визначається за допомогою методу ResolveLocalPlayerId(), який намагається отримать його з даних про сесію, а якщо це не вдається, використовує дефолтне значення "local-player". Це гарантує, що локальний гравець отримає унікальний ідентифікатор навіть у випадках, коли дані про сесію недоступні.
                     participantId = ResolveLocalPlayerId();
                 }
-                else if (index < launchParticipantCount)
+                else if (index < launchParticipantCount) // Якщо індекс позиції менший за кількість учасників, призначаємо її боту з унікальним ідентифікатором. Це дозволяє коректно обробляти випадки, коли гра є багатокористувацькою або локальною, і забезпечує правильне призначення стартових позицій для ботів, якщо їх кількість перевищує 1. Ідентифікатор бота формируется как "bot-XX", где XX - это порядковый номер бота, начиная с 01. Это гарантирует, что каждый бот получит уникальный идентификатор, который легко отличить от идентификатора локального игрока и других участников.
                 {
+                    // якщо індекс позиції менший за кількість учасників, призначаємо її боту з унікальним ідентифікатором. Це дозволяє коректно обробляти випадки, коли гра є багатокористувацькою або локальною, і забезпечує правильне призначення стартових позицій для ботів, якщо їх кількість перевищує 1. Ідентифікатор бота формируется как "bot-XX", где XX - это порядковый номер бота, начиная с 01. Это гарантирует, что каждый бот получит уникальный идентификатор, который легко отличить от идентификатора локального игрока и других участников.
                     participantId = $"bot-{index:00}";
                     isBot = true;
                 }
 
+                // Створюємо нове призначення стартової позиції з визначеними значеннями і додаємо його до масиву призначень. Це дозволяє сформувати масив призначень стартових позицій, який буде використовуватися для розміщення гравців на мапі відповідно до їх ролі (локальний гравець або бот) та порядку у списку учасників.
                 assignments[index] = new SpawnPositionAssignment
                 {
                     SlotIndex = index,
@@ -474,9 +489,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 };
             }
 
+
+            // Повертаємо масив призначень стартових позицій, який містить інформацію про те, яка позиція призначена якому учаснику (локальному гравцю або боту) та їх ролі. Це дозволяє коректно розмістити гравців на мапі відповідно до їх ролі та порядку у списку учасників, забезпечуючи правильну логіку стартової позиції для багатокористувацької або локальної гри.
             return assignments;
         }
 
+
+
+
+
+
+        /// <summary>
+        /// У багатокористувацькій грі хост відповідає за вибір стартових позицій для всіх гравців. Якщо дані про сесію недоступні, припускаємо, що це не мультиплеєр або локальна гра, і дозволяємо застосувати логіку стартової позиції.
+        /// </summary>
+        /// <returns>Ідентифікатор локального гравця.</returns>
         private string ResolveLocalPlayerId()
         {
             string localPlayerId = _sessionManager?.LocalPlayerId;
@@ -486,40 +512,115 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return "local-player";
         }
 
+
+
+
+        /// <summary>
+        /// Копіює масив SpawnPositionAssignment, щоб зберегти імунітет до зовнішніх змін після передачі сигналу.
+        /// </summary>
+        /// <param name="assignments">Масив стартових позицій для копіювання.</param>
+        /// <returns>Копія масиву стартових позицій.</returns>
         private static SpawnPositionAssignment[] CopySpawnAssignments(IReadOnlyList<SpawnPositionAssignment> assignments)
         {
+            // Якщо вхідний масив null або порожній, повертаємо порожній масив.
             var copy = new SpawnPositionAssignment[assignments.Count];
+
+            // Копіюємо кожен елемент з вхідного масиву до нового масиву.
             for (int index = 0; index < assignments.Count; index++)
                 copy[index] = assignments[index];
 
+            // Повертаємо новий масив, який є копією вхідного масиву.
             return copy;
         }
 
+
+
+        /// <summary>
+        /// У багатокористувацькій грі хост відповідає за вибір стартових позицій для всіх гравців.
+        /// </summary>
+        /// <returns>Повертає true, якщо локальний гравець може виконати логіку стартової позиції.</returns>
         private bool CanRunStartLogic()
         {
+            // Якщо немає даних про сесію, припускаємо,
             if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
                 return true;
-
+            // що це не мультиплеєр або локальна гра,
             if (_sessionManager.IsLocalPlayerHost)
                 return true;
-
+            // і дозволяємо застосувати логіку стартової позиції.
             return _startingPositionState.IsSet;
         }
 
+        /// <summary>
+        /// У багатокористувацькій грі хост відповідає за вибір стартових позицій для всіх гравців.
+        /// </summary>
+        /// <returns>Повертає true, якщо локальний гравець є хостом у багатокористувацькій грі.</returns>
         private bool IsMultiplayerHost()
         {
+            // Якщо немає даних про сесію, припускаємо, 
+            // що це не мультиплеєр або локальна гра, 
+            // і дозволяємо застосувати логіку стартової позиції.
             return _sessionManager != null && _sessionManager.IsLocalPlayerHost;
         }
 
         // ─── Стартове кругле розкриття туману ─────────────────────────────────
 
+        /// <summary>
+        /// Рівномірно розкриває круглу ділянку туману навколо стартової позиції.
+        /// Імітує стартову позицію на мапі, якщо гравець є локальним.
+        /// </summary>
         private void RevealStartingAreas(int width, int height)
         {
+            // Якщо стартова позиція не визначена, розкриваємо центр мапи.
             int radius = _settings.ResolveRevealedRadius(width, height);
-            var snapshot = BuildRevealSnapshot(width, height, ResolveLocalRevealCenter(width, height), radius, _settings.ResolveRevealShape());
+
+            // Якщо є збереження і автозавантаження ввімкнено — стартова позиція вже розкрита 
+            // FogOfWarSaveModule, додатково не розкриваємо.
+            var shape = _settings.ResolveRevealShape();
+
+            // Якщо гравець є локальним, розкриваємо стартову позицію навколо його спавну 
+            // (якщо він є) або навколо позиції, визначеної у WorldSpawnPositionsSignal.
+            var center = ResolveLocalRevealCenter(width, height);
+
+            // Якщо стартова позиція виявиться у чорному тумані, 
+            // камера буде переміщена до найближчої видимої ділянки. 
+            // Щоб уникнути неприємного сюрпризу, 
+            // розкриваємо стартову область до телепортації камери.
+            Debug.Log($"[Bootstrap] Стартовий туман: center={center}, radius={radius}, shape={shape}, map={width}x{height}, scaled={_settings.useMapSizeScaledFog}.");
+
+            // Навантажуємо згенерований snapshot, 
+            // щоб гарантовано розкрити стартову позицію. 
+            // Якщо є збереження з валідним snapshot, 
+            // він уже завантажився через FogOfWarSaveModule і додатково не перезапишеться.
+            var snapshot = BuildRevealSnapshot(width, height, center, radius, shape);
+
+            // Навантажуємо згенерований snapshot,
+            // щоб гарантовано розкрити стартову позицію. 
+            // Якщо є збереження з валідним snapshot, 
+            //  він уже завантажився через FogOfWarSaveModule і додатково не перезапишеться.
             _fogOfWarService.LoadFromSnapshot(snapshot);
+
+            // Гарантуємо, що стартова область буде 
+            // у exploredTiles через RegisterFixedVisionArea
+            _fogOfWarService.RegisterFixedVisionArea("bootstrap-start-vision-anchor-initial", center, radius, shape);
+
+            // Після розкриття стартової області — зберігаємо слот, щоб зміни (туман) були персистентні.
+            try
+            {
+                int slot = GameLaunchContext.SaveSlot;
+                _saveService?.Save(slot);
+                Debug.Log($"[Bootstrap] Автосейв після розкриття стартового туману у слот {slot}.");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[Bootstrap] Не вдалося зберегти після розкриття туману: {ex}");
+            }
         }
 
+        /// <summary>
+        /// Визначає центр розкриття стартової позиції для локального гравця.
+        /// </summary>
+        /// <returns>Центр розкриття стартової позиції для локального гравця.</returns>
         private bool ShouldComputeHostStartPositions()
         {
             if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
@@ -528,9 +629,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return _sessionManager.IsLocalPlayerHost;
         }
 
+
+        /// <summary>
+        /// Розкриває стартову позицію навколо спавну гравця (якщо він є) або навколо позиції, визначеної у WorldSpawnPositionsSignal.
+        /// </summary>
+        /// <param name="index">Індекс стартової позиції.</param>
+        /// <returns>Ідентифікатор якоря стартової позиції.</returns>
         private static string ResolveStartVisionAnchorId(int index)
             => index <= 0 ? StartVisionAnchorId : $"{StartVisionAnchorId}-{index}";
 
+        /// <summary>
+        /// Якщо стартова позиція виявиться у чорному тумані, камера буде переміщена до найближчої видимої ділянки.
+        /// </summary>
         private void UnregisterStartVisionAnchors()
         {
             int count = Mathf.Max(1, _registeredStartAnchorCount);
@@ -540,82 +650,198 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _registeredStartAnchorCount = 0;
         }
 
+
+        /// <summary>
+        /// Якщо є збереження і автозавантаження ввімкнено — туман відновить FogOfWarSaveModule. Якщо snapshot битий, робимо repair:
+        /// </summary>
+        /// <param name="signal">Сигнал з даними згенерованого світу.</param>
         private void RepairLoadedFogIfNeeded(WorldGeneratedDataSignal signal)
         {
+            // Якщо є збереження і автозавантаження ввімкнено —
             if (!CanRunStartLogic())
                 return;
 
+            // туман відновить FogOfWarSaveModule. 
+            // Якщо snapshot битий, робимо repair:
             var snapshot = _fogOfWarService.GetExploredSnapshot();
+
+
+            // Якщо snapshot битий або не має видимої ділянки для мапи, 
+            // розкриваємо стартову область навколо спавну гравця або позиції з WorldSpawnPositionsSignal.
             if (IsFogSnapshotUsable(snapshot, signal.Width, signal.Height))
                 return;
 
+
+            // Якщо snapshot битий або не має видимої ділянки для мапи, 
+            // розкриваємо стартову область навколо спавну гравця 
+            // або позиції з WorldSpawnPositionsSignal.
             Vector2Int center = ResolveRepairCenter(snapshot, signal.Width, signal.Height);
 
+            // Розкриваємо стартову область навколо спавну гравця або позиції з
+            //  WorldSpawnPositionsSignal, щоб гарантувати видиму ділянку для старту.
             int radius = _settings.ResolveRevealedRadius(signal.Width, signal.Height);
+
+
+            // Навантажуємо згенерований snapshot, 
+            // щоб гарантовано розкрити стартову позицію. 
+            // Якщо є збереження з валідним snapshot, він уже завантажився через 
+            // FogOfWarSaveModule і додатково не перезапишеться.
             var repaired = BuildRevealSnapshot(signal.Width, signal.Height, center, radius, _settings.ResolveRevealShape());
+
+
+            // Навантажуємо згенерований snapshot, 
+            // щоб гарантовано розкрити стартову позицію. 
+            // Якщо є збереження з валідним snapshot, 
+            // оновлений snapshot завантажиться через FogOfWarSaveModule і 
+            // перезапише його, інакше — завантажиться цей відремонтований snapshot.
             _fogOfWarService.LoadFromSnapshot(repaired);
 
+
+            // Якщо стартова позиція виявиться у чорному тумані, 
+            // камера буде переміщена до найближчої видимої ділянки. 
+            // Щоб уникнути неприємного сюрпризу, розкриваємо стартову 
+            // область до телепортації камери.
             if (_settings.keepCoreFullyVisible)
             {
+                // Уникаємо попередження FogOfWar «UnregisterUnit before Initialize»: 
+                // на першому виклику якорь ще не зареєстровано — пропускаємо unregister.
                 int visibleRange = _settings.ResolveCoreVisibleRadius(signal.Width, signal.Height);
+
+                // Розкриваємо стартову область навколо спавну гравця або позиції з 
+                // WorldSpawnPositionsSignal, щоб гарантувати видиму ділянку для старту.
                 _fogOfWarService.RegisterFixedVisionArea(StartVisionAnchorId, center, visibleRange, _settings.ResolveRevealShape());
+
+
+                // Гарантуємо, що стартова область буде у exploredTiles через RegisterFixedVisionArea
                 _startAnchorRegistered = true;
             }
 
+            // Якщо snapshot битий або не має видимої ділянки для мапи, 
+            // розкриваємо стартову область навколо спавну гравця або позиції з WorldSpawnPositionsSignal.
             Debug.LogWarning($"[Bootstrap] FogOfWar snapshot був невалідний або без видимої ділянки для мапи {signal.Width}x{signal.Height}. Стартову область відновлено біля {center}.");
+
         }
 
+        /// <summary>
+        /// Розкриває стартову позицію навколо спавну гравця (якщо він є) або навколо позиції, визначеної у WorldSpawnPositionsSignal.
+        /// </summary>
+        /// <param name="snapshot">Снімок видимості карти.</param>
+        /// <param name="width">Ширина карти.</param>
+        /// <param name="height">Висота карти.</param>
+        /// <returns>Повертає координати стартової позиції для відновлення.</returns>
         private Vector2Int ResolveRepairCenter(bool[,] snapshot, int width, int height)
         {
+            // Якщо є спавн гравця, розкриваємо навколо нього.
             if (TryGetLocalSpawnPosition(out Vector2Int localSpawn))
+                // Розкриваємо навколо позиції спавну гравця,
                 return ClampToMap(localSpawn, width, height);
 
+
+
+            // Якщо є позиція з WorldSpawnPositionsSignal, розкриваємо навколо неї.
             if (_startingPositionState.IsSet)
+                // Розкриваємо навколо позиції, визначеної у WorldSpawnPositionsSignal.
                 return ClampToMap(_startingPositionState.StartPosition, width, height);
 
+
+
+            // Інакше розкриваємо навколо центру карти або найближчої до нього видимої ділянки.
             Vector2Int snapshotCenter = FindRepairCenter(snapshot, width, height);
+
+
+
+            // Якщо центр снімку не є видимою ділянкою, намагаємося знайти найближчу до нього позицію юніта,
+            // щоб розкрити стартову область навколо неї замість випадкової
             if (TryGetClosestUnitPosition(snapshotCenter, out Vector2Int unitPosition))
+                // Розкриваємо навколо позиції юніта, якщо вона ближче до центру снімку, 
+                // ніж будь-яка інша знайдена видима ділянка.
                 return ClampToMap(unitPosition, width, height);
 
+
+            // Якщо центр снімку є видимою ділянкою або валідною позицією юніта не знайдено, 
+            // розкриваємо навколо центру снімку.
             return snapshotCenter;
         }
 
+        /// <summary>
+        /// Пробуємо отримати стартову позицію для локального гравця. 
+        /// Якщо вона визначена у WorldSpawnPositionsSignal, використовуємо її.
+        /// Інакше, якщо є спавн гравця, використовуємо його.
+        /// </summary>
+        /// <param name="position">Позиція старту для локального гравця.</param>
+        /// <returns>Повертає true, якщо стартова позиція знайдена, і false в іншому випадку.</returns>
         private bool TryGetLocalSpawnPosition(out Vector2Int position)
         {
+            // Якщо є спавн гравця, використовуємо його.
             string localPlayerId = _sessionManager?.LocalPlayerId;
+
+            // Якщо стартова позиція для локального гравця визначена у WorldSpawnPositionsSignal, 
+            // використовуємо її.
             if (!string.IsNullOrEmpty(localPlayerId) &&
                 _startingPositionState.PlayerStartPositions.TryGetValue(localPlayerId, out position))
             {
                 return true;
             }
 
+            // Якщо є спавн гравця, використовуємо його.
             var assignments = _startingPositionState.SpawnAssignments;
+
+            // Якщо стартова позиція для локального гравця не визначена у WorldSpawnPositionsSignal,
             for (int index = 0; index < assignments.Count; index++)
             {
+                // Якщо це не бот, вважаємо його локальним гравцем і використовуємо його стартову позицію.
                 if (!assignments[index].IsBot)
                 {
+                    // Якщо є спавн гравця, використовуємо його.
                     position = assignments[index].Position;
                     return true;
                 }
             }
 
+            // Якщо стартова позиція для локального гравця не визначена у 
+            // WorldSpawnPositionsSignal і немає спавну гравця,
+            // стартову позицію для локального гравця не знайдено.
             position = default;
             return false;
         }
 
+        /// <summary>
+        /// Розкриває стартову позицію навколо спавну гравця (якщо він є) або навколо позиції, визначеної у WorldSpawnPositionsSignal.
+        /// </summary>
+        /// <param name="width">Ширина карти.</param>
+        /// <param name="height">Висота карти.</param>
+        /// <returns>Позиція для розкриття стартової області.</returns>
         private Vector2Int ResolveLocalRevealCenter(int width, int height)
         {
+            // Якщо є спавн гравця, розкриваємо навколо нього.
             if (TryGetLocalSpawnPosition(out Vector2Int localSpawn))
+                //  Розкриваємо навколо позиції спавну гравця, 
+                // якщо вона визначена у WorldSpawnPositionsSignal.
                 return ClampToMap(localSpawn, width, height);
 
+
+            // Якщо є позиція з WorldSpawnPositionsSignal, розкриваємо навколо неї.
             if (_startingPositionState.IsSet)
+                // Розкриваємо навколо позиції, визначеної у WorldSpawnPositionsSignal.
                 return ClampToMap(_startingPositionState.StartPosition, width, height);
 
+
+            // Інакше розкриваємо навколо центру карти або найближчої до нього видимої ділянки.
             return new Vector2Int(Mathf.Max(0, width / 2), Mathf.Max(0, height / 2));
         }
 
+        /// <summary>
+        /// Обмежує позицію межами карти, щоб уникнути помилок при розкритті туману або телепортації камери.
+        /// </summary>
+        /// <param name="position">Позиція для обмеження.</param>
+        /// <param name="width">Ширина карти.</param>
+        /// <param name="height">Висота карти.</param>
+        /// <returns>Обмежена позиція.</returns>
         private static Vector2Int ClampToMap(Vector2Int position, int width, int height)
         {
+            // Обмежуємо позицію межами карти, 
+            // щоб уникнути помилок при розкритті туману 
+            // або телепортації камери.
             return new Vector2Int(
                 Mathf.Clamp(position.x, 0, Mathf.Max(0, width - 1)),
                 Mathf.Clamp(position.y, 0, Mathf.Max(0, height - 1)));
@@ -632,23 +858,56 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int explored = 0;
             int required = Mathf.Max(1, _settings.minimumExploredTilesBeforeRepair);
             bool hasEnoughExplored = false;
-            bool hasVisibleTile = false;
             for (int x = 0; x < width; x++)
             {
                 for (int y = 0; y < height; y++)
                 {
-                    var position = new Vector2Int(x, y);
-                    if (_fogOfWarService.IsVisible(position))
-                        hasVisibleTile = true;
-
                     if (snapshot[x, y])
                     {
                         explored++;
                         if (explored >= required)
+                        {
                             hasEnoughExplored = true;
+                            break;
+                        }
                     }
+                }
 
-                    if (hasEnoughExplored && hasVisibleTile)
+                if (hasEnoughExplored)
+                    break;
+            }
+
+            if (!hasEnoughExplored)
+                return false;
+
+            if (!_settings.keepCoreFullyVisible)
+                return true;
+
+            Vector2Int center = ResolveRepairCenter(snapshot, width, height);
+            int radius = Mathf.Max(1, _settings.ResolveCoreVisibleRadius(width, height));
+            return HasVisibleTileNear(center, width, height, radius, _settings.ResolveRevealShape());
+        }
+
+        private bool HasVisibleTileNear(Vector2Int center, int width, int height, int radius, FogRevealShape shape)
+        {
+            float radiusWithCellCoverage = radius + 0.5f;
+            float radiusSqr = radiusWithCellCoverage * radiusWithCellCoverage;
+
+            int minX = Mathf.Max(0, center.x - radius);
+            int maxX = Mathf.Min(width - 1, center.x + radius);
+            int minY = Mathf.Max(0, center.y - radius);
+            int maxY = Mathf.Min(height - 1, center.y + radius);
+
+            for (int x = minX; x <= maxX; x++)
+            {
+                int deltaX = x - center.x;
+                for (int y = minY; y <= maxY; y++)
+                {
+                    int deltaY = y - center.y;
+                    if (!IsInsideRevealShape(deltaX, deltaY, radius, radiusSqr, shape))
+                        continue;
+
+                    if (_fogOfWarService.IsVisible(new Vector2Int(x, y)))
                         return true;
                 }
             }

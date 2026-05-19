@@ -63,4 +63,11 @@ namespace Kruty1918.Moyva.Signals
         public Vector2Int Center;
         public bool Hide; // true — приховати ручки
     }
+
+    /// <summary>
+    /// Надсилається з UI, коли гравець натискає кнопку «Підтвердити» у режимі будівництва.
+    /// MultiplayerAuthorityService перехоплює цей сигнал і або виконує Confirm() локально (хост/офлайн),
+    /// або надсилає запит до хоста (клієнт).
+    /// </summary>
+    public struct PlaceBuildingConfirmRequestSignal { }
 }

@@ -6,6 +6,10 @@ using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
+    /// <summary>
+    /// Панель підтвердження дій у HomeMenu.
+    /// Відображає <see cref="ConfirmationRequest"/> і керує confirm/cancel callback-ланцюгом.
+    /// </summary>
     public class ConfirmationPanel : MonoBehaviour, IConfiremationPanel
     {
         [Header("References")]
@@ -48,6 +52,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         }
 
         #region API
+        /// <summary>Примусово сховати панель і скинути активний запит.</summary>
         public void ForeceHide()
         {
             _request = null;
@@ -57,6 +62,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             LogWithSufix("Force hide was called.");
         }
 
+        /// <summary>Показати панель з переданим запитом підтвердження.</summary>
         public void Show(ConfirmationRequest request)
         {
             _request = request;
@@ -65,6 +71,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             LogWithSufix("Panel was showed");
         }
 
+        /// <summary>Повертає поточний запит, якщо він встановлений.</summary>
         public bool TryGetReqest(out ConfirmationRequest? request)
         {
             request = _request;
@@ -162,11 +169,5 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         #endregion
 
         #endregion
-    }
-
-    public interface IConfirmationButton
-    {
-        void SetInteractable(bool interactable);
-        event Action<ConfirmationRequest> OnClicked;
     }
  }

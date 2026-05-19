@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Kruty1918.Moyva.Signals;
-using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.SaveSystem
@@ -14,13 +13,29 @@ namespace Kruty1918.Moyva.SaveSystem
     /// </summary>
     internal sealed class SaveService : ISaveService, IInitializable, IDisposable
     {
-        private readonly List<ISaveModule> _modules;
-        private readonly SignalBus         _signalBus;
+        private const string GeneratedWorldSaveModuleFullName = "Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule";
 
-        public SaveService(List<ISaveModule> modules, SignalBus signalBus)
+        private readonly List<ISaveModule> _modules;
+        private readonly SignalBus _signalBus;
+        private readonly ISaveWriteService _writeService;
+        private readonly ISaveLoadService _loadService;
+        private readonly ISaveSlotPolicyService _slotPolicyService;
+        private readonly ISaveModuleRegistry _moduleRegistry;
+
+        public SaveService(
+            List<ISaveModule> modules,
+            SignalBus signalBus,
+            [InjectOptional] ISaveWriteService writeService = null,
+            [InjectOptional] ISaveLoadService loadService = null,
+            [InjectOptional] ISaveSlotPolicyService slotPolicyService = null,
+            [InjectOptional] ISaveModuleRegistry moduleRegistry = null)
         {
-            _modules   = modules ?? new List<ISaveModule>();
+            _modules = modules ?? new List<ISaveModule>();
             _signalBus = signalBus;
+            _writeService = writeService ?? new SaveWriteService();
+            _loadService = loadService ?? new SaveLoadService();
+            _slotPolicyService = slotPolicyService ?? new SaveSlotPolicyService();
+            _moduleRegistry = moduleRegistry;
         }
 
         // ─── IInitializable / IDisposable ──────────────────────────────────
@@ -44,109 +59,30 @@ namespace Kruty1918.Moyva.SaveSystem
 
         public void Save(int slot = 0)
         {
-            if (!SavePipelineHelper.ValidateSlot(slot))
-            {
-                FireCompleted(slot, false, $"Invalid slot {slot}");
-                return;
-            }
-
-            if (!SavePipelineHelper.EnsureDirectoryExists(out string dirError))
-            {
-                Debug.LogError($"[SaveSystem] Directory error: {dirError}");
-                FireCompleted(slot, false, dirError);
-                return;
-            }
-
-            var    blocks = SavePipelineHelper.CollectBlocks(_modules);
-            byte[] data   = SaveFileCodec.Encode(blocks);
-
-            if (!SavePipelineHelper.VerifyAssembledBuffer(data))
-            {
-                FireCompleted(slot, false, "Buffer verification failed");
-                return;
-            }
-
-            if (SavePipelineHelper.AtomicWrite(GetPath(slot), data))
+            var modules = GetCurrentModulesSnapshot();
+            if (_writeService.TrySave(slot, modules, GeneratedWorldSaveModuleFullName, out var errorMessage))
                 FireCompleted(slot, true, null);
             else
-                FireCompleted(slot, false, "Write failed");
+                FireCompleted(slot, false, errorMessage);
         }
 
         public void Load(int slot = 0)
         {
-            if (!SavePipelineHelper.ValidateSlot(slot))
-                return;
-
-            string path = GetPath(slot);
-
-            if (!File.Exists(path))
-            {
-                Debug.LogError($"[SaveSystem] Save file not found: '{path}'");
-                TryLoadBackup(slot);
-                return;
-            }
-
-            byte[] bytes;
-            try   { bytes = File.ReadAllBytes(path); }
-            catch (Exception e)
-            {
-                Debug.LogError($"[SaveSystem] Cannot read file: {e.Message}");
-                TryLoadBackup(slot);
-                return;
-            }
-
-            if (!SavePipelineHelper.ExecuteLoad(bytes, _modules, $"slot {slot}"))
-            {
-                TryLoadBackup(slot);
-            }
+            var modules = GetCurrentModulesSnapshot();
+            _loadService.TryLoad(slot, modules, GeneratedWorldSaveModuleFullName, out _);
         }
 
         public bool HasSave(int slot = 0)
-            => SavePipelineHelper.ValidateSlot(slot) && File.Exists(GetPath(slot));
+            => _slotPolicyService.HasSave(slot);
 
         public void Delete(int slot = 0)
         {
-            if (!SavePipelineHelper.ValidateSlot(slot)) return;
-            SavePipelineHelper.TryDelete(GetPath(slot));
-            SavePipelineHelper.TryDelete(GetPath(slot) + ".bak");
-            SavePipelineHelper.TryDelete(GetPath(slot) + ".tmp");
+            _slotPolicyService.Delete(slot);
         }
 
         public SaveSlotInfo GetSlotInfo(int slot = 0)
         {
-            if (!SavePipelineHelper.ValidateSlot(slot))
-                return new SaveSlotInfo(slot, false, 0, DateTime.MinValue);
-
-            string path = GetPath(slot);
-            if (!File.Exists(path))
-                return new SaveSlotInfo(slot, false, 0, DateTime.MinValue);
-
-            var fi = new FileInfo(path);
-            string worldName = TryReadWorldName(path, out var name) ? name : null;
-            return new SaveSlotInfo(slot, true, fi.Length, fi.LastWriteTimeUtc, worldName);
-        }
-
-        // ─── Fallback ─────────────────────────────────────────────────────
-
-        private void TryLoadBackup(int slot)
-        {
-            string backup = GetPath(slot) + ".bak";
-            if (!File.Exists(backup))
-            {
-                Debug.LogWarning($"[SaveSystem] No .bak available for slot {slot}. Load failed.");
-                return;
-            }
-
-            Debug.LogWarning($"[SaveSystem] Falling back to .bak for slot {slot}.");
-            byte[] bytes;
-            try   { bytes = File.ReadAllBytes(backup); }
-            catch (Exception e)
-            {
-                Debug.LogError($"[SaveSystem] Backup unreadable: {e.Message}");
-                return;
-            }
-
-            SavePipelineHelper.ExecuteLoad(bytes, _modules, $"slot {slot} backup");
+            return _slotPolicyService.GetSlotInfo(slot);
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────
@@ -154,76 +90,20 @@ namespace Kruty1918.Moyva.SaveSystem
         internal static string GetPath(int slot)
             => Path.Combine(SavePipelineHelper.GetDirectory(), $"slot{slot:D2}.mvs");
 
-        private static bool TryReadWorldName(string path, out string worldName)
+        private List<ISaveModule> GetCurrentModulesSnapshot()
         {
-            worldName = null;
-
-            byte[] bytes;
-            try { bytes = File.ReadAllBytes(path); }
-            catch { return false; }
-
-            var result = SaveFileCodec.TryDecode(bytes, out _, out var blocks, out _);
-            if (result != SaveFileCodec.DecodeError.None || blocks == null)
-                return false;
-
-            uint generatedWorldBlockId = SaveFileCodec.ComputeBlockId("Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule");
-            for (int i = 0; i < blocks.Count; i++)
+            var modules = new List<ISaveModule>(_modules.Count);
+            for (int index = 0; index < _modules.Count; index++)
             {
-                if (blocks[i].blockId != generatedWorldBlockId)
+                var module = _modules[index];
+                if (module == null || modules.Contains(module))
                     continue;
 
-                return TryReadWorldNameFromGeneratedWorldPayload(blocks[i].payload, out worldName);
+                modules.Add(module);
             }
 
-            return false;
-        }
-
-        private static bool TryReadWorldNameFromGeneratedWorldPayload(byte[] payload, out string worldName)
-        {
-            worldName = null;
-
-            try
-            {
-                using var ms = new MemoryStream(payload);
-                using var reader = new BinaryReader(ms);
-                int width = reader.ReadInt32();
-                int height = reader.ReadInt32();
-                if (width <= 0 || height <= 0)
-                    return false;
-
-                SkipStringMap(reader, width, height);
-                SkipStringMap(reader, width, height);
-                SkipFloatMap(reader, width, height);
-                SkipStringMap(reader, width, height);
-
-                if (ms.Position >= ms.Length)
-                    return false;
-
-                string value = reader.ReadString();
-                if (string.IsNullOrWhiteSpace(value))
-                    return false;
-
-                worldName = value.Trim();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static void SkipStringMap(BinaryReader reader, int width, int height)
-        {
-            for (int x = 0; x < width; x++)
-                for (int y = 0; y < height; y++)
-                    reader.ReadString();
-        }
-
-        private static void SkipFloatMap(BinaryReader reader, int width, int height)
-        {
-            for (int x = 0; x < width; x++)
-                for (int y = 0; y < height; y++)
-                    reader.ReadSingle();
+            _moduleRegistry?.AppendRegisteredModules(modules);
+            return modules;
         }
 
         private void FireCompleted(int slot, bool success, string errorMessage)

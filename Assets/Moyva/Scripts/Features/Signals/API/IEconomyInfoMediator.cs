@@ -27,5 +27,6 @@ namespace Kruty1918.Moyva.Signals
         IReadOnlyDictionary<string, float> GetSettlementWarehousesTotal(string settlementId);
         IReadOnlyDictionary<string, float> GetSettlementResourceTotals(string settlementId);
         IReadOnlyDictionary<string, float> GetOwnerResourceTotals(string ownerId);
+        string GetResourceDisplayName(string resourceId);
     }
 }

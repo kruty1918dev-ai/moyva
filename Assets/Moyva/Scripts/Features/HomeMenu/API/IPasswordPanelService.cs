@@ -3,25 +3,6 @@ using System.Threading.Tasks;
 
 namespace Kruty1918.Moyva.HomeMenu.API
 {
-    /// <summary>
-    /// Результат запиту пароля у користувача.
-    /// </summary>
-    public readonly struct PasswordPromptResult
-    {
-        /// <summary>True, якщо користувач натиснув OK; false — якщо скасував.</summary>
-        public bool Confirmed { get; }
-        /// <summary>Введений пароль (порожній, якщо <see cref="Confirmed"/> = false).</summary>
-        public string Password { get; }
-
-        public PasswordPromptResult(bool confirmed, string password)
-        {
-            Confirmed = confirmed;
-            Password = password ?? string.Empty;
-        }
-
-        public static PasswordPromptResult Cancelled => new PasswordPromptResult(false, string.Empty);
-        public static PasswordPromptResult Confirm(string password) => new PasswordPromptResult(true, password);
-    }
 
     /// <summary>
     /// Сервіс модального запиту пароля для приєднання до приватної кімнати.

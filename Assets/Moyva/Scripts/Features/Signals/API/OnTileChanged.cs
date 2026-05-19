@@ -56,6 +56,17 @@ namespace Kruty1918.Moyva.Signals
     }
 
     /// <summary>
+    /// Надсилається TileInteractionService, коли гравець наказує юніту рухатись до тайлу.
+    /// MultiplayerAuthorityService перехоплює і або виконує MoveUnitAsync локально (хост/офлайн),
+    /// або надсилає запит до хоста (клієнт).
+    /// </summary>
+    public struct MoveUnitRequestSignal
+    {
+        public string UnitId;
+        public Vector2Int TargetPosition;
+    }
+
+    /// <summary>
     /// Надсилається MapVisualInstantiator після спавну статичного обʼєкта карти (гора, річка, ліс…)
     /// </summary>
     public struct OnMapObjectSpawnedSignal

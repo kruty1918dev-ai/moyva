@@ -2,7 +2,9 @@
     "name": "Kruty1918.Moyva.WorldCreation.API",
     "rootNamespace": "Kruty1918.Moyva.WorldCreation.API",
     "references": [
-        "Kruty1918.Moyva.Signals"
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.GraphSystem",
+        "Kruty1918.Moyva.Grid"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

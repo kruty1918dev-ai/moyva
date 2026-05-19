@@ -6,6 +6,9 @@ using Zenject;
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
     // TODO: Implement view controllers for each menu panel (Solo, Multiplayer, CreateRoom, JoinRoom, Continue, WorldSetup) following the pattern of IBotViewController and BotViewController.
+    /// <summary>
+    /// Контролер solo-екрану з кнопкою переходу до наступного кроку.
+    /// </summary>
     public class SoloViewController : MonoBehaviour, ISoloViewController, IInitializable
     {
         [SerializeField] private Button _nextButton;

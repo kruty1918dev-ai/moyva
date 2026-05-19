@@ -26,6 +26,21 @@ namespace Kruty1918.Moyva.SaveSystem
 
         public static void Install(DiContainer container)
         {
+            container.Bind<ISaveWriteService>()
+                .To<SaveWriteService>()
+                .AsSingle();
+
+            container.Bind<ISaveLoadService>()
+                .To<SaveLoadService>()
+                .AsSingle();
+
+            container.Bind<ISaveSlotPolicyService>()
+                .To<SaveSlotPolicyService>()
+                .AsSingle();
+
+            container.BindInterfacesAndSelfTo<SaveModuleRegistry>()
+                .AsSingle();
+
             container.BindInterfacesAndSelfTo<SaveService>()
                 .AsSingle()
                 .NonLazy();

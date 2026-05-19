@@ -60,6 +60,9 @@ namespace Kruty1918.Moyva.Units.Runtime
 
         private static string ResolveTitle(string unitId, string unitTypeId, UnitClassConfig config)
         {
+            if (!string.IsNullOrWhiteSpace(config?.DisplayName))
+                return config.DisplayName;
+
             if (!string.IsNullOrWhiteSpace(config?.TypeId))
                 return config.TypeId;
 
@@ -94,7 +97,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             sb.AppendLine($"ID: {unitId}");
 
             if (!string.IsNullOrWhiteSpace(unitTypeId))
-                sb.AppendLine($"Тип: {unitTypeId}");
+                sb.AppendLine($"Тип: {ResolveUnitDisplayName(unitTypeId, config)}");
 
             int beforeFacts = sb.Length;
             if (config != null && AppendMeaningfulFacts(config, sb))
@@ -170,7 +173,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             return config.Role == UnitRole.Military ? "Військовий юніт" : "Робітник";
         }
 
-        private static string FormatResources(IReadOnlyDictionary<string, float> resources, string title)
+        private string FormatResources(IReadOnlyDictionary<string, float> resources, string title)
         {
             var sb = new StringBuilder();
             sb.AppendLine(title);
@@ -182,9 +185,24 @@ namespace Kruty1918.Moyva.Units.Runtime
             }
 
             foreach (var entry in resources)
-                sb.AppendLine($"- {entry.Key}: {entry.Value:0.#}");
+                sb.AppendLine($"- {ResolveResourceDisplayName(entry.Key)}: {entry.Value:0.#}");
 
             return sb.ToString().TrimEnd();
+        }
+
+        private string ResolveResourceDisplayName(string resourceId)
+            => _economyInfoMediator?.GetResourceDisplayName(resourceId)
+               ?? (string.IsNullOrWhiteSpace(resourceId) ? string.Empty : resourceId.Trim());
+
+        private static string ResolveUnitDisplayName(string unitTypeId, UnitClassConfig config)
+        {
+            if (!string.IsNullOrWhiteSpace(config?.DisplayName))
+                return config.DisplayName;
+
+            if (!string.IsNullOrWhiteSpace(config?.TypeId))
+                return config.TypeId;
+
+            return unitTypeId;
         }
     }
 }

@@ -27,9 +27,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            Container.Bind<ISaveModule>()
-                .To<FogOfWarSaveModule>()
+            Container.BindInterfacesAndSelfTo<FogOfWarSaveModule>()
                 .AsSingle();
+
+            Container.BindInterfacesTo<SaveModuleRegistrar<FogOfWarSaveModule>>()
+                .AsSingle()
+                .NonLazy();
 
             var fogQuads = Object.FindObjectsByType<FogQuadController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var fogQuad in fogQuads)

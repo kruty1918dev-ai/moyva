@@ -18,6 +18,7 @@ MonoBehaviour:
     Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
+    ConstructionCost: []
     Modules:
     - rid: 1139584718011891780
     UseCustomTownHallRules: 0
@@ -29,6 +30,11 @@ MonoBehaviour:
     Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 8030073889366943068, guid: f9fff611f2465687b966cf0e0cfdda74, type: 3}
+    ConstructionCost:
+    - ResourceId: walnut-wood-materials-resources
+      Amount: 1
+    - ResourceId: hardwood-materials-resources
+      Amount: 1
     Modules:
     - rid: 1139584718011891781
     UseCustomTownHallRules: 0
@@ -40,6 +46,13 @@ MonoBehaviour:
     Category: 2
     Icon: {fileID: 0}
     Prefab: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
+    ConstructionCost:
+    - ResourceId: walnut-wood-materials-resources
+      Amount: 1
+    - ResourceId: stone-materials-resources
+      Amount: 1
+    - ResourceId: hardwood-materials-resources
+      Amount: 1
     Modules: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
@@ -50,6 +63,13 @@ MonoBehaviour:
     Category: 1
     Icon: {fileID: 0}
     Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
+    ConstructionCost:
+    - ResourceId: walnut-wood-materials-resources
+      Amount: 1
+    - ResourceId: stone-materials-resources
+      Amount: 1
+    - ResourceId: hardwood-materials-resources
+      Amount: 1
     Modules: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
@@ -60,6 +80,11 @@ MonoBehaviour:
     Category: 3
     Icon: {fileID: -1448105316, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
     Prefab: {fileID: 8756741331363231770, guid: 190f77ff4fd19557ebd89ef3e3e06832, type: 3}
+    ConstructionCost:
+    - ResourceId: stone-materials-resources
+      Amount: 1
+    - ResourceId: hardwood-materials-resources
+      Amount: 1
     Modules: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
@@ -70,6 +95,13 @@ MonoBehaviour:
     Category: 3
     Icon: {fileID: 1129816292, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
     Prefab: {fileID: 4054757616884961693, guid: 2fc84416ec42ca98796010998d7561ef, type: 3}
+    ConstructionCost:
+    - ResourceId: walnut-wood-materials-resources
+      Amount: 1
+    - ResourceId: stone-materials-resources
+      Amount: 1
+    - ResourceId: hardwood-materials-resources
+      Amount: 1
     Modules: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1

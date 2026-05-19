@@ -126,6 +126,19 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             {
                 return CreateUnit(typeId, gridPosition);
             }
+
+            public string CreateUnitWithId(string forcedUnitId, string typeId, Vector2Int gridPosition, string ownerId)
+            {
+                string unitId = string.IsNullOrWhiteSpace(forcedUnitId)
+                    ? _unitService.RegisterCreated(typeId, gridPosition)
+                    : forcedUnitId;
+
+                if (!string.IsNullOrWhiteSpace(forcedUnitId))
+                    _unitService.Seed(unitId, typeId, gridPosition, 0f);
+
+                Created.Add((typeId, gridPosition, unitId));
+                return unitId;
+            }
         }
 
         private SignalBus _signalBus;

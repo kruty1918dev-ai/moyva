@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
@@ -392,6 +393,22 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .To<GameCommandSyncService>()
                     .AsSingle();
             }
+                // Синхронізація ігрових команд
+                if (!container.HasBinding(typeof(IGameCommandSyncService)))
+                {
+                    container.Bind<IGameCommandSyncService>()
+                        .To<GameCommandSyncService>()
+                        .AsSingle();
+                }
+
+                // Авторитативний хост-роутер: маршрутизує дії гравця через хоста
+                container.Bind<MultiplayerAuthorityService>()
+                    .AsSingle()
+                    .NonLazy();
+
+                container.Bind<IConstructionConfirmRequestExecutor>()
+                    .FromMethod(ctx => ctx.Container.Resolve<MultiplayerAuthorityService>() as IConstructionConfirmRequestExecutor)
+                    .AsSingle();
 
             // Identity-сервіс (UGS Auth коли доступно, інакше device id).
             container.Bind<IMultiplayerIdentityService>()

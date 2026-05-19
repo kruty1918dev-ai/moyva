@@ -12,5 +12,10 @@ namespace Kruty1918.Moyva.Units.API
         /// <paramref name="ownerId"/> — це FactionId.Value (або null для "без власника").
         /// </summary>
         string CreateUnit(string typeId, Vector2Int gridPosition, string ownerId);
+
+        /// <summary>
+        /// Створює юніт із заданим ID (для мультиплеєр-синхронізації та збереження).
+        /// </summary>
+        string CreateUnitWithId(string forcedUnitId, string typeId, Vector2Int gridPosition, string ownerId);
     }
 }

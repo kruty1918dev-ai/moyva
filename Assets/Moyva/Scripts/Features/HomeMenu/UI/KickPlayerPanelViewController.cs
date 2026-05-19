@@ -9,6 +9,10 @@ using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
+    /// <summary>
+    /// Контролер панелі керування гравцями в лобі для kick-сценарію.
+    /// Рендерить список гравців, статус і делегує запити кік/оновлення/закриття.
+    /// </summary>
     public sealed class KickPlayerPanelViewController : MonoBehaviour, IKickPlayerPanelViewController, IInitializable
     {
         [SerializeField] private Button _closeButton;
@@ -52,11 +56,14 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         public void SetPlayers(IReadOnlyList<KickPlayerInfo> players)
         {
+            // 1: Очищаємо попередній стан списку.
             ClearPlayers();
 
+            // 2: Якщо немає залежностей або даних - вихід.
             if (_playersContainer == null || _playerItemPrefab == null || players == null)
                 return;
 
+            // 3: Створюємо item для кожного гравця й прив'язуємо дії.
             _playerItemPrefab.gameObject.SetActive(false);
             foreach (var player in players)
             {

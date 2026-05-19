@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.GraphSystem.API
@@ -13,6 +14,10 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
         [SerializeField] private GraphSharedSettings _sharedSettings = new();
 
+        [Header("Tile Registry")]
+        [Tooltip("Реєстр тайлів цього графа.")]
+        [SerializeField] private TileRegistrySO _tileRegistry;
+
         public IReadOnlyList<NodeBase> Nodes => _nodes;
         public IReadOnlyList<Connection> Connections => _connections;
         public int Version => _version;
@@ -22,6 +27,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
         /// Змінюються прямо в інспекторі GraphAsset — без потреби в окремому ноді.
         /// </summary>
         public GraphSharedSettings SharedSettings => _sharedSettings ??= new GraphSharedSettings();
+        public TileRegistrySO TileRegistry => _tileRegistry;
 
         public NodeBase GetNodeById(string nodeId)
         {

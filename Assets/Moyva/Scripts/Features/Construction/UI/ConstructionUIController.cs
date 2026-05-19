@@ -52,6 +52,9 @@ namespace Kruty1918.Moyva.Construction.UI
         private const string previewInfoPanelTextLabelKeyWord = "Label";
         private const string previewInfoPanelTextInfoKeyWord = "Info";
         private const int previewInfoMaxResourcesLines = 6;
+        private const float previewInfoHeaderFontSize = 20f;
+        private const float previewInfoBodyFontSize = 14f;
+        private const float previewInfoBodyLineSpacing = 8f;
 
         // --- Інжектується Zenject ---
         private IConstructionService _constructionService;
@@ -182,7 +185,7 @@ namespace Kruty1918.Moyva.Construction.UI
         /// Підтвердити всі pending-розміщення.
         /// Підключи: Confirm button → OnClick → цей метод.
         /// </summary>
-        public void OnConfirmClicked() => _constructionService.Confirm();
+        public void OnConfirmClicked() => _signalBus.Fire(new PlaceBuildingConfirmRequestSignal());
 
         /// <summary>
         /// Скасувати поточну сесію будівництва.</summary>
@@ -254,6 +257,7 @@ namespace Kruty1918.Moyva.Construction.UI
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
+            PopulateBuildingList();
             RefreshUI();
         }
 
@@ -333,11 +337,43 @@ namespace Kruty1918.Moyva.Construction.UI
                 return;
 
             var buildings = _buildingRegistry.GetAll();
-            var items = _menuFactory.BuildMenuItems(buildings, _buildingRegistry, this);
+            bool ownerHasCastle = OwnerHasAnyCastle();
+            var items = _menuFactory.BuildMenuItems(
+                buildings,
+                _buildingRegistry,
+                this,
+                definition => ownerHasCastle || (definition != null && BuildingDefinitionCapabilities.IsCastle(definition)),
+                definition => !ownerHasCastle || definition == null || !BuildingDefinitionCapabilities.IsCastle(definition));
 
             Debug.Log($"[Construction UI] Ініціалізовано меню будівель. Знайдено елементів: {items.Count}.", this);
 
             selectionPanel.Populate(items);
+        }
+
+        private bool OwnerHasAnyCastle()
+        {
+            if (_constructionService == null || _buildingRegistry == null)
+                return false;
+
+            string ownerId = _constructionService.GetActiveOwner();
+            var all = _buildingRegistry.GetAll();
+            if (all == null || all.Length == 0)
+                return false;
+
+            for (int i = 0; i < all.Length; i++)
+            {
+                var def = all[i];
+                if (def == null || string.IsNullOrWhiteSpace(def.Id))
+                    continue;
+
+                if (!BuildingDefinitionCapabilities.IsCastle(def))
+                    continue;
+
+                if (_constructionService.HasPlacedBuilding(def.Id, ownerId))
+                    return true;
+            }
+
+            return false;
         }
 
         private void RefreshUI()
@@ -398,6 +434,36 @@ namespace Kruty1918.Moyva.Construction.UI
 
             if (_previewInfoPanelInfo == null)
                 _previewInfoPanelInfo = _previewInfoPanelLabel;
+
+            ApplyPreviewTextStyle(_previewInfoPanelLabel, isHeader: true);
+            ApplyPreviewTextStyle(_previewInfoPanelInfo, isHeader: false);
+        }
+
+        private static void ApplyPreviewTextStyle(TMP_Text text, bool isHeader)
+        {
+            if (text == null)
+                return;
+
+            // Фіксуємо вигляд у коді, щоб не залежати від довільних налаштувань prefab/scene.
+            text.enableAutoSizing = false;
+            text.enableWordWrapping = true;
+            text.overflowMode = TextOverflowModes.Overflow;
+            text.alignment = isHeader
+                ? TextAlignmentOptions.TopLeft
+                : TextAlignmentOptions.TopLeft;
+
+            if (isHeader)
+            {
+                text.fontStyle = FontStyles.Bold;
+                text.fontSize = previewInfoHeaderFontSize;
+                text.lineSpacing = 0f;
+            }
+            else
+            {
+                text.fontStyle = FontStyles.Normal;
+                text.fontSize = previewInfoBodyFontSize;
+                text.lineSpacing = previewInfoBodyLineSpacing;
+            }
         }
 
         private static TMP_Text FindTextByKeyword(IEnumerable<TMP_Text> texts, string keyword)
@@ -494,14 +560,45 @@ namespace Kruty1918.Moyva.Construction.UI
                 sb.AppendLine($"Тайл: {position.x}, {position.y}");
 
             int beforeFacts = sb.Length;
-            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, sb))
+            if (BuildingDefaultInfoExtractor.AppendMeaningfulFacts(definition, sb, ResolveResourceDisplayName))
             {
                 if (beforeFacts > 0)
                     sb.Insert(beforeFacts, Environment.NewLine);
             }
 
+            AppendConstructionCostBlock(sb, definition);
             AppendOwnerResourcesBlock(sb);
             return sb.ToString().TrimEnd();
+        }
+
+        private void AppendConstructionCostBlock(StringBuilder sb, BuildingDefinition definition)
+        {
+            sb.AppendLine();
+            sb.AppendLine("Потрібно для будівництва:");
+
+            if (definition == null || definition.ConstructionCost == null || definition.ConstructionCost.Count == 0)
+            {
+                sb.AppendLine("• Безкоштовно");
+                return;
+            }
+
+            bool hasValidEntries = false;
+            for (int i = 0; i < definition.ConstructionCost.Count; i++)
+            {
+                var entry = definition.ConstructionCost[i];
+                if (entry == null || entry.Amount <= 0)
+                    continue;
+
+                hasValidEntries = true;
+                string resourceId = string.IsNullOrWhiteSpace(entry.ResourceId)
+                    ? "<невідомий ресурс>"
+                    : entry.ResourceId.Trim();
+
+                sb.AppendLine($"• {ResolveResourceDisplayName(resourceId)}: {entry.Amount}");
+            }
+
+            if (!hasValidEntries)
+                sb.AppendLine("• Безкоштовно");
         }
 
         private void AppendOwnerResourcesBlock(StringBuilder sb)
@@ -530,11 +627,15 @@ namespace Kruty1918.Moyva.Construction.UI
                 .ToList();
 
             foreach (var resource in topResources)
-                sb.AppendLine($"• {resource.Key}: {resource.Value:0.#}");
+                sb.AppendLine($"• {ResolveResourceDisplayName(resource.Key)}: {resource.Value:0.#}");
 
             int hiddenCount = totals.Count - topResources.Count;
             if (hiddenCount > 0)
                 sb.AppendLine($"• + ще {hiddenCount}");
         }
+
+        private string ResolveResourceDisplayName(string resourceId)
+            => _economyInfoMediator?.GetResourceDisplayName(resourceId)
+               ?? (string.IsNullOrWhiteSpace(resourceId) ? "<невідомий ресурс>" : resourceId.Trim());
     }
 }

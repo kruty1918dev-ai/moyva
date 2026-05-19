@@ -80,7 +80,10 @@ namespace Kruty1918.Moyva.Construction.UI
             }
 
             if (button != null)
+            {
+                button.interactable = data.IsInteractable;
                 button.onClick.AddListener(HandleClick);
+            }
         }
 
         /// <summary>Встановлює або знімає виділення кнопки (збільшення масштабу).</summary>
@@ -91,6 +94,9 @@ namespace Kruty1918.Moyva.Construction.UI
 
         private void HandleClick()
         {
+            if (button != null && !button.interactable)
+                return;
+
             ConstructionButtonPressAnimator.AnimatePress(transform, pressScaleMultiplier, pressDuration, pressVibrato, pressElasticity);
             _onClick?.Invoke(_buildingId);
         }

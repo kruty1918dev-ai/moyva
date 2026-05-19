@@ -20,6 +20,7 @@ namespace Kruty1918.Moyva.Economy.Editor
         private enum Tab
         {
             Resources = 0,
+            StartingEconomy = 17,
             OverridableParameters = 1,
             SettlementRules = 2,
             PopulationRules = 3,
@@ -57,6 +58,7 @@ namespace Kruty1918.Moyva.Economy.Editor
         private static readonly Dictionary<Tab, string> TabLabels = new Dictionary<Tab, string>
         {
             { Tab.Resources, "Ресурси" },
+            { Tab.StartingEconomy, "Стартова економіка" },
             { Tab.OverridableParameters, "Оверайди" },
             { Tab.SettlementRules, "Поселення" },
             { Tab.PopulationRules, "Населення" },
@@ -77,7 +79,7 @@ namespace Kruty1918.Moyva.Economy.Editor
 
         private static readonly Dictionary<TabGroup, Tab[]> TabsByGroup = new Dictionary<TabGroup, Tab[]>
         {
-            { TabGroup.Дані, new[] { Tab.Resources, Tab.OverridableParameters, Tab.MapObjects } },
+            { TabGroup.Дані, new[] { Tab.Resources, Tab.StartingEconomy, Tab.OverridableParameters, Tab.MapObjects } },
             {
                 TabGroup.Правила,
                 new[]
@@ -419,6 +421,8 @@ namespace Kruty1918.Moyva.Economy.Editor
 
         private Kruty1918.Moyva.Grid.API.TileRegistrySO _tileRegistry;
         private MapObjectRegistrySO _mapObjectRegistry;
+        private UnityEngine.Object _bootstrapConfigAsset;
+        private SerializedObject _bootstrapConfigSo;
         private List<EconomyResourceDefinition> _cachedResources = new List<EconomyResourceDefinition>();
         private Dictionary<string, Sprite> _resourceIconCache = new Dictionary<string, Sprite>();
         
@@ -520,6 +524,9 @@ namespace Kruty1918.Moyva.Economy.Editor
             if (_mapObjectRegistry == null)
                 _mapObjectRegistry = MoyvaProjectEditorContext.GetOrFindFirst<MapObjectRegistrySO>();
 
+            if (_bootstrapConfigAsset == null)
+                _bootstrapConfigAsset = FindBootstrapConfigAsset();
+
             _designerPresetLibrary ??= MoyvaProjectEditorContext.GetOrFindFirst<DesignerPresetLibrarySO>();
 
             RefreshResourceCache();
@@ -577,6 +584,10 @@ namespace Kruty1918.Moyva.Economy.Editor
 
                 case Tab.OverridableParameters:
                     DrawOverridableParametersTab();
+                    break;
+
+                case Tab.StartingEconomy:
+                    DrawStartingEconomyTab();
                     break;
 
                 case Tab.SettlementRules:
@@ -747,6 +758,87 @@ namespace Kruty1918.Moyva.Economy.Editor
 
             if (_rulesConfigurationSo.ApplyModifiedProperties())
                 EditorUtility.SetDirty(_rulesConfiguration);
+        }
+
+        private void DrawStartingEconomyTab()
+        {
+            if (!EnsureBootstrapConfigSerialized())
+            {
+                EditorGUILayout.HelpBox(
+                    "Не знайдено BootstrapInstallerConfigSO. Стартові ресурси мають редагуватися лише тут, у Economy Editor.",
+                    MessageType.Warning);
+
+                if (GUILayout.Button("Знайти Bootstrap Config", GUILayout.Width(220f)))
+                {
+                    _bootstrapConfigAsset = FindBootstrapConfigAsset();
+                    _bootstrapConfigSo = null;
+                }
+
+                return;
+            }
+
+            _bootstrapConfigSo.Update();
+
+            EditorGUILayout.LabelField("Стартова економіка", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Single Source of Truth: стартові ресурси редагуються тільки в Economy Designer. Інші редактори можуть лише показувати посилання на це місце.",
+                MessageType.Info);
+
+            var gameSettings = _bootstrapConfigSo.FindProperty("_gameSettings");
+            if (gameSettings == null)
+            {
+                EditorGUILayout.HelpBox("Property '_gameSettings' не знайдено в BootstrapInstallerConfigSO.", MessageType.Error);
+                return;
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.ObjectField("Bootstrap Config", _bootstrapConfigAsset, typeof(UnityEngine.Object), false);
+                if (GUILayout.Button("Ping", GUILayout.Width(80f)) && _bootstrapConfigAsset != null)
+                    EditorGUIUtility.PingObject(_bootstrapConfigAsset);
+                if (GUILayout.Button("Refresh", GUILayout.Width(80f)))
+                {
+                    _bootstrapConfigAsset = FindBootstrapConfigAsset();
+                    _bootstrapConfigSo = null;
+                    EnsureBootstrapConfigSerialized();
+                }
+            }
+
+            EditorGUILayout.PropertyField(gameSettings.FindPropertyRelative("InitialResources"), new GUIContent("Стартові ресурси"), true);
+
+            if (_bootstrapConfigSo.ApplyModifiedProperties())
+            {
+                if (_bootstrapConfigAsset != null)
+                    EditorUtility.SetDirty(_bootstrapConfigAsset);
+                AssetDatabase.SaveAssets();
+            }
+        }
+
+        private bool EnsureBootstrapConfigSerialized()
+        {
+            if (_bootstrapConfigAsset == null)
+                _bootstrapConfigAsset = FindBootstrapConfigAsset();
+
+            if (_bootstrapConfigAsset == null)
+                return false;
+
+            if (_bootstrapConfigSo == null || _bootstrapConfigSo.targetObject != _bootstrapConfigAsset)
+                _bootstrapConfigSo = new SerializedObject(_bootstrapConfigAsset);
+
+            return true;
+        }
+
+        private static UnityEngine.Object FindBootstrapConfigAsset()
+        {
+            var guids = AssetDatabase.FindAssets("t:BootstrapInstallerConfigSO");
+            if (guids == null || guids.Length == 0)
+                return null;
+
+            string path = AssetDatabase.GUIDToAssetPath(guids[0]);
+            if (string.IsNullOrWhiteSpace(path))
+                return null;
+
+            return AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
         }
 
         private void DrawRuleCategoryTab(EconomyRuleCategory category, string title)

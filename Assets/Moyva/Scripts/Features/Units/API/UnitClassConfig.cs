@@ -71,6 +71,9 @@ namespace Kruty1918.Moyva.Units.API
         [Tooltip("У написані айді НЕ повино використовуватися нижнє підкреслення, окільки це є зарезервований символ для внутрішнього використання (наприклад, для позначення інстанцій юнітів). Рекомендується використовувати дефіси або camelCase. Наприклад: \"warrior-01\" або \"Warrior01\".")]
         public string TypeId; // наприклад "warrior-01"
 
+        [Tooltip("Назва для UI/інфопанелей. Якщо порожня, використовується TypeId.")]
+        public string DisplayName;
+
         [Tooltip("Класифікація юніта: Worker (економічні задачі) або Military (бойові задачі).")]
         public UnitRole Role = UnitRole.Worker;
 
