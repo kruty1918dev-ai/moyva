@@ -6,6 +6,10 @@ using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
+    /// <summary>
+    /// View-компонент одного рядка гравця в kick-панелі.
+    /// Відображає ім'я/статус і делегує натискання кнопки кік.
+    /// </summary>
     public sealed class KickPlayerItemView : MonoBehaviour
     {
         [SerializeField] private TextMeshProUGUI _nameText;

@@ -2,6 +2,15 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Signals
 {
+    /// <summary>Дані про один ресурс, необхідний для будівництва будівлі. Іконка може бути null.</summary>
+    public struct BuildingConstructionCostItemData
+    {
+        public string ResourceId;
+        public string DisplayName;
+        public int Amount;
+        public Sprite Icon;
+    }
+
     public enum WorldInfoSelectionKind
     {
         None = 0,
@@ -15,6 +24,8 @@ namespace Kruty1918.Moyva.Signals
         public string Title;
         public string Subtitle;
         public string Content;
+        /// <summary>Вартість будівництва. Null або порожній масив — безкоштовно / не актуально.</summary>
+        public BuildingConstructionCostItemData[] ConstructionCostItems;
     }
 
     public struct WorldInfoPanelClosedSignal

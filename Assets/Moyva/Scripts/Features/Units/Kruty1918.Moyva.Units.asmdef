@@ -8,7 +8,9 @@
         "Kruty1918.Moyva.Pathfinding",
         "Kruty1918.Moyva.Animations",
         "Kruty1918.Moyva.ObjectsMap",
-        "Kruty1918.Moyva.Calendar"
+        "Kruty1918.Moyva.Calendar",
+        "Kruty1918.Moyva.Construction",
+        "Kruty1918.Moyva.WorldCreation.API"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

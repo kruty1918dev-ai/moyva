@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using Zenject;
 
@@ -47,6 +49,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IFogOfWarService _fogOfWarService; // може бути null якщо туман не підключений
         private readonly IWallPlacementService _wallPlacementService;
         private readonly IEconomyInfoMediator _economyInfoMediator;
+        private readonly IGridService _gridService;
+        private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
+        private readonly WorldCreationDefaultsSO _worldDefaults;
         private bool _initialized;
         private bool _disposed;
 
@@ -77,7 +82,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius,
             [InjectOptional] IFogOfWarService fogOfWarService,
             [InjectOptional] IWallPlacementService wallPlacementService,
-            [InjectOptional] IEconomyInfoMediator economyInfoMediator)
+            [InjectOptional] IEconomyInfoMediator economyInfoMediator,
+            [InjectOptional] IGridService gridService,
+            [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery,
+            [InjectOptional] WorldCreationDefaultsSO worldDefaults = null)
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
@@ -87,6 +95,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _fogOfWarService = fogOfWarService;
             _wallPlacementService = wallPlacementService;
             _economyInfoMediator = economyInfoMediator;
+            _gridService = gridService;
+            _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
+            _worldDefaults = worldDefaults;
         }
 
         public void Initialize()
@@ -255,7 +266,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             // Основна перевірка розміщення
-            if (!gateReplacementAllowed && !CanPlaceAt(position, null, _selectedBuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked))
+            if (!gateReplacementAllowed && !CanPlaceAt(position, null, _selectedBuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
@@ -265,7 +276,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 });
 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] TryPreviewAt({position}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
+                    Debug.Log($"[Construction] TryPreviewAt({position}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, terrainBlocked={terrainBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
+
+                return false;
+            }
+
+            if (!TryValidateConstructionResources(position, _selectedBuildingId, _activeOwnerId, ignoredPendingPosition: null, out var resourceReason))
+            {
+                _lastActionMessage = resourceReason;
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = position,
+                    BuildingId = _selectedBuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] TryPreviewAt({position}) -> BLOCKED. resourcesBlocked=True, reason={resourceReason}");
 
                 return false;
             }
@@ -292,6 +319,21 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             buildingId = _pendingPlacements[index].BuildingId;
             return !string.IsNullOrWhiteSpace(buildingId);
+        }
+
+        public IReadOnlyDictionary<Vector2Int, string> GetPendingPlacements()
+        {
+            var snapshot = new Dictionary<Vector2Int, string>(_pendingPlacements.Count);
+            for (int index = 0; index < _pendingPlacements.Count; index++)
+            {
+                var placement = _pendingPlacements[index];
+                if (string.IsNullOrWhiteSpace(placement.BuildingId))
+                    continue;
+
+                snapshot[placement.Position] = placement.BuildingId;
+            }
+
+            return new ReadOnlyDictionary<Vector2Int, string>(snapshot);
         }
 
         public bool TryMovePendingPlacement(Vector2Int fromPosition, Vector2Int toPosition)
@@ -330,7 +372,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            if (!gateReplacementAllowed && !CanPlaceAt(toPosition, fromPosition, placement.BuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked))
+            if (!gateReplacementAllowed && !CanPlaceAt(toPosition, fromPosition, placement.BuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked))
             {
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
@@ -340,7 +382,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 });
 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
+                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, terrainBlocked={terrainBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
+
+                return false;
+            }
+
+            if (!TryValidateConstructionResources(toPosition, placement.BuildingId, _activeOwnerId, fromPosition, out var resourceReason))
+            {
+                _lastActionMessage = resourceReason;
+                _signalBus.Fire(new BuildingPreviewChangedSignal
+                {
+                    Position = toPosition,
+                    BuildingId = placement.BuildingId,
+                    PreviewState = BuildingPreviewState.Blocked
+                });
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> BLOCKED. resourcesBlocked=True, reason={resourceReason}");
 
                 return false;
             }
@@ -392,9 +450,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     && _wallPlacementService.IsGate(id)
                     && _wallPlacementService.CanReplaceWallWithGate(pos, id, out _);
 
-                if (!gateReplacementAllowed && !CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked))
+                if (!gateReplacementAllowed && !CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked))
                 {
-                    Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: placement became invalid. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, townHallBuildRadius={_townHallBuildRadius}.");
+                    Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: placement became invalid. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, terrainBlocked={terrainBlocked}, townHallBuildRadius={_townHallBuildRadius}.");
                     _signalBus.Fire(new BuildingPreviewChangedSignal
                     {
                         Position = pos,
@@ -413,6 +471,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     }
 
                     _objectsMapService.Unregister(pos);
+                }
+
+                if (!TryConsumeConstructionResources(pos, id, _activeOwnerId, out var resourceReason))
+                {
+                    _lastActionMessage = resourceReason;
+                    Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: {resourceReason}");
+                    _signalBus.Fire(new BuildingPreviewChangedSignal
+                    {
+                        Position = pos,
+                        BuildingId = id,
+                        PreviewState = BuildingPreviewState.None
+                    });
+                    continue;
                 }
 
                 _objectsMapService.Register(pos, id);
@@ -677,6 +748,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            string ownerId = string.IsNullOrWhiteSpace(placedByFactionId)
+                ? DefaultOwnerId
+                : placedByFactionId.Trim();
+
             if (_objectsMapService.IsOccupied(position))
             {
                 if (VerboseLogs) Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}): тайл зайнятий.");
@@ -690,10 +765,30 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            if (IsBlockedByTerrain(position, out var terrainReason))
+            {
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}) -> BLOCKED. terrainBlocked=True, reason={terrainReason}.");
+                return false;
+            }
+
+            if (!TryConsumeConstructionResources(position, buildingId, ownerId, out var resourceReason))
+            {
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}) -> BLOCKED. resourcesBlocked=True, reason={resourceReason}.");
+                return false;
+            }
+
             _objectsMapService.Register(position, buildingId);
-            _factionPlacedBuildings[position] = (buildingId, placedByFactionId);
-            _signalBus.Fire(new BuildingPlacedSignal { BuildingId = buildingId, Position = position, SourceFactionId = placedByFactionId });
-            if (VerboseLogs) Debug.Log($"[Construction] TryDirectPlace: розміщено '{buildingId}' на {position} від '{placedByFactionId}'.");
+            _factionPlacedBuildings[position] = (buildingId, ownerId);
+            _signalBus.Fire(new BuildingPlacedSignal
+            {
+                BuildingId = buildingId,
+                Position = position,
+                OwnerId = ownerId,
+                SourceFactionId = ownerId,
+            });
+            if (VerboseLogs) Debug.Log($"[Construction] TryDirectPlace: розміщено '{buildingId}' на {position} від '{ownerId}'.");
             return true;
         }
 
@@ -711,6 +806,34 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return true;
         }
 
+        public bool HasPlacedBuilding(string buildingId, string ownerId = null)
+        {
+            if (string.IsNullOrWhiteSpace(buildingId))
+                return false;
+
+            string normalizedOwner = string.IsNullOrWhiteSpace(ownerId) ? null : ownerId.Trim();
+
+            foreach (var pair in _factionPlacedBuildings)
+            {
+                if (!string.Equals(pair.Value.BuildingId, buildingId, StringComparison.Ordinal))
+                    continue;
+
+                if (normalizedOwner == null || string.Equals(pair.Value.FactionId, normalizedOwner, StringComparison.Ordinal))
+                    return true;
+            }
+
+            if (normalizedOwner == null || string.Equals(normalizedOwner, _activeOwnerId, StringComparison.Ordinal))
+            {
+                foreach (var pair in _playerPlacedBuildings)
+                {
+                    if (string.Equals(pair.Value, buildingId, StringComparison.Ordinal))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool TryGetPendingPlacementStatus(Vector2Int position, out ConstructionPendingPlacementStatus status)
         {
             // Перевіряємо, чи є непідтверджена будівля на цій позиції
@@ -722,41 +845,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             var placement = _pendingPlacements[index];
-            var buildingDef = _buildingRegistry?.GetById(placement.BuildingId);
-            
-            // Намагаємось отримати информацію про поселення з EconomyInfoMediator
-            string settlementId = null;
-            string settlementName = "Unknown";
-            bool hasSettlement = false;
-            bool isAffordable = true;
-            string errorMessage = string.Empty;
-
-            if (_economyInfoMediator != null)
-            {
-                // Попытка отримати інформацію про поселення з EconomyInfoMediator
-                // За умовою, це має бути settlement-scoped check
-                try
-                {
-                    // Placeholder для майбутньої інтеграції з EconomyInfoMediator
-                    // Коли будуть інтегровані методи для перевірки affordability
-                    hasSettlement = true; // Визначається EconomyInfoMediator
-                    isAffordable = true;  // Визначається EconomyInfoMediator
-                }
-                catch (System.Exception ex)
-                {
-                    errorMessage = $"Error checking affordability: {ex.Message}";
-                    if (VerboseLogs) Debug.LogWarning($"[Construction] TryGetPendingPlacementStatus: {errorMessage}");
-                }
-            }
+            var projection = BuildResourceProjectionForPlacement(
+                placement.Position,
+                placement.BuildingId,
+                _activeOwnerId,
+                ignoredPendingPosition: placement.Position);
 
             status = new ConstructionPendingPlacementStatus(
                 position: position,
                 buildingId: placement.BuildingId,
-                settlementId: settlementId ?? "Unknown",
-                settlementName: settlementName,
-                hasSettlement: hasSettlement,
-                isAffordable: isAffordable,
-                errorMessage: errorMessage
+                settlementId: projection.SettlementId ?? "Unknown",
+                settlementName: projection.SettlementName ?? "Unknown",
+                hasSettlement: projection.HasSettlement,
+                isAffordable: !projection.HasDeficit,
+                errorMessage: projection.HasDeficit ? projection.Message : string.Empty
             );
 
             return true;
@@ -768,34 +870,218 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!HasPendingPlacementAt(position))
                 return ConstructionResourceProjection.Empty;
 
-            if (_economyInfoMediator == null)
-                return ConstructionResourceProjection.Empty;
-
-            // Placeholder для майбутньої реалізації з EconomyInfoMediator
-            // Потрібно:
-            // 1. Знайти поселення на цій позиції
-            // 2. Отримати його поточні ресурси
-            // 3. Відняти запас від попередніх pending-будівель на позиціях 0..index
-            // 4. Повернути баланс для кожного ресурсу з інформацією про дефіцит
-
             try
             {
                 if (!TryGetPendingBuildingIdAt(position, out var buildingId))
                     return ConstructionResourceProjection.Empty;
 
-                var buildingDef = _buildingRegistry?.GetById(buildingId);
-                if (buildingDef == null)
-                    return ConstructionResourceProjection.Empty;
-
-                // Тимчасово повертаємо Empty проекцію
-                // Буде повністю реалізовано при інтеграції з Economy
-                return ConstructionResourceProjection.Empty;
+                return BuildResourceProjectionForPlacement(position, buildingId, _activeOwnerId, ignoredPendingPosition: position);
             }
             catch (System.Exception ex)
             {
                 Debug.LogWarning($"[Construction] GetResourceProjection error: {ex.Message}");
                 return ConstructionResourceProjection.Empty;
             }
+        }
+
+        private bool TryValidateConstructionResources(
+            Vector2Int position,
+            string buildingId,
+            string ownerId,
+            Vector2Int? ignoredPendingPosition,
+            out string reason)
+        {
+            var projection = BuildResourceProjectionForPlacement(position, buildingId, ownerId, ignoredPendingPosition);
+            if (!projection.HasDeficit)
+            {
+                reason = null;
+                return true;
+            }
+
+            reason = projection.Message;
+            return false;
+        }
+
+        private bool TryConsumeConstructionResources(
+            Vector2Int position,
+            string buildingId,
+            string ownerId,
+            out string reason)
+        {
+            reason = null;
+
+            var costs = BuildConstructionCostMap(buildingId);
+            if (costs.Count == 0)
+                return true;
+
+            if (_economyInfoMediator == null)
+            {
+                reason = "Економіка не підключена: неможливо перевірити ресурси для будівництва.";
+                return false;
+            }
+
+            if (!_economyInfoMediator.TryResolveConstructionSettlement(position, ownerId, out var settlement)
+                || string.IsNullOrWhiteSpace(settlement.SettlementId))
+            {
+                reason = "Не знайдено поселення/замок для списання ресурсів у цій зоні будівництва.";
+                return false;
+            }
+
+            if (!_economyInfoMediator.TryConsumeSettlementResources(settlement.SettlementId, costs, out reason))
+                return false;
+
+            reason = null;
+            return true;
+        }
+
+        private ConstructionResourceProjection BuildResourceProjectionForPlacement(
+            Vector2Int position,
+            string buildingId,
+            string ownerId,
+            Vector2Int? ignoredPendingPosition)
+        {
+            var costs = BuildConstructionCostMap(buildingId);
+            if (costs.Count == 0)
+            {
+                return new ConstructionResourceProjection(
+                    ownerId,
+                    null,
+                    null,
+                    hasSettlement: false,
+                    hasDeficit: false,
+                    message: string.Empty,
+                    balances: new List<ConstructionResourceBalance>());
+            }
+
+            if (_economyInfoMediator == null)
+            {
+                return new ConstructionResourceProjection(
+                    ownerId,
+                    null,
+                    null,
+                    hasSettlement: false,
+                    hasDeficit: true,
+                    message: "Економіка не підключена: неможливо перевірити ресурси для будівництва.",
+                    balances: new List<ConstructionResourceBalance>());
+            }
+
+            if (!_economyInfoMediator.TryResolveConstructionSettlement(position, ownerId, out var settlement)
+                || string.IsNullOrWhiteSpace(settlement.SettlementId))
+            {
+                return new ConstructionResourceProjection(
+                    ownerId,
+                    null,
+                    null,
+                    hasSettlement: false,
+                    hasDeficit: true,
+                    message: "Не знайдено поселення/замок для ресурсів у цій зоні будівництва.",
+                    balances: new List<ConstructionResourceBalance>());
+            }
+
+            var available = _economyInfoMediator.GetSettlementResourceTotals(settlement.SettlementId);
+            var reserved = BuildReservedConstructionCosts(settlement.SettlementId, ownerId, ignoredPendingPosition);
+            AddCosts(reserved, costs);
+
+            var balances = new List<ConstructionResourceBalance>(reserved.Count);
+            bool hasDeficit = false;
+            string deficitMessage = string.Empty;
+
+            foreach (var pair in reserved)
+            {
+                float availableAmount = available != null && available.TryGetValue(pair.Key, out var value)
+                    ? value
+                    : 0f;
+                var balance = new ConstructionResourceBalance(pair.Key, availableAmount, pair.Value);
+                balances.Add(balance);
+                if (balance.IsDeficit && string.IsNullOrEmpty(deficitMessage))
+                {
+                    hasDeficit = true;
+                    deficitMessage = $"Недостатньо ресурсу '{ResolveResourceDisplayName(pair.Key)}' у поселенні '{settlement.SettlementName}': потрібно {pair.Value:0.#}, доступно {availableAmount:0.#}.";
+                }
+            }
+
+            balances.Sort((left, right) => string.CompareOrdinal(left.ResourceId, right.ResourceId));
+
+            return new ConstructionResourceProjection(
+                settlement.OwnerId,
+                settlement.SettlementId,
+                settlement.SettlementName,
+                hasSettlement: true,
+                hasDeficit: hasDeficit,
+                message: hasDeficit ? deficitMessage : string.Empty,
+                balances: balances);
+        }
+
+        private Dictionary<string, float> BuildReservedConstructionCosts(
+            string settlementId,
+            string ownerId,
+            Vector2Int? ignoredPendingPosition)
+        {
+            var reserved = new Dictionary<string, float>(StringComparer.Ordinal);
+            if (string.IsNullOrWhiteSpace(settlementId) || _economyInfoMediator == null)
+                return reserved;
+
+            for (int i = 0; i < _pendingPlacements.Count; i++)
+            {
+                var placement = _pendingPlacements[i];
+                if (ignoredPendingPosition.HasValue && placement.Position == ignoredPendingPosition.Value)
+                    continue;
+
+                if (!_economyInfoMediator.TryResolveConstructionSettlement(placement.Position, ownerId, out var pendingSettlement)
+                    || !string.Equals(pendingSettlement.SettlementId, settlementId, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                AddCosts(reserved, BuildConstructionCostMap(placement.BuildingId));
+            }
+
+            return reserved;
+        }
+
+        private string ResolveResourceDisplayName(string resourceId)
+            => _economyInfoMediator?.GetResourceDisplayName(resourceId)
+               ?? (string.IsNullOrWhiteSpace(resourceId) ? string.Empty : resourceId.Trim());
+
+        private Dictionary<string, float> BuildConstructionCostMap(string buildingId)
+        {
+            var result = new Dictionary<string, float>(StringComparer.Ordinal);
+            var definition = string.IsNullOrWhiteSpace(buildingId)
+                ? null
+                : _buildingRegistry?.GetById(buildingId);
+
+            var costs = BuildingDefinitionCapabilities.GetConstructionCost(definition);
+            for (int i = 0; i < costs.Count; i++)
+            {
+                var entry = costs[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0)
+                    continue;
+
+                AddCost(result, entry.ResourceId.Trim(), entry.Amount);
+            }
+
+            return result;
+        }
+
+        private static void AddCosts(Dictionary<string, float> target, IReadOnlyDictionary<string, float> source)
+        {
+            if (target == null || source == null)
+                return;
+
+            foreach (var pair in source)
+                AddCost(target, pair.Key, pair.Value);
+        }
+
+        private static void AddCost(Dictionary<string, float> target, string resourceId, float amount)
+        {
+            if (target == null || string.IsNullOrWhiteSpace(resourceId) || amount <= 0f)
+                return;
+
+            string normalizedId = resourceId.Trim();
+            if (target.ContainsKey(normalizedId))
+                target[normalizedId] += amount;
+            else
+                target[normalizedId] = amount;
         }
 
         public string GetLastActionMessage()
@@ -892,6 +1178,100 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
+        private bool IsBlockedByTerrain(Vector2Int position, out string reason)
+        {
+            reason = null;
+
+            if (_generatedTerrainLevelQuery != null
+                && _generatedTerrainLevelQuery.TryGetTerrainLevel(position, out int terrainLevel)
+                && terrainLevel > 0)
+            {
+                if (HasCustomBuildingHillRestrictions())
+                {
+                    if (IsTerrainLevelBlocked(_worldDefaults.BlockedBuildingHillLevelRanges, terrainLevel))
+                    {
+                        reason = $"blocked hill level {terrainLevel}";
+                        return true;
+                    }
+                }
+            }
+
+            if (_gridService == null)
+                return false;
+
+            if (!_gridService.TryGetTileData(position, out var tileTypeId))
+            {
+                reason = "outside generated grid";
+                return true;
+            }
+
+            if (IsBlockedBuildingTile(tileTypeId))
+            {
+                reason = $"blocked tile '{tileTypeId}'";
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool HasCustomBuildingHillRestrictions()
+        {
+            return _worldDefaults != null
+                && _worldDefaults.BlockedBuildingHillLevelRanges != null
+                && _worldDefaults.BlockedBuildingHillLevelRanges.Count > 0;
+        }
+
+        private bool IsBlockedBuildingTile(string tileTypeId)
+        {
+            if (string.IsNullOrWhiteSpace(tileTypeId))
+                return false;
+
+            var blockedTileIds = _worldDefaults?.BlockedBuildingTileIds;
+            if (blockedTileIds != null && blockedTileIds.Count > 0)
+            {
+                for (int i = 0; i < blockedTileIds.Count; i++)
+                {
+                    string blockedId = blockedTileIds[i];
+                    if (string.IsNullOrWhiteSpace(blockedId))
+                        continue;
+
+                    if (string.Equals(blockedId.Trim(), tileTypeId, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+
+                return false;
+            }
+
+            return false;
+        }
+
+        private static bool IsTerrainLevelBlocked(IReadOnlyList<TerrainLevelRestrictionRange> ranges, int terrainLevel)
+        {
+            if (ranges == null || ranges.Count == 0)
+                return false;
+
+            for (int i = 0; i < ranges.Count; i++)
+            {
+                var range = ranges[i];
+                if (range == null)
+                    continue;
+
+                int min = Mathf.Max(1, range.MinLevel);
+                int max = Mathf.Max(1, range.MaxLevel);
+                if (max < min)
+                {
+                    int swap = min;
+                    min = max;
+                    max = swap;
+                }
+
+                if (terrainLevel >= min && terrainLevel <= max)
+                    return true;
+            }
+
+            return false;
+        }
+
         private bool CanPlaceAt(
             Vector2Int position,
             Vector2Int? ignoredPendingPosition,
@@ -899,7 +1279,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out bool tileOccupied,
             out bool spacingBlocked,
             out bool fogBlocked,
-            out bool influenceZoneBlocked)
+            out bool influenceZoneBlocked,
+            out bool terrainBlocked)
         {
             if (VerboseLogs)
                 Debug.Log($"[Construction] CanPlaceAt({position}, buildingId={buildingId}) проверка ПОЧАЛАСЬ");
@@ -937,7 +1318,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (VerboseLogs)
                     Debug.Log($"[Construction] CanPlaceAt({position}): influenceZoneBlocked={influenceZoneBlocked}");
 
-                bool allowed = result.IsValid;
+                terrainBlocked = IsBlockedByTerrain(position, out var terrainReason);
+
+                if (VerboseLogs)
+                    Debug.Log($"[Construction] CanPlaceAt({position}): terrainBlocked={terrainBlocked}, terrainReason={terrainReason}");
+
+                bool allowed = result.IsValid && !terrainBlocked;
                 
                 if (VerboseLogs)
                     Debug.Log($"[Construction] CanPlaceAt({position}) результат: {(allowed ? "✓ VALID" : "❌ BLOCKED")}");
@@ -951,6 +1337,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 spacingBlocked = false;
                 fogBlocked = false;
                 influenceZoneBlocked = false;
+                terrainBlocked = false;
                 return false;
             }
         }
@@ -1384,6 +1771,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     if (VerboseLogs)
                         Debug.Log($"[Construction] TryReplacePendingWallWithGate({position}): вже ворота '{gateBuildingId}'");
                     return true;
+                }
+
+                if (!TryValidateConstructionResources(position, gateBuildingId, _activeOwnerId, position, out var resourceReason))
+                {
+                    _lastActionMessage = resourceReason;
+                    if (VerboseLogs)
+                        Debug.Log($"[Construction] TryReplacePendingWallWithGate({position}) -> BLOCKED. resourcesBlocked=True, reason={resourceReason}");
+                    return false;
                 }
 
                 SaveSnapshotForUndo(clearRedoHistory: true);

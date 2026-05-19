@@ -31,6 +31,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private Transform _buildingsRoot;
         private Transform _layersRoot;
         private readonly Dictionary<string, TileTypeDefinition> _definitionsCache = new();
+        private readonly HashSet<string> _loggedTileFallbacks = new();
         private readonly SignalBus _signalBus;
         private GeneratedWorldData _currentWorldData;
         private GeneratedWorldData _pendingWorldData;
@@ -211,10 +212,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     string biomeId = worldData.BiomeMap[x, y];
                     if (!string.IsNullOrEmpty(biomeId))
                     {
+                        string resolvedBiomeId = ResolveGridTileId(biomeId);
+                        worldData.BiomeMap[x, y] = resolvedBiomeId;
+
                         if (useLayerOnlyTiles)
-                            _gridService.SetTileData(pos, biomeId);
+                            _gridService.SetTileData(pos, resolvedBiomeId);
                         else
-                            CreateTileView(pos, biomeId, _tilesRoot, -1);
+                            CreateTileView(pos, resolvedBiomeId, _tilesRoot, -1);
                     }
 
                     string objectId = worldData.ObjectMap[x, y];
@@ -425,7 +429,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private void CreateTileView(Vector2Int position, string tileId, Transform root, int sortingOrder)
         {
-            if (!_definitionsCache.TryGetValue(tileId, out var tileType))
+            if (!TryResolveTileDefinition(tileId, out var tileType, out string resolvedTileId))
             {
                 Debug.LogError($"[MapInstantiator] Не знайдено TileTypeDefinition для ID: {tileId}");
                 return;
@@ -441,7 +445,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 Quaternion.identity,
                 root);
 
-            instance.name = $"{(sortingOrder < 0 ? "Tile" : "Obj")}_{tileId}_{position.x}_{position.y}";
+            instance.name = $"{(sortingOrder < 0 ? "Tile" : "Obj")}_{resolvedTileId}_{position.x}_{position.y}";
 
             var tileView = instance.GetComponent<TileView>();
             if (tileView != null)
@@ -452,7 +456,66 @@ namespace Kruty1918.Moyva.Generator.Runtime
             // Оновлюємо дані в GridService
             // Якщо це об'єкт (річка), він може перезаписувати властивості прохідності клітинки
             // Логіка: якщо ми спавнимо об'єкт, він стає пріоритетним типом для цієї клітинки в логіці
-            _gridService.SetTileData(position, tileId);
+            _gridService.SetTileData(position, resolvedTileId);
+        }
+
+        private string ResolveGridTileId(string tileId)
+        {
+            return TryResolveTileDefinition(tileId, out _, out string resolvedTileId)
+                ? resolvedTileId
+                : tileId;
+        }
+
+        private bool TryResolveTileDefinition(string tileId, out TileTypeDefinition tileType, out string resolvedTileId)
+        {
+            resolvedTileId = tileId;
+
+            if (!string.IsNullOrEmpty(tileId) && _definitionsCache.TryGetValue(tileId, out tileType))
+                return true;
+
+            string fallbackTileId = ResolveLegacyFallbackTileId(tileId);
+            if (!string.IsNullOrEmpty(fallbackTileId) && _definitionsCache.TryGetValue(fallbackTileId, out tileType))
+            {
+                resolvedTileId = fallbackTileId;
+                LogTileFallbackOnce(tileId, fallbackTileId);
+                return true;
+            }
+
+            tileType = null;
+            return false;
+        }
+
+        private void LogTileFallbackOnce(string sourceTileId, string fallbackTileId)
+        {
+            string key = $"{sourceTileId}->{fallbackTileId}";
+            if (!_loggedTileFallbacks.Add(key))
+                return;
+
+            Debug.LogWarning($"[MapInstantiator] Tile ID '{sourceTileId}' відсутній у поточному реєстрі. Використано сумісний fallback '{fallbackTileId}'.");
+        }
+
+        private static string ResolveLegacyFallbackTileId(string tileId)
+        {
+            if (string.IsNullOrWhiteSpace(tileId))
+                return null;
+
+            string normalized = tileId.ToLowerInvariant();
+            if (normalized.Contains("deep-depth") || normalized.Contains("ocean-deep"))
+                return "ocean-deep";
+
+            if (normalized.StartsWith("water") || normalized.Contains("water-"))
+                return "ocean-shallow";
+
+            if (normalized.Contains("stone-hill") || normalized.Contains("hill"))
+                return "hill";
+
+            if (normalized.Contains("sand") || normalized.Contains("coast"))
+                return "beach";
+
+            if (normalized.Contains("grass"))
+                return "grass";
+
+            return null;
         }
 
         private void CreateObjectLayerEntity(Vector2Int position, string layerEntityId)
@@ -483,9 +546,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             // Fallback: object layer може містити tile ID (наприклад, river), який
             // має перезаписати базовий біом у GridService.
-            if (_definitionsCache.ContainsKey(layerEntityId))
+            if (TryResolveTileDefinition(layerEntityId, out _, out string resolvedTileId))
             {
-                CreateTileView(position, layerEntityId, _objectsRoot, 0);
+                CreateTileView(position, resolvedTileId, _objectsRoot, 0);
                 return;
             }
 

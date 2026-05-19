@@ -23,7 +23,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     ///
     /// Офлайн / хост: дії виконуються безпосередньо, без мережевого round-trip.
     /// </summary>
-    internal sealed class MultiplayerAuthorityService : IInitializable, IDisposable
+    internal sealed class MultiplayerAuthorityService : IInitializable, IDisposable, IConstructionConfirmRequestExecutor
     {
         private readonly IGameCommandSyncService _syncService;
         private readonly ISessionManager         _sessionManager;
@@ -39,24 +39,25 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             IGameCommandSyncService syncService,
             ISessionManager         sessionManager,
             SignalBus               signalBus,
-            IConstructionService    constructionService,
-            IUnitMovementService    unitMovementService,
-            IUnitFactory            unitFactory)
+            [InjectOptional] IUnitMovementService unitMovementService = null,
+            [InjectOptional] IUnitFactory unitFactory = null,
+            [InjectOptional] IConstructionService constructionService = null)
         {
             _syncService         = syncService;
             _sessionManager      = sessionManager;
             _signalBus           = signalBus;
-            _constructionService = constructionService;
             _unitMovementService = unitMovementService;
             _unitFactory         = unitFactory;
+            _constructionService = constructionService;
         }
 
         // ─── Lifecycle ───────────────────────────────────────────────────────────
 
+        public int Priority => 100;
+
         public void Initialize()
         {
             // Локальні дії гравця: перехоплення перед виконанням
-            _signalBus.Subscribe<PlaceBuildingConfirmRequestSignal>(OnLocalConfirmConstruction);
             _signalBus.Subscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
 
             // Хост: слухає локальні результати і транслює іншим клієнтам
@@ -74,7 +75,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         public void Dispose()
         {
-            _signalBus.TryUnsubscribe<PlaceBuildingConfirmRequestSignal>(OnLocalConfirmConstruction);
             _signalBus.TryUnsubscribe<MoveUnitRequestSignal>(OnLocalMoveUnitRequest);
             _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlacedLocally);
             _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(OnBuildingDemolishedLocally);
@@ -84,21 +84,27 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         // ─── Локальні дії гравця (перехоплення) ─────────────────────────────────
 
-        private void OnLocalConfirmConstruction(PlaceBuildingConfirmRequestSignal _)
+        public bool TryHandleConfirmRequest()
         {
+            if (_constructionService == null)
+            {
+                Debug.LogWarning("[MultiplayerAuthority] PlaceBuildingConfirmRequestSignal received, but IConstructionService is not bound in this scene.");
+                return false;
+            }
+
             if (IsOfflineOrHost())
             {
                 // Хост / офлайн: виконуємо одразу; BuildingPlacedSignal транслює результат.
                 _constructionService.Confirm();
-                return;
+                return true;
             }
 
             // Клієнт: зібрати pending-розміщення, скасувати локально, надіслати запити до хоста.
-            var pending = _constructionService.GetPlayerPlacedBuildings();
+            var pending = _constructionService.GetPendingPlacements();
             if (pending == null || pending.Count == 0)
             {
                 _constructionService.Cancel();
-                return;
+                return true;
             }
 
             string ownerId = _constructionService.GetActiveOwner();
@@ -115,10 +121,17 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
 
             _constructionService.Cancel();
+            return true;
         }
 
         private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
         {
+            if (_unitMovementService == null)
+            {
+                Debug.LogWarning("[MultiplayerAuthority] MoveUnitRequestSignal received, but IUnitMovementService is not bound in this scene.");
+                return;
+            }
+
             if (IsOfflineOrHost())
             {
                 // Хост / офлайн: виконуємо рух одразу; UnitMovedSignal транслює кожен крок.
@@ -191,6 +204,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             var data = BuildingPlacePayload.FromBytes(body);
 
+            if (_constructionService == null)
+            {
+                Debug.LogWarning("[MultiplayerAuthority] BuildingPlace command received, but IConstructionService is not bound in this scene.");
+                return;
+            }
+
             if (data.Kind == GameActionMessageKind.Request)
             {
                 // Лише хост обробляє запити.
@@ -246,6 +265,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             var data = BuildingDemolishPayload.FromBytes(body);
 
+            if (_constructionService == null)
+            {
+                Debug.LogWarning("[MultiplayerAuthority] BuildingDemolish command received, but IConstructionService is not bound in this scene.");
+                return;
+            }
+
             if (data.Kind == GameActionMessageKind.Request)
             {
                 if (!IsOfflineOrHost()) return;
@@ -282,6 +307,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         {
             var data = UnitMovePayload.FromBytes(body);
 
+            if (_unitMovementService == null)
+            {
+                Debug.LogWarning("[MultiplayerAuthority] UnitMove command received, but IUnitMovementService is not bound in this scene.");
+                return;
+            }
+
             if (data.Kind == GameActionMessageKind.Request)
             {
                 // Лише хост обробляє запити на рух.
@@ -301,6 +332,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private void OnNetworkUnitSpawn(string senderId, byte[] body)
         {
             var data = UnitSpawnPayload.FromBytes(body);
+
+            if (_unitFactory == null)
+            {
+                Debug.LogWarning("[MultiplayerAuthority] UnitSpawn command received, but IUnitFactory is not bound in this scene.");
+                return;
+            }
 
             if (data.Kind == GameActionMessageKind.Request)
             {

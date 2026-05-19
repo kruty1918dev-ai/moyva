@@ -121,16 +121,16 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         public void HandleTileClick(Vector2Int position)
         {
+            // Інфо/взаємодії тайлів працюють лише в Normal mode.
+            if (!_isActive)
+                return;
+
             if (!_gridService.TryGetTileData(position, out _))
             {
                 if (VerboseLogs)
                     Debug.Log($"[Interaction] HandleTileClick ignored: позиція {position} поза межами grid.");
                 return;
             }
-
-            // Інфо панель НЕ працює в режимі будування
-            if (!_isActive)
-                return;
 
             _objectsMapService.TryGetOccupant(position, out var occupantId);
 

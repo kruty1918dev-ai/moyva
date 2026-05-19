@@ -797,7 +797,6 @@ namespace Kruty1918.Moyva.Economy.Editor
                 }
             }
 
-            EditorGUILayout.PropertyField(gameSettings.FindPropertyRelative("DefaultBuildingId"), new GUIContent("Default Building ID"));
             EditorGUILayout.PropertyField(gameSettings.FindPropertyRelative("InitialResources"), new GUIContent("Стартові ресурси"), true);
 
             if (_bootstrapConfigSo.ApplyModifiedProperties())

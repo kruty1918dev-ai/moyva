@@ -8,7 +8,8 @@
         "Kruty1918.Moyva.Grid",
         "Kruty1918.Moyva.SaveSystem",
         "Kruty1918.Moyva.FogOfWar",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Kruty1918.Moyva.WorldCreation.API"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

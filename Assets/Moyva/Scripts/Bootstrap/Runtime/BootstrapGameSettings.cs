@@ -28,12 +28,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     [Serializable]
     public sealed class BootstrapGameSettings
     {
-        [Header("Default Building")]
-        [Tooltip("ID будівлі, яка буде спавнена по дефолту на стартовій позиції.")]
-        [BuildingIdAttribute]
-        [SerializeField]
-        public string DefaultBuildingId = string.Empty;
-
         [Header("Initial Resources")]
         [Tooltip("Список ресурсів, які гравець отримує на старт нової гри.")]
         [SerializeField]

@@ -14,8 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Economy::Kruty1918.Moyva.Economy.API.EconomyDatabaseSO
   _schemaVersion: 2
   _resources:
-  - {fileID: 11400000, guid: b607065dfeb2c6544a0e9be876389d1e, type: 2}
-  - {fileID: 11400000, guid: 44981519979c52cee88418305f3be67f, type: 2}
   - {fileID: 11400000, guid: a0474060c4514280acfa386d2f07bfde, type: 2}
   - {fileID: 11400000, guid: 96ced90b67c84e1699c5fc3b48de3fc9, type: 2}
   - {fileID: 11400000, guid: b4e763f76d514f49b106f0998d622e4d, type: 2}
@@ -42,7 +40,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 813927edeeb34ce7a9de314bc2b6c16d, type: 2}
   - {fileID: 11400000, guid: ff4450de26f64284bc728e1bf05d9b15, type: 2}
   - {fileID: 11400000, guid: cf8647b5c95c415787ceaf822e055268, type: 2}
-  - {fileID: 11400000, guid: a805e14c9d6e447cafc8d88c2b2d976e, type: 2}
   - {fileID: 11400000, guid: ff490840ff4345cd8839642240d5ffe6, type: 2}
   - {fileID: 11400000, guid: f215b90fb9d04d0e9ec9268ddf17b076, type: 2}
   - {fileID: 11400000, guid: 601102c3a7d24feaba52ebeb74ba3550, type: 2}
@@ -66,7 +63,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: bf64386917214800a7bd8b59324e8940, type: 2}
   - {fileID: 11400000, guid: 0c529b983be84aa2bd79f000361abcad, type: 2}
   - {fileID: 11400000, guid: 9aea2c120f7d47b9a3656f0949b9b837, type: 2}
-  - {fileID: 11400000, guid: 7ff7957152b44d13afc598bb6f3f2f5b, type: 2}
   - {fileID: 11400000, guid: 539a132a3b43476cb7e3a36cc4dc98a6, type: 2}
   - {fileID: 11400000, guid: b26dc85780fa4dc7bdeefd61eeeb4660, type: 2}
   - {fileID: 11400000, guid: fcb98148a6fc432f84091f4cc82bc2bd, type: 2}
@@ -99,4 +95,85 @@ MonoBehaviour:
   _productionProfiles: []
   _caravanTemplates: []
   _aiRuleProfiles: []
+  _mapObjectEconomyEntries:
+  - _mapObjectId: bush
+    _displayName: bush
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: tree-pine
+    _displayName: tree-pine
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: tree-oak
+    _displayName: tree-oak
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: green-tree-object-001
+    _displayName: green-tree-object-001
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: green-tree-object-002
+    _displayName: green-tree-object-002
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: green-tree-object-003
+    _displayName: green-tree-object-003
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: green-tree-object-004
+    _displayName: green-tree-object-004
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: green-tree-object-005
+    _displayName: green-tree-object-005
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: green-tree-object-006
+    _displayName: green-tree-object-006
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: green-tree-object-007
+    _displayName: green-tree-object-007
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: green-tree-object-008
+    _displayName: green-tree-object-008
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: palm-tree-object-001
+    _displayName: palm-tree-object-001
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: green-tree-stump-object-001
+    _displayName: green-tree-stump-object-001
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: palm-tree-object-002
+    _displayName: palm-tree-object-002
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: palm-tree-object-003
+    _displayName: palm-tree-object-003
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
+  - _mapObjectId: palm-tree-stump-object-001
+    _displayName: palm-tree-stump-object-001
+    _isInteractable: 0
+    _yieldsResource: 0
+    _harvestResourceId: 
   _rulesConfig: {fileID: 11400000, guid: 35071a3ae4fbc232a96169cc2e4e3e00, type: 2}

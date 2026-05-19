@@ -1,127 +1,39 @@
 using System;
-using System.Collections.Generic;
 using Kruty1918.Moyva.HomeMenu.API;
-using Kruty1918.Moyva.HomeMenu.UI;
-using Zenject;
 using HomeMenuGameMode = Kruty1918.Moyva.HomeMenu.API.GameMode;
 
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
+    /// <summary>
+    /// Сервіс зберігає поточний обраний режим гри в HomeMenu.
+    /// Залежності:
+    /// - реалізує <see cref="ISelectedGameModeService"/> як централізоване сховище стану;
+    /// - повідомляє UI та runtime-сервіси через <see cref="OnSelectedGameModeChanged"/>.
+    /// </summary>
     internal class SelectedGameModeService : ISelectedGameModeService
     {
+        /// <summary>
+        /// Поточний вибраний режим гри.
+        /// </summary>
         public HomeMenuGameMode SelectedGameMode { get; private set; }
 
+        /// <summary>
+        /// Подія, яка викликається після зміни вибраного режиму.
+        /// Залежності: на неї підписуються UI-контролери та сервіси переходів між панелями.
+        /// </summary>
         public event Action<HomeMenuGameMode> OnSelectedGameModeChanged;
 
+        /// <summary>
+        /// Змінити вибраний режим гри й повідомити всіх підписників.
+        /// </summary>
+        /// <param name="gameMode">Новий режим гри, який треба зберегти.</param>
         public void SetSelectedGameMode(HomeMenuGameMode gameMode)
         {
+            // 1: Зберігаємо нове значення, щоб усі наступні читачі сервісу бачили актуальний режим.
             SelectedGameMode = gameMode;
+
+            // 2: Одразу розсилаємо подію, щоб UI і workflow-сервіси синхронізувалися з новим режимом.
             OnSelectedGameModeChanged?.Invoke(gameMode);
-        }
-    }
-
-    internal sealed class SoloPanelService : ISoloPanelService, IInitializable, IDisposable
-    {
-        [Inject] private ISoloViewController _viewController;
-        [Inject] private ISelectedGameModeService _selectedGameMode;
-        [Inject] private IWorldCreationPanelService _worldCreationPanel;
-        [Inject] private INavigation _navigation;
-        [Inject(Id = "WorldSetupPanelName")] private string _worldSetupPanelName;
-
-        public void Initialize()
-        {
-            if (_viewController == null)
-                return;
-
-            _viewController.OnButtonNextClicked -= OnNextClicked;
-            _viewController.OnButtonNextClicked += OnNextClicked;
-        }
-
-        public void Dispose()
-        {
-            if (_viewController != null)
-                _viewController.OnButtonNextClicked -= OnNextClicked;
-        }
-
-        private void OnNextClicked()
-        {
-            _selectedGameMode.SetSelectedGameMode(HomeMenuGameMode.Solo);
-            _worldCreationPanel.SetupMode(WolrdCreationMode.Solo);
-            _navigation.Open(_worldSetupPanelName);
-        }
-    }
-
-    internal sealed class MultiplayerPanelService : IMultiplayerPanelService, IInitializable, IDisposable
-    {
-        [InjectOptional] private List<IMultiplayerViewController> _viewControllers = new List<IMultiplayerViewController>();
-        [Inject] private INavigation _navigation;
-        [InjectOptional] private IJoinRoomPanelService _joinRoomPanelService;
-        [InjectOptional] private Runtime.Services.MultiplayerMenuModeService _multiplayerMenuModeService;
-        [Inject(Id = "CreateRoomPanelName")] private string _createRoomPanelName;
-        [Inject(Id = "JoinRoomPanelName")] private string _joinRoomPanelName;
-
-        private bool _isOpeningJoin;
-
-        public void Initialize()
-        {
-            if (_viewControllers == null)
-                return;
-
-            foreach (var viewController in _viewControllers)
-            {
-                if (viewController == null)
-                    continue;
-
-                viewController.OnCreateRoomClicked -= OnCreateRoomClicked;
-                viewController.OnCreateRoomClicked += OnCreateRoomClicked;
-                viewController.OnJoinRoomClicked -= OnJoinRoomClicked;
-                viewController.OnJoinRoomClicked += OnJoinRoomClicked;
-            }
-        }
-
-        public void Dispose()
-        {
-            if (_viewControllers == null)
-                return;
-
-            foreach (var viewController in _viewControllers)
-            {
-                if (viewController == null)
-                    continue;
-
-                viewController.OnCreateRoomClicked -= OnCreateRoomClicked;
-                viewController.OnJoinRoomClicked -= OnJoinRoomClicked;
-            }
-        }
-
-        private async void OnCreateRoomClicked()
-        {
-            if (_multiplayerMenuModeService != null)
-                await _multiplayerMenuModeService.ApplyModeForNavigationAsync(_createRoomPanelName, _navigation.CurrentMenu);
-
-            _navigation.Open(_createRoomPanelName);
-        }
-
-        private async void OnJoinRoomClicked()
-        {
-            if (_isOpeningJoin)
-                return;
-
-            _isOpeningJoin = true;
-            try
-            {
-                if (_multiplayerMenuModeService != null)
-                    await _multiplayerMenuModeService.ApplyModeForNavigationAsync(_joinRoomPanelName, _navigation.CurrentMenu);
-
-                if (_joinRoomPanelService != null && !await _joinRoomPanelService.PrepareForOpenAsync())
-                    return;
-
-                _navigation.Open(_joinRoomPanelName);
-            }
-            finally
-            {
-                _isOpeningJoin = false;
-            }
         }
     }
 }

@@ -8,6 +8,10 @@ using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
+    /// <summary>
+    /// Контролер вибору мережевого режиму (Relay/LAN/WebSocket/Offline).
+    /// Синхронізує dropdown/toggle UI та подію <see cref="OnModeChanged"/>.
+    /// </summary>
     public sealed class MultiplayerModeViewController : MonoBehaviour, IMultiplayerModeViewController, IInitializable
     {
         private static readonly NetworkProviderType[] ModeOrder =
@@ -174,9 +178,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private void SelectMode(NetworkProviderType mode)
         {
+            // 1: Ігноруємо повторний вибір того ж режиму.
             if (_selectedMode == mode)
                 return;
 
+            // 2: Фіксуємо новий режим, оновлюємо UI і повідомляємо підписників.
             _selectedMode = mode;
             Refresh();
             OnModeChanged?.Invoke(mode);

@@ -10,6 +10,10 @@ using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
+    /// <summary>
+    /// Головний контролер екрану налаштувань гри (аудіо, графіка, перформанс, сервісні дії).
+    /// Працює як адаптер між UI-елементами й подіями API HomeMenu.
+    /// </summary>
     public sealed class GameSettingsViewController : MonoBehaviour, IGameSettingsViewController, IInitializable
     {
         [SerializeField] private TMP_InputField _playerNameInput;
@@ -229,8 +233,11 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
         private void Bind()
         {
+            // 1: Захист від повторного биндингу підписок.
             if (_bound) return;
+            // 2: Гарантуємо наявність runtime-контролів, якщо частина полів не виставлена в сцені.
             EnsureRuntimeControls();
+            // 3: Налаштовуємо options/діапазони і підписуємо всі UI події.
             ConfigureGraphicsOptions();
             if (_playerNameInput != null) _playerNameInput.onEndEdit.AddListener(HandlePlayerNameChanged);
             if (_masterVolumeSlider != null) _masterVolumeSlider.onValueChanged.AddListener(HandleMaster);

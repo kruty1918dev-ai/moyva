@@ -21,12 +21,16 @@ namespace Kruty1918.Moyva.Construction.UI
         /// <summary>Icon sprite shown on the building button. May be null.</summary>
         public Sprite Icon { get; }
 
-        public BuildingListItemData(string id, string displayName, BuildingCategory category, Sprite icon = null)
+        /// <summary>True when this item is currently allowed to be clicked in the build menu.</summary>
+        public bool IsInteractable { get; }
+
+        public BuildingListItemData(string id, string displayName, BuildingCategory category, Sprite icon = null, bool isInteractable = true)
         {
             Id = id;
-            DisplayName = displayName;
+            DisplayName = string.IsNullOrWhiteSpace(displayName) ? id : displayName;
             Category = category;
             Icon = icon;
+            IsInteractable = isInteractable;
         }
     }
 }

@@ -8,6 +8,10 @@ using Zenject;
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
     // TODO: Implement view controllers for each menu panel (Solo, Multiplayer, CreateRoom, JoinRoom, Continue, WorldSetup) following the pattern of IBotViewController and BotViewController.
+    /// <summary>
+    /// Контролер налаштувань ботів (складність, стратегія, кількість, cheating).
+    /// Синхронізує внутрішній state моделі з UI-елементами.
+    /// </summary>
     public class BotViewController : MonoBehaviour, IBotViewController, IInitializable
     {
         [SerializeField] private TMP_Dropdown _difficultyDropdown;

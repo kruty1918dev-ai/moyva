@@ -18,6 +18,39 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
             CustomPath,
         }
 
+        private static bool TryParseFogBlock(byte[] payload, out bool[,] snapshot, out string error)
+        {
+            snapshot = null;
+            error = null;
+
+            try
+            {
+                using var ms = new MemoryStream(payload);
+                using var reader = new BinaryReader(ms);
+
+                int width = reader.ReadInt32();
+                int height = reader.ReadInt32();
+                if (width <= 0 || height <= 0)
+                {
+                    error = "Некоректні розміри FogOfWar.";
+                    return false;
+                }
+
+                var snap = new bool[width, height];
+                for (int x = 0; x < width; x++)
+                    for (int y = 0; y < height; y++)
+                        snap[x, y] = reader.ReadBoolean();
+
+                snapshot = snap;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+
         private sealed class ParsedBlock
         {
             public uint BlockId;
@@ -334,41 +367,103 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
                 return;
 
             ParsedBlock block = _currentFile.Blocks[_selectedBlockIndex];
-            if (block.BlockId != ComputeBlockId("Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule"))
-                return;
 
-            EditorGUILayout.BeginVertical("box");
-            EditorGUILayout.LabelField("5) Розумний перегляд блока генератора", EditorStyles.boldLabel);
+            uint genId = ComputeBlockId("Kruty1918.Moyva.Generator.Runtime.GeneratedWorldSaveModule");
+            uint fogId = ComputeBlockId("Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarSaveModule");
 
-            if (!TryParseGeneratedWorldBlock(block.Payload, out var generatedWorld, out var error))
+            if (block.BlockId == genId)
             {
-                EditorGUILayout.HelpBox($"Не вдалося розібрати блок генератора: {error}", MessageType.Warning);
+                EditorGUILayout.BeginVertical("box");
+                EditorGUILayout.LabelField("5) Розумний перегляд блока генератора", EditorStyles.boldLabel);
+
+                if (!TryParseGeneratedWorldBlock(block.Payload, out var generatedWorld, out var error))
+                {
+                    EditorGUILayout.HelpBox($"Не вдалося розібрати блок генератора: {error}", MessageType.Warning);
+                    EditorGUILayout.EndVertical();
+                    return;
+                }
+
+                EditorGUILayout.LabelField("Розмір карти", $"{generatedWorld.Width} x {generatedWorld.Height}");
+                EditorGUILayout.LabelField("Унікальні біоми", string.Join(", ", generatedWorld.UniqueBiomeIds));
+                EditorGUILayout.LabelField("Кількість статичних об'єктів", generatedWorld.ObjectEntries.Count.ToString());
+
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("Статичні об'єкти карти", EditorStyles.boldLabel);
+                _knownBlockScroll = EditorGUILayout.BeginScrollView(_knownBlockScroll, GUILayout.MinHeight(140));
+                if (generatedWorld.ObjectEntries.Count == 0)
+                {
+                    EditorGUILayout.LabelField("Об'єктів немає.");
+                }
+                else
+                {
+                    foreach (var entry in generatedWorld.ObjectEntries)
+                        EditorGUILayout.LabelField($"{entry.ObjectId} @ ({entry.Position.x}, {entry.Position.y})");
+                }
+                EditorGUILayout.EndScrollView();
+
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("Приклад даних висоти", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("(0,0)", generatedWorld.HeightMap[0, 0].ToString("F3"));
                 EditorGUILayout.EndVertical();
                 return;
             }
 
-            EditorGUILayout.LabelField("Розмір карти", $"{generatedWorld.Width} x {generatedWorld.Height}");
-            EditorGUILayout.LabelField("Унікальні біоми", string.Join(", ", generatedWorld.UniqueBiomeIds));
-            EditorGUILayout.LabelField("Кількість статичних об'єктів", generatedWorld.ObjectEntries.Count.ToString());
-
-            EditorGUILayout.Space(4);
-            EditorGUILayout.LabelField("Статичні об'єкти карти", EditorStyles.boldLabel);
-            _knownBlockScroll = EditorGUILayout.BeginScrollView(_knownBlockScroll, GUILayout.MinHeight(140));
-            if (generatedWorld.ObjectEntries.Count == 0)
+            if (block.BlockId == fogId)
             {
-                EditorGUILayout.LabelField("Об'єктів немає.");
-            }
-            else
-            {
-                foreach (var entry in generatedWorld.ObjectEntries)
-                    EditorGUILayout.LabelField($"{entry.ObjectId} @ ({entry.Position.x}, {entry.Position.y})");
-            }
-            EditorGUILayout.EndScrollView();
+                EditorGUILayout.BeginVertical("box");
+                EditorGUILayout.LabelField("5) Розумний перегляд блока FogOfWar", EditorStyles.boldLabel);
 
-            EditorGUILayout.Space(4);
-            EditorGUILayout.LabelField("Приклад даних висоти", EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("(0,0)", generatedWorld.HeightMap[0, 0].ToString("F3"));
-            EditorGUILayout.EndVertical();
+                if (!TryParseFogBlock(block.Payload, out var snapshot, out var ferr))
+                {
+                    EditorGUILayout.HelpBox($"Не вдалося розібрати FogOfWar блок: {ferr}", MessageType.Warning);
+                    EditorGUILayout.EndVertical();
+                    return;
+                }
+
+                int width = snapshot.GetLength(0);
+                int height = snapshot.GetLength(1);
+                int explored = 0;
+                for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) if (snapshot[x, y]) explored++;
+
+                EditorGUILayout.LabelField("Розмір сітки", $"{width} x {height}");
+                EditorGUILayout.LabelField("Розблокованих тайлів", explored.ToString());
+
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField("Перші координати (до 200)", EditorStyles.boldLabel);
+                _knownBlockScroll = EditorGUILayout.BeginScrollView(_knownBlockScroll, GUILayout.MinHeight(120));
+                int shown = 0;
+                for (int x = 0; x < width && shown < 200; x++)
+                {
+                    for (int y = 0; y < height && shown < 200; y++)
+                    {
+                        if (!snapshot[x, y]) continue;
+                        EditorGUILayout.LabelField($"({x},{y})");
+                        shown++;
+                    }
+                }
+                if (shown == 0) EditorGUILayout.LabelField("Немає розблокованих тайлів.");
+                EditorGUILayout.EndScrollView();
+
+                EditorGUILayout.Space(4);
+                if (GUILayout.Button("Експортувати Fog CSV"))
+                {
+                    try
+                    {
+                        string outPath = _currentFile.Path + ".fog.csv";
+                        using var sw = new StreamWriter(outPath, false, Encoding.UTF8);
+                        sw.WriteLine("x,y");
+                        for (int x = 0; x < width; x++) for (int y = 0; y < height; y++) if (snapshot[x, y]) sw.WriteLine($"{x},{y}");
+                        EditorUtility.DisplayDialog("Експорт завершено", $"CSV записано: {outPath}", "OK");
+                    }
+                    catch (Exception e)
+                    {
+                        EditorUtility.DisplayDialog("Помилка експорту", e.Message, "OK");
+                    }
+                }
+
+                EditorGUILayout.EndVertical();
+                return;
+            }
         }
 
         private void LoadSelectedFile()

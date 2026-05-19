@@ -8,6 +8,8 @@ using Kruty1918.Moyva.Animations.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using Zenject;
 
@@ -24,6 +26,8 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly SignalBus _signalBus;
         private readonly IUnitClassConfig _unitClassConfig;
         private readonly IUnitGameplayProfileService _unitGameplayProfileService;
+        private readonly IGeneratedTerrainLevelQuery _terrainLevelQuery;
+        private readonly WorldCreationDefaultsSO _worldDefaults;
 
         private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 
@@ -36,7 +40,9 @@ namespace Kruty1918.Moyva.Units.Runtime
             IObjectsMapService objectsMapService,
             SignalBus signalBus,
             IUnitClassConfig unitClassConfig,
-            IUnitGameplayProfileService unitGameplayProfileService)
+            IUnitGameplayProfileService unitGameplayProfileService,
+            [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
+            [InjectOptional] WorldCreationDefaultsSO worldDefaults = null)
         {
             _unitService = unitService;
             _pathfinder = pathfinder;
@@ -47,6 +53,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             _signalBus = signalBus;
             _unitClassConfig = unitClassConfig;
             _unitGameplayProfileService = unitGameplayProfileService;
+            _terrainLevelQuery = terrainLevelQuery;
+            _worldDefaults = worldDefaults;
         }
 
         public void Initialize()
@@ -193,6 +201,12 @@ namespace Kruty1918.Moyva.Units.Runtime
                     return false;
                 }
 
+                if (IsBlockedByUnitPlacementRules(stepPos, tileTypeId, out string blockReason))
+                {
+                    Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: BLOCKED ({blockReason}).");
+                    return false;
+                }
+
                 float cost = _tileSettings.GetTileWeight(tileTypeId);
                 bool canStep = currentStamina >= cost;
                 Debug.Log($"[UnitMovement] Перевірка кроку для {unitId} на {stepPos}: стаміна={currentStamina}, вартість={cost}, результат={canStep}");
@@ -219,6 +233,77 @@ namespace Kruty1918.Moyva.Units.Runtime
                 NewPosition = stepPos,
                 Cost = stepCost
             });
+        }
+
+        private bool IsBlockedByUnitPlacementRules(Vector2Int position, string tileTypeId, out string reason)
+        {
+            reason = null;
+
+            if (IsBlockedUnitTile(tileTypeId))
+            {
+                reason = $"blocked tile '{tileTypeId}'";
+                return true;
+            }
+
+            if (_terrainLevelQuery != null
+                && _terrainLevelQuery.TryGetTerrainLevel(position, out int terrainLevel)
+                && terrainLevel > 0
+                && IsTerrainLevelBlocked(_worldDefaults?.BlockedUnitHillLevelRanges, terrainLevel))
+            {
+                reason = $"blocked hill level {terrainLevel}";
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool IsBlockedUnitTile(string tileTypeId)
+        {
+            if (string.IsNullOrWhiteSpace(tileTypeId))
+                return false;
+
+            var blockedTileIds = _worldDefaults?.BlockedUnitTileIds;
+            if (blockedTileIds == null || blockedTileIds.Count == 0)
+                return false;
+
+            for (int i = 0; i < blockedTileIds.Count; i++)
+            {
+                string blockedId = blockedTileIds[i];
+                if (string.IsNullOrWhiteSpace(blockedId))
+                    continue;
+
+                if (string.Equals(blockedId.Trim(), tileTypeId, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsTerrainLevelBlocked(IReadOnlyList<TerrainLevelRestrictionRange> ranges, int terrainLevel)
+        {
+            if (ranges == null || ranges.Count == 0)
+                return false;
+
+            for (int i = 0; i < ranges.Count; i++)
+            {
+                var range = ranges[i];
+                if (range == null)
+                    continue;
+
+                int min = Mathf.Max(1, range.MinLevel);
+                int max = Mathf.Max(1, range.MaxLevel);
+                if (max < min)
+                {
+                    int swap = min;
+                    min = max;
+                    max = swap;
+                }
+
+                if (terrainLevel >= min && terrainLevel <= max)
+                    return true;
+            }
+
+            return false;
         }
     }
 }

@@ -1,16 +1,25 @@
 using UnityEngine;
 using Zenject;
 using Kruty1918.Moyva.Units.API;
+using Kruty1918.Moyva.WorldCreation.API;
 
 namespace Kruty1918.Moyva.Units.Runtime
 {
     public class UnitsInstaller : MonoInstaller
     {
         [SerializeField] private UnitRegistrySO _unitRegistry;
+        [SerializeField] private WorldCreationDefaultsSO _worldDefaults;
 
         public override void InstallBindings()
         {
             Container.BindInstance(_unitRegistry).AsSingle();
+
+            if (_worldDefaults != null)
+            {
+                Container.Bind<WorldCreationDefaultsSO>()
+                    .FromInstance(_worldDefaults)
+                    .WhenInjectedInto<UnitMovementService>();
+            }
 
             Container.BindInterfacesAndSelfTo<UnitService>()
                 .AsSingle()

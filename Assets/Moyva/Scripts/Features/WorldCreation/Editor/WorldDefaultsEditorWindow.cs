@@ -1,11 +1,15 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using Kruty1918.Moyva.Bootstrap;
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
 using Kruty1918.Moyva.HomeMenu.Runtime;
+using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -18,7 +22,7 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
         private const string DefaultWorldAssetPath = "Assets/Moyva/SO/WorldCreation/WorldCreationDefaults.asset";
         private const string DefaultBootstrapAssetPath = "Assets/Moyva/SO/Bootstrap/BootstrapInstallerConfig.asset";
 
-        private static readonly string[] Tabs = { "Світ", "Розміри", "Старт", "Туман", "Превʼю" };
+        private static readonly string[] Tabs = { "Світ", "Розміри", "Старт", "Туман", "Розміщення", "Превʼю" };
 
         private WorldCreationDefaultsSO _worldDefaults;
         private BootstrapInstallerConfigSO _bootstrapConfig;
@@ -30,6 +34,12 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
         private int _fogPreviewMapSide = 25;
         private int _fogPreviewRadiusOverride;
         private int _fogPreviewCellPixels = 10;
+        private bool _buildingTilesDropdownOpen;
+        private bool _unitTilesDropdownOpen;
+        private string _buildingTilesSearch = string.Empty;
+        private string _unitTilesSearch = string.Empty;
+        private Vector2 _buildingTilesScroll;
+        private Vector2 _unitTilesScroll;
 
         private GUIStyle _titleStyle;
         private GUIStyle _subtitleStyle;
@@ -74,6 +84,7 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                     case 1: DrawSizeTab(); break;
                     case 2: DrawStartTab(); break;
                     case 3: DrawFogTab(); break;
+                    case 4: DrawPlacementRulesTab(); break;
                     default: DrawPreviewTab(); break;
                 }
 
@@ -229,10 +240,8 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                 return;
             }
 
-            var gameSettings = _bootstrapSerialized.FindProperty("_gameSettings");
             BeginCard();
-            EditorGUILayout.LabelField("Стартова взаємодія", _sectionStyle);
-            EditorGUILayout.PropertyField(gameSettings.FindPropertyRelative("DefaultBuildingId"), new GUIContent("Стартова будівля"));
+            EditorGUILayout.LabelField("Стартова економіка", _sectionStyle);
             EditorGUILayout.HelpBox(
                 "Стартові ресурси централізовано редагуються в Economy Designer (Single Source of Truth).",
                 MessageType.Info);
@@ -297,6 +306,415 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
             DrawFogShapePreviewControls(settings);
             DrawFogShapePreview(GUILayoutUtility.GetRect(0f, 320f, GUILayout.ExpandWidth(true)), settings);
             EndCard();
+        }
+
+        private void DrawPlacementRulesTab()
+        {
+            if (_worldSerialized == null)
+            {
+                DrawMissingWorldDefaults();
+                return;
+            }
+
+            BeginCard();
+            EditorGUILayout.LabelField("Обмеження розміщення", _sectionStyle);
+
+            var graphProperty = _worldSerialized.FindProperty("PlacementRulesGraph");
+            EditorGUILayout.PropertyField(graphProperty, new GUIContent("Граф генерації"));
+
+            var tileRegistryProperty = _worldSerialized.FindProperty("TileRegistry");
+            EditorGUILayout.PropertyField(tileRegistryProperty, new GUIContent("Реєстр тайлів (опційно)"));
+
+            int hillLevelCount;
+            List<string> graphTileIds;
+            string graphStatus;
+            bool graphValid = TryResolvePlacementGraphData(
+                graphProperty?.objectReferenceValue as GraphAsset,
+                tileRegistryProperty?.objectReferenceValue as UnityEngine.Object,
+                out hillLevelCount,
+                out graphTileIds,
+                out graphStatus);
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.HelpBox(graphStatus, graphValid ? MessageType.Info : MessageType.Warning);
+
+            var blockedBuildingLevels = _worldSerialized.FindProperty("BlockedBuildingHillLevelRanges");
+            var blockedUnitLevels = _worldSerialized.FindProperty("BlockedUnitHillLevelRanges");
+            var blockedBuildingTiles = _worldSerialized.FindProperty("BlockedBuildingTileIds");
+            var blockedUnitTiles = _worldSerialized.FindProperty("BlockedUnitTileIds");
+
+            using (new EditorGUI.DisabledScope(!graphValid || hillLevelCount <= 0))
+            {
+                DrawLevelRangesEditor(
+                    blockedBuildingLevels,
+                    "Будівництво: заборонені діапазони рівнів",
+                    hillLevelCount,
+                    "На цих рівнях HillGenerator розміщення будівель буде заборонено.");
+
+                DrawLevelRangesEditor(
+                    blockedUnitLevels,
+                    "Юніти: заборонені діапазони рівнів",
+                    hillLevelCount,
+                    "На цих рівнях HillGenerator розміщення або рух юнітів буде заборонено.");
+            }
+
+            EditorGUILayout.Space(6f);
+            using (new EditorGUI.DisabledScope(graphTileIds == null || graphTileIds.Count == 0))
+            {
+                DrawTileMultiSelectDropdown(
+                    blockedBuildingTiles,
+                    graphTileIds,
+                    "Будівництво: заборонені Tile ID",
+                    ref _buildingTilesDropdownOpen,
+                    ref _buildingTilesSearch,
+                    ref _buildingTilesScroll);
+
+                DrawTileMultiSelectDropdown(
+                    blockedUnitTiles,
+                    graphTileIds,
+                    "Юніти: заборонені Tile ID",
+                    ref _unitTilesDropdownOpen,
+                    ref _unitTilesSearch,
+                    ref _unitTilesScroll);
+            }
+
+            EndCard();
+        }
+
+        private static bool TryResolvePlacementGraphData(
+            GraphAsset graphAsset,
+            UnityEngine.Object overrideTileRegistry,
+            out int hillLevelCount,
+            out List<string> tileIds,
+            out string status)
+        {
+            hillLevelCount = 0;
+            tileIds = new List<string>();
+
+            if (graphAsset == null)
+            {
+                if (overrideTileRegistry != null)
+                {
+                    TryCollectTileIdsFromOverride(overrideTileRegistry, tileIds);
+                    status = tileIds.Count > 0
+                        ? $"GraphAsset не задано — HillGenerator levels недоступні. Tile ID з реєстру: {tileIds.Count}."
+                        : "GraphAsset не задано. Реєстр тайлів порожній або не містить Definitions.";
+                }
+                else
+                {
+                    status = "Признач GraphAsset генерації або задай Реєстр тайлів напряму.";
+                }
+                return false;
+            }
+
+            if (!TryReadGraphNodes(graphAsset, out var nodes))
+            {
+                status = "Об'єкт не схожий на GraphAsset (не знайдено список нод).";
+                return false;
+            }
+
+            if (!TryReadHillLevels(nodes, out hillLevelCount))
+            {
+                status = "У графі не знайдено HillGeneratorNode з доступною кількістю рівнів.";
+                return false;
+            }
+
+            TryCollectTileIdsFromGraphSettings(graphAsset, tileIds);
+            if (overrideTileRegistry != null)
+                tileIds = CollectTileIdsFromSource(overrideTileRegistry);
+
+            if (tileIds.Count == 0)
+            {
+                status = "HillGenerator знайдено, але TileRegistry не задано ні в GraphAsset, ні напряму.";
+                return true;
+            }
+
+            status = $"HillGenerator levels: {hillLevelCount}. Доступно Tile ID: {tileIds.Count}.";
+            return true;
+        }
+
+        private static bool TryReadGraphNodes(GraphAsset graphAsset, out List<UnityEngine.Object> nodes)
+        {
+            nodes = new List<UnityEngine.Object>();
+            var serialized = new SerializedObject(graphAsset);
+            var nodesProperty = serialized.FindProperty("_nodes");
+            if (nodesProperty == null || !nodesProperty.isArray)
+                return false;
+
+            for (int i = 0; i < nodesProperty.arraySize; i++)
+            {
+                var element = nodesProperty.GetArrayElementAtIndex(i);
+                var node = element?.objectReferenceValue;
+                if (node != null)
+                    nodes.Add(node);
+            }
+
+            return true;
+        }
+
+        private static bool TryReadHillLevels(IReadOnlyList<UnityEngine.Object> nodes, out int levelCount)
+        {
+            levelCount = 0;
+            if (nodes == null)
+                return false;
+
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                var node = nodes[i];
+                if (node == null)
+                    continue;
+
+                var type = node.GetType();
+                if (type.Name != "HillGeneratorNode")
+                    continue;
+
+                var levelProperty = type.GetProperty("LevelCount", BindingFlags.Public | BindingFlags.Instance);
+                if (levelProperty != null && levelProperty.PropertyType == typeof(int))
+                {
+                    levelCount = Mathf.Max(0, (int)levelProperty.GetValue(node, null));
+                    return levelCount > 0;
+                }
+
+                var levelField = type.GetField("_levels", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (levelField != null && levelField.FieldType == typeof(int))
+                {
+                    levelCount = Mathf.Max(0, (int)levelField.GetValue(node));
+                    return levelCount > 0;
+                }
+            }
+
+            return false;
+        }
+
+        private static void TryCollectTileIdsFromGraphSettings(
+            GraphAsset graphAsset,
+            List<string> tileIds)
+        {
+            var uniqueIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (graphAsset?.TileRegistry != null)
+                TryExtractTileIdsFromRegistry(graphAsset.TileRegistry, uniqueIds);
+
+            tileIds.Clear();
+            tileIds.AddRange(uniqueIds);
+            tileIds.Sort(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static void TryCollectTileIdsFromOverride(UnityEngine.Object source, List<string> tileIds)
+        {
+            tileIds.AddRange(CollectTileIdsFromSource(source));
+        }
+
+        private static List<string> CollectTileIdsFromSource(UnityEngine.Object source)
+        {
+            var uniqueIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (source != null)
+                TryExtractTileIdsFromRegistry(source, uniqueIds);
+            var result = new List<string>(uniqueIds);
+            result.Sort(StringComparer.OrdinalIgnoreCase);
+            return result;
+        }
+
+        private static bool TryExtractTileIdsFromRegistry(UnityEngine.Object source, HashSet<string> uniqueIds)
+        {
+            var type = source.GetType();
+            if (type.Name != "TileRegistrySO")
+                return false;
+
+            var definitionsProperty = type.GetProperty("Definitions", BindingFlags.Instance | BindingFlags.Public);
+            if (definitionsProperty == null)
+                return true;
+
+            if (definitionsProperty.GetValue(source, null) is not IEnumerable definitions)
+                return true;
+
+            foreach (var definition in definitions)
+            {
+                if (definition == null)
+                    continue;
+
+                var idProperty = definition.GetType().GetProperty("Id", BindingFlags.Instance | BindingFlags.Public);
+                if (idProperty == null)
+                    continue;
+
+                string id = idProperty.GetValue(definition, null) as string;
+                if (!string.IsNullOrWhiteSpace(id))
+                    uniqueIds.Add(id.Trim());
+            }
+
+            return true;
+        }
+
+        private void DrawLevelRangesEditor(
+            SerializedProperty ranges,
+            string label,
+            int maxLevel,
+            string description)
+        {
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"Рівні у HillGenerator: 1..{maxLevel}", _mutedStyle);
+            EditorGUILayout.LabelField(description, _mutedStyle);
+
+            int removeIndex = -1;
+            for (int i = 0; i < ranges.arraySize; i++)
+            {
+                var element = ranges.GetArrayElementAtIndex(i);
+                var minProperty = element.FindPropertyRelative("MinLevel");
+                var maxProperty = element.FindPropertyRelative("MaxLevel");
+                if (minProperty == null || maxProperty == null)
+                    continue;
+
+                int minValue = Mathf.Clamp(minProperty.intValue, 1, maxLevel);
+                int maxValue = Mathf.Clamp(maxProperty.intValue, 1, maxLevel);
+                if (maxValue < minValue)
+                    maxValue = minValue;
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField($"Діапазон {i + 1}", GUILayout.Width(92f));
+                    minValue = EditorGUILayout.IntSlider(minValue, 1, maxLevel);
+                    GUILayout.Label("..", GUILayout.Width(14f));
+                    maxValue = EditorGUILayout.IntSlider(maxValue, 1, maxLevel);
+                    if (GUILayout.Button("До останнього", GUILayout.Width(98f)))
+                        maxValue = maxLevel;
+                    if (GUILayout.Button("✕", GUILayout.Width(24f)))
+                        removeIndex = i;
+                }
+
+                minProperty.intValue = minValue;
+                maxProperty.intValue = maxValue;
+            }
+
+            if (removeIndex >= 0)
+                ranges.DeleteArrayElementAtIndex(removeIndex);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("+ Додати діапазон", GUILayout.Width(148f)))
+                {
+                    int index = ranges.arraySize;
+                    ranges.InsertArrayElementAtIndex(index);
+                    var element = ranges.GetArrayElementAtIndex(index);
+                    var minProperty = element.FindPropertyRelative("MinLevel");
+                    var maxProperty = element.FindPropertyRelative("MaxLevel");
+                    if (minProperty != null) minProperty.intValue = 1;
+                    if (maxProperty != null) maxProperty.intValue = maxLevel;
+                }
+
+                if (GUILayout.Button("Очистити", GUILayout.Width(90f)))
+                    ranges.ClearArray();
+            }
+        }
+
+        private void DrawTileMultiSelectDropdown(
+            SerializedProperty selectedTileIds,
+            List<string> availableTileIds,
+            string label,
+            ref bool dropdownOpen,
+            ref string search,
+            ref Vector2 scroll)
+        {
+            EditorGUILayout.Space(8f);
+            EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
+
+            string summary = selectedTileIds.arraySize > 0
+                ? $"Вибрано: {selectedTileIds.arraySize}"
+                : "Нічого не вибрано";
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField(summary, _mutedStyle);
+                if (GUILayout.Button(dropdownOpen ? "Згорнути" : "Відкрити", GUILayout.Width(92f)))
+                    dropdownOpen = !dropdownOpen;
+            }
+
+            if (!dropdownOpen)
+                return;
+
+            search = EditorGUILayout.TextField("Пошук", search ?? string.Empty);
+            string searchPattern = (search ?? string.Empty).Trim();
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Вибрати все (фільтр)", GUILayout.Width(162f)))
+                {
+                    for (int i = 0; i < availableTileIds.Count; i++)
+                    {
+                        string id = availableTileIds[i];
+                        if (!id.Contains(searchPattern, StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        EnsureStringInArray(selectedTileIds, id);
+                    }
+                }
+
+                if (GUILayout.Button("Очистити (фільтр)", GUILayout.Width(152f)))
+                {
+                    for (int i = selectedTileIds.arraySize - 1; i >= 0; i--)
+                    {
+                        string value = selectedTileIds.GetArrayElementAtIndex(i).stringValue;
+                        if (value != null && value.Contains(searchPattern, StringComparison.OrdinalIgnoreCase))
+                            selectedTileIds.DeleteArrayElementAtIndex(i);
+                    }
+                }
+            }
+
+            const float listHeight = 190f;
+            scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.Height(listHeight));
+            bool anyVisible = false;
+            for (int i = 0; i < availableTileIds.Count; i++)
+            {
+                string id = availableTileIds[i];
+                if (!string.IsNullOrEmpty(searchPattern)
+                    && !id.Contains(searchPattern, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                anyVisible = true;
+                bool isSelected = ArrayContains(selectedTileIds, id);
+                bool nextSelected = EditorGUILayout.ToggleLeft(id, isSelected);
+                if (nextSelected == isSelected)
+                    continue;
+
+                if (nextSelected)
+                    EnsureStringInArray(selectedTileIds, id);
+                else
+                    RemoveStringFromArray(selectedTileIds, id);
+            }
+
+            if (!anyVisible)
+                EditorGUILayout.LabelField("Нічого не знайдено за поточним фільтром.", _mutedStyle);
+
+            EditorGUILayout.EndScrollView();
+        }
+
+        private static bool ArrayContains(SerializedProperty array, string value)
+        {
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                if (string.Equals(array.GetArrayElementAtIndex(i).stringValue, value, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static void EnsureStringInArray(SerializedProperty array, string value)
+        {
+            if (ArrayContains(array, value))
+                return;
+
+            int index = array.arraySize;
+            array.InsertArrayElementAtIndex(index);
+            array.GetArrayElementAtIndex(index).stringValue = value;
+        }
+
+        private static void RemoveStringFromArray(SerializedProperty array, string value)
+        {
+            for (int i = array.arraySize - 1; i >= 0; i--)
+            {
+                if (string.Equals(array.GetArrayElementAtIndex(i).stringValue, value, StringComparison.OrdinalIgnoreCase))
+                    array.DeleteArrayElementAtIndex(i);
+            }
         }
 
         private void DrawPreviewTab()

@@ -39,14 +39,14 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
                 return;
 
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            Vector2 screenPos = mouse.position.ReadValue();
+            if (IsScreenPositionOverUi(screenPos, -1))
                 return;
 
             var cam = ResolveCamera();
             if (cam == null)
                 return;
 
-            Vector2 screenPos = mouse.position.ReadValue();
             FireTileClick(screenPos, cam);
         }
 

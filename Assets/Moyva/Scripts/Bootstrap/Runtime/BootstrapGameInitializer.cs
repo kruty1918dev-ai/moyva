@@ -10,21 +10,19 @@ using Zenject;
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
     /// <summary>
-    /// На старті нової гри розміщує дефолтну будівлю на стартовій позиції
-    /// та видає стартові ресурси гравцю.
+    /// На старті нового світу готує owner-контекст і видає стартові ресурси гравцю.
     ///
-    /// При завантаженні збереження — не втручається.
+    /// При завантаженні сучасного збереження не втручається; старі сейви без economy-блоку мігрує.
     /// </summary>
     internal sealed class BootstrapGameInitializer : IInitializable, IDisposable
     {
-        private const int MaxSearchRadius = 20;
+        private const string EconomySaveModuleFullName = "Kruty1918.Moyva.Economy.Runtime.EconomySaveModule";
 
         private readonly IConstructionService _constructionService;
         private readonly SignalBus _signalBus;
         private readonly BootstrapGameSettings _settings;
         private readonly ISaveService _saveService;
         private readonly BootstrapStartingPositionState _startingPositionState;
-        private WorldGeneratedDataSignal _pendingWorldGeneratedSignal;
         private bool _hasPendingWorldGeneratedSignal;
         private bool _bootstrapApplied;
         private bool _starterPackGrantEnabled;
@@ -32,6 +30,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
     #pragma warning disable CS0649
         [InjectOptional] private ISessionManager _sessionManager;
+        [InjectOptional] private ISaveInspectorService _saveInspectorService;
     #pragma warning restore CS0649
 
         [Inject]
@@ -67,7 +66,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
-            _pendingWorldGeneratedSignal = signal;
             _hasPendingWorldGeneratedSignal = true;
 
             TryApplyBootstrap();
@@ -86,54 +84,60 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_bootstrapApplied || !_hasPendingWorldGeneratedSignal)
                 return;
 
-            // Якщо є збереження — не робимо bootstrap
+            // Якщо є сучасне збереження економіки — не робимо bootstrap.
+            // Старі сейви не мають EconomySaveModule, тому їм потрібна одноразова міграція стартових ресурсів.
             int slot = GameLaunchContext.SaveSlot;
             if (GameLaunchContext.IsAutoLoadEnabled() && _saveService.HasSave(slot))
             {
-                _starterPackGrantEnabled = false;
-                _bootstrapApplied = true;
-                return;
-            }
+                bool hasEconomySave = _saveInspectorService != null
+                    && _saveInspectorService.HasBlock(slot, EconomySaveModuleFullName);
 
-            _starterPackGrantEnabled = ShouldGrantStarterPackForCurrentLaunch();
-
-            if (!CanRunBootstrapLogic())
-                return;
-
-            if (!string.IsNullOrEmpty(_settings.DefaultBuildingId))
-            {
-                // Центр ядра розкриття туману, встановлений StartingPositionInitializer (order 101).
-                // Ми маємо order 102, тому значення вже є.
-                var fallback = _startingPositionState.IsSet
-                    ? _startingPositionState.StartPosition
-                    : new Vector2Int(_pendingWorldGeneratedSignal.Width / 2, _pendingWorldGeneratedSignal.Height / 2);
-                var targets = ResolveActiveSpawnAssignments(fallback);
-                int placedCount = 0;
-
-                for (int index = 0; index < targets.Count; index++)
+                if (hasEconomySave)
                 {
-                    var target = targets[index];
-                    string ownerId = ResolveSpawnOwnerId(target, index);
-                    bool placed = TryPlaceWithSpiralSearch(_settings.DefaultBuildingId, target.Position, _pendingWorldGeneratedSignal.Width, _pendingWorldGeneratedSignal.Height, ownerId, out Vector2Int placedPosition);
-
-                    if (placed)
-                    {
-                        placedCount++;
-                        Debug.Log($"[Bootstrap] '{_settings.DefaultBuildingId}' розміщено для slot {target.SlotIndex} ({ownerId}) на {placedPosition} (центр {target.Position})");
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[Bootstrap] Не вдалось розмістити '{_settings.DefaultBuildingId}' для slot {target.SlotIndex} в радіусі {MaxSearchRadius} від {target.Position}");
-                    }
+                    _starterPackGrantEnabled = false;
+                    _bootstrapApplied = true;
+                    return;
                 }
 
-                if (targets.Count > 1)
-                    Debug.Log($"[Bootstrap] Стартові будівлі розміщено: {placedCount}/{targets.Count}.");
+                _starterPackGrantEnabled = true;
+                Debug.LogWarning($"[Bootstrap] Save slot {slot} не має economy-блоку. Виконується міграційна видача стартових ресурсів.");
             }
             else
             {
-                Debug.LogWarning("[Bootstrap] DefaultBuildingId не установлено");
+                _starterPackGrantEnabled = ShouldGrantStarterPackForCurrentLaunch();
             }
+
+            string activeOwnerId = ResolveBootstrapOwnerId();
+            _constructionService.SetActiveOwner(activeOwnerId);
+
+            if (_starterPackGrantEnabled && !_ownersWithGrantedStarterPack.Contains(activeOwnerId))
+            {
+                TryGrantStarterPack(string.Empty, activeOwnerId);
+
+                // Після видачі — робимо автосейв і перевіряємо, чи з'явився economy-блок у файлі.
+                try
+                {
+                    _saveService?.Save(slot);
+                    Debug.Log($"[Bootstrap] Автосейв після видачі стартових ресурсів у слот {slot}.");
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[Bootstrap] Не вдалося зберегти після видачі стартових ресурсів: {ex}");
+                }
+
+                bool hasEconomySave = _saveInspectorService != null && _saveInspectorService.HasBlock(slot, EconomySaveModuleFullName);
+                if (hasEconomySave)
+                {
+                    _ownersWithGrantedStarterPack.Add(activeOwnerId);
+                }
+                else
+                {
+                    Debug.LogWarning($"[Bootstrap] Після автосейву не знайдено economy-блоку у слоті {slot}. Відкладено маркування owner '{activeOwnerId}' як granted; повторна спроба відбудеться при створенні поселення.");
+                }
+            }
+
+            if (!CanRunBootstrapLogic())
+                return;
 
             _bootstrapApplied = true;
         }
@@ -153,7 +157,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!TryGrantStarterPack(signal.SettlementId, ownerId))
                 return;
 
-            _ownersWithGrantedStarterPack.Add(ownerId);
+            int slot = GameLaunchContext.SaveSlot;
+            try
+            {
+                _saveService?.Save(slot);
+                Debug.Log($"[Bootstrap] Автосейв після видачі стартових ресурсів (поселення) у слот {slot}.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Bootstrap] Не вдалося зберегти після видачі стартових ресурсів (поселення): {ex}");
+            }
+
+            bool hasEconomySave = _saveInspectorService != null && _saveInspectorService.HasBlock(slot, EconomySaveModuleFullName);
+            if (hasEconomySave)
+            {
+                _ownersWithGrantedStarterPack.Add(ownerId);
+            }
+            else
+            {
+                Debug.LogWarning($"[Bootstrap] Після автосейву не знайдено economy-блоку у слоті {slot}. Owner '{ownerId}' не буде марковано як granted.");
+            }
         }
 
         private bool TryGrantStarterPack(string settlementId, string ownerId)
@@ -186,7 +209,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     OwnerId = ownerId,
                     Entries = payload.ToArray(),
                 });
-                Debug.Log($"[Bootstrap] Видано стартовий пакет owner='{ownerId}' для settlement='{settlementId}'.");
+
+                string target = string.IsNullOrWhiteSpace(settlementId)
+                    ? "owner pool"
+                    : $"settlement='{settlementId}'";
+                Debug.Log($"[Bootstrap] Видано стартовий пакет owner='{ownerId}' для {target}.");
             }
 
             return true;
@@ -201,86 +228,51 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private static bool ShouldGrantStarterPackForCurrentLaunch()
         {
-            return GameLaunchContext.Mode == GameLaunchMode.MenuNewGame
-                || GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame;
+            switch (GameLaunchContext.Mode)
+            {
+                case GameLaunchMode.MenuLoadGame:
+                case GameLaunchMode.MenuJoinGame:
+                    return false;
+                case GameLaunchMode.DirectGameplayTest:
+                case GameLaunchMode.MenuNewGame:
+                case GameLaunchMode.MenuMultiplayerGame:
+                case GameLaunchMode.Unknown:
+                default:
+                    return true;
+            }
         }
 
-        // ─── Спіральний пошук вільного тайлу ─────────────────────────────────
-
-        private bool TryPlaceWithSpiralSearch(string buildingId, Vector2Int center, int mapWidth, int mapHeight, string ownerId, out Vector2Int placedPosition)
+        private string ResolveLocalActiveOwnerId(IReadOnlyList<SpawnPositionAssignment> targets)
         {
-            for (int radius = 0; radius <= MaxSearchRadius; radius++)
-            {
-                for (int dx = -radius; dx <= radius; dx++)
-                {
-                    for (int dy = -radius; dy <= radius; dy++)
-                    {
-                        // Тільки оболонка поточного радіусу
-                        if (Mathf.Abs(dx) != radius && Mathf.Abs(dy) != radius)
-                            continue;
-
-                        var pos = new Vector2Int(center.x + dx, center.y + dy);
-                        if (pos.x < 0 || pos.x >= mapWidth || pos.y < 0 || pos.y >= mapHeight)
-                            continue;
-
-                        if (_constructionService.TryDirectPlace(buildingId, pos, ownerId))
-                        {
-                            placedPosition = pos;
-                            return true;
-                        }
-                    }
-                }
-            }
-            placedPosition = default;
-            return false;
-        }
-
-        private IReadOnlyList<SpawnPositionAssignment> ResolveActiveSpawnAssignments(Vector2Int fallback)
-        {
-            var assignments = _startingPositionState.SpawnAssignments;
-
-            var result = new List<SpawnPositionAssignment>();
-            if (assignments == null || assignments.Count == 0)
-            {
-                result.Add(new SpawnPositionAssignment { SlotIndex = 0, Position = fallback });
-                return result;
-            }
-
             string localPlayerId = _sessionManager?.LocalPlayerId;
-            bool isHost = _sessionManager == null || _sessionManager.IsLocalPlayerHost;
 
-            for (int index = 0; index < assignments.Count; index++)
+            if (targets != null)
             {
-                var assignment = assignments[index];
-
-                if (!string.IsNullOrEmpty(localPlayerId) && string.Equals(assignment.ParticipantId, localPlayerId, StringComparison.Ordinal))
+                for (int index = 0; index < targets.Count; index++)
                 {
-                    result.Add(assignment);
-                    continue;
-                }
+                    var target = targets[index];
+                    if (target.IsBot)
+                        continue;
 
-                if (isHost && assignment.IsBot)
-                {
-                    result.Add(assignment);
-                }
-            }
-
-            if (result.Count == 0)
-            {
-                for (int index = 0; index < assignments.Count; index++)
-                {
-                    if (!assignments[index].IsBot)
+                    if (!string.IsNullOrWhiteSpace(localPlayerId)
+                        && string.Equals(target.ParticipantId, localPlayerId, StringComparison.Ordinal))
                     {
-                        result.Add(assignments[index]);
-                        break;
+                        return ResolveSpawnOwnerId(target, index);
                     }
                 }
 
-                if (result.Count == 0)
-                    result.Add(assignments[0]);
+                for (int index = 0; index < targets.Count; index++)
+                {
+                    var target = targets[index];
+                    if (!target.IsBot)
+                        return ResolveSpawnOwnerId(target, index);
+                }
+
+                if (targets.Count > 0)
+                    return ResolveSpawnOwnerId(targets[0], 0);
             }
 
-            return result;
+            return "player_0";
         }
 
         private static string ResolveSpawnOwnerId(SpawnPositionAssignment assignment, int fallbackIndex)
@@ -291,7 +283,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (assignment.IsBot)
                 return $"bot-{assignment.SlotIndex:00}";
 
-            return fallbackIndex == 0 ? "bootstrap" : $"spawn-slot-{assignment.SlotIndex:00}";
+            return fallbackIndex == 0 ? "player_0" : $"spawn-slot-{assignment.SlotIndex:00}";
+        }
+
+        private string ResolveBootstrapOwnerId()
+        {
+            var assignments = _startingPositionState.SpawnAssignments;
+            if (assignments != null && assignments.Count > 0)
+                return NormalizeOwnerId(ResolveLocalActiveOwnerId(assignments));
+
+            if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
+                return NormalizeOwnerId(_sessionManager.LocalPlayerId);
+
+            return NormalizeOwnerId(_constructionService.GetActiveOwner());
         }
 
         private bool CanRunBootstrapLogic()

@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.WorldCreation.API;
 using System;
 using System.Reflection;
 using UnityEngine;
@@ -10,6 +11,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     public sealed class ConstructionInstaller : MonoInstaller
     {
         [SerializeField] private BuildingRegistrySO buildingRegistry;
+        [SerializeField] private WorldCreationDefaultsSO _worldDefaults;
 
         [Header("Будівництво — налаштування")]
         [Tooltip("Мінімальна відстань (в тайлах) між будівлями. 0 = можна ставити впритул.")]
@@ -28,6 +30,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             Container.BindInstance(buildingRegistry).AsSingle();
             Container.Bind<IBuildingRegistry>().FromInstance(buildingRegistry).AsSingle();
+
+            if (_worldDefaults != null)
+            {
+                Container.Bind<WorldCreationDefaultsSO>()
+                    .FromInstance(_worldDefaults)
+                    .WhenInjectedInto<ConstructionService>();
+            }
 
             Container.BindInstance(_minSpacingBetweenBuildings).WithId("minSpacing");
 
@@ -60,6 +69,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            Container.Bind<IConstructionConfirmRequestExecutor>()
+                .To<ConstructionLocalConfirmExecutor>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<ConstructionConfirmRequestRouter>()
+                .AsSingle()
+                .NonLazy();
+
             Container.BindInterfacesAndSelfTo<WallPlacementService>()
                 .AsSingle()
                 .NonLazy();
@@ -81,12 +98,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            Container.Bind<ISaveModule>()
-                .To<ConstructionSaveModule>()
+            Container.BindInterfacesAndSelfTo<ConstructionSaveModule>()
                 .AsSingle();
+
+            Container.BindInterfacesTo<SaveModuleRegistrar<ConstructionSaveModule>>()
+                .AsSingle()
+                .NonLazy();
 
             // Явний порядок Initialize() — виконується ПІСЛЯ GameMode (-10).
             Container.BindExecutionOrder<ConstructionService>(0);
+            Container.BindExecutionOrder<ConstructionConfirmRequestRouter>(2);
             Container.BindExecutionOrder<ConstructionInputService>(5);
             Container.BindExecutionOrder<ConstructionVisualService>(10);
             Container.BindExecutionOrder<BuildingWorldInfoPresenter>(15);

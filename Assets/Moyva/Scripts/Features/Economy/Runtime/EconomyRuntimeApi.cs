@@ -51,22 +51,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         public EconomyCategoryTotals GetOwnerCategoryTotals(string ownerId)
         {
-            var normalizedOwnerId = NormalizeOwnerId(ownerId);
             float food = 0f;
             float materials = 0f;
-
-            foreach (var kvp in _economyManager.Settlements)
-            {
-                var state = kvp.Value;
-                if (state == null)
-                    continue;
-
-                if (!string.Equals(NormalizeOwnerId(state.OwnerId), normalizedOwnerId, StringComparison.Ordinal))
-                    continue;
-
-                AccumulateCategoryTotals(state.ResourcePool, ref food, ref materials);
-            }
-
+            AccumulateCategoryTotals(_economyManager.GetOwnerResourceTotals(ownerId), ref food, ref materials);
             return new EconomyCategoryTotals(food, materials);
         }
 
@@ -80,22 +67,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         public Dictionary<string, float> GetOwnerResourceTotals(string ownerId)
         {
-            var normalizedOwnerId = NormalizeOwnerId(ownerId);
-            var totals = new Dictionary<string, float>(StringComparer.Ordinal);
-
-            foreach (var kvp in _economyManager.Settlements)
-            {
-                var state = kvp.Value;
-                if (state == null)
-                    continue;
-
-                if (!string.Equals(NormalizeOwnerId(state.OwnerId), normalizedOwnerId, StringComparison.Ordinal))
-                    continue;
-
-                AccumulatePerResource(state.ResourcePool, totals);
-            }
-
-            return totals;
+            return _economyManager.GetOwnerResourceTotals(ownerId);
         }
 
         public EconomyCategoryTotals GetSettlementCategoryTotals(string settlementId)

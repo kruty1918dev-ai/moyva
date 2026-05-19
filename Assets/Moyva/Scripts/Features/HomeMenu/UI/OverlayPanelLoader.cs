@@ -4,6 +4,10 @@ using Kruty1918.Moyva.HomeMenu.API;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
+    /// <summary>
+    /// Віджет loading-overlay для HomeMenu з анімацією прогресу і watchdog-закриттям.
+    /// Підписується на <see cref="OverlayLoaderResult.CurrentChanged"/> та синхронізує видимість оверлею.
+    /// </summary>
     public class OverlayPanelLoader : MonoBehaviour
     {
         [SerializeField] private GameObject _overlayRoot;
@@ -60,6 +64,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_overlayRoot == null)
                 _overlayRoot = gameObject;
 
+            // 1: Скасовуємо поточну анімацію прогресу перед новою операцією.
             if (_progressCoroutine != null)
             {
                 StopCoroutine(_progressCoroutine);
@@ -67,6 +72,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 LogWithSufix("Corutine was cancled. Progress corutine is null");
             }
 
+            // 2: При старті loading скасовуємо відкладений hide-watchdog.
             // cancel any pending watchdog when opening or updating
             if (isLoading && _hideWatchdogCoroutine != null)
             {
@@ -75,6 +81,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 LogWithSufix("Operation was canceled by new loading request. Watchdog canceled.");
             }
 
+            // 3: Або відкриваємо overlay з анімацією до target progress, або закриваємо з graceful finish.
             if (isLoading)
             {
                 _overlayRoot.SetActive(true);

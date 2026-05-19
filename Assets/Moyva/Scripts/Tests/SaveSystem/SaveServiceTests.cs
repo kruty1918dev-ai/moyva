@@ -133,6 +133,27 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
             Assert.AreEqual(99, module.LoadedValue);
         }
 
+        [Test]
+        public void SaveLoad_ModuleRegisteredAfterServiceConstruction_Roundtrip()
+        {
+            var registry = new SaveModuleRegistry();
+            var module = new AlwaysWriteModule { Value = 321 };
+
+            _signalBus = Container.Resolve<SignalBus>();
+            _service = new SaveService(new List<ISaveModule>(), _signalBus, moduleRegistry: registry);
+            _service.Initialize();
+
+            registry.Register(module);
+            _service.Save(TestSlot);
+            module.Value = 0;
+
+            _service.Load(TestSlot);
+
+            Assert.IsTrue(module.OnSaveCalled);
+            Assert.IsTrue(module.OnLoadCalled);
+            Assert.AreEqual(321, module.LoadedValue);
+        }
+
         // ─── 4. Module exception on save doesn't stop others ─────────────
 
         [Test]

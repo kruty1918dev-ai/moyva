@@ -21,12 +21,14 @@ namespace Kruty1918.Moyva.Bootstrap
 
             if (_config == null)
                 Debug.LogWarning("[Bootstrap] BootstrapInstallerConfigSO не призначено. Використано legacy inline settings із BootstrapInstaller.");
+            else
+                Debug.Log($"[Bootstrap] Використано BootstrapInstallerConfigSO '{_config.name}'.");
 
             // Спільний стан стартової позиції (читається BootstrapGameInitializer після того,
             // як StartingPositionInitializer запише значення при обробці WorldGeneratedDataSignal).
             Container.Bind<BootstrapStartingPositionState>().AsSingle();
 
-            // Гра-bootstrap робить дефолтну будівлю та видає стартові ресурси
+            // Гра-bootstrap готує owner-контекст і видає стартові ресурси на старті нового світу.
             Container.BindInstance(gameSettings).AsSingle();
             Container.BindInterfacesTo<BootstrapGameInitializer>().AsSingle().NonLazy();
             Container.BindExecutionOrder<BootstrapGameInitializer>(102); // після StartingPositionInitializer (101)
@@ -35,6 +37,10 @@ namespace Kruty1918.Moyva.Bootstrap
             // потрапляє в List<ISaveModule> при ініціалізації SaveService.
             Container.BindInterfacesAndSelfTo<UnitsSaveModule>()
                 .AsSingle();
+
+            Container.BindInterfacesTo<SaveModuleRegistrar<UnitsSaveModule>>()
+                .AsSingle()
+                .NonLazy();
 
             // Автозбереження при виході з програми.
             Container.BindInterfacesTo<GameExitSaver>()

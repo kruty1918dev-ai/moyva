@@ -5,6 +5,9 @@ using Zenject;
 
 namespace Kruty1918.Moyva.HomeMenu.UI
 {
+    /// <summary>
+    /// Контролер UI-панелі лобі: invite-code, список користувачів, старт гри та refresh.
+    /// </summary>
     public class LobbyPanelViewController : MonoBehaviour, ILobbyPanelViewController, IInitializable
     {
         [SerializeField] private Button _startGameButton;
@@ -115,6 +118,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_bound)
                 return;
 
+            // 1: Скидаємо UI у базовий стартовий стан.
             // Початковий стан UI: очистити список та встановити дефолтний текст
             ClearUsers();
             ClearLobbyInvateCode();
@@ -123,6 +127,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_startGameButton != null)
                 _startGameButton.interactable = false;
 
+            // 2: Прив'язуємо обробники кнопок копіювання і оновлення.
             // Підключаємо слухачі кнопок
             if (_coppyInviteCodeButton != null)
             {
