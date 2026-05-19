@@ -131,6 +131,13 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
                 SendCount++;
             }
 
+            public void SendCommandToPeer(string peerId, GameCommandType type, byte[] payload)
+            {
+                LastSentType = type;
+                LastSentPayload = payload;
+                SendCount++;
+            }
+
             public void RegisterHandler(GameCommandType type, Action<string, byte[]> handler)
             {
                 if (type == GameCommandType.StartingPositions)
