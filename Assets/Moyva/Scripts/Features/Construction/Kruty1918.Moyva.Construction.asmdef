@@ -9,7 +9,8 @@
         "Kruty1918.Moyva.SaveSystem",
         "Kruty1918.Moyva.FogOfWar",
         "Unity.InputSystem",
-        "Kruty1918.Moyva.WorldCreation.API"
+        "Kruty1918.Moyva.WorldCreation.API",
+        "Kruty1918.Moyva.Combat"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

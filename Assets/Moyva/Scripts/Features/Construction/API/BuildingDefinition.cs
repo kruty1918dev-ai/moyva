@@ -54,6 +54,11 @@ namespace Kruty1918.Moyva.Construction.API
         [SerializeReference]
         public List<BuildingModuleDefinition> Modules = new List<BuildingModuleDefinition>();
 
+        [Header("Здоров'я")]
+        [Tooltip("Максимальне HP будівлі. Використовується для ініціалізації компонента IHealth під час spawn.")]
+        [Min(1)]
+        public int MaxHp = 100;
+
         [Header("Правила розміщення")]
         [Tooltip("Увімкнути кастомні правила розміщення відносно ратуші для цієї будівлі.\nЯкщо вимкнено — застосовуються стандартні правила за класом будівлі.")]
         public bool UseCustomTownHallRules;

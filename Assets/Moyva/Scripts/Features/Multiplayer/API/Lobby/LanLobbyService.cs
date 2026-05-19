@@ -68,7 +68,9 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             var roomId = Guid.NewGuid().ToString("N");
             var ip = GetLocalIPAddress() ?? "127.0.0.1";
             var lobbyCode = roomId.Substring(0, 8);
-            var joinCode = $"lan:{ip}:{DefaultPort}";
+            var joinCode = string.IsNullOrWhiteSpace(options.RelayJoinCode)
+                ? $"lan:{ip}:{DefaultPort}"
+                : options.RelayJoinCode.Trim();
             var hostPlayerId = BuildLocalHostId();
             var players = new List<LobbyPlayer>
             {
