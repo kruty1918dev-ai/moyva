@@ -8,6 +8,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
     {
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
+        private readonly ICameraBoundsProvider _boundsProvider;
 
         private Vector3 _targetPosition;
         private Vector3 _currentVelocity; // Необхідно для Vector3.SmoothDamp
@@ -16,16 +17,21 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private const float ForceBlockDuration = 1.5f; // Час затримки після форсованого руху (можна винести в SO)
 
         // Zenject автоматично підставить активну камеру та налаштування
-        public CameraMovement(UnityEngine.Camera camera, CameraSettingsSO settings)
+        public CameraMovement(
+            UnityEngine.Camera camera,
+            CameraSettingsSO settings,
+            [InjectOptional] ICameraBoundsProvider boundsProvider = null)
         {
             _camera = camera;
             _settings = settings;
+            _boundsProvider = boundsProvider;
         }
 
         public void Initialize()
         {
             // На старті синхронізуємо цільову позицію з поточною, щоб камера не відлітала
             _targetPosition = _camera.transform.position;
+            ClampTargetToBounds();
         }
 
         public void MoveCamera(Vector3 delta) // delta — це чисті пікселі з Action Map
@@ -41,6 +47,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             worldDelta.z = 0f;
             _targetPosition += worldDelta;
             _targetPosition.z = _settings.defaultCameraZ;
+            ClampTargetToBounds();
 
             if (!immediate)
                 return;
@@ -73,6 +80,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             // Тримаємо Z стабільним для 2D
             _targetPosition.z = _settings.defaultCameraZ;
+            ClampTargetToBounds();
 
             if (!immediate)
                 return;
@@ -85,14 +93,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
         {
             // Встановлюємо нову ціль і блокуємо звичайний рух на заданий час
             _targetPosition = position;
+            ClampTargetToBounds();
             _forceBlockTimer = ForceBlockDuration;
         }
 
         public void TeleportCamera(Vector3 position)
         {
             _targetPosition = position;
+            ClampTargetToBounds();
             _currentVelocity = Vector3.zero;
-            _camera.transform.position = position;
+            _camera.transform.position = _targetPosition;
         }
 
         public void LateTick()
@@ -103,6 +113,10 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 _forceBlockTimer -= Time.deltaTime;
             }
 
+            // Тримаємо ціль усередині bounds на кожному кадрі, бо зум міг змінити
+            // допустиму "напіввисоту" viewport.
+            ClampTargetToBounds();
+
             // Плавно рухаємо камеру до _targetPosition
             _camera.transform.position = Vector3.SmoothDamp(
                 _camera.transform.position,
@@ -110,6 +124,45 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 ref _currentVelocity,
                 _settings.smoothTime
             );
+        }
+
+        private void ClampTargetToBounds()
+        {
+            if (_boundsProvider == null || _camera == null)
+                return;
+
+            var bounds = _boundsProvider.GetWorldBounds();
+            if (!bounds.HasValue)
+                return;
+
+            float halfH = _camera.orthographicSize;
+            float halfW = halfH * _camera.aspect;
+
+            float minX, maxX;
+            if (bounds.Width <= halfW * 2f)
+            {
+                // Якщо viewport ширший за bounds, єдина валідна позиція — центр.
+                minX = maxX = bounds.Center.x;
+            }
+            else
+            {
+                minX = bounds.MinX + halfW;
+                maxX = bounds.MaxX - halfW;
+            }
+
+            float minY, maxY;
+            if (bounds.Height <= halfH * 2f)
+            {
+                minY = maxY = bounds.Center.y;
+            }
+            else
+            {
+                minY = bounds.MinY + halfH;
+                maxY = bounds.MaxY - halfH;
+            }
+
+            _targetPosition.x = Mathf.Clamp(_targetPosition.x, minX, maxX);
+            _targetPosition.y = Mathf.Clamp(_targetPosition.y, minY, maxY);
         }
     }
 }

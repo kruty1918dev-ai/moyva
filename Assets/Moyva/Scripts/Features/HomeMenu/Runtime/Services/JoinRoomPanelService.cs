@@ -141,7 +141,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _roomsCts?.Cancel();
             _roomsCts?.Dispose();
             _roomsCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt);
-            _roomsCts.CancelAfter(TimeSpan.FromSeconds(8));
+            _roomsCts.CancelAfter(TimeSpan.FromSeconds(5));
             var ct = _roomsCts.Token;
 
             OverlayLoaderResult overlay = null;
@@ -257,7 +257,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             if (_viewController == null) return;
             if (_isJoining) return;
-            if (!_actionRateLimiter.Allow("join-click", TimeSpan.FromMilliseconds(700)))
+            if (!_actionRateLimiter.Allow("join-click", TimeSpan.FromMilliseconds(400)))
             {
                 _infoPanelService?.Show(new InfoMessage("Зачекайте", "Натискання виконується надто часто. Спробуйте ще раз за мить."));
                 return;

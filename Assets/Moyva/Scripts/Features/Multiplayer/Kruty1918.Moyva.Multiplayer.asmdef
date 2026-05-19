@@ -6,6 +6,7 @@
         "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.Construction",
         "Kruty1918.Moyva.Units",
+        "Kruty1918.Moyva.Economy",
         "Unity.Services.Core",
         "Unity.Services.Authentication",
         "Unity.Services.Relay",

@@ -61,8 +61,8 @@ namespace Kruty1918.Moyva.Shared.Common
             logLevel: ServiceLogLevel.Verbose,
             connectivityWaitTimeout: TimeSpan.FromSeconds(8),
             connectivityQuickProbeTimeout: TimeSpan.FromSeconds(6),
-            joinCodeResolveTimeout: TimeSpan.FromSeconds(15),
-            joinCodePollInterval: TimeSpan.FromMilliseconds(250),
+            joinCodeResolveTimeout: TimeSpan.FromSeconds(10),
+            joinCodePollInterval: TimeSpan.FromMilliseconds(200),
             applyGraphicsProfile: true,
             respectCustomGraphicsProfile: true,
             graphicsProfile: GraphicsQualityProfile.Balanced);

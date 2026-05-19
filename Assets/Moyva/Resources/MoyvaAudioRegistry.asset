@@ -12,7 +12,47 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce0b7440ca9299cf0856867a9999c7a2, type: 3}
   m_Name: MoyvaAudioRegistry
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
-  _sounds: []
+  _sounds:
+  - Key: music-idle
+    Clip: {fileID: 8300000, guid: 1155955e306f54181935f3ac9156a5eb, type: 3}
+    Variants: []
+    Bus: 1
+    MixerGroup: {fileID: 0}
+    Volume: 1
+    VolumeRandom: 0
+    Pitch: 1
+    PitchRandom: 0
+    SpatialBlend: 0
+    DopplerLevel: 0
+    ReverbZoneMix: 1
+    Priority: 128
+    Loop: 1
+    PoolWarmup: 1
+    MaxSimultaneous: 8
+    Effects:
+      EnableLowPass: 0
+      LowPassCutoff: 5000
+      LowPassResonance: 1
+      EnableHighPass: 0
+      HighPassCutoff: 120
+      HighPassResonance: 1
+      EnableEcho: 0
+      EchoDelay: 220
+      EchoDecayRatio: 0.35
+      EchoWetMix: 0.28
+      EchoDryMix: 1
+      EnableReverb: 0
+      ReverbPreset: 0
+      EnableDistortion: 0
+      DistortionLevel: 0.18
+      EnableChorus: 0
+      ChorusDryMix: 0.5
+      ChorusWetMix1: 0.5
+      ChorusWetMix2: 0.5
+      ChorusWetMix3: 0.5
+      ChorusDelay: 40
+      ChorusRate: 0.8
+      ChorusDepth: 0.03
   _defaultPoolSize: 12
   _dontDestroyOnLoad: 1
   _verboseLogs: 0
