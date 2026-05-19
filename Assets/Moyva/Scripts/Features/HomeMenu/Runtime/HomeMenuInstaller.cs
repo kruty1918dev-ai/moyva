@@ -214,6 +214,11 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.BindInterfacesAndSelfTo<InfoPanelService>()
                 .AsSingle();
 
+            // Дренує HostDisconnectNotice при завантаженні HomeMenu сцени.
+            Container.BindInterfacesAndSelfTo<HostDisconnectNoticePresenter>()
+                .AsSingle()
+                .NonLazy();
+
             // Сервіс запиту пароля для приватних кімнат.
             Container.BindInterfacesAndSelfTo<PasswordPanelService>()
                 .AsSingle();

@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
+using UnityEngine.SceneManagement;
 
 namespace Kruty1918.Moyva.Multiplayer.Core
 {
@@ -356,6 +357,26 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private void OnKickedFromLobby(string reason)
         {
             _logger.Warn($"Kicked from lobby: {reason}");
+
+            // If the local player has already moved to the gameplay scene
+            // (i.e. active scene name is not the HomeMenu scene), surface a
+            // host-disconnected notice and bounce back to the main menu so the
+            // user is not left in a broken multiplayer match.
+            try
+            {
+                var active = SceneManager.GetActiveScene().name;
+                if (!string.IsNullOrEmpty(active) &&
+                    !active.Equals("HomeMenu", StringComparison.OrdinalIgnoreCase))
+                {
+                    HostDisconnectNotice.Set(reason);
+                    SceneManager.LoadScene("HomeMenu", LoadSceneMode.Single);
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.Warn($"Failed to schedule HomeMenu transition after host-left: {e.Message}");
+            }
+
             _ = SafeCleanupAsync();
         }
 
