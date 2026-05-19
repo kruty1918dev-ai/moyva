@@ -12,6 +12,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         /// <summary>Кнопка старту гри для host flow.</summary>
         Button StartGameButton { get; }
 
+        /// <summary>Кнопка «Назад» / виходу з лобі.</summary>
+        Button BackButton { get; }
+
         /// <summary>Показати код запрошення до лобі.</summary>
         void SetLobbyInvateCode(string code);
 

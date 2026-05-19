@@ -26,6 +26,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             // 3. Біндимо сервіси. 
             // Використовуємо BindInterfacesAndSelfTo, щоб підхопити ITickable, IInitializable та самі інтерфейси API
+            Container.BindInterfacesAndSelfTo<TilemapCameraBoundsProvider>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraMovement>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraZoom>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraMapRenderMaskService>().AsSingle();

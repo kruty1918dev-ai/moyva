@@ -154,7 +154,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var resolved = await MultiplayerReliabilityPolicy.RetryWithBackoffAndJitterAsync(
                 async token => await ResolveAttemptAsync(),
                 value => !string.IsNullOrWhiteSpace(value),
-                maxAttempts: 4,
+                maxAttempts: 3,
                 baseDelay: _menuProfile.JoinCodePollInterval,
                 operationName: "ResolveNetworkJoinCodeAsync",
                 ct: ct);
