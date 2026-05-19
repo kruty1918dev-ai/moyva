@@ -54,6 +54,18 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _ = _network.SendMessageAsync("*", packet, CancellationToken.None);
         }
 
+        public void SendCommandToPeer(string peerId, GameCommandType type, byte[] payload)
+        {
+            if (string.IsNullOrEmpty(peerId))
+            {
+                _logger.Warn("SendCommandToPeer called with null/empty peerId.");
+                return;
+            }
+
+            var packet = BuildPacket(type, payload);
+            _ = _network.SendMessageAsync(peerId, packet, CancellationToken.None);
+        }
+
         public void RegisterHandler(GameCommandType type, Action<string, byte[]> handler)
         {
             _handlers[type] = handler;

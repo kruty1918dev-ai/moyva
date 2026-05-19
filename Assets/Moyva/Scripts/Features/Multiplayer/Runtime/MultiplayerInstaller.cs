@@ -353,6 +353,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            // Late-join catch-up: host надсилає snapshot будівель + economy кожному новому peer.
+            container.BindInterfacesAndSelfTo<WorldStateReplicationService>()
+                .AsSingle()
+                .NonLazy();
+
             container.Bind<IParticipantPolicyService>()
                 .To<ParticipantPolicyService>()
                 .AsSingle();
