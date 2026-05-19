@@ -217,6 +217,25 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         }
 
         [Test]
+        public void SwitchableNetworkProvider_RelayDisabled_ReportsOfflineEffectiveType()
+        {
+            var logger = new FakeLogger();
+            var config = new MultiplayerConfig(
+                MultiplayerConfig.CurrentSchemaVersion,
+                NetworkProviderType.Relay,
+                SessionRules.Default(),
+                strictParticipantLock: false,
+                enforceConfigConsistency: false,
+                matchmakingEnabled: false,
+                enableRelayProvider: false);
+
+            using var provider = new SwitchableNetworkProvider(config, logger);
+
+            Assert.AreEqual(NetworkProviderType.Relay, provider.RequestedType);
+            Assert.AreEqual(NetworkProviderType.Offline, provider.CurrentType);
+        }
+
+        [Test]
         public void GameCommandSync_SendCommand_BuildsPacketAndBroadcasts()
         {
             var logger = new FakeLogger();

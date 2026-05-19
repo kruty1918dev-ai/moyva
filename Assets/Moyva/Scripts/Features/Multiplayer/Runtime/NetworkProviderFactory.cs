@@ -80,6 +80,12 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 return new OfflineNetworkProvider();
             }
 
+            if (!RelayNetworkProvider.IsRuntimeAvailable)
+            {
+                logger?.Warn("[NetworkProviderFactory] Relay runtime is unavailable. Falling back to Offline provider.");
+                return new OfflineNetworkProvider();
+            }
+
             if (RelayNetworkProvider.TryValidateReflectionBindings(out var error))
                 return new RelayNetworkProvider(config.RelaySettings, logger);
 

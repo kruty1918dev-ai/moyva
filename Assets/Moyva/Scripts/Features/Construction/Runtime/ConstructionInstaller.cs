@@ -1,3 +1,5 @@
+using Kruty1918.Moyva.Combat;
+using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.WorldCreation.API;
@@ -39,6 +41,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             Container.BindInstance(_minSpacingBetweenBuildings).WithId("minSpacing");
+
+            // IHealthRegistry — забезпечується CombatInstaller
+            if (!Container.HasBinding(typeof(IHealthRegistry)))
+                CombatInstaller.Install(Container);
 
             int townHallBuildRadius;
             try
@@ -102,6 +108,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle();
 
             Container.BindInterfacesTo<SaveModuleRegistrar<ConstructionSaveModule>>()
+                .AsSingle()
+                .NonLazy();
+
+            // Система здоров'я будівель — реєструє IHealth при BuildingPlacedSignal
+            Container.BindInterfacesAndSelfTo<BuildingHealthService>()
                 .AsSingle()
                 .NonLazy();
 

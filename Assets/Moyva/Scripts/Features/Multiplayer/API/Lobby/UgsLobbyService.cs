@@ -76,6 +76,10 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
 
+            var initialRelayJoinCode = options.RelayJoinCode?.Trim() ?? string.Empty;
+            if (!string.IsNullOrEmpty(initialRelayJoinCode) && !RelayJoinCodeUtility.IsValid(initialRelayJoinCode))
+                throw new ArgumentException($"Invalid Relay join code '{initialRelayJoinCode}'.", nameof(options));
+
             await _operationLock.WaitAsync(ct);
             try
             {
@@ -91,7 +95,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                     Player = BuildLocalPlayer(options.DisplayName),
                     Data = new Dictionary<string, DataObject>
                     {
-                        { RelayCodeDataKey, new DataObject(DataObject.VisibilityOptions.Member, string.Empty) },
+                        { RelayCodeDataKey, new DataObject(DataObject.VisibilityOptions.Member, initialRelayJoinCode) },
                         { ProjectDataKey, new DataObject(DataObject.VisibilityOptions.Public, ProjectDataValue, DataObject.IndexOptions.S1) },
                         { ProviderDataKey, new DataObject(DataObject.VisibilityOptions.Public, ProviderDataValue, DataObject.IndexOptions.S2) },
                         { PasswordHashDataKey, new DataObject(DataObject.VisibilityOptions.Public, LobbyPasswordHasher.Hash(options.Password)) },
@@ -127,7 +131,7 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
                 PublishState(_current.State);
 
                 StartLoops();
-                _logger.Info($"[UgsLobby] Created '{options.Name}' id={_lobby.Id} code={_lobby.LobbyCode}");
+                _logger.Info($"[UgsLobby] Created '{options.Name}' id={_lobby.Id} code={_lobby.LobbyCode} relay={initialRelayJoinCode}");
                 return _current;
             }
             finally

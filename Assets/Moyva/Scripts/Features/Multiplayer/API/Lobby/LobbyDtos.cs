@@ -128,17 +128,19 @@ namespace Kruty1918.Moyva.Multiplayer.Lobbies
         public int MaxPlayers { get; }
         public bool IsPrivate { get; }
         public string DisplayName { get; }
+        public string RelayJoinCode { get; }
 
         /// <summary>Сирий пароль, введений хостом. Зберігається як SHA-256 хеш, ніколи не передається по мережі в відкритому вигляді.</summary>
         public string Password { get; }
 
-        public CreateRoomOptions(string name, int maxPlayers, bool isPrivate, string displayName, string password = null)
+        public CreateRoomOptions(string name, int maxPlayers, bool isPrivate, string displayName, string password = null, string relayJoinCode = null)
         {
             Name = string.IsNullOrWhiteSpace(name) ? "Room" : name.Trim();
             MaxPlayers = maxPlayers > 0 ? maxPlayers : 4;
             IsPrivate = isPrivate;
             DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Player" : displayName.Trim();
             Password = password;
+            RelayJoinCode = relayJoinCode?.Trim() ?? string.Empty;
         }
 
         /// <summary>True, якщо пароль був введений.</summary>

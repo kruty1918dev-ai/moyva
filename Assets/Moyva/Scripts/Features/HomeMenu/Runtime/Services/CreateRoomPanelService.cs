@@ -71,24 +71,30 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_viewController.NextButton != null)
                 _viewController.NextButton.interactable = false;
 
+            var transportHostStarted = false;
             try
             {
                 await ApplySelectedProviderAsync();
+
+                var transportJoinCode = await StartNetworkHostAsync(_viewController.RoomName);
+                if (transportJoinCode == null)
+                    return;
+                transportHostStarted = _networkProvider != null;
 
                 var opts = new Kruty1918.Moyva.Multiplayer.Lobbies.CreateRoomOptions(
                     _viewController.RoomName,
                     _viewController.MaxPlayers,
                     isPrivate: !_viewController.IsPublic,
                     displayName: GetPlayerName(),
-                    password: _viewController.Password);
+                    password: _viewController.Password,
+                    relayJoinCode: transportJoinCode);
 
                 var room = await _lobbyService.CreateRoomAsync(opts);
 
                 // If created successfully, update UI and navigate on main thread
                 if (room != null)
                 {
-                    var transportReady = await StartNetworkHostAsync(room);
-                    if (!transportReady)
+                    if (!await PublishTransportJoinCodeAsync(transportJoinCode))
                         return;
 
                     MainThreadDispatcher.Enqueue(() =>
@@ -101,11 +107,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
                 else
                 {
-                    UnityEngine.Debug.LogError("CreateRoomPanelService: failed to create room, no exception but result was null.");
+                    await FailRoomCreationAsync("Не вдалося створити lobby: сервіс повернув порожній результат.", leaveLobby: false, stopTransport: true);
                 }
             }
             catch (Exception ex)
             {
+                if (transportHostStarted)
+                    await FailRoomCreationAsync($"Не вдалося створити lobby: {ex.Message}", leaveLobby: false, stopTransport: true);
                 UnityEngine.Debug.LogError($"CreateRoomPanelService: failed to create room: {ex.Message}");
                 UnityEngine.Debug.LogException(ex);
             }
@@ -126,43 +134,54 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         }
 
         /// <summary>
-        /// Після створення lobby запускає transport-хост (LAN/Relay/etc.) і публікує join-code назад у lobby.
-        /// Без цього кімната може бути видима у списку, але клієнт не матиме реального transport endpoint.
+        /// Запускає transport-хост (LAN/Relay/etc.) до створення lobby, щоб lobby одразу містила реальний transport join-code.
         /// </summary>
-        private async Task<bool> StartNetworkHostAsync(LobbyRoom room)
+        private async Task<string> StartNetworkHostAsync(string roomName)
         {
+            var providerType = GetCurrentProviderType();
             if (_networkProvider == null)
             {
-                UnityEngine.Debug.LogWarning("[CreateRoomPanelService] INetworkProvider not available; lobby created without transport host.");
-                return true;
+                var warning = "INetworkProvider not available; lobby created without transport host.";
+                if (providerType == NetworkProviderType.Relay)
+                {
+                    await FailRoomCreationAsync(warning, leaveLobby: false, stopTransport: false);
+                    return null;
+                }
+
+                UnityEngine.Debug.LogWarning($"[CreateRoomPanelService] {warning}");
+                return string.Empty;
             }
 
-            var sessionId = !string.IsNullOrWhiteSpace(room.LobbyId) ? room.LobbyId : room.LobbyCode;
-            var providerType = GetCurrentProviderType();
             var effectiveNetworkType = GetEffectiveNetworkProviderType();
             if (providerType == NetworkProviderType.Relay && effectiveNetworkType != NetworkProviderType.Relay)
             {
                 var error = $"Глобальний Relay транспорт недоступний: активний мережевий провайдер зараз {effectiveNetworkType}.";
-                await FailCreatedLobbyAsync(error);
-                return false;
+                await FailRoomCreationAsync(error, leaveLobby: false, stopTransport: false);
+                return null;
             }
 
-            var result = await _networkProvider.HostSessionAsync(sessionId);
+            var transportSessionId = BuildTransportHostSessionId(providerType, roomName);
+            var result = await _networkProvider.HostSessionAsync(transportSessionId);
             if (result == null || !result.Success)
             {
                 var error = result?.ErrorMessage ?? "Не вдалося запустити мережеву сесію.";
-                await FailCreatedLobbyAsync(error);
-                return false;
+                await FailRoomCreationAsync(error, leaveLobby: false, stopTransport: false);
+                return null;
             }
 
             var transportJoinCode = result.SessionId?.Trim() ?? string.Empty;
             if (providerType == NetworkProviderType.Relay && !RelayJoinCodeUtility.IsValid(transportJoinCode))
             {
-                var error = $"Relay повернув невалідний код підключення '{transportJoinCode}'. Очікувався короткий Relay join code, а не lobby id '{room?.LobbyId}'.";
-                await FailCreatedLobbyAsync(error);
-                return false;
+                var error = $"Relay повернув невалідний код підключення '{transportJoinCode}'. Очікувався короткий Relay join code; LobbyId не передається у transport host-flow.";
+                await FailRoomCreationAsync(error, leaveLobby: false, stopTransport: true);
+                return null;
             }
 
+            return transportJoinCode;
+        }
+
+        private async Task<bool> PublishTransportJoinCodeAsync(string transportJoinCode)
+        {
             if (!string.IsNullOrWhiteSpace(transportJoinCode) && _lobbyService != null)
             {
                 try
@@ -171,7 +190,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 }
                 catch (Exception e)
                 {
-                    await FailCreatedLobbyAsync($"Не вдалося опублікувати мережевий код кімнати: {e.Message}");
+                    await FailRoomCreationAsync($"Не вдалося опублікувати мережевий код кімнати: {e.Message}", leaveLobby: true, stopTransport: true);
                     return false;
                 }
             }
@@ -188,14 +207,38 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         {
             return _networkProvider is SwitchableNetworkProvider switchableNetworkProvider
                 ? switchableNetworkProvider.CurrentType
+                : _networkProvider is RelayNetworkProvider ? NetworkProviderType.Relay
+                : _networkProvider is LanNetworkProvider ? NetworkProviderType.Lan
+                : _networkProvider is WebSocketNetworkProvider ? NetworkProviderType.WebSocket
+                : _networkProvider is OfflineNetworkProvider ? NetworkProviderType.Offline
                 : GetCurrentProviderType();
         }
 
-        private async Task FailCreatedLobbyAsync(string error)
+        private static string BuildTransportHostSessionId(NetworkProviderType providerType, string roomName)
         {
-            UnityEngine.Debug.LogError($"[CreateRoomPanelService] HostSessionAsync failed: {error}");
-            try { if (_lobbyService != null) await _lobbyService.LeaveAsync(); }
-            catch (Exception leaveError) { UnityEngine.Debug.LogWarning($"[CreateRoomPanelService] Leave after failed host transport failed: {leaveError.Message}"); }
+            if (providerType == NetworkProviderType.Relay)
+                return string.Empty;
+
+            return string.IsNullOrWhiteSpace(roomName)
+                ? Guid.NewGuid().ToString("N")
+                : roomName.Trim();
+        }
+
+        private async Task FailRoomCreationAsync(string error, bool leaveLobby, bool stopTransport)
+        {
+            UnityEngine.Debug.LogError($"[CreateRoomPanelService] Room creation failed: {error}");
+            if (leaveLobby)
+            {
+                try { if (_lobbyService != null) await _lobbyService.LeaveAsync(); }
+                catch (Exception leaveError) { UnityEngine.Debug.LogWarning($"[CreateRoomPanelService] Leave after failed room creation failed: {leaveError.Message}"); }
+            }
+
+            if (stopTransport)
+            {
+                try { if (_networkProvider != null) await _networkProvider.LeaveSessionAsync(); }
+                catch (Exception leaveError) { UnityEngine.Debug.LogWarning($"[CreateRoomPanelService] Transport cleanup after failed room creation failed: {leaveError.Message}"); }
+            }
+
             _infoPanelService?.Show(new InfoMessage("Помилка кімнати", error));
         }
 

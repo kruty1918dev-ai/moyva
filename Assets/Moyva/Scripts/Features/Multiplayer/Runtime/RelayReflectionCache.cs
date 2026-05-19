@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private static string _validationError;
 
         private static Type _relayServiceType;
+        private static Type _methodLookupType;
         private static PropertyInfo _instanceProperty;
         private static MethodInfo[] _createAllocationMethods;
         private static MethodInfo[] _getJoinCodeMethods;
@@ -83,7 +84,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     return method;
             }
 
-            throw new MissingMethodException(_relayServiceType.FullName, methodName);
+            throw new MissingMethodException(_methodLookupType?.FullName ?? _relayServiceType?.FullName, methodName);
         }
 
         public static T ReadProperty<T>(object source, string propertyName)
@@ -139,25 +140,45 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         return;
                     }
 
-                    _createAllocationMethods = ResolveTaskMethods(_relayServiceType, "CreateAllocationAsync");
-                    _getJoinCodeMethods = ResolveTaskMethods(_relayServiceType, "GetJoinCodeAsync");
-                    _joinAllocationMethods = ResolveTaskMethods(_relayServiceType, "JoinAllocationAsync");
+                    // In the UGS Relay SDK the static RelayService class is just an accessor.
+                    // The actual service methods (CreateAllocationAsync, GetJoinCodeAsync, etc.)
+                    // are declared on IRelayService — the type returned by RelayService.Instance.
+                    // Using the PropertyType of the Instance property (i.e. IRelayService) ensures
+                    // we find the methods regardless of the concrete internal implementation class.
+                    var methodLookupType = (_instanceProperty.PropertyType != typeof(object)
+                                           && _instanceProperty.PropertyType != _relayServiceType)
+                        ? _instanceProperty.PropertyType
+                        : _relayServiceType;
+                    _methodLookupType = methodLookupType;
+
+                    _createAllocationMethods = ResolveTaskMethods(methodLookupType, "CreateAllocationAsync");
+                    _getJoinCodeMethods      = ResolveTaskMethods(methodLookupType, "GetJoinCodeAsync");
+                    _joinAllocationMethods   = ResolveTaskMethods(methodLookupType, "JoinAllocationAsync");
+
+                    // Fallback: if methods not found on the declared interface type, try the
+                    // RelayService class itself (older SDK versions exposed them there directly).
+                    if (_createAllocationMethods.Length == 0)
+                        _createAllocationMethods = ResolveTaskMethods(_relayServiceType, "CreateAllocationAsync");
+                    if (_getJoinCodeMethods.Length == 0)
+                        _getJoinCodeMethods = ResolveTaskMethods(_relayServiceType, "GetJoinCodeAsync");
+                    if (_joinAllocationMethods.Length == 0)
+                        _joinAllocationMethods = ResolveTaskMethods(_relayServiceType, "JoinAllocationAsync");
 
                     if (_createAllocationMethods.Length == 0)
                     {
-                        Invalidate("RelayService.CreateAllocationAsync method is missing.");
+                        Invalidate($"CreateAllocationAsync not found on {methodLookupType.FullName} or {_relayServiceType.FullName}.");
                         return;
                     }
 
                     if (_getJoinCodeMethods.Length == 0)
                     {
-                        Invalidate("RelayService.GetJoinCodeAsync method is missing.");
+                        Invalidate($"GetJoinCodeAsync not found on {methodLookupType.FullName} or {_relayServiceType.FullName}.");
                         return;
                     }
 
                     if (_joinAllocationMethods.Length == 0)
                     {
-                        Invalidate("RelayService.JoinAllocationAsync method is missing.");
+                        Invalidate($"JoinAllocationAsync not found on {methodLookupType.FullName} or {_relayServiceType.FullName}.");
                         return;
                     }
 
