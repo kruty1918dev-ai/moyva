@@ -47,6 +47,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             SubscribeToWorldGeneratedSignal();
         }
 
+        private void Awake()
+        {
+            // Страховка від коротких артефактів при старті/перезавантаженні сцени:
+            // глобальний fog-culling вимикаємо до повної ініціалізації fog texture.
+            Shader.SetGlobalFloat(GlobalFogCullEnabledId, 0f);
+        }
+
         private void OnDestroy()
         {
             if (_signalBus != null && _subscribed)
@@ -58,6 +65,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void InitializeOverlay(int width, int height)
         {
+            // На час (ре)ініціалізації тимчасово вимикаємо culling, щоб шейдер не
+            // семплив застарілі глобали минулої сцени/карти.
+            Shader.SetGlobalFloat(GlobalFogCullEnabledId, 0f);
+
             int w = Mathf.Max(1, width);
             int h = Mathf.Max(1, height);
             _mapWidth = w;

@@ -104,10 +104,14 @@ Shader "Moyva/2D/WaterLayerMipLodContour"
                 if (_MoyvaFogCullEnabled < 0.5)
                     return;
 
+                float2 mapSize = max(_MoyvaFogMapParams.xy, float2(1.0, 1.0));
                 float2 invMapSize = max(_MoyvaFogMapParams.zw, float2(0.000001, 0.000001));
-                float2 fogUV = (worldXY + float2(0.5, 0.5)) * invMapSize;
-                float inside = step(0.0, fogUV.x) * step(fogUV.x, 1.0) * step(0.0, fogUV.y) * step(fogUV.y, 1.0);
-                float fogValue = SAMPLE_TEXTURE2D(_MoyvaFogTex, sampler_MoyvaFogTex, saturate(fogUV)).r;
+
+                float2 fogCell = floor(worldXY + float2(0.5, 0.5));
+                float inside = step(0.0, fogCell.x) * step(fogCell.x, mapSize.x - 1.0)
+                             * step(0.0, fogCell.y) * step(fogCell.y, mapSize.y - 1.0);
+                float2 fogUV = (clamp(fogCell, float2(0.0, 0.0), mapSize - 1.0) + float2(0.5, 0.5)) * invMapSize;
+                float fogValue = SAMPLE_TEXTURE2D(_MoyvaFogTex, sampler_MoyvaFogTex, fogUV).r;
                 clip((1.0 - inside) + fogValue - _MoyvaFogCullThreshold);
             }
 
