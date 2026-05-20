@@ -175,6 +175,37 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
                 if (GUILayout.Button("Відкрити Economy Designer → Стартова економіка", GUILayout.Height(24f)))
                     OpenEconomyDesignerAtStartingEconomy();
             }
+
+            using (new EditorGUILayout.VerticalScope(_cardStyle))
+            {
+                EditorGUILayout.LabelField("Проявлення світу після завантаження", EditorStyles.boldLabel);
+                EditorGUILayout.Space(3f);
+
+                var reveal = settings.FindPropertyRelative("WorldRevealFade");
+                if (reveal == null)
+                {
+                    EditorGUILayout.HelpBox("Property 'WorldRevealFade' не знайдено.", MessageType.Warning);
+                    return;
+                }
+
+                EditorGUILayout.PropertyField(reveal.FindPropertyRelative("Enabled"), new GUIContent("Увімкнено"));
+                using (new EditorGUI.DisabledScope(!reveal.FindPropertyRelative("Enabled").boolValue))
+                {
+                    EditorGUILayout.PropertyField(
+                        reveal.FindPropertyRelative("DurationSeconds"),
+                        new GUIContent("Тривалість fade (сек)"));
+                    EditorGUILayout.PropertyField(
+                        reveal.FindPropertyRelative("StartDelaySeconds"),
+                        new GUIContent("Затримка перед fade (сек)"));
+                    EditorGUILayout.PropertyField(
+                        reveal.FindPropertyRelative("StartAlpha"),
+                        new GUIContent("Стартова непрозорість"));
+                }
+
+                EditorGUILayout.HelpBox(
+                    "Overlay не блокує рейкасти: взаємодія мишею/тачем проходить крізь нього.",
+                    MessageType.Info);
+            }
         }
 
         private static void OpenEconomyDesignerAtStartingEconomy()

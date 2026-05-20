@@ -35,7 +35,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         }
 
         public void MoveCamera(Vector3 delta) // delta — це чисті пікселі з Action Map
-            => ApplyScreenDelta(delta, _settings.moveSpeed, immediate: false);
+            => ApplyScreenDelta(delta, _settings.ResolveMoveSpeed(), immediate: false);
 
         public void MoveCameraImmediate(Vector3 delta, float speedMultiplier)
             => ApplyScreenDelta(delta, speedMultiplier, immediate: true);
@@ -122,7 +122,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 _camera.transform.position,
                 _targetPosition,
                 ref _currentVelocity,
-                _settings.smoothTime
+                _settings.ResolveSmoothTime()
             );
         }
 
@@ -135,30 +135,38 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (!bounds.HasValue)
                 return;
 
+            Vector2 overflow = _settings.ResolveBoundsOverflowWorldUnits();
+            float minBoundX = bounds.MinX - overflow.x;
+            float maxBoundX = bounds.MaxX + overflow.x;
+            float minBoundY = bounds.MinY - overflow.y;
+            float maxBoundY = bounds.MaxY + overflow.y;
+
             float halfH = _camera.orthographicSize;
             float halfW = halfH * _camera.aspect;
+            float width = Mathf.Max(0.01f, maxBoundX - minBoundX);
+            float height = Mathf.Max(0.01f, maxBoundY - minBoundY);
 
             float minX, maxX;
-            if (bounds.Width <= halfW * 2f)
+            if (width <= halfW * 2f)
             {
                 // Якщо viewport ширший за bounds, єдина валідна позиція — центр.
-                minX = maxX = bounds.Center.x;
+                minX = maxX = (minBoundX + maxBoundX) * 0.5f;
             }
             else
             {
-                minX = bounds.MinX + halfW;
-                maxX = bounds.MaxX - halfW;
+                minX = minBoundX + halfW;
+                maxX = maxBoundX - halfW;
             }
 
             float minY, maxY;
-            if (bounds.Height <= halfH * 2f)
+            if (height <= halfH * 2f)
             {
-                minY = maxY = bounds.Center.y;
+                minY = maxY = (minBoundY + maxBoundY) * 0.5f;
             }
             else
             {
-                minY = bounds.MinY + halfH;
-                maxY = bounds.MaxY - halfH;
+                minY = minBoundY + halfH;
+                maxY = maxBoundY - halfH;
             }
 
             _targetPosition.x = Mathf.Clamp(_targetPosition.x, minX, maxX);

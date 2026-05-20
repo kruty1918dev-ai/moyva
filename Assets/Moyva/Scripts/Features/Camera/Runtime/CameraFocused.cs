@@ -37,7 +37,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             // 3. Викликаємо форсований зум. 
             // Можна фокусуватися на "середнє" значення між min та max, 
             // або додати спеціальне фокусне значення в налаштування.
-            float focusZoom = (_settings.minZoom + _settings.maxZoom) * 0.5f;
+            float focusZoom = (_settings.ResolveMinZoom() + _settings.ResolveMaxZoom()) * 0.5f;
             _cameraZoom.ForceZoomCamera(focusZoom);
             
             Debug.Log($"[CameraFocused] Focusing on {target.name} at {targetPos}");

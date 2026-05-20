@@ -28,6 +28,29 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     [Serializable]
     public sealed class BootstrapGameSettings
     {
+        [Serializable]
+        public sealed class WorldRevealFadeSettings
+        {
+            [Tooltip("Увімкнути плавне проявлення світу після сигналу готовності карти.")]
+            [SerializeField]
+            public bool Enabled = true;
+
+            [Tooltip("Тривалість fade з чорного в прозорий (сек).")]
+            [Min(0f)]
+            [SerializeField]
+            public float DurationSeconds = 0.8f;
+
+            [Tooltip("Додаткова затримка перед стартом fade (сек).")]
+            [Min(0f)]
+            [SerializeField]
+            public float StartDelaySeconds = 0.05f;
+
+            [Tooltip("Стартова непрозорість чорного екрану.")]
+            [Range(0f, 1f)]
+            [SerializeField]
+            public float StartAlpha = 1f;
+        }
+
         [Header("Initial Resources")]
         [Tooltip("Список ресурсів, які гравець отримує на старт нової гри.")]
         [SerializeField]
@@ -36,6 +59,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             new InitialResourceEntry("food", 50f),
             new InitialResourceEntry("wood", 30f),
         };
+
+        [Header("World Reveal")]
+        [Tooltip("Налаштування плавного проявлення світу після генерації/завантаження.")]
+        [SerializeField]
+        public WorldRevealFadeSettings WorldRevealFade = new();
 
         public BootstrapGameSettings() { }
     }
