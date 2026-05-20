@@ -73,6 +73,10 @@ namespace Kruty1918.Moyva.Bootstrap
 
             Container.BindInterfacesTo<InitialWorldSaveService>().AsSingle().NonLazy();
             Container.BindExecutionOrder<InitialWorldSaveService>(103);
+
+            // Плавний reveal світу (чорний overlay -> прозорий) після готовності карти.
+            Container.BindInterfacesTo<WorldLoadRevealOverlayService>().AsSingle().NonLazy();
+            Container.BindExecutionOrder<WorldLoadRevealOverlayService>(104);
         }
     }
 
