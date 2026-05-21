@@ -335,6 +335,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 if (layerShader != null)
                 {
                     var mat = new Material(layerShader) { mainTexture = texture };
+                    if (mat.HasProperty("_GlobalMipBiasWeight"))
+                        mat.SetFloat("_GlobalMipBiasWeight", 0f);
                     if (mat.HasProperty("_LandMaskTex"))
                         _waterLayerMaterialSettings?.ApplyTo(mat);
                     spriteRenderer.sharedMaterial = mat;

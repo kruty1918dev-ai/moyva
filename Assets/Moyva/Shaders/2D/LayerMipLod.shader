@@ -6,6 +6,7 @@ Shader "Moyva/2D/LayerMipLod"
         _Color ("Tint", Color) = (1,1,1,1)
         _MipBias ("Base Mip Bias", Range(0, 4)) = 0
         _ZoomLodStrength ("Zoom LOD Strength", Range(0, 2)) = 1
+        _GlobalMipBiasWeight ("Global Zoom Mip Bias Weight", Range(0, 1)) = 1
         _AlphaStabilization ("Alpha Stabilization", Range(0, 1)) = 1
         _AlphaClipThreshold ("Alpha Clip Threshold", Range(0, 1)) = 0.2
     }
@@ -40,6 +41,7 @@ Shader "Moyva/2D/LayerMipLod"
             fixed4 _Color;
             float _MipBias;
             float _ZoomLodStrength;
+            float _GlobalMipBiasWeight;
             float _MoyvaTexLodBias;
             float _AlphaStabilization;
             float _AlphaClipThreshold;
@@ -94,7 +96,7 @@ Shader "Moyva/2D/LayerMipLod"
             fixed4 frag(v2f i) : SV_Target
             {
                 ClipHiddenByFog(i.worldXY);
-                float mipBias = _MipBias + (_MoyvaTexLodBias * _ZoomLodStrength);
+                float mipBias = _MipBias + (_MoyvaTexLodBias * _ZoomLodStrength * _GlobalMipBiasWeight);
                 fixed4 texColor = tex2Dbias(_MainTex, float4(i.uv, 0, mipBias));
 
                 // Стабілізуємо альфу для mip-level sampling, щоб уникати tile bleeding

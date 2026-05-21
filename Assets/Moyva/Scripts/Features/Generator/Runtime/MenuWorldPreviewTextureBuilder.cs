@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         private const int DefaultPixelsPerTile = 4;
         private const int DefaultMaxTextureEdge = 1024;
-        private const float ObjectOverlayScale = 0.72f;
+        private const float ObjectOverlayScale = 1.35f;
         private const float BuildingOverlayScale = 0.9f;
         private const float OverlayAlphaScale = 0.9f;
 
@@ -175,7 +175,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                     if (TryResolveSpriteData(objectSpriteCache, objectId, out var spriteData))
                     {
-                        StampSpriteOverlay(canvas, canvasWidth, x, y, pixelsPerTile, spriteData, ObjectOverlayScale, OverlayAlphaScale);
+                        StampSpriteOverlay(canvas, canvasWidth, canvasHeight, x, y, pixelsPerTile, spriteData, ObjectOverlayScale, OverlayAlphaScale, anchorToBottom: true);
                         renderedWithSprites++;
                     }
                     else
@@ -201,6 +201,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (!HasAnyStringValue(previewData.BuildingMap))
                 return;
 
+            if (buildingRegistry == null)
+            {
+                Debug.LogWarning("[MenuPreview] BuildingMap has values, but BuildingRegistry is not assigned. Building overlay will be skipped.");
+                return;
+            }
+
             var buildingSpriteCache = BuildBuildingSpriteCache(buildingRegistry);
             int renderedWithSprites = 0;
             int renderedWithDots = 0;
@@ -214,7 +220,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                     if (TryResolveSpriteData(buildingSpriteCache, buildingId, out var spriteData))
                     {
-                        StampSpriteOverlay(canvas, canvasWidth, x, y, pixelsPerTile, spriteData, BuildingOverlayScale, OverlayAlphaScale);
+                        StampSpriteOverlay(canvas, canvasWidth, canvasHeight, x, y, pixelsPerTile, spriteData, BuildingOverlayScale, OverlayAlphaScale, anchorToBottom: true);
                         renderedWithSprites++;
                     }
                     else
@@ -323,7 +329,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private static Dictionary<string, SpritePixelData> BuildBuildingSpriteCache(BuildingRegistrySO registry)
         {
             var cache = new Dictionary<string, SpritePixelData>(System.StringComparer.OrdinalIgnoreCase);
-            var definitions = registry.GetAll();
+            var definitions = registry?.GetAll();
+            if (definitions == null)
+                return cache;
+
             for (int i = 0; i < definitions.Length; i++)
             {
                 var definition = definitions[i];
@@ -416,26 +425,37 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private static void StampSpriteOverlay(
             Color[] canvas,
             int canvasWidth,
+            int canvasHeight,
             int tileX,
             int tileY,
             int pixelsPerTile,
             SpritePixelData spriteData,
             float overlayScale,
-            float alphaScale)
+            float alphaScale,
+            bool anchorToBottom)
         {
-            int targetSize = Mathf.Clamp(Mathf.RoundToInt(pixelsPerTile * Mathf.Clamp01(overlayScale)), 1, pixelsPerTile);
-            int inset = (pixelsPerTile - targetSize) / 2;
-            int startX = tileX * pixelsPerTile + inset;
-            int startY = tileY * pixelsPerTile + inset;
+            int targetHeight = Mathf.Max(1, Mathf.RoundToInt(pixelsPerTile * Mathf.Max(overlayScale, 0.1f)));
+            int targetWidth = Mathf.Max(1, Mathf.RoundToInt(targetHeight * (spriteData.Width / (float)Mathf.Max(1, spriteData.Height))));
 
-            for (int py = 0; py < targetSize; py++)
+            int startX = tileX * pixelsPerTile + (pixelsPerTile - targetWidth) / 2;
+            int startY = anchorToBottom
+                ? tileY * pixelsPerTile + pixelsPerTile - targetHeight
+                : tileY * pixelsPerTile + (pixelsPerTile - targetHeight) / 2;
+
+            for (int py = 0; py < targetHeight; py++)
             {
                 int canvasY = startY + py;
-                int sourceY = py * spriteData.Height / targetSize;
-                for (int px = 0; px < targetSize; px++)
+                if (canvasY < 0 || canvasY >= canvasHeight)
+                    continue;
+
+                int sourceY = py * spriteData.Height / targetHeight;
+                for (int px = 0; px < targetWidth; px++)
                 {
                     int canvasX = startX + px;
-                    int sourceX = px * spriteData.Width / targetSize;
+                    if (canvasX < 0 || canvasX >= canvasWidth)
+                        continue;
+
+                    int sourceX = px * spriteData.Width / targetWidth;
                     Color source = spriteData.Pixels[sourceY * spriteData.Width + sourceX];
                     source.a *= alphaScale;
                     if (source.a < 0.05f)

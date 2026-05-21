@@ -28,10 +28,20 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         [Header("Navigation")]
         [Tooltip("Names of panels that require confirmation when the player navigates back from them.")]
         [SerializeField] private string[] _confirmOnBackMenuNames = new string[0];
+        [Header("Menu Reveal")]
+        [Tooltip("Плавне проявлення головного меню при вході в сцену.")]
+        [SerializeField] private HomeMenuRevealFadeSettings _menuRevealFade = new();
 
         public override void InstallBindings()
         {
             HomeMenuRuntimeUiFactory.EnsureRequiredPanels(_infoPanelName);
+
+            var menuRevealFade = _menuRevealFade ?? new HomeMenuRevealFadeSettings();
+            Container.BindInstance(menuRevealFade).AsSingle();
+
+            Container.BindInterfacesTo<HomeMenuRevealOverlayService>()
+                .AsSingle()
+                .NonLazy();
 
             // Навігація між меню
             Container.Bind<INavigation>()

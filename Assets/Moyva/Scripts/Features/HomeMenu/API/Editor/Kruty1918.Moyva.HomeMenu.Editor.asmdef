@@ -3,6 +3,8 @@
     "rootNamespace": "Kruty1918.Moyva.HomeMenu.Editor",
     "references": [
         "Kruty1918.Moyva.HomeMenu",
+        "Kruty1918.Moyva.Construction",
+        "Kruty1918.Moyva.Grid",
         "Kruty1918.Moyva.WorldCreation.UI",
         "Kruty1918.Moyva.WorldCreation",
         "Kruty1918.Moyva.Signals",
