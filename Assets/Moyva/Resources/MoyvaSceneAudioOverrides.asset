@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21c613fe68ea7c18d84c3c98af6485e3, type: 3}
+  m_Name: MoyvaSceneAudioOverrides
+  m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.SceneAudioOverridesSO
+  _overrides:
+  - SceneName: HomeMenu
+    SoundKey: tavern-music-loop
+    OverrideVolume: 0
+    Volume: 1
+    OverridePitch: 0
+    Pitch: 1
+    OverrideMixerGroup: 0
+    MixerGroup: {fileID: 24300002, guid: 35a28e1f08aa176529bf03c2255bc3f8, type: 2}
+    OverrideLoop: 1
+    Loop: 1
+    OverrideSpatialBlend: 0
+    SpatialBlend: 0
+    OverridePriority: 0
+    Priority: 128
+    PlayOnAwake: 1
+  - SceneName: Gamplay_Scene
+    SoundKey: tavern-music-loop
+    OverrideVolume: 1
+    Volume: 0.343
+    OverridePitch: 0
+    Pitch: 1
+    OverrideMixerGroup: 0
+    MixerGroup: {fileID: 24300002, guid: 35a28e1f08aa176529bf03c2255bc3f8, type: 2}
+    OverrideLoop: 1
+    Loop: 1
+    OverrideSpatialBlend: 0
+    SpatialBlend: 0
+    OverridePriority: 0
+    Priority: 128
+    PlayOnAwake: 1

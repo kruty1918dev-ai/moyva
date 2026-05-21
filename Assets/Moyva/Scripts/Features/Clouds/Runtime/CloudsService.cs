@@ -11,6 +11,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
 {
     internal sealed class CloudsService : ICloudsService, IInitializable, ITickable, IDisposable
     {
+        private const string CloudMipLodShaderName = "Moyva/2D/LayerMipLod";
         private readonly CloudsSettings _settings;
         private readonly CloudsSceneReferences _sceneReferences;
         private readonly IGridService _gridService;
@@ -274,7 +275,10 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             if (_runtimeSpriteMaterial != null)
                 return _runtimeSpriteMaterial;
 
-            Shader shader = Shader.Find("Sprites/Default");
+            Shader shader = Shader.Find(CloudMipLodShaderName);
+            if (shader == null)
+                shader = Shader.Find("Sprites/Default");
+
             if (shader == null)
                 return null;
 
