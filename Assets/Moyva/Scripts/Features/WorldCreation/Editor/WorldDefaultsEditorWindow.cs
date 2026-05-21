@@ -34,12 +34,6 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
         private int _fogPreviewMapSide = 25;
         private int _fogPreviewRadiusOverride;
         private int _fogPreviewCellPixels = 10;
-        private bool _buildingTilesDropdownOpen;
-        private bool _unitTilesDropdownOpen;
-        private string _buildingTilesSearch = string.Empty;
-        private string _unitTilesSearch = string.Empty;
-        private Vector2 _buildingTilesScroll;
-        private Vector2 _unitTilesScroll;
 
         private GUIStyle _titleStyle;
         private GUIStyle _subtitleStyle;
@@ -342,6 +336,9 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
             var blockedUnitLevels = _worldSerialized.FindProperty("BlockedUnitHillLevelRanges");
             var blockedBuildingTiles = _worldSerialized.FindProperty("BlockedBuildingTileIds");
             var blockedUnitTiles = _worldSerialized.FindProperty("BlockedUnitTileIds");
+            var effectiveTileRegistry = tileRegistryProperty?.objectReferenceValue as TileRegistrySO
+                ?? (graphProperty?.objectReferenceValue as GraphAsset)?.TileRegistry;
+            var tileVisualLookup = BuildTileVisualLookup(graphTileIds, effectiveTileRegistry);
 
             using (new EditorGUI.DisabledScope(!graphValid || hillLevelCount <= 0))
             {
@@ -365,17 +362,13 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                     blockedBuildingTiles,
                     graphTileIds,
                     "Будівництво: заборонені Tile ID",
-                    ref _buildingTilesDropdownOpen,
-                    ref _buildingTilesSearch,
-                    ref _buildingTilesScroll);
+                    tileVisualLookup);
 
                 DrawTileMultiSelectDropdown(
                     blockedUnitTiles,
                     graphTileIds,
                     "Юніти: заборонені Tile ID",
-                    ref _unitTilesDropdownOpen,
-                    ref _unitTilesSearch,
-                    ref _unitTilesScroll);
+                    tileVisualLookup);
             }
 
             EndCard();
@@ -611,9 +604,7 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
             SerializedProperty selectedTileIds,
             List<string> availableTileIds,
             string label,
-            ref bool dropdownOpen,
-            ref string search,
-            ref Vector2 scroll)
+            IReadOnlyDictionary<string, TileVisualPreview> tileVisualLookup)
         {
             EditorGUILayout.Space(8f);
             EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
@@ -625,66 +616,276 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
             using (new EditorGUILayout.HorizontalScope())
             {
                 EditorGUILayout.LabelField(summary, _mutedStyle);
-                if (GUILayout.Button(dropdownOpen ? "Згорнути" : "Відкрити", GUILayout.Width(92f)))
-                    dropdownOpen = !dropdownOpen;
+                if (GUILayout.Button("Вибрати…", GUILayout.Width(92f)))
+                {
+                    Rect buttonRect = GUILayoutUtility.GetLastRect();
+                    var selectedValues = BuildSelectedValueSet(selectedTileIds);
+                    var serializedObject = selectedTileIds.serializedObject;
+                    string propertyPath = selectedTileIds.propertyPath;
+                    PopupWindow.Show(
+                        buttonRect,
+                        new TileMultiSelectPopup(
+                            availableTileIds,
+                            selectedValues,
+                            tileVisualLookup,
+                            appliedSelection =>
+                            {
+                                serializedObject.Update();
+                                var property = serializedObject.FindProperty(propertyPath);
+                                if (property == null || !property.isArray)
+                                    return;
+
+                                ApplyStringArray(property, appliedSelection);
+                                serializedObject.ApplyModifiedProperties();
+                            }));
+                }
+            }
+        }
+
+        private static HashSet<string> BuildSelectedValueSet(SerializedProperty array)
+        {
+            var result = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                string value = array.GetArrayElementAtIndex(i).stringValue;
+                if (!string.IsNullOrWhiteSpace(value))
+                    result.Add(value.Trim());
             }
 
-            if (!dropdownOpen)
+            return result;
+        }
+
+        private static void ApplyStringArray(SerializedProperty array, IReadOnlyCollection<string> values)
+        {
+            array.ClearArray();
+            if (values == null || values.Count == 0)
                 return;
 
-            search = EditorGUILayout.TextField("Пошук", search ?? string.Empty);
-            string searchPattern = (search ?? string.Empty).Trim();
-
-            using (new EditorGUILayout.HorizontalScope())
+            foreach (string value in values)
             {
-                if (GUILayout.Button("Вибрати все (фільтр)", GUILayout.Width(162f)))
-                {
-                    for (int i = 0; i < availableTileIds.Count; i++)
-                    {
-                        string id = availableTileIds[i];
-                        if (!id.Contains(searchPattern, StringComparison.OrdinalIgnoreCase))
-                            continue;
-                        EnsureStringInArray(selectedTileIds, id);
-                    }
-                }
+                if (string.IsNullOrWhiteSpace(value))
+                    continue;
 
-                if (GUILayout.Button("Очистити (фільтр)", GUILayout.Width(152f)))
+                int index = array.arraySize;
+                array.InsertArrayElementAtIndex(index);
+                array.GetArrayElementAtIndex(index).stringValue = value;
+            }
+        }
+
+        private static IReadOnlyDictionary<string, TileVisualPreview> BuildTileVisualLookup(
+            IReadOnlyList<string> availableTileIds,
+            TileRegistrySO tileRegistry)
+        {
+            var lookup = new Dictionary<string, TileVisualPreview>(StringComparer.OrdinalIgnoreCase);
+            if (availableTileIds == null || tileRegistry?.Definitions == null)
+                return lookup;
+            var availableSet = new HashSet<string>(availableTileIds, StringComparer.OrdinalIgnoreCase);
+
+            for (int i = 0; i < tileRegistry.Definitions.Length; i++)
+            {
+                var definition = tileRegistry.Definitions[i];
+                if (definition == null || string.IsNullOrWhiteSpace(definition.Id))
+                    continue;
+                if (!availableSet.Contains(definition.Id))
+                    continue;
+
+                var renderer = definition.VisualPrefab != null
+                    ? definition.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true)
+                    : null;
+
+                lookup[definition.Id] = new TileVisualPreview
                 {
-                    for (int i = selectedTileIds.arraySize - 1; i >= 0; i--)
-                    {
-                        string value = selectedTileIds.GetArrayElementAtIndex(i).stringValue;
-                        if (value != null && value.Contains(searchPattern, StringComparison.OrdinalIgnoreCase))
-                            selectedTileIds.DeleteArrayElementAtIndex(i);
-                    }
+                    Sprite = renderer?.sprite,
+                    Tint = renderer != null ? renderer.color : Color.white
+                };
+            }
+
+            return lookup;
+        }
+
+        private readonly struct TileVisualPreview
+        {
+            public Sprite Sprite { get; init; }
+            public Color Tint { get; init; }
+        }
+
+        private sealed class TileMultiSelectPopup : PopupWindowContent
+        {
+            private const float PopupWidth = 560f;
+            private const float PopupHeight = 460f;
+            private const float SearchHeight = 20f;
+            private const float RowHeight = 24f;
+            private const float IconSize = 18f;
+            private const float Padding = 6f;
+            private const string SearchControlName = "WorldDefaultsTileMultiSelectSearch";
+
+            private readonly List<string> _availableTileIds;
+            private readonly HashSet<string> _selectedIds;
+            private readonly IReadOnlyDictionary<string, TileVisualPreview> _tileVisualLookup;
+            private readonly Action<IReadOnlyCollection<string>> _onApply;
+
+            private Vector2 _scroll;
+            private string _search = string.Empty;
+            private bool _focusSearch = true;
+
+            public TileMultiSelectPopup(
+                IEnumerable<string> availableTileIds,
+                IEnumerable<string> selectedIds,
+                IReadOnlyDictionary<string, TileVisualPreview> tileVisualLookup,
+                Action<IReadOnlyCollection<string>> onApply)
+            {
+                _availableTileIds = availableTileIds != null
+                    ? new List<string>(availableTileIds)
+                    : new List<string>();
+                _selectedIds = selectedIds != null
+                    ? new HashSet<string>(selectedIds, StringComparer.OrdinalIgnoreCase)
+                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                _tileVisualLookup = tileVisualLookup ?? new Dictionary<string, TileVisualPreview>(StringComparer.OrdinalIgnoreCase);
+                _onApply = onApply;
+            }
+
+            public override Vector2 GetWindowSize() => new Vector2(PopupWidth, PopupHeight);
+
+            public override void OnOpen()
+            {
+                _focusSearch = true;
+            }
+
+            public override void OnClose()
+            {
+                _onApply?.Invoke(_selectedIds);
+            }
+
+            public override void OnGUI(Rect rect)
+            {
+                DrawSearch(rect);
+                DrawFilterActions(rect);
+                DrawList(rect);
+            }
+
+            private void DrawSearch(Rect rect)
+            {
+                Rect searchRect = new Rect(Padding, Padding, rect.width - Padding * 2f, SearchHeight);
+                GUI.SetNextControlName(SearchControlName);
+                EditorGUI.BeginChangeCheck();
+                _search = EditorGUI.TextField(searchRect, _search, EditorStyles.toolbarSearchField);
+                if (EditorGUI.EndChangeCheck())
+                    _scroll = Vector2.zero;
+
+                if (_focusSearch)
+                {
+                    _focusSearch = false;
+                    EditorGUI.FocusTextInControl(SearchControlName);
                 }
             }
 
-            const float listHeight = 190f;
-            scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.Height(listHeight));
-            bool anyVisible = false;
-            for (int i = 0; i < availableTileIds.Count; i++)
+            private void DrawFilterActions(Rect rect)
             {
-                string id = availableTileIds[i];
-                if (!string.IsNullOrEmpty(searchPattern)
-                    && !id.Contains(searchPattern, StringComparison.OrdinalIgnoreCase))
-                    continue;
+                float y = Padding + SearchHeight + Padding;
+                Rect selectAllRect = new Rect(Padding, y, 162f, RowHeight);
+                Rect clearRect = new Rect(selectAllRect.xMax + 8f, y, 152f, RowHeight);
+                if (GUI.Button(selectAllRect, "Вибрати все (фільтр)"))
+                {
+                    foreach (string id in GetFilteredIds())
+                        _selectedIds.Add(id);
+                }
 
-                anyVisible = true;
-                bool isSelected = ArrayContains(selectedTileIds, id);
-                bool nextSelected = EditorGUILayout.ToggleLeft(id, isSelected);
-                if (nextSelected == isSelected)
-                    continue;
-
-                if (nextSelected)
-                    EnsureStringInArray(selectedTileIds, id);
-                else
-                    RemoveStringFromArray(selectedTileIds, id);
+                if (GUI.Button(clearRect, "Очистити (фільтр)"))
+                {
+                    foreach (string id in GetFilteredIds())
+                        _selectedIds.Remove(id);
+                }
             }
 
-            if (!anyVisible)
-                EditorGUILayout.LabelField("Нічого не знайдено за поточним фільтром.", _mutedStyle);
+            private void DrawList(Rect rect)
+            {
+                float y = Padding + SearchHeight + Padding + RowHeight + Padding;
+                Rect viewRect = new Rect(
+                    Padding,
+                    y,
+                    rect.width - Padding * 2f,
+                    rect.height - y - Padding);
 
-            EditorGUILayout.EndScrollView();
+                var filtered = GetFilteredIds();
+                if (filtered.Count == 0)
+                {
+                    EditorGUI.HelpBox(viewRect, "Нічого не знайдено за поточним фільтром.", MessageType.Info);
+                    return;
+                }
+
+                Rect contentRect = new Rect(0f, 0f, viewRect.width - 14f, Mathf.Max(viewRect.height, filtered.Count * RowHeight));
+                _scroll = GUI.BeginScrollView(viewRect, _scroll, contentRect);
+                for (int i = 0; i < filtered.Count; i++)
+                {
+                    Rect rowRect = new Rect(0f, i * RowHeight, contentRect.width, RowHeight - 1f);
+                    DrawRow(rowRect, filtered[i]);
+                }
+                GUI.EndScrollView();
+            }
+
+            private List<string> GetFilteredIds()
+            {
+                if (string.IsNullOrWhiteSpace(_search))
+                    return _availableTileIds;
+
+                var result = new List<string>();
+                string[] terms = _search.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 0; i < _availableTileIds.Count; i++)
+                {
+                    string id = _availableTileIds[i];
+                    bool matches = true;
+                    for (int t = 0; t < terms.Length; t++)
+                    {
+                        if (id.IndexOf(terms[t], StringComparison.OrdinalIgnoreCase) < 0)
+                        {
+                            matches = false;
+                            break;
+                        }
+                    }
+
+                    if (matches)
+                        result.Add(id);
+                }
+
+                return result;
+            }
+
+            private void DrawRow(Rect rowRect, string id)
+            {
+                bool selected = _selectedIds.Contains(id);
+                if (selected)
+                    EditorGUI.DrawRect(rowRect, new Color(0.24f, 0.36f, 0.24f, 0.7f));
+                else if (rowRect.Contains(Event.current.mousePosition))
+                    EditorGUI.DrawRect(rowRect, new Color(0.20f, 0.20f, 0.20f, 0.45f));
+
+                Rect toggleRect = new Rect(rowRect.x + 4f, rowRect.y + 2f, 18f, RowHeight - 4f);
+                bool next = EditorGUI.Toggle(toggleRect, selected);
+                if (next != selected)
+                {
+                    if (next)
+                        _selectedIds.Add(id);
+                    else
+                        _selectedIds.Remove(id);
+                }
+
+                Rect iconRect = new Rect(toggleRect.xMax + 4f, rowRect.y + (RowHeight - IconSize) * 0.5f, IconSize, IconSize);
+                if (_tileVisualLookup.TryGetValue(id, out var preview) && preview.Sprite != null && preview.Sprite.texture != null)
+                    DrawSprite(iconRect, preview.Sprite, preview.Tint);
+
+                Rect labelRect = new Rect(iconRect.xMax + 6f, rowRect.y + 2f, rowRect.width - iconRect.width - 34f, RowHeight - 2f);
+                GUI.Label(labelRect, id, EditorStyles.label);
+            }
+
+            private static void DrawSprite(Rect rect, Sprite sprite, Color tint)
+            {
+                var texture = sprite.texture;
+                var sr = sprite.textureRect;
+                var uv = new Rect(sr.x / texture.width, sr.y / texture.height, sr.width / texture.width, sr.height / texture.height);
+                Color previous = GUI.color;
+                GUI.color = tint;
+                GUI.DrawTextureWithTexCoords(rect, texture, uv);
+                GUI.color = previous;
+            }
         }
 
         private static bool ArrayContains(SerializedProperty array, string value)
