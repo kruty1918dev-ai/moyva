@@ -727,6 +727,8 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
             private Vector2 _scroll;
             private string _search = string.Empty;
             private bool _focusSearch = true;
+            private string _cachedFilterKey = string.Empty;
+            private List<string> _cachedFilteredIds;
 
             public TileMultiSelectPopup(
                 IEnumerable<string> availableTileIds,
@@ -770,7 +772,10 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                 EditorGUI.BeginChangeCheck();
                 _search = EditorGUI.TextField(searchRect, _search, EditorStyles.toolbarSearchField);
                 if (EditorGUI.EndChangeCheck())
+                {
                     _scroll = Vector2.zero;
+                    _cachedFilteredIds = null;
+                }
 
                 if (_focusSearch)
                 {
@@ -825,11 +830,19 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
 
             private List<string> GetFilteredIds()
             {
-                if (string.IsNullOrWhiteSpace(_search))
-                    return _availableTileIds;
+                string filterKey = _search ?? string.Empty;
+                if (_cachedFilteredIds != null && string.Equals(_cachedFilterKey, filterKey, StringComparison.Ordinal))
+                    return _cachedFilteredIds;
+
+                _cachedFilterKey = filterKey;
+                if (string.IsNullOrWhiteSpace(filterKey))
+                {
+                    _cachedFilteredIds = _availableTileIds;
+                    return _cachedFilteredIds;
+                }
 
                 var result = new List<string>();
-                string[] terms = _search.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] terms = filterKey.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 for (int i = 0; i < _availableTileIds.Count; i++)
                 {
                     string id = _availableTileIds[i];
@@ -847,7 +860,8 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                         result.Add(id);
                 }
 
-                return result;
+                _cachedFilteredIds = result;
+                return _cachedFilteredIds;
             }
 
             private void DrawRow(Rect rowRect, string id)
@@ -869,7 +883,7 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                 }
 
                 Rect iconRect = new Rect(toggleRect.xMax + 4f, rowRect.y + (RowHeight - IconSize) * 0.5f, IconSize, IconSize);
-                if (_tileVisualLookup.TryGetValue(id, out var preview) && preview.Sprite != null && preview.Sprite.texture != null)
+                if (_tileVisualLookup.TryGetValue(id, out var preview) && preview.Sprite != null)
                     DrawSprite(iconRect, preview.Sprite, preview.Tint);
 
                 Rect labelRect = new Rect(iconRect.xMax + 6f, rowRect.y + 2f, rowRect.width - iconRect.width - 34f, RowHeight - 2f);
