@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: MoyvaAudioRegistry
   m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.AudioRegistrySO
   _sounds:
-  - Key: music-idle
+  - Key: tavern-music-loop
     Clip: {fileID: 8300000, guid: 1155955e306f54181935f3ac9156a5eb, type: 3}
     Variants: []
     Bus: 1
-    MixerGroup: {fileID: 0}
+    MixerGroup: {fileID: 24300002, guid: 35a28e1f08aa176529bf03c2255bc3f8, type: 2}
     Volume: 1
     VolumeRandom: 0
     Pitch: 1
@@ -53,6 +53,47 @@ MonoBehaviour:
       ChorusDelay: 40
       ChorusRate: 0.8
       ChorusDepth: 0.03
+  - Key: click-01
+    Clip: {fileID: 8300000, guid: a70a2ba457f3aac47b09c7b29fb8c7a0, type: 3}
+    Variants:
+    - {fileID: 8300000, guid: 5d58cc7e4c716e34d8c74b56a58904f3, type: 3}
+    Bus: 3
+    MixerGroup: {fileID: 0}
+    Volume: 1
+    VolumeRandom: 0
+    Pitch: 1
+    PitchRandom: 0
+    SpatialBlend: 0
+    DopplerLevel: 0
+    ReverbZoneMix: 1
+    Priority: 128
+    Loop: 0
+    PoolWarmup: 1
+    MaxSimultaneous: 8
+    Effects:
+      EnableLowPass: 0
+      LowPassCutoff: 5000
+      LowPassResonance: 1
+      EnableHighPass: 0
+      HighPassCutoff: 120
+      HighPassResonance: 1
+      EnableEcho: 0
+      EchoDelay: 220
+      EchoDecayRatio: 0.35
+      EchoWetMix: 0.28
+      EchoDryMix: 1
+      EnableReverb: 0
+      ReverbPreset: 0
+      EnableDistortion: 0
+      DistortionLevel: 0.18
+      EnableChorus: 0
+      ChorusDryMix: 0.5
+      ChorusWetMix1: 0.5
+      ChorusWetMix2: 0.5
+      ChorusWetMix3: 0.5
+      ChorusDelay: 40
+      ChorusRate: 0.8
+      ChorusDepth: 0.03
   _defaultPoolSize: 12
   _dontDestroyOnLoad: 1
-  _verboseLogs: 0
+  _verboseLogs: 1

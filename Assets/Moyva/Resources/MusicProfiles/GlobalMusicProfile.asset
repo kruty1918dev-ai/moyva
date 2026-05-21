@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cd5c647b47ea27b0a2259a243171c12, type: 3}
+  m_Name: GlobalMusicProfile
+  m_EditorClassIdentifier: Kruty1918.Moyva.Shared::Kruty1918.Moyva.Audio.Runtime.SceneMusicProfileSO
+  _targetScenes: []
+  _isGlobal: 0
+  _defaultMusic:
+    Clip: {fileID: 0}
+    MixerGroup: {fileID: 0}
+    Volume: 0.7
+    Loop: 1
+    StartDelay: 0
+    FadeInDuration: 1.5
+    FadeOutDuration: 1.5
+    UseCrossfade: 1
+  _epicMusic:
+    Clip: {fileID: 0}
+    MixerGroup: {fileID: 0}
+    Volume: 0.7
+    Loop: 1
+    StartDelay: 0
+    FadeInDuration: 1.5
+    FadeOutDuration: 1.5
+    UseCrossfade: 1
+  _preserveMusicBetweenScenes: 0
+  _sceneTransitionDuration: 2

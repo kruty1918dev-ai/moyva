@@ -16,26 +16,24 @@ namespace Kruty1918.Moyva.Bootstrap
     /// </summary>
     public sealed class ProjectServicesInstaller : MonoInstaller
     {
+        [Header("Audio")]
+        [Tooltip("Реєстр звуків. Якщо порожньо — завантажується з Resources/MoyvaAudioRegistry.")]
+        [SerializeField] private AudioRegistrySO _audioRegistry;
+
+        [Tooltip("Per-scene overrides для звуків. Якщо порожньо — завантажується з Resources/MoyvaSceneAudioOverrides.")]
+        [SerializeField] private SceneAudioOverridesSO _sceneOverrides;
+
+        [Tooltip("Профілі музики сцен. Може бути порожнім — тоді музика не налаштовується автоматично.")]
+        [SerializeField] private SceneMusicProfileSO[] _musicProfiles;
+
         public override void InstallBindings()
         {
-            // Install shared services (connectivity, health checks, etc.) first
             SharedInstaller.Install(Container);
 
-            // Project-level audio framework: registry lookup, pooled sources,
-            // and automatic per-sound effect application.
-            AudioInstaller.Install(Container);
+            AudioInstaller.Install(Container, _audioRegistry, _musicProfiles, _sceneOverrides);
 
-            // Save system installer belongs to the SaveSystem library and is
-            // safe to install here because it's a project-level orchestration.
             SaveSystemInstaller.Install(Container);
 
-            // The composition root (ProjectServicesInstaller) is responsible for
-            // orchestrating which feature libraries are installed at startup.
-            // It's acceptable for the bootstrap to invoke a library's installer
-            // so that the library can register its own dependencies in the
-            // project's DI container. Call the multiplayer install helper to
-            // ensure minimal switchable wrappers (ILobbyService / INetworkProvider)
-            // are available synchronously for UI services during startup.
             MultiplayerInstaller.Install(Container);
 
             Container.BindInterfacesTo<MobileGraphicsAutoScaler>().AsSingle().NonLazy();

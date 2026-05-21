@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Units.Runtime;
 using Kruty1918.Moyva.Audio.API;
 using Kruty1918.Moyva.Audio.Runtime;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Editor
@@ -377,6 +379,24 @@ namespace Kruty1918.Moyva.Editor.Audio
                 current = next;
             }
         }
+
+        public const string DefaultOverridesPath = "Assets/Moyva/Resources/MoyvaSceneAudioOverrides.asset";
+
+        public static SceneAudioOverridesSO FindOrCreateOverridesSo()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<SceneAudioOverridesSO>(DefaultOverridesPath);
+            if (existing != null) return existing;
+
+            string[] guids = AssetDatabase.FindAssets("t:SceneAudioOverridesSO");
+            if (guids != null && guids.Length > 0)
+                return AssetDatabase.LoadAssetAtPath<SceneAudioOverridesSO>(AssetDatabase.GUIDToAssetPath(guids[0]));
+
+            EnsureFolder("Assets/Moyva/Resources");
+            var so = ScriptableObject.CreateInstance<SceneAudioOverridesSO>();
+            AssetDatabase.CreateAsset(so, DefaultOverridesPath);
+            AssetDatabase.SaveAssets();
+            return so;
+        }
     }
 
     internal static class AudioEditorPreview
@@ -559,6 +579,12 @@ namespace Kruty1918.Moyva.Editor.Audio
         private AudioBus? _busFilter;
         private bool _showOnlyProblems;
 
+        // Scene Overrides tab
+        private int _activeDetailTab;
+        private int _selectedSceneIdx;
+        private SceneAudioOverridesSO _overridesSo;
+        private SerializedObject _serializedOverrides;
+
         [MenuItem("Moyva/Tools/Audio Designer %#a", priority = 31)]
         public static void Open()
         {
@@ -568,9 +594,36 @@ namespace Kruty1918.Moyva.Editor.Audio
             window.Show();
         }
 
+        /// <summary>
+        /// Відкриває Audio Designer і виділяє звук за ключем.
+        /// Якщо ключ не знайдено — просто відкриває вікно.
+        /// </summary>
+        public static void OpenAndSelect(string key)
+        {
+            var window = GetWindow<AudioDesignerWindow>();
+            window.titleContent = new GUIContent("Audio Designer");
+            window.minSize = new Vector2(920f, 560f);
+            window.Show();
+
+            if (string.IsNullOrWhiteSpace(key) || window._registry == null)
+                return;
+
+            var sounds = window._registry.Sounds;
+            for (int i = 0; i < sounds.Length; i++)
+            {
+                if (sounds[i].Key == key)
+                {
+                    window._selectedIndex = i;
+                    window._activeDetailTab = 0;
+                    break;
+                }
+            }
+        }
+
         private void OnEnable()
         {
             ResolveRegistry();
+            LoadOrCreateOverridesSo();
         }
 
         private void OnGUI()
@@ -611,10 +664,16 @@ namespace Kruty1918.Moyva.Editor.Audio
                 if (GUILayout.Button("Create", EditorStyles.toolbarButton, GUILayout.Width(64f)))
                     SetRegistry(AudioEditorRegistryUtility.GetOrCreateDefaultRegistry());
 
+                if (GUILayout.Button("Save", EditorStyles.toolbarButton, GUILayout.Width(54f)))
+                    SaveAllAudioAssets();
+
                 GUILayout.FlexibleSpace();
 
                 if (_registry != null && GUILayout.Button("Ping", EditorStyles.toolbarButton, GUILayout.Width(50f)))
                     EditorGUIUtility.PingObject(_registry);
+
+                if (GUILayout.Button("Infra Wizard", EditorStyles.toolbarButton, GUILayout.Width(88f)))
+                    AudioInfrastructureWizardWindow.Open();
             }
         }
 
@@ -701,9 +760,6 @@ namespace Kruty1918.Moyva.Editor.Audio
                     return;
                 }
 
-                // Ensure serialized object is up-to-date before accessing elements
-                _serializedRegistry.Update();
-
                 try
                 {
                     var element = _sounds.GetArrayElementAtIndex(_selectedIndex);
@@ -714,8 +770,13 @@ namespace Kruty1918.Moyva.Editor.Audio
                         return;
                     }
 
+                    _activeDetailTab = GUILayout.Toolbar(_activeDetailTab, new[] { "Sound", "Scene Overrides" });
+                    EditorGUILayout.Space(2f);
                     _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll);
-                    DrawSoundDetails(element);
+                    if (_activeDetailTab == 0)
+                        DrawSoundDetails(element);
+                    else
+                        DrawSceneOverridesPanel(element);
                     EditorGUILayout.EndScrollView();
                 }
                 catch (System.ObjectDisposedException)
@@ -769,6 +830,24 @@ namespace Kruty1918.Moyva.Editor.Audio
                         string sanitized = AudioEditorRegistryUtility.SanitizeKey(key.stringValue);
                         if (!string.Equals(key.stringValue, sanitized, StringComparison.Ordinal) && GUILayout.Button($"Нормалізувати ключ: {sanitized}"))
                             key.stringValue = sanitized;
+                    }
+
+                    // ── Fill from Clip ──────────────────────────────────────────────
+                    var clipForFill = element.FindPropertyRelative("Clip");
+                    if (clipForFill != null)
+                    {
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            EditorGUI.BeginDisabledGroup(clipForFill.objectReferenceValue == null);
+                            if (GUILayout.Button("Fill from Clip", EditorStyles.miniButton, GUILayout.Width(110f)))
+                            {
+                                var ac = clipForFill.objectReferenceValue as AudioClip;
+                                if (ac != null && key != null)
+                                    key.stringValue = AudioEditorRegistryUtility.MakeUniqueKey(_registry, ac.name);
+                            }
+                            EditorGUI.EndDisabledGroup();
+                            EditorGUILayout.LabelField("← заповнити Key із назви AudioClip", EditorStyles.miniLabel);
+                        }
                     }
 
                     DrawValidation(element);
@@ -1062,9 +1141,241 @@ namespace Kruty1918.Moyva.Editor.Audio
                     EditorPrefs.SetString(RegistryGuidPrefsKey, guid);
             }
         }
-    }
 
-    [CustomPropertyDrawer(typeof(AudioKeyAttribute))]
+        private void SaveAllAudioAssets()
+        {
+            _serializedRegistry?.ApplyModifiedProperties();
+            _serializedOverrides?.ApplyModifiedProperties();
+
+            if (_registry != null)
+                EditorUtility.SetDirty(_registry);
+
+            if (_overridesSo != null)
+                EditorUtility.SetDirty(_overridesSo);
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        // ── Scene Overrides tab ───────────────────────────────────────────────
+
+        private void LoadOrCreateOverridesSo()
+        {
+            _overridesSo = AudioEditorRegistryUtility.FindOrCreateOverridesSo();
+            _serializedOverrides = _overridesSo != null ? new SerializedObject(_overridesSo) : null;
+        }
+
+        private void DrawSceneOverridesPanel(SerializedProperty element)
+        {
+            if (_overridesSo == null)
+            {
+                EditorGUILayout.HelpBox("SceneAudioOverrides SO не знайдено.", MessageType.Warning);
+                if (GUILayout.Button("Створити MoyvaSceneAudioOverrides"))
+                    LoadOrCreateOverridesSo();
+                return;
+            }
+
+            string soundKey = element.FindPropertyRelative("Key")?.stringValue ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(soundKey))
+            {
+                EditorGUILayout.HelpBox("Задайте ключ звуку на вкладці Sound.", MessageType.Info);
+                return;
+            }
+
+            string[] sceneNames   = GetBuildSceneNames();
+            string[] sceneDisplay = GetBuildSceneDisplayNames(sceneNames);
+            if (_selectedSceneIdx >= sceneNames.Length) _selectedSceneIdx = 0;
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField("Сцена:", GUILayout.Width(55f));
+                _selectedSceneIdx = EditorGUILayout.Popup(_selectedSceneIdx, sceneDisplay);
+            }
+
+            string selectedScene = sceneNames[_selectedSceneIdx];
+            string sceneLabel    = _selectedSceneIdx == 0 ? "Всі сцени (глобально)" : selectedScene;
+
+            EditorGUILayout.Space(6f);
+
+            if (!_overridesSo.HasOverride(selectedScene, soundKey))
+            {
+                EditorGUILayout.HelpBox(
+                    $"Немає override для: {sceneLabel}\nВикористовуються базові параметри Sound definition.",
+                    MessageType.None);
+                EditorGUILayout.Space(4f);
+                if (GUILayout.Button($"+ Додати override для \"{sceneLabel}\"", GUILayout.Height(28f)))
+                {
+                    Undo.RecordObject(_overridesSo, "Add Sound Scene Override");
+                    _overridesSo.GetOrCreate(selectedScene, soundKey);
+                    _serializedOverrides = new SerializedObject(_overridesSo);
+                    EditorUtility.SetDirty(_overridesSo);
+                }
+            }
+            else
+            {
+                DrawExistingOverride(selectedScene, soundKey, sceneLabel);
+            }
+
+            EditorGUILayout.Space(10f);
+            DrawAllOverridesSummary(soundKey);
+        }
+
+        private void DrawExistingOverride(string sceneName, string soundKey, string sceneLabel)
+        {
+            if (_serializedOverrides == null)
+                _serializedOverrides = new SerializedObject(_overridesSo);
+
+            _serializedOverrides.Update();
+
+            int idx = FindOverrideIndex(sceneName, soundKey);
+            if (idx < 0) { EditorGUILayout.HelpBox("Внутрішня помилка: override не знайдено.", MessageType.Error); return; }
+
+            var ov = _serializedOverrides.FindProperty("_overrides").GetArrayElementAtIndex(idx);
+
+            EditorGUILayout.LabelField($"Override: {sceneLabel}", EditorStyles.boldLabel);
+            EditorGUILayout.Space(2f);
+
+            using (new EditorGUILayout.VerticalScope("box"))
+            {
+                EditorGUILayout.LabelField("Параметри які перевизначити:", EditorStyles.miniLabel);
+                EditorGUILayout.Space(3f);
+                DrawOverrideField(ov, "OverrideVolume",       "Volume",       "Volume");
+                DrawOverrideField(ov, "OverridePitch",        "Pitch",        "Pitch");
+                DrawOverrideField(ov, "OverrideMixerGroup",   "MixerGroup",   "Mixer Group");
+                DrawOverrideField(ov, "OverrideLoop",         "Loop",         "Loop");
+                DrawOverrideField(ov, "OverrideSpatialBlend", "SpatialBlend", "Spatial Blend");
+                DrawOverrideField(ov, "OverridePriority",     "Priority",     "Priority");
+
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.LabelField("Поведінка при завантаженні сцени:", EditorStyles.miniLabel);
+                var playOnAwakeProp = ov.FindPropertyRelative("PlayOnAwake");
+                if (playOnAwakeProp != null)
+                    playOnAwakeProp.boolValue = EditorGUILayout.ToggleLeft(
+                        new GUIContent("Play On Awake", "Автоматично запустити цей звук при завантаженні сцени."),
+                        playOnAwakeProp.boolValue);
+            }
+
+            _serializedOverrides.ApplyModifiedProperties();
+
+            EditorGUILayout.Space(6f);
+            var prevCol = GUI.color;
+            GUI.color = new Color(0.85f, 0.35f, 0.35f);
+            if (GUILayout.Button($"\u00d7  Видалити override для \"{sceneLabel}\""))
+            {
+                GUI.color = prevCol;
+                if (EditorUtility.DisplayDialog("Видалити override",
+                    $"Видалити override для: {sceneLabel}?", "Так", "Ні"))
+                {
+                    Undo.RecordObject(_overridesSo, "Remove Sound Scene Override");
+                    _overridesSo.RemoveOverride(sceneName, soundKey);
+                    _serializedOverrides = new SerializedObject(_overridesSo);
+                    EditorUtility.SetDirty(_overridesSo);
+                }
+            }
+            GUI.color = prevCol;
+        }
+
+        private static void DrawOverrideField(SerializedProperty ov, string toggleName, string valueName, string displayName)
+        {
+            var toggleProp = ov.FindPropertyRelative(toggleName);
+            var valueProp  = ov.FindPropertyRelative(valueName);
+            if (toggleProp == null || valueProp == null) return;
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                toggleProp.boolValue = EditorGUILayout.ToggleLeft(displayName, toggleProp.boolValue, GUILayout.Width(130f));
+                using (new EditorGUI.DisabledScope(!toggleProp.boolValue))
+                    EditorGUILayout.PropertyField(valueProp, GUIContent.none);
+            }
+        }
+
+        private void DrawAllOverridesSummary(string soundKey)
+        {
+            if (_overridesSo == null) return;
+
+            var allOverrides = _overridesSo.Overrides;
+            var relevant = new List<SoundSceneOverride>();
+            foreach (var o in allOverrides)
+                if (o != null && string.Equals(o.SoundKey, soundKey, StringComparison.OrdinalIgnoreCase))
+                    relevant.Add(o);
+
+            if (relevant.Count == 0) { EditorGUILayout.HelpBox("Немає жодного override для цього звуку.", MessageType.None); return; }
+
+            EditorGUILayout.LabelField("Всі overrides для цього звуку:", EditorStyles.boldLabel);
+            using (new EditorGUILayout.VerticalScope("helpbox"))
+            {
+                foreach (var o in relevant)
+                {
+                    string scLabel = string.IsNullOrEmpty(o.SceneName) ? "[Global]" : o.SceneName;
+                    var parts = new List<string>();
+                    if (o.OverrideVolume)       parts.Add($"Vol:{o.Volume:F2}");
+                    if (o.OverridePitch)        parts.Add($"Pitch:{o.Pitch:F2}");
+                    if (o.OverrideMixerGroup && o.MixerGroup != null) parts.Add($"Mixer:{o.MixerGroup.name}");
+                    if (o.OverrideLoop)         parts.Add($"Loop:{o.Loop}");
+                    if (o.OverrideSpatialBlend) parts.Add($"Spatial:{o.SpatialBlend:F2}");
+                    if (o.OverridePriority)     parts.Add($"Prior:{o.Priority}");
+                    if (o.PlayOnAwake)          parts.Add("PlayOnAwake");
+                    string details = parts.Count > 0 ? string.Join(", ", parts) : "(немає активних override)";
+
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUILayout.LabelField($"  {scLabel}:", GUILayout.Width(120f));
+                        EditorGUILayout.LabelField(details, EditorStyles.miniLabel);
+                        if (GUILayout.Button("\u00d7", GUILayout.Width(20f)))
+                        {
+                            Undo.RecordObject(_overridesSo, "Remove Sound Scene Override");
+                            _overridesSo.RemoveOverride(o.SceneName, soundKey);
+                            _serializedOverrides = new SerializedObject(_overridesSo);
+                            EditorUtility.SetDirty(_overridesSo);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private int FindOverrideIndex(string sceneName, string soundKey)
+        {
+            if (_serializedOverrides == null) return -1;
+            var array = _serializedOverrides.FindProperty("_overrides");
+            if (array == null || !array.isArray) return -1;
+            for (int i = 0; i < array.arraySize; i++)
+            {
+                var el = array.GetArrayElementAtIndex(i);
+                string sn = el.FindPropertyRelative("SceneName")?.stringValue ?? string.Empty;
+                string sk = el.FindPropertyRelative("SoundKey")?.stringValue  ?? string.Empty;
+                if (string.Equals(sn, sceneName, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(sk, soundKey, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+            return -1;
+        }
+
+        private static string[] GetBuildSceneNames()
+        {
+            var names = new List<string> { string.Empty };
+            foreach (var s in EditorBuildSettings.scenes)
+            {
+                if (!s.enabled) continue;
+                string n = Path.GetFileNameWithoutExtension(s.path);
+                if (!string.IsNullOrEmpty(n) && !names.Contains(n))
+                    names.Add(n);
+            }
+            string cur = EditorSceneManager.GetActiveScene().name;
+            if (!string.IsNullOrEmpty(cur) && !names.Contains(cur))
+                names.Add(cur);
+            return names.ToArray();
+        }
+
+        private static string[] GetBuildSceneDisplayNames(string[] sceneNames)
+        {
+            var display = new string[sceneNames.Length];
+            display[0] = "--- Всі сцени (глобально) ---";
+            for (int i = 1; i < sceneNames.Length; i++)
+                display[i] = sceneNames[i];
+            return display;
+        }
+    }
     public sealed class AudioKeyDrawer : PropertyDrawer
     {
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)

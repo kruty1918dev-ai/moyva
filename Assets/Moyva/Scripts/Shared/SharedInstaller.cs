@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using Kruty1918.Moyva.Multiplayer.Runtime;
+using Kruty1918.Moyva.Audio.Runtime;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.Rendering;
@@ -155,6 +156,8 @@ namespace Kruty1918.Moyva.Audio.API
 
     public readonly struct AudioPlayOptions
     {
+        public static AudioPlayOptions Default => new AudioPlayOptions(volumeScale: 1f);
+
         public readonly Vector3? Position;
         public readonly Transform Parent;
         public readonly float VolumeScale;
@@ -215,16 +218,20 @@ namespace Kruty1918.Moyva.Audio.Runtime
         private const string RootName = "MoyvaAudioPool";
 
         private readonly AudioRegistrySO _registry;
+        private readonly SceneAudioOverridesSO _sceneOverrides;
         private readonly Queue<AudioSource> _available = new Queue<AudioSource>();
         private readonly List<AudioSource> _active = new List<AudioSource>();
         private readonly Dictionary<AudioSource, string> _activeKeys = new Dictionary<AudioSource, string>();
         private readonly Dictionary<string, int> _activeCountByKey = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private readonly List<AudioSource> _awakeSources = new List<AudioSource>();
 
         private GameObject _root;
+        private int _lastProcessedSceneHandle = -1;
 
-        public AudioService([InjectOptional] AudioRegistrySO registry)
+        public AudioService([InjectOptional] AudioRegistrySO registry, [InjectOptional] SceneAudioOverridesSO sceneOverrides)
         {
             _registry = registry != null ? registry : Resources.Load<AudioRegistrySO>(DefaultRegistryResourcePath);
+            _sceneOverrides = sceneOverrides ?? Resources.Load<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
         }
 
         public void Initialize()
@@ -247,12 +254,21 @@ namespace Kruty1918.Moyva.Audio.Runtime
             for (int i = 0; i < poolSize; i++)
                 _available.Enqueue(CreateSource());
 
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+
+            // Перша сцена вже завантажена до Initialize() — запустити auto-play вручну.
+            var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (activeScene.IsValid())
+                OnSceneLoaded(activeScene, UnityEngine.SceneManagement.LoadSceneMode.Single);
+
             if (_registry != null && _registry.VerboseLogs)
                 Debug.Log($"[AudioService] Initialized with {_available.Count} pooled AudioSource objects.");
         }
 
         public void Tick()
         {
+            RefreshAutoPlayForCurrentScene();
+
             for (int i = _active.Count - 1; i >= 0; i--)
             {
                 var source = _active[i];
@@ -271,6 +287,8 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
         public void Dispose()
         {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+
             if (_root != null)
                 UnityEngine.Object.Destroy(_root);
 
@@ -278,6 +296,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
             _active.Clear();
             _activeKeys.Clear();
             _activeCountByKey.Clear();
+            _awakeSources.Clear();
         }
 
         public bool TryGetSound(string key, out AudioSoundDefinition sound)
@@ -293,12 +312,15 @@ namespace Kruty1918.Moyva.Audio.Runtime
         }
 
         public AudioHandle Play(string key)
-            => Play(key, new AudioPlayOptions());
+            => PlayInternal(key, AudioPlayOptions.Default, null);
 
         public AudioHandle PlayAt(string key, Vector3 position, float volumeScale = 1f)
-            => Play(key, new AudioPlayOptions(position, null, volumeScale));
+            => PlayInternal(key, new AudioPlayOptions(position, null, volumeScale), null);
 
         public AudioHandle Play(string key, AudioPlayOptions options)
+            => PlayInternal(key, options, null);
+
+        private AudioHandle PlayInternal(string key, AudioPlayOptions options, string sceneNameForOverrides)
         {
             if (!TryGetSound(key, out var sound))
             {
@@ -314,7 +336,14 @@ namespace Kruty1918.Moyva.Audio.Runtime
             }
 
             if (!CanPlay(sound))
+            {
+                if (_registry != null && _registry.VerboseLogs)
+                {
+                    _activeCountByKey.TryGetValue(sound.Key, out int cnt);
+                    Debug.LogWarning($"[AudioService] Play blocked for '{sound.Key}': MaxSimultaneous={Mathf.Max(1, sound.MaxSimultaneous)}, Active={cnt}.");
+                }
                 return default;
+            }
 
             var source = GetConfiguredSourceInternal(sound, options.Parent);
             source.clip = clip;
@@ -336,9 +365,82 @@ namespace Kruty1918.Moyva.Audio.Runtime
                 source.transform.position = Vector3.zero;
             }
 
+            if (_sceneOverrides != null)
+            {
+                string scn = !string.IsNullOrWhiteSpace(sceneNameForOverrides)
+                    ? sceneNameForOverrides
+                    : UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+                if (_sceneOverrides.TryGet(scn, sound.Key, out var ov))
+                {
+                    if (ov.OverrideVolume)       source.volume                = Mathf.Clamp01(ov.Volume * options.VolumeScale);
+                    if (ov.OverridePitch)        source.pitch                 = Mathf.Clamp(ov.Pitch + options.PitchOffset, -3f, 3f);
+                    if (ov.OverrideMixerGroup)   source.outputAudioMixerGroup = ov.MixerGroup;
+                    if (ov.OverrideLoop)         source.loop                  = ov.Loop;
+                    if (ov.OverrideSpatialBlend) source.spatialBlend          = Mathf.Clamp01(ov.SpatialBlend);
+                    if (ov.OverridePriority)     source.priority              = Mathf.Clamp(ov.Priority, 0, 256);
+                }
+            }
+
             RegisterActive(source, sound.Key);
             source.Play();
             return new AudioHandle(source);
+        }
+
+        private void RefreshAutoPlayForCurrentScene()
+        {
+            var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (!activeScene.IsValid())
+                return;
+
+            if (activeScene.handle == _lastProcessedSceneHandle)
+                return;
+
+            RefreshAutoPlayForScene(activeScene);
+        }
+
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+            => RefreshAutoPlayForScene(scene);
+
+        private void RefreshAutoPlayForScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            _lastProcessedSceneHandle = scene.handle;
+
+            for (int i = _awakeSources.Count - 1; i >= 0; i--)
+            {
+                StopAndReleaseSource(_awakeSources[i]);
+            }
+
+            _awakeSources.Clear();
+
+            if (_sceneOverrides == null) return;
+
+            string sceneName = scene.name;
+            foreach (var ov in _sceneOverrides.Overrides)
+            {
+                if (ov == null || !ov.PlayOnAwake) continue;
+                if (!string.IsNullOrEmpty(ov.SceneName)
+                    && !string.Equals(ov.SceneName, sceneName, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var handle = PlayInternal(ov.SoundKey, AudioPlayOptions.Default, sceneName);
+                if (handle.IsValid && handle.Source != null)
+                    _awakeSources.Add(handle.Source);
+            }
+        }
+
+        private void StopAndReleaseSource(AudioSource source)
+        {
+            if (source == null)
+                return;
+
+            if (_active.Contains(source))
+            {
+                source.Stop();
+                Release(source);
+                return;
+            }
+
+            source.Stop();
         }
 
         public AudioSource GetConfiguredSource(string key, Transform parent = null)
@@ -403,6 +505,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
             go.transform.SetParent(_root != null ? _root.transform : null, false);
             var source = go.AddComponent<AudioSource>();
             source.playOnAwake = false;
+            ResetSourceForPool(source);
             source.gameObject.SetActive(false);
             return source;
         }
@@ -588,10 +691,25 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
             source.Stop();
             source.clip = null;
-            source.loop = false;
+            ResetSourceForPool(source);
             source.transform.SetParent(_root != null ? _root.transform : null, false);
             source.gameObject.SetActive(false);
             _available.Enqueue(source);
+        }
+
+        private static void ResetSourceForPool(AudioSource source)
+        {
+            if (source == null)
+                return;
+
+            source.volume = 1f;
+            source.pitch = 1f;
+            source.loop = false;
+            source.mute = false;
+            source.spatialBlend = 0f;
+            source.dopplerLevel = 0f;
+            source.reverbZoneMix = 1f;
+            source.priority = 128;
         }
     }
 
@@ -599,7 +717,9 @@ namespace Kruty1918.Moyva.Audio.Runtime
     {
         private const string DefaultRegistryResourcePath = "MoyvaAudioRegistry";
 
-        public static void Install(DiContainer container, AudioRegistrySO registry = null)
+        public static void Install(DiContainer container, AudioRegistrySO registry = null,
+            IEnumerable<SceneMusicProfileSO> musicProfiles = null,
+            SceneAudioOverridesSO sceneOverrides = null)
         {
             if (!container.HasBinding<AudioRegistrySO>())
             {
@@ -608,8 +728,17 @@ namespace Kruty1918.Moyva.Audio.Runtime
                     container.BindInstance(registry).AsSingle();
             }
 
+            if (!container.HasBinding<SceneAudioOverridesSO>())
+            {
+                sceneOverrides ??= Resources.Load<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
+                if (sceneOverrides != null)
+                    container.BindInstance(sceneOverrides).AsSingle();
+            }
+
             if (!container.HasBinding<IAudioService>())
                 container.BindInterfacesAndSelfTo<AudioService>().AsSingle().NonLazy();
+
+            MusicInstaller.Install(container, musicProfiles);
         }
     }
 }
