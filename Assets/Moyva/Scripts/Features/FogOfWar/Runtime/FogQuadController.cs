@@ -16,14 +16,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         [SerializeField] private FogOfWarSettings _settings;
 
-    private IFogOfWarService _fogService;
-    private IFogTextureUpdater _textureUpdater;
-    private IGridService _gridService;
-    private SignalBus _signalBus;
+        private IFogOfWarService _fogService;
+        private IFogTextureUpdater _textureUpdater;
+        private IGridService _gridService;
+        private IGridProjection _gridProjection;
+        private SignalBus _signalBus;
 
         private Material _mat;
         private int _mapWidth = 10;
         private int _mapHeight = 10;
+        private int _projectionMode = int.MinValue;
         private bool _subscribed;
 
         [Inject]
@@ -31,11 +33,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             [InjectOptional] IFogOfWarService fogService,
             [InjectOptional] IFogTextureUpdater textureUpdater,
             [InjectOptional] IGridService gridService,
+            [InjectOptional] IGridProjection gridProjection,
             [InjectOptional] SignalBus signalBus)
         {
             _fogService = fogService;
             _textureUpdater = textureUpdater;
             _gridService = gridService;
+            _gridProjection = gridProjection;
             _signalBus = signalBus;
         }
 
@@ -74,9 +78,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _mapWidth = w;
             _mapHeight = h;
 
+            _projectionMode = _gridProjection != null ? (int)_gridProjection.ProjectionMode : (int)GridProjectionMode.Orthographic2D;
+
+            Bounds worldBounds = ResolveWorldBounds(w, h);
             Vector2 edgePadding = ResolveEdgePaddingInCells();
-            transform.localScale = new Vector3(w + edgePadding.x * 2f, h + edgePadding.y * 2f, 1f);
-            transform.position   = new Vector3((w - 1) * 0.5f, (h - 1) * 0.5f, -0.5f);
+            transform.localScale = new Vector3(worldBounds.size.x + edgePadding.x * 2f, worldBounds.size.y + edgePadding.y * 2f, 1f);
+            transform.position = new Vector3(worldBounds.center.x, worldBounds.center.y, -0.5f);
 
             var mr = GetComponent<MeshRenderer>();
             if (_mat == null)
@@ -118,10 +125,20 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             int width = Mathf.Max(1, signal.Width);
             int height = Mathf.Max(1, signal.Height);
-            if (width == _mapWidth && height == _mapHeight)
+            if (width == _mapWidth && height == _mapHeight && signal.ProjectionMode == _projectionMode)
                 return;
 
             InitializeOverlay(width, height);
+        }
+
+        private Bounds ResolveWorldBounds(int width, int height)
+        {
+            if (_gridProjection != null)
+                return _gridProjection.GetWorldBounds(width, height);
+
+            return new Bounds(
+                new Vector3((width - 1) * 0.5f, (height - 1) * 0.5f, 0f),
+                new Vector3(width, height, 1f));
         }
 
         private void ApplySettingsToMaterial()
