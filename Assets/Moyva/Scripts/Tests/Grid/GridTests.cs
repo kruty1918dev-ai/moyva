@@ -214,6 +214,44 @@ namespace Kruty1918.Moyva.Tests.Grid
     }
 
     [TestFixture]
+    public sealed class GridProjectionTests
+    {
+        [Test]
+        public void OrthogonalProjection_GridToWorld_MatchesLegacyPositioning()
+        {
+            var projection = new Kruty1918.Moyva.Grid.Runtime.OrthogonalGridProjection();
+
+            Assert.AreEqual(new Vector3(2f, 3f, 0f), projection.GridToWorld(new Vector2Int(2, 3)));
+        }
+
+        [Test]
+        public void OrthogonalProjection_WorldToGrid_MatchesLegacyRounding()
+        {
+            var projection = new Kruty1918.Moyva.Grid.Runtime.OrthogonalGridProjection();
+
+            Assert.AreEqual(new Vector2Int(2, 3), projection.WorldToGrid(new Vector3(2.2f, 3.4f, 0f)));
+        }
+
+        [Test]
+        public void IsometricProjection_RoundTripsGridCoordinates()
+        {
+            var projection = new Kruty1918.Moyva.Grid.Runtime.IsometricGridProjection();
+            var grid = new Vector2Int(7, 4);
+
+            Assert.AreEqual(grid, projection.WorldToGrid(projection.GridToWorld(grid)));
+        }
+
+        [Test]
+        public void HexProjection_RoundTripsAxialCoordinates()
+        {
+            var projection = new Kruty1918.Moyva.Grid.Runtime.HexAxialGridProjection();
+            var grid = new Vector2Int(3, -2);
+
+            Assert.AreEqual(grid, projection.WorldToGrid(projection.GridToWorld(grid)));
+        }
+    }
+
+    [TestFixture]
     public sealed class TileSettingsServiceTests
     {
         private ITileSettingsService CreateService(params (string id, float cost)[] tiles)

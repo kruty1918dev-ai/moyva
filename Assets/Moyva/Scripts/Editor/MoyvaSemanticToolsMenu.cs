@@ -17,6 +17,9 @@ namespace Kruty1918.Moyva.EditorTools
         [MenuItem("Moyva/Tools/Designers/Developer Hub", priority = 0)]
         private static void OpenDeveloperHubDesigner() => OpenLegacyMenu("Moyva/Tools/Developer Hub");
 
+        [MenuItem("Moyva/Tools/Designers/Project Settings", priority = 9)]
+        private static void OpenProjectSettings() => OpenLegacyMenu("Moyva/Project/Global Settings");
+
         [MenuItem("Moyva/Tools/Designers/Unit Designer", priority = 10)]
         private static void OpenUnitDesigner() => OpenLegacyMenu("Moyva/Tools/Unit Designer");
 

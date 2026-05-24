@@ -34,6 +34,7 @@ namespace Kruty1918.Moyva.Editor
         private static readonly ToolDefinition[] Tools =
         {
             new ToolDefinition("Developer Hub", "Системи", "Moyva/Tools/Developer Hub", "Головний редакторський хаб: інструменти, прев'ю, пошук і моніторинг.", "d_UnityEditor.ConsoleWindow", true, "hub", "developer", "dashboard", "preview"),
+            new ToolDefinition("Project Settings", "Системи", "Moyva/Project/Global Settings", "Глобальні режими сітки, проекції, preview та майбутні project-wide defaults.", "d_Settings", true, "project", "settings", "grid", "projection", "hex", "isometric", "3d"),
             new ToolDefinition("Registry Hub", "Реєстри", "Moyva/Tools/Registry Hub", "Центральний редактор тайлів, об'єктів, юнітів, будівель, стін і ресурсів.", "d_FilterByType", true, "registry", "tile", "object", "unit", "building", "wall", "resource", "додати", "змінити"),
             new ToolDefinition("Registry Factory Legacy", "Реєстри", "Moyva/Tools/Registry Factory (Legacy)", "Старий entry point, який перенаправляє у Registry Hub для сумісності зі звичним меню.", "d_FilterByType", false, "registry", "legacy", "factory", "old", "compatibility"),
             new ToolDefinition("Audio Designer", "Реєстри", "Moyva/Tools/Audio Designer", "Звуки під ключ, preview, ефекти, pool і вибір AudioKey.", "d_AudioSource Icon", true, "audio", "sound", "звук", "preview", "effects", "pool"),

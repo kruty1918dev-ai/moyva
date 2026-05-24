@@ -164,6 +164,31 @@ namespace Kruty1918.Moyva.Tests.Pathfinding
             Assert.IsTrue(n.Contains(new Vector2Int(6, 5)));
         }
 
+        [Test]
+        public void MooreNeighborhoodStrategy_Center_ReturnsCurrent8NeighborBehavior()
+        {
+            var strategy = new Kruty1918.Moyva.Pathfinding.Runtime.MooreNeighborhoodStrategy();
+
+            var neighbors = strategy.GetNeighbors(new Vector2Int(5, 5), _grid).ToList();
+
+            Assert.AreEqual(8, neighbors.Count);
+            Assert.IsTrue(neighbors.Contains(new Vector2Int(4, 4)));
+            Assert.IsTrue(neighbors.Contains(new Vector2Int(5, 4)));
+        }
+
+        [Test]
+        public void HexAxialNeighborhoodStrategy_Center_Returns6Neighbors()
+        {
+            var strategy = new Kruty1918.Moyva.Pathfinding.Runtime.HexAxialNeighborhoodStrategy();
+
+            var neighbors = strategy.GetNeighbors(new Vector2Int(5, 5), _grid).ToList();
+
+            Assert.AreEqual(6, neighbors.Count);
+            Assert.IsTrue(neighbors.Contains(new Vector2Int(6, 5)));
+            Assert.IsTrue(neighbors.Contains(new Vector2Int(6, 4)));
+            Assert.IsTrue(neighbors.Contains(new Vector2Int(5, 4)));
+        }
+
         // --- FindPath - basic ---
         [Test]
         public void FindPath_SameStartEnd_ReturnsSingleElement()

@@ -3,6 +3,7 @@ using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Pathfinding.Runtime
 {
@@ -11,33 +12,29 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
         private readonly IGridService _gridService;
         private readonly ITileSettingsService _tileSettings;
         private readonly IObjectsMapService _objectsMapService;
+        private readonly INeighborhoodStrategy _neighborhoodStrategy;
 
         public Pathfinder(IGridService gridService, ITileSettingsService tileSettings, IObjectsMapService objectsMapService)
+            : this(gridService, tileSettings, objectsMapService, new MooreNeighborhoodStrategy())
+        {
+        }
+
+        [Inject]
+        public Pathfinder(
+            IGridService gridService,
+            ITileSettingsService tileSettings,
+            IObjectsMapService objectsMapService,
+            [InjectOptional] INeighborhoodStrategy neighborhoodStrategy)
         {
             _gridService = gridService;
             _tileSettings = tileSettings;
             _objectsMapService = objectsMapService;
+            _neighborhoodStrategy = neighborhoodStrategy ?? new MooreNeighborhoodStrategy();
         }
 
         public IEnumerable<Vector2Int> GetNeighbors(Vector2Int pos)
         {
-            List<Vector2Int> neighbors = new List<Vector2Int>();
-
-            for (int x = -1; x <= 1; x++)
-            {
-                for (int y = -1; y <= 1; y++)
-                {
-                    if (x == 0 && y == 0) continue; 
-
-                    Vector2Int next = new Vector2Int(pos.x + x, pos.y + y);
-
-                    if (_gridService.TryGetTileData(next, out _))
-                    {
-                        neighbors.Add(next);
-                    }
-                }
-            }
-            return neighbors;
+            return _neighborhoodStrategy.GetNeighbors(pos, _gridService);
         }
 
         public List<Vector2Int> FindPath(Vector2Int start, Vector2Int end)
@@ -75,10 +72,7 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
                     // 2. ВРАХУВАННЯ ВАГИ (СТАМІНИ)
                     float tileWeight = _tileSettings.GetTileWeight(tileTypeId);
                     
-                    // Вартість кроку = (базова відстань) * (вага тайла)
-                    // Тобто діагональний крок по "болоту" буде коштувати більше, ніж прямий крок по "болоту".
-                    float distanceMultiplier = (current.x != neighbor.x && current.y != neighbor.y) ? 1.414f : 1.0f;
-                    float stepCost = distanceMultiplier * tileWeight;
+                    float stepCost = _neighborhoodStrategy.GetStepCost(current, neighbor) * tileWeight;
 
                     float tentativeGScore = GetScore(gScore, current) + stepCost;
 
@@ -101,9 +95,7 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
 
         private float Heuristic(Vector2Int a, Vector2Int b)
         {
-            float dx = Mathf.Abs(a.x - b.x);
-            float dy = Mathf.Abs(a.y - b.y);
-            return (dx + dy) + (1.414f - 2) * Mathf.Min(dx, dy);
+            return _neighborhoodStrategy.EstimateDistance(a, b);
         }
 
         private float GetScore(Dictionary<Vector2Int, float> scores, Vector2Int node)

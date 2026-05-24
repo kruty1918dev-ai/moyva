@@ -16,6 +16,8 @@ namespace Kruty1918.Moyva.Grid.Runtime
         /// </summary>
         [SerializeField] private TileRegistrySO tileRegistry;
 
+        [SerializeField] private MoyvaProjectSettingsSO projectSettings;
+
         /// <summary>
         /// Базова ширина сітки, якщо стартовий контекст запуску не перевизначив розмір.
         /// </summary>
@@ -45,6 +47,13 @@ namespace Kruty1918.Moyva.Grid.Runtime
             // 3) Публікуємо TileRegistry як singleton instance для всіх споживачів.
             Container.BindInstance(tileRegistry).AsSingle();
 
+            var resolvedProjectSettings = ResolveProjectSettings();
+            if (!Container.HasBinding<MoyvaProjectSettingsSO>())
+                Container.BindInstance(resolvedProjectSettings).AsSingle();
+
+            if (!Container.HasBinding<IGridProjection>())
+                Container.Bind<IGridProjection>().FromInstance(GridProjectionFactory.Create(resolvedProjectSettings)).AsSingle();
+
             // 4) Реєструємо центральний GridService як реалізацію IGridService.
             //    Додатково передаємо розв'язані ширину/висоту через конструктор.
             Container.Bind<IGridService>().To<GridService>().AsSingle()
@@ -52,6 +61,15 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
             // 5) Реєструємо сервіс читання параметрів тайлів (вага руху тощо).
             Container.Bind<ITileSettingsService>().To<TileSettingsService>().AsSingle();
+        }
+
+        private MoyvaProjectSettingsSO ResolveProjectSettings()
+        {
+            MoyvaProjectSettingsSO resolved = projectSettings != null
+                ? projectSettings
+                : MoyvaProjectSettingsSO.CreateRuntimeDefault();
+            resolved.Normalize();
+            return resolved;
         }
 
         /// <summary>
