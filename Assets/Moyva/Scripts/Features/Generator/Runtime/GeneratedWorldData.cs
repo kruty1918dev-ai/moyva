@@ -1,5 +1,6 @@
 using UnityEngine;
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.Grid.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
@@ -11,6 +12,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         public int Width;
         public int Height;
+        public GridTopology GridTopology = GridTopology.Orthogonal;
+        public GridProjectionMode ProjectionMode = GridProjectionMode.Orthographic2D;
+        public GridRenderMode RenderMode = GridRenderMode.Sprite2D;
+        public GridNeighborhoodMode NeighborhoodMode = GridNeighborhoodMode.Moore8;
         public string[,] BiomeMap;
         public string[,] ObjectMap;
         public float[,] HeightMap;
@@ -34,6 +39,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 Width = Width,
                 Height = Height,
+                GridTopology = GridTopology,
+                ProjectionMode = ProjectionMode,
+                RenderMode = RenderMode,
+                NeighborhoodMode = NeighborhoodMode,
                 BiomeMap = MapArrayUtils.CloneStringMap(BiomeMap),
                 ObjectMap = MapArrayUtils.CloneStringMap(ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(HeightMap),

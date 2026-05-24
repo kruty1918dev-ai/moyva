@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.GraphSystem.API
@@ -11,6 +12,10 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public CancellationToken Cancellation { get; }
         public IProgress<float> Progress { get; }
         public Vector2Int MapSize { get; set; }
+        public GridTopology GridTopology { get; private set; } = GridTopology.Orthogonal;
+        public GridProjectionMode ProjectionMode { get; private set; } = GridProjectionMode.Orthographic2D;
+        public GridRenderMode RenderMode { get; private set; } = GridRenderMode.Sprite2D;
+        public GridNeighborhoodMode NeighborhoodMode { get; private set; } = GridNeighborhoodMode.Moore8;
 
         private readonly Dictionary<Type, object> _services = new();
         private long _nodeIterations;
@@ -26,6 +31,17 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
         public void RegisterService<T>(T service) =>
             _services[typeof(T)] = service;
+
+        public void ApplySharedSettings(GraphSharedSettings settings)
+        {
+            if (settings == null)
+                return;
+
+            GridTopology = settings.GridTopology;
+            ProjectionMode = settings.ProjectionMode;
+            RenderMode = settings.RenderMode;
+            NeighborhoodMode = settings.ResolveNeighborhoodMode();
+        }
 
         public T GetService<T>()
         {
@@ -66,6 +82,11 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
         public void CopyServicesTo(NodeContext other)
         {
+            other.GridTopology = GridTopology;
+            other.ProjectionMode = ProjectionMode;
+            other.RenderMode = RenderMode;
+            other.NeighborhoodMode = NeighborhoodMode;
+
             foreach (var kv in _services)
                 other._services[kv.Key] = kv.Value;
         }

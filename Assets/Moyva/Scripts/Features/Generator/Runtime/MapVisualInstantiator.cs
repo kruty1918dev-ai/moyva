@@ -140,6 +140,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 Width = width,
                 Height = height,
+                GridTopology = _gridProjection.Topology,
+                ProjectionMode = _gridProjection.ProjectionMode,
+                RenderMode = ResolveRenderMode(_gridProjection.ProjectionMode),
+                NeighborhoodMode = ResolveNeighborhoodMode(_gridProjection),
                 BiomeMap = virtualBiomeMap,
                 ObjectMap = virtualObjectMap,
                 HeightMap = finalHeightMap,
@@ -167,6 +171,30 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (heightMap != null) return heightMap.GetLength(1);
             if (buildingMap != null) return buildingMap.GetLength(1);
             return 0;
+        }
+
+        private static GridRenderMode ResolveRenderMode(GridProjectionMode projectionMode)
+        {
+            return projectionMode switch
+            {
+                GridProjectionMode.Isometric2D => GridRenderMode.Isometric2D,
+                GridProjectionMode.Isometric3DPreview => GridRenderMode.Mesh3DPreview,
+                _ => GridRenderMode.Sprite2D,
+            };
+        }
+
+        private static GridNeighborhoodMode ResolveNeighborhoodMode(IGridProjection projection)
+        {
+            if (projection == null)
+                return GridNeighborhoodMode.Moore8;
+
+            if (projection.Topology == GridTopology.HexAxial)
+                return GridNeighborhoodMode.HexAxial6;
+
+            return projection.ProjectionMode == GridProjectionMode.Isometric2D
+                || projection.ProjectionMode == GridProjectionMode.Isometric3DPreview
+                    ? GridNeighborhoodMode.VonNeumann4
+                    : GridNeighborhoodMode.Moore8;
         }
 
         private static void ApplyLaunchMetadata(GeneratedWorldData data)
@@ -252,6 +280,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 Width = _currentWorldData.Width,
                 Height = _currentWorldData.Height,
+                GridTopology = (int)_currentWorldData.GridTopology,
+                ProjectionMode = (int)_currentWorldData.ProjectionMode,
+                RenderMode = (int)_currentWorldData.RenderMode,
+                NeighborhoodMode = (int)_currentWorldData.NeighborhoodMode,
                 TileMap = MapArrayUtils.CloneStringMap(_currentWorldData.BiomeMap),
                 ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),

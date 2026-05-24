@@ -119,7 +119,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             context.RegisterService<IGeneratorTerrainLevelService>(new GeneratorTerrainLevelService());
 
             if (graphAsset.SharedSettings != null)
+            {
+                context.ApplySharedSettings(graphAsset.SharedSettings);
                 context.RegisterService(graphAsset.SharedSettings);
+            }
 
             if (graphAsset.TileRegistry != null)
                 context.RegisterService(graphAsset.TileRegistry);

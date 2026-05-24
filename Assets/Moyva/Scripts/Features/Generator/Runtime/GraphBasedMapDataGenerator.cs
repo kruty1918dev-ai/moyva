@@ -113,6 +113,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 // Реєструємо GraphSharedSettings
                 if (sharedSettings != null)
                 {
+                    context.ApplySharedSettings(sharedSettings);
                     context.RegisterService(sharedSettings);
                 }
 
