@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Units.API;
@@ -17,6 +18,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private const int BuildingLayerMinSortingOrder = 5;
 
         private readonly IGridService _gridService;
+        private readonly IGridProjection _gridProjection;
         private readonly IMapDataGenerator _mapDataGenerator;
         private readonly TileRegistrySO _tileRegistry;
         private readonly IMapObjectRegistryService _objectRegistry;
@@ -54,6 +56,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             SignalBus signalBus,
             [InjectOptional] GraphBasedMapDataGenerator graphBasedGenerator,
             [InjectOptional] ShoreMaskPrepass shoreMaskPrepass,
+            [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] WaterLayerMaterialSettings waterLayerMaterialSettings = null)
         {
             _tileRegistry = tileRegistry;
@@ -63,6 +66,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _unitFactory = unitFactory;
             _buildingRegistry = buildingRegistry;
             _gridService = gridService;
+            _gridProjection = gridProjection ?? new OrthogonalGridProjection();
             _mapDataGenerator = mapDataGenerator;
             _container = container;
             _signalBus = signalBus;
@@ -437,8 +441,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
-            // Використовуємо sortingOrder для Z, щоб річка точно була над травою
-            Vector3 worldPos = new Vector3(position.x, position.y, sortingOrder * 0.1f);
+            Vector3 worldPos = ResolveWorldPosition(position, sortingOrder);
             var tilePrefab = tileType.VisualPrefab;
 
             var instance = _container.InstantiatePrefab(
@@ -452,7 +455,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var tileView = instance.GetComponent<TileView>();
             if (tileView != null)
             {
-                tileView.Setup(position);
+                tileView.Setup(position, worldPos);
             }
 
             // Оновлюємо дані в GridService
@@ -571,7 +574,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
-            Vector3 worldPos = new Vector3(position.x, position.y, sortingOrder * 0.1f);
+            Vector3 worldPos = ResolveWorldPosition(position, sortingOrder);
             Quaternion prefabRotation = objectDef.VisualPrefab.transform.rotation;
 
             var instance = _container.InstantiatePrefab(
@@ -585,7 +588,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var tileView = instance.GetComponent<TileView>();
             if (tileView != null)
             {
-                tileView.Setup(position);
+                tileView.Setup(position, worldPos);
             }
 
             ApplySortingOrder(instance, ObjectLayerSortingOrder);
@@ -612,7 +615,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
-            Vector3 worldPos = new Vector3(position.x, position.y, 0.1f);
+            Vector3 worldPos = ResolveWorldPosition(position, 1);
 
             var instance = _container.InstantiatePrefab(
                 def.Prefab,
@@ -625,10 +628,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var tileView = instance.GetComponent<TileView>();
             if (tileView != null)
             {
-                tileView.Setup(position);
+                tileView.Setup(position, worldPos);
             }
 
             EnsureBuildingSortingOrder(instance, BuildingLayerMinSortingOrder);
+        }
+
+        private Vector3 ResolveWorldPosition(Vector2Int position, int sortingOrder)
+        {
+            return _gridProjection.GridToWorld(position, 0f, sortingOrder * 0.1f);
         }
 
         private static void EnsureBuildingSortingOrder(GameObject rootObject, int minOrder)
