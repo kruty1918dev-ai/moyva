@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
@@ -59,12 +60,151 @@ namespace Kruty1918.Moyva.Tests.Construction
             public void EndDrag() { }
         }
 
+        private sealed class FakeEconomyInfoMediator : IEconomyInfoMediator
+        {
+            public EconomySettlementContext? SettlementContext;
+            public bool HasAnyWarehouse;
+            public int OwnerPoolConsumeCalls;
+            public int SettlementConsumeCalls;
+
+            private readonly Dictionary<string, float> _ownerPoolResources = new(StringComparer.Ordinal);
+            private readonly Dictionary<string, float> _settlementResources = new(StringComparer.Ordinal);
+
+            public void SetOwnerPoolResource(string resourceId, float amount)
+            {
+                if (string.IsNullOrWhiteSpace(resourceId))
+                    return;
+
+                if (amount <= 0f)
+                    _ownerPoolResources.Remove(resourceId);
+                else
+                    _ownerPoolResources[resourceId.Trim()] = amount;
+            }
+
+            public float GetOwnerPoolResource(string resourceId)
+            {
+                return !string.IsNullOrWhiteSpace(resourceId) && _ownerPoolResources.TryGetValue(resourceId.Trim(), out var amount)
+                    ? amount
+                    : 0f;
+            }
+
+            public bool TryGetSettlementContext(Vector2Int position, out EconomySettlementContext context)
+            {
+                if (SettlementContext.HasValue)
+                {
+                    context = SettlementContext.Value;
+                    return true;
+                }
+
+                context = default;
+                return false;
+            }
+
+            public bool TryResolveConstructionSettlement(Vector2Int position, string ownerId, out EconomySettlementContext context)
+            {
+                if (SettlementContext.HasValue && string.Equals(NormalizeOwnerId(ownerId), NormalizeOwnerId(SettlementContext.Value.OwnerId), System.StringComparison.Ordinal))
+                {
+                    context = SettlementContext.Value;
+                    return true;
+                }
+
+                context = default;
+                return false;
+            }
+
+            public bool TryGetBuildingContext(Vector2Int position, out string buildingId, out string ownerId)
+            {
+                buildingId = null;
+                ownerId = null;
+                return false;
+            }
+
+            public bool TryConsumeSettlementResources(string settlementId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
+            {
+                SettlementConsumeCalls++;
+                return TryConsume(_settlementResources, resourceCosts, out errorMessage, "поселенні");
+            }
+
+            public bool TryConsumeOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
+            {
+                OwnerPoolConsumeCalls++;
+                return TryConsume(_ownerPoolResources, resourceCosts, out errorMessage, "стартовому запасі");
+            }
+
+            public bool OwnerHasAnyWarehouse(string ownerId)
+                => HasAnyWarehouse;
+
+            public IReadOnlyDictionary<string, float> GetWarehouseResourceTotals(Vector2Int warehousePosition)
+                => new Dictionary<string, float>(StringComparer.Ordinal);
+
+            public IReadOnlyDictionary<string, float> GetSettlementWarehousesTotal(string settlementId)
+                => new Dictionary<string, float>(StringComparer.Ordinal);
+
+            public IReadOnlyDictionary<string, float> GetSettlementResourceTotals(string settlementId)
+                => new Dictionary<string, float>(_settlementResources, StringComparer.Ordinal);
+
+            public IReadOnlyDictionary<string, float> GetOwnerPoolResourceTotals(string ownerId)
+                => new Dictionary<string, float>(_ownerPoolResources, StringComparer.Ordinal);
+
+            public IReadOnlyDictionary<string, float> GetOwnerResourceTotals(string ownerId)
+                => new Dictionary<string, float>(_ownerPoolResources, StringComparer.Ordinal);
+
+            public string GetResourceDisplayName(string resourceId)
+                => resourceId;
+
+            private static bool TryConsume(
+                Dictionary<string, float> pool,
+                IReadOnlyDictionary<string, float> resourceCosts,
+                out string errorMessage,
+                string sourceLabel)
+            {
+                errorMessage = string.Empty;
+                if (resourceCosts == null || resourceCosts.Count == 0)
+                    return true;
+
+                foreach (var pair in resourceCosts)
+                {
+                    if (pair.Value <= 0f)
+                        continue;
+
+                    float current = pool.TryGetValue(pair.Key, out var value) ? value : 0f;
+                    if (current + 0.0001f < pair.Value)
+                    {
+                        errorMessage = $"Недостатньо '{pair.Key}' у {sourceLabel}.";
+                        return false;
+                    }
+                }
+
+                foreach (var pair in resourceCosts)
+                {
+                    if (pair.Value <= 0f)
+                        continue;
+
+                    float current = pool.TryGetValue(pair.Key, out var value) ? value : 0f;
+                    float next = current - pair.Value;
+                    if (next <= 0.0001f)
+                        pool.Remove(pair.Key);
+                    else
+                        pool[pair.Key] = next;
+                }
+
+                return true;
+            }
+
+            private static string NormalizeOwnerId(string ownerId)
+            {
+                return string.IsNullOrWhiteSpace(ownerId) ? "player_0" : ownerId.Trim();
+            }
+        }
+
         private IConstructionService _service;
         private IInitializable _init;
         private System.IDisposable _disposable;
         private SignalBus _signalBus;
         private IObjectsMapService _objectsMap;
         private FakeFogOfWarService _fog;
+        private FakeEconomyInfoMediator _economyInfoMediator;
+        private BuildingRegistrySO _buildingRegistry;
         private int _placedCount;
         private int _cancelledCount;
         private int _demolishedCount;
@@ -94,9 +234,11 @@ namespace Kruty1918.Moyva.Tests.Construction
             _fog = new FakeFogOfWarService();
             Container.Bind<IFogOfWarService>().FromInstance(_fog).AsSingle();
             Container.Bind<IWallPlacementService>().To<FakeWallPlacementService>().AsSingle();
+            _economyInfoMediator = new FakeEconomyInfoMediator();
+            Container.Bind<IEconomyInfoMediator>().FromInstance(_economyInfoMediator).AsSingle();
 
-            var regSO = ScriptableObject.CreateInstance<BuildingRegistrySO>();
-            Container.Bind<IBuildingRegistry>().FromInstance(regSO).AsSingle();
+            _buildingRegistry = ScriptableObject.CreateInstance<BuildingRegistrySO>();
+            Container.Bind<IBuildingRegistry>().FromInstance(_buildingRegistry).AsSingle();
             Container.BindInstance(0).WithId("minSpacing");
             Container.BindInstance(0).WithId("townHallBuildRadius");
 
@@ -135,6 +277,8 @@ namespace Kruty1918.Moyva.Tests.Construction
         public override void Teardown()
         {
             _disposable?.Dispose();
+            if (_buildingRegistry != null)
+                UnityEngine.Object.DestroyImmediate(_buildingRegistry);
             base.Teardown();
         }
 
@@ -205,6 +349,49 @@ namespace Kruty1918.Moyva.Tests.Construction
         public void TryPreviewAt_WithoutSelectingBuilding_ReturnsFalse()
         {
             Assert.IsFalse(_service.TryPreviewAt(Vector2Int.zero));
+        }
+
+        [Test]
+        public void TryPreviewAt_ConsumesOwnerPoolBeforeAnyWarehouseExists()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding("castle", new CastleBuildingModule { ExclusionRadius = 3 }, ("wood", 30)),
+            };
+            _economyInfoMediator.SetOwnerPoolResource("wood", 30f);
+            _economyInfoMediator.HasAnyWarehouse = false;
+
+            _service.SelectBuilding("castle");
+
+            Assert.IsTrue(_service.TryPreviewAt(new Vector2Int(5, 5)));
+
+            _service.Confirm();
+
+            Assert.AreEqual(1, _economyInfoMediator.OwnerPoolConsumeCalls);
+            Assert.AreEqual(0, _economyInfoMediator.SettlementConsumeCalls);
+            Assert.AreEqual(0f, _economyInfoMediator.GetOwnerPoolResource("wood"), 0.01f);
+        }
+
+        [Test]
+        public void TryPreviewAt_ConsumesOwnerPoolEvenWhenSettlementExistsUntilWarehouseAppears()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding("castle", new CastleBuildingModule { ExclusionRadius = 3 }, ("wood", 20)),
+            };
+            _economyInfoMediator.SettlementContext = new EconomySettlementContext("settlement-1", "Settlement 1", "player_0");
+            _economyInfoMediator.SetOwnerPoolResource("wood", 20f);
+            _economyInfoMediator.HasAnyWarehouse = false;
+
+            _service.SelectBuilding("castle");
+
+            Assert.IsTrue(_service.TryPreviewAt(new Vector2Int(8, 8)));
+
+            _service.Confirm();
+
+            Assert.AreEqual(1, _economyInfoMediator.OwnerPoolConsumeCalls);
+            Assert.AreEqual(0, _economyInfoMediator.SettlementConsumeCalls);
+            Assert.AreEqual(0f, _economyInfoMediator.GetOwnerPoolResource("wood"), 0.01f);
         }
 
         // --- TryDemolishAt ---
@@ -322,6 +509,36 @@ namespace Kruty1918.Moyva.Tests.Construction
             _service.SelectBuilding("house");
             _service.SelectBuilding("barracks");
             Assert.AreEqual("barracks", _service.GetSelectedBuildingId());
+        }
+
+        private static BuildingDefinition CreateBuilding(
+            string id,
+            BuildingModuleDefinition module,
+            params (string ResourceId, int Amount)[] costs)
+        {
+            var definition = new BuildingDefinition
+            {
+                Id = id,
+                Modules = module == null
+                    ? new List<BuildingModuleDefinition>()
+                    : new List<BuildingModuleDefinition> { module },
+                ConstructionCost = new List<BuildingDefinition.BuildingConstructionCostEntry>(),
+            };
+
+            if (costs == null)
+                return definition;
+
+            for (int index = 0; index < costs.Length; index++)
+            {
+                var cost = costs[index];
+                definition.ConstructionCost.Add(new BuildingDefinition.BuildingConstructionCostEntry
+                {
+                    ResourceId = cost.ResourceId,
+                    Amount = cost.Amount,
+                });
+            }
+
+            return definition;
         }
     }
 }

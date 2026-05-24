@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
     public sealed class EconomyManager : IInitializable, IDisposable
     {
         public const string DefaultOwnerId = "player_0";
+        private const string StarterPackLogTag = "[Bootstrap][StarterPack]";
 
         private readonly ICalendarService _calendar;
         private readonly SignalBus _signalBus;
@@ -28,9 +29,6 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private readonly ISettlementRegistry _settlementRegistry;
         private readonly IEconomyBuildingIntegration _buildingIntegration;
         private readonly IEconomyTurnProcessor _turnProcessor;
-
-        private readonly Dictionary<string, Dictionary<string, float>> _ownerResourcePools =
-            new Dictionary<string, Dictionary<string, float>>(StringComparer.Ordinal);
 
         private EconomyRulesConfigSO Rules => _database?.RulesConfig;
 
@@ -100,15 +98,19 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
-            var createdSettlement = _buildingIntegration.OnBuildingPlaced(
+            _buildingIntegration.OnBuildingPlaced(
                 signal,
                 _settlementRegistry,
                 _signalBus,
                 _database,
                 _buildingRegistry);
 
-            if (createdSettlement != null)
-                TransferOwnerResourcesToSettlement(createdSettlement.OwnerId, createdSettlement);
+            var definition = string.IsNullOrWhiteSpace(signal.BuildingId)
+                ? null
+                : _buildingRegistry?.GetById(signal.BuildingId);
+
+            if (definition != null && BuildingDefinitionCapabilities.IsWarehouse(definition))
+                _ownerResourcePoolService.TransferOwnerResourcesToFirstWarehouse(signal.OwnerId, _settlementRegistry.AllSettlements, _signalBus, StarterPackLogTag);
         }
 
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
@@ -124,26 +126,37 @@ namespace Kruty1918.Moyva.Economy.Runtime
         private void OnGrantStarterPackResources(GrantStarterPackResourcesSignal signal)
         {
             if (signal.Entries == null || signal.Entries.Length == 0)
+            {
+                Debug.LogWarning($"{StarterPackLogTag} Economy received empty starter-pack payload for owner '{NormalizeOwnerId(signal.OwnerId)}'.");
                 return;
+            }
+
+            string entriesDescription = DescribeStarterPackEntries(signal.Entries);
 
             if (string.IsNullOrWhiteSpace(signal.SettlementId))
             {
                 string ownerId = NormalizeOwnerId(signal.OwnerId);
+                Debug.Log($"{StarterPackLogTag} Economy applying starter-pack to owner pool: owner='{ownerId}', entries=[{entriesDescription}].");
                 for (int index = 0; index < signal.Entries.Length; index++)
                 {
                     var entry = signal.Entries[index];
                     if (string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0f)
                         continue;
 
-                    AddOwnerResource(ownerId, entry.ResourceId.Trim(), entry.Amount);
+                    _ownerResourcePoolService.AddOwnerResource(ownerId, entry.ResourceId.Trim(), entry.Amount, _signalBus);
                 }
+
+                _ownerResourcePoolService.TransferOwnerResourcesToFirstWarehouse(ownerId, _settlementRegistry.AllSettlements, _signalBus, StarterPackLogTag);
 
                 return;
             }
 
             var state = _settlementRegistry.GetSettlement(signal.SettlementId);
             if (state == null || !state.IsActive)
+            {
+                Debug.LogWarning($"{StarterPackLogTag} Economy cannot apply starter-pack: settlement '{signal.SettlementId}' is missing or inactive for owner '{NormalizeOwnerId(signal.OwnerId)}'. Entries=[{entriesDescription}].");
                 return;
+            }
 
             string ownerFromSignal = NormalizeOwnerId(signal.OwnerId);
             string ownerFromSettlement = NormalizeOwnerId(state.OwnerId);
@@ -152,6 +165,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 Debug.LogWarning($"[Economy] Пропущено стартовий пакет: owner mismatch signal='{ownerFromSignal}', settlement='{ownerFromSettlement}'.");
                 return;
             }
+
+            Debug.Log($"{StarterPackLogTag} Economy applying starter-pack to settlement='{signal.SettlementId}', owner='{ownerFromSignal}', entries=[{entriesDescription}].");
 
             for (int index = 0; index < signal.Entries.Length; index++)
             {
@@ -163,25 +178,22 @@ namespace Kruty1918.Moyva.Economy.Runtime
             }
         }
 
-        private void AddOwnerResource(string ownerId, string resourceId, float amount)
+        private static string DescribeStarterPackEntries(StarterPackResourceEntrySignal[] entries)
         {
-            _ownerResourcePoolService.AddOwnerResource(
-                _ownerResourcePools,
-                NormalizeOwnerId(ownerId),
-                resourceId,
-                amount,
-                _signalBus);
+            if (entries == null || entries.Length == 0)
+                return "none";
 
-            TransferOwnerResourcesToExistingSettlement(NormalizeOwnerId(ownerId));
-        }
+            var parts = new List<string>(entries.Length);
+            for (int index = 0; index < entries.Length; index++)
+            {
+                var entry = entries[index];
+                if (string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0f)
+                    continue;
 
-        private void TransferOwnerResourcesToSettlement(string ownerId, EconomySettlementState state)
-        {
-            _ownerResourcePoolService.TransferOwnerResourcesToSettlement(
-                _ownerResourcePools,
-                NormalizeOwnerId(ownerId),
-                state,
-                _signalBus);
+                parts.Add($"{entry.ResourceId.Trim()}={entry.Amount:0.##}");
+            }
+
+            return parts.Count == 0 ? "none" : string.Join(", ", parts);
         }
 
         // ───────────────────────── Public API for UI / other systems
@@ -266,6 +278,16 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return true;
         }
 
+        public bool TryConsumeOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
+        {
+            return _ownerResourcePoolService.TryConsumeOwnerPoolResources(
+                ownerId,
+                resourceCosts,
+                ResolveResourceDisplayName,
+                _signalBus,
+                out errorMessage);
+        }
+
         public bool TryGetBuildingAtPosition(Vector2Int position, out string buildingId, out string ownerId)
         {
             return _settlementRegistry.TryGetBuildingAtPosition(position, out buildingId, out ownerId);
@@ -303,76 +325,37 @@ namespace Kruty1918.Moyva.Economy.Runtime
             return new Dictionary<string, float>(state.ResourcePool, StringComparer.Ordinal);
         }
 
+        public Dictionary<string, float> GetOwnerPoolResourceTotals(string ownerId)
+        {
+            return _ownerResourcePoolService.GetOwnerPoolResourceTotals(ownerId);
+        }
+
         public Dictionary<string, float> GetOwnerResourceTotals(string ownerId)
         {
             return _ownerResourcePoolService.GetOwnerResourceTotals(
-                _ownerResourcePools,
                 _settlementRegistry.AllSettlements,
                 NormalizeOwnerId(ownerId));
         }
 
+        public bool OwnerHasAnyWarehouse(string ownerId)
+        {
+            return _ownerResourcePoolService.OwnerHasAnyWarehouse(ownerId, _settlementRegistry.AllSettlements);
+        }
+
         public Dictionary<string, Dictionary<string, float>> GetOwnerResourcePoolsSnapshot()
         {
-            return _ownerResourcePoolService.GetOwnerResourcePoolsSnapshot(_ownerResourcePools);
+            return _ownerResourcePoolService.GetOwnerResourcePoolsSnapshot();
         }
 
         public Dictionary<string, Dictionary<string, float>> GetOwnerResourceTotalsSnapshot()
         {
-            var ownerIds = new HashSet<string>(StringComparer.Ordinal);
-
-            foreach (var ownerPair in _ownerResourcePools)
-                ownerIds.Add(NormalizeOwnerId(ownerPair.Key));
-
-            foreach (var settlement in _settlementRegistry.AllSettlements.Values)
-            {
-                if (settlement == null)
-                    continue;
-
-                ownerIds.Add(NormalizeOwnerId(settlement.OwnerId));
-            }
-
-            var snapshot = new Dictionary<string, Dictionary<string, float>>(StringComparer.Ordinal);
-            foreach (string ownerId in ownerIds)
-            {
-                var totals = GetOwnerResourceTotals(ownerId);
-                if (totals.Count > 0)
-                    snapshot[ownerId] = totals;
-            }
-
-            return snapshot;
+            return _ownerResourcePoolService.GetOwnerResourceTotalsSnapshot(_settlementRegistry.AllSettlements);
         }
 
         public void RestoreOwnerResourcePools(Dictionary<string, Dictionary<string, float>> snapshot)
         {
-            _ownerResourcePoolService.RestoreOwnerResourcePools(_ownerResourcePools, snapshot, _signalBus);
-            TransferOwnerResourcesToExistingSettlements();
-        }
-
-        private void TransferOwnerResourcesToExistingSettlements()
-        {
-            _ownerResourcePoolService.TransferOwnerResourcesToExistingSettlements(
-                _ownerResourcePools,
-                _settlementRegistry.AllSettlements,
-                _signalBus);
-        }
-
-        private void TransferOwnerResourcesToExistingSettlement(string ownerId)
-        {
-            if (_ownerResourcePools.Count == 0 || _settlementRegistry.AllSettlements.Count == 0)
-                return;
-
-            string normalizedOwnerId = NormalizeOwnerId(ownerId);
-            foreach (var settlement in _settlementRegistry.AllSettlements.Values)
-            {
-                if (settlement == null || !settlement.IsActive)
-                    continue;
-
-                if (!string.Equals(NormalizeOwnerId(settlement.OwnerId), normalizedOwnerId, StringComparison.Ordinal))
-                    continue;
-
-                TransferOwnerResourcesToSettlement(normalizedOwnerId, settlement);
-                break;
-            }
+            _ownerResourcePoolService.RestoreOwnerResourcePools(snapshot, _signalBus);
+            _ownerResourcePoolService.TransferOwnerResourcesToExistingWarehouses(_settlementRegistry.AllSettlements, _signalBus, StarterPackLogTag);
         }
 
         /// <summary>Додати ресурс до поселення вручну (караван, чіт, тестування).</summary>

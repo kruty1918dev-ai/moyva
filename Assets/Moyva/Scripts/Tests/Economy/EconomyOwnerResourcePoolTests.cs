@@ -38,27 +38,36 @@ namespace Kruty1918.Moyva.Tests.Economy
         }
 
         [Test]
-        public void OwnerPoolTransfersIntoFirstSettlementWithoutDoubleCounting()
+        public void RuntimeApiResourceTotals_IncludeOwnerPoolBeforeSettlementExists()
+        {
+            var manager = CreateManager();
+            var api = new EconomyRuntimeApi(manager, CreateDatabase(), null);
+
+            GrantStarterPack(manager, "player_0", string.Empty);
+
+            var totals = api.GetOwnerResourceTotals("player_0");
+            Assert.AreEqual(50f, totals["steak-food-resources"], 0.01f);
+            Assert.AreEqual(30f, totals["copper-ore-materials-resources"], 0.01f);
+        }
+
+        [Test]
+        public void OwnerPoolStaysInOwnerPoolUntilWarehouseExists()
         {
             var manager = CreateManager();
             GrantStarterPack(manager, "player_0", string.Empty);
 
-            var settlement = new EconomySettlementState
-            {
-                SettlementId = "settlement-1",
-                OwnerId = "player_0",
-                IsActive = true,
-            };
+            var settlement = AddSettlement(manager, "settlement-1", "player_0");
 
-            var settlements = GetPrivateField<Dictionary<string, EconomySettlementState>>(manager, "_settlements");
-            settlements[settlement.SettlementId] = settlement;
-
-            // Use the public restore pipeline, which transfers owner pools into existing settlements.
+            // Restore should keep resources in owner-pool until the owner has at least one warehouse.
             var snapshotBeforeTransfer = manager.GetOwnerResourcePoolsSnapshot();
             manager.RestoreOwnerResourcePools(snapshotBeforeTransfer);
 
-            Assert.AreEqual(50f, settlement.GetResource("steak-food-resources"), 0.01f);
-            Assert.AreEqual(30f, settlement.GetResource("copper-ore-materials-resources"), 0.01f);
+            Assert.AreEqual(0f, settlement.GetResource("steak-food-resources"), 0.01f);
+            Assert.AreEqual(0f, settlement.GetResource("copper-ore-materials-resources"), 0.01f);
+
+            var ownerPool = manager.GetOwnerPoolResourceTotals("player_0");
+            Assert.AreEqual(50f, ownerPool["steak-food-resources"], 0.01f);
+            Assert.AreEqual(30f, ownerPool["copper-ore-materials-resources"], 0.01f);
 
             var totals = manager.GetOwnerResourceTotals("player_0");
             Assert.AreEqual(50f, totals["steak-food-resources"], 0.01f);
@@ -80,10 +89,11 @@ namespace Kruty1918.Moyva.Tests.Economy
         }
 
         [Test]
-        public void RestoreOwnerResourcePools_TransfersIntoExistingSettlementWithoutDoubleCounting()
+        public void RestoreOwnerResourcePools_TransfersIntoExistingWarehouseWithoutDoubleCounting()
         {
             var manager = CreateManager();
             var settlement = AddSettlement(manager, "settlement-1", "player_0");
+            settlement.EnsureWarehousePool("10:10");
 
             manager.RestoreOwnerResourcePools(new Dictionary<string, Dictionary<string, float>>
             {
@@ -97,9 +107,37 @@ namespace Kruty1918.Moyva.Tests.Economy
             Assert.AreEqual(50f, settlement.GetResource("steak-food-resources"), 0.01f);
             Assert.AreEqual(30f, settlement.GetResource("copper-ore-materials-resources"), 0.01f);
 
+            var warehouseSnapshot = settlement.GetWarehouseSnapshot("10:10");
+            Assert.AreEqual(50f, warehouseSnapshot["steak-food-resources"], 0.01f);
+            Assert.AreEqual(30f, warehouseSnapshot["copper-ore-materials-resources"], 0.01f);
+
+            Assert.IsEmpty(manager.GetOwnerPoolResourceTotals("player_0"));
+
             var totals = manager.GetOwnerResourceTotals("player_0");
             Assert.AreEqual(50f, totals["steak-food-resources"], 0.01f);
             Assert.AreEqual(30f, totals["copper-ore-materials-resources"], 0.01f);
+        }
+
+        [Test]
+        public void TryConsumeOwnerPoolResources_SpendsDirectlyFromOwnerPool()
+        {
+            var manager = CreateManager();
+            GrantStarterPack(manager, "player_0", string.Empty);
+
+            bool consumed = manager.TryConsumeOwnerPoolResources(
+                "player_0",
+                new Dictionary<string, float>
+                {
+                    ["steak-food-resources"] = 20f,
+                    ["copper-ore-materials-resources"] = 5f,
+                },
+                out string errorMessage);
+
+            Assert.IsTrue(consumed, errorMessage);
+
+            var ownerPool = manager.GetOwnerPoolResourceTotals("player_0");
+            Assert.AreEqual(30f, ownerPool["steak-food-resources"], 0.01f);
+            Assert.AreEqual(25f, ownerPool["copper-ore-materials-resources"], 0.01f);
         }
 
         private static EconomyManager CreateManager()
@@ -116,8 +154,8 @@ namespace Kruty1918.Moyva.Tests.Economy
                 IsActive = true,
             };
 
-            var settlements = GetPrivateField<Dictionary<string, EconomySettlementState>>(manager, "_settlements");
-            settlements[settlement.SettlementId] = settlement;
+            var registry = GetPrivateField<object>(manager, "_settlementRegistry");
+            InvokeInstance(registry, "RegisterSettlement", settlement, Vector2Int.zero);
             return settlement;
         }
 
@@ -160,6 +198,13 @@ namespace Kruty1918.Moyva.Tests.Economy
         {
             var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
             Assert.NotNull(method, $"Missing private method '{methodName}'.");
+            method.Invoke(target, arguments);
+        }
+
+        private static void InvokeInstance(object target, string methodName, params object[] arguments)
+        {
+            var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Assert.NotNull(method, $"Missing method '{methodName}'.");
             method.Invoke(target, arguments);
         }
 

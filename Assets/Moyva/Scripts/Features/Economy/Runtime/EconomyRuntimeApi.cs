@@ -58,17 +58,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
             float materials = 0f;
             float money = 0f;
 
-            foreach (var kvp in _economyManager.Settlements)
-            {
-                var state = kvp.Value;
-                if (state == null)
-                    continue;
-
-                if (!string.Equals(NormalizeOwnerId(state.OwnerId), normalizedOwnerId, StringComparison.Ordinal))
-                    continue;
-
-                AccumulateCategoryTotals(state.ResourcePool, ref food, ref materials, ref money);
-            }
+            // Завдання: головний ресурсний UI відкривається до появи першого складу.
+            // Тому owner totals мають включати owner-pool зі стартовою економікою, інакше UI знову покаже 0.
+            var ownerTotals = _economyManager?.GetOwnerResourceTotals(normalizedOwnerId);
+            AccumulateCategoryTotals(ownerTotals, ref food, ref materials, ref money);
 
             return new EconomyCategoryTotals(food, materials, money);
         }
@@ -85,21 +78,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
         public Dictionary<string, float> GetOwnerResourceTotals(string ownerId)
         {
             var normalizedOwnerId = NormalizeOwnerId(ownerId);
-            var totals = new Dictionary<string, float>(StringComparer.Ordinal);
-
-            foreach (var kvp in _economyManager.Settlements)
-            {
-                var state = kvp.Value;
-                if (state == null)
-                    continue;
-
-                if (!string.Equals(NormalizeOwnerId(state.OwnerId), normalizedOwnerId, StringComparison.Ordinal))
-                    continue;
-
-                AccumulatePerResource(state.ResourcePool, totals);
-            }
-
-            return totals;
+            // Завдання: цей API є загальним owner dashboard для UI/tooltip-ів.
+            // Не замінювати на settlement-only totals, бо стартові ресурси живуть в owner-pool до першого складу.
+            return _economyManager?.GetOwnerResourceTotals(normalizedOwnerId)
+                ?? new Dictionary<string, float>(StringComparer.Ordinal);
         }
 
         public EconomyCategoryTotals GetSettlementCategoryTotals(string settlementId)

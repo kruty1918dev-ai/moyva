@@ -73,6 +73,16 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 && _economyManager.TryConsumeSettlementResources(settlementId, resourceCosts, out errorMessage);
         }
 
+        public bool TryConsumeOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
+        {
+            errorMessage = null;
+            return _economyManager != null
+                && _economyManager.TryConsumeOwnerPoolResources(ownerId, resourceCosts, out errorMessage);
+        }
+
+        public bool OwnerHasAnyWarehouse(string ownerId)
+            => _economyManager != null && _economyManager.OwnerHasAnyWarehouse(ownerId);
+
         public IReadOnlyDictionary<string, float> GetWarehouseResourceTotals(Vector2Int warehousePosition)
             => _economyManager?.GetWarehouseResourceTotalsByPosition(warehousePosition) ?? EmptyResources;
 
@@ -81,6 +91,9 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         public IReadOnlyDictionary<string, float> GetSettlementResourceTotals(string settlementId)
             => _economyManager?.GetSettlementResourceTotals(settlementId) ?? EmptyResources;
+
+        public IReadOnlyDictionary<string, float> GetOwnerPoolResourceTotals(string ownerId)
+            => _economyManager?.GetOwnerPoolResourceTotals(ownerId) ?? EmptyResources;
 
         public IReadOnlyDictionary<string, float> GetOwnerResourceTotals(string ownerId)
             => _economyManager?.GetOwnerResourceTotals(ownerId) ?? EmptyResources;
