@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
@@ -26,7 +27,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             out bool ownsTexture,
             out string status,
             TileRegistrySO tileRegistry = null,
-            bool heatmap = false)
+            bool heatmap = false,
+            GraphSharedSettings sharedSettings = null)
         {
             ownsTexture = false;
             status = "No map output";
@@ -53,6 +55,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 {
                     status = "Height/float map";
                     ownsTexture = true;
+                    if (ProjectedMapPreviewRenderer.ShouldProject(sharedSettings))
+                        return BuildProjectedFloatTexture(floatMap, requestedWidth, requestedHeight, heatmap, sharedSettings);
+
                     return BuildFloatTexture(floatMap, requestedWidth, requestedHeight, heatmap);
                 }
 
@@ -61,6 +66,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     bool hasSprites = tileRegistry != null;
                     status = hasSprites ? "Tile map (sprites)" : "Tile/biome map";
                     ownsTexture = true;
+                    if (ProjectedMapPreviewRenderer.ShouldProject(sharedSettings))
+                    {
+                        return hasSprites
+                            ? BuildProjectedSpriteColorTexture(tileMap, requestedWidth, requestedHeight, tileRegistry, sharedSettings)
+                            : BuildProjectedStringTexture(tileMap, requestedWidth, requestedHeight, sharedSettings);
+                    }
+
                     return hasSprites
                         ? BuildSpriteColorTexture(tileMap, requestedWidth, requestedHeight, tileRegistry)
                         : BuildStringTexture(tileMap, requestedWidth, requestedHeight);
@@ -70,6 +82,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 {
                     status = "Mask map";
                     ownsTexture = true;
+                    if (ProjectedMapPreviewRenderer.ShouldProject(sharedSettings))
+                        return BuildProjectedBoolTexture(maskMap, requestedWidth, requestedHeight, heatmap, sharedSettings);
+
                     return BuildBoolTexture(maskMap, requestedWidth, requestedHeight, heatmap);
                 }
 
@@ -77,12 +92,95 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 {
                     status = "Int map";
                     ownsTexture = true;
+                    if (ProjectedMapPreviewRenderer.ShouldProject(sharedSettings))
+                        return BuildProjectedIntTexture(intMap, requestedWidth, requestedHeight, heatmap, sharedSettings);
+
                     return BuildIntTexture(intMap, requestedWidth, requestedHeight, heatmap);
                 }
             }
 
             status = "Unsupported output type";
             return null;
+        }
+
+        private static Texture2D BuildProjectedFloatTexture(float[,] source, int requestedWidth, int requestedHeight, bool heatmap, GraphSharedSettings sharedSettings)
+        {
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            return ProjectedMapPreviewRenderer.Render(width, height, requestedWidth, requestedHeight, sharedSettings,
+                (x, y) =>
+                {
+                    float t = Mathf.Clamp01(source[x, y]);
+                    return heatmap ? EvaluateHeatColor(t) : new Color(t, t, t, 1f);
+                });
+        }
+
+        private static Texture2D BuildProjectedBoolTexture(bool[,] source, int requestedWidth, int requestedHeight, bool heatmap, GraphSharedSettings sharedSettings)
+        {
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            Color falseColor = heatmap
+                ? new Color(0.08f, 0.10f, 0.30f, 1f)
+                : new Color(0.10f, 0.12f, 0.16f, 1f);
+            Color trueColor = heatmap
+                ? new Color(1f, 0.2f, 0.2f, 1f)
+                : new Color(0.38f, 0.86f, 0.48f, 1f);
+
+            return ProjectedMapPreviewRenderer.Render(width, height, requestedWidth, requestedHeight, sharedSettings,
+                (x, y) => source[x, y] ? trueColor : falseColor);
+        }
+
+        private static Texture2D BuildProjectedIntTexture(int[,] source, int requestedWidth, int requestedHeight, bool heatmap, GraphSharedSettings sharedSettings)
+        {
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            int min = int.MaxValue;
+            int max = int.MinValue;
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    int value = source[x, y];
+                    if (value < min) min = value;
+                    if (value > max) max = value;
+                }
+            }
+
+            float span = Mathf.Max(1f, max - min);
+            return ProjectedMapPreviewRenderer.Render(width, height, requestedWidth, requestedHeight, sharedSettings,
+                (x, y) =>
+                {
+                    float t = Mathf.Clamp01((source[x, y] - min) / span);
+                    return heatmap ? EvaluateHeatColor(t) : new Color(t, t, t, 1f);
+                });
+        }
+
+        private static Texture2D BuildProjectedStringTexture(string[,] source, int requestedWidth, int requestedHeight, GraphSharedSettings sharedSettings)
+        {
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            return ProjectedMapPreviewRenderer.Render(width, height, requestedWidth, requestedHeight, sharedSettings,
+                (x, y) => StringToColor(source[x, y]));
+        }
+
+        private static Texture2D BuildProjectedSpriteColorTexture(string[,] source, int requestedWidth, int requestedHeight, TileRegistrySO registry, GraphSharedSettings sharedSettings)
+        {
+            EnsureSpriteColorCache(registry);
+
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            return ProjectedMapPreviewRenderer.Render(width, height, requestedWidth, requestedHeight, sharedSettings,
+                (x, y) =>
+                {
+                    string tileId = source[x, y];
+                    if (string.IsNullOrEmpty(tileId))
+                        return Color.black;
+
+                    if (_spriteColorCache != null && _spriteColorCache.TryGetValue(tileId, out var color))
+                        return color;
+
+                    return StringToColor(tileId);
+                });
         }
 
         private static Texture2D BuildFloatTexture(float[,] source, int requestedWidth, int requestedHeight, bool heatmap)

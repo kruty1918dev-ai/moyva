@@ -4,6 +4,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
+using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
@@ -39,7 +40,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             TileRegistrySO tileRegistry,
             MapObjectRegistrySO objectRegistry,
             BuildingRegistrySO buildingRegistry,
-            int pixelsPerTile = DefaultPixelsPerTile)
+            int pixelsPerTile = DefaultPixelsPerTile,
+            GraphSharedSettings sharedSettings = null)
         {
             // Визначаємо розмір карти
             int mapW = 0, mapH = 0;
@@ -61,6 +63,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             if (mapW <= 0 || mapH <= 0) return null;
+
+            if (ProjectedMapPreviewRenderer.ShouldProject(sharedSettings))
+            {
+                return BuildProjectedComposite(
+                    layers,
+                    biomeMap,
+                    objectMap,
+                    heightMap,
+                    buildingMap,
+                    tileRegistry,
+                    objectRegistry,
+                    buildingRegistry,
+                    sharedSettings,
+                    mapW,
+                    mapH,
+                    pixelsPerTile);
+            }
 
             int ppt = Mathf.Max(1, pixelsPerTile);
             int texW = mapW * ppt;
@@ -219,6 +238,235 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return tex;
         }
 
+        private static Texture2D BuildProjectedComposite(
+            List<WorldLayerData> layers,
+            string[,] biomeMap,
+            string[,] objectMap,
+            float[,] heightMap,
+            string[,] buildingMap,
+            TileRegistrySO tileRegistry,
+            MapObjectRegistrySO objectRegistry,
+            BuildingRegistrySO buildingRegistry,
+            GraphSharedSettings sharedSettings,
+            int mapW,
+            int mapH,
+            int pixelsPerTile)
+        {
+            var layerSamples = BuildLayerSamples(layers);
+            var tileSpriteCache = tileRegistry != null ? BuildTileSpriteCache(tileRegistry) : null;
+            var objectSpriteCache = objectRegistry != null ? BuildObjectSpriteCache(objectRegistry) : null;
+            var buildingColorCache = buildingRegistry != null ? BuildBuildingColorCache(buildingRegistry) : null;
+            CalculateHeightRange(heightMap, out float minHeight, out float maxHeight);
+
+            int targetSize = Mathf.Clamp(Mathf.Max(mapW, mapH) * Mathf.Max(2, pixelsPerTile), 64, 512);
+            return ProjectedMapPreviewRenderer.Render(
+                mapW,
+                mapH,
+                targetSize,
+                targetSize,
+                sharedSettings,
+                (x, y) => ResolveProjectedBaseColor(
+                    x,
+                    y,
+                    mapW,
+                    mapH,
+                    layerSamples,
+                    biomeMap,
+                    heightMap,
+                    tileSpriteCache,
+                    minHeight,
+                    maxHeight),
+                (x, y) => ResolveProjectedMarkerColor(
+                    x,
+                    y,
+                    objectMap,
+                    buildingMap,
+                    objectSpriteCache,
+                    buildingColorCache));
+        }
+
+        private static Color ResolveProjectedBaseColor(
+            int x,
+            int y,
+            int mapW,
+            int mapH,
+            List<LayerSample> layerSamples,
+            string[,] biomeMap,
+            float[,] heightMap,
+            Dictionary<string, SpritePixelData> tileSpriteCache,
+            float minHeight,
+            float maxHeight)
+        {
+            Color layerColor = Color.clear;
+            bool hasLayerColor = false;
+            if (layerSamples != null)
+            {
+                for (int i = 0; i < layerSamples.Count; i++)
+                {
+                    Color src = layerSamples[i].Sample(x, y, mapW, mapH);
+                    if (src.a < 0.01f)
+                        continue;
+
+                    layerColor = hasLayerColor ? AlphaBlend(layerColor, src) : src;
+                    hasLayerColor = true;
+                }
+            }
+
+            if (hasLayerColor)
+                return layerColor;
+
+            if (biomeMap != null && IsInBounds(biomeMap, x, y))
+            {
+                string tileId = biomeMap[x, y];
+                if (string.IsNullOrEmpty(tileId))
+                    return Color.black;
+
+                if (tileSpriteCache != null && tileSpriteCache.TryGetValue(tileId, out var spriteData))
+                    return AverageOpaqueColor(spriteData.Pixels);
+
+                return HashColor(tileId);
+            }
+
+            if (heightMap != null && IsInBounds(heightMap, x, y))
+            {
+                float span = Mathf.Max(0.0001f, maxHeight - minHeight);
+                float t = Mathf.Clamp01((heightMap[x, y] - minHeight) / span);
+                return new Color(t, t, t, 1f);
+            }
+
+            return Color.black;
+        }
+
+        private static Color ResolveProjectedMarkerColor(
+            int x,
+            int y,
+            string[,] objectMap,
+            string[,] buildingMap,
+            Dictionary<string, SpritePixelData> objectSpriteCache,
+            Dictionary<string, Color> buildingColorCache)
+        {
+            if (buildingMap != null && IsInBounds(buildingMap, x, y))
+            {
+                string buildingId = buildingMap[x, y];
+                if (!string.IsNullOrEmpty(buildingId))
+                {
+                    Color color = buildingColorCache != null && buildingColorCache.TryGetValue(buildingId, out var cached)
+                        ? cached
+                        : HashColor(buildingId);
+                    color.a = 0.92f;
+                    return color;
+                }
+            }
+
+            if (objectMap != null && IsInBounds(objectMap, x, y))
+            {
+                string objectId = objectMap[x, y];
+                if (!string.IsNullOrEmpty(objectId))
+                {
+                    Color color = objectSpriteCache != null && objectSpriteCache.TryGetValue(objectId, out var spriteData)
+                        ? AverageOpaqueColor(spriteData.Pixels)
+                        : HashColor(objectId);
+                    color.a = 0.88f;
+                    return color;
+                }
+            }
+
+            return Color.clear;
+        }
+
+        private static List<LayerSample> BuildLayerSamples(List<WorldLayerData> layers)
+        {
+            if (layers == null || layers.Count == 0)
+                return null;
+
+            var sorted = new List<WorldLayerData>(layers);
+            sorted.Sort((a, b) => a.SortingOrder.CompareTo(b.SortingOrder));
+
+            var samples = new List<LayerSample>(sorted.Count);
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                Texture2D texture = sorted[i].TileTexture;
+                if (texture == null)
+                    continue;
+
+                try
+                {
+                    samples.Add(new LayerSample
+                    {
+                        Pixels = texture.GetPixels(),
+                        Width = texture.width,
+                        Height = texture.height
+                    });
+                }
+                catch
+                {
+                    // Read/Write може бути вимкнений у спрайтів шарів; тоді працює biome/height fallback.
+                }
+            }
+
+            return samples;
+        }
+
+        private static Dictionary<string, Color> BuildBuildingColorCache(BuildingRegistrySO registry)
+        {
+            var cache = new Dictionary<string, Color>();
+            foreach (var def in registry.GetAll())
+            {
+                if (def == null || string.IsNullOrEmpty(def.Id))
+                    continue;
+
+                Sprite sprite = def.Icon;
+                Color tint = Color.white;
+                if (sprite == null && def.Prefab != null)
+                {
+                    var sr = def.Prefab.GetComponentInChildren<SpriteRenderer>(true);
+                    if (sr != null)
+                    {
+                        sprite = sr.sprite;
+                        tint = sr.color;
+                    }
+                }
+
+                if (sprite != null)
+                    cache[def.Id] = AverageOpaqueColor(GetSpritePixels(sprite, HashColor(def.Id), tint).Pixels);
+            }
+
+            return cache;
+        }
+
+        private static void CalculateHeightRange(float[,] heightMap, out float min, out float max)
+        {
+            min = 0f;
+            max = 1f;
+            if (heightMap == null)
+                return;
+
+            min = float.MaxValue;
+            max = float.MinValue;
+            int width = heightMap.GetLength(0);
+            int height = heightMap.GetLength(1);
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    float value = heightMap[x, y];
+                    if (value < min) min = value;
+                    if (value > max) max = value;
+                }
+            }
+
+            if (min == float.MaxValue)
+            {
+                min = 0f;
+                max = 1f;
+            }
+        }
+
+        private static bool IsInBounds(Array map, int x, int y)
+        {
+            return x >= 0 && y >= 0 && x < map.GetLength(0) && y < map.GetLength(1);
+        }
+
         // ── Layer Blitting ──────────────────────────────────────────────────
 
         /// <summary>
@@ -267,6 +515,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             public Color[] Pixels;
             public int Width;
             public int Height;
+        }
+
+        private struct LayerSample
+        {
+            public Color[] Pixels;
+            public int Width;
+            public int Height;
+
+            public Color Sample(int tileX, int tileY, int mapW, int mapH)
+            {
+                if (Pixels == null || Pixels.Length == 0 || Width <= 0 || Height <= 0)
+                    return Color.clear;
+
+                int srcX = Mathf.Clamp(tileX * Width / Mathf.Max(1, mapW), 0, Width - 1);
+                int srcY = Mathf.Clamp(tileY * Height / Mathf.Max(1, mapH), 0, Height - 1);
+                return Pixels[srcY * Width + srcX];
+            }
         }
 
         private static Dictionary<string, SpritePixelData> BuildObjectSpriteCache(MapObjectRegistrySO registry)
