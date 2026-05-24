@@ -35,7 +35,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
             int w = tileMap.GetLength(0);
             int h = tileMap.GetLength(1);
-            var result = (string[,])tileMap.Clone();
+            var result = MapArrayUtils.CloneStringMap(tileMap);
             var mask = inputs[1] as bool[,];
 
             for (int x = 0; x < w; x++)

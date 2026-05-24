@@ -39,7 +39,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             int w = baseMap?.GetLength(0) ?? Mathf.Max(1, context.MapSize.x);
             int h = baseMap?.GetLength(1) ?? Mathf.Max(1, context.MapSize.y);
 
-            var result = baseMap != null ? (string[,])baseMap.Clone() : new string[w, h];
+            var result = MapArrayUtils.CloneStringMapOrCreate(baseMap, w, h);
 
             if (_paintTexture == null || _palette == null || _palette.Count == 0)
                 return NodeOutput.Warning("Paint texture or palette is empty. Returning base map.", result);

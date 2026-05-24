@@ -1,3 +1,5 @@
+using System;
+
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     /// <summary>
@@ -19,12 +21,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int width = source.GetLength(0);
             int height = source.GetLength(1);
             var clone = new string[width, height];
-
-            for (int x = 0; x < width; x++)
-                for (int y = 0; y < height; y++)
-                    clone[x, y] = source[x, y];
-
+            Array.Copy(source, clone, source.Length);
             return clone;
+        }
+
+        internal static string[,] CloneStringMapOrCreate(string[,] source, int width, int height)
+        {
+            return source != null
+                ? CloneStringMap(source)
+                : new string[Math.Max(1, width), Math.Max(1, height)];
         }
 
         /// <summary>
@@ -39,12 +44,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int width = source.GetLength(0);
             int height = source.GetLength(1);
             var clone = new float[width, height];
-
-            for (int x = 0; x < width; x++)
-                for (int y = 0; y < height; y++)
-                    clone[x, y] = source[x, y];
-
+            Array.Copy(source, clone, source.Length);
             return clone;
+        }
+
+        internal static float[,] CloneFloatMapOrCreate(float[,] source, int width, int height)
+        {
+            return source != null
+                ? CloneFloatMap(source)
+                : new float[Math.Max(1, width), Math.Max(1, height)];
         }
 
         internal static int[,] CloneIntMap(int[,] source)
@@ -55,12 +63,27 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int width = source.GetLength(0);
             int height = source.GetLength(1);
             var clone = new int[width, height];
-
-            for (int x = 0; x < width; x++)
-                for (int y = 0; y < height; y++)
-                    clone[x, y] = source[x, y];
-
+            Array.Copy(source, clone, source.Length);
             return clone;
+        }
+
+        internal static bool[,] CloneBoolMap(bool[,] source)
+        {
+            if (source == null)
+                return null;
+
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            var clone = new bool[width, height];
+            Array.Copy(source, clone, source.Length);
+            return clone;
+        }
+
+        internal static bool[,] CloneBoolMapOrCreate(bool[,] source, int width, int height)
+        {
+            return source != null
+                ? CloneBoolMap(source)
+                : new bool[Math.Max(1, width), Math.Max(1, height)];
         }
     }
 }

@@ -67,7 +67,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             int h = heightMap.GetLength(1);
 
             var existing = inputs[1] as string[,];
-            var result = existing != null ? (string[,])existing.Clone() : new string[w, h];
+            var result = MapArrayUtils.CloneStringMapOrCreate(existing, w, h);
 
             if (_layers == null || _layers.Length == 0)
                 return NodeOutput.Success(result);
