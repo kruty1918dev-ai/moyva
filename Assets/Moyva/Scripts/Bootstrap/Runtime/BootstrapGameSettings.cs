@@ -54,6 +54,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         [Header("Initial Resources")]
         [Tooltip("Список ресурсів, які гравець отримує на старт нової гри.")]
         [SerializeField]
+        // Завдання: це serialized джерело для вкладки Economy Designer -> "Стартова економіка".
+        // Bootstrap читає саме цей список, щоб стартові ресурси з редактора потрапляли в новий світ.
         public List<InitialResourceEntry> InitialResources = new()
         {
             new InitialResourceEntry("food", 50f),
