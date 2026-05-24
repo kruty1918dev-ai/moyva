@@ -11,6 +11,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
             return settings.DefaultProjectionMode switch
             {
+                GridProjectionMode.Orthographic3D => new Orthographic3DGridProjection(settings),
                 GridProjectionMode.Isometric2D => new IsometricGridProjection(settings),
                 GridProjectionMode.Isometric3DPreview => new IsometricGridProjection(settings),
                 GridProjectionMode.HexPointy2D => new HexAxialGridProjection(settings),

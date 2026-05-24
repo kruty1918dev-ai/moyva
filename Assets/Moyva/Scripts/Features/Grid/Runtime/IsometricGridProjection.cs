@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
         public GridProjectionMode ProjectionMode => GridProjectionMode.Isometric2D;
         public GridTopology Topology => GridTopology.Orthogonal;
+        public GridWorldPlane WorldPlane => GridWorldPlane.XY;
 
         public IsometricGridProjection()
             : this(null)

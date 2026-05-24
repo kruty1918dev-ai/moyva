@@ -82,8 +82,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             Bounds worldBounds = ResolveWorldBounds(w, h);
             Vector2 edgePadding = ResolveEdgePaddingInCells();
-            transform.localScale = new Vector3(worldBounds.size.x + edgePadding.x * 2f, worldBounds.size.y + edgePadding.y * 2f, 1f);
-            transform.position = new Vector3(worldBounds.center.x, worldBounds.center.y, -0.5f);
+            ApplyOverlayTransform(worldBounds, edgePadding);
 
             var mr = GetComponent<MeshRenderer>();
             if (_mat == null)
@@ -139,6 +138,21 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             return new Bounds(
                 new Vector3((width - 1) * 0.5f, (height - 1) * 0.5f, 0f),
                 new Vector3(width, height, 1f));
+        }
+
+        private void ApplyOverlayTransform(Bounds worldBounds, Vector2 edgePadding)
+        {
+            if (_gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ)
+            {
+                transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                transform.localScale = new Vector3(worldBounds.size.x + edgePadding.x * 2f, worldBounds.size.z + edgePadding.y * 2f, 1f);
+                transform.position = new Vector3(worldBounds.center.x, worldBounds.min.y - 0.5f, worldBounds.center.z);
+                return;
+            }
+
+            transform.rotation = Quaternion.identity;
+            transform.localScale = new Vector3(worldBounds.size.x + edgePadding.x * 2f, worldBounds.size.y + edgePadding.y * 2f, 1f);
+            transform.position = new Vector3(worldBounds.center.x, worldBounds.center.y, -0.5f);
         }
 
         private void ApplySettingsToMaterial()

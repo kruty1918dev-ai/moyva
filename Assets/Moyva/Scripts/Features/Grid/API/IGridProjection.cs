@@ -7,6 +7,7 @@ namespace Kruty1918.Moyva.Grid.API
     {
         GridProjectionMode ProjectionMode { get; }
         GridTopology Topology { get; }
+        GridWorldPlane WorldPlane { get; }
 
         Vector3 GridToWorld(Vector2Int gridPosition);
         Vector3 GridToWorld(Vector2Int gridPosition, float elevation, float layerOffset = 0f);

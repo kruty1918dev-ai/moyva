@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Camera.API;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using Zenject;
 
@@ -9,9 +10,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
         private readonly ICameraBoundsProvider _boundsProvider;
+        private readonly IGridProjection _gridProjection;
 
         private Vector3 _targetPosition;
         private Vector3 _currentVelocity; // Необхідно для Vector3.SmoothDamp
+        private float _fixedPlaneAxisValue;
 
         private float _forceBlockTimer;
         private const float ForceBlockDuration = 1.5f; // Час затримки після форсованого руху (можна винести в SO)
@@ -20,17 +23,20 @@ namespace Kruty1918.Moyva.Camera.Runtime
         public CameraMovement(
             UnityEngine.Camera camera,
             CameraSettingsSO settings,
-            [InjectOptional] ICameraBoundsProvider boundsProvider = null)
+            [InjectOptional] ICameraBoundsProvider boundsProvider = null,
+            [InjectOptional] IGridProjection gridProjection = null)
         {
             _camera = camera;
             _settings = settings;
             _boundsProvider = boundsProvider;
+            _gridProjection = gridProjection;
         }
 
         public void Initialize()
         {
             // На старті синхронізуємо цільову позицію з поточною, щоб камера не відлітала
             _targetPosition = _camera.transform.position;
+            _fixedPlaneAxisValue = UsesXzPlane ? _targetPosition.y : _settings.defaultCameraZ;
             ClampTargetToBounds();
         }
 
@@ -44,9 +50,13 @@ namespace Kruty1918.Moyva.Camera.Runtime
         {
             if (_forceBlockTimer > 0f) return;
 
-            worldDelta.z = 0f;
+            if (UsesXzPlane)
+                worldDelta.y = 0f;
+            else
+                worldDelta.z = 0f;
+
             _targetPosition += worldDelta;
-            _targetPosition.z = _settings.defaultCameraZ;
+            ApplyFixedPlaneAxis();
             ClampTargetToBounds();
 
             if (!immediate)
@@ -67,19 +77,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             // 2. Розраховуємо фінальний вектор руху
             // Інвертуємо (-), щоб мапа "йшла за пальцем"
-            Vector3 moveDirection = new Vector3(
-                -delta.x * unitsPerPixel,
-                -delta.y * unitsPerPixel,
-                0
-            );
+            Vector3 moveDirection = UsesXzPlane
+                ? new Vector3(-delta.x * unitsPerPixel, 0f, -delta.y * unitsPerPixel)
+                : new Vector3(-delta.x * unitsPerPixel, -delta.y * unitsPerPixel, 0f);
 
             // 3. Додаємо до цілі. 
             // ТУТ ВАЖЛИВО: moveSpeed у налаштуваннях тепер має бути в районі 1.0.
             // Якщо поставиш 1.0 — мапа буде ідеально "приклеєна" до пальця/курсора.
             _targetPosition += moveDirection * speedMultiplier;
 
-            // Тримаємо Z стабільним для 2D
-            _targetPosition.z = _settings.defaultCameraZ;
+            ApplyFixedPlaneAxis();
             ClampTargetToBounds();
 
             if (!immediate)
@@ -93,6 +100,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         {
             // Встановлюємо нову ціль і блокуємо звичайний рух на заданий час
             _targetPosition = position;
+            ApplyFixedPlaneAxis();
             ClampTargetToBounds();
             _forceBlockTimer = ForceBlockDuration;
         }
@@ -100,6 +108,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         public void TeleportCamera(Vector3 position)
         {
             _targetPosition = position;
+            ApplyFixedPlaneAxis();
             ClampTargetToBounds();
             _currentVelocity = Vector3.zero;
             _camera.transform.position = _targetPosition;
@@ -170,7 +179,26 @@ namespace Kruty1918.Moyva.Camera.Runtime
             }
 
             _targetPosition.x = Mathf.Clamp(_targetPosition.x, minX, maxX);
-            _targetPosition.y = Mathf.Clamp(_targetPosition.y, minY, maxY);
+            if (UsesXzPlane)
+            {
+                _targetPosition.z = Mathf.Clamp(_targetPosition.z, minY, maxY);
+                _targetPosition.y = _fixedPlaneAxisValue;
+            }
+            else
+            {
+                _targetPosition.y = Mathf.Clamp(_targetPosition.y, minY, maxY);
+                _targetPosition.z = _fixedPlaneAxisValue;
+            }
+        }
+
+        private bool UsesXzPlane => _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ;
+
+        private void ApplyFixedPlaneAxis()
+        {
+            if (UsesXzPlane)
+                _targetPosition.y = _fixedPlaneAxisValue;
+            else
+                _targetPosition.z = _fixedPlaneAxisValue;
         }
     }
 }

@@ -177,6 +177,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             return projectionMode switch
             {
+                GridProjectionMode.Orthographic3D => GridRenderMode.Mesh3D,
                 GridProjectionMode.Isometric2D => GridRenderMode.Isometric2D,
                 GridProjectionMode.Isometric3DPreview => GridRenderMode.Mesh3DPreview,
                 _ => GridRenderMode.Sprite2D,
@@ -387,10 +388,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     Debug.LogWarning($"[MapVisualInstantiator] Shader '{layerData[i].LayerShaderName}' not found for layer '{layerData[i].LayerTileID}'. Using default SpriteRenderer material.");
                 }
 
-                // Для сітки, де центри тайлів лежать у цілих координатах (x, y),
-                // шар із pivot (0,0) треба зсунути на пів тайла вліво/вниз,
-                // інакше центри текселів потрапляють у .5 і з'являється візуальний зсув.
-                layerObj.transform.position = new Vector3(-0.5f, -0.5f, 0f);
+                Bounds projectionBounds = _gridProjection.GetWorldBounds(worldData.Width, worldData.Height);
+                if (_gridProjection.WorldPlane == GridWorldPlane.XZ)
+                {
+                    layerObj.transform.position = new Vector3(projectionBounds.min.x, projectionBounds.min.y, projectionBounds.min.z);
+                    layerObj.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                }
+                else
+                {
+                    // Для сітки, де центри тайлів лежать у цілих координатах (x, y),
+                    // шар із pivot (0,0) треба зсунути на пів тайла вліво/вниз,
+                    // інакше центри текселів потрапляють у .5 і з'являється візуальний зсув.
+                    layerObj.transform.position = new Vector3(projectionBounds.min.x, projectionBounds.min.y, 0f);
+                    layerObj.transform.rotation = Quaternion.identity;
+                }
 
                 // Масштабуємо спрайт точно до розміру згенерованого світу незалежно від ppu/розміру текстури.
                 float spriteWorldWidth = texture.width;

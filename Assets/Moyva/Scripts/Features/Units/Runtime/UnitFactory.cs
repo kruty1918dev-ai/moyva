@@ -2,6 +2,7 @@ using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
+using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
 using Zenject;
 using System.Collections.Generic;
@@ -16,6 +17,8 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly SignalBus _signalBus;
         private readonly IGridService _gridService;
         private readonly IObjectsMapService _objectsMapService;
+        private readonly IGridProjection _gridProjection;
+        private readonly IGeneratedTerrainLevelQuery _terrainLevelQuery;
         
         private readonly Dictionary<string, int> _typeCounters = new();
 
@@ -25,7 +28,9 @@ namespace Kruty1918.Moyva.Units.Runtime
             IUnitGameplayProfileService unitGameplayProfileService,
             SignalBus signalBus,
             IGridService gridService,
-            IObjectsMapService objectsMapService)
+            IObjectsMapService objectsMapService,
+            [InjectOptional] IGridProjection gridProjection = null,
+            [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null)
         {
             _container = container;
             _unitClassConfig = unitClassConfig;
@@ -33,6 +38,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             _signalBus = signalBus;
             _gridService = gridService;
             _objectsMapService = objectsMapService;
+            _gridProjection = gridProjection;
+            _terrainLevelQuery = terrainLevelQuery;
         }
 
         public string CreateUnit(string typeId, Vector2Int gridPosition)
@@ -60,7 +67,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return null;
             }
 
-            Vector3 worldPos = new Vector3(gridPosition.x, gridPosition.y);
+            Vector3 worldPos = ResolveWorldPosition(gridPosition);
             GameObject unitObj = _container.InstantiatePrefab(config.Prefab, worldPos, Quaternion.identity, null);
 
             string instanceId = unitObj.GetInstanceID().ToString().Replace("-", "");
@@ -91,7 +98,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return null;
             }
 
-            Vector3 worldPos = new Vector3(gridPosition.x, gridPosition.y);
+            Vector3 worldPos = ResolveWorldPosition(gridPosition);
             GameObject unitObj = _container.InstantiatePrefab(config.Prefab, worldPos, Quaternion.identity, null);
 
             return FireUnitCreated(forcedUnitId, typeId, gridPosition, unitObj, ownerId);
@@ -117,6 +124,17 @@ namespace Kruty1918.Moyva.Units.Runtime
             });
 
             return unitId;
+        }
+
+        private Vector3 ResolveWorldPosition(Vector2Int gridPosition)
+        {
+            if (_gridProjection == null)
+                return new Vector3(gridPosition.x, gridPosition.y);
+
+            float elevation = _terrainLevelQuery != null && _terrainLevelQuery.TryGetTerrainLevel(gridPosition, out int level)
+                ? level
+                : 0f;
+            return _gridProjection.GridToWorld(gridPosition, elevation, 0.05f);
         }
     }
 }

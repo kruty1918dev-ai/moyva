@@ -25,15 +25,32 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public Vector2Int ScreenToGrid(Vector2 screenPosition)
         {
-            // Ортографічна камера: Z не впливає на проекцію, ігноруємо
-            Vector3 worldPos = _camera.ScreenToWorldPoint(
-                new Vector3(screenPosition.x, screenPosition.y, 0f));
+            Vector3 worldPos = ScreenToWorldOnGridPlane(screenPosition);
             return _gridProjection.WorldToGrid(worldPos);
         }
 
         public Vector2Int WorldToGrid(Vector2 worldPosition)
         {
-            return _gridProjection.WorldToGrid(new Vector3(worldPosition.x, worldPosition.y, 0f));
+            Vector3 projectedWorldPosition = _gridProjection.WorldPlane == GridWorldPlane.XZ
+                ? new Vector3(worldPosition.x, 0f, worldPosition.y)
+                : new Vector3(worldPosition.x, worldPosition.y, 0f);
+            return _gridProjection.WorldToGrid(projectedWorldPosition);
+        }
+
+        private Vector3 ScreenToWorldOnGridPlane(Vector2 screenPosition)
+        {
+            if (_camera == null)
+                return Vector3.zero;
+
+            Ray ray = _camera.ScreenPointToRay(screenPosition);
+            Plane plane = _gridProjection.WorldPlane == GridWorldPlane.XZ
+                ? new Plane(Vector3.up, Vector3.zero)
+                : new Plane(Vector3.forward, Vector3.zero);
+
+            if (plane.Raycast(ray, out float distance))
+                return ray.GetPoint(distance);
+
+            return _camera.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, -_camera.transform.position.z));
         }
     }
 }

@@ -28,6 +28,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IUnitGameplayProfileService _unitGameplayProfileService;
         private readonly IGeneratedTerrainLevelQuery _terrainLevelQuery;
         private readonly WorldCreationDefaultsSO _worldDefaults;
+        private readonly IGridProjection _gridProjection;
 
         private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
 
@@ -42,7 +43,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             IUnitClassConfig unitClassConfig,
             IUnitGameplayProfileService unitGameplayProfileService,
             [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
-            [InjectOptional] WorldCreationDefaultsSO worldDefaults = null)
+            [InjectOptional] WorldCreationDefaultsSO worldDefaults = null,
+            [InjectOptional] IGridProjection gridProjection = null)
         {
             _unitService = unitService;
             _pathfinder = pathfinder;
@@ -55,6 +57,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _unitGameplayProfileService = unitGameplayProfileService;
             _terrainLevelQuery = terrainLevelQuery;
             _worldDefaults = worldDefaults;
+            _gridProjection = gridProjection;
         }
 
         public void Initialize()
@@ -157,6 +160,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 // -------------------------------------------
 
                 settings.OnStepCompleted = (stepPos) => OnStepCompleted(unitId, stepPos);
+                settings.ResolveWorldPosition = ResolveMovementWorldPosition;
 
                 await _animationService.MoveAlongPathAsync(unitObj.transform, path, settings, linkedCts.Token);
             }
@@ -233,6 +237,17 @@ namespace Kruty1918.Moyva.Units.Runtime
                 NewPosition = stepPos,
                 Cost = stepCost
             });
+        }
+
+        private Vector3 ResolveMovementWorldPosition(Vector2Int gridPosition)
+        {
+            if (_gridProjection == null)
+                return new Vector3(gridPosition.x, gridPosition.y, 0f);
+
+            float elevation = _terrainLevelQuery != null && _terrainLevelQuery.TryGetTerrainLevel(gridPosition, out int level)
+                ? level
+                : 0f;
+            return _gridProjection.GridToWorld(gridPosition, elevation, 0.05f);
         }
 
         private bool IsBlockedByUnitPlacementRules(Vector2Int position, string tileTypeId, out string reason)

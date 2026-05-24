@@ -25,6 +25,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IWallPlacementService _wallPlacementService;
         private readonly DiContainer _container;
         private readonly int _townHallBuildRadius;
+        private readonly IGridProjection _gridProjection;
+        private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
 
         private readonly Dictionary<Vector2Int, GameObject> _previewByPosition = new();
         private readonly Dictionary<Vector2Int, GameObject> _placedByPosition = new();
@@ -65,7 +67,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             LazyInject<IConstructionService> constructionService,
             IWallPlacementService wallPlacementService,
             DiContainer container,
-            [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius)
+            [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius,
+            [InjectOptional] IGridProjection gridProjection = null,
+            [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery = null)
         {
             _signalBus = signalBus;
             _buildingRegistry = buildingRegistry;
@@ -75,6 +79,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _wallPlacementService = wallPlacementService;
             _container = container;
             _townHallBuildRadius = Mathf.Max(0, townHallBuildRadius);
+            _gridProjection = gridProjection;
+            _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
         }
 
         public void Initialize()
@@ -587,14 +593,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
         /// Ring width, dash length and gap length задаються у world-space,
         /// щоб пунктир мав однакову довжину незалежно від радіуса.
         /// </summary>
-        private static void DrawInfluenceRadius(
+        private void DrawInfluenceRadius(
             GameObject go, MeshRenderer mr, Material mat,
             Vector2Int center, int radius)
         {
             if (go == null || mr == null || mat == null) return;
 
             float size = radius * 2f + 1f;
-            go.transform.position   = new Vector3(center.x, center.y, 0.05f);
+            go.transform.position = ResolveWorldPosition(center, 0.05f);
+            go.transform.rotation = _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ
+                ? Quaternion.Euler(90f, 0f, 0f)
+                : Quaternion.identity;
             go.transform.localScale = new Vector3(size, size, 1f);
 
             const float borderWidthWorld = 0.5f;
@@ -627,7 +636,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return null;
             }
             
-            Vector3 worldPos = new Vector3(tile.x, tile.y, 0.1f);
+            Vector3 worldPos = ResolveWorldPosition(tile, 0.1f);
             Quaternion rotation = forcedRotation ?? prefab.transform.rotation;
             
             GameObject instance = null;
@@ -659,6 +668,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     UnityEngine.Object.Destroy(instance);
                 return null;
             }
+        }
+
+        private Vector3 ResolveWorldPosition(Vector2Int tile, float layerOffset)
+        {
+            if (_gridProjection == null)
+                return new Vector3(tile.x, tile.y, layerOffset);
+
+            float elevation = _generatedTerrainLevelQuery != null && _generatedTerrainLevelQuery.TryGetTerrainLevel(tile, out int level)
+                ? level
+                : 0f;
+            return _gridProjection.GridToWorld(tile, elevation, layerOffset);
         }
 
         private static void DisableColliders(GameObject rootObject)

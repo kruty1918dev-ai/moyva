@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Grid.API
         HexPointy2D = 2,
         HexFlat2D = 3,
         Isometric3DPreview = 4,
+        Orthographic3D = 5,
     }
 
     public enum GridRenderMode
@@ -21,6 +22,7 @@ namespace Kruty1918.Moyva.Grid.API
         Sprite2D = 0,
         Isometric2D = 1,
         Mesh3DPreview = 2,
+        Mesh3D = 3,
     }
 
     public enum GridNeighborhoodMode
@@ -35,5 +37,11 @@ namespace Kruty1918.Moyva.Grid.API
     {
         PointyTop = 0,
         FlatTop = 1,
+    }
+
+    public enum GridWorldPlane
+    {
+        XY = 0,
+        XZ = 1,
     }
 }

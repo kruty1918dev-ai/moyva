@@ -4,24 +4,26 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Grid.Runtime
 {
-    public sealed class OrthogonalGridProjection : IGridProjection
+    public sealed class Orthographic3DGridProjection : IGridProjection
     {
-        private readonly Vector2 _cellSize;
+        private readonly float _cellWidth;
+        private readonly float _cellDepth;
         private readonly float _heightScale;
 
-        public GridProjectionMode ProjectionMode => GridProjectionMode.Orthographic2D;
-        public GridTopology Topology => GridTopology.Orthogonal;
-        public GridWorldPlane WorldPlane => GridWorldPlane.XY;
+        public GridProjectionMode ProjectionMode => GridProjectionMode.Orthographic3D;
+        public GridTopology Topology => GridTopology.Layered;
+        public GridWorldPlane WorldPlane => GridWorldPlane.XZ;
 
-        public OrthogonalGridProjection()
+        public Orthographic3DGridProjection()
             : this(null)
         {
         }
 
-        public OrthogonalGridProjection(MoyvaProjectSettingsSO settings)
+        public Orthographic3DGridProjection(MoyvaProjectSettingsSO settings)
         {
             settings?.Normalize();
-            _cellSize = settings != null ? settings.OrthogonalCellSize : Vector2.one;
+            _cellWidth = settings != null ? settings.OrthogonalCellWidth : 1f;
+            _cellDepth = settings != null ? settings.OrthogonalCellDepth : 1f;
             _heightScale = settings != null ? settings.HeightScale : 0.25f;
         }
 
@@ -31,16 +33,16 @@ namespace Kruty1918.Moyva.Grid.Runtime
         public Vector3 GridToWorld(Vector2Int gridPosition, float elevation, float layerOffset = 0f)
         {
             return new Vector3(
-                gridPosition.x * _cellSize.x,
-                gridPosition.y * _cellSize.y,
-                elevation * _heightScale + layerOffset);
+                gridPosition.x * _cellWidth,
+                elevation * _heightScale + layerOffset,
+                gridPosition.y * _cellDepth);
         }
 
         public Vector2Int WorldToGrid(Vector3 worldPosition)
         {
             return new Vector2Int(
-                Mathf.RoundToInt(worldPosition.x / _cellSize.x),
-                Mathf.RoundToInt(worldPosition.y / _cellSize.y));
+                Mathf.RoundToInt(worldPosition.x / _cellWidth),
+                Mathf.RoundToInt(worldPosition.z / _cellDepth));
         }
 
         public IEnumerable<Vector2Int> GetNeighborCandidates(Vector2Int gridPosition)
@@ -69,11 +71,11 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
         public Bounds GetWorldBounds(int width, int height)
         {
-            float safeWidth = Mathf.Max(1, width) * _cellSize.x;
-            float safeHeight = Mathf.Max(1, height) * _cellSize.y;
+            float safeWidth = Mathf.Max(1, width) * _cellWidth;
+            float safeDepth = Mathf.Max(1, height) * _cellDepth;
             return new Bounds(
-                new Vector3((safeWidth - _cellSize.x) * 0.5f, (safeHeight - _cellSize.y) * 0.5f, 0f),
-                new Vector3(safeWidth, safeHeight, 1f));
+                new Vector3((safeWidth - _cellWidth) * 0.5f, 0f, (safeDepth - _cellDepth) * 0.5f),
+                new Vector3(safeWidth, Mathf.Max(1f, _heightScale), safeDepth));
         }
     }
 }

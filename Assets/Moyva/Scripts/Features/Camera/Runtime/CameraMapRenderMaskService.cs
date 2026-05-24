@@ -237,7 +237,9 @@ namespace Kruty1918.Moyva.Camera.Runtime
             }
 
             Bounds worldBounds = _gridProjection.GetWorldBounds(width, height);
-            bounds = new MapBounds(worldBounds.min.x, worldBounds.max.x, worldBounds.min.y, worldBounds.max.y);
+            float minPlaneY = _gridProjection.WorldPlane == GridWorldPlane.XZ ? worldBounds.min.z : worldBounds.min.y;
+            float maxPlaneY = _gridProjection.WorldPlane == GridWorldPlane.XZ ? worldBounds.max.z : worldBounds.max.y;
+            bounds = new MapBounds(worldBounds.min.x, worldBounds.max.x, minPlaneY, maxPlaneY);
             return true;
         }
 

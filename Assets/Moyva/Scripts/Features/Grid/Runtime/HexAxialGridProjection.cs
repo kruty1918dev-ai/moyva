@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
             : GridProjectionMode.HexFlat2D;
 
         public GridTopology Topology => GridTopology.HexAxial;
+        public GridWorldPlane WorldPlane => GridWorldPlane.XY;
 
         public HexAxialGridProjection()
             : this(null)

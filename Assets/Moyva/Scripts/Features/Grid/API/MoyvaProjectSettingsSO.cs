@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Grid.API
         [Header("Cell Size")]
         [Min(0.01f)] public float OrthogonalCellWidth = 1f;
         [Min(0.01f)] public float OrthogonalCellHeight = 1f;
+        [Min(0.01f)] public float OrthogonalCellDepth = 1f;
 
         [Header("Isometric")]
         [Min(0.01f)] public float IsometricTileWidth = 1f;
@@ -30,6 +31,7 @@ namespace Kruty1918.Moyva.Grid.API
         public bool UseHeightForPreview = true;
 
         public Vector2 OrthogonalCellSize => new Vector2(OrthogonalCellWidth, OrthogonalCellHeight);
+        public Vector3 Orthogonal3DCellSize => new Vector3(OrthogonalCellWidth, HeightScale, OrthogonalCellDepth);
         public Vector2 IsometricTileSize => new Vector2(IsometricTileWidth, IsometricTileHeight);
 
         public static MoyvaProjectSettingsSO CreateRuntimeDefault()
@@ -44,6 +46,7 @@ namespace Kruty1918.Moyva.Grid.API
         {
             OrthogonalCellWidth = Mathf.Max(0.01f, OrthogonalCellWidth);
             OrthogonalCellHeight = Mathf.Max(0.01f, OrthogonalCellHeight);
+            OrthogonalCellDepth = Mathf.Max(0.01f, OrthogonalCellDepth);
             IsometricTileWidth = Mathf.Max(0.01f, IsometricTileWidth);
             IsometricTileHeight = Mathf.Max(0.01f, IsometricTileHeight);
             HexRadius = Mathf.Max(0.01f, HexRadius);

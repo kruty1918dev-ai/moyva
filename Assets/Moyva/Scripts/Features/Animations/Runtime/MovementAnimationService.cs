@@ -32,8 +32,9 @@ namespace Kruty1918.Moyva.Animations.Runtime
                 }
 
                 Vector3 startPos = target.position;
-                // Зберігаємо Z координату таргету, щоб об'єкт не провалився/не злетів
-                Vector3 endPos = new Vector3(nextGridPos.x, nextGridPos.y, startPos.z);
+                Vector3 endPos = settings.ResolveWorldPosition != null
+                    ? settings.ResolveWorldPosition(nextGridPos)
+                    : new Vector3(nextGridPos.x, nextGridPos.y, startPos.z);
 
                 float elapsed = 0f;
 

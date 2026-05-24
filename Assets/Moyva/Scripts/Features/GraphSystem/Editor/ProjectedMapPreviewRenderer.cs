@@ -15,7 +15,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         public static bool ShouldProject(GraphSharedSettings settings)
         {
-            return settings != null && settings.ProjectionMode != GridProjectionMode.Orthographic2D;
+            if (settings == null)
+                return false;
+
+            return settings.ProjectionMode == GridProjectionMode.Isometric2D
+                || settings.ProjectionMode == GridProjectionMode.Isometric3DPreview
+                || settings.ProjectionMode == GridProjectionMode.HexPointy2D
+                || settings.ProjectionMode == GridProjectionMode.HexFlat2D;
         }
 
         public static Texture2D Render(

@@ -249,6 +249,29 @@ namespace Kruty1918.Moyva.Tests.Grid
 
             Assert.AreEqual(grid, projection.WorldToGrid(projection.GridToWorld(grid)));
         }
+
+        [Test]
+        public void Orthographic3DProjection_UsesXZPlaneAndYHeight()
+        {
+            var settings = ScriptableObject.CreateInstance<MoyvaProjectSettingsSO>();
+            settings.OrthogonalCellWidth = 2f;
+            settings.OrthogonalCellDepth = 3f;
+            settings.HeightScale = 0.5f;
+            settings.Normalize();
+            var projection = new Kruty1918.Moyva.Grid.Runtime.Orthographic3DGridProjection(settings);
+
+            Assert.AreEqual(GridWorldPlane.XZ, projection.WorldPlane);
+            Assert.AreEqual(new Vector3(4f, 1.5f, 9f), projection.GridToWorld(new Vector2Int(2, 3), elevation: 3f));
+        }
+
+        [Test]
+        public void Orthographic3DProjection_RoundTripsGridCoordinates()
+        {
+            var projection = new Kruty1918.Moyva.Grid.Runtime.Orthographic3DGridProjection();
+            var grid = new Vector2Int(5, 8);
+
+            Assert.AreEqual(grid, projection.WorldToGrid(projection.GridToWorld(grid)));
+        }
     }
 
     [TestFixture]

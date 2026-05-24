@@ -10,6 +10,7 @@ namespace Kruty1918.Moyva.Animations.API
         public float DelayOnTile;         // Затримка перед тим, як зробити наступний крок
         public Action<Vector2Int> OnStepCompleted;
         public Func<Vector2Int, bool> CanPerformStep;
+        public Func<Vector2Int, Vector3> ResolveWorldPosition;
         public static PathAnimationSettings Default => new PathAnimationSettings
         {
             MoveDurationPerTile = 0.3f,

@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.Grid.Editor
             {
                 label = "Moyva",
                 guiHandler = _ => DrawSettingsProviderGui(),
-                keywords = new[] { "Moyva", "Grid", "Projection", "Isometric", "Hex" },
+                keywords = new[] { "Moyva", "Grid", "Projection", "Isometric", "Hex", "3D" },
             };
         }
 
@@ -81,6 +81,7 @@ namespace Kruty1918.Moyva.Grid.Editor
             EditorGUILayout.LabelField("Orthogonal", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(serializedSettings.FindProperty(nameof(MoyvaProjectSettingsSO.OrthogonalCellWidth)));
             EditorGUILayout.PropertyField(serializedSettings.FindProperty(nameof(MoyvaProjectSettingsSO.OrthogonalCellHeight)));
+            EditorGUILayout.PropertyField(serializedSettings.FindProperty(nameof(MoyvaProjectSettingsSO.OrthogonalCellDepth)));
 
             EditorGUILayout.Space(8f);
             EditorGUILayout.LabelField("Isometric", EditorStyles.boldLabel);
