@@ -1482,10 +1482,10 @@ namespace Kruty1918.Moyva.Editor
                 var iconProp = target.FindPropertyRelative("Icon");
                 if (iconProp != null)
                 {
-                    var sr = prefab.GetComponentInChildren<SpriteRenderer>(true);
-                    if (sr != null && sr.sprite != null && iconProp.objectReferenceValue != sr.sprite)
+                    if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(prefab, out var sprite, out _)
+                        && iconProp.objectReferenceValue != sprite)
                     {
-                        iconProp.objectReferenceValue = sr.sprite;
+                        iconProp.objectReferenceValue = sprite;
                         changed = true;
                     }
                 }
@@ -2978,9 +2978,10 @@ namespace Kruty1918.Moyva.Editor
         {
             Rect iconRect = GUILayoutUtility.GetRect(18f, 18f, GUILayout.Width(20f));
             Sprite sprite = ExtractPreviewSprite(prefabOrAsset as GameObject);
-            if (sprite != null && sprite.texture != null)
+            var prefab = prefabOrAsset as GameObject;
+            if ((sprite != null && sprite.texture != null) || prefab != null)
             {
-                DrawSpritePreviewIcon(iconRect, sprite);
+                AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, prefab, sprite);
                 return;
             }
 
@@ -3003,23 +3004,14 @@ namespace Kruty1918.Moyva.Editor
             if (_prefabNoSpriteCache.Contains(id))
                 return null;
 
-            var sr = prefab.GetComponentInChildren<SpriteRenderer>(true);
-            if (sr != null && sr.sprite != null)
+            if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(prefab, out var sprite, out _))
             {
-                _prefabSpriteCache[id] = sr.sprite;
-                return sr.sprite;
+                _prefabSpriteCache[id] = sprite;
+                return sprite;
             }
 
             _prefabNoSpriteCache.Add(id);
             return null;
-        }
-
-        private static void DrawSpritePreviewIcon(Rect rect, Sprite sprite)
-        {
-            Texture2D tex = sprite.texture;
-            Rect tr = sprite.textureRect;
-            Rect uv = new Rect(tr.x / tex.width, tr.y / tex.height, tr.width / tex.width, tr.height / tex.height);
-            GUI.DrawTextureWithTexCoords(rect, tex, uv);
         }
 
         private static bool DrawDeleteBtn()
@@ -3878,17 +3870,11 @@ namespace Kruty1918.Moyva.Editor
             {
                 if (entry.PreviewSprite != null)
                 {
-                    DrawSpritePreview(entry.PreviewSprite, 96f);
+                    DrawSpritePreview(entry.PreviewSprite, _bulkPreviewObject as GameObject, 96f);
                 }
                 else
                 {
-                    var texture = AssetPreview.GetAssetPreview(_bulkPreviewObject) ?? AssetPreview.GetMiniThumbnail(_bulkPreviewObject);
-                    if (texture != null)
-                    {
-                        Rect previewRect = GUILayoutUtility.GetRect(96f, 96f, GUILayout.Width(96f));
-                        GUI.Box(previewRect, GUIContent.none);
-                        GUI.DrawTexture(previewRect, texture, ScaleMode.ScaleToFit);
-                    }
+                    DrawSpritePreview(null, _bulkPreviewObject as GameObject, 96f);
                 }
 
                 EditorGUILayout.ObjectField("Asset", _bulkPreviewObject, typeof(UnityEngine.Object), false);
@@ -3907,19 +3893,14 @@ namespace Kruty1918.Moyva.Editor
             EditorGUILayout.EndVertical();
         }
 
-        private static void DrawSpritePreview(Sprite sprite, float size)
+        private static void DrawSpritePreview(Sprite sprite, GameObject prefab, float size)
         {
-            if (sprite == null)
+            if (sprite == null && prefab == null)
                 return;
 
             Rect previewRect = GUILayoutUtility.GetRect(size, size, GUILayout.Width(size));
             GUI.Box(previewRect, GUIContent.none);
-
-            Texture preview = AssetPreview.GetAssetPreview(sprite);
-            if (preview == null)
-                preview = AssetPreview.GetMiniThumbnail(sprite);
-            if (preview != null)
-                GUI.DrawTexture(previewRect, preview, ScaleMode.ScaleToFit, true);
+            AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(previewRect, prefab, sprite);
         }
 
         private List<BulkEntry> CollectBulkEntries()
@@ -3969,8 +3950,9 @@ namespace Kruty1918.Moyva.Editor
                     }
                     else if (previewObject is GameObject previewGo)
                     {
-                        var sr = previewGo.GetComponentInChildren<SpriteRenderer>(true);
-                        previewSprite = sr != null ? sr.sprite : null;
+                        previewSprite = AdaptivePrefabPreviewUtility.TryGetPrimarySprite(previewGo, out var sprite, out _)
+                            ? sprite
+                            : null;
                     }
 
                     string key = $"{category}::{shownId}";

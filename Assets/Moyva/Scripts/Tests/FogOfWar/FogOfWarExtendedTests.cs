@@ -295,6 +295,20 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.IsTrue(shouldRender);
         }
 
+        [Test]
+        public void ShouldRender_XzProjection_UsesWorldZAsGridY()
+        {
+            var fog = new StubFogService();
+            fog.SetState(new Vector2Int(2, 3), FogStateType.Explored);
+            var grid = new StubGridService(5, 5);
+            var projection = new Kruty1918.Moyva.Grid.Runtime.Orthographic3DGridProjection();
+            var bounds = new Bounds(new Vector3(2f, 0.5f, 3f), Vector3.one);
+
+            bool shouldRender = FogRendererCullingEvaluator.ShouldRender(bounds, fog, grid, 0f, projection);
+
+            Assert.IsTrue(shouldRender);
+        }
+
         private sealed class StubGridService : IGridService
         {
             public StubGridService(int width, int height)

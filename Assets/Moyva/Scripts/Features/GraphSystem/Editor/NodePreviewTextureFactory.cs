@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
@@ -356,28 +357,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (def == null || string.IsNullOrEmpty(def.Id)) continue;
                 if (def.VisualPrefab == null) continue;
 
-                var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
-                if (sr == null || sr.sprite == null) continue;
+                if (!AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.VisualPrefab, out var sprite, out var tint))
+                    continue;
 
-                var sprite = sr.sprite;
-                try
+                if (AdaptivePrefabPreviewUtility.TryGetSpritePixels(sprite, tint, StringToColor(def.Id), out var spriteData))
                 {
-                    var srcRect = sprite.textureRect;
-                    int srcX = (int)srcRect.x;
-                    int srcY = (int)srcRect.y;
-                    int srcW = Mathf.Max(1, (int)srcRect.width);
-                    int srcH = Mathf.Max(1, (int)srcRect.height);
-
-                    Color tint = sr.color;
-                    Color[] pixels = sprite.texture.GetPixels(srcX, srcY, srcW, srcH);
-                    ApplyTint(pixels, tint);
-                    _spriteColorCache[def.Id] = AverageColor(pixels);
-                    _spritePxCache[def.Id] = (pixels, srcW, srcH);
-                }
-                catch
-                {
-                    // Texture not readable — use tint color as fallback
-                    _spriteColorCache[def.Id] = sr.color;
+                    _spriteColorCache[def.Id] = spriteData.AverageOpaqueColor(tint);
+                    _spritePxCache[def.Id] = (spriteData.Pixels, spriteData.Width, spriteData.Height);
                 }
             }
         }
@@ -414,9 +400,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private static Texture2D CreateTexture(int width, int height)
         {
+            var settings = AdaptivePrefabPreviewUtility.ProjectSettings;
             var tex = new Texture2D(width, height, TextureFormat.RGBA32, false)
             {
-                filterMode = FilterMode.Point,
+                filterMode = AdaptivePrefabPreviewUtility.Uses3DPreview(settings) ? settings.PreviewFilterMode : FilterMode.Point,
                 wrapMode = TextureWrapMode.Clamp,
                 hideFlags = HideFlags.HideAndDontSave
             };

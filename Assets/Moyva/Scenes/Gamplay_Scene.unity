@@ -2809,6 +2809,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 622d965c0b15130a097ecc8f02eb54cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kruty1918.Moyva.Pathfinding.Runtime.PathfinderInstaller
+  _projectSettings: {fileID: 11400000, guid: 62c207fc5c1497db8a5ea98c4f27f42b, type: 2}
 --- !u!1 &1046007492
 GameObject:
   m_ObjectHideFlags: 0
@@ -4523,7 +4524,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c1f09faef73347d1aaf365061b67a86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.GridInstaller
-  tileRegistry: {fileID: 11400000, guid: bc77e778b9a26da4abebea25d37293b9, type: 2}
+  tileRegistry: {fileID: 11400000, guid: 5a57832fb61b869c4a38191aa4236799, type: 2}
+  projectSettings: {fileID: 11400000, guid: 62c207fc5c1497db8a5ea98c4f27f42b, type: 2}
   gridWidth: 80
   gridHeight: 80
 --- !u!1 &1537667075

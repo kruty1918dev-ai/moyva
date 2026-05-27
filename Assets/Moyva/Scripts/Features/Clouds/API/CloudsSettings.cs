@@ -47,6 +47,22 @@ namespace Kruty1918.Moyva.Clouds.API
         [Tooltip("Діапазон масштабу хмаринок.")]
         public Vector2 ScaleRange = new Vector2(0.85f, 1.35f);
 
+        [Header("Altitude Variation")]
+        [Tooltip("Наскільки випадково можна відхилити масштаб після прив'язки до вертикальної висоти. 0 = масштаб повністю визначається висотою.")]
+        [Range(0f, 0.5f)] public float AltitudeScaleJitter = 0.12f;
+
+        [Tooltip("Додатковий базовий mip bias для найнижчих хмаринок. Нижчі/менші хмари виглядають сильніше деформованими.")]
+        [Range(0f, 4f)] public float LowAltitudeMipBias = 1.2f;
+
+        [Tooltip("Додатковий базовий mip bias для найвищих хмаринок.")]
+        [Range(0f, 4f)] public float HighAltitudeMipBias = 0.15f;
+
+        [Tooltip("Множник CloudHeight для нижніх хмаринок.")]
+        [Min(0f)] public float LowAltitudeHeightMultiplier = 0.7f;
+
+        [Tooltip("Множник CloudHeight для верхніх хмаринок.")]
+        [Min(0f)] public float HighAltitudeHeightMultiplier = 1.35f;
+
         [Tooltip("Шанс руху зліва направо. 0 = тільки справа наліво, 1 = тільки зліва направо.")]
         [Range(0f, 1f)] public float LeftToRightChance = 0.5f;
 
@@ -147,6 +163,29 @@ namespace Kruty1918.Moyva.Clouds.API
         [Tooltip("Зсув sorting order тіні відносно хмаринки.")]
         public int ShadowSortingOrderOffset = -1;
 
+        public float EvaluateCloudScale(float altitude01, float random01)
+        {
+            altitude01 = Mathf.Clamp01(altitude01);
+            random01 = Mathf.Clamp01(random01);
+
+            float baseScale = Mathf.Lerp(ScaleRange.x, ScaleRange.y, altitude01);
+            float jitter = Mathf.Lerp(1f - AltitudeScaleJitter, 1f + AltitudeScaleJitter, random01);
+            return Mathf.Max(0.01f, baseScale * jitter);
+        }
+
+        public float EvaluateCloudMipBias(float altitude01)
+        {
+            altitude01 = Mathf.Clamp01(altitude01);
+            return Mathf.Lerp(LowAltitudeMipBias, HighAltitudeMipBias, altitude01);
+        }
+
+        public float EvaluateCloudVisualHeight(float altitude01)
+        {
+            altitude01 = Mathf.Clamp01(altitude01);
+            float heightMultiplier = Mathf.Lerp(LowAltitudeHeightMultiplier, HighAltitudeHeightMultiplier, altitude01);
+            return Mathf.Max(0f, CloudHeight * heightMultiplier);
+        }
+
         private void OnValidate()
         {
             MaxActiveClouds = Mathf.Max(0, MaxActiveClouds);
@@ -156,6 +195,11 @@ namespace Kruty1918.Moyva.Clouds.API
             SpawnPlacementAttempts = Mathf.Max(1, SpawnPlacementAttempts);
             SpeedRange = ClampRange(SpeedRange, 0.001f);
             ScaleRange = ClampRange(ScaleRange, 0.01f);
+            AltitudeScaleJitter = Mathf.Clamp(AltitudeScaleJitter, 0f, 0.5f);
+            LowAltitudeMipBias = Mathf.Clamp(LowAltitudeMipBias, 0f, 4f);
+            HighAltitudeMipBias = Mathf.Clamp(HighAltitudeMipBias, 0f, 4f);
+            LowAltitudeHeightMultiplier = Mathf.Max(0f, LowAltitudeHeightMultiplier);
+            HighAltitudeHeightMultiplier = Mathf.Max(0f, HighAltitudeHeightMultiplier);
             SpawnHorizontalPadding = Mathf.Max(0f, SpawnHorizontalPadding);
             SpawnVerticalPadding = Mathf.Max(0f, SpawnVerticalPadding);
             DespawnHorizontalPadding = Mathf.Max(0f, DespawnHorizontalPadding);

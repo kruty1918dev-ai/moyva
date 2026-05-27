@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Generator.API;
 using UnityEditor;
 using UnityEngine;
@@ -74,8 +75,9 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             // Sprite preview
             Sprite sprite = GetSpriteForObjectId(currentValue);
-            if (sprite != null && sprite.texture != null)
-                DrawSprite(spriteRect, sprite);
+            GameObject prefab = GetPrefabForObjectId(currentValue);
+            if ((sprite != null && sprite.texture != null) || prefab != null)
+                AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(spriteRect, prefab, sprite);
 
             // Error box + create button (ID not found)
             if (!isValid && !string.IsNullOrEmpty(currentValue))
@@ -127,14 +129,6 @@ namespace Kruty1918.Moyva.Generator.Editor
                 return $"⚠ {currentValue}";
 
             return currentValue;
-        }
-
-        private static void DrawSprite(Rect rect, Sprite sprite)
-        {
-            var tex = sprite.texture;
-            var sr = sprite.textureRect;
-            var uv = new Rect(sr.x / tex.width, sr.y / tex.height, sr.width / tex.width, sr.height / tex.height);
-            GUI.DrawTextureWithTexCoords(rect, tex, uv);
         }
 
         private sealed class MapObjectPickerPopup : PopupWindowContent
@@ -204,8 +198,9 @@ namespace Kruty1918.Moyva.Generator.Editor
 
                 Rect iconRect = new Rect(rowRect.x + 4f, rowRect.y + (RowHeight - IconSize) * 0.5f, IconSize, IconSize);
                 var sprite = GetSpriteForObjectId(id);
-                if (sprite != null && sprite.texture != null)
-                    DrawSprite(iconRect, sprite);
+                var prefab = GetPrefabForObjectId(id);
+                if ((sprite != null && sprite.texture != null) || prefab != null)
+                    AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, prefab, sprite);
 
                 Rect labelRect = new Rect(iconRect.xMax + 6f, rowRect.y + 2f, rowRect.width - iconRect.width - 10f, RowHeight - 2f);
                 GUI.Label(labelRect, id, EditorStyles.label);
@@ -216,6 +211,7 @@ namespace Kruty1918.Moyva.Generator.Editor
         private static MapObjectRegistrySO _cachedRegistry;
         private static string[] _cachedIds = System.Array.Empty<string>();
         private static readonly Dictionary<string, Sprite> _spriteCache = new();
+        private static readonly Dictionary<string, GameObject> _prefabObjectCache = new();
         private static readonly Dictionary<string, bool> _prefabCache = new();
         private static double _cacheTime;
         private const double CacheTTL = 1.0;
@@ -228,6 +224,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             _cachedRegistry = FindRegistryInternal();
             _cacheTime = now;
             _spriteCache.Clear();
+            _prefabObjectCache.Clear();
             _prefabCache.Clear();
 
             if (_cachedRegistry?.Definitions == null)
@@ -244,9 +241,9 @@ namespace Kruty1918.Moyva.Generator.Editor
                 _prefabCache[def.Id] = def.VisualPrefab != null;
                 if (def.VisualPrefab != null)
                 {
-                    var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
-                    if (sr != null && sr.sprite != null)
-                        _spriteCache[def.Id] = sr.sprite;
+                    _prefabObjectCache[def.Id] = def.VisualPrefab;
+                    if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.VisualPrefab, out var sprite, out _))
+                        _spriteCache[def.Id] = sprite;
                 }
             }
             ids.Sort();
@@ -280,6 +277,13 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (string.IsNullOrEmpty(id)) return null;
             EnsureCache();
             return _spriteCache.TryGetValue(id, out var s) ? s : null;
+        }
+
+        private static GameObject GetPrefabForObjectId(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            EnsureCache();
+            return _prefabObjectCache.TryGetValue(id, out var prefab) ? prefab : null;
         }
 
         private static void CreateObjectEntry(string id)

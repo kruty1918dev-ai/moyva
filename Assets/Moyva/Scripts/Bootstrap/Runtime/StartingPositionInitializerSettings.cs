@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
@@ -87,6 +88,19 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         [Header("Камера")]
         [Tooltip("Позиція Z для різкого перенесення камери в стартову точку.\nДля 2D зазвичай -10, щоб камера залишалась на правильній глибині.")]
         public float cameraZ = -10f;
+
+        [Header("Кадрування стартової камери")]
+        [Tooltip("Якщо увімкнено, стартова камера підбирає фокус і зум так, щоб показати відкриту стартову зону.")]
+        public bool ensureStartupCameraShowsRevealedArea = true;
+
+        [Tooltip("Додатковий відступ навколо відкритої стартової зони в тайлах.")]
+        [Min(0f)] public float startupCameraPaddingTiles = 2f;
+
+        [Tooltip("Який радіус використовувати як стартову зону для кадрування камери.")]
+        public MoyvaStartupCameraRadiusSource startupCameraRadiusSource = MoyvaStartupCameraRadiusSource.RevealedFogRadius;
+
+        [Tooltip("Ручний радіус стартової зони, якщо Startup Camera Radius Source = Manual Radius.")]
+        [Min(1)] public int manualStartupCameraRadius = 15;
 
         public int ResolveRevealedRadius(int width, int height)
             => ResolveFogRadius(width, height, useCoreRadius: false);

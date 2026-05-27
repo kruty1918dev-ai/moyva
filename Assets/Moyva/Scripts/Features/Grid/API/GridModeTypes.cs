@@ -1,5 +1,12 @@
 namespace Kruty1918.Moyva.Grid.API
 {
+    public enum MoyvaProjectVisualMode
+    {
+        Auto = 0,
+        Classic2D = 1,
+        Full3D = 2,
+    }
+
     public enum GridTopology
     {
         Orthogonal = 0,
@@ -43,5 +50,28 @@ namespace Kruty1918.Moyva.Grid.API
     {
         XY = 0,
         XZ = 1,
+    }
+
+    public enum MoyvaCameraProjectPolicy
+    {
+        AutoFromGrid = 0,
+        Force2D = 1,
+        Force3DOrthographic = 2,
+        Force3DPerspective = 3,
+    }
+
+    public enum MoyvaCameraAnglePolicy
+    {
+        Auto = 0,
+        OrthographicTopDown = 1,
+        Isometric = 2,
+        Custom = 3,
+    }
+
+    public enum MoyvaStartupCameraRadiusSource
+    {
+        RevealedFogRadius = 0,
+        CoreVisibleRadius = 1,
+        ManualRadius = 2,
     }
 }

@@ -42,8 +42,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _viewController.OnTargetFrameRateChanged += OnTargetFrameRateChanged;
             _viewController.OnRenderScaleChanged -= OnRenderScaleChanged;
             _viewController.OnRenderScaleChanged += OnRenderScaleChanged;
-            _viewController.OnDynamicRenderScaleChanged -= OnDynamicRenderScaleChanged;
-            _viewController.OnDynamicRenderScaleChanged += OnDynamicRenderScaleChanged;
             _viewController.OnCloseZoomOptimizationChanged -= OnCloseZoomOptimizationChanged;
             _viewController.OnCloseZoomOptimizationChanged += OnCloseZoomOptimizationChanged;
             _viewController.OnTextureMipmapLimitChanged -= OnTextureMipmapLimitChanged;
@@ -86,7 +84,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 _viewController.OnGraphicsProfileChanged -= OnGraphicsProfileChanged;
                 _viewController.OnTargetFrameRateChanged -= OnTargetFrameRateChanged;
                 _viewController.OnRenderScaleChanged -= OnRenderScaleChanged;
-                _viewController.OnDynamicRenderScaleChanged -= OnDynamicRenderScaleChanged;
                 _viewController.OnCloseZoomOptimizationChanged -= OnCloseZoomOptimizationChanged;
                 _viewController.OnTextureMipmapLimitChanged -= OnTextureMipmapLimitChanged;
                 _viewController.OnAntiAliasingChanged -= OnAntiAliasingChanged;
@@ -149,11 +146,6 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private void OnRenderScaleChanged(float renderScale)
         {
             _graphicsSettingsService?.SetRenderScale(renderScale);
-        }
-
-        private void OnDynamicRenderScaleChanged(bool enabled)
-        {
-            _graphicsSettingsService?.SetDynamicRenderScale(enabled);
         }
 
         private void OnCloseZoomOptimizationChanged(bool enabled)

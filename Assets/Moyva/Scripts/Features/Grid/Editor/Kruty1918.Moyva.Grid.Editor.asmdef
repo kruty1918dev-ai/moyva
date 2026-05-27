@@ -2,7 +2,8 @@
     "name": "Kruty1918.Moyva.Grid.Editor",
     "rootNamespace": "Kruty1918.Moyva.Grid.Editor",
     "references": [
-        "Kruty1918.Moyva.Grid"
+        "Kruty1918.Moyva.Grid",
+        "Kruty1918.Moyva.EditorShared"
     ],
     "includePlatforms": [
         "Editor"

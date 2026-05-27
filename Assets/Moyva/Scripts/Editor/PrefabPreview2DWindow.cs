@@ -1,10 +1,12 @@
+using Kruty1918.Moyva.Editor.Shared;
+using Kruty1918.Moyva.Grid.API;
 using UnityEditor;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Editor
 {
     /// <summary>
-    /// Editor Window для налаштування 2D превью для всього проекту.
+    /// Editor Window для адаптивного налаштування preview prefab-ів під глобальний режим проекту.
     /// </summary>
     public class PrefabPreview2DWindow : EditorWindow
     {
@@ -16,14 +18,15 @@ namespace Kruty1918.Moyva.Editor
         [MenuItem("Moyva/Windows/Prefab 2D Preview Setup", priority = 10)]
         public static void ShowWindow()
         {
-            GetWindow<PrefabPreview2DWindow>("2D Preview Setup");
+            GetWindow<PrefabPreview2DWindow>("Adaptive Preview Setup");
         }
 
         private void OnGUI()
         {
             _scrollPosition = GUILayout.BeginScrollView(_scrollPosition);
 
-            EditorGUILayout.LabelField("Налаштування 2D превью для префабів", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Адаптивні prefab preview", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"Поточний режим: {AdaptivePrefabPreviewUtility.DescribeCurrentMode()}", EditorStyles.miniLabel);
             EditorGUILayout.Space();
 
             // Опції превью
@@ -36,14 +39,14 @@ namespace Kruty1918.Moyva.Editor
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Дії", EditorStyles.boldLabel);
 
-            if (GUILayout.Button("Фіксити встановлення 2D превью на всі префаби", GUILayout.Height(30)))
+            if (GUILayout.Button("М'яко оновити prefab preview defaults", GUILayout.Height(30)))
             {
-                FixAllPrefabsFor2DPreview();
+                FixAllPrefabsForAdaptivePreview();
             }
 
-            if (GUILayout.Button("Налаштувати гізмо для 2D", GUILayout.Height(30)))
+            if (GUILayout.Button("Підказка для Scene View", GUILayout.Height(30)))
             {
-                SetupSceneViewFor2D();
+                SetupSceneViewForProjectMode();
             }
 
             if (GUILayout.Button("Показати Sprite Outline Gizmo", GUILayout.Height(30)))
@@ -53,26 +56,25 @@ namespace Kruty1918.Moyva.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.HelpBox(
-                "Це вікно допомагає налаштувати превью для 2D префабів.\n" +
-                "Якщо превью все ще показуються як 3D, переконайтеся, " +
-                "що префаби використовують SpriteRenderer компоненти.",
+                "Preview тепер читають глобальні Moyva Project Settings. " +
+                "У 3D/Mesh режимах ця дія не вимикає MeshRenderer і не скидає transform prefab-ів.",
                 MessageType.Info);
 
             GUILayout.EndScrollView();
         }
 
-        private static void FixAllPrefabsFor2DPreview()
+        private static void FixAllPrefabsForAdaptivePreview()
         {
             var prefabGuids = AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/Moyva" });
             var count = 0;
+            var settings = AdaptivePrefabPreviewUtility.ProjectSettings;
 
             foreach (var guid in prefabGuids)
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
                 var prefab = PrefabUtility.LoadPrefabContents(path);
 
-                // Налаштовуємо кожен префаб
-                if (ConfigurePrefabFor2D(prefab))
+                if (ConfigurePrefabForAdaptivePreview(prefab, settings))
                 {
                     count++;
                     PrefabUtility.SaveAsPrefabAsset(prefab, path);
@@ -81,76 +83,44 @@ namespace Kruty1918.Moyva.Editor
                 PrefabUtility.UnloadPrefabContents(prefab);
             }
 
-            EditorUtility.DisplayDialog("Success",
-                $"Налаштовано {count} префабів для 2D превью!",
+            EditorUtility.DisplayDialog("Adaptive Preview",
+                $"Оновлено {count} prefab-ів для режиму {AdaptivePrefabPreviewUtility.DescribeCurrentMode()}.",
                 "OK");
 
             AssetDatabase.Refresh();
         }
 
-        private static bool ConfigurePrefabFor2D(GameObject prefab)
+        private static bool ConfigurePrefabForAdaptivePreview(GameObject prefab, MoyvaProjectSettingsSO settings)
         {
             bool changed = false;
+            bool uses3DPreview = AdaptivePrefabPreviewUtility.Uses3DPreview(settings);
 
-            // Налаштовуємо SpriteRenderer компоненти
+            if (uses3DPreview)
+                return false;
+
             var spriteRenderers = prefab.GetComponentsInChildren<SpriteRenderer>();
             foreach (var sr in spriteRenderers)
             {
-                if (sr.material == null || !sr.material.shader.name.Contains("Sprite"))
+                if (sr.material == null || sr.material.shader == null || !sr.material.shader.name.Contains("Sprite"))
                 {
-                    sr.material = new Material(Shader.Find("Sprites/Default"));
-                    changed = true;
-                }
-
-                // Переконуємось, що сортування правильне
-                if (sr.sortingLayerID == 0 && sr.sortingOrder == 0)
-                {
-                    changed = true;
-                }
-            }
-
-            // Дезактивуємо MeshRenderer якщо є SpriteRenderer
-            var meshRenderers = prefab.GetComponentsInChildren<MeshRenderer>();
-            if (meshRenderers.Length > 0 && spriteRenderers.Length > 0)
-            {
-                foreach (var mr in meshRenderers)
-                {
-                    if (mr.enabled)
+                    var shader = Shader.Find("Sprites/Default");
+                    if (shader != null)
                     {
-                        mr.enabled = false;
+                        sr.material = new Material(shader);
                         changed = true;
                     }
                 }
             }
 
-            // Забезпечуємо коректний масштаб
-            if (prefab.transform.localScale != Vector3.one)
-            {
-                prefab.transform.localScale = Vector3.one;
-                changed = true;
-            }
-
-            // Встановлюємо позицію як (0, 0, 0) для 2D
-            if (prefab.transform.localPosition.z != 0)
-            {
-                var pos = prefab.transform.localPosition;
-                pos.z = 0;
-                prefab.transform.localPosition = pos;
-                changed = true;
-            }
-
             return changed;
         }
 
-        private static void SetupSceneViewFor2D()
+        private static void SetupSceneViewForProjectMode()
         {
-            EditorUtility.DisplayDialog("Scene View 2D Setup", 
-                "🎮 ГАРЯЧИЙ СВІЖИЙ ТРЮК\\n\\n" +
-                "Найкращий спосіб отримати 2D превью:\\n\\n" +
-                "1. Двічі клікніть на префаб у Project\\n" +
-                "2. Це відкриває Prefab Mode\\n" +
-                "3. Scene View АВТОМАТИЧНО переходить на 2D!\\n\\n" +
-                "Альтернатива: Натисніть '2' на Numpad",
+            EditorUtility.DisplayDialog("Scene View Preview",
+                "Preview режим читається з Moyva Project Settings.\n\n" +
+                "Для sprite/isometric режимів зручно відкривати Prefab Mode і Scene View 2D.\n" +
+                "Для Mesh/3D режимів залишайте Scene View у перспективі або orthographic 3D.",
                 "OK");
         }
 

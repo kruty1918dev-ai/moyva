@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEditor;
@@ -69,9 +70,8 @@ namespace Kruty1918.Moyva.Generator.Editor
                     _availableTileIDs.Add(def.Id);
                     if (def.VisualPrefab != null)
                     {
-                        var spriteRenderer = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>();
-                        if (spriteRenderer != null && spriteRenderer.sprite != null)
-                            _tileSprites[def.Id] = spriteRenderer.sprite;
+                        if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.VisualPrefab, out var sprite, out _))
+                            _tileSprites[def.Id] = sprite;
                     }
                 }
             }
@@ -1022,10 +1022,7 @@ namespace Kruty1918.Moyva.Generator.Editor
         private void DrawSprite(Rect rect, Sprite sprite)
         {
             if (sprite == null) return;
-            Texture tex = sprite.texture;
-            Rect r = sprite.textureRect;
-            Rect uv = new Rect(r.x / tex.width, r.y / tex.height, r.width / tex.width, r.height / tex.height);
-            GUI.DrawTextureWithTexCoords(rect, tex, uv, true);
+            AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(rect, null, sprite);
         }
 
         private Neighborhood8 GetDirFromGrid(int row, int col)
@@ -1124,10 +1121,7 @@ namespace Kruty1918.Moyva.Generator.Editor
                     Rect iconRect = new Rect(row.x + 4f, row.y + (RowH - IconSize) * 0.5f, IconSize, IconSize);
                     if (_sprites.TryGetValue(id, out Sprite spr) && spr != null)
                     {
-                        var tex = spr.texture;
-                        var sr  = spr.textureRect;
-                        var uv  = new Rect(sr.x / tex.width, sr.y / tex.height, sr.width / tex.width, sr.height / tex.height);
-                        GUI.DrawTextureWithTexCoords(iconRect, tex, uv, true);
+                        AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, null, spr);
                     }
                     else
                     {
@@ -1248,10 +1242,7 @@ namespace Kruty1918.Moyva.Generator.Editor
                     Rect iconRect = new Rect(chkRect.xMax + 4f, row.y + (RowH - IconSize) * 0.5f, IconSize, IconSize);
                     if (_sprites.TryGetValue(id, out Sprite spr) && spr != null)
                     {
-                        var tex = spr.texture;
-                        var sr  = spr.textureRect;
-                        var uv  = new Rect(sr.x / tex.width, sr.y / tex.height, sr.width / tex.width, sr.height / tex.height);
-                        GUI.DrawTextureWithTexCoords(iconRect, tex, uv, true);
+                        AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, null, spr);
                     }
                     else
                     {

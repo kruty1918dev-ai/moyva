@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         public void Initialize()
         {
-            if (_settings == null || !_settings.mapRenderMaskEnabled)
+            if (!ShouldUseSpriteMask())
                 return;
 
             EnsureMask();
@@ -44,8 +44,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         public void Tick()
         {
-            if (_settings == null || !_settings.mapRenderMaskEnabled)
+            if (!ShouldUseSpriteMask())
+            {
+                UnmaskTrackedRenderers();
                 return;
+            }
 
             if (Time.unscaledTime < _nextRefreshTime)
                 return;
@@ -64,6 +67,14 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private float ResolveRefreshInterval()
         {
             return Mathf.Max(0.05f, _settings.mapMaskRefreshSeconds);
+        }
+
+        private bool ShouldUseSpriteMask()
+        {
+            if (_settings == null || !_settings.mapRenderMaskEnabled)
+                return false;
+
+            return _gridProjection == null || _gridProjection.WorldPlane != GridWorldPlane.XZ;
         }
 
         private void EnsureMask()

@@ -2,7 +2,8 @@
     "name": "Kruty1918.Moyva.Shared.UI.Editor",
     "rootNamespace": "Kruty1918.Moyva.Shared.UI.Editor",
     "references": [
-        "Kruty1918.Moyva.Shared"
+        "Kruty1918.Moyva.Shared",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [
         "Editor"

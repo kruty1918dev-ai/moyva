@@ -118,10 +118,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             _canvas.sortingOrder = short.MaxValue - 8;
 
             var scaler = root.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            ConfigureCanvasScaler(scaler);
 
             root.AddComponent<GraphicRaycaster>();
 
@@ -141,6 +138,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var group = imageGo.AddComponent<CanvasGroup>();
             group.blocksRaycasts = false;
             group.interactable = false;
+        }
+
+        private static void ConfigureCanvasScaler(CanvasScaler scaler)
+        {
+            if (scaler == null)
+                return;
+
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            scaler.scaleFactor = 1f;
+            scaler.referencePixelsPerUnit = 100f;
         }
 
         private void SetOverlayAlpha(float alpha)

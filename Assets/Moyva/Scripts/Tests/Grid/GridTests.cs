@@ -242,6 +242,28 @@ namespace Kruty1918.Moyva.Tests.Grid
         }
 
         [Test]
+        public void Isometric3DPreviewProjection_PreservesConfiguredMode()
+        {
+            var settings = ScriptableObject.CreateInstance<MoyvaProjectSettingsSO>();
+            settings.DefaultProjectionMode = GridProjectionMode.Isometric3DPreview;
+            settings.OrthogonalCellWidth = 2f;
+            settings.OrthogonalCellDepth = 3f;
+            settings.HeightScale = 0.5f;
+            settings.Normalize();
+
+            var projection = new Kruty1918.Moyva.Grid.Runtime.IsometricGridProjection(settings);
+            var grid = new Vector2Int(2, 3);
+            Vector3 world = projection.GridToWorld(grid, elevation: 3f);
+
+            Assert.AreEqual(GridProjectionMode.Isometric3DPreview, projection.ProjectionMode);
+            Assert.AreEqual(GridWorldPlane.XZ, projection.WorldPlane);
+            Assert.AreEqual(GridTopology.Layered, projection.Topology);
+            Assert.AreEqual(new Vector3(4f, 1.5f, 9f), world);
+            Assert.AreEqual(grid, projection.WorldToGrid(world));
+            Assert.AreEqual(GridRenderMode.Mesh3DPreview, ResolveRenderMode(projection.ProjectionMode));
+        }
+
+        [Test]
         public void HexProjection_RoundTripsAxialCoordinates()
         {
             var projection = new Kruty1918.Moyva.Grid.Runtime.HexAxialGridProjection();
@@ -271,6 +293,17 @@ namespace Kruty1918.Moyva.Tests.Grid
             var grid = new Vector2Int(5, 8);
 
             Assert.AreEqual(grid, projection.WorldToGrid(projection.GridToWorld(grid)));
+        }
+
+        private static GridRenderMode ResolveRenderMode(GridProjectionMode projectionMode)
+        {
+            return projectionMode switch
+            {
+                GridProjectionMode.Orthographic3D => GridRenderMode.Mesh3D,
+                GridProjectionMode.Isometric2D => GridRenderMode.Isometric2D,
+                GridProjectionMode.Isometric3DPreview => GridRenderMode.Mesh3DPreview,
+                _ => GridRenderMode.Sprite2D,
+            };
         }
     }
 

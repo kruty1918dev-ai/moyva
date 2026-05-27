@@ -8,6 +8,7 @@ using Kruty1918.Moyva.Animations.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
@@ -29,8 +30,10 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IGeneratedTerrainLevelQuery _terrainLevelQuery;
         private readonly WorldCreationDefaultsSO _worldDefaults;
         private readonly IGridProjection _gridProjection;
+        private readonly TileRegistrySO _tileRegistry;
 
         private readonly Dictionary<string, CancellationTokenSource> _activeMovements = new();
+        private readonly Dictionary<string, float> _tileSurfaceOffsetYById = new();
 
         public UnitMovementService(
             IUnitService unitService,
@@ -44,7 +47,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             IUnitGameplayProfileService unitGameplayProfileService,
             [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
             [InjectOptional] WorldCreationDefaultsSO worldDefaults = null,
-            [InjectOptional] IGridProjection gridProjection = null)
+            [InjectOptional] IGridProjection gridProjection = null,
+            [InjectOptional] TileRegistrySO tileRegistry = null)
         {
             _unitService = unitService;
             _pathfinder = pathfinder;
@@ -58,6 +62,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _terrainLevelQuery = terrainLevelQuery;
             _worldDefaults = worldDefaults;
             _gridProjection = gridProjection;
+            _tileRegistry = tileRegistry;
         }
 
         public void Initialize()
@@ -160,7 +165,8 @@ namespace Kruty1918.Moyva.Units.Runtime
                 // -------------------------------------------
 
                 settings.OnStepCompleted = (stepPos) => OnStepCompleted(unitId, stepPos);
-                settings.ResolveWorldPosition = ResolveMovementWorldPosition;
+                float unitSurfacePivotOffsetY = ResolveUnitSurfacePivotOffsetY(unitObj, startPosition);
+                settings.ResolveWorldPosition = (stepPos) => ResolveMovementWorldPosition(stepPos, unitSurfacePivotOffsetY);
 
                 await _animationService.MoveAlongPathAsync(unitObj.transform, path, settings, linkedCts.Token);
             }
@@ -239,7 +245,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             });
         }
 
-        private Vector3 ResolveMovementWorldPosition(Vector2Int gridPosition)
+        private Vector3 ResolveMovementWorldPosition(Vector2Int gridPosition, float unitSurfacePivotOffsetY)
         {
             if (_gridProjection == null)
                 return new Vector3(gridPosition.x, gridPosition.y, 0f);
@@ -247,7 +253,58 @@ namespace Kruty1918.Moyva.Units.Runtime
             float elevation = _terrainLevelQuery != null && _terrainLevelQuery.TryGetTerrainLevel(gridPosition, out int level)
                 ? level
                 : 0f;
-            return _gridProjection.GridToWorld(gridPosition, elevation, 0.05f);
+            Vector3 basePosition = _gridProjection.GridToWorld(gridPosition, elevation, 0.05f);
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
+                return basePosition;
+
+            basePosition.y = ResolveTerrainSurfaceY(gridPosition, elevation) + unitSurfacePivotOffsetY;
+            return basePosition;
+        }
+
+        private float ResolveUnitSurfacePivotOffsetY(GameObject unitObject, Vector2Int gridPosition)
+        {
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection) || unitObject == null)
+                return 0.05f;
+
+            float elevation = _terrainLevelQuery != null && _terrainLevelQuery.TryGetTerrainLevel(gridPosition, out int level)
+                ? level
+                : 0f;
+            float surfaceY = ResolveTerrainSurfaceY(gridPosition, elevation);
+            return Mathf.Max(GridSurfacePlacementUtility.DefaultSurfaceClearance, unitObject.transform.position.y - surfaceY);
+        }
+
+        private float ResolveTerrainSurfaceY(Vector2Int gridPosition, float elevation)
+        {
+            float baseY = _gridProjection.GridToWorld(gridPosition, elevation, 0f).y;
+            if (_gridService.TryGetTileData(gridPosition, out string tileId) && TryResolveTileSurfaceOffsetY(tileId, out float offsetY))
+                return baseY + offsetY;
+
+            return baseY;
+        }
+
+        private bool TryResolveTileSurfaceOffsetY(string tileId, out float offsetY)
+        {
+            offsetY = 0f;
+            if (string.IsNullOrWhiteSpace(tileId) || _tileRegistry?.Definitions == null)
+                return false;
+
+            if (_tileSurfaceOffsetYById.TryGetValue(tileId, out offsetY))
+                return true;
+
+            for (int i = 0; i < _tileRegistry.Definitions.Length; i++)
+            {
+                var definition = _tileRegistry.Definitions[i];
+                if (definition == null || definition.Id != tileId || definition.VisualPrefab == null)
+                    continue;
+
+                if (!GridSurfacePlacementUtility.TryResolveTopOffsetY(definition.VisualPrefab, out offsetY))
+                    offsetY = 0f;
+
+                _tileSurfaceOffsetYById[tileId] = offsetY;
+                return true;
+            }
+
+            return false;
         }
 
         private bool IsBlockedByUnitPlacementRules(Vector2Int position, string tileTypeId, out string reason)

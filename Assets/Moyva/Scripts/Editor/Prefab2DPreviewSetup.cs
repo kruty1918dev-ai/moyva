@@ -1,3 +1,4 @@
+using Kruty1918.Moyva.Editor.Shared;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -6,8 +7,7 @@ using UnityEngine.SceneManagement;
 namespace Kruty1918.Moyva.Editor
 {
     /// <summary>
-    /// Налаштовує превью префабів для 2D режиму замість 3D.
-    /// Це забезпечує коректне відображення спрайтів у Project вкладці.
+    /// М'яко налаштовує preview prefab-ів під глобальний режим Moyva Project Settings.
     /// </summary>
     [InitializeOnLoad]
     public static class Prefab2DPreviewSetup
@@ -25,8 +25,8 @@ namespace Kruty1918.Moyva.Editor
             // 2D режим налаштовується автоматично при редаганні префабу через Prefab Mode
         }
 
-        [MenuItem("Moyva/Setup/Force 2D on Selected Prefab", priority = 101)]
-        public static void Force2DOnSelectedPrefab()
+        [MenuItem("Moyva/Setup/Apply Adaptive Preview Defaults to Selected Prefab", priority = 101)]
+        public static void ApplyAdaptivePreviewDefaultsToSelectedPrefab()
         {
             var selectedObject = Selection.activeObject;
             if (selectedObject == null)
@@ -43,36 +43,41 @@ namespace Kruty1918.Moyva.Editor
             }
 
             var prefab = PrefabUtility.LoadPrefabContents(path);
-            ConfigurePrefabFor2D(prefab);
-            PrefabUtility.SaveAsPrefabAsset(prefab, path);
+            bool changed = ConfigurePrefabForAdaptivePreview(prefab);
+            if (changed)
+                PrefabUtility.SaveAsPrefabAsset(prefab, path);
             PrefabUtility.UnloadPrefabContents(prefab);
 
-            EditorUtility.DisplayDialog("Success", "Префаб налаштовано на 2D режим!", "OK");
+            EditorUtility.DisplayDialog("Adaptive Preview",
+                changed
+                    ? $"Prefab оновлено для режиму {AdaptivePrefabPreviewUtility.DescribeCurrentMode()}."
+                    : $"Змін не потрібно для режиму {AdaptivePrefabPreviewUtility.DescribeCurrentMode()}.",
+                "OK");
         }
 
-        private static void ConfigurePrefabFor2D(GameObject prefab)
+        private static bool ConfigurePrefabForAdaptivePreview(GameObject prefab)
         {
-            var spriteRenderer = prefab.GetComponent<SpriteRenderer>();
-            if (spriteRenderer != null)
+            if (AdaptivePrefabPreviewUtility.Uses3DPreview())
+                return false;
+
+            bool changed = false;
+            var spriteRenderers = prefab.GetComponentsInChildren<SpriteRenderer>(true);
+            var shader = Shader.Find("Sprites/Default");
+            foreach (var spriteRenderer in spriteRenderers)
             {
-                spriteRenderer.sortingOrder = 0;
-                var shader = Shader.Find("Sprites/Default");
-                if (shader != null)
+                if (spriteRenderer == null || shader == null)
+                    continue;
+
+                if (spriteRenderer.material == null
+                    || spriteRenderer.material.shader == null
+                    || !spriteRenderer.material.shader.name.Contains("Sprite"))
                 {
                     spriteRenderer.material = new Material(shader);
+                    changed = true;
                 }
             }
 
-            var meshRenderer = prefab.GetComponent<MeshRenderer>();
-            if (meshRenderer != null)
-            {
-                meshRenderer.enabled = false;
-            }
-
-            var transform = prefab.transform;
-            var pos = transform.position;
-            transform.position = new Vector3(pos.x, pos.y, 0);
-            transform.localScale = Vector3.one;
+            return changed;
         }
     }
 }

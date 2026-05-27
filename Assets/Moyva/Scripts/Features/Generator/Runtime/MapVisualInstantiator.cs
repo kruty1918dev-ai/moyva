@@ -34,6 +34,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private Transform _layersRoot;
         private readonly Dictionary<string, TileTypeDefinition> _definitionsCache = new();
         private readonly HashSet<string> _loggedTileFallbacks = new();
+        private readonly Dictionary<Vector2Int, float> _terrainSurfaceYByPosition = new();
         private readonly SignalBus _signalBus;
         private GeneratedWorldData _currentWorldData;
         private GeneratedWorldData _pendingWorldData;
@@ -79,6 +80,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             foreach (var def in _tileRegistry.Definitions)
             {
+                if (def == null || string.IsNullOrEmpty(def.Id))
+                    continue;
+
                 _definitionsCache[def.Id] = def;
             }
 
@@ -225,6 +229,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ClearRoot(_objectsRoot);
             ClearRoot(_buildingsRoot);
             ClearRoot(_layersRoot);
+            _terrainSurfaceYByPosition.Clear();
             ReleaseRuntimeLayerResources();
 
             // Ініціалізуємо LayerData до основного проходу, щоб знати чи працюємо у layer-only режимі.
@@ -241,6 +246,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 for (int y = 0; y < worldData.Height; y++)
                 {
                     Vector2Int pos = new Vector2Int(x, y);
+                    float elevation = ResolveTerrainElevation(worldData, x, y);
+                    RegisterFallbackTerrainSurface(pos, elevation);
 
                     string biomeId = worldData.BiomeMap[x, y];
                     if (!string.IsNullOrEmpty(biomeId))
@@ -251,13 +258,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         if (useLayerOnlyTiles)
                             _gridService.SetTileData(pos, resolvedBiomeId);
                         else
-                            CreateTileView(pos, resolvedBiomeId, _tilesRoot, -1);
+                            CreateTileView(pos, resolvedBiomeId, _tilesRoot, -1, elevation);
                     }
 
                     string objectId = worldData.ObjectMap[x, y];
                     if (!string.IsNullOrEmpty(objectId))
                     {
-                        CreateObjectLayerEntity(pos, objectId);
+                        CreateObjectLayerEntity(pos, objectId, elevation);
                     }
 
                     if (worldData.BuildingMap != null)
@@ -265,7 +272,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         string buildingId = worldData.BuildingMap[x, y];
                         if (!string.IsNullOrEmpty(buildingId))
                         {
-                            CreateBuildingView(pos, buildingId);
+                            CreateBuildingView(pos, buildingId, elevation);
                         }
                     }
                 }
@@ -476,7 +483,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _runtimeLayerMaterials.Clear();
         }
 
-        private void CreateTileView(Vector2Int position, string tileId, Transform root, int sortingOrder)
+        private void CreateTileView(Vector2Int position, string tileId, Transform root, int sortingOrder, float elevation)
         {
             if (!TryResolveTileDefinition(tileId, out var tileType, out string resolvedTileId))
             {
@@ -484,16 +491,25 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
-            Vector3 worldPos = ResolveWorldPosition(position, sortingOrder);
             var tilePrefab = tileType.VisualPrefab;
+            if (tilePrefab == null)
+            {
+                Debug.LogWarning($"[MapInstantiator] Tile ID '{resolvedTileId}' має запис у реєстрі, але prefab відсутній. Візуал пропущено, grid data збережено.");
+                _gridService.SetTileData(position, resolvedTileId);
+                return;
+            }
+
+            Vector3 worldPos = ResolveWorldPosition(position, elevation, sortingOrder);
 
             var instance = _container.InstantiatePrefab(
                 tilePrefab,
                 worldPos,
-                Quaternion.identity,
+                tilePrefab.transform.rotation,
                 root);
 
             instance.name = $"{(sortingOrder < 0 ? "Tile" : "Obj")}_{resolvedTileId}_{position.x}_{position.y}";
+            if (sortingOrder < 0)
+                RegisterTerrainSurface(position, instance, worldPos.y);
 
             var tileView = instance.GetComponent<TileView>();
             if (tileView != null)
@@ -518,14 +534,33 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             resolvedTileId = tileId;
 
+            if (!string.IsNullOrEmpty(tileId) && TryGetUsableTileDefinition(tileId, out tileType))
+                return true;
+
+            foreach (string fallbackTileId in ResolveFallbackTileIds(tileId))
+            {
+                if (TryGetUsableTileDefinition(fallbackTileId, out tileType))
+                {
+                    resolvedTileId = fallbackTileId;
+                    LogTileFallbackOnce(tileId, fallbackTileId);
+                    return true;
+                }
+            }
+
             if (!string.IsNullOrEmpty(tileId) && _definitionsCache.TryGetValue(tileId, out tileType))
                 return true;
 
-            string fallbackTileId = ResolveLegacyFallbackTileId(tileId);
-            if (!string.IsNullOrEmpty(fallbackTileId) && _definitionsCache.TryGetValue(fallbackTileId, out tileType))
+            tileType = null;
+            return false;
+        }
+
+        private bool TryGetUsableTileDefinition(string tileId, out TileTypeDefinition tileType)
+        {
+            if (!string.IsNullOrEmpty(tileId)
+                && _definitionsCache.TryGetValue(tileId, out tileType)
+                && tileType != null
+                && tileType.VisualPrefab != null)
             {
-                resolvedTileId = fallbackTileId;
-                LogTileFallbackOnce(tileId, fallbackTileId);
                 return true;
             }
 
@@ -542,35 +577,92 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Debug.LogWarning($"[MapInstantiator] Tile ID '{sourceTileId}' відсутній у поточному реєстрі. Використано сумісний fallback '{fallbackTileId}'.");
         }
 
-        private static string ResolveLegacyFallbackTileId(string tileId)
+        private static IEnumerable<string> ResolveFallbackTileIds(string tileId)
         {
             if (string.IsNullOrWhiteSpace(tileId))
-                return null;
+                yield break;
 
             string normalized = tileId.ToLowerInvariant();
             if (normalized.Contains("deep-depth") || normalized.Contains("ocean-deep"))
-                return "ocean-deep";
+            {
+                yield return "water-deep-depth-tile-001";
+                yield return "water-deep-depth-tile-002";
+                yield return "ocean-deep";
+                yield break;
+            }
 
             if (normalized.StartsWith("water") || normalized.Contains("water-"))
-                return "ocean-shallow";
+            {
+                yield return "water-middle-depth-tile-002";
+                yield return "water-deep-depth-tile-001";
+                yield return "ocean-shallow";
+                yield break;
+            }
 
             if (normalized.Contains("stone-hill") || normalized.Contains("hill"))
-                return "hill";
+            {
+                yield return "grass-tile-level-3-001";
+                yield return "grass-tile-level-2-001";
+                yield return "hill";
+                yield break;
+            }
+
+            if (normalized.Contains("mountain"))
+            {
+                yield return "grass-tile-level-3-001";
+                yield return "hill";
+                yield return "mountain";
+                yield break;
+            }
+
+            if (normalized.Contains("snow"))
+            {
+                yield return "snow-tile-001";
+                yield return "grass-tile-level-1-001";
+                yield break;
+            }
 
             if (normalized.Contains("sand") || normalized.Contains("coast"))
-                return "beach";
+            {
+                yield return "sand-tile-003";
+                yield return "sand-tile-001";
+                yield return "beach";
+                yield break;
+            }
 
-            if (normalized.Contains("grass"))
-                return "grass";
-
-            return null;
+            if (normalized.Contains("grass") || normalized.Contains("lowland"))
+            {
+                yield return "grass-tile-001";
+                yield return "texture-grass-tile-001";
+                yield return "grass-tile-level-1-001";
+                yield return "grass";
+            }
         }
 
-        private void CreateObjectLayerEntity(Vector2Int position, string layerEntityId)
+        private static float ResolveTerrainElevation(GeneratedWorldData worldData, int x, int y)
+        {
+            if (worldData?.TerrainLevelMap != null
+                && x >= 0 && x < worldData.TerrainLevelMap.GetLength(0)
+                && y >= 0 && y < worldData.TerrainLevelMap.GetLength(1))
+            {
+                return worldData.TerrainLevelMap[x, y];
+            }
+
+            if (worldData?.HeightMap != null
+                && x >= 0 && x < worldData.HeightMap.GetLength(0)
+                && y >= 0 && y < worldData.HeightMap.GetLength(1))
+            {
+                return worldData.HeightMap[x, y];
+            }
+
+            return 0f;
+        }
+
+        private void CreateObjectLayerEntity(Vector2Int position, string layerEntityId, float elevation)
         {
             if (_objectRegistry.TryGetDefinition(layerEntityId, out _))
             {
-                CreateObjectView(position, layerEntityId, _objectsRoot, 0);
+                CreateObjectView(position, layerEntityId, _objectsRoot, 0, elevation);
 
                 _signalBus.Fire(new OnMapObjectSpawnedSignal
                 {
@@ -596,14 +688,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             // має перезаписати базовий біом у GridService.
             if (TryResolveTileDefinition(layerEntityId, out _, out string resolvedTileId))
             {
-                CreateTileView(position, resolvedTileId, _objectsRoot, 0);
+                CreateTileView(position, resolvedTileId, _objectsRoot, 0, elevation);
                 return;
             }
 
             Debug.LogWarning($"[MapVisualInstantiator] Object layer ID '{layerEntityId}' не знайдено ні в MapObjectRegistry, ні в UnitRegistry.");
         }
 
-        private void CreateObjectView(Vector2Int position, string objectId, Transform root, int sortingOrder)
+        private void CreateObjectView(Vector2Int position, string objectId, Transform root, int sortingOrder, float elevation)
         {
             if (!_objectRegistry.TryGetDefinition(objectId, out var objectDef))
             {
@@ -617,7 +709,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
-            Vector3 worldPos = ResolveWorldPosition(position, sortingOrder);
+            Vector3 worldPos = ResolveWorldPosition(position, elevation, sortingOrder);
             Quaternion prefabRotation = objectDef.VisualPrefab.transform.rotation;
 
             var instance = _container.InstantiatePrefab(
@@ -627,6 +719,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 root);
 
             instance.name = $"Obj_{objectId}_{position.x}_{position.y}";
+            AlignInstanceToTerrainSurface(instance, position, elevation);
+            worldPos = instance.transform.position;
 
             var tileView = instance.GetComponent<TileView>();
             if (tileView != null)
@@ -638,7 +732,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _mapObjectVisualRegistryService?.Register(objectId, position, instance);
         }
 
-        private void CreateBuildingView(Vector2Int position, string buildingId)
+        private void CreateBuildingView(Vector2Int position, string buildingId, float elevation)
         {
             if (_buildingRegistry == null)
             {
@@ -658,7 +752,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
-            Vector3 worldPos = ResolveWorldPosition(position, 1);
+            Vector3 worldPos = ResolveWorldPosition(position, elevation, 1);
 
             var instance = _container.InstantiatePrefab(
                 def.Prefab,
@@ -667,6 +761,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 _buildingsRoot);
 
             instance.name = $"Building_{buildingId}_{position.x}_{position.y}";
+            AlignInstanceToTerrainSurface(instance, position, elevation);
+            worldPos = instance.transform.position;
 
             var tileView = instance.GetComponent<TileView>();
             if (tileView != null)
@@ -677,9 +773,43 @@ namespace Kruty1918.Moyva.Generator.Runtime
             EnsureBuildingSortingOrder(instance, BuildingLayerMinSortingOrder);
         }
 
-        private Vector3 ResolveWorldPosition(Vector2Int position, int sortingOrder)
+        private Vector3 ResolveWorldPosition(Vector2Int position, float elevation, int sortingOrder)
         {
-            return _gridProjection.GridToWorld(position, 0f, sortingOrder * 0.1f);
+            float layerOffset = sortingOrder * 0.1f;
+            if (_gridProjection.WorldPlane == GridWorldPlane.XZ && sortingOrder < 0)
+                layerOffset = 0f;
+
+            return _gridProjection.GridToWorld(position, elevation, layerOffset);
+        }
+
+        private void RegisterFallbackTerrainSurface(Vector2Int position, float elevation)
+        {
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
+                return;
+
+            _terrainSurfaceYByPosition[position] = _gridProjection.GridToWorld(position, elevation, 0f).y;
+        }
+
+        private void RegisterTerrainSurface(Vector2Int position, GameObject tileInstance, float fallbackSurfaceY)
+        {
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
+                return;
+
+            _terrainSurfaceYByPosition[position] = GridSurfacePlacementUtility.TryResolveRendererBounds(tileInstance, out var bounds)
+                ? bounds.max.y
+                : fallbackSurfaceY;
+        }
+
+        private void AlignInstanceToTerrainSurface(GameObject instance, Vector2Int position, float elevation)
+        {
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection) || instance == null)
+                return;
+
+            float surfaceY = _terrainSurfaceYByPosition.TryGetValue(position, out float cachedSurfaceY)
+                ? cachedSurfaceY
+                : _gridProjection.GridToWorld(position, elevation, 0f).y;
+
+            GridSurfacePlacementUtility.AlignBottomToSurface(instance, surfaceY);
         }
 
         private static void EnsureBuildingSortingOrder(GameObject rootObject, int minOrder)

@@ -111,14 +111,7 @@ namespace Kruty1918.Moyva.Editor.Shared
 
         private static void DrawSprite(Rect rect, Sprite sprite)
         {
-            Rect texRect = sprite.textureRect;
-            Rect texCoords = new Rect(
-                texRect.x / sprite.texture.width,
-                texRect.y / sprite.texture.height,
-                texRect.width / sprite.texture.width,
-                texRect.height / sprite.texture.height
-            );
-            GUI.DrawTextureWithTexCoords(rect, sprite.texture, texCoords);
+            AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(rect, null, sprite);
         }
 
         private sealed class ResourcePickerPopup : PopupWindowContent

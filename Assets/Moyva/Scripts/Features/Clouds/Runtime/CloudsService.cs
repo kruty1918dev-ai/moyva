@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
         private readonly CloudsSceneReferences _sceneReferences;
         private readonly IGridService _gridService;
         private readonly List<CloudInstance> _clouds = new List<CloudInstance>();
+        private static readonly int MipBiasPropertyId = Shader.PropertyToID("_MipBias");
 
         private const int MaskSortingRangePadding = 64;
         private const float MapMaskRefreshIntervalSeconds = 0.5f;
@@ -185,25 +186,31 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             rootObject.transform.SetParent(_root, worldPositionStays: true);
             rootObject.transform.position = position;
 
-            float scale = Random.Range(_settings.ScaleRange.x, _settings.ScaleRange.y);
+            CameraBounds bounds = ResolveDistributionBounds();
+            float altitude01 = ResolveAltitude01(bounds, position.y);
+            float scale = _settings.EvaluateCloudScale(altitude01, Random.value);
+            float cloudHeight = _settings.EvaluateCloudVisualHeight(altitude01);
+            float mipBias = _settings.EvaluateCloudMipBias(altitude01);
             rootObject.transform.localScale = new Vector3(scale, scale, 1f);
 
             var cloudRenderer = rootObject.AddComponent<SpriteRenderer>();
             cloudRenderer.sprite = sprite;
             ApplySpriteMaterial(cloudRenderer);
             ApplySorting(cloudRenderer, _settings.SortingOrder);
+            ApplyCloudMipBias(cloudRenderer, mipBias);
 
             SpriteRenderer shadowRenderer = null;
             if (_settings.ShadowsEnabled)
             {
                 var shadowObject = new GameObject("CloudShadow");
                 shadowObject.transform.SetParent(rootObject.transform, worldPositionStays: false);
-                Vector2 shadowOffset = ResolveShadowOffset();
+                Vector2 shadowOffset = ResolveShadowOffset(cloudHeight);
                 shadowObject.transform.localPosition = new Vector3(shadowOffset.x, shadowOffset.y, 0f);
-                shadowObject.transform.localScale = Vector3.one * ResolveShadowScaleMultiplier();
+                shadowObject.transform.localScale = Vector3.one * ResolveShadowScaleMultiplier(cloudHeight);
                 shadowRenderer = shadowObject.AddComponent<SpriteRenderer>();
                 shadowRenderer.sprite = sprite;
                 ApplySpriteMaterial(shadowRenderer);
+                ApplyCloudMipBias(shadowRenderer, mipBias);
                 shadowRenderer.maskInteraction = ResolveMaskInteraction();
                 ApplySorting(shadowRenderer, _settings.SortingOrder + _settings.ShadowSortingOrderOffset);
             }
@@ -217,7 +224,8 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 Random.Range(_settings.SpeedRange.x, _settings.SpeedRange.y),
                 direction,
                 endX,
-                ResolveLifetime());
+                ResolveLifetime(),
+                cloudHeight);
         }
 
         private Vector3 PickSpawnPosition(CameraBounds bounds, float edgeSpawnX, int direction, bool startInView)
@@ -427,7 +435,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             }
 
             Color shadowColor = _settings.ShadowColor;
-            shadowColor.a *= _settings.CloudAlpha * ResolveShadowAlphaMultiplier() * fade * cameraFade;
+            shadowColor.a *= _settings.CloudAlpha * ResolveShadowAlphaMultiplier(cloud.VisualHeight) * fade * cameraFade;
             if (!cloud.HasColorState || !Approximately(cloud.LastShadowColor, shadowColor))
             {
                 cloud.ShadowRenderer.color = shadowColor;
@@ -483,19 +491,36 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             return Mathf.Floor(Mathf.Clamp01(value) * steps) / steps;
         }
 
-        private Vector2 ResolveShadowOffset()
+        private static float ResolveAltitude01(CameraBounds bounds, float y)
         {
-            return _settings.ShadowOffset + _settings.ShadowOffsetPerHeight * _settings.CloudHeight;
+            float height = Mathf.Max(0.001f, bounds.MaxY - bounds.MinY);
+            return Mathf.Clamp01((y - bounds.MinY) / height);
         }
 
-        private float ResolveShadowScaleMultiplier()
+        private void ApplyCloudMipBias(SpriteRenderer renderer, float mipBias)
         {
-            return Mathf.Max(0.01f, _settings.ShadowScaleMultiplier + _settings.ShadowScalePerHeight * _settings.CloudHeight);
+            if (renderer == null || renderer.sharedMaterial == null || !renderer.sharedMaterial.HasProperty(MipBiasPropertyId))
+                return;
+
+            var propertyBlock = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetFloat(MipBiasPropertyId, mipBias);
+            renderer.SetPropertyBlock(propertyBlock);
         }
 
-        private float ResolveShadowAlphaMultiplier()
+        private Vector2 ResolveShadowOffset(float cloudHeight)
         {
-            return Mathf.Clamp01(_settings.ShadowAlphaMultiplier / (1f + _settings.CloudHeight * _settings.ShadowAlphaHeightFade));
+            return _settings.ShadowOffset + _settings.ShadowOffsetPerHeight * cloudHeight;
+        }
+
+        private float ResolveShadowScaleMultiplier(float cloudHeight)
+        {
+            return Mathf.Max(0.01f, _settings.ShadowScaleMultiplier + _settings.ShadowScalePerHeight * cloudHeight);
+        }
+
+        private float ResolveShadowAlphaMultiplier(float cloudHeight)
+        {
+            return Mathf.Clamp01(_settings.ShadowAlphaMultiplier / (1f + cloudHeight * _settings.ShadowAlphaHeightFade));
         }
 
         private float ResolveLifetime()
@@ -721,6 +746,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             public readonly int Direction;
             public readonly float EndX;
             public readonly float Lifetime;
+            public readonly float VisualHeight;
             public float Age;
             public bool HasColorState;
             public Color LastCloudColor;
@@ -733,7 +759,8 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 float speed,
                 int direction,
                 float endX,
-                float lifetime)
+                float lifetime,
+                float visualHeight)
             {
                 Root = root;
                 CloudRenderer = cloudRenderer;
@@ -742,6 +769,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
                 Direction = direction;
                 EndX = endX;
                 Lifetime = lifetime;
+                VisualHeight = visualHeight;
             }
         }
     }

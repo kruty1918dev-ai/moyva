@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
@@ -21,7 +22,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return settings.ProjectionMode == GridProjectionMode.Isometric2D
                 || settings.ProjectionMode == GridProjectionMode.Isometric3DPreview
                 || settings.ProjectionMode == GridProjectionMode.HexPointy2D
-                || settings.ProjectionMode == GridProjectionMode.HexFlat2D;
+                || settings.ProjectionMode == GridProjectionMode.HexFlat2D
+                || settings.ProjectionMode == GridProjectionMode.Orthographic3D;
         }
 
         public static Texture2D Render(
@@ -73,7 +75,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             var texture = new Texture2D(texWidth, texHeight, TextureFormat.RGBA32, false)
             {
-                filterMode = FilterMode.Bilinear,
+                filterMode = AdaptivePrefabPreviewUtility.ProjectSettings.PreviewFilterMode,
                 wrapMode = TextureWrapMode.Clamp,
                 hideFlags = HideFlags.HideAndDontSave
             };

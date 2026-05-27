@@ -34,13 +34,7 @@ namespace Kruty1918.Moyva.Units.Editor
                 if (sprite != null)
                 {
                     Rect iconRect = new Rect(rect.x + 10f, rect.y + 10f, 48f, 48f);
-                    Rect texRect = sprite.textureRect;
-                    Rect uv = new Rect(
-                        texRect.x / sprite.texture.width,
-                        texRect.y / sprite.texture.height,
-                        texRect.width / sprite.texture.width,
-                        texRect.height / sprite.texture.height);
-                    GUI.DrawTextureWithTexCoords(iconRect, sprite.texture, uv, true);
+                    AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, null, sprite);
                 }
             }
 

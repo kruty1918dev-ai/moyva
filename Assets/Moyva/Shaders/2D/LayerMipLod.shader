@@ -49,6 +49,7 @@ Shader "Moyva/2D/LayerMipLod"
             float4 _MoyvaFogMapParams;
             float _MoyvaFogCullEnabled;
             float _MoyvaFogCullThreshold;
+            float _MoyvaFogWorldPlane;
 
             struct appdata
             {
@@ -71,7 +72,8 @@ Shader "Moyva/2D/LayerMipLod"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.color = v.color * _Color;
-                o.worldXY = mul(unity_ObjectToWorld, v.vertex).xy;
+                float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                o.worldXY = _MoyvaFogWorldPlane > 0.5 ? worldPos.xz : worldPos.xy;
                 return o;
             }
 
@@ -147,6 +149,7 @@ Shader "Moyva/2D/LayerMipLod"
             float4 _MoyvaFogMapParams;
             float _MoyvaFogCullEnabled;
             float _MoyvaFogCullThreshold;
+            float _MoyvaFogWorldPlane;
 
             struct appdata
             {
@@ -169,7 +172,8 @@ Shader "Moyva/2D/LayerMipLod"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.color = v.color * _Color;
-                o.worldXY = mul(unity_ObjectToWorld, v.vertex).xy;
+                float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                o.worldXY = _MoyvaFogWorldPlane > 0.5 ? worldPos.xz : worldPos.xy;
                 return o;
             }
 

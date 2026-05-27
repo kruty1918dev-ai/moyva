@@ -13,5 +13,10 @@ namespace Kruty1918.Moyva.Camera.API
         /// Миттєво телепортує камеру в позицію без жодної плавності.
         /// </summary>
         void TeleportCamera(Vector3 position);
+
+        /// <summary>
+        /// Миттєво розміщує камеру так, щоб центр екрана дивився на задану точку світу.
+        /// </summary>
+        void TeleportCameraToFocusPoint(Vector3 focusPoint, float distance);
     }
 }

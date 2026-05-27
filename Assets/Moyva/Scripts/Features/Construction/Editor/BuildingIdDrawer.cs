@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
 using UnityEditor;
@@ -75,8 +76,9 @@ namespace Kruty1918.Moyva.Construction.Editor
 
             // Sprite preview
             Sprite sprite = GetSpriteForBuildingId(currentValue);
-            if (sprite != null && sprite.texture != null)
-                DrawSprite(spriteRect, sprite);
+            GameObject prefab = GetPrefabForBuildingId(currentValue);
+            if ((sprite != null && sprite.texture != null) || prefab != null)
+                AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(spriteRect, prefab, sprite);
 
             // Error box + create button (ID not found)
             if (!isValid && !string.IsNullOrEmpty(currentValue))
@@ -134,19 +136,6 @@ namespace Kruty1918.Moyva.Construction.Editor
         {
             string displayName = GetDisplayNameForBuildingId(buildingId);
             return $"{buildingId} — {displayName}";
-        }
-
-        private static void DrawSprite(Rect rect, Sprite sprite)
-        {
-            Rect texRect = sprite.textureRect;
-            Rect texCoords = new Rect(
-                texRect.x / sprite.texture.width,
-                texRect.y / sprite.texture.height,
-                texRect.width / sprite.texture.width,
-                texRect.height / sprite.texture.height
-            );
-
-            GUI.DrawTextureWithTexCoords(rect, sprite.texture, texCoords);
         }
 
         private sealed class BuildingPickerPopup : PopupWindowContent
@@ -289,8 +278,9 @@ namespace Kruty1918.Moyva.Construction.Editor
 
                 Rect iconRect = new Rect(rowRect.x + 4f, rowRect.y + (RowHeight - IconSize) * 0.5f, IconSize, IconSize);
                 Sprite sprite = GetSpriteForBuildingId(id);
-                if (sprite != null && sprite.texture != null)
-                    DrawSprite(iconRect, sprite);
+                GameObject prefab = GetPrefabForBuildingId(id);
+                if ((sprite != null && sprite.texture != null) || prefab != null)
+                    AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, prefab, sprite);
 
                 Rect labelRect = new Rect(iconRect.xMax + 6f, rowRect.y + 2f, rowRect.width - iconRect.width - 10f, RowHeight - 2f);
                 GUI.Label(labelRect, BuildBuildingLabel(id), EditorStyles.label);
@@ -301,6 +291,7 @@ namespace Kruty1918.Moyva.Construction.Editor
         private static BuildingRegistrySO _cachedRegistry;
         private static string[] _cachedIds = System.Array.Empty<string>();
         private static readonly Dictionary<string, Sprite> _spriteCache = new();
+        private static readonly Dictionary<string, GameObject> _prefabObjectCache = new();
         private static readonly Dictionary<string, bool> _prefabCache = new();
         private static readonly Dictionary<string, string> _displayNameCache = new();
         private static readonly Dictionary<string, BuildingCategory> _categoryCache = new();
@@ -315,6 +306,7 @@ namespace Kruty1918.Moyva.Construction.Editor
             _cachedRegistry = FindRegistryInternal();
             _cacheTime = now;
             _spriteCache.Clear();
+            _prefabObjectCache.Clear();
             _prefabCache.Clear();
             _displayNameCache.Clear();
             _categoryCache.Clear();
@@ -334,15 +326,17 @@ namespace Kruty1918.Moyva.Construction.Editor
                 _displayNameCache[def.Id] = string.IsNullOrWhiteSpace(def.DisplayName) ? def.Id : def.DisplayName;
                 _categoryCache[def.Id] = def.Category;
 
+                if (def.Prefab != null)
+                    _prefabObjectCache[def.Id] = def.Prefab;
+
                 if (def.Icon != null)
                 {
                     _spriteCache[def.Id] = def.Icon;
                 }
                 else if (def.Prefab != null)
                 {
-                    var sr = def.Prefab.GetComponentInChildren<SpriteRenderer>(true);
-                    if (sr != null && sr.sprite != null)
-                        _spriteCache[def.Id] = sr.sprite;
+                    if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.Prefab, out var sprite, out _))
+                        _spriteCache[def.Id] = sprite;
                 }
             }
             ids.Sort();
@@ -393,6 +387,13 @@ namespace Kruty1918.Moyva.Construction.Editor
             if (string.IsNullOrEmpty(id)) return null;
             EnsureCache();
             return _spriteCache.TryGetValue(id, out var s) ? s : null;
+        }
+
+        private static GameObject GetPrefabForBuildingId(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            EnsureCache();
+            return _prefabObjectCache.TryGetValue(id, out var prefab) ? prefab : null;
         }
 
         private static string GetDisplayNameForBuildingId(string id)

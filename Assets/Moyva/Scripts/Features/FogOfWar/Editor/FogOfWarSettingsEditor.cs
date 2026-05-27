@@ -35,6 +35,9 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private SerializedProperty _fogIconSpritePixelSizeProp;
         private SerializedProperty _fogIconGridSizeProp;
         private SerializedProperty _fogIconScaleProp;
+        private SerializedProperty _enable3DVolumeFogProp;
+        private SerializedProperty _fog3DTopClearanceProp;
+        private SerializedProperty _fog3DVolumeHeightProp;
         private SerializedProperty _enableRendererCullingProp;
         private SerializedProperty _requireOpaqueUnexploredForCullingProp;
         private SerializedProperty _rendererCullingLayerMaskProp;
@@ -49,6 +52,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private bool _heightFoldout = false;
         private bool _colorsFoldout = true;
         private bool _tileFoldout = true;
+        private bool _volume3DFoldout = true;
         private bool _cullingFoldout = true;
         private bool _iconsFoldout = true;
         private float _previewFogValue = 0f;
@@ -80,6 +84,9 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             _fogIconSpritePixelSizeProp = serializedObject.FindProperty("FogIconSpritePixelSize");
             _fogIconGridSizeProp        = serializedObject.FindProperty("FogIconGridSize");
             _fogIconScaleProp           = serializedObject.FindProperty("FogIconScale");
+            _enable3DVolumeFogProp      = serializedObject.FindProperty("Enable3DVolumeFog");
+            _fog3DTopClearanceProp      = serializedObject.FindProperty("Fog3DTopClearance");
+            _fog3DVolumeHeightProp      = serializedObject.FindProperty("Fog3DVolumeHeight");
             _enableRendererCullingProp  = serializedObject.FindProperty("EnableRendererCulling");
             _requireOpaqueUnexploredForCullingProp = serializedObject.FindProperty("RequireOpaqueUnexploredForCulling");
             _rendererCullingLayerMaskProp = serializedObject.FindProperty("RendererCullingLayerMask");
@@ -99,6 +106,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             DrawHeightVisionSection();
             DrawColorSection();
             DrawTileSection();
+            Draw3DVolumeSection();
             DrawCullingSection();
             DrawIconsSection();
 
@@ -396,6 +404,27 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
 
                 DrawCullingPreview();
 
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+            EditorGUILayout.Space(2);
+        }
+
+        private void Draw3DVolumeSection()
+        {
+            _volume3DFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_volume3DFoldout,
+                new GUIContent("3D volume", "Як Fog of War розміщується у XZ/3D світах"));
+
+            if (_volume3DFoldout)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_enable3DVolumeFogProp,
+                    new GUIContent("Увімкнути 3D volume", "У 3D світі туман стає world-space шаром над рельєфом з вертикальними боками"));
+                EditorGUILayout.PropertyField(_fog3DTopClearanceProp,
+                    new GUIContent("Відступ над рельєфом", "Наскільки підняти верхню площину туману над найвищою точкою рельєфу"));
+                EditorGUILayout.PropertyField(_fog3DVolumeHeightProp,
+                    new GUIContent("Висота volume", "Вертикальна товщина бокових площин туману"));
                 EditorGUI.indentLevel--;
             }
 

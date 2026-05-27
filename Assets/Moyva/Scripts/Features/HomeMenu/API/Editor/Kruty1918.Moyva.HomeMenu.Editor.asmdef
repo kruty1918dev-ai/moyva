@@ -9,6 +9,7 @@
         "Kruty1918.Moyva.WorldCreation",
         "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.SaveSystem",
+        "Kruty1918.Moyva.EditorShared",
         "Zenject",
         "Unity.TextMeshPro"
     ],

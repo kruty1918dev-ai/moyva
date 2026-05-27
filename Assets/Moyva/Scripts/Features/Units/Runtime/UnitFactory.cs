@@ -1,6 +1,7 @@
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
@@ -19,6 +20,8 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IObjectsMapService _objectsMapService;
         private readonly IGridProjection _gridProjection;
         private readonly IGeneratedTerrainLevelQuery _terrainLevelQuery;
+        private readonly TileRegistrySO _tileRegistry;
+        private readonly Dictionary<string, float> _tileSurfaceOffsetYById = new();
         
         private readonly Dictionary<string, int> _typeCounters = new();
 
@@ -30,7 +33,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             IGridService gridService,
             IObjectsMapService objectsMapService,
             [InjectOptional] IGridProjection gridProjection = null,
-            [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null)
+            [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
+            [InjectOptional] TileRegistrySO tileRegistry = null)
         {
             _container = container;
             _unitClassConfig = unitClassConfig;
@@ -40,6 +44,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _objectsMapService = objectsMapService;
             _gridProjection = gridProjection;
             _terrainLevelQuery = terrainLevelQuery;
+            _tileRegistry = tileRegistry;
         }
 
         public string CreateUnit(string typeId, Vector2Int gridPosition)
@@ -69,6 +74,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             Vector3 worldPos = ResolveWorldPosition(gridPosition);
             GameObject unitObj = _container.InstantiatePrefab(config.Prefab, worldPos, Quaternion.identity, null);
+            AlignUnitToTerrainSurface(unitObj, gridPosition);
 
             string instanceId = unitObj.GetInstanceID().ToString().Replace("-", "");
             string finalUnitId = $"{typeId}_{_typeCounters[typeId]:D2}_{instanceId}";
@@ -100,6 +106,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             Vector3 worldPos = ResolveWorldPosition(gridPosition);
             GameObject unitObj = _container.InstantiatePrefab(config.Prefab, worldPos, Quaternion.identity, null);
+            AlignUnitToTerrainSurface(unitObj, gridPosition);
 
             return FireUnitCreated(forcedUnitId, typeId, gridPosition, unitObj, ownerId);
         }
@@ -135,6 +142,52 @@ namespace Kruty1918.Moyva.Units.Runtime
                 ? level
                 : 0f;
             return _gridProjection.GridToWorld(gridPosition, elevation, 0.05f);
+        }
+
+        private void AlignUnitToTerrainSurface(GameObject unitObject, Vector2Int gridPosition)
+        {
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection) || unitObject == null)
+                return;
+
+            GridSurfacePlacementUtility.AlignBottomToSurface(unitObject, ResolveTerrainSurfaceY(gridPosition));
+        }
+
+        private float ResolveTerrainSurfaceY(Vector2Int gridPosition)
+        {
+            float elevation = _terrainLevelQuery != null && _terrainLevelQuery.TryGetTerrainLevel(gridPosition, out int level)
+                ? level
+                : 0f;
+            float baseY = _gridProjection.GridToWorld(gridPosition, elevation, 0f).y;
+
+            if (_gridService.TryGetTileData(gridPosition, out string tileId) && TryResolveTileSurfaceOffsetY(tileId, out float offsetY))
+                return baseY + offsetY;
+
+            return baseY;
+        }
+
+        private bool TryResolveTileSurfaceOffsetY(string tileId, out float offsetY)
+        {
+            offsetY = 0f;
+            if (string.IsNullOrWhiteSpace(tileId) || _tileRegistry?.Definitions == null)
+                return false;
+
+            if (_tileSurfaceOffsetYById.TryGetValue(tileId, out offsetY))
+                return true;
+
+            for (int i = 0; i < _tileRegistry.Definitions.Length; i++)
+            {
+                var definition = _tileRegistry.Definitions[i];
+                if (definition == null || definition.Id != tileId || definition.VisualPrefab == null)
+                    continue;
+
+                if (!GridSurfacePlacementUtility.TryResolveTopOffsetY(definition.VisualPrefab, out offsetY))
+                    offsetY = 0f;
+
+                _tileSurfaceOffsetYById[tileId] = offsetY;
+                return true;
+            }
+
+            return false;
         }
     }
 }

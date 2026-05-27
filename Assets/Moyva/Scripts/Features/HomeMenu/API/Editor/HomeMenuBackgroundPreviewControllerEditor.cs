@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Kruty1918.Moyva.Construction.Runtime;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.HomeMenu.UI;
 using UnityEditor;
@@ -22,10 +23,12 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
         private TileRegistrySO             _lastTileReg;
         private string[]                   _cachedTileIds   = Array.Empty<string>();
         private Dictionary<string, Sprite> _tileSpriteCache = new();
+        private Dictionary<string, GameObject> _tilePrefabCache = new();
 
         private BuildingRegistrySO         _lastBldReg;
         private string[]                   _cachedBldIds    = Array.Empty<string>();
         private Dictionary<string, Sprite> _bldSpriteCache  = new();
+        private Dictionary<string, GameObject> _bldPrefabCache = new();
         private Dictionary<string, string> _bldDisplayCache = new();
 
         private void OnEnable()
@@ -118,6 +121,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                 PopupWindow.Show(btnRect, new MultiTilePickerPopup(
                     new List<string>(_cachedTileIds),
                     _tileSpriteCache,
+                    _tilePrefabCache,
                     current,
                     finalSet =>
                     {
@@ -146,6 +150,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                 var    elemProp = prop.GetArrayElementAtIndex(i);
                 string elemId   = elemProp.stringValue;
                 Sprite spr      = _tileSpriteCache.TryGetValue(elemId, out var ts) ? ts : null;
+                GameObject prefab = _tilePrefabCache.TryGetValue(elemId, out var tp) ? tp : null;
 
                 Rect  rowRect  = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight);
                 float iconSize = rowRect.height;
@@ -156,10 +161,10 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                     removeIdx = i;
                 GUI.color = Color.white;
 
-                if (spr != null && spr.texture != null)
+                if ((spr != null && spr.texture != null) || prefab != null)
                 {
                     Rect iRect = new Rect(rowRect.x, rowRect.y, iconSize, iconSize);
-                    DrawSprite(iRect, spr);
+                    AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iRect, prefab, spr);
                     Rect tRect = new Rect(rowRect.x + iconSize + 3f, rowRect.y,
                         rowRect.width - iconSize - 25f, rowRect.height);
                     EditorGUI.LabelField(tRect, elemId, EditorStyles.label);
@@ -218,12 +223,13 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
 
             var idsSnap     = _cachedBldIds;
             var spritesSnap = _bldSpriteCache;
+            var prefabsSnap = _bldPrefabCache;
             var displaySnap = _bldDisplayCache;
 
             if (EditorGUI.DropdownButton(dropdownRect, new GUIContent(btnText), FocusType.Keyboard))
             {
                 PopupWindow.Show(dropdownRect, new BuildingPickerPopup(
-                    currentValue, idsSnap, spritesSnap, displaySnap,
+                    currentValue, idsSnap, spritesSnap, prefabsSnap, displaySnap,
                     selectedId =>
                     {
                         serObj.Update();
@@ -234,9 +240,10 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
 
             GUI.color = prevColor;
 
-            if (_bldSpriteCache.TryGetValue(currentValue ?? string.Empty, out Sprite icon)
-                && icon != null && icon.texture != null)
-                DrawSprite(spriteRect, icon);
+            _bldSpriteCache.TryGetValue(currentValue ?? string.Empty, out Sprite icon);
+            _bldPrefabCache.TryGetValue(currentValue ?? string.Empty, out GameObject prefabIcon);
+            if ((icon != null && icon.texture != null) || prefabIcon != null)
+                AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(spriteRect, prefabIcon, icon);
 
             EditorGUI.EndProperty();
 
@@ -244,20 +251,12 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                 EditorGUILayout.HelpBox($"ID '{currentValue}' not found in BuildingRegistry!", MessageType.Warning);
         }
 
-        private static void DrawSprite(Rect rect, Sprite sprite)
-        {
-            var tex = sprite.texture;
-            var sr  = sprite.textureRect;
-            var uv  = new Rect(sr.x / tex.width, sr.y / tex.height,
-                               sr.width / tex.width, sr.height / tex.height);
-            GUI.DrawTextureWithTexCoords(rect, tex, uv);
-        }
-
         private void RefreshTileCache(TileRegistrySO reg)
         {
             if (reg == _lastTileReg) return;
             _lastTileReg = reg;
             _tileSpriteCache.Clear();
+            _tilePrefabCache.Clear();
 
             if (reg?.Definitions == null) { _cachedTileIds = Array.Empty<string>(); return; }
 
@@ -268,8 +267,9 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                 list.Add(def.Id);
                 if (def.VisualPrefab != null)
                 {
-                    var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
-                    if (sr?.sprite != null) _tileSpriteCache[def.Id] = sr.sprite;
+                    _tilePrefabCache[def.Id] = def.VisualPrefab;
+                    if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.VisualPrefab, out var sprite, out _))
+                        _tileSpriteCache[def.Id] = sprite;
                 }
             }
             list.Sort();
@@ -281,6 +281,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             if (reg == _lastBldReg) return;
             _lastBldReg = reg;
             _bldSpriteCache.Clear();
+            _bldPrefabCache.Clear();
             _bldDisplayCache.Clear();
 
             if (reg?.Buildings == null) { _cachedBldIds = Array.Empty<string>(); return; }
@@ -291,11 +292,14 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                 if (string.IsNullOrEmpty(def?.Id)) continue;
                 list.Add(def.Id);
                 _bldDisplayCache[def.Id] = string.IsNullOrWhiteSpace(def.DisplayName) ? def.Id : def.DisplayName;
+                if (def.Prefab != null)
+                    _bldPrefabCache[def.Id] = def.Prefab;
+
                 if (def.Icon != null) _bldSpriteCache[def.Id] = def.Icon;
                 else if (def.Prefab != null)
                 {
-                    var sr = def.Prefab.GetComponentInChildren<SpriteRenderer>(true);
-                    if (sr?.sprite != null) _bldSpriteCache[def.Id] = sr.sprite;
+                    if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.Prefab, out var sprite, out _))
+                        _bldSpriteCache[def.Id] = sprite;
                 }
             }
             list.Sort();
@@ -315,6 +319,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
 
             private readonly List<string>               _ids;
             private readonly Dictionary<string, Sprite> _sprites;
+            private readonly Dictionary<string, GameObject> _prefabs;
             private readonly Action<List<string>>       _onApply;
             private readonly HashSet<string>            _checked;
 
@@ -325,11 +330,13 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             public MultiTilePickerPopup(
                 List<string> allIds,
                 Dictionary<string, Sprite> sprites,
+                Dictionary<string, GameObject> prefabs,
                 HashSet<string> current,
                 Action<List<string>> onApply)
             {
                 _ids     = allIds;
                 _sprites = sprites;
+                _prefabs = prefabs;
                 _checked = new HashSet<string>(current);
                 _onApply = onApply;
             }
@@ -392,14 +399,10 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
 
                     Rect iconRect = new Rect(toggleRect.xMax + 4f,
                         rowRect.y + (RowH - IconSize) * 0.5f, IconSize, IconSize);
-                    if (_sprites.TryGetValue(id, out Sprite spr) && spr != null && spr.texture != null)
-                    {
-                        var tex = spr.texture;
-                        var sr  = spr.textureRect;
-                        var uv  = new Rect(sr.x / tex.width, sr.y / tex.height,
-                                           sr.width / tex.width, sr.height / tex.height);
-                        GUI.DrawTextureWithTexCoords(iconRect, tex, uv, true);
-                    }
+                    _sprites.TryGetValue(id, out Sprite spr);
+                    _prefabs.TryGetValue(id, out GameObject prefab);
+                    if ((spr != null && spr.texture != null) || prefab != null)
+                        AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, prefab, spr);
                     else
                     {
                         GUI.Box(iconRect, string.Empty);
@@ -455,6 +458,7 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
             private readonly string                     _currentValue;
             private readonly string[]                   _ids;
             private readonly Dictionary<string, Sprite> _sprites;
+            private readonly Dictionary<string, GameObject> _prefabs;
             private readonly Dictionary<string, string> _displayNames;
             private readonly Action<string>             _onSelected;
 
@@ -466,12 +470,14 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                 string currentValue,
                 string[] ids,
                 Dictionary<string, Sprite> sprites,
+                Dictionary<string, GameObject> prefabs,
                 Dictionary<string, string> displayNames,
                 Action<string> onSelected)
             {
                 _currentValue = currentValue;
                 _ids          = ids;
                 _sprites      = sprites;
+                _prefabs      = prefabs;
                 _displayNames = displayNames;
                 _onSelected   = onSelected;
             }
@@ -525,8 +531,10 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                     }
 
                     Rect iconRect = new Rect(4f, y + (RowH - IconSize) * 0.5f, IconSize, IconSize);
-                    if (_sprites.TryGetValue(id, out Sprite spr) && spr != null && spr.texture != null)
-                        DrawSprite(iconRect, spr);
+                    _sprites.TryGetValue(id, out Sprite spr);
+                    _prefabs.TryGetValue(id, out GameObject prefab);
+                    if ((spr != null && spr.texture != null) || prefab != null)
+                        AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, prefab, spr);
 
                     _displayNames.TryGetValue(id, out string displayName);
                     string labelText = string.IsNullOrEmpty(displayName) || displayName == id
@@ -557,14 +565,6 @@ namespace Kruty1918.Moyva.HomeMenu.Editor
                 return result;
             }
 
-            private static void DrawSprite(Rect rect, Sprite sprite)
-            {
-                var tex = sprite.texture;
-                var sr  = sprite.textureRect;
-                var uv  = new Rect(sr.x / tex.width, sr.y / tex.height,
-                                   sr.width / tex.width, sr.height / tex.height);
-                GUI.DrawTextureWithTexCoords(rect, tex, uv);
-            }
         }
     }
 }

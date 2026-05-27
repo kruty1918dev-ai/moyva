@@ -67,10 +67,12 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 LogWarning($"Panel '{menuName}' not found.");
                 return;
             }
-            // If requested menu is already open, do nothing.
+            // Повторне відкриття вже активної панелі працює як toggle-all:
+            // просто закриваємо весь стек відкритих панелей без confirm flow.
             if (_menuStack.Count > 0 && _menuStack.Peek() == menuName)
             {
-                LogInfo($"Menu '{menuName}' already open.");
+                LogInfo($"Menu '{menuName}' already open. Closing all open panels.");
+                CloseAllOpenPanels();
                 return;
             }
             UnityEngine.Debug.Log($"[HomeMenuNavigation] Open('{menuName}') from: {new System.Diagnostics.StackTrace(1, true)}");
@@ -319,6 +321,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
             }
 
+            if (_menuStack.Count > 0 && _menuStack.Peek() == menuName)
+            {
+                LogInfo($"Menu '{menuName}' already open during force open. Closing all open panels.");
+                CloseAllOpenPanels();
+                return;
+            }
+
             UnityEngine.Debug.Log($"[HomeMenuNavigation] OpenForce('{menuName}') from: {new System.Diagnostics.StackTrace(1, true)}");
             var previous = CurrentMenu;
 
@@ -363,6 +372,29 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_menuStack.Count == 0) return;
             var menuName = _menuStack.Peek();
             DoClose(menuName);
+        }
+
+        private void CloseAllOpenPanels()
+        {
+            if (_menuStack.Count == 0)
+                return;
+
+            var previous = CurrentMenu;
+            _suppressConfirmationNextClose = false;
+
+            while (_menuStack.Count > 0)
+            {
+                var menuName = _menuStack.Pop();
+                if (_panelsByName.TryGetValue(menuName, out var panel))
+                    panel.Close();
+                else
+                    LogWarning($"Panel '{menuName}' not found when clearing navigation stack.");
+
+                _closedStack.Push(menuName);
+                LogInfo($"Closed menu '{menuName}' while clearing navigation stack.");
+            }
+
+            RaiseMenuChanged(previous, string.Empty, false);
         }
     }
 }

@@ -106,82 +106,10 @@ namespace Kruty1918.Moyva.Shared.Performance
 
     public sealed class AdaptiveQualityPolicyService : IAdaptiveQualityPolicyService, ITickable
     {
-        private readonly IGraphicsSettingsService _graphics;
-        private readonly IFrameBudgetMonitorService _frameBudget;
-        private readonly RenderScalePolicySettings _renderScalePolicy;
-        private readonly MobilePerformanceThresholds _thresholds;
-
-        private float _cooldown;
-
-        public AdaptiveQualityPolicyService(
-            [InjectOptional] IGraphicsSettingsService graphics,
-            [InjectOptional] IFrameBudgetMonitorService frameBudget)
-        {
-            _graphics = graphics;
-            _frameBudget = frameBudget;
-            _renderScalePolicy = AdaptivePerformanceDefaultsProvider.LoadRenderScalePolicy();
-            _thresholds = AdaptivePerformanceDefaultsProvider.LoadMobileThresholds();
-        }
-
-        public bool IsThrottled() => _cooldown > 0f;
+        public bool IsThrottled() => false;
 
         public void Tick()
         {
-            if (_graphics == null || _frameBudget == null)
-                return;
-
-            if (_cooldown > 0f)
-            {
-                _cooldown -= Time.unscaledDeltaTime;
-                return;
-            }
-
-            var snapshot = _frameBudget.GetSnapshot();
-            if (snapshot.P95Ms <= 1000f / Mathf.Max(1f, _thresholds.LowFpsThreshold))
-                return;
-
-            ApplyNextDegradationStep();
-            _cooldown = _renderScalePolicy.CooldownSeconds;
-        }
-
-        private void ApplyNextDegradationStep()
-        {
-            var settings = _graphics.Settings;
-
-            if (settings.Shadows)
-            {
-                _graphics.SetShadows(false);
-                _frameBudget.SetDegradationReason("AdaptivePolicy: disable shadows");
-                return;
-            }
-
-            if (settings.AnisotropicFiltering)
-            {
-                _graphics.SetAnisotropicFiltering(false);
-                _frameBudget.SetDegradationReason("AdaptivePolicy: disable anisotropic filtering");
-                return;
-            }
-
-            if (settings.TextureMipmapLimit < 2)
-            {
-                _graphics.SetTextureMipmapLimit(settings.TextureMipmapLimit + 1);
-                _frameBudget.SetDegradationReason("AdaptivePolicy: increase texture mipmap limit");
-                return;
-            }
-
-            if (settings.LodBias > 0.75f)
-            {
-                _graphics.SetLodBias(Mathf.Max(0.75f, settings.LodBias - 0.1f));
-                _frameBudget.SetDegradationReason("AdaptivePolicy: reduce LOD bias");
-                return;
-            }
-
-            float nextScale = Mathf.Clamp(settings.RenderScale - _renderScalePolicy.Step, _renderScalePolicy.MinimumScale, _renderScalePolicy.MaximumScale);
-            if (nextScale < settings.RenderScale - 0.001f)
-            {
-                _graphics.SetRenderScale(nextScale);
-                _frameBudget.SetDegradationReason($"AdaptivePolicy: reduce render scale to {nextScale:0.00}");
-            }
         }
     }
 

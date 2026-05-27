@@ -1674,6 +1674,11 @@ MonoBehaviour:
   _sharedSettings:
     _mapWidth: 0
     _mapHeight: 0
+    _gridTopology: 0
+    _projectionMode: 0
+    _renderMode: 0
+    _neighborhoodMode: 0
+  _tileRegistry: {fileID: 0}
 --- !u!114 &332949947074943817
 MonoBehaviour:
   m_ObjectHideFlags: 1

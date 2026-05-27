@@ -139,7 +139,7 @@ namespace Kruty1918.Moyva.Editor.Shared
                 // Sprite preview
                 Sprite sprite = GetSpriteForResourceId(currentValue);
                 if (sprite != null)
-                    GUI.DrawTexture(spriteRect, sprite.texture, ScaleMode.ScaleToFit);
+                    AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(spriteRect, null, sprite);
             }
 
             private string[] BuildDisplayOptions(string[] ids, string currentValue, bool isValid, out int selectedIndex)

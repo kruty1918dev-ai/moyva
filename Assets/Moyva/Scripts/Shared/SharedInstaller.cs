@@ -47,11 +47,6 @@ namespace Kruty1918.Moyva.Shared
                 .AsSingle()
                 .NonLazy();
 
-            container.Bind<IAdaptiveQualityPolicyService>()
-                .To<AdaptiveQualityPolicyService>()
-                .AsSingle()
-                .NonLazy();
-
             container.Bind<StartupPrewarmService>()
                 .AsSingle();
 
@@ -202,6 +197,8 @@ namespace Kruty1918.Moyva.Audio.API
         AudioHandle Play(string key, AudioPlayOptions options);
         AudioHandle PlayAt(string key, Vector3 position, float volumeScale = 1f);
         AudioSource GetConfiguredSource(string key, Transform parent = null);
+        void SetBusVolume(AudioBus bus, float volume);
+        float GetBusVolume(AudioBus bus);
         void StopByKey(string key);
         void StopAll(AudioBus? bus = null);
         string[] GetKeys();
@@ -223,7 +220,10 @@ namespace Kruty1918.Moyva.Audio.Runtime
         private readonly List<AudioSource> _active = new List<AudioSource>();
         private readonly Dictionary<AudioSource, string> _activeKeys = new Dictionary<AudioSource, string>();
         private readonly Dictionary<string, int> _activeCountByKey = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<AudioSource, AudioBus> _activeBusBySource = new Dictionary<AudioSource, AudioBus>();
+        private readonly Dictionary<AudioSource, float> _activeBaseVolumeBySource = new Dictionary<AudioSource, float>();
         private readonly List<AudioSource> _awakeSources = new List<AudioSource>();
+        private readonly float[] _busVolumes = { 1f, 1f, 1f, 1f, 1f };
 
         private GameObject _root;
         private int _lastProcessedSceneHandle = -1;
@@ -320,6 +320,20 @@ namespace Kruty1918.Moyva.Audio.Runtime
         public AudioHandle Play(string key, AudioPlayOptions options)
             => PlayInternal(key, options, null);
 
+        public void SetBusVolume(AudioBus bus, float volume)
+        {
+            int busIndex = GetBusIndex(bus);
+            float clampedVolume = Mathf.Clamp01(volume);
+            if (Mathf.Approximately(_busVolumes[busIndex], clampedVolume))
+                return;
+
+            _busVolumes[busIndex] = clampedVolume;
+            ApplyBusVolumeToActiveSources(bus);
+        }
+
+        public float GetBusVolume(AudioBus bus)
+            => _busVolumes[GetBusIndex(bus)];
+
         private AudioHandle PlayInternal(string key, AudioPlayOptions options, string sceneNameForOverrides)
         {
             if (!TryGetSound(key, out var sound))
@@ -347,7 +361,8 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
             var source = GetConfiguredSourceInternal(sound, options.Parent);
             source.clip = clip;
-            source.volume = Mathf.Clamp01(ResolveVolume(sound) * options.VolumeScale);
+            float baseVolume = Mathf.Clamp01(ResolveVolume(sound) * options.VolumeScale);
+            source.volume = baseVolume;
             source.pitch = Mathf.Clamp(ResolvePitch(sound) + options.PitchOffset, -3f, 3f);
             source.loop = options.LoopOverride ?? sound.Loop;
 
@@ -372,7 +387,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
                     : UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
                 if (_sceneOverrides.TryGet(scn, sound.Key, out var ov))
                 {
-                    if (ov.OverrideVolume)       source.volume                = Mathf.Clamp01(ov.Volume * options.VolumeScale);
+                    if (ov.OverrideVolume)       baseVolume                  = Mathf.Clamp01(ov.Volume * options.VolumeScale);
                     if (ov.OverridePitch)        source.pitch                 = Mathf.Clamp(ov.Pitch + options.PitchOffset, -3f, 3f);
                     if (ov.OverrideMixerGroup)   source.outputAudioMixerGroup = ov.MixerGroup;
                     if (ov.OverrideLoop)         source.loop                  = ov.Loop;
@@ -381,7 +396,8 @@ namespace Kruty1918.Moyva.Audio.Runtime
                 }
             }
 
-            RegisterActive(source, sound.Key);
+            ApplyBusVolume(source, sound.Bus, baseVolume);
+            RegisterActive(source, sound.Key, sound.Bus, baseVolume);
             source.Play();
             return new AudioHandle(source);
         }
@@ -489,6 +505,24 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
         public string[] GetKeys()
             => _registry != null ? _registry.GetKeys() : Array.Empty<string>();
+
+        private void ApplyBusVolumeToActiveSources(AudioBus bus)
+        {
+            for (int i = 0; i < _active.Count; i++)
+            {
+                var source = _active[i];
+                if (source == null)
+                    continue;
+
+                if (!_activeBusBySource.TryGetValue(source, out AudioBus sourceBus) || sourceBus != bus)
+                    continue;
+
+                if (!_activeBaseVolumeBySource.TryGetValue(source, out float baseVolume))
+                    continue;
+
+                ApplyBusVolume(source, sourceBus, baseVolume);
+            }
+        }
 
         private AudioSource GetConfiguredSourceInternal(AudioSoundDefinition sound, Transform parent)
         {
@@ -662,12 +696,25 @@ namespace Kruty1918.Moyva.Audio.Runtime
             return Mathf.Clamp(sound.Pitch + delta, -3f, 3f);
         }
 
-        private void RegisterActive(AudioSource source, string key)
+        private void ApplyBusVolume(AudioSource source, AudioBus bus, float baseVolume)
+        {
+            if (source == null)
+                return;
+
+            source.volume = Mathf.Clamp01(baseVolume * GetBusVolume(bus));
+        }
+
+        private int GetBusIndex(AudioBus bus)
+            => Mathf.Clamp((int)bus, 0, _busVolumes.Length - 1);
+
+        private void RegisterActive(AudioSource source, string key, AudioBus bus, float baseVolume)
         {
             if (!_active.Contains(source))
                 _active.Add(source);
 
             _activeKeys[source] = key;
+            _activeBusBySource[source] = bus;
+            _activeBaseVolumeBySource[source] = Mathf.Clamp01(baseVolume);
             _activeCountByKey.TryGetValue(key, out int count);
             _activeCountByKey[key] = count + 1;
         }
@@ -688,6 +735,9 @@ namespace Kruty1918.Moyva.Audio.Runtime
                     else _activeCountByKey[key] = count;
                 }
             }
+
+            _activeBusBySource.Remove(source);
+            _activeBaseVolumeBySource.Remove(source);
 
             source.Stop();
             source.clip = null;
@@ -786,7 +836,7 @@ namespace Kruty1918.Moyva.Shared.Graphics
             Profile = profile;
             TargetFrameRate = NormalizeFrameRate(targetFrameRate);
             RenderScale = Mathf.Clamp(renderScale, 0.42f, 1f);
-            DynamicRenderScale = dynamicRenderScale;
+            DynamicRenderScale = false;
             CloseZoomOptimization = closeZoomOptimization;
             TextureMipmapLimit = Mathf.Clamp(textureMipmapLimit, 0, 3);
             AntiAliasing = NormalizeAntiAliasing(antiAliasing);
@@ -806,14 +856,14 @@ namespace Kruty1918.Moyva.Shared.Graphics
             switch (profile)
             {
                 case GraphicsQualityProfile.Performance:
-                    return new GraphicsSettingsData(profile, 60, isMobile ? 0.60f : 0.80f, true, true, isMobile ? 1 : 0, 0, false, false, false, 0.70f);
+                    return new GraphicsSettingsData(profile, 60, isMobile ? 0.60f : 0.80f, false, false, isMobile ? 1 : 0, 0, false, false, false, 0.70f);
                 case GraphicsQualityProfile.Quality:
-                    return new GraphicsSettingsData(profile, 60, isMobile ? 0.90f : 1f, isMobile, true, 0, isMobile ? 0 : 2, false, !isMobile, true, 1.15f);
+                    return new GraphicsSettingsData(profile, 60, isMobile ? 0.90f : 1f, false, false, 0, isMobile ? 0 : 2, false, !isMobile, true, 1.15f);
                 case GraphicsQualityProfile.Balanced:
-                    return new GraphicsSettingsData(profile, 60, isMobile ? 0.75f : 1f, true, true, 0, 0, false, false, true, 0.90f);
+                    return new GraphicsSettingsData(profile, 60, isMobile ? 0.75f : 1f, false, false, 0, 0, false, false, true, 0.90f);
                 default:
                     return isMobile
-                        ? new GraphicsSettingsData(GraphicsQualityProfile.Auto, 60, 0.75f, true, true, 0, 0, false, false, true, 0.85f)
+                        ? new GraphicsSettingsData(GraphicsQualityProfile.Auto, 60, 0.75f, false, false, 0, 0, false, false, true, 0.85f)
                         : new GraphicsSettingsData(GraphicsQualityProfile.Auto, 60, 1f, false, false, 0, 0, false, true, true, 1f);
             }
         }
@@ -840,7 +890,7 @@ namespace Kruty1918.Moyva.Shared.Graphics
         }
         public GraphicsSettingsData WithTargetFrameRate(int value) => AsCustom(TargetFrameRate: NormalizeFrameRate(value));
         public GraphicsSettingsData WithRenderScale(float value) => AsCustom(RenderScale: Mathf.Clamp(value, 0.42f, 1f));
-        public GraphicsSettingsData WithDynamicRenderScale(bool value) => AsCustom(DynamicRenderScale: value);
+        public GraphicsSettingsData WithDynamicRenderScale(bool value) => AsCustom(DynamicRenderScale: false);
         public GraphicsSettingsData WithCloseZoomOptimization(bool value) => AsCustom(CloseZoomOptimization: value);
         public GraphicsSettingsData WithTextureMipmapLimit(int value) => AsCustom(TextureMipmapLimit: Mathf.Clamp(value, 0, 3));
         public GraphicsSettingsData WithAntiAliasing(int value) => AsCustom(AntiAliasing: NormalizeAntiAliasing(value));

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.GraphSystem.API;
@@ -208,11 +209,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         Color spriteTint = Color.white;
                         if (sprite == null && def.Prefab != null)
                         {
-                            var sr = def.Prefab.GetComponentInChildren<SpriteRenderer>(true);
-                            if (sr != null)
+                            if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.Prefab, out var prefabSprite, out var prefabTint))
                             {
-                                sprite = sr.sprite;
-                                spriteTint = sr.color;
+                                sprite = prefabSprite;
+                                spriteTint = prefabTint;
                             }
                         }
 
@@ -419,11 +419,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 Color tint = Color.white;
                 if (sprite == null && def.Prefab != null)
                 {
-                    var sr = def.Prefab.GetComponentInChildren<SpriteRenderer>(true);
-                    if (sr != null)
+                    if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.Prefab, out var prefabSprite, out var prefabTint))
                     {
-                        sprite = sr.sprite;
-                        tint = sr.color;
+                        sprite = prefabSprite;
+                        tint = prefabTint;
                     }
                 }
 
@@ -544,44 +543,32 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (def == null || string.IsNullOrEmpty(def.Id)) continue;
                 if (def.VisualPrefab == null) continue;
 
-                var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
-                if (sr == null || sr.sprite == null) continue;
-
-                cache[def.Id] = GetSpritePixels(sr.sprite, HashColor(def.Id), sr.color);
+                if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.VisualPrefab, out var sprite, out var tint))
+                    cache[def.Id] = GetSpritePixels(sprite, HashColor(def.Id), tint);
             }
             return cache;
         }
 
         private static SpritePixelData GetSpritePixels(Sprite sprite, Color fallbackColor, Color tint)
         {
-            try
+            if (AdaptivePrefabPreviewUtility.TryGetSpritePixels(sprite, tint, fallbackColor, out var spriteData))
             {
-                var rect = sprite.textureRect;
-                int x = (int)rect.x, y = (int)rect.y;
-                int w = Mathf.Max(1, (int)rect.width);
-                int h = Mathf.Max(1, (int)rect.height);
-                Color[] pixels = sprite.texture.GetPixels(x, y, w, h);
-                ApplyTint(pixels, tint);
                 return new SpritePixelData
                 {
-                    Pixels = pixels,
-                    Width = w,
-                    Height = h
+                    Pixels = spriteData.Pixels,
+                    Width = spriteData.Width,
+                    Height = spriteData.Height
                 };
             }
-            catch
+
+            var fallback = fallbackColor;
+            fallback.a = Mathf.Max(0.35f, fallback.a);
+            return new SpritePixelData
             {
-                // Texture not readable — використовуємо стабільний fallback колір,
-                // а не magenta, щоб превью не виглядало «shader error»-фіолетовим.
-                var c = fallbackColor;
-                c.a = Mathf.Max(0.35f, c.a);
-                return new SpritePixelData
-                {
-                    Pixels = new[] { c },
-                    Width = 1,
-                    Height = 1
-                };
-            }
+                Pixels = new[] { fallback },
+                Width = 1,
+                Height = 1
+            };
         }
 
         /// <summary>
@@ -671,10 +658,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (def == null || string.IsNullOrEmpty(def.Id)) continue;
                 if (def.VisualPrefab == null) continue;
 
-                var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
-                if (sr == null || sr.sprite == null) continue;
-
-                cache[def.Id] = GetSpritePixels(sr.sprite, HashColor(def.Id), sr.color);
+                if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.VisualPrefab, out var sprite, out var tint))
+                    cache[def.Id] = GetSpritePixels(sprite, HashColor(def.Id), tint);
             }
 
             return cache;

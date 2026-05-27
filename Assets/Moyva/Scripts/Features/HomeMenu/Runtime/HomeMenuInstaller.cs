@@ -95,6 +95,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             Container.BindInterfacesAndSelfTo<LocalGameSettingsService>()
                 .AsSingle();
 
+            Container.BindInterfacesAndSelfTo<AudioSettingsRuntimeSyncService>()
+                .AsSingle();
+
             if (_audioMixerBindings != null)
                 Container.BindInstance(_audioMixerBindings).AsSingle();
 

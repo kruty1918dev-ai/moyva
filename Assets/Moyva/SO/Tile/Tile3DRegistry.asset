@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d48492a0c16c58cdfb26448607aa340c, type: 3}
+  m_Name: Tile3DRegistry
+  m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.API.TileRegistrySO
+  _definitions:
+  - _id: water-tile
+    _movementCost: 1
+    _visualPrefab: {fileID: 4329283859322598317, guid: f159a1eb9faed5e249cb7620ba03aca5, type: 3}
+  - _id: TileGrass
+    _movementCost: 1
+    _visualPrefab: {fileID: 4329283859322598317, guid: 5456fc4e5b39c7450b3d39758446d240, type: 3}
+  - _id: water-deep-depth-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 8282189633118392519, guid: cf171a132921da3efa5d1bae04f9a9ba, type: 3}
+  - _id: water-deep-depth-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 1696104003082180676, guid: 010478bea22c1c7a6be833dc928b6651, type: 3}
+  - _id: water-middle-depth-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3213976384180829521, guid: f42e5bf6590d0a5a89451dfca85a8b11, type: 3}
+  - _id: sand-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 1991431936498055131, guid: 74150fecc7a5caff8bba0338a2abe73a, type: 3}
+  - _id: grass-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 7966136710849035844, guid: f9791baa039db8e74a5e35c01a0048fc, type: 3}
+  - _id: texture-grass-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 3279324195366833361, guid: 36c0de5853f9b1bdcb9571a189253f07, type: 3}
+  - _id: texture-grass-tile-002
+    _movementCost: 1
+    _visualPrefab: {fileID: 4701585843203515928, guid: dbb76b41c28a16523a3c4ad8417257d6, type: 3}
+  - _id: texture-grass-tile-003
+    _movementCost: 1
+    _visualPrefab: {fileID: 4767315111446220782, guid: aeef854f2b1eaa258a31cd743ccd6fa9, type: 3}
+  - _id: texture-grass-tile-004
+    _movementCost: 1
+    _visualPrefab: {fileID: 8971650722287722829, guid: acc94b497dd4806719954cf9c5054c37, type: 3}
+  - _id: texture-grass-tile-005
+    _movementCost: 1
+    _visualPrefab: {fileID: 6627631165414677781, guid: dfada238862ca85dba63aaa02e36ca7b, type: 3}
+  - _id: texture-grass-tile-008
+    _movementCost: 1
+    _visualPrefab: {fileID: 4544566536593508589, guid: 2de65fac4bd56b8c890d1fc7c4532f20, type: 3}
+  - _id: texture-grass-tile-007
+    _movementCost: 1
+    _visualPrefab: {fileID: 7984446846503356110, guid: fb0b6ed7228d9654880bae38acd12e9f, type: 3}
+  - _id: texture-grass-tile-006
+    _movementCost: 1
+    _visualPrefab: {fileID: 9218854386558987901, guid: 8c1f56a1308be7be5b060ca449338d3e, type: 3}
+  - _id: grass-tile-level-1-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5705023750674074305, guid: fe9a1591fedb440508444d718b963988, type: 3}
+  - _id: grass-tile-level-2-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 5302667273615761019, guid: 06db334edf785d255a74c42647ec7d65, type: 3}
+  - _id: grass-tile-level-3-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 2873162266757005405, guid: c66acd7d7643af1328687256cfc153c0, type: 3}
+  - _id: snow-tile-001
+    _movementCost: 1
+    _visualPrefab: {fileID: 4721971937291970928, guid: 5707d18245bbb267e83b163280fe25db, type: 3}

@@ -419,10 +419,6 @@ namespace Kruty1918.Moyva.Editor
             DrawDiagLine("ProjectServicesInstaller present", hasProjectServicesInstaller,
                 hasProjectServicesInstaller ? "OK" : "ProjectServicesInstaller instance not found (ProjectContext may be unopened in EditMode).");
 
-            bool hasAutoScalerType = Type.GetType("Kruty1918.Moyva.Bootstrap.Runtime.MobileGraphicsAutoScaler, Kruty1918.Moyva.Bootstrap") != null;
-            DrawDiagLine("MobileGraphicsAutoScaler type", hasAutoScalerType,
-                hasAutoScalerType ? "OK" : "Type not resolved in current domain.");
-
             if (developerPixel.Enabled && !hasStartupAsset)
             {
                 EditorGUILayout.HelpBox("Dev pixel mode enabled, але startup asset відсутній: runtime не зможе застосувати override.", MessageType.Error);

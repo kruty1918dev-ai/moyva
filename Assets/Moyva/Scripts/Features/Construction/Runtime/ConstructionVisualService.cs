@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -27,9 +28,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly int _townHallBuildRadius;
         private readonly IGridProjection _gridProjection;
         private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
+        private readonly TileRegistrySO _tileRegistry;
 
         private readonly Dictionary<Vector2Int, GameObject> _previewByPosition = new();
         private readonly Dictionary<Vector2Int, GameObject> _placedByPosition = new();
+        private readonly Dictionary<string, float> _tileSurfaceOffsetYById = new();
         private readonly HashSet<Vector2Int> _demolitionPreviewPositions = new();
         private readonly SpriteSelectionHighlighter _buildingSelectionHighlighter = new();
 
@@ -69,7 +72,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             DiContainer container,
             [Inject(Id = "townHallBuildRadius")] int townHallBuildRadius,
             [InjectOptional] IGridProjection gridProjection = null,
-            [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery = null)
+            [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery = null,
+            [InjectOptional] TileRegistrySO tileRegistry = null)
         {
             _signalBus = signalBus;
             _buildingRegistry = buildingRegistry;
@@ -81,6 +85,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _townHallBuildRadius = Mathf.Max(0, townHallBuildRadius);
             _gridProjection = gridProjection;
             _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
+            _tileRegistry = tileRegistry;
         }
 
         public void Initialize()
@@ -653,9 +658,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
                 
                 instance.name = objectName;
+                AlignInstanceToTerrainSurface(instance, tile);
                 
                 if (VerboseLogs)
-                    Debug.Log($"[ConstructionVisual] ✓ Created instance: {objectName} at {worldPos}, parent={parent.name}");
+                    Debug.Log($"[ConstructionVisual] ✓ Created instance: {objectName} at {instance.transform.position}, parent={parent.name}");
                 
                 EnsureBuildingSortingOrder(instance, BuildingLayerMinSortingOrder);
                 DisableColliders(instance);
@@ -679,6 +685,51 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ? level
                 : 0f;
             return _gridProjection.GridToWorld(tile, elevation, layerOffset);
+        }
+
+        private void AlignInstanceToTerrainSurface(GameObject instance, Vector2Int tile)
+        {
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection) || instance == null)
+                return;
+
+            GridSurfacePlacementUtility.AlignBottomToSurface(instance, ResolveTerrainSurfaceY(tile));
+        }
+
+        private float ResolveTerrainSurfaceY(Vector2Int tile)
+        {
+            Vector3 basePosition = ResolveWorldPosition(tile, 0f);
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
+                return basePosition.y;
+
+            if (_gridService.TryGetTileData(tile, out string tileId) && TryResolveTileSurfaceOffsetY(tileId, out float offsetY))
+                return basePosition.y + offsetY;
+
+            return basePosition.y;
+        }
+
+        private bool TryResolveTileSurfaceOffsetY(string tileId, out float offsetY)
+        {
+            offsetY = 0f;
+            if (string.IsNullOrWhiteSpace(tileId) || _tileRegistry?.Definitions == null)
+                return false;
+
+            if (_tileSurfaceOffsetYById.TryGetValue(tileId, out offsetY))
+                return true;
+
+            for (int i = 0; i < _tileRegistry.Definitions.Length; i++)
+            {
+                var definition = _tileRegistry.Definitions[i];
+                if (definition == null || definition.Id != tileId || definition.VisualPrefab == null)
+                    continue;
+
+                if (!GridSurfacePlacementUtility.TryResolveTopOffsetY(definition.VisualPrefab, out offsetY))
+                    offsetY = 0f;
+
+                _tileSurfaceOffsetYById[tileId] = offsetY;
+                return true;
+            }
+
+            return false;
         }
 
         private static void DisableColliders(GameObject rootObject)

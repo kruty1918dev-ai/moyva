@@ -132,23 +132,14 @@ namespace Kruty1918.Moyva.Construction.Editor
                 canvas = canvasGO.AddComponent<Canvas>();
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                 var scaler = canvasGO.AddComponent<CanvasScaler>();
-                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1920f, 1080f);
-                scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-                scaler.matchWidthOrHeight = 0.5f;
+                ApplyAuthoringCanvasScaler(scaler);
                 canvasGO.AddComponent<GraphicRaycaster>();
                 _messages.Add("Створено: Canvas.");
             }
             else
             {
-                var scaler = canvas.GetComponent<CanvasScaler>();
-                if (scaler != null)
-                {
-                    scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                    scaler.referenceResolution = new Vector2(1920f, 1080f);
-                    scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-                    scaler.matchWidthOrHeight = 0.5f;
-                }
+                var scaler = canvas.GetComponent<CanvasScaler>() ?? Undo.AddComponent<CanvasScaler>(canvas.gameObject);
+                ApplyAuthoringCanvasScaler(scaler);
                 _messages.Add($"OK: використано існуючий Canvas '{canvas.name}'.");
             }
 
@@ -622,16 +613,7 @@ namespace Kruty1918.Moyva.Construction.Editor
                     continue;
                 }
 
-                var renderers = building.Prefab.GetComponentsInChildren<SpriteRenderer>(true);
-                bool hasSprite = false;
-                foreach (var renderer in renderers)
-                {
-                    if (renderer != null && renderer.sprite != null)
-                    {
-                        hasSprite = true;
-                        break;
-                    }
-                }
+                bool hasSprite = AdaptivePrefabPreviewUtility.TryGetPrimarySprite(building.Prefab, out _, out _);
 
                 if (!hasSprite && building.Icon == null)
                 {
@@ -678,6 +660,16 @@ namespace Kruty1918.Moyva.Construction.Editor
 
             eventSystemObject.AddComponent(inputModuleType);
             return true;
+        }
+
+        private static void ApplyAuthoringCanvasScaler(CanvasScaler scaler)
+        {
+            if (scaler == null)
+                return;
+
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            scaler.scaleFactor = 1f;
+            scaler.referencePixelsPerUnit = 100f;
         }
     }
 }

@@ -1881,39 +1881,12 @@ namespace Kruty1918.Moyva.Economy.Editor
             if (sprite == null)
                 return;
 
-            if (_assetPreviewCache.TryGetValue(sprite, out var preview) && preview != null)
-            {
-                GUI.DrawTexture(rect, preview, ScaleMode.ScaleToFit, true);
-                return;
-            }
-
-            preview = AssetPreview.GetAssetPreview(sprite);
-            if (preview != null)
-            {
-                _assetPreviewCache[sprite] = preview;
-                GUI.DrawTexture(rect, preview, ScaleMode.ScaleToFit, true);
-            }
-            else
-            {
-                if (AssetPreview.IsLoadingAssetPreview(sprite.GetInstanceID()))
-                    _livePreviewThrottle.TryRepaint(this);
-
-                DrawSpriteRectDirect(rect, sprite);
-            }
+            AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(rect, null, sprite);
         }
 
         private static void DrawSpriteRectDirect(Rect rect, Sprite sprite)
         {
-            if (sprite == null)
-                return;
-
-            Texture tex = sprite.texture;
-            if (tex != null)
-            {
-                Rect r = sprite.textureRect;
-                Rect uv = new Rect(r.x / tex.width, r.y / tex.height, r.width / tex.width, r.height / tex.height);
-                GUI.DrawTextureWithTexCoords(rect, tex, uv, true);
-            }
+            AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(rect, null, sprite);
         }
 
         private void DrawEntitySpritePreview(Sprite sprite, float size = 36f)
@@ -1951,18 +1924,9 @@ namespace Kruty1918.Moyva.Economy.Editor
 
         private static Sprite ExtractSpriteFromPrefab(GameObject prefab)
         {
-            if (prefab == null)
-                return null;
-
-            var renderers = prefab.GetComponentsInChildren<SpriteRenderer>(true);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                var renderer = renderers[i];
-                if (renderer != null && renderer.sprite != null)
-                    return renderer.sprite;
-            }
-
-            return null;
+            return AdaptivePrefabPreviewUtility.TryGetPrimarySprite(prefab, out var sprite, out _)
+                ? sprite
+                : null;
         }
 
         private static void DrawSerializedPropertyChildren(SerializedProperty parentProperty)
@@ -3719,9 +3683,8 @@ namespace Kruty1918.Moyva.Economy.Editor
                     if (visualPrefab == null)
                         continue;
 
-                    var spriteRenderer = visualPrefab.GetComponentInChildren<SpriteRenderer>(true);
-                    if (spriteRenderer != null && spriteRenderer.sprite != null)
-                        _tileIconCache[tileId] = spriteRenderer.sprite;
+                    if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(visualPrefab, out var sprite, out _))
+                        _tileIconCache[tileId] = sprite;
                 }
             }
             else
@@ -3822,25 +3785,7 @@ namespace Kruty1918.Moyva.Economy.Editor
             Rect iconRect = GUILayoutUtility.GetRect(36f, 36f, GUILayout.Width(36f), GUILayout.Height(36f));
             EditorGUI.DrawRect(iconRect, new Color(0.2f, 0.2f, 0.2f));
             
-            if (_assetPreviewCache.TryGetValue(sprite, out var preview) && preview != null)
-            {
-                GUI.DrawTexture(iconRect, preview, ScaleMode.ScaleToFit, true);
-                return;
-            }
-
-            preview = AssetPreview.GetAssetPreview(sprite);
-            if (preview != null)
-            {
-                _assetPreviewCache[sprite] = preview;
-                GUI.DrawTexture(iconRect, preview, ScaleMode.ScaleToFit, true);
-            }
-            else
-            {
-                if (AssetPreview.IsLoadingAssetPreview(sprite.GetInstanceID()))
-                    _livePreviewThrottle.TryRepaint(this);
-
-                DrawSpriteRectDirect(iconRect, sprite);
-            }
+            AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, null, sprite);
         }
 
         private void RebuildBuildingEntityCache()

@@ -5,7 +5,8 @@
     "Kruty1918.Moyva.Economy",
     "Kruty1918.Moyva.Construction",
     "Kruty1918.Moyva.Units",
-    "Kruty1918.Moyva.FogOfWar"
+    "Kruty1918.Moyva.FogOfWar",
+    "Kruty1918.Moyva.Grid"
   ],
   "includePlatforms": [
     "Editor"

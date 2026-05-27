@@ -779,7 +779,7 @@ namespace Kruty1918.Moyva.Construction.Editor
             DrawBorder(row, selected ? SelectedColor : new Color(0f, 0f, 0f, 0.18f), selected ? 2f : 1f);
 
             Rect iconRect = new Rect(row.x + 8f, row.y + 8f, 42f, 42f);
-            DrawSprite(iconRect, ExtractSprite(definition));
+            DrawBuildingPreview(iconRect, definition);
 
             float badgeX = row.xMax - 218f;
             Rect titleRect = new Rect(iconRect.xMax + 8f, row.y + 7f, Mathf.Max(80f, badgeX - iconRect.xMax - 16f), 20f);
@@ -1520,11 +1520,8 @@ namespace Kruty1918.Moyva.Construction.Editor
                 EditorGUI.DrawRect(buttonRect, EditorGUIUtility.isProSkin ? new Color(0.15f, 0.17f, 0.19f) : new Color(0.86f, 0.88f, 0.90f));
                 DrawBorder(buttonRect, SelectedColor, 2f);
 
-                var icon = ExtractSprite(definition);
                 Rect iconRect = new Rect(buttonRect.x + 12f, buttonRect.y + 12f, 80f, 80f);
-                if (icon != null)
-                    DrawSprite(iconRect, icon);
-                else
+                if (!DrawBuildingPreview(iconRect, definition))
                     GUI.Label(iconRect, "Без іконки", CenteredCellStyle());
 
                 Rect textRect = new Rect(buttonRect.x + 102f, buttonRect.y + 18f, buttonRect.width - 114f, 90f);
@@ -1607,7 +1604,7 @@ namespace Kruty1918.Moyva.Construction.Editor
             DrawBorder(rect, CategoryColor(definition.Category), 2f);
 
             Rect iconRect = new Rect(rect.x + 12f, rect.y + 12f, 88f, 88f);
-            DrawSprite(iconRect, ExtractSprite(definition));
+            DrawBuildingPreview(iconRect, definition);
 
             Rect textRect = new Rect(iconRect.xMax + 14f, rect.y + 12f, rect.width - 126f, 92f);
             GUI.Label(new Rect(textRect.x, textRect.y, textRect.width, 26f), GetPlayerFacingName(definition), PlayerButtonTitleStyle());
@@ -2438,7 +2435,7 @@ namespace Kruty1918.Moyva.Construction.Editor
                     return;
                 }
 
-                DrawMiniIcon(ExtractSprite(definition), 72f);
+                DrawMiniIcon(definition, 72f);
                 EditorGUILayout.LabelField(GetPlayerFacingName(definition), EditorStyles.boldLabel);
                 EditorGUILayout.LabelField("Технічний ID сховано у foldout технічних полів.", EditorStyles.miniLabel);
                 DrawBadge(definition.Category.ToString(), CategoryColor(definition.Category));
@@ -3242,9 +3239,8 @@ namespace Kruty1918.Moyva.Construction.Editor
                 var prefab = prefabProp?.objectReferenceValue as GameObject;
                 if (prefab != null)
                 {
-                    var renderer = prefab.GetComponentInChildren<SpriteRenderer>();
-                    if (renderer != null && renderer.sprite != null)
-                        iconProp.objectReferenceValue = renderer.sprite;
+                    if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(prefab, out var sprite, out _))
+                        iconProp.objectReferenceValue = sprite;
                 }
             }
 
@@ -3528,12 +3524,8 @@ namespace Kruty1918.Moyva.Construction.Editor
 
             if (definition.Prefab != null)
             {
-                var renderers = definition.Prefab.GetComponentsInChildren<SpriteRenderer>(true);
-                for (int index = 0; index < renderers.Length; index++)
-                {
-                    if (renderers[index] != null && renderers[index].sprite != null)
-                        return renderers[index].sprite;
-                }
+                if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(definition.Prefab, out var sprite, out _))
+                    return sprite;
             }
 
             return definition.Icon;
@@ -3629,10 +3621,30 @@ namespace Kruty1918.Moyva.Construction.Editor
             EditorGUI.DrawRect(new Rect(rect.xMax - thickness, rect.y, thickness, rect.height), color);
         }
 
-        private static void DrawMiniIcon(Sprite sprite, float size)
+        private static void DrawMiniIcon(BuildingDefinition definition, float size)
         {
             Rect rect = GUILayoutUtility.GetRect(size, size, GUILayout.Width(size), GUILayout.Height(size));
-            DrawSprite(rect, sprite);
+            DrawBuildingPreview(rect, definition);
+        }
+
+        private static bool DrawBuildingPreview(Rect rect, BuildingDefinition definition)
+        {
+            if (definition == null)
+            {
+                DrawSprite(rect, null);
+                return false;
+            }
+
+            Sprite sprite = definition.Icon != null ? definition.Icon : ExtractSprite(definition);
+            if ((sprite != null && sprite.texture != null) || definition.Prefab != null)
+            {
+                EditorGUI.DrawRect(rect, new Color(0f, 0f, 0f, 0.18f));
+                AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(Shrink(rect, 3f), definition.Prefab, sprite);
+                return true;
+            }
+
+            DrawSprite(rect, null);
+            return false;
         }
 
         private static void DrawSprite(Rect rect, Sprite sprite)
@@ -3645,13 +3657,7 @@ namespace Kruty1918.Moyva.Construction.Editor
             }
 
             Rect padded = Shrink(rect, 3f);
-            Rect fitted = FitRect(padded, sprite.textureRect.width, sprite.textureRect.height);
-            Rect uv = new Rect(
-                sprite.textureRect.x / sprite.texture.width,
-                sprite.textureRect.y / sprite.texture.height,
-                sprite.textureRect.width / sprite.texture.width,
-                sprite.textureRect.height / sprite.texture.height);
-            GUI.DrawTextureWithTexCoords(fitted, sprite.texture, uv, true);
+            AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(padded, null, sprite);
         }
 
         private static Rect FitRect(Rect container, float contentWidth, float contentHeight)
