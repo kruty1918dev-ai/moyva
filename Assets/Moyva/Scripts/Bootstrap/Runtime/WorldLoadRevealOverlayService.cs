@@ -131,8 +131,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = short.MaxValue;
 
+<<<<<<< HEAD
             var scaler = go.AddComponent<CanvasScaler>();
             ConfigureCanvasScaler(scaler);
+=======
+            go.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+>>>>>>> origin/main
             go.AddComponent<GraphicRaycaster>();
 
             var imageGo = new GameObject("FadeImage");
@@ -153,6 +157,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             group.interactable = false;
         }
 
+<<<<<<< HEAD
         private static void ConfigureCanvasScaler(CanvasScaler scaler)
         {
             if (scaler == null)
@@ -163,6 +168,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             scaler.referencePixelsPerUnit = 100f;
         }
 
+=======
+>>>>>>> origin/main
         private void SetOverlayAlpha(float alpha)
         {
             if (_image == null)
