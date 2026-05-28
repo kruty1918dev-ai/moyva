@@ -65,6 +65,7 @@ Shader "Moyva/2D/WaterLayerMipLodContour"
             float4 _MoyvaFogMapParams;
             float _MoyvaFogCullEnabled;
             float _MoyvaFogCullThreshold;
+            float _MoyvaFogWorldPlane;
 
             half4 _Color;
             half4 _ContourColor;
@@ -95,7 +96,8 @@ Shader "Moyva/2D/WaterLayerMipLodContour"
                 o.positionCS = TransformObjectToHClip(v.positionOS);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.color = v.color * _Color;
-                o.worldXY = TransformObjectToWorld(v.positionOS).xy;
+                float3 worldPos = TransformObjectToWorld(v.positionOS);
+                o.worldXY = _MoyvaFogWorldPlane > 0.5 ? worldPos.xz : worldPos.xy;
                 return o;
             }
 

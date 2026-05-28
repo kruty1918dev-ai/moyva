@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Editor.Shared;
 using UnityEditor;
 using UnityEngine;
 
@@ -730,8 +731,9 @@ namespace Kruty1918.Moyva.Construction.Editor
             var icon = sprite;
             if (icon == null && prefab != null)
             {
-                var sr = prefab.GetComponentInChildren<SpriteRenderer>(true);
-                icon = sr != null ? sr.sprite : null;
+                icon = AdaptivePrefabPreviewUtility.TryGetPrimarySprite(prefab, out var resolvedSprite, out _)
+                    ? resolvedSprite
+                    : null;
             }
 
             if (icon != null)

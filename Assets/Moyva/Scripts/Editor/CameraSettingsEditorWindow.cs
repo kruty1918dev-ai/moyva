@@ -12,7 +12,10 @@ namespace Kruty1918.Moyva.Editor
         private SerializedObject _serialized;
         private Vector2 _scroll;
 
+<<<<<<< HEAD
+=======
         [MenuItem("Moyva/Tools/Camera/Settings Editor", priority = 41)]
+>>>>>>> origin/main
         public static void Open()
         {
             var window = GetWindow<CameraSettingsEditorWindow>("Camera Settings");

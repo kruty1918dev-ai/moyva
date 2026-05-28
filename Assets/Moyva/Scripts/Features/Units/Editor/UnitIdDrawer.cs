@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Units.Runtime;
 using UnityEditor;
@@ -65,8 +66,9 @@ namespace Kruty1918.Moyva.Units.Editor
 
             // Sprite preview
             Sprite sprite = GetSpriteForUnitId(currentValue);
-            if (sprite != null)
-                GUI.DrawTexture(spriteRect, sprite.texture, ScaleMode.ScaleToFit);
+            GameObject prefab = GetPrefabForUnitId(currentValue);
+            if (sprite != null || prefab != null)
+                AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(spriteRect, prefab, sprite);
 
             // Error box + create button (ID not found)
             if (!isValid && !string.IsNullOrEmpty(currentValue))
@@ -132,6 +134,7 @@ namespace Kruty1918.Moyva.Units.Editor
         private static UnitRegistrySO _cachedRegistry;
         private static string[] _cachedIds = System.Array.Empty<string>();
         private static readonly Dictionary<string, Sprite> _spriteCache = new();
+        private static readonly Dictionary<string, GameObject> _prefabObjectCache = new();
         private static readonly Dictionary<string, bool> _prefabCache = new();
         private static double _cacheTime;
         private const double CacheTTL = 1.0;
@@ -144,6 +147,7 @@ namespace Kruty1918.Moyva.Units.Editor
             _cachedRegistry = FindRegistryInternal();
             _cacheTime = now;
             _spriteCache.Clear();
+            _prefabObjectCache.Clear();
             _prefabCache.Clear();
 
             if (_cachedRegistry?.Configs == null)
@@ -160,9 +164,9 @@ namespace Kruty1918.Moyva.Units.Editor
                 _prefabCache[cfg.TypeId] = cfg.Prefab != null;
                 if (cfg.Prefab != null)
                 {
-                    var sr = cfg.Prefab.GetComponentInChildren<SpriteRenderer>(true);
-                    if (sr != null && sr.sprite != null)
-                        _spriteCache[cfg.TypeId] = sr.sprite;
+                    _prefabObjectCache[cfg.TypeId] = cfg.Prefab;
+                    if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(cfg.Prefab, out var sprite, out _))
+                        _spriteCache[cfg.TypeId] = sprite;
                 }
             }
             ids.Sort();
@@ -196,6 +200,13 @@ namespace Kruty1918.Moyva.Units.Editor
             if (string.IsNullOrEmpty(id)) return null;
             EnsureCache();
             return _spriteCache.TryGetValue(id, out var s) ? s : null;
+        }
+
+        private static GameObject GetPrefabForUnitId(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            EnsureCache();
+            return _prefabObjectCache.TryGetValue(id, out var prefab) ? prefab : null;
         }
 
         private static void CreateUnitEntry(string id)

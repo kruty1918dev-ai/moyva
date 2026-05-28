@@ -32,6 +32,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
 
             _overlayCompletionSource?.TrySetResult(true);
             _overlayCompletionSource = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var completionSource = _overlayCompletionSource;
 
             _currentValue = value;
             _currentMax = maxValue > 0 ? maxValue : 100f;
@@ -46,7 +47,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             OverlayLoaderResult result = null;
             // Use an async waiter instead of blocking GetResult() to avoid thread-pool blocking.
             result = OverlayLoaderResult.Start(
-                async () => await _overlayCompletionSource.Task.ConfigureAwait(false),
+                async () => await completionSource.Task.ConfigureAwait(false),
                 null,
                 ex => { StopLoading(result); Debug.LogError($"[HomeMenuOverlayLoader] Overlay failed: {ex.Message}"); }
             );

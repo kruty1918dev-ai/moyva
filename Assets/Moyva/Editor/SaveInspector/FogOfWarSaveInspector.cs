@@ -14,7 +14,6 @@ namespace Kruty1918.Moyva.Editor.SaveInspector
     {
         private const string FogModuleTypeName = "Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarSaveModule";
 
-        [MenuItem("Moyva/Inspect Save/Fog of War...")]
         public static void InspectFogOfWar()
         {
             string path = EditorUtility.OpenFilePanel("Select .mvs save file", Application.dataPath, "mvs");

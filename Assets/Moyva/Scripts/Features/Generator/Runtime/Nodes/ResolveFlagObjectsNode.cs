@@ -57,8 +57,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (objectMap != null && (objectMap.GetLength(0) != w || objectMap.GetLength(1) != h))
                 return NodeOutput.Error("TileMap and ObjectMap must have the same size.");
 
-            var tileResult = (string[,])tileMap.Clone();
-            var objectResult = objectMap != null ? (string[,])objectMap.Clone() : new string[w, h];
+            var tileResult = MapArrayUtils.CloneStringMap(tileMap);
+            var objectResult = MapArrayUtils.CloneStringMapOrCreate(objectMap, w, h);
 
             var lookup = new Dictionary<string, FlagObjectRule>(StringComparer.OrdinalIgnoreCase);
             if (_rules != null)

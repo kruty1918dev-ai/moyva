@@ -214,6 +214,100 @@ namespace Kruty1918.Moyva.Tests.Grid
     }
 
     [TestFixture]
+    public sealed class GridProjectionTests
+    {
+        [Test]
+        public void OrthogonalProjection_GridToWorld_MatchesLegacyPositioning()
+        {
+            var projection = new Kruty1918.Moyva.Grid.Runtime.OrthogonalGridProjection();
+
+            Assert.AreEqual(new Vector3(2f, 3f, 0f), projection.GridToWorld(new Vector2Int(2, 3)));
+        }
+
+        [Test]
+        public void OrthogonalProjection_WorldToGrid_MatchesLegacyRounding()
+        {
+            var projection = new Kruty1918.Moyva.Grid.Runtime.OrthogonalGridProjection();
+
+            Assert.AreEqual(new Vector2Int(2, 3), projection.WorldToGrid(new Vector3(2.2f, 3.4f, 0f)));
+        }
+
+        [Test]
+        public void IsometricProjection_RoundTripsGridCoordinates()
+        {
+            var projection = new Kruty1918.Moyva.Grid.Runtime.IsometricGridProjection();
+            var grid = new Vector2Int(7, 4);
+
+            Assert.AreEqual(grid, projection.WorldToGrid(projection.GridToWorld(grid)));
+        }
+
+        [Test]
+        public void Isometric3DPreviewProjection_PreservesConfiguredMode()
+        {
+            var settings = ScriptableObject.CreateInstance<MoyvaProjectSettingsSO>();
+            settings.DefaultProjectionMode = GridProjectionMode.Isometric3DPreview;
+            settings.OrthogonalCellWidth = 2f;
+            settings.OrthogonalCellDepth = 3f;
+            settings.HeightScale = 0.5f;
+            settings.Normalize();
+
+            var projection = new Kruty1918.Moyva.Grid.Runtime.IsometricGridProjection(settings);
+            var grid = new Vector2Int(2, 3);
+            Vector3 world = projection.GridToWorld(grid, elevation: 3f);
+
+            Assert.AreEqual(GridProjectionMode.Isometric3DPreview, projection.ProjectionMode);
+            Assert.AreEqual(GridWorldPlane.XZ, projection.WorldPlane);
+            Assert.AreEqual(GridTopology.Layered, projection.Topology);
+            Assert.AreEqual(new Vector3(4f, 1.5f, 9f), world);
+            Assert.AreEqual(grid, projection.WorldToGrid(world));
+            Assert.AreEqual(GridRenderMode.Mesh3DPreview, ResolveRenderMode(projection.ProjectionMode));
+        }
+
+        [Test]
+        public void HexProjection_RoundTripsAxialCoordinates()
+        {
+            var projection = new Kruty1918.Moyva.Grid.Runtime.HexAxialGridProjection();
+            var grid = new Vector2Int(3, -2);
+
+            Assert.AreEqual(grid, projection.WorldToGrid(projection.GridToWorld(grid)));
+        }
+
+        [Test]
+        public void Orthographic3DProjection_UsesXZPlaneAndYHeight()
+        {
+            var settings = ScriptableObject.CreateInstance<MoyvaProjectSettingsSO>();
+            settings.OrthogonalCellWidth = 2f;
+            settings.OrthogonalCellDepth = 3f;
+            settings.HeightScale = 0.5f;
+            settings.Normalize();
+            var projection = new Kruty1918.Moyva.Grid.Runtime.Orthographic3DGridProjection(settings);
+
+            Assert.AreEqual(GridWorldPlane.XZ, projection.WorldPlane);
+            Assert.AreEqual(new Vector3(4f, 1.5f, 9f), projection.GridToWorld(new Vector2Int(2, 3), elevation: 3f));
+        }
+
+        [Test]
+        public void Orthographic3DProjection_RoundTripsGridCoordinates()
+        {
+            var projection = new Kruty1918.Moyva.Grid.Runtime.Orthographic3DGridProjection();
+            var grid = new Vector2Int(5, 8);
+
+            Assert.AreEqual(grid, projection.WorldToGrid(projection.GridToWorld(grid)));
+        }
+
+        private static GridRenderMode ResolveRenderMode(GridProjectionMode projectionMode)
+        {
+            return projectionMode switch
+            {
+                GridProjectionMode.Orthographic3D => GridRenderMode.Mesh3D,
+                GridProjectionMode.Isometric2D => GridRenderMode.Isometric2D,
+                GridProjectionMode.Isometric3DPreview => GridRenderMode.Mesh3DPreview,
+                _ => GridRenderMode.Sprite2D,
+            };
+        }
+    }
+
+    [TestFixture]
     public sealed class TileSettingsServiceTests
     {
         private ITileSettingsService CreateService(params (string id, float cost)[] tiles)

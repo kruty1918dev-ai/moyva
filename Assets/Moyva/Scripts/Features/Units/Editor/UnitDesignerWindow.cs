@@ -4008,11 +4008,9 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private static Sprite ResolveSprite(GameObject prefab)
         {
-            if (prefab == null)
-                return null;
-
-            var renderer = prefab.GetComponentInChildren<SpriteRenderer>(true);
-            return renderer != null ? renderer.sprite : null;
+            return AdaptivePrefabPreviewUtility.TryGetPrimarySprite(prefab, out var sprite, out _)
+                ? sprite
+                : null;
         }
 
         private static void DrawSpriteOrPrefab(Rect rect, Sprite sprite, GameObject prefab, bool framed)
@@ -4021,21 +4019,9 @@ namespace Kruty1918.Moyva.Units.Editor
                 DrawPanelBackground(rect, EditorGUIUtility.isProSkin ? new Color(0.09f, 0.1f, 0.11f) : new Color(0.72f, 0.75f, 0.78f));
 
             Rect padded = new Rect(rect.x + 4f, rect.y + 4f, rect.width - 8f, rect.height - 8f);
-            if (sprite != null && sprite.texture != null)
+            if ((sprite != null && sprite.texture != null) || prefab != null)
             {
-                Rect uv = new Rect(
-                    sprite.textureRect.x / sprite.texture.width,
-                    sprite.textureRect.y / sprite.texture.height,
-                    sprite.textureRect.width / sprite.texture.width,
-                    sprite.textureRect.height / sprite.texture.height);
-                GUI.DrawTextureWithTexCoords(padded, sprite.texture, uv, true);
-                return;
-            }
-
-            Texture preview = prefab != null ? AssetPreview.GetAssetPreview(prefab) ?? AssetPreview.GetMiniThumbnail(prefab) : null;
-            if (preview != null)
-            {
-                GUI.DrawTexture(padded, preview, ScaleMode.ScaleToFit, true);
+                AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(padded, prefab, sprite);
                 return;
             }
 

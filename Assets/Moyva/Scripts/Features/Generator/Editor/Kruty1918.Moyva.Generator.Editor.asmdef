@@ -4,7 +4,10 @@
     "references": [
         "Kruty1918.Moyva.Generator",
         "Kruty1918.Moyva.GraphSystem",
-        "Kruty1918.Moyva.Grid"
+        "Kruty1918.Moyva.Grid",
+        "Kruty1918.Moyva.EditorShared",
+        "GiantGrey.TileWorldCreator",
+        "Zenject"
     ],
     "includePlatforms": [
         "Editor"

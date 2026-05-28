@@ -10,6 +10,9 @@ namespace Kruty1918.Moyva.Visuals
         [SerializeField] private Color _occupiedColor;
 
         private SignalBus _signalBus;
+        private bool _hasGridPosition;
+
+        public Vector2Int GridPosition { get; private set; }
 
         [Inject]
         private void Construct(SignalBus signalBus)
@@ -49,12 +52,22 @@ namespace Kruty1918.Moyva.Visuals
 
         private bool IsMinePosition(Vector2Int position)
         {
+            if (_hasGridPosition)
+                return position == GridPosition;
+
             return position == new Vector2Int((int)transform.position.x, (int)transform.position.y);
         }
 
         public void Setup(Vector2Int position)
         {
-            transform.position = new Vector3(position.x, position.y, 0);
+            Setup(position, new Vector3(position.x, position.y, transform.position.z));
+        }
+
+        public void Setup(Vector2Int position, Vector3 worldPosition)
+        {
+            GridPosition = position;
+            _hasGridPosition = true;
+            transform.position = worldPosition;
         }
     }
 }

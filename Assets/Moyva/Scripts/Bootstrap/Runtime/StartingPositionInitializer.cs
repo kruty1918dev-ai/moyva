@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Camera.API;
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Pathfinding.API;
 using Kruty1918.Moyva.SaveSystem;
@@ -34,6 +35,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         [InjectOptional] private ISessionManager _sessionManager;
         [InjectOptional] private IPathfinder _pathfinder;
         [InjectOptional] private IUnitService _unitService;
+        [InjectOptional] private IGridProjection _gridProjection;
+        [InjectOptional] private ICameraZoom _cameraZoom;
+        [InjectOptional] private MoyvaProjectSettingsSO _projectSettings;
+        [InjectOptional] private UnityEngine.Camera _camera;
+        [InjectOptional] private CameraSettingsSO _cameraSettings;
 #pragma warning restore CS0649
 
         private bool _startAnchorRegistered;
@@ -102,7 +108,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (GameLaunchContext.IsAutoLoadEnabled() && _saveService.HasSave(slot))
             {
                 RepairLoadedFogIfNeeded(signal);
-                TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height));
+                TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height), signal);
                 _startLogicApplied = true;
                 return;
             }
@@ -153,14 +159,198 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _registeredStartAnchorCount = 1;
             }
 
-            TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height));
+            TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height), signal);
 
             Debug.Log($"[Bootstrap] Стартова позиція: {ResolveLocalRevealCenter(signal.Width, signal.Height)}. Туман розкрито, камеру переміщено.");
         }
 
-        private void TeleportMainCamera(Vector2Int startPos)
+        private void TeleportMainCamera(Vector2Int startPos, WorldGeneratedDataSignal signal)
         {
+            if (TryTeleportCameraToStartupFocus(startPos, signal))
+                return;
+
             _cameraMovement.TeleportCamera(new Vector3(startPos.x, startPos.y, _settings.cameraZ));
+        }
+
+        private bool TryTeleportCameraToStartupFocus(Vector2Int startPos, WorldGeneratedDataSignal signal)
+        {
+            if (_cameraMovement == null)
+                return false;
+
+            Vector3 focusPoint = ResolveStartupFocusPoint(startPos, signal);
+            float distance = ResolveStartupCameraDistance();
+            _cameraMovement.TeleportCameraToFocusPoint(focusPoint, distance);
+            ApplyStartupCameraZoom(startPos, focusPoint, signal);
+            return true;
+        }
+
+        private Vector3 ResolveStartupFocusPoint(Vector2Int startPos, WorldGeneratedDataSignal signal)
+        {
+            if (_gridProjection != null)
+                return _gridProjection.GridToWorld(startPos, ResolveHeight(signal, startPos));
+
+            return new Vector3(startPos.x, startPos.y, 0f);
+        }
+
+        private float ResolveStartupCameraDistance()
+        {
+            if (TryResolveCurrentCameraPlaneDistance(out float currentDistance))
+                return currentDistance;
+
+            if (_projectSettings != null)
+                return _projectSettings.ResolveProject3DCameraDistance();
+
+            return _cameraSettings != null
+                ? _cameraSettings.ResolveDefault3DCameraDistance()
+                : 35f;
+        }
+
+        private bool TryResolveCurrentCameraPlaneDistance(out float distance)
+        {
+            distance = 0f;
+            if (_camera == null)
+                return false;
+
+            Vector3 normal = _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ
+                ? Vector3.up
+                : Vector3.forward;
+            Vector3 direction = _camera.transform.forward;
+            float denominator = Vector3.Dot(normal, direction);
+            if (Mathf.Abs(denominator) <= 0.0001f)
+                return false;
+
+            distance = -Vector3.Dot(normal, _camera.transform.position) / denominator;
+            return distance > 0.1f && !float.IsNaN(distance) && !float.IsInfinity(distance);
+        }
+
+        private void ApplyStartupCameraZoom(Vector2Int startPos, Vector3 focusPoint, WorldGeneratedDataSignal signal)
+        {
+            if (!ShouldEnsureStartupCameraShowsRevealedArea() || _cameraZoom == null || _camera == null)
+                return;
+
+            float radius = ResolveStartupCameraRadius(signal.Width, signal.Height) + ResolveStartupCameraPaddingTiles();
+            Vector3[] corners = BuildStartupZoneCorners(startPos, focusPoint, radius, signal);
+            float zoom = _camera.orthographic
+                ? ResolveOrthographicZoomToFit(focusPoint, corners)
+                : ResolvePerspectiveFieldOfViewToFit(focusPoint, corners);
+
+            if (_camera.orthographic)
+                _camera.orthographicSize = zoom;
+            else
+                _camera.fieldOfView = zoom;
+
+            _cameraZoom.ForceZoomCamera(zoom);
+        }
+
+        private bool ShouldEnsureStartupCameraShowsRevealedArea()
+        {
+            return _projectSettings != null
+                ? _projectSettings.EnsureStartupCameraShowsRevealedArea
+                : _settings.ensureStartupCameraShowsRevealedArea;
+        }
+
+        private float ResolveStartupCameraPaddingTiles()
+        {
+            return _projectSettings != null
+                ? _projectSettings.ResolveStartupCameraPaddingTiles()
+                : Mathf.Max(0f, _settings.startupCameraPaddingTiles);
+        }
+
+        private int ResolveStartupCameraRadius(int width, int height)
+        {
+            MoyvaStartupCameraRadiusSource source = _projectSettings != null
+                ? _projectSettings.StartupCameraRadiusSource
+                : _settings.startupCameraRadiusSource;
+
+            return source switch
+            {
+                MoyvaStartupCameraRadiusSource.CoreVisibleRadius => _settings.ResolveCoreVisibleRadius(width, height),
+                MoyvaStartupCameraRadiusSource.ManualRadius => _projectSettings != null
+                    ? _projectSettings.ResolveManualStartupCameraRadius()
+                    : Mathf.Max(1, _settings.manualStartupCameraRadius),
+                _ => _settings.ResolveRevealedRadius(width, height),
+            };
+        }
+
+        private Vector3[] BuildStartupZoneCorners(Vector2Int startPos, Vector3 focusPoint, float radius, WorldGeneratedDataSignal signal)
+        {
+            if (_gridProjection == null)
+            {
+                return new[]
+                {
+                    focusPoint + new Vector3(-radius, -radius, 0f),
+                    focusPoint + new Vector3(radius, -radius, 0f),
+                    focusPoint + new Vector3(-radius, radius, 0f),
+                    focusPoint + new Vector3(radius, radius, 0f),
+                };
+            }
+
+            int tileRadius = Mathf.Max(1, Mathf.CeilToInt(radius));
+            var min = ClampToMap(new Vector2Int(startPos.x - tileRadius, startPos.y - tileRadius), signal.Width, signal.Height);
+            var max = ClampToMap(new Vector2Int(startPos.x + tileRadius, startPos.y + tileRadius), signal.Width, signal.Height);
+            return new[]
+            {
+                ProjectStartupCorner(new Vector2Int(min.x, min.y), signal),
+                ProjectStartupCorner(new Vector2Int(max.x, min.y), signal),
+                ProjectStartupCorner(new Vector2Int(min.x, max.y), signal),
+                ProjectStartupCorner(new Vector2Int(max.x, max.y), signal),
+            };
+        }
+
+        private Vector3 ProjectStartupCorner(Vector2Int gridPosition, WorldGeneratedDataSignal signal)
+            => _gridProjection.GridToWorld(gridPosition, ResolveHeight(signal, gridPosition));
+
+        private float ResolveOrthographicZoomToFit(Vector3 focusPoint, Vector3[] corners)
+        {
+            float aspect = _camera != null && _camera.aspect > 0.0001f ? _camera.aspect : 1f;
+            Quaternion worldToView = Quaternion.Inverse(_camera.transform.rotation);
+            ResolveViewHalfExtents(focusPoint, corners, worldToView, out float halfWidth, out float halfHeight);
+            float required = Mathf.Max(halfHeight, halfWidth / aspect, 0.1f);
+            float minZoom = _cameraSettings != null ? _cameraSettings.ResolveMinZoom() : 0.1f;
+            return Mathf.Max(minZoom, required);
+        }
+
+        private float ResolvePerspectiveFieldOfViewToFit(Vector3 focusPoint, Vector3[] corners)
+        {
+            float aspect = _camera != null && _camera.aspect > 0.0001f ? _camera.aspect : 1f;
+            Quaternion worldToView = Quaternion.Inverse(_camera.transform.rotation);
+            ResolveViewHalfExtents(focusPoint, corners, worldToView, out float halfWidth, out float halfHeight);
+            float requiredHalfHeight = Mathf.Max(halfHeight, halfWidth / aspect, 0.01f);
+            Vector3 localFocus = worldToView * (focusPoint - _camera.transform.position);
+            float distance = Mathf.Max(0.1f, Mathf.Abs(localFocus.z));
+            float requiredFov = Mathf.Atan(requiredHalfHeight / distance) * 2f * Mathf.Rad2Deg;
+            float configuredFov = _projectSettings != null
+                ? _projectSettings.ResolveProject3DFieldOfView()
+                : (_cameraSettings != null ? _cameraSettings.ResolveDefault3DFieldOfView() : 45f);
+            return Mathf.Clamp(Mathf.Max(configuredFov, requiredFov), 1f, 179f);
+        }
+
+        private static void ResolveViewHalfExtents(Vector3 focusPoint, Vector3[] corners, Quaternion worldToView, out float halfWidth, out float halfHeight)
+        {
+            halfWidth = 0.01f;
+            halfHeight = 0.01f;
+            if (corners == null)
+                return;
+
+            for (int i = 0; i < corners.Length; i++)
+            {
+                Vector3 view = worldToView * (corners[i] - focusPoint);
+                halfWidth = Mathf.Max(halfWidth, Mathf.Abs(view.x));
+                halfHeight = Mathf.Max(halfHeight, Mathf.Abs(view.y));
+            }
+        }
+
+        private static float ResolveHeight(WorldGeneratedDataSignal signal, Vector2Int position)
+        {
+            if (signal.HeightMap == null)
+                return 0f;
+
+            int width = signal.HeightMap.GetLength(0);
+            int height = signal.HeightMap.GetLength(1);
+            if (position.x < 0 || position.y < 0 || position.x >= width || position.y >= height)
+                return 0f;
+
+            return signal.HeightMap[position.x, position.y];
         }
 
         private Vector2Int ResolveStartupCameraTarget(int width, int height)

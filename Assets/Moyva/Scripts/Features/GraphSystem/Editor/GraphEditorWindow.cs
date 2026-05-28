@@ -777,7 +777,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                 // Register shared settings
                 if (sharedSettings != null)
+                {
+                    context.ApplySharedSettings(sharedSettings);
                     context.RegisterService(sharedSettings);
+                }
 
                 // Register generator services with fallbacks
                 RegisterEditorServices(context, runtimeSettings);

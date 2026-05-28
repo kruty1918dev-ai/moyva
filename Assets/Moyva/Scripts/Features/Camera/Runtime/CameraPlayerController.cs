@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Camera.API;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -16,6 +17,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly ICameraZoom _cameraZoom;
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
+        private readonly IGridProjection _gridProjection;
 
         private readonly InputAction _moveAction;
         private readonly InputAction _zoomAction;
@@ -27,12 +29,14 @@ namespace Kruty1918.Moyva.Camera.Runtime
             ICameraZoom cameraZoom,
             UnityEngine.Camera camera,
             CameraSettingsSO settings,
-            InputActionAsset inputAsset)
+            InputActionAsset inputAsset,
+            [InjectOptional] IGridProjection gridProjection = null)
         {
             _cameraMovement = cameraMovement;
             _cameraZoom = cameraZoom;
             _camera = camera;
             _settings = settings;
+            _gridProjection = gridProjection;
 
             var map = inputAsset.FindActionMap("Player");
             _moveAction = map.FindAction("Move");
@@ -122,7 +126,10 @@ namespace Kruty1918.Moyva.Camera.Runtime
             {
                 Vector3 worldAfterZoom = ScreenToWorld(currentCenter);
                 Vector3 correction = worldBeforeZoom - worldAfterZoom;
-                correction.z = 0f;
+                if (_gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ)
+                    correction.y = 0f;
+                else
+                    correction.z = 0f;
                 _cameraMovement.ShiftCameraWorld(correction, immediate: true);
             }
         }
@@ -169,7 +176,17 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (_camera == null)
                 return Vector3.zero;
 
-            return _camera.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, -_camera.transform.position.z));
+            if (_gridProjection == null)
+                return _camera.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, -_camera.transform.position.z));
+
+            Ray ray = _camera.ScreenPointToRay(screenPosition);
+            Plane plane = _gridProjection.WorldPlane == GridWorldPlane.XZ
+                ? new Plane(Vector3.up, Vector3.zero)
+                : new Plane(Vector3.forward, Vector3.zero);
+
+            return plane.Raycast(ray, out float distance)
+                ? ray.GetPoint(distance)
+                : _camera.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, -_camera.transform.position.z));
         }
 
         private bool IsTouchOverInteractiveUi(TouchGestureSample touch)

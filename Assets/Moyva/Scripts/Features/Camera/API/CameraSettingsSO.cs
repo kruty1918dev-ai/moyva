@@ -92,6 +92,18 @@ namespace Kruty1918.Moyva.Camera.API
         [Header("Shared")]
         public float defaultCameraZ = -10f;
 
+<<<<<<< HEAD
+        [Header("3D Project Adaptation")]
+        public bool adaptToProject3DMode = true;
+        public bool useOrthographicCameraIn3D = true;
+        [Min(0.1f)] public float default3DCameraDistance = 35f;
+        [Min(0.1f)] public float default3DOrthographicSize = 20f;
+        [Range(1f, 179f)] public float default3DFieldOfView = 45f;
+        public Vector3 orthographic3DEuler = new Vector3(90f, 0f, 0f);
+        public Vector3 isometric3DEuler = new Vector3(60f, 45f, 0f);
+
+=======
+>>>>>>> origin/main
         [Header("Shader / Mip Bias")]
         [Tooltip("Applies global automatic mip bias for zoom. Disable to avoid tile atlas artifacts/bleeding on zoom-out.")]
         public bool enableAutomaticMipBias = false;
@@ -133,6 +145,14 @@ namespace Kruty1918.Moyva.Camera.API
         public float ResolveMaxTouchDeltaPixels() => ResolveActiveProfile().maxTouchDeltaPixels;
         public bool ResolveUseImmediateTouchGestures() => ResolveActiveProfile().useImmediateTouchGestures;
         public bool ResolveKeepPinchFocusUnderFingers() => ResolveActiveProfile().keepPinchFocusUnderFingers;
+<<<<<<< HEAD
+        public bool ResolveAdaptToProject3DMode() => adaptToProject3DMode;
+        public bool ResolveUseOrthographicCameraIn3D() => useOrthographicCameraIn3D;
+        public float ResolveDefault3DCameraDistance() => Mathf.Max(0.1f, default3DCameraDistance);
+        public float ResolveDefault3DOrthographicSize() => Mathf.Max(ResolveMinZoom(), default3DOrthographicSize);
+        public float ResolveDefault3DFieldOfView() => Mathf.Clamp(default3DFieldOfView, 1f, 179f);
+=======
+>>>>>>> origin/main
         public Vector2 ResolveBoundsOverflowWorldUnits() => new Vector2(
             Mathf.Max(0f, boundsOverflowTiles.x),
             Mathf.Max(0f, boundsOverflowTiles.y));
@@ -146,6 +166,12 @@ namespace Kruty1918.Moyva.Camera.API
             boundsOverflowTiles = new Vector2(
                 Mathf.Max(0f, boundsOverflowTiles.x),
                 Mathf.Max(0f, boundsOverflowTiles.y));
+<<<<<<< HEAD
+            default3DCameraDistance = Mathf.Max(0.1f, default3DCameraDistance);
+            default3DOrthographicSize = Mathf.Max(ResolveMinZoom(), default3DOrthographicSize);
+            default3DFieldOfView = Mathf.Clamp(default3DFieldOfView, 1f, 179f);
+=======
+>>>>>>> origin/main
             automaticMipBiasMax = Mathf.Clamp(automaticMipBiasMax, 0f, 3f);
         }
     }

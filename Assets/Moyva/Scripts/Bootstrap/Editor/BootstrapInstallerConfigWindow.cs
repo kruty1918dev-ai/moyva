@@ -27,7 +27,6 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
 
         private static readonly string[] Tabs = { "Гра", "Стартова позиція" };
 
-        [MenuItem("Moyva/Bootstrap/Installer Config Editor")]
         private static void OpenWindow()
         {
             var window = GetWindow<BootstrapInstallerConfigWindow>("Bootstrap Config");

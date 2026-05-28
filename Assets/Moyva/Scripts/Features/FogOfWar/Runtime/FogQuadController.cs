@@ -13,29 +13,37 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private const int FogOverlayRenderQueue = 4000; // Overlay queue
         private static readonly int GlobalFogCullEnabledId = Shader.PropertyToID("_MoyvaFogCullEnabled");
         private static readonly int GlobalFogCullThresholdId = Shader.PropertyToID("_MoyvaFogCullThreshold");
+        private static readonly int GlobalFogWorldPlaneId = Shader.PropertyToID("_MoyvaFogWorldPlane");
 
         [SerializeField] private FogOfWarSettings _settings;
 
-    private IFogOfWarService _fogService;
-    private IFogTextureUpdater _textureUpdater;
-    private IGridService _gridService;
-    private SignalBus _signalBus;
+        private IFogOfWarService _fogService;
+        private IFogTextureUpdater _textureUpdater;
+        private IGridService _gridService;
+        private IGridProjection _gridProjection;
+        private SignalBus _signalBus;
 
         private Material _mat;
         private int _mapWidth = 10;
         private int _mapHeight = 10;
+        private int _projectionMode = int.MinValue;
+        private float _maxTerrainWorldY = float.MinValue;
         private bool _subscribed;
+        private readonly GameObject[] _volumeSideObjects = new GameObject[4];
+        private readonly MeshRenderer[] _volumeSideRenderers = new MeshRenderer[4];
 
         [Inject]
         private void ConstructOptionalDependencies(
             [InjectOptional] IFogOfWarService fogService,
             [InjectOptional] IFogTextureUpdater textureUpdater,
             [InjectOptional] IGridService gridService,
+            [InjectOptional] IGridProjection gridProjection,
             [InjectOptional] SignalBus signalBus)
         {
             _fogService = fogService;
             _textureUpdater = textureUpdater;
             _gridService = gridService;
+            _gridProjection = gridProjection;
             _signalBus = signalBus;
         }
 
@@ -52,6 +60,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             // Страховка від коротких артефактів при старті/перезавантаженні сцени:
             // глобальний fog-culling вимикаємо до повної ініціалізації fog texture.
             Shader.SetGlobalFloat(GlobalFogCullEnabledId, 0f);
+<<<<<<< HEAD
+            Shader.SetGlobalFloat(GlobalFogWorldPlaneId, 0f);
+=======
+>>>>>>> origin/main
         }
 
         private void OnDestroy()
@@ -60,6 +72,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
 
             Shader.SetGlobalFloat(GlobalFogCullEnabledId, 0f);
+            Shader.SetGlobalFloat(GlobalFogWorldPlaneId, 0f);
+            DestroyVolumeSides();
             ReleaseMaterialInstance();
         }
 
@@ -74,9 +88,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _mapWidth = w;
             _mapHeight = h;
 
+            _projectionMode = _gridProjection != null ? (int)_gridProjection.ProjectionMode : (int)GridProjectionMode.Orthographic2D;
+
+            Bounds worldBounds = ResolveWorldBounds(w, h);
             Vector2 edgePadding = ResolveEdgePaddingInCells();
-            transform.localScale = new Vector3(w + edgePadding.x * 2f, h + edgePadding.y * 2f, 1f);
-            transform.position   = new Vector3((w - 1) * 0.5f, (h - 1) * 0.5f, -0.5f);
+            ApplyOverlayTransform(worldBounds, edgePadding);
 
             var mr = GetComponent<MeshRenderer>();
             if (_mat == null)
@@ -99,6 +115,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             _textureUpdater.Initialize(w, h, _mat);
             _fogService.Initialize(w, h);
+            ApplyShaderWorldPlane();
             ApplyShaderCullingSettings();
 
             if (_settings != null)
@@ -118,10 +135,162 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             int width = Mathf.Max(1, signal.Width);
             int height = Mathf.Max(1, signal.Height);
-            if (width == _mapWidth && height == _mapHeight)
+            float maxTerrainWorldY = ResolveMaxTerrainWorldY(signal);
+            bool terrainHeightChanged = !Mathf.Approximately(maxTerrainWorldY, _maxTerrainWorldY);
+            _maxTerrainWorldY = maxTerrainWorldY;
+
+            if (width == _mapWidth && height == _mapHeight && signal.ProjectionMode == _projectionMode && !terrainHeightChanged)
                 return;
 
             InitializeOverlay(width, height);
+        }
+
+        private Bounds ResolveWorldBounds(int width, int height)
+        {
+            if (_gridProjection != null)
+                return _gridProjection.GetWorldBounds(width, height);
+
+            return new Bounds(
+                new Vector3((width - 1) * 0.5f, (height - 1) * 0.5f, 0f),
+                new Vector3(width, height, 1f));
+        }
+
+        private void ApplyOverlayTransform(Bounds worldBounds, Vector2 edgePadding)
+        {
+            if (_gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ)
+            {
+                float topY = Resolve3DFogTopY(worldBounds);
+                transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                transform.localScale = new Vector3(worldBounds.size.x + edgePadding.x * 2f, worldBounds.size.z + edgePadding.y * 2f, 1f);
+                transform.position = new Vector3(worldBounds.center.x, topY, worldBounds.center.z);
+                Apply3DVolumeSides(worldBounds, edgePadding, topY);
+                return;
+            }
+
+            SetVolumeSidesActive(false);
+            transform.rotation = Quaternion.identity;
+            transform.localScale = new Vector3(worldBounds.size.x + edgePadding.x * 2f, worldBounds.size.y + edgePadding.y * 2f, 1f);
+            transform.position = new Vector3(worldBounds.center.x, worldBounds.center.y, -0.5f);
+        }
+
+        private float Resolve3DFogTopY(Bounds worldBounds)
+        {
+            float terrainTop = _maxTerrainWorldY > float.MinValue * 0.5f
+                ? Mathf.Max(worldBounds.max.y, _maxTerrainWorldY)
+                : worldBounds.max.y;
+            float clearance = _settings != null ? Mathf.Max(0f, _settings.Fog3DTopClearance) : 0.08f;
+            return terrainTop + clearance;
+        }
+
+        private float ResolveMaxTerrainWorldY(WorldGeneratedDataSignal signal)
+        {
+            if (_gridProjection == null || _gridProjection.WorldPlane != GridWorldPlane.XZ)
+                return float.MinValue;
+
+            float maxElevation = float.MinValue;
+            if (signal.TerrainLevelMap != null)
+            {
+                int width = Mathf.Min(Mathf.Max(0, signal.Width), signal.TerrainLevelMap.GetLength(0));
+                int height = Mathf.Min(Mathf.Max(0, signal.Height), signal.TerrainLevelMap.GetLength(1));
+                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    maxElevation = Mathf.Max(maxElevation, signal.TerrainLevelMap[x, y]);
+            }
+
+            if (maxElevation == float.MinValue && signal.HeightMap != null)
+            {
+                int width = Mathf.Min(Mathf.Max(0, signal.Width), signal.HeightMap.GetLength(0));
+                int height = Mathf.Min(Mathf.Max(0, signal.Height), signal.HeightMap.GetLength(1));
+                for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                    maxElevation = Mathf.Max(maxElevation, signal.HeightMap[x, y]);
+            }
+
+            if (maxElevation == float.MinValue)
+                return float.MinValue;
+
+            return _gridProjection.GridToWorld(Vector2Int.zero, maxElevation, 0f).y;
+        }
+
+        private void Apply3DVolumeSides(Bounds worldBounds, Vector2 edgePadding, float topY)
+        {
+            if (_settings != null && !_settings.Enable3DVolumeFog)
+            {
+                SetVolumeSidesActive(false);
+                return;
+            }
+
+            float volumeHeight = _settings != null ? Mathf.Max(0.01f, _settings.Fog3DVolumeHeight) : 2.5f;
+            float width = worldBounds.size.x + edgePadding.x * 2f;
+            float depth = worldBounds.size.z + edgePadding.y * 2f;
+            float minX = worldBounds.center.x - width * 0.5f;
+            float maxX = worldBounds.center.x + width * 0.5f;
+            float minZ = worldBounds.center.z - depth * 0.5f;
+            float maxZ = worldBounds.center.z + depth * 0.5f;
+            float bottomY = Mathf.Min(worldBounds.min.y, topY - volumeHeight);
+            float sideHeight = Mathf.Max(0.01f, topY - bottomY);
+            float centerY = (topY + bottomY) * 0.5f;
+
+            ConfigureVolumeSide(0, new Vector3(worldBounds.center.x, centerY, minZ), Quaternion.identity, new Vector3(width, sideHeight, 1f));
+            ConfigureVolumeSide(1, new Vector3(worldBounds.center.x, centerY, maxZ), Quaternion.Euler(0f, 180f, 0f), new Vector3(width, sideHeight, 1f));
+            ConfigureVolumeSide(2, new Vector3(minX, centerY, worldBounds.center.z), Quaternion.Euler(0f, 90f, 0f), new Vector3(depth, sideHeight, 1f));
+            ConfigureVolumeSide(3, new Vector3(maxX, centerY, worldBounds.center.z), Quaternion.Euler(0f, -90f, 0f), new Vector3(depth, sideHeight, 1f));
+        }
+
+        private void ConfigureVolumeSide(int index, Vector3 position, Quaternion rotation, Vector3 scale)
+        {
+            var renderer = EnsureVolumeSide(index);
+            if (renderer == null)
+                return;
+
+            var side = renderer.transform;
+            side.position = position;
+            side.rotation = rotation;
+            side.localScale = scale;
+            renderer.sharedMaterial = _mat;
+            ApplyOverlayRenderPriority(renderer);
+            renderer.gameObject.SetActive(true);
+        }
+
+        private MeshRenderer EnsureVolumeSide(int index)
+        {
+            if (index < 0 || index >= _volumeSideObjects.Length)
+                return null;
+
+            if (_volumeSideObjects[index] != null && _volumeSideRenderers[index] != null)
+                return _volumeSideRenderers[index];
+
+            var side = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            side.name = $"Fog3DVolumeSide_{index}";
+            side.transform.SetParent(null, worldPositionStays: true);
+            var collider = side.GetComponent<Collider>();
+            if (collider != null)
+                Destroy(collider);
+
+            _volumeSideObjects[index] = side;
+            _volumeSideRenderers[index] = side.GetComponent<MeshRenderer>();
+            return _volumeSideRenderers[index];
+        }
+
+        private void SetVolumeSidesActive(bool active)
+        {
+            for (int i = 0; i < _volumeSideObjects.Length; i++)
+            {
+                if (_volumeSideObjects[i] != null)
+                    _volumeSideObjects[i].SetActive(active);
+            }
+        }
+
+        private void DestroyVolumeSides()
+        {
+            for (int i = 0; i < _volumeSideObjects.Length; i++)
+            {
+                if (_volumeSideObjects[i] != null)
+                    Destroy(_volumeSideObjects[i]);
+
+                _volumeSideObjects[i] = null;
+                _volumeSideRenderers[i] = null;
+            }
         }
 
         private void ApplySettingsToMaterial()
@@ -212,6 +381,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             float threshold = _settings != null ? _settings.ShaderFogCullThreshold : 0.01f;
             Shader.SetGlobalFloat(GlobalFogCullEnabledId, enabled ? 1f : 0f);
             Shader.SetGlobalFloat(GlobalFogCullThresholdId, Mathf.Clamp(threshold, 0f, 0.25f));
+        }
+
+        private void ApplyShaderWorldPlane()
+        {
+            bool usesXzPlane = _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ;
+            Shader.SetGlobalFloat(GlobalFogWorldPlaneId, usesXzPlane ? 1f : 0f);
         }
 
         private static Vector4 BuildSpriteUvRect(Sprite sprite, Texture2D texture, Vector2Int pixelSize)

@@ -954,12 +954,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// Перевіряє, чи варто рендерити об'єкт з огляду на стан туману в області його меж.
         /// Повертає true якщо хоча б одна клітина в області не є невідкритою (Unexplored).
         /// </summary>
-        public static bool ShouldRender(Bounds worldBounds, IFogOfWarService fogService, IGridService gridService, float boundsPaddingCells)
+        public static bool ShouldRender(Bounds worldBounds, IFogOfWarService fogService, IGridService gridService, float boundsPaddingCells, IGridProjection gridProjection = null)
         {
             if (fogService == null || gridService == null)
                 return true;
 
-            if (!TryGetCoveredTileRange(worldBounds, gridService, boundsPaddingCells, out var min, out var max))
+            if (!TryGetCoveredTileRange(worldBounds, gridService, boundsPaddingCells, out var min, out var max, gridProjection))
                 return true;
 
             for (int x = min.x; x <= max.x; x++)
@@ -983,7 +983,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             IGridService gridService,
             float boundsPaddingCells,
             out Vector2Int min,
-            out Vector2Int max)
+            out Vector2Int max,
+            IGridProjection gridProjection = null)
         {
             min = default;
             max = default;
@@ -991,11 +992,67 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (gridService == null || gridService.GridWidth <= 0 || gridService.GridHeight <= 0)
                 return false;
 
+            if (gridProjection != null)
+                return TryGetProjectedCoveredTileRange(worldBounds, gridService, boundsPaddingCells, gridProjection, out min, out max);
+
             float padding = Mathf.Max(0f, boundsPaddingCells);
             int rawMinX = Mathf.FloorToInt(worldBounds.min.x + 0.5f - padding);
             int rawMinY = Mathf.FloorToInt(worldBounds.min.y + 0.5f - padding);
             int rawMaxX = Mathf.FloorToInt(worldBounds.max.x + 0.5f - BoundsEdgeEpsilon + padding);
             int rawMaxY = Mathf.FloorToInt(worldBounds.max.y + 0.5f - BoundsEdgeEpsilon + padding);
+
+            if (rawMaxX < 0 || rawMaxY < 0 || rawMinX >= gridService.GridWidth || rawMinY >= gridService.GridHeight)
+                return false;
+
+            min = new Vector2Int(
+                Mathf.Clamp(rawMinX, 0, gridService.GridWidth - 1),
+                Mathf.Clamp(rawMinY, 0, gridService.GridHeight - 1));
+
+            max = new Vector2Int(
+                Mathf.Clamp(rawMaxX, 0, gridService.GridWidth - 1),
+                Mathf.Clamp(rawMaxY, 0, gridService.GridHeight - 1));
+
+            return min.x <= max.x && min.y <= max.y;
+        }
+
+        private static bool TryGetProjectedCoveredTileRange(
+            Bounds worldBounds,
+            IGridService gridService,
+            float boundsPaddingCells,
+            IGridProjection gridProjection,
+            out Vector2Int min,
+            out Vector2Int max)
+        {
+            min = default;
+            max = default;
+
+            int minX = int.MaxValue;
+            int minY = int.MaxValue;
+            int maxX = int.MinValue;
+            int maxY = int.MinValue;
+
+            Vector3 boundsMin = worldBounds.min;
+            Vector3 boundsMax = worldBounds.max;
+            for (int xIndex = 0; xIndex < 2; xIndex++)
+            for (int yIndex = 0; yIndex < 2; yIndex++)
+            for (int zIndex = 0; zIndex < 2; zIndex++)
+            {
+                var corner = new Vector3(
+                    xIndex == 0 ? boundsMin.x : boundsMax.x,
+                    yIndex == 0 ? boundsMin.y : boundsMax.y,
+                    zIndex == 0 ? boundsMin.z : boundsMax.z);
+                Vector2Int grid = gridProjection.WorldToGrid(corner);
+                minX = Mathf.Min(minX, grid.x);
+                minY = Mathf.Min(minY, grid.y);
+                maxX = Mathf.Max(maxX, grid.x);
+                maxY = Mathf.Max(maxY, grid.y);
+            }
+
+            int padding = Mathf.CeilToInt(Mathf.Max(0f, boundsPaddingCells));
+            int rawMinX = minX - padding;
+            int rawMinY = minY - padding;
+            int rawMaxX = maxX + padding;
+            int rawMaxY = maxY + padding;
 
             if (rawMaxX < 0 || rawMaxY < 0 || rawMinX >= gridService.GridWidth || rawMinY >= gridService.GridHeight)
                 return false;
@@ -1036,6 +1093,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly IGridService _gridService;
         private readonly SignalBus _signalBus;
         private readonly FogOfWarSettings _settings;
+        private readonly IGridProjection _gridProjection;
 
         private readonly List<CullableRenderer> _renderers = new List<CullableRenderer>();
         private readonly Dictionary<Renderer, CullableRenderer> _tracked = new Dictionary<Renderer, CullableRenderer>();
@@ -1054,11 +1112,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             FogOfWarService fogService,
             IGridService gridService,
             SignalBus signalBus,
-            [InjectOptional] FogOfWarSettings settings)
+            [InjectOptional] IGridProjection gridProjection = null,
+            [InjectOptional] FogOfWarSettings settings = null)
         {
             _fogService = fogService;
             _gridService = gridService;
             _signalBus = signalBus;
+            _gridProjection = gridProjection;
             _settings = settings;
         }
 
@@ -1292,7 +1352,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     continue;
                 }
 
-                bool shouldRender = FogRendererCullingEvaluator.ShouldRender(renderer.bounds, _fogService, _gridService, paddingCells);
+                bool shouldRender = FogRendererCullingEvaluator.ShouldRender(renderer.bounds, _fogService, _gridService, paddingCells, _gridProjection);
                 entry.SetHiddenByFog(!shouldRender);
                 processed++;
             }

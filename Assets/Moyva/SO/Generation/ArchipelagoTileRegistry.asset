@@ -13,54 +13,111 @@ MonoBehaviour:
   m_Name: ArchipelagoTileRegistry
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.API.TileRegistrySO
   _definitions:
+  - _id: TileGrass
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: water
     _movementCost: 1
-    _visualPrefab: {fileID: 1384669653051272897, guid: 1d32aeffc2c9ab6c8a53853a9910a1f3, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
   - _id: ocean-deep
     _movementCost: 1
-    _visualPrefab: {fileID: 7203100000000001001, guid: 9b6a0d1f87ee4a99b01b97b46c5d1010, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
   - _id: ocean-shallow
     _movementCost: 1
-    _visualPrefab: {fileID: 7203100000000002001, guid: 6dcb2a7cf65049ea9b7c67e63b43e271, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
   - _id: beach
     _movementCost: 1
-    _visualPrefab: {fileID: 7203100000000003001, guid: 1e1d4f94fe6e4932b7d4173f7d25f3a1, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: 6f7566a5feac92a48a18dcf6a52b544d, type: 3}
   - _id: lowland
     _movementCost: 1
-    _visualPrefab: {fileID: 7203100000000004001, guid: c9a436dd242048f0ab05a8b97f3d6fb3, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
   - _id: grass
     _movementCost: 1
-    _visualPrefab: {fileID: 8617330532228340915, guid: 23151ff9b4d8faa368d78bfe81c8e13d, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: hill
     _movementCost: 1.2
-    _visualPrefab: {fileID: 7203100000000005001, guid: 3ef4f4f119e14ce295c8c512a2a73a98, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 5918185789254116943, guid: 6242e01fcf2943a4a8e3c28135b4dcbf, type: 3}
   - _id: mountain
     _movementCost: 3
-    _visualPrefab: {fileID: 7203100000000006001, guid: ddc2d68d0f83482c8f50f55eaed1ed53, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 53689e490f32e294bbaf7af82b759737, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 3e238af7-89df-4ad7-a35a-1869f9321613
+    _tileWorldCreatorBlueprintLayerName: Mountain
+    _visualPrefab: {fileID: 6864620678140451330, guid: 9d579ac99d1488f479c7d40ee76eef29, type: 3}
   - _id: snow
     _movementCost: 2.5
-    _visualPrefab: {fileID: 7203100000000007001, guid: 58d1c3cafb7a4902a1a138b121f721d0, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 4b3b8cd0-44ae-4923-aadb-bc49251bbc6b
+    _tileWorldCreatorBlueprintLayerName: Snow
+    _visualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
   - _id: forest-sparse
     _movementCost: 1.5
-    _visualPrefab: {fileID: 6097099620203038976, guid: fcee0ae92d400f04a9c13b628e41465f, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 3c608b14-579d-43b1-bb78-04b76e1609a5
+    _tileWorldCreatorBlueprintLayerName: Forest
+    _visualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
   - _id: forest-dense
     _movementCost: 2
-    _visualPrefab: {fileID: 2574010424079311619, guid: d38490c7e15db92efbcd9e52a5042f41, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 3c608b14-579d-43b1-bb78-04b76e1609a5
+    _tileWorldCreatorBlueprintLayerName: Forest
+    _visualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
   - _id: grass-tile-level-1-001
     _movementCost: 1
-    _visualPrefab: {fileID: 2680998980662229933, guid: e82361f05179d965b8476942dedc85d5, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
   - _id: grass-tile-level-2-001
     _movementCost: 1
-    _visualPrefab: {fileID: 2680998980662229933, guid: 955f6aa9affbb795eafafed74c565106, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
   - _id: grass-tile-level-3-001
     _movementCost: 1
-    _visualPrefab: {fileID: 2680998980662229933, guid: eb0fb5eb46a037b0c8ccceee10fd4f48, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
   - _id: grass-tile-level-4-001
     _movementCost: 1
-    _visualPrefab: {fileID: 2680998980662229933, guid: 4ad2fec847d647f36a4f653350e23db7, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
   - _id: grass-tile-level-5-001
     _movementCost: 1
-    _visualPrefab: {fileID: 2680998980662229933, guid: f5e8775cfe47b07ffa82e01d86e32dfb, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
   - _id: grass-tile-level-6-001
     _movementCost: 1
-    _visualPrefab: {fileID: 2680998980662229933, guid: 47b18e70c8a3ede7db87d467b84050ab, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}

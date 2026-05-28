@@ -35,7 +35,6 @@ namespace Kruty1918.Moyva.Editor
 
         private Vector2 _scroll;
 
-        [MenuItem("Moyva/Tools/Registry Factory (Legacy)")]
         private static void Open()
         {
             // Нова версія: відкривається Registry Hub

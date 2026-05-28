@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Signals;
+using Kruty1918.Moyva.Grid.API;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -14,6 +15,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private const float TouchTapMaxDurationSeconds = 0.45f;
 
         private readonly SignalBus _signalBus;
+        private readonly IGridProjection _gridProjection;
         private readonly List<RaycastResult> _uiRaycastResults = new List<RaycastResult>(8);
 
         private PointerEventData _pointerEventData;
@@ -25,9 +27,10 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private bool _multiTouchObserved;
         private Camera _cachedCamera;
 
-        public TileClickInputService(SignalBus signalBus)
+        public TileClickInputService(SignalBus signalBus, [InjectOptional] IGridProjection gridProjection = null)
         {
             _signalBus = signalBus;
+            _gridProjection = gridProjection;
         }
 
         public void Tick()
@@ -182,12 +185,30 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private void FireTileClick(Vector2 screenPos, Camera cam)
         {
-            var worldPos = cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, -cam.transform.position.z));
-            var tilePos = new Vector2Int(
-                Mathf.RoundToInt(worldPos.x),
-                Mathf.RoundToInt(worldPos.y));
+            Vector3 worldPos = ScreenToWorldOnGridPlane(screenPos, cam);
+            var tilePos = _gridProjection != null
+                ? _gridProjection.WorldToGrid(worldPos)
+                : new Vector2Int(Mathf.RoundToInt(worldPos.x), Mathf.RoundToInt(worldPos.y));
 
             _signalBus.Fire(new TileClickedSignal { Position = tilePos });
+        }
+
+        private Vector3 ScreenToWorldOnGridPlane(Vector2 screenPos, Camera cam)
+        {
+            if (cam == null)
+                return Vector3.zero;
+
+            if (_gridProjection == null)
+                return cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, -cam.transform.position.z));
+
+            Ray ray = cam.ScreenPointToRay(screenPos);
+            Plane plane = _gridProjection.WorldPlane == GridWorldPlane.XZ
+                ? new Plane(Vector3.up, Vector3.zero)
+                : new Plane(Vector3.forward, Vector3.zero);
+
+            return plane.Raycast(ray, out float distance)
+                ? ray.GetPoint(distance)
+                : cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, -cam.transform.position.z));
         }
     }
 }

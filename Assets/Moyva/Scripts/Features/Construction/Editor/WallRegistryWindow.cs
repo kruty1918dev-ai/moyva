@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
+using Kruty1918.Moyva.Editor.Shared;
 using UnityEditor;
 using UnityEngine;
 
@@ -80,7 +81,6 @@ namespace Kruty1918.Moyva.Construction.Editor
         private GUIStyle _boxedContentStyle;
 
         // ── Відкрити вікно ─────────────────────────────────────────────────────
-        [MenuItem("Moyva/Construction/Wall Registry Editor")]
         public static void Open()
         {
             var window = GetWindow<WallRegistryWindow>("Реєстр стін");
@@ -806,11 +806,9 @@ namespace Kruty1918.Moyva.Construction.Editor
 
         private static Sprite ExtractSpriteFromPrefab(GameObject prefab)
         {
-            if (prefab == null)
-                return null;
-
-            var sr = prefab.GetComponentInChildren<SpriteRenderer>(true);
-            return sr != null ? sr.sprite : null;
+            return AdaptivePrefabPreviewUtility.TryGetPrimarySprite(prefab, out var sprite, out _)
+                ? sprite
+                : null;
         }
 
         private void UpsertBuildingDefinition(

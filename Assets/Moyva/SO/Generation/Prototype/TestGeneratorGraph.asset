@@ -264,43 +264,13 @@ MonoBehaviour:
   - water-shoal-depth-tile-001
   _applyOnlyOnFlags: 0
   _targetFlagIds: []
-  _levels: 10
+  _levels: 4
   _useCustomThresholds: 1
   _levelThresholds:
-  - 0
-  - 0.2
-  - 0.3
-  - 0.4
-  - 0.5
-  - 0.6
-  - 0.7
+  - 0.42
+  - 0.62
   - 0.8
-  - 0.9
-  _hillTiles:
-  - Direction: 0
-    TileId: stone-hill-down-middle-tile-001
-  - Direction: 1
-    TileId: stone-hill-top-middle-tile-001
-  - Direction: 2
-    TileId: stone-hill-right-tile-001
-  - Direction: 3
-    TileId: stone-hill-left-tile-001
-  - Direction: 4
-    TileId: stone-hill-top-right-tile-001
-  - Direction: 5
-    TileId: stone-hill-top-left-tile-001
-  - Direction: 6
-    TileId: stone-hill-down-right-tile-001
-  - Direction: 7
-    TileId: stone-hill-down-left-tile-001
-  - Direction: 8
-    TileId: stone-hill-top-right-inner-corner-tile-001
-  - Direction: 9
-    TileId: stone-hill-top-left-inner-corner-tile-001
-  - Direction: 10
-    TileId: stone-hill-down-right-inner-corner-tile-001
-  - Direction: 11
-    TileId: stone-hill-down-left-inner-corner-tile-001
+  _hillTiles: []
   _useMaskOverride: 0
   _maskLayerIndices: 00000000
   _maskOverrideLevels: 3
@@ -577,18 +547,18 @@ MonoBehaviour:
   _nodeId: 164df983-4d80-4b66-9b0b-d7b55729068b
   _editorPosition: {x: 16686, y: -134}
   _waterMinHeight: 0
-  _waterMaxHeight: 0.34052122
-  _waterLevels: 5
-  _deepDistance: 9
-  _levelBlend: 0.6
+  _waterMaxHeight: 0.325
+  _waterLevels: 4
+  _deepDistance: 12
+  _levelBlend: 0.35
   _cleanupIterations: 5
   _fillNeighborThreshold: 5
   _removeNeighborThreshold: 3
   _minWaterBodySize: 32
-  _shoreWidth: 3
-  _shoreTargetHeight: 0.36
-  _shoreBlend: 0.75
-  _shoreMaxSourceHeight: 0.4
+  _shoreWidth: 4
+  _shoreTargetHeight: 0.43
+  _shoreBlend: 0.95
+  _shoreMaxSourceHeight: 0.52
   _smoothRadius: 2
   _smoothIterations: 2
 --- !u!114 &-4634082612512850134
@@ -1674,6 +1644,11 @@ MonoBehaviour:
   _sharedSettings:
     _mapWidth: 0
     _mapHeight: 0
+    _gridTopology: 0
+    _projectionMode: 0
+    _renderMode: 0
+    _neighborhoodMode: 0
+  _tileRegistry: {fileID: 11400000, guid: 5a57832fb61b869c4a38191aa4236799, type: 2}
 --- !u!114 &332949947074943817
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -1791,31 +1766,7 @@ MonoBehaviour:
   _excludedNeighborTileTypes: []
   _applyOnlyOnFlags: 0
   _targetFlagIds: []
-  _contourTiles:
-  - Direction: 0
-    TileId: grass-coast-down-middle-tile-001
-  - Direction: 1
-    TileId: grass-coast-top-middle-tile-001
-  - Direction: 2
-    TileId: grass-coast-right-tile-001
-  - Direction: 3
-    TileId: grass-coast-left-tile-001
-  - Direction: 7
-    TileId: grass-coast-down-left-tile-001
-  - Direction: 5
-    TileId: grass-coast-top-left-tile-001
-  - Direction: 4
-    TileId: grass-coast-top-right-tile-001
-  - Direction: 6
-    TileId: grass-coast-down-right-tile-001
-  - Direction: 9
-    TileId: grass-coast-top-left-corner-tile-001
-  - Direction: 8
-    TileId: grass-coast-top-right-corner-tile-001
-  - Direction: 11
-    TileId: grass-coast-down-left-corner-tile-001
-  - Direction: 10
-    TileId: grass-coast-down-right-corner-tile-001
+  _contourTiles: []
   _replaceLandNearWater: 1
 --- !u!114 &2198955456719905099
 MonoBehaviour:

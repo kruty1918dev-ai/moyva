@@ -210,9 +210,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
             Color[] srcPixels = src.GetPixels(srcX, srcY, srcW, srcH);
 
-            // Базова роздільність шару за скейлом.
-            int targetW = Mathf.Max(1, Mathf.RoundToInt(mapW * Mathf.Clamp01(resolutionScale)));
-            int targetH = Mathf.Max(1, Mathf.RoundToInt(mapH * Mathf.Clamp01(resolutionScale)));
+            // Базова роздільність шару: печемо реальний sprite у кожну tile-комірку,
+            // а resolutionScale керує кількістю texel'ів на один tile.
+            float scale = Mathf.Clamp(resolutionScale, 0.05f, 1f);
+            int desiredPixelsPerTileW = Mathf.Max(1, Mathf.RoundToInt(srcW * scale));
+            int desiredPixelsPerTileH = Mathf.Max(1, Mathf.RoundToInt(srcH * scale));
+            int maxTextureSize = Mathf.Max(256, SystemInfo.maxTextureSize);
+
+            int targetW = Mathf.Clamp(mapW * desiredPixelsPerTileW, 1, maxTextureSize);
+            int targetH = Mathf.Clamp(mapH * desiredPixelsPerTileH, 1, maxTextureSize);
 
             // Якщо є маска дірок, гарантуємо мінімум 1 texel на 1 тайл,
             // щоб розмір дірок точно відповідав розміру тайлів незалежно від quality/resolution.
@@ -228,12 +234,24 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
             var tex = new Texture2D(targetW, targetH, textureFormat, useMipMaps);
             tex.filterMode = filterMode;
+            tex.wrapMode = TextureWrapMode.Clamp;
 
-            // Середній колір спрайту — найпростіший спосіб представити "суцільний шар тайлу"
-            Color avg = AverageColor(srcPixels);
             var fillPixels = new Color[targetW * targetH];
-            for (int i = 0; i < fillPixels.Length; i++)
-                fillPixels[i] = avg;
+
+            for (int texY = 0; texY < targetH; texY++)
+            {
+                float mapYf = ((texY + 0.5f) / targetH) * mapH;
+                float localTileY = mapYf - Mathf.Floor(mapYf);
+                int sampleY = Mathf.Clamp(Mathf.FloorToInt(localTileY * srcH), 0, srcH - 1);
+
+                for (int texX = 0; texX < targetW; texX++)
+                {
+                    float mapXf = ((texX + 0.5f) / targetW) * mapW;
+                    float localTileX = mapXf - Mathf.Floor(mapXf);
+                    int sampleX = Mathf.Clamp(Mathf.FloorToInt(localTileX * srcW), 0, srcW - 1);
+                    fillPixels[texY * targetW + texX] = srcPixels[sampleY * srcW + sampleX];
+                }
+            }
 
             // Застосовуємо HoleMask: де true → robimо alpha=0 (діркa)
             if (holeMask != null)
@@ -290,23 +308,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             tex.SetPixels(fillPixels);
             tex.Apply();
             return tex;
-        }
-
-        private static Color AverageColor(Color[] pixels)
-        {
-            if (pixels == null || pixels.Length == 0)
-                return Color.white;
-
-            float r = 0, g = 0, b = 0, a = 0;
-            foreach (var c in pixels)
-            {
-                r += c.r;
-                g += c.g;
-                b += c.b;
-                a += c.a;
-            }
-            float n = pixels.Length;
-            return new Color(r / n, g / n, b / n, a / n);
         }
 
         private static WorldLayerData BuildFallbackLayerData(int w, int h)

@@ -91,6 +91,14 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Tooltip("Visible areas are fully transparent (alpha=0)")]
         public bool FullyTransparentWhenVisible = true;
 
+        [Header("3D Volume Fog")]
+        [Tooltip("In XZ/3D worlds, places the fog overlay above terrain and adds vertical side planes so the fog reads as a world-space volume.")]
+        public bool Enable3DVolumeFog = true;
+        [Tooltip("Small gap above the highest generated terrain point where the top fog plane is placed.")]
+        [Min(0f)] public float Fog3DTopClearance = 0.08f;
+        [Tooltip("Vertical thickness of the 3D fog volume sides in world units.")]
+        [Min(0.01f)] public float Fog3DVolumeHeight = 2.5f;
+
         [Header("Visibility Culling")]
         [Tooltip("Disables world renderers that are fully covered by unexplored fog.")]
         public bool EnableRendererCulling = true;
@@ -138,6 +146,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
             FogTileSeamOverlapPixels = Mathf.Max(0f, FogTileSeamOverlapPixels);
             FogMapEdgePaddingPixels = Mathf.Max(0f, FogMapEdgePaddingPixels);
             FogIconSpritePixelSize = ClampSpritePixelSize(FogIconSpritePixelSize);
+            Fog3DTopClearance = Mathf.Max(0f, Fog3DTopClearance);
+            Fog3DVolumeHeight = Mathf.Max(0.01f, Fog3DVolumeHeight);
             RendererCullingMaxRenderersPerFrame = Mathf.Max(1, RendererCullingMaxRenderersPerFrame);
             RendererCullingDiscoveryInterval = Mathf.Max(0.05f, RendererCullingDiscoveryInterval);
             RendererCullingBoundsPaddingCells = Mathf.Max(0f, RendererCullingBoundsPaddingCells);

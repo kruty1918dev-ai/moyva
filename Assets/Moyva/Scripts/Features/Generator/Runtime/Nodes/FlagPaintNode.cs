@@ -44,7 +44,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (!ValidateSize(baseMap, boolMask, floatMask, w, h))
                 return NodeOutput.Error("All inputs must have the same size.");
 
-            var result = baseMap != null ? (string[,])baseMap.Clone() : new string[w, h];
+            var result = MapArrayUtils.CloneStringMapOrCreate(baseMap, w, h);
             float threshold = Mathf.Clamp01(_threshold);
 
             for (int x = 0; x < w; x++)

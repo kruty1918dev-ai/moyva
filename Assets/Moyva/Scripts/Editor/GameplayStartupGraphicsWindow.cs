@@ -17,7 +17,6 @@ namespace Kruty1918.Moyva.Editor
         private Texture2D _stripe;
         private float _previewZoomNormalized = 0.5f;
 
-        [MenuItem("Moyva/Tools/Gameplay Startup Graphics", priority = 42)]
         public static void Open()
         {
             var window = GetWindow<GameplayStartupGraphicsWindow>("Startup Graphics");
@@ -418,10 +417,6 @@ namespace Kruty1918.Moyva.Editor
             bool hasProjectServicesInstaller = FindAnyComponentByTypeName("Kruty1918.Moyva.Bootstrap.ProjectServicesInstaller, Kruty1918.Moyva.Bootstrap");
             DrawDiagLine("ProjectServicesInstaller present", hasProjectServicesInstaller,
                 hasProjectServicesInstaller ? "OK" : "ProjectServicesInstaller instance not found (ProjectContext may be unopened in EditMode).");
-
-            bool hasAutoScalerType = Type.GetType("Kruty1918.Moyva.Bootstrap.Runtime.MobileGraphicsAutoScaler, Kruty1918.Moyva.Bootstrap") != null;
-            DrawDiagLine("MobileGraphicsAutoScaler type", hasAutoScalerType,
-                hasAutoScalerType ? "OK" : "Type not resolved in current domain.");
 
             if (developerPixel.Enabled && !hasStartupAsset)
             {

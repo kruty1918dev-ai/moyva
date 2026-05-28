@@ -587,7 +587,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                             layerData, biomeMap, objectMap, heightMap, buildingMap,
                             tileRegistry,
                             settings?.MapObjectRegistry,
-                            settings?.BuildingRegistry);
+                            settings?.BuildingRegistry,
+                            sharedSettings: _graphAsset.SharedSettings);
 
                         nodeView.SetPreview(composite, "Composite preview", ownsTexture: true);
                         nodeView.SetPreviewVisible(_inlinePreviewsVisible);
@@ -648,7 +649,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                             out ownsPreview,
                             out status,
                             tileRegistry,
-                            heatmap);
+                            heatmap,
+                            _graphAsset.SharedSettings);
                     }
 
                     nodeView.SetPreview(preview, status, ownsPreview);

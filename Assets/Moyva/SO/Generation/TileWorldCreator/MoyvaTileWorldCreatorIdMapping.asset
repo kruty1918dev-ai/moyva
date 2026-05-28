@@ -1,0 +1,217 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f41855f5564b012a2a824dafe8222fec, type: 3}
+  m_Name: MoyvaTileWorldCreatorIdMapping
+  m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.API.TileWorldCreatorIdMappingSO
+  _terrainLayers:
+  - _idPattern: water*
+    _blueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _blueprintLayerName: Water
+    _tilePreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+    _movementCost: 1
+  - _idPattern: grass-coast-*
+    _blueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _blueprintLayerName: Sand
+    _tilePreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 6f7566a5feac92a48a18dcf6a52b544d, type: 3}
+    _movementCost: 1
+  - _idPattern: stone-hill-*
+    _blueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _blueprintLayerName: Hill
+    _tilePreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 5918185789254116943, guid: 6242e01fcf2943a4a8e3c28135b4dcbf, type: 3}
+    _movementCost: 1.2
+  - _idPattern: texture-grass-*
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
+    _movementCost: 1
+  - _idPattern: grass*
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
+    _movementCost: 1
+  - _idPattern: TileGrass
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
+    _movementCost: 1
+  - _idPattern: sand*
+    _blueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _blueprintLayerName: Sand
+    _tilePreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 6f7566a5feac92a48a18dcf6a52b544d, type: 3}
+    _movementCost: 1
+  - _idPattern: snow*
+    _blueprintLayerGuid: 4b3b8cd0-44ae-4923-aadb-bc49251bbc6b
+    _blueprintLayerName: Snow
+    _tilePreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
+    _movementCost: 2.5
+  - _idPattern: water
+    _blueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _blueprintLayerName: Water
+    _tilePreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+    _movementCost: 1
+  - _idPattern: ocean-deep
+    _blueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _blueprintLayerName: Water
+    _tilePreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+    _movementCost: 1
+  - _idPattern: ocean-shallow
+    _blueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _blueprintLayerName: Water
+    _tilePreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+    _movementCost: 1
+  - _idPattern: beach
+    _blueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _blueprintLayerName: Sand
+    _tilePreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 6f7566a5feac92a48a18dcf6a52b544d, type: 3}
+    _movementCost: 1
+  - _idPattern: lowland
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+    _movementCost: 1
+  - _idPattern: grass
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
+    _movementCost: 1
+  - _idPattern: hill
+    _blueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _blueprintLayerName: Hill
+    _tilePreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 5918185789254116943, guid: 6242e01fcf2943a4a8e3c28135b4dcbf, type: 3}
+    _movementCost: 1.2
+  - _idPattern: mountain
+    _blueprintLayerGuid: 3e238af7-89df-4ad7-a35a-1869f9321613
+    _blueprintLayerName: Mountain
+    _tilePreset: {fileID: 11400000, guid: 53689e490f32e294bbaf7af82b759737, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 6864620678140451330, guid: 9d579ac99d1488f479c7d40ee76eef29, type: 3}
+    _movementCost: 3
+  - _idPattern: snow
+    _blueprintLayerGuid: 4b3b8cd0-44ae-4923-aadb-bc49251bbc6b
+    _blueprintLayerName: Snow
+    _tilePreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+    _movementCost: 2.5
+  - _idPattern: forest-sparse
+    _blueprintLayerGuid: 3c608b14-579d-43b1-bb78-04b76e1609a5
+    _blueprintLayerName: Forest
+    _tilePreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+    _movementCost: 1.5
+  - _idPattern: forest-dense
+    _blueprintLayerGuid: 3c608b14-579d-43b1-bb78-04b76e1609a5
+    _blueprintLayerName: Forest
+    _tilePreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+    _movementCost: 2
+  - _idPattern: grass-tile-level-1-001
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+    _movementCost: 1
+  - _idPattern: grass-tile-level-2-001
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+    _movementCost: 1
+  - _idPattern: grass-tile-level-3-001
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+    _movementCost: 1
+  - _idPattern: grass-tile-level-4-001
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+    _movementCost: 1
+  - _idPattern: grass-tile-level-5-001
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+    _movementCost: 1
+  - _idPattern: grass-tile-level-6-001
+    _blueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _blueprintLayerName: Grass
+    _tilePreset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
+    _useDualGrid: 1
+    _scaleTileToCellSize: 1
+    _registryVisualPrefab: {fileID: 7486491380029859929, guid: 4b3b1230a5718e043b3e26418bc49be6, type: 3}
+    _movementCost: 1
+  _objectLayers: []
+  _buildingLayers: []

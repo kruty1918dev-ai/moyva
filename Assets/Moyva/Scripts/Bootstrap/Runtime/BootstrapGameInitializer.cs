@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -18,37 +16,39 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class BootstrapGameInitializer : IInitializable, IDisposable
     {
         private const string EconomySaveModuleFullName = "Kruty1918.Moyva.Economy.Runtime.EconomySaveModule";
+        private const string StarterPackLogTag = "[Bootstrap][StarterPack]";
 
         private readonly IConstructionService _constructionService;
         private readonly SignalBus _signalBus;
-        private readonly BootstrapGameSettings _settings;
         private readonly ISaveService _saveService;
-        private readonly BootstrapStartingPositionState _startingPositionState;
         private readonly BootstrapStarterPackState _starterPackState;
+        private readonly IBootstrapOwnerIdResolver _ownerIdResolver;
+        private readonly IBootstrapStarterPackDecisionService _decisionService;
+        private readonly IBootstrapStarterPackPersistenceService _persistenceService;
+        private readonly IBootstrapStarterPackGrantService _grantService;
         private bool _hasPendingWorldGeneratedSignal;
         private bool _bootstrapApplied;
         private bool _starterPackGrantEnabled;
-
-    #pragma warning disable CS0649
-        [InjectOptional] private ISessionManager _sessionManager;
-        [InjectOptional] private ISaveInspectorService _saveInspectorService;
-    #pragma warning restore CS0649
 
         [Inject]
         public BootstrapGameInitializer(
             IConstructionService constructionService,
             SignalBus signalBus,
-            BootstrapGameSettings settings,
             ISaveService saveService,
-            BootstrapStartingPositionState startingPositionState,
-            BootstrapStarterPackState starterPackState)
+            BootstrapStarterPackState starterPackState,
+            IBootstrapOwnerIdResolver ownerIdResolver,
+            IBootstrapStarterPackDecisionService decisionService,
+            IBootstrapStarterPackPersistenceService persistenceService,
+            IBootstrapStarterPackGrantService grantService)
         {
             _constructionService   = constructionService;
             _signalBus             = signalBus;
-            _settings              = settings;
             _saveService           = saveService;
-            _startingPositionState = startingPositionState;
             _starterPackState      = starterPackState;
+            _ownerIdResolver       = ownerIdResolver;
+            _decisionService       = decisionService;
+            _persistenceService    = persistenceService;
+            _grantService          = grantService;
         }
 
         public void Initialize()
@@ -87,13 +87,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_bootstrapApplied || !_hasPendingWorldGeneratedSignal)
                 return;
 
-            string activeOwnerId = ResolveBootstrapOwnerId();
+            string activeOwnerId = _ownerIdResolver.ResolveActiveOwnerId();
             _constructionService.SetActiveOwner(activeOwnerId);
 
-            // Multiplayer client guard: only the host grants the starter pack.
-            // Joining clients receive the host's economy state via the world snapshot
-            // (see EconomyMultiplayerBridge) and must not duplicate starter resources.
-            if (IsMultiplayerClient())
+            if (_decisionService.IsMultiplayerClient())
             {
                 _starterPackGrantEnabled = false;
                 _bootstrapApplied = true;
@@ -101,20 +98,24 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            // Якщо є сучасне збереження економіки — не робимо bootstrap.
-            // Старі сейви не мають EconomySaveModule, тому їм потрібна одноразова міграція стартових ресурсів.
             int slot = GameLaunchContext.SaveSlot;
-            if (GameLaunchContext.IsAutoLoadEnabled() && _saveService.HasSave(slot))
+            bool autoLoadEnabled = GameLaunchContext.IsAutoLoadEnabled();
+            bool hasSave = _saveService.HasSave(slot);
+            LogStarterPackBootstrapEvaluation(activeOwnerId, slot, autoLoadEnabled, hasSave);
+
+            if (autoLoadEnabled && hasSave)
             {
                 if (_starterPackState.HasGranted(activeOwnerId))
                 {
+                    Debug.Log($"{StarterPackLogTag} Skip grant: owner '{activeOwnerId}' already has granted marker in slot {slot}.");
                     _starterPackGrantEnabled = false;
                     _bootstrapApplied = true;
                     return;
                 }
 
-                if (HasAnyPersistedOwnerResources(slot, activeOwnerId))
+                if (_persistenceService.HasPersistedEconomyBlock(slot))
                 {
+                    Debug.Log($"{StarterPackLogTag} Skip grant: save slot {slot} already contains economy block for owner '{activeOwnerId}'.");
                     _starterPackState.MarkGranted(activeOwnerId);
                     _starterPackGrantEnabled = false;
                     _bootstrapApplied = true;
@@ -122,20 +123,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
 
                 _starterPackGrantEnabled = true;
-                Debug.LogWarning($"[Bootstrap] Save slot {slot} не має підтверджених economy-ресурсів для owner '{activeOwnerId}'. Виконується міграційна видача стартових ресурсів.");
+                Debug.LogWarning($"[Bootstrap] Save slot {slot} не містить economy-блоку. Виконується міграційна видача стартових ресурсів для owner '{activeOwnerId}'.");
+                Debug.Log($"{StarterPackLogTag} Migration grant enabled for slot {slot}, owner '{activeOwnerId}', entries=[{_grantService.DescribeConfiguredEntries()}].");
             }
             else
             {
-                _starterPackGrantEnabled = ShouldGrantStarterPackForCurrentLaunch();
+                _starterPackGrantEnabled = _decisionService.ShouldGrantForCurrentLaunch();
+                Debug.Log($"{StarterPackLogTag} New-world decision: grantEnabled={_starterPackGrantEnabled}, mode={GameLaunchContext.Mode}, slot={slot}, owner='{activeOwnerId}', entries=[{_grantService.DescribeConfiguredEntries()}].");
             }
 
             if (_starterPackGrantEnabled && !_starterPackState.HasGranted(activeOwnerId))
             {
-                TryGrantStarterPack(string.Empty, activeOwnerId);
-                TryPersistStarterGrant(slot, activeOwnerId, "після видачі стартових ресурсів");
+                _grantService.TryGrant(string.Empty, activeOwnerId);
+                _persistenceService.TryPersistStarterGrant(slot, activeOwnerId, "після видачі стартових ресурсів", _grantService.HasStarterPackEntries());
             }
 
-            if (!CanRunBootstrapLogic())
+            if (!_ownerIdResolver.CanRunBootstrapLogic())
                 return;
 
             _bootstrapApplied = true;
@@ -153,195 +156,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_starterPackState.HasGranted(ownerId))
                 return;
 
-            if (!TryGrantStarterPack(signal.SettlementId, ownerId))
+            if (!_grantService.TryGrant(signal.SettlementId, ownerId))
                 return;
 
             int slot = GameLaunchContext.SaveSlot;
-            TryPersistStarterGrant(slot, ownerId, "після видачі стартових ресурсів (поселення)");
+            _persistenceService.TryPersistStarterGrant(slot, ownerId, "після видачі стартових ресурсів (поселення)", _grantService.HasStarterPackEntries());
         }
 
-        private bool TryPersistStarterGrant(int slot, string ownerId, string contextLabel)
+        private void LogStarterPackBootstrapEvaluation(string ownerId, int slot, bool autoLoadEnabled, bool hasSave)
         {
-            bool hasStarterEntries = HasStarterPackEntries();
-            if (!GameLaunchContext.IsAutoSaveEnabled())
-            {
-                _starterPackState.MarkGranted(ownerId);
-                return true;
-            }
-
-            try
-            {
-                _saveService?.Save(slot);
-                Debug.Log($"[Bootstrap] Автосейв {contextLabel} у слот {slot}.");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[Bootstrap] Не вдалося зберегти {contextLabel}: {ex}");
-                return false;
-            }
-
-            if (hasStarterEntries && !HasPersistedStarterResources(slot, ownerId))
-            {
-                Debug.LogWarning($"[Bootstrap] Після автосейву economy-блок у слоті {slot} не містить очікуваних стартових ресурсів owner '{ownerId}'. Маркер granted не записано.");
-                return false;
-            }
-
-            _starterPackState.MarkGranted(ownerId);
-
-            try
-            {
-                _saveService?.Save(slot);
-                Debug.Log($"[Bootstrap] Маркер стартового пакета збережено для owner '{ownerId}' у слот {slot}.");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[Bootstrap] Не вдалося зберегти маркер стартового пакета для owner '{ownerId}': {ex}");
-                return false;
-            }
-        }
-
-        private bool HasAnyPersistedOwnerResources(int slot, string ownerId)
-        {
-            if (!TryReadEconomyOwnerResources(slot, ownerId, out var resources))
-                return false;
-
-            foreach (var resource in resources)
-            {
-                if (resource.Value > 0.0001f)
-                    return true;
-            }
-
-            return false;
-        }
-
-        private bool HasPersistedStarterResources(int slot, string ownerId)
-        {
-            if (!HasStarterPackEntries())
-                return true;
-
-            if (!TryReadEconomyOwnerResources(slot, ownerId, out var resources))
-                return false;
-
-            bool hasExpectedEntry = false;
-            var entries = _settings.InitialResources;
-            for (int index = 0; index < entries.Count; index++)
-            {
-                var entry = entries[index];
-                if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0f)
-                    continue;
-
-                hasExpectedEntry = true;
-                string resourceId = entry.ResourceId.Trim();
-                if (!resources.TryGetValue(resourceId, out float amount) || amount + 0.0001f < entry.Amount)
-                    return false;
-            }
-
-            return hasExpectedEntry;
-        }
-
-        private bool TryReadEconomyOwnerResources(int slot, string ownerId, out Dictionary<string, float> resources)
-        {
-            resources = new Dictionary<string, float>(StringComparer.Ordinal);
-            if (_saveInspectorService == null || !_saveInspectorService.TryGetBlockPayload(slot, EconomySaveModuleFullName, out byte[] payload))
-                return false;
-
-            string normalizedOwnerId = NormalizeOwnerId(ownerId);
-            try
-            {
-                using var stream = new MemoryStream(payload);
-                using var reader = new BinaryReader(stream);
-
-                int schemaVersion = reader.ReadInt32();
-                if (schemaVersion != 1)
-                    return false;
-
-                int ownerCount = reader.ReadInt32();
-                for (int ownerIndex = 0; ownerIndex < ownerCount; ownerIndex++)
-                {
-                    string savedOwnerId = NormalizeOwnerId(reader.ReadString());
-                    int resourceCount = reader.ReadInt32();
-                    bool isTargetOwner = string.Equals(savedOwnerId, normalizedOwnerId, StringComparison.Ordinal);
-
-                    for (int resourceIndex = 0; resourceIndex < resourceCount; resourceIndex++)
-                    {
-                        string resourceId = reader.ReadString();
-                        float amount = reader.ReadSingle();
-                        if (!isTargetOwner || string.IsNullOrWhiteSpace(resourceId) || amount <= 0f)
-                            continue;
-
-                        string normalizedResourceId = resourceId.Trim();
-                        if (resources.TryGetValue(normalizedResourceId, out float current))
-                            resources[normalizedResourceId] = current + amount;
-                        else
-                            resources[normalizedResourceId] = amount;
-                    }
-                }
-
-                return resources.Count > 0;
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[Bootstrap] Не вдалося прочитати economy-блок слота {slot}: {ex.Message}");
-                resources.Clear();
-                return false;
-            }
-        }
-
-        private bool HasStarterPackEntries()
-        {
-            var entries = _settings.InitialResources;
-            if (entries == null || entries.Count == 0)
-                return false;
-
-            for (int index = 0; index < entries.Count; index++)
-            {
-                var entry = entries[index];
-                if (entry != null && !string.IsNullOrWhiteSpace(entry.ResourceId) && entry.Amount > 0f)
-                    return true;
-            }
-
-            return false;
-        }
-
-        private bool TryGrantStarterPack(string settlementId, string ownerId)
-        {
-            var entries = _settings.InitialResources;
-            if (entries == null || entries.Count == 0)
-                return true;
-
-            var payload = new List<StarterPackResourceEntrySignal>();
-            bool grantedAny = false;
-            for (int index = 0; index < entries.Count; index++)
-            {
-                var entry = entries[index];
-                if (entry == null || string.IsNullOrWhiteSpace(entry.ResourceId) || entry.Amount <= 0f)
-                    continue;
-
-                payload.Add(new StarterPackResourceEntrySignal
-                {
-                    ResourceId = entry.ResourceId.Trim(),
-                    Amount = entry.Amount,
-                });
-                grantedAny = true;
-            }
-
-            if (grantedAny)
-            {
-                _signalBus.Fire(new GrantStarterPackResourcesSignal
-                {
-                    SettlementId = settlementId,
-                    OwnerId = ownerId,
-                    Entries = payload.ToArray(),
-                });
-
-                string target = string.IsNullOrWhiteSpace(settlementId)
-                    ? "owner pool"
-                    : $"settlement='{settlementId}'";
-                Debug.Log($"[Bootstrap] Видано стартовий пакет owner='{ownerId}' для {target}.");
-            }
-
-            return true;
+            Debug.Log($"{StarterPackLogTag} Evaluate bootstrap: mode={GameLaunchContext.Mode}, slot={slot}, autoLoad={autoLoadEnabled}, autoSave={GameLaunchContext.IsAutoSaveEnabled()}, hasSave={hasSave}, owner='{ownerId}', alreadyGranted={_starterPackState.HasGranted(ownerId)}, entries=[{_grantService.DescribeConfiguredEntries()}].");
         }
 
         private static string NormalizeOwnerId(string ownerId)
@@ -351,99 +175,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 : ownerId.Trim();
         }
 
-        /// <summary>
-        /// True when the local participant is connected to a multiplayer session
-        /// (more than one participant in the lobby) and is not the host.
-        /// </summary>
-        private bool IsMultiplayerClient()
-        {
-            if (_sessionManager == null)
-                return false;
-            if (_sessionManager.Participants == null || _sessionManager.Participants.Count <= 1)
-                return false;
-            return !_sessionManager.IsLocalPlayerHost;
-        }
-
-        private static bool ShouldGrantStarterPackForCurrentLaunch()
-        {
-            switch (GameLaunchContext.Mode)
-            {
-                case GameLaunchMode.MenuLoadGame:
-                case GameLaunchMode.MenuJoinGame:
-                    return false;
-                case GameLaunchMode.DirectGameplayTest:
-                case GameLaunchMode.MenuNewGame:
-                case GameLaunchMode.MenuMultiplayerGame:
-                case GameLaunchMode.Unknown:
-                default:
-                    return true;
-            }
-        }
-
-        private string ResolveLocalActiveOwnerId(IReadOnlyList<SpawnPositionAssignment> targets)
-        {
-            string localPlayerId = _sessionManager?.LocalPlayerId;
-
-            if (targets != null)
-            {
-                for (int index = 0; index < targets.Count; index++)
-                {
-                    var target = targets[index];
-                    if (target.IsBot)
-                        continue;
-
-                    if (!string.IsNullOrWhiteSpace(localPlayerId)
-                        && string.Equals(target.ParticipantId, localPlayerId, StringComparison.Ordinal))
-                    {
-                        return ResolveSpawnOwnerId(target, index);
-                    }
-                }
-
-                for (int index = 0; index < targets.Count; index++)
-                {
-                    var target = targets[index];
-                    if (!target.IsBot)
-                        return ResolveSpawnOwnerId(target, index);
-                }
-
-                if (targets.Count > 0)
-                    return ResolveSpawnOwnerId(targets[0], 0);
-            }
-
-            return "player_0";
-        }
-
-        private static string ResolveSpawnOwnerId(SpawnPositionAssignment assignment, int fallbackIndex)
-        {
-            if (!string.IsNullOrWhiteSpace(assignment.ParticipantId))
-                return assignment.ParticipantId;
-
-            if (assignment.IsBot)
-                return $"bot-{assignment.SlotIndex:00}";
-
-            return fallbackIndex == 0 ? "player_0" : $"spawn-slot-{assignment.SlotIndex:00}";
-        }
-
-        private string ResolveBootstrapOwnerId()
-        {
-            var assignments = _startingPositionState.SpawnAssignments;
-            if (assignments != null && assignments.Count > 0)
-                return NormalizeOwnerId(ResolveLocalActiveOwnerId(assignments));
-
-            if (!string.IsNullOrWhiteSpace(_sessionManager?.LocalPlayerId))
-                return NormalizeOwnerId(_sessionManager.LocalPlayerId);
-
-            return NormalizeOwnerId(_constructionService.GetActiveOwner());
-        }
-
-        private bool CanRunBootstrapLogic()
-        {
-            var participants = _sessionManager?.Participants;
-            if (participants == null || participants.Count == 0)
-                return true;
-
-            return _startingPositionState.IsSet;
-        }
+        // BootstrapGameInitializer intentionally stays as a signal coordinator.
+        // Starter economy decisions, payload creation, and save validation live in
+        // focused services so future economy/editor changes do not silently alter
+        // the new-world starter resource contract.
     }
 
     internal sealed class BootstrapStarterPackState

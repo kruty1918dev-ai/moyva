@@ -63,6 +63,13 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             if (_isOpening || _joinRoomPanelService == null)
                 return;
 
+            if (!string.IsNullOrWhiteSpace(_menuToOpen)
+                && string.Equals(_navigation?.CurrentMenu, _menuToOpen, System.StringComparison.Ordinal))
+            {
+                _navigation.Open(_menuToOpen);
+                return;
+            }
+
             // 2: Позначаємо in-flight стан і блокуємо кнопку на час async-операції.
             _isOpening = true;
             var previousInteractable = _button == null || _button.interactable;

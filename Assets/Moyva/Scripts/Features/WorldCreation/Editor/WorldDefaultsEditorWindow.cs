@@ -48,7 +48,6 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
         private GUIStyle _mutedStyle;
         private GUIStyle _pillStyle;
 
-        [MenuItem("Moyva/World/Базові налаштування світу")]
         public static void Open()
         {
             var window = GetWindow<WorldDefaultsEditorWindow>();

@@ -86,6 +86,13 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return;
             }
 
+            if (!string.IsNullOrWhiteSpace(_menuToOpen)
+                && string.Equals(_navigation.CurrentMenu, _menuToOpen, StringComparison.Ordinal))
+            {
+                _navigation.Open(_menuToOpen);
+                return;
+            }
+
             // 3: Фіксуємо in-flight стан і тимчасово вимикаємо кнопку.
             _isOpening = true;
             var previousInteractable = _button == null || _button.interactable;

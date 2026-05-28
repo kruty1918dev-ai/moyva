@@ -37,7 +37,6 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
         private bool _showRevealRadius = true;
         private Vector2 _scroll;
 
-        [MenuItem("Moyva/Bootstrap/Дизайнер стартового спавну")]
         public static void Open()
         {
             var window = GetWindow<PlayerSpawnPreviewWindow>("Стартовий спавн");

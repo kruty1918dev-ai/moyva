@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
@@ -166,9 +167,8 @@ namespace Kruty1918.Moyva.Generator.Editor
             foreach (var def in reg.Definitions)
             {
                 if (string.IsNullOrEmpty(def.Id) || def.VisualPrefab == null) continue;
-                var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
-                if (sr != null && sr.sprite != null)
-                    sprites[def.Id] = sr.sprite;
+                if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.VisualPrefab, out var sprite, out _))
+                    sprites[def.Id] = sprite;
             }
             return sprites;
         }
@@ -313,11 +313,7 @@ namespace Kruty1918.Moyva.Generator.Editor
                         rowRect.y + (RowH - IconSize) * 0.5f, IconSize, IconSize);
                     if (_sprites.TryGetValue(id, out Sprite sprite) && sprite != null)
                     {
-                        var tex = sprite.texture;
-                        var sr  = sprite.textureRect;
-                        var uv  = new Rect(sr.x / tex.width, sr.y / tex.height,
-                                           sr.width / tex.width, sr.height / tex.height);
-                        GUI.DrawTextureWithTexCoords(iconRect, tex, uv, true);
+                        AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, null, sprite);
                     }
                     else
                     {

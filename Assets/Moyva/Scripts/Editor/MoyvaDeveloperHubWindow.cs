@@ -34,6 +34,7 @@ namespace Kruty1918.Moyva.Editor
         private static readonly ToolDefinition[] Tools =
         {
             new ToolDefinition("Developer Hub", "Системи", "Moyva/Tools/Developer Hub", "Головний редакторський хаб: інструменти, прев'ю, пошук і моніторинг.", "d_UnityEditor.ConsoleWindow", true, "hub", "developer", "dashboard", "preview"),
+            new ToolDefinition("Project Settings", "Системи", "Moyva/Project/Global Settings", "Глобальні режими сітки, проекції, preview та майбутні project-wide defaults.", "d_Settings", true, "project", "settings", "grid", "projection", "hex", "isometric", "3d"),
             new ToolDefinition("Registry Hub", "Реєстри", "Moyva/Tools/Registry Hub", "Центральний редактор тайлів, об'єктів, юнітів, будівель, стін і ресурсів.", "d_FilterByType", true, "registry", "tile", "object", "unit", "building", "wall", "resource", "додати", "змінити"),
             new ToolDefinition("Registry Factory Legacy", "Реєстри", "Moyva/Tools/Registry Factory (Legacy)", "Старий entry point, який перенаправляє у Registry Hub для сумісності зі звичним меню.", "d_FilterByType", false, "registry", "legacy", "factory", "old", "compatibility"),
             new ToolDefinition("Audio Designer", "Реєстри", "Moyva/Tools/Audio Designer", "Звуки під ключ, preview, ефекти, pool і вибір AudioKey.", "d_AudioSource Icon", true, "audio", "sound", "звук", "preview", "effects", "pool"),
@@ -41,6 +42,8 @@ namespace Kruty1918.Moyva.Editor
             new ToolDefinition("Building Designer", "Будівництво", "Moyva/Tools/Building Designer", "Візуальний редактор будівель із placement-симуляцією, heatmap і player-facing preview.", "d_BuildSettings.Standalone.Small", true, "building", "construction", "placement", "simulation", "heatmap", "будівля", "споруда"),
             new ToolDefinition("Редактор економіки", "Реєстри", "Moyva/Tools/Редактор Економіки", "Каталог ресурсів, settlement profiles, production, правила і перевірки економіки.", "d_UnityEditor.InspectorWindow", true, "economy", "resource", "production", "warehouse", "caravan", "економіка"),
             new ToolDefinition("Graph Editor", "Генерація світу", "Moyva/Graph Editor", "Візуальний граф генерації світу, nodes, preview і preset workflow.", "d_GraphView Icon", true, "graph", "generator", "world", "node", "preview", "map"),
+            new ToolDefinition("TileWorldCreator Setup", "Генерація світу", "Moyva/Tools/TileWorldCreator/Setup Wizard", "Єдиний wizard для TWC manager/configuration/mapping/registry/scene wiring.", "d_Grid.PaintTool", true, "twc", "tileworldcreator", "setup", "mapping", "configuration", "tiles"),
+            new ToolDefinition("TileWorldCreator Registry Sync", "Генерація світу", "Moyva/Tools/TileWorldCreator/Sync Tile Registry From Mapping", "Синхронізує TileRegistry із TWC ID Mapping без окремого меню.", "d_Refresh", false, "twc", "tileworldcreator", "sync", "registry", "mapping"),
             new ToolDefinition("World Defaults", "Генерація світу", "Moyva/World/Базові налаштування світу", "Базові world creation defaults і bootstrap-facing world параметри.", "d_SceneAsset Icon", false, "world", "defaults", "generation", "seed", "map"),
             new ToolDefinition("Object Rules: Empty Preset", "Генерація світу", "Assets/Moyva/ObjectConnectionRules/Apply Preset/Empty", "Context action для ObjectConnectionRules: застосувати порожній preset.", "d_ScriptableObject Icon", false, "object", "connection", "rules", "preset", "empty"),
             new ToolDefinition("Object Rules: River Preset", "Генерація світу", "Assets/Moyva/ObjectConnectionRules/Apply Preset/River", "Context action для ObjectConnectionRules: застосувати river preset.", "d_ScriptableObject Icon", false, "object", "connection", "rules", "preset", "river"),
@@ -1085,7 +1088,7 @@ namespace Kruty1918.Moyva.Editor
                 string path = Tools[i].MenuPath;
                 if (string.IsNullOrWhiteSpace(path) || !path.StartsWith("Moyva/Tools/", StringComparison.OrdinalIgnoreCase))
                     continue;
-                if (available.Contains(path))
+                if (available.Contains(path) || HasToolFallback(path))
                     continue;
                 _missingHubMenuPaths.Add(path);
             }
@@ -1230,8 +1233,95 @@ namespace Kruty1918.Moyva.Editor
             if (EditorApplication.ExecuteMenuItem(menuPath))
                 return;
 
+            if (TryOpenToolFallback(menuPath))
+                return;
+
             ShowNotification(new GUIContent($"Не вдалося відкрити: {menuPath}"));
             Debug.LogWarning($"[MoyvaDeveloperHub] Menu item not found or unavailable: {menuPath}");
+        }
+
+        private static bool HasToolFallback(string menuPath)
+            => TryResolveToolFallback(menuPath, out _, out _);
+
+        private static bool TryOpenToolFallback(string menuPath)
+        {
+            if (!TryResolveToolFallback(menuPath, out string typeName, out string methodName))
+                return false;
+
+            var type = FindEditorWindowType(typeName);
+            if (type == null)
+            {
+                Debug.LogWarning($"[MoyvaDeveloperHub] Fallback editor type not found: {typeName}");
+                return false;
+            }
+
+            var method = type.GetMethod(methodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static, null, Type.EmptyTypes, null);
+            if (method != null)
+            {
+                method.Invoke(null, null);
+                return true;
+            }
+
+            var window = GetWindow(type, false, ObjectNames.NicifyVariableName(type.Name));
+            window.Show();
+            window.Focus();
+            return true;
+        }
+
+        private static bool TryResolveToolFallback(string menuPath, out string typeName, out string methodName)
+        {
+            typeName = null;
+            methodName = "Open";
+
+            switch (menuPath)
+            {
+                case "Moyva/Tools/Developer Hub": typeName = nameof(MoyvaDeveloperHubWindow); return true;
+                case "Moyva/Project/Global Settings": typeName = "MoyvaProjectSettingsEditorWindow"; return true;
+                case "Moyva/Tools/Registry Hub": typeName = "RegistryHubWindow"; return true;
+                case "Moyva/Tools/Registry Factory (Legacy)": typeName = "RegistryFactoryEditorWindow"; return true;
+                case "Moyva/Tools/Audio Designer": typeName = "AudioDesignerWindow"; return true;
+                case "Moyva/Tools/Unit Designer": typeName = "UnitDesignerWindow"; return true;
+                case "Moyva/Tools/Building Designer": typeName = "BuildingDesignerWindow"; return true;
+                case "Moyva/Construction/Building Designer": typeName = "BuildingDesignerWindow"; return true;
+                case "Moyva/Tools/Редактор Економіки": typeName = "EconomyDesignerWindow"; return true;
+                case "Moyva/Graph Editor": typeName = "GraphEditorWindow"; return true;
+                case "Moyva/World/Базові налаштування світу": typeName = "WorldDefaultsEditorWindow"; return true;
+                case "Moyva/Bootstrap/Installer Config Editor": typeName = "BootstrapInstallerConfigWindow"; methodName = "OpenWindow"; return true;
+                case "Moyva/Tools/Gameplay Startup Graphics": typeName = "GameplayStartupGraphicsWindow"; return true;
+                case "Moyva/Bootstrap/Дизайнер стартового спавну": typeName = "PlayerSpawnPreviewWindow"; return true;
+                case "Moyva/Multiplayer/Config Hub": typeName = "MultiplayerConfigEditorWindow"; return true;
+                case "Moyva/Calendar/Config Hub": typeName = "CalendarConfigEditorWindow"; return true;
+                case "Moyva/Save System/Designer Tool": typeName = "SaveSystemDesignerToolWindow"; methodName = "OpenWindow"; return true;
+                case "Moyva/Tools/Fog of War/Vision Tuner": typeName = "FogVisionTuningWindow"; return true;
+                case "Moyva/Construction/Topology Resolver Editor": typeName = "TopologyResolverEditorWindow"; return true;
+                case "Moyva/Construction/UI Setup Tool": typeName = "ConstructionUISetupWindow"; return true;
+                case "Moyva/Construction/Wall Registry Editor": typeName = "WallRegistryWindow"; return true;
+                case "Moyva/Windows/Prefab 2D Preview Setup": typeName = "PrefabPreview2DWindow"; methodName = "ShowWindow"; return true;
+                case "Moyva/Tools/TileWorldCreator/Setup Wizard": typeName = "TileWorldCreatorSetupWizardWindow"; return true;
+                case "Moyva/Tools/TileWorldCreator/Sync Tile Registry From Mapping": typeName = "TileWorldCreatorRegistrySyncWindow"; return true;
+                case "Moyva/Tools/Camera/Settings Editor": typeName = "CameraSettingsEditorWindow"; return true;
+                case "Moyva/Tools/Audio Infrastructure Wizard": typeName = "AudioInfrastructureWizardWindow"; return true;
+                default: return false;
+            }
+        }
+
+        private static Type FindEditorWindowType(string typeName)
+        {
+            foreach (var type in TypeCache.GetTypesDerivedFrom<EditorWindow>())
+            {
+                if (string.Equals(type.Name, typeName, StringComparison.Ordinal)
+                    || string.Equals(type.FullName, typeName, StringComparison.Ordinal))
+                    return type;
+            }
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type type = assembly.GetType(typeName, false);
+                if (type != null && typeof(EditorWindow).IsAssignableFrom(type))
+                    return type;
+            }
+
+            return null;
         }
 
         private void SelectAsset(UnityEngine.Object asset)

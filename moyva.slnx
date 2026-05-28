@@ -6,11 +6,13 @@
   <Project Path="Kruty1918.Moyva.Animations.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
+  <Project Path="Kruty1918.Moyva.Generator.Editor.csproj" />
   <Project Path="Zenject-ReflectionBaking-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Interactions.API.csproj" />
   <Project Path="Zenject-UnitTests-Editor.csproj" />
   <Project Path="Zenject-Editor.csproj" />
   <Project Path="Zenject-IntegrationTests.csproj" />
+  <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.UI.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Kruty1918.Moyva.GraphSystem.csproj" />
@@ -18,10 +20,10 @@
   <Project Path="Kruty1918.Moyva.Tests.Faction.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.csproj" />
   <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
+  <Project Path="GiantGrey.TileWorldCreator.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.BotAI.csproj" />
-  <Project Path="Kruty1918.Moyva.Generator.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Pathfinding.csproj" />
@@ -39,6 +41,8 @@
   <Project Path="Zenject-TestFramework.csproj" />
   <Project Path="Kruty1918.Moyva.BotAI.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
+  <Project Path="Kruty1918.Moyva.GraphSystem.Editor.csproj" />
+  <Project Path="GiantGrey.TileWorldCreator.Samples.csproj" />
   <Project Path="Kruty1918.Moyva.Signals.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.csproj" />
   <Project Path="Kruty1918.Moyva.WorldCreation.UI.csproj" />
@@ -47,22 +51,25 @@
   <Project Path="Kruty1918.Moyva.Tests.InfoPanel.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.GameMode.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Units.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Faction.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
   <Project Path="Kruty1918.Moyva.Bootstrap.csproj" />
+<<<<<<< HEAD
+=======
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
+>>>>>>> origin/main
   <Project Path="Kruty1918.Moyva.HomeMenu.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.FogOfWar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.GameMode.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Shared.UI.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.MovementPlayMode.csproj" />
-  <Project Path="Kruty1918.Moyva.GraphSystem.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.ConstructionUI.csproj" />
   <Project Path="Kruty1918.Moyva.Bootstrap.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.ObjectsMap.csproj" />

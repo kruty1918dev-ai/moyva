@@ -17,6 +17,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         public void OnSave(ISaveContext context)
         {
+            // Завдання: збереження має переживати обидві фази стартової економіки:
+            // до першого складу ресурси можуть бути в owner-pool, після складу - у settlement/warehouse storage.
             var ownerPools = _economyManager?.GetOwnerResourceTotalsSnapshot()
                              ?? new Dictionary<string, Dictionary<string, float>>(StringComparer.Ordinal);
 
@@ -77,6 +79,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
                     restored[ownerId.Trim()] = pool;
             }
 
+            // Завдання: після load ранні owner-pool ресурси або лишаються owner-level, або одразу переїжджають у перший склад,
+            // якщо settlement/warehouse вже відновлені. Це запобігає повторній видачі starter pack на load-game.
             _economyManager?.RestoreOwnerResourcePools(restored);
             Debug.Log($"[EconomySave] Відновлено owner-пули: {restored.Count}.");
         }

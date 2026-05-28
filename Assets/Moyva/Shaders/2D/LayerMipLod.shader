@@ -6,6 +6,10 @@ Shader "Moyva/2D/LayerMipLod"
         _Color ("Tint", Color) = (1,1,1,1)
         _MipBias ("Base Mip Bias", Range(0, 4)) = 0
         _ZoomLodStrength ("Zoom LOD Strength", Range(0, 2)) = 1
+<<<<<<< HEAD
+        _GlobalMipBiasWeight ("Global Zoom Mip Bias Weight", Range(0, 1)) = 1
+=======
+>>>>>>> origin/main
         _AlphaStabilization ("Alpha Stabilization", Range(0, 1)) = 1
         _AlphaClipThreshold ("Alpha Clip Threshold", Range(0, 1)) = 0.2
     }
@@ -40,6 +44,7 @@ Shader "Moyva/2D/LayerMipLod"
             fixed4 _Color;
             float _MipBias;
             float _ZoomLodStrength;
+            float _GlobalMipBiasWeight;
             float _MoyvaTexLodBias;
             float _AlphaStabilization;
             float _AlphaClipThreshold;
@@ -47,6 +52,7 @@ Shader "Moyva/2D/LayerMipLod"
             float4 _MoyvaFogMapParams;
             float _MoyvaFogCullEnabled;
             float _MoyvaFogCullThreshold;
+            float _MoyvaFogWorldPlane;
 
             struct appdata
             {
@@ -69,7 +75,8 @@ Shader "Moyva/2D/LayerMipLod"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.color = v.color * _Color;
-                o.worldXY = mul(unity_ObjectToWorld, v.vertex).xy;
+                float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                o.worldXY = _MoyvaFogWorldPlane > 0.5 ? worldPos.xz : worldPos.xy;
                 return o;
             }
 
@@ -94,7 +101,7 @@ Shader "Moyva/2D/LayerMipLod"
             fixed4 frag(v2f i) : SV_Target
             {
                 ClipHiddenByFog(i.worldXY);
-                float mipBias = _MipBias + (_MoyvaTexLodBias * _ZoomLodStrength);
+                float mipBias = _MipBias + (_MoyvaTexLodBias * _ZoomLodStrength * _GlobalMipBiasWeight);
                 fixed4 texColor = tex2Dbias(_MainTex, float4(i.uv, 0, mipBias));
 
                 // Стабілізуємо альфу для mip-level sampling, щоб уникати tile bleeding
@@ -145,6 +152,7 @@ Shader "Moyva/2D/LayerMipLod"
             float4 _MoyvaFogMapParams;
             float _MoyvaFogCullEnabled;
             float _MoyvaFogCullThreshold;
+            float _MoyvaFogWorldPlane;
 
             struct appdata
             {
@@ -167,7 +175,8 @@ Shader "Moyva/2D/LayerMipLod"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 o.color = v.color * _Color;
-                o.worldXY = mul(unity_ObjectToWorld, v.vertex).xy;
+                float3 worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                o.worldXY = _MoyvaFogWorldPlane > 0.5 ? worldPos.xz : worldPos.xy;
                 return o;
             }
 

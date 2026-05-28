@@ -10,6 +10,24 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
     {
         private const string PasswordPanelName = "PasswordPanel";
         private const string RuntimeUiRootName = "RuntimeHomeMenuPanels";
+        private const float ModalPadding = 18f;
+        private const float InfoCardWidth = 520f;
+        private const float InfoCardHeight = 260f;
+        private const float InfoCardSpacing = 18f;
+        private const float InfoMessagePreferredHeight = 104f;
+        private const float InfoPrimaryButtonWidth = 160f;
+        private const float InfoPrimaryButtonHeight = 44f;
+        private const float PasswordCardWidth = 520f;
+        private const float PasswordCardHeight = 320f;
+        private const float PasswordCardSpacing = 16f;
+        private const float PasswordActionsRowWidth = 360f;
+        private const float PasswordActionsRowHeight = 48f;
+        private const float PasswordActionsSpacing = 12f;
+        private const float PasswordActionButtonWidth = 150f;
+        private const float PasswordActionButtonHeight = 44f;
+        private const float InputFieldPreferredHeight = 48f;
+        private const float InputPaddingHorizontal = 14f;
+        private const float InputPaddingVertical = 4f;
 
         private static TMP_FontAsset _runtimeFontAsset;
 
@@ -30,13 +48,13 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
 
             var root = CreateModalRoot(parent, panelName);
-            var card = CreateCard(root.transform, new Vector2(520f, 260f));
-            CreateVerticalLayout(card, 18f, 18f);
+            var card = CreateCard(root.transform, new Vector2(InfoCardWidth, InfoCardHeight));
+            CreateVerticalLayout(card, InfoCardSpacing, ModalPadding);
 
             var title = CreateText(card.transform, "Title", "Повідомлення", 24, FontStyles.Bold, TextAlignmentOptions.Center);
             var message = CreateText(card.transform, "Message", string.Empty, 18, FontStyles.Normal, TextAlignmentOptions.Center);
-            SetFlexible(message.gameObject, preferredHeight: 104f, flexibleHeight: 1f);
-            var okButton = CreateButton(card.transform, "Button_OK", "OK", new Vector2(160f, 44f));
+            SetFlexible(message.gameObject, preferredHeight: InfoMessagePreferredHeight, flexibleHeight: 1f);
+            var okButton = CreateButton(card.transform, "Button_OK", "OK", new Vector2(InfoPrimaryButtonWidth, InfoPrimaryButtonHeight));
 
             var controller = root.AddComponent<InfoPanelViewController>();
             controller.ConfigureReferences(root, title, message, okButton);
@@ -48,8 +66,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
                 return;
 
             var root = CreateModalRoot(parent, PasswordPanelName);
-            var card = CreateCard(root.transform, new Vector2(520f, 320f));
-            CreateVerticalLayout(card, 16f, 18f);
+            var card = CreateCard(root.transform, new Vector2(PasswordCardWidth, PasswordCardHeight));
+            CreateVerticalLayout(card, PasswordCardSpacing, ModalPadding);
 
             var title = CreateText(card.transform, "Title", "Введіть пароль", 24, FontStyles.Bold, TextAlignmentOptions.Center);
             var input = CreateInputField(card.transform, "Input_Password", "Пароль");
@@ -60,18 +78,18 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var buttons = new GameObject("Actions", typeof(RectTransform));
             buttons.transform.SetParent(card.transform, false);
             var buttonsRect = buttons.GetComponent<RectTransform>();
-            buttonsRect.sizeDelta = new Vector2(360f, 48f);
+            buttonsRect.sizeDelta = new Vector2(PasswordActionsRowWidth, PasswordActionsRowHeight);
             var horizontal = buttons.AddComponent<HorizontalLayoutGroup>();
-            horizontal.spacing = 12f;
+            horizontal.spacing = PasswordActionsSpacing;
             horizontal.childAlignment = TextAnchor.MiddleCenter;
             horizontal.childControlWidth = false;
             horizontal.childControlHeight = true;
             horizontal.childForceExpandWidth = false;
             horizontal.childForceExpandHeight = false;
-            SetFlexible(buttons, preferredHeight: 48f);
+            SetFlexible(buttons, preferredHeight: PasswordActionsRowHeight);
 
-            var okButton = CreateButton(buttons.transform, "Button_OK", "OK", new Vector2(150f, 44f));
-            var cancelButton = CreateButton(buttons.transform, "Button_Cancel", "Скасувати", new Vector2(150f, 44f));
+            var okButton = CreateButton(buttons.transform, "Button_OK", "OK", new Vector2(PasswordActionButtonWidth, PasswordActionButtonHeight));
+            var cancelButton = CreateButton(buttons.transform, "Button_Cancel", "Скасувати", new Vector2(PasswordActionButtonWidth, PasswordActionButtonHeight));
 
             var controller = root.AddComponent<PasswordPanelViewController>();
             controller.ConfigureReferences(root, title, input, error, okButton, cancelButton);
@@ -91,10 +109,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             canvasComponent.renderMode = RenderMode.ScreenSpaceOverlay;
 
             var scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            ConfigureCanvasScaler(scaler);
             return canvasComponent;
         }
 
@@ -142,7 +157,9 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         private static void CreateVerticalLayout(GameObject target, float spacing, float padding)
         {
             var layout = target.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset((int)padding, (int)padding, (int)padding, (int)padding);
+            int horizontalPadding = Mathf.RoundToInt(padding);
+            int verticalPadding = Mathf.RoundToInt(padding);
+            layout.padding = new RectOffset(horizontalPadding, horizontalPadding, verticalPadding, verticalPadding);
             layout.spacing = spacing;
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = true;
@@ -156,7 +173,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
             go.transform.SetParent(parent, false);
             var rect = go.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(0f, size + 18f);
+            float boxHeight = size + 18f;
+            rect.sizeDelta = new Vector2(0f, boxHeight);
             var label = go.GetComponent<TextMeshProUGUI>();
             label.text = text;
             label.fontSize = size;
@@ -222,21 +240,21 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(TMP_InputField));
             go.transform.SetParent(parent, false);
             var rect = go.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(0f, 48f);
+            rect.sizeDelta = new Vector2(0f, InputFieldPreferredHeight);
             go.GetComponent<Image>().color = new Color(0.15f, 0.16f, 0.21f, 1f);
 
             var text = CreateText(go.transform, "Text", string.Empty, 18, FontStyles.Normal, TextAlignmentOptions.MidlineLeft);
             var textRect = text.GetComponent<RectTransform>();
             Stretch(textRect);
-            textRect.offsetMin = new Vector2(14f, 4f);
-            textRect.offsetMax = new Vector2(-14f, -4f);
+            textRect.offsetMin = new Vector2(InputPaddingHorizontal, InputPaddingVertical);
+            textRect.offsetMax = new Vector2(-InputPaddingHorizontal, -InputPaddingVertical);
 
             var placeholder = CreateText(go.transform, "Placeholder", placeholderText, 18, FontStyles.Italic, TextAlignmentOptions.MidlineLeft);
             placeholder.color = new Color(0.62f, 0.64f, 0.7f, 1f);
             var placeholderRect = placeholder.GetComponent<RectTransform>();
             Stretch(placeholderRect);
-            placeholderRect.offsetMin = new Vector2(14f, 4f);
-            placeholderRect.offsetMax = new Vector2(-14f, -4f);
+            placeholderRect.offsetMin = new Vector2(InputPaddingHorizontal, InputPaddingVertical);
+            placeholderRect.offsetMax = new Vector2(-InputPaddingHorizontal, -InputPaddingVertical);
 
             var input = go.GetComponent<TMP_InputField>();
             input.textViewport = rect;
@@ -245,7 +263,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             input.contentType = TMP_InputField.ContentType.Password;
             input.lineType = TMP_InputField.LineType.SingleLine;
             input.targetGraphic = go.GetComponent<Image>();
-            SetFlexible(go, preferredHeight: 48f);
+            SetFlexible(go, preferredHeight: InputFieldPreferredHeight);
             return input;
         }
 
@@ -282,6 +300,16 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             layout.preferredWidth = preferredWidth;
             layout.preferredHeight = preferredHeight;
             layout.flexibleHeight = flexibleHeight;
+        }
+
+        private static void ConfigureCanvasScaler(CanvasScaler scaler)
+        {
+            if (scaler == null)
+                return;
+
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+            scaler.scaleFactor = 1f;
+            scaler.referencePixelsPerUnit = 100f;
         }
     }
 }

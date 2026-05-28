@@ -15,15 +15,18 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private readonly CameraSettingsSO _settings;
         private readonly IGridService _gridService;
+        private readonly IGridProjection _gridProjection;
         private CameraWorldBounds _cached;
         private float _nextRefreshTime;
 
         public TilemapCameraBoundsProvider(
             CameraSettingsSO settings,
-            [InjectOptional] IGridService gridService = null)
+            [InjectOptional] IGridService gridService = null,
+            [InjectOptional] IGridProjection gridProjection = null)
         {
             _settings = settings;
             _gridService = gridService;
+            _gridProjection = gridProjection;
         }
 
         public CameraWorldBounds GetWorldBounds()
@@ -72,8 +75,19 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 return false;
             }
 
-            // Тайли створюються по центрах у координатах [0..width-1], [0..height-1].
-            // Отже краї мапи лежать на півтайла ширше за центри.
+            if (_gridProjection != null)
+            {
+                Bounds worldBounds = _gridProjection.GetWorldBounds(width, height);
+                float minPlaneY = _gridProjection.WorldPlane == GridWorldPlane.XZ ? worldBounds.min.z : worldBounds.min.y;
+                float maxPlaneY = _gridProjection.WorldPlane == GridWorldPlane.XZ ? worldBounds.max.z : worldBounds.max.y;
+                bounds = new CameraWorldBounds(
+                    minX: worldBounds.min.x,
+                    maxX: worldBounds.max.x,
+                    minY: minPlaneY,
+                    maxY: maxPlaneY);
+                return true;
+            }
+
             bounds = new CameraWorldBounds(
                 minX: -0.5f,
                 maxX: width - 0.5f,

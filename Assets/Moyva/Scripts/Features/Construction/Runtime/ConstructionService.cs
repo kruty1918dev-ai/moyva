@@ -909,6 +909,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out string reason)
         {
             reason = null;
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
 
             var costs = BuildConstructionCostMap(buildingId);
             if (costs.Count == 0)
@@ -920,7 +921,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            if (!_economyInfoMediator.TryResolveConstructionSettlement(position, ownerId, out var settlement)
+            if (ShouldUseOwnerPoolConstructionFunding(normalizedOwnerId))
+            {
+                // Завдання: перші будівлі мають будуватися зі стартового owner-pool, навіть коли складу ще немає.
+                if (!_economyInfoMediator.TryConsumeOwnerPoolResources(normalizedOwnerId, costs, out reason))
+                    return false;
+
+                reason = null;
+                return true;
+            }
+
+            if (!_economyInfoMediator.TryResolveConstructionSettlement(position, normalizedOwnerId, out var settlement)
                 || string.IsNullOrWhiteSpace(settlement.SettlementId))
             {
                 reason = "Не знайдено поселення/замок для списання ресурсів у цій зоні будівництва.";
@@ -940,11 +951,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string ownerId,
             Vector2Int? ignoredPendingPosition)
         {
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
             var costs = BuildConstructionCostMap(buildingId);
             if (costs.Count == 0)
             {
                 return new ConstructionResourceProjection(
-                    ownerId,
+                    normalizedOwnerId,
                     null,
                     null,
                     hasSettlement: false,
@@ -956,7 +968,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (_economyInfoMediator == null)
             {
                 return new ConstructionResourceProjection(
-                    ownerId,
+                    normalizedOwnerId,
                     null,
                     null,
                     hasSettlement: false,
@@ -965,11 +977,50 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     balances: new List<ConstructionResourceBalance>());
             }
 
-            if (!_economyInfoMediator.TryResolveConstructionSettlement(position, ownerId, out var settlement)
-                || string.IsNullOrWhiteSpace(settlement.SettlementId))
+            bool hasSettlement = _economyInfoMediator.TryResolveConstructionSettlement(position, normalizedOwnerId, out var settlement)
+                && !string.IsNullOrWhiteSpace(settlement.SettlementId);
+
+            if (ShouldUseOwnerPoolConstructionFunding(normalizedOwnerId))
+            {
+                // Завдання: preview має показувати ті самі стартові ресурси, які confirm реально спише з owner-pool.
+                var ownerPoolAvailable = _economyInfoMediator.GetOwnerPoolResourceTotals(normalizedOwnerId);
+                var ownerPoolReserved = BuildReservedOwnerPoolCosts(normalizedOwnerId, ignoredPendingPosition);
+                AddCosts(ownerPoolReserved, costs);
+
+                var ownerPoolBalances = new List<ConstructionResourceBalance>(ownerPoolReserved.Count);
+                bool ownerPoolHasDeficit = false;
+                string ownerPoolDeficitMessage = string.Empty;
+
+                foreach (var pair in ownerPoolReserved)
+                {
+                    float availableAmount = ownerPoolAvailable != null && ownerPoolAvailable.TryGetValue(pair.Key, out var value)
+                        ? value
+                        : 0f;
+                    var balance = new ConstructionResourceBalance(pair.Key, availableAmount, pair.Value);
+                    ownerPoolBalances.Add(balance);
+                    if (balance.IsDeficit && string.IsNullOrEmpty(ownerPoolDeficitMessage))
+                    {
+                        ownerPoolHasDeficit = true;
+                        ownerPoolDeficitMessage = $"Недостатньо ресурсу '{ResolveResourceDisplayName(pair.Key)}' у стартовому запасі власника '{normalizedOwnerId}': потрібно {pair.Value:0.#}, доступно {availableAmount:0.#}.";
+                    }
+                }
+
+                ownerPoolBalances.Sort((left, right) => string.CompareOrdinal(left.ResourceId, right.ResourceId));
+
+                return new ConstructionResourceProjection(
+                    normalizedOwnerId,
+                    hasSettlement ? settlement.SettlementId : null,
+                    hasSettlement ? settlement.SettlementName : null,
+                    hasSettlement: hasSettlement,
+                    hasDeficit: ownerPoolHasDeficit,
+                    message: ownerPoolHasDeficit ? ownerPoolDeficitMessage : string.Empty,
+                    balances: ownerPoolBalances);
+            }
+
+            if (!hasSettlement)
             {
                 return new ConstructionResourceProjection(
-                    ownerId,
+                    normalizedOwnerId,
                     null,
                     null,
                     hasSettlement: false,
@@ -1012,6 +1063,26 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 balances: balances);
         }
 
+        private Dictionary<string, float> BuildReservedOwnerPoolCosts(
+            string ownerId,
+            Vector2Int? ignoredPendingPosition)
+        {
+            var reserved = new Dictionary<string, float>(StringComparer.Ordinal);
+            if (!ShouldUseOwnerPoolConstructionFunding(ownerId))
+                return reserved;
+
+            for (int i = 0; i < _pendingPlacements.Count; i++)
+            {
+                var placement = _pendingPlacements[i];
+                if (ignoredPendingPosition.HasValue && placement.Position == ignoredPendingPosition.Value)
+                    continue;
+
+                AddCosts(reserved, BuildConstructionCostMap(placement.BuildingId));
+            }
+
+            return reserved;
+        }
+
         private Dictionary<string, float> BuildReservedConstructionCosts(
             string settlementId,
             string ownerId,
@@ -1037,6 +1108,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             return reserved;
+        }
+
+        private bool ShouldUseOwnerPoolConstructionFunding(string ownerId)
+        {
+            // Завдання: до першого складу стартова економіка існує на owner-level, а не в settlement storage.
+            // Щойно в owner є warehouse, construction повертається до стандартного settlement/warehouse funding.
+            return _economyInfoMediator != null
+                && !_economyInfoMediator.OwnerHasAnyWarehouse(NormalizeOwnerId(ownerId));
+        }
+
+        private static string NormalizeOwnerId(string ownerId)
+        {
+            return string.IsNullOrWhiteSpace(ownerId) ? DefaultOwnerId : ownerId.Trim();
         }
 
         private string ResolveResourceDisplayName(string resourceId)

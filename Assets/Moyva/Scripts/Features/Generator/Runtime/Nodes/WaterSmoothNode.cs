@@ -33,7 +33,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             var heightMap = inputs[2] as float[,]
                 ?? new float[biomeMap.GetLength(0), biomeMap.GetLength(1)];
 
-            var result = (string[,])biomeMap.Clone();
+            var result = MapArrayUtils.CloneStringMap(biomeMap);
             int w = result.GetLength(0);
             int h = result.GetLength(1);
 

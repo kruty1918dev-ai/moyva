@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Camera.API;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using Zenject;
 
@@ -17,11 +18,14 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private const float MaxPinchTargetStepFraction = 0.1f;
         private const float MaxImmediatePinchStepFraction = 0.04f;
         private const float MinZoomStep = 0.1f;
+        private const float PerspectiveMinFieldOfView = 10f;
+        private const float PerspectiveMaxFieldOfView = 80f;
         private static readonly int GlobalMipBiasId = Shader.PropertyToID(GlobalMipBiasProperty);
 
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
         private readonly ICameraBoundsProvider _boundsProvider;
+        private readonly MoyvaProjectSettingsSO _projectSettings;
 
         private float _targetZoom;
         private float _currentVelocity; // Необхідно для Mathf.SmoothDamp
@@ -33,11 +37,13 @@ namespace Kruty1918.Moyva.Camera.Runtime
         public CameraZoom(
             UnityEngine.Camera camera,
             CameraSettingsSO settings,
-            [InjectOptional] ICameraBoundsProvider boundsProvider = null)
+            [InjectOptional] ICameraBoundsProvider boundsProvider = null,
+            [InjectOptional] MoyvaProjectSettingsSO projectSettings = null)
         {
             _camera = camera;
             _settings = settings;
             _boundsProvider = boundsProvider;
+            _projectSettings = projectSettings;
         }
 
         public void Initialize()
@@ -67,7 +73,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
             // Віднімаємо дельту (щоб скрол вперед наближав, а назад — віддаляв)
             // і обмежуємо крок, щоб raw wheel delta не кидав камеру відразу в min/max
             float zoomStep = Mathf.Min(Mathf.Max(0.01f, _settings.ResolveZoomSpeed()), ResolveMaxZoomStep(MaxWheelZoomStepFraction));
+<<<<<<< HEAD
+            float minZoom = ResolveEffectiveMinZoom();
+=======
             float minZoom = _settings.ResolveMinZoom();
+>>>>>>> origin/main
             _targetZoom = Mathf.Clamp(
                 _targetZoom - normalizedDelta * zoomStep,
                 minZoom,
@@ -81,7 +91,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (scaleFactor <= 0f || float.IsNaN(scaleFactor) || float.IsInfinity(scaleFactor)) return;
 
             float sensitivity = Mathf.Max(0.01f, _settings.ResolveTouchPinchZoomSensitivity());
+<<<<<<< HEAD
+            float minZoom = ResolveEffectiveMinZoom();
+=======
             float minZoom = _settings.ResolveMinZoom();
+>>>>>>> origin/main
             float adjustedScale = Mathf.Pow(scaleFactor, sensitivity);
             float nextTarget = Mathf.Clamp(_targetZoom * adjustedScale, minZoom, ResolveEffectiveMaxZoom());
             _targetZoom = Mathf.MoveTowards(_targetZoom, nextTarget, ResolveMaxZoomStep(MaxPinchTargetStepFraction));
@@ -97,7 +111,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
         public void ForceZoomCamera(float zoomLevel)
         {
             // Встановлюємо новий цільовий зум (теж обмежуємо про всяк випадок)
+<<<<<<< HEAD
+            _targetZoom = Mathf.Clamp(zoomLevel, ResolveEffectiveMinZoom(), ResolveEffectiveMaxZoom());
+=======
             _targetZoom = Mathf.Clamp(zoomLevel, _settings.ResolveMinZoom(), ResolveEffectiveMaxZoom());
+>>>>>>> origin/main
 
             // Блокуємо ручне керування на заданий час
             _forceBlockTimer = ForceBlockDuration;
@@ -113,7 +131,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             // Continuously clamp against effective max (bounds can change once
             // tilemaps load asynchronously after the camera was already alive).
+<<<<<<< HEAD
+            _targetZoom = Mathf.Clamp(_targetZoom, ResolveEffectiveMinZoom(), ResolveEffectiveMaxZoom());
+=======
             _targetZoom = Mathf.Clamp(_targetZoom, _settings.ResolveMinZoom(), ResolveEffectiveMaxZoom());
+>>>>>>> origin/main
 
             if (_camera.orthographic)
             {
@@ -152,8 +174,19 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private float ResolveMaxZoomStep(float fraction)
         {
+<<<<<<< HEAD
+            float zoomRange = Mathf.Max(MinZoomStep, ResolveEffectiveMaxZoom() - ResolveEffectiveMinZoom());
+=======
             float zoomRange = Mathf.Max(MinZoomStep, _settings.ResolveMaxZoom() - _settings.ResolveMinZoom());
+>>>>>>> origin/main
             return Mathf.Max(MinZoomStep, zoomRange * Mathf.Clamp01(fraction));
+        }
+
+        private float ResolveEffectiveMinZoom()
+        {
+            return _camera != null && !_camera.orthographic
+                ? PerspectiveMinFieldOfView
+                : _settings.ResolveMinZoom();
         }
 
         /// <summary>
@@ -166,7 +199,19 @@ namespace Kruty1918.Moyva.Camera.Runtime
         {
             float settingsMin = _settings.ResolveMinZoom();
             float settingsMax = _settings.ResolveMaxZoom();
+<<<<<<< HEAD
+            if (!_camera.orthographic)
+            {
+                float configuredDefault = _projectSettings != null
+                    ? _projectSettings.ResolveProject3DFieldOfView()
+                    : _settings.ResolveDefault3DFieldOfView();
+                return Mathf.Clamp(Mathf.Max(PerspectiveMaxFieldOfView, configuredDefault), PerspectiveMinFieldOfView + 0.1f, 179f);
+            }
+
+            if (_boundsProvider == null)
+=======
             if (_boundsProvider == null || !_camera.orthographic)
+>>>>>>> origin/main
                 return settingsMax;
 
             var bounds = _boundsProvider.GetWorldBounds();
@@ -219,8 +264,13 @@ namespace Kruty1918.Moyva.Camera.Runtime
             }
 
             float currentZoom = GetCurrentZoom();
+<<<<<<< HEAD
+            float minZoom = ResolveEffectiveMinZoom();
+            float maxZoom = ResolveEffectiveMaxZoom();
+=======
             float minZoom = _settings.ResolveMinZoom();
             float maxZoom = _settings.ResolveMaxZoom();
+>>>>>>> origin/main
 
             float normalized = maxZoom > minZoom
                 ? Mathf.InverseLerp(minZoom, maxZoom, currentZoom)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Camera.API;
+using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using Zenject;
@@ -10,6 +11,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
     internal sealed class CameraMapRenderMaskService : IInitializable, ITickable, IDisposable
     {
         private readonly CameraSettingsSO _settings;
+        private readonly IGridService _gridService;
+        private readonly IGridProjection _gridProjection;
 
         private SpriteMask _mapMask;
         private Sprite _maskSprite;
@@ -20,14 +23,18 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly List<TilemapRenderer> _maskedTilemapRenderers = new List<TilemapRenderer>(32);
 
         public CameraMapRenderMaskService(
-            CameraSettingsSO settings)
+            CameraSettingsSO settings,
+            [InjectOptional] IGridService gridService = null,
+            [InjectOptional] IGridProjection gridProjection = null)
         {
             _settings = settings;
+            _gridService = gridService;
+            _gridProjection = gridProjection;
         }
 
         public void Initialize()
         {
-            if (_settings == null || !_settings.mapRenderMaskEnabled)
+            if (!ShouldUseSpriteMask())
                 return;
 
             EnsureMask();
@@ -37,8 +44,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         public void Tick()
         {
-            if (_settings == null || !_settings.mapRenderMaskEnabled)
+            if (!ShouldUseSpriteMask())
+            {
+                UnmaskTrackedRenderers();
                 return;
+            }
 
             if (Time.unscaledTime < _nextRefreshTime)
                 return;
@@ -57,6 +67,14 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private float ResolveRefreshInterval()
         {
             return Mathf.Max(0.05f, _settings.mapMaskRefreshSeconds);
+        }
+
+        private bool ShouldUseSpriteMask()
+        {
+            if (_settings == null || !_settings.mapRenderMaskEnabled)
+                return false;
+
+            return _gridProjection == null || _gridProjection.WorldPlane != GridWorldPlane.XZ;
         }
 
         private void EnsureMask()
@@ -194,6 +212,11 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private MapBounds ResolveMapBounds()
         {
+            if (TryBuildBoundsFromGridProjection(out MapBounds fromProjection))
+            {
+                return fromProjection;
+            }
+
             var tilemapRenderers = UnityEngine.Object.FindObjectsByType<TilemapRenderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             if (TryBuildBoundsFromTilemaps(tilemapRenderers, out MapBounds fromTilemaps))
             {
@@ -206,6 +229,29 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 _settings.manualMapMaskCenter.x + halfSize.x,
                 _settings.manualMapMaskCenter.y - halfSize.y,
                 _settings.manualMapMaskCenter.y + halfSize.y);
+        }
+
+        private bool TryBuildBoundsFromGridProjection(out MapBounds bounds)
+        {
+            if (_gridService == null || _gridProjection == null)
+            {
+                bounds = default;
+                return false;
+            }
+
+            int width = _gridService.GridWidth;
+            int height = _gridService.GridHeight;
+            if (width <= 0 || height <= 0)
+            {
+                bounds = default;
+                return false;
+            }
+
+            Bounds worldBounds = _gridProjection.GetWorldBounds(width, height);
+            float minPlaneY = _gridProjection.WorldPlane == GridWorldPlane.XZ ? worldBounds.min.z : worldBounds.min.y;
+            float maxPlaneY = _gridProjection.WorldPlane == GridWorldPlane.XZ ? worldBounds.max.z : worldBounds.max.y;
+            bounds = new MapBounds(worldBounds.min.x, worldBounds.max.x, minPlaneY, maxPlaneY);
+            return true;
         }
 
         private bool TryBuildBoundsFromTilemaps(TilemapRenderer[] tilemapRenderers, out MapBounds bounds)

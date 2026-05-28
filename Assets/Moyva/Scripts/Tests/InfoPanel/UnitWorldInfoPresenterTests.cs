@@ -87,6 +87,15 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
                 return true;
             }
 
+            public bool TryConsumeOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
+            {
+                errorMessage = string.Empty;
+                return true;
+            }
+
+            public bool OwnerHasAnyWarehouse(string ownerId)
+                => false;
+
             public IReadOnlyDictionary<string, float> GetWarehouseResourceTotals(Vector2Int warehousePosition)
                 => new Dictionary<string, float>(StringComparer.Ordinal);
 
@@ -98,6 +107,12 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
                 {
                     ["Food"] = 12f,
                     ["Wood"] = 7f,
+                };
+
+            public IReadOnlyDictionary<string, float> GetOwnerPoolResourceTotals(string ownerId)
+                => new Dictionary<string, float>(StringComparer.Ordinal)
+                {
+                    ["Food"] = 33f,
                 };
 
             public IReadOnlyDictionary<string, float> GetOwnerResourceTotals(string ownerId)

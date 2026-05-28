@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Grid.API;
 using UnityEditor;
 using UnityEngine;
@@ -75,8 +76,9 @@ namespace Kruty1918.Moyva.Grid.Editor
 
             // Sprite preview
             Sprite sprite = GetSpriteForTileId(currentValue);
-            if (sprite != null && sprite.texture != null)
-                DrawSprite(spriteRect, sprite, GetColorForTileId(currentValue));
+            GameObject prefab = GetPrefabForTileId(currentValue);
+            if ((sprite != null && sprite.texture != null) || prefab != null)
+                AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(spriteRect, prefab, sprite, GetColorForTileId(currentValue));
 
             // Error box + create button (ID not found)
             if (!isValid && !string.IsNullOrEmpty(currentValue))
@@ -128,17 +130,6 @@ namespace Kruty1918.Moyva.Grid.Editor
                 return $"⚠ {currentValue}";
 
             return currentValue;
-        }
-
-        private static void DrawSprite(Rect rect, Sprite sprite, Color color)
-        {
-            var tex = sprite.texture;
-            var sr = sprite.textureRect;
-            var uv = new Rect(sr.x / tex.width, sr.y / tex.height, sr.width / tex.width, sr.height / tex.height);
-            Color prevColor = GUI.color;
-            GUI.color = color;
-            GUI.DrawTextureWithTexCoords(rect, tex, uv);
-            GUI.color = prevColor;
         }
 
         private sealed class TilePickerPopup : PopupWindowContent
@@ -259,8 +250,9 @@ namespace Kruty1918.Moyva.Grid.Editor
 
                 Rect iconRect = new Rect(rowRect.x + 4f, rowRect.y + (RowHeight - IconSize) * 0.5f, IconSize, IconSize);
                 var sprite = GetSpriteForTileId(id);
-                if (sprite != null && sprite.texture != null)
-                    DrawSprite(iconRect, sprite, GetColorForTileId(id));
+                var prefab = GetPrefabForTileId(id);
+                if ((sprite != null && sprite.texture != null) || prefab != null)
+                    AdaptivePrefabPreviewUtility.DrawPrefabOrSprite(iconRect, prefab, sprite, GetColorForTileId(id));
 
                 Rect labelRect = new Rect(iconRect.xMax + 8f, rowRect.y, rowRect.width - iconRect.width - 14f, RowHeight);
                 var labelStyle = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleLeft };
@@ -273,6 +265,7 @@ namespace Kruty1918.Moyva.Grid.Editor
         private static string[] _cachedIds = System.Array.Empty<string>();
         private static readonly Dictionary<string, Sprite> _spriteCache = new();
         private static readonly Dictionary<string, Color> _spriteColorCache = new();
+        private static readonly Dictionary<string, GameObject> _prefabObjectCache = new();
         private static readonly Dictionary<string, bool> _prefabCache = new();
         private static double _cacheTime;
         private const double CacheTTL = 1.0;
@@ -286,6 +279,7 @@ namespace Kruty1918.Moyva.Grid.Editor
             _cacheTime = now;
             _spriteCache.Clear();
             _spriteColorCache.Clear();
+            _prefabObjectCache.Clear();
             _prefabCache.Clear();
 
             if (_cachedRegistry?.Definitions == null)
@@ -302,11 +296,11 @@ namespace Kruty1918.Moyva.Grid.Editor
                 _prefabCache[def.Id] = def.VisualPrefab != null;
                 if (def.VisualPrefab != null)
                 {
-                    var sr = def.VisualPrefab.GetComponentInChildren<SpriteRenderer>(true);
-                    if (sr != null && sr.sprite != null)
+                    _prefabObjectCache[def.Id] = def.VisualPrefab;
+                    if (AdaptivePrefabPreviewUtility.TryGetPrimarySprite(def.VisualPrefab, out var sprite, out var tint))
                     {
-                        _spriteCache[def.Id] = sr.sprite;
-                        _spriteColorCache[def.Id] = sr.color;
+                        _spriteCache[def.Id] = sprite;
+                        _spriteColorCache[def.Id] = tint;
                     }
                 }
             }
@@ -421,6 +415,13 @@ namespace Kruty1918.Moyva.Grid.Editor
             if (string.IsNullOrEmpty(id)) return null;
             EnsureCache();
             return _spriteCache.TryGetValue(id, out var s) ? s : null;
+        }
+
+        private static GameObject GetPrefabForTileId(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return null;
+            EnsureCache();
+            return _prefabObjectCache.TryGetValue(id, out var prefab) ? prefab : null;
         }
 
         private static Color GetColorForTileId(string id)
