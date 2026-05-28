@@ -585,7 +585,6 @@ namespace Kruty1918.Moyva.Editor.Audio
         private SceneAudioOverridesSO _overridesSo;
         private SerializedObject _serializedOverrides;
 
-        [MenuItem("Moyva/Tools/Audio Designer %#a", priority = 31)]
         public static void Open()
         {
             var window = GetWindow<AudioDesignerWindow>();

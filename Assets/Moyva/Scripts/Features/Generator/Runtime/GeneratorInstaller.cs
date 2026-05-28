@@ -4,6 +4,7 @@ using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.GraphSystem.Runtime;
 using Kruty1918.Moyva.SaveSystem;
+using GiantGrey.TileWorldCreator;
 using UnityEngine;
 using Zenject;
 
@@ -25,6 +26,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
 		[Header("Water Runtime Setup")]
 		[SerializeField] private WaterLayerMaterialSettings _waterLayerMaterialSettings = new();
+
+		[Header("TileWorldCreator Integration")]
+		[SerializeField] private bool _useTileWorldCreatorVisuals;
+		[SerializeField] private TileWorldCreatorManager _tileWorldCreatorManager;
+		[SerializeField] private TileWorldCreatorIdMappingSO _tileWorldCreatorIdMapping;
+		[SerializeField] private TileWorldCreatorBuildOptions _tileWorldCreatorBuildOptions = new();
 
 		public override void InstallBindings()
 		{
@@ -62,6 +69,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
 			Container.Bind<IGeneratorDataRegistry>().To<GeneratorDataRegistry>().AsSingle();
 			Container.Bind<IGeneratorTerrainLevelService>().To<GeneratorTerrainLevelService>().AsSingle();
 			Container.Bind<IGeneratedTerrainLevelQuery>().To<GeneratedTerrainLevelQueryService>().AsSingle();
+
+			if (_useTileWorldCreatorVisuals && _tileWorldCreatorManager != null && _tileWorldCreatorIdMapping != null)
+			{
+				Container.BindInstance(_tileWorldCreatorManager).AsSingle();
+				Container.BindInstance(_tileWorldCreatorIdMapping).AsSingle();
+				Container.BindInstance(_tileWorldCreatorBuildOptions ?? new TileWorldCreatorBuildOptions()).AsSingle();
+				Container.Bind<TileWorldCreatorWorldBuildBridge>().AsSingle();
+
+				// Прокидаємо TWC Configuration з менеджера як окремий binding,
+				// щоб граф і будь-який внутрішній сервіс міг резолвити його через DI.
+				if (_tileWorldCreatorManager.configuration != null)
+					Container.BindInstance(_tileWorldCreatorManager.configuration).AsSingle();
+			}
 
 			Container.BindInterfacesAndSelfTo<MapVisualInstantiator>().AsSingle();
 			Container.BindInterfacesAndSelfTo<GeneratedWorldSaveModule>().AsSingle();

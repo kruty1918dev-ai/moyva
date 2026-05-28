@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.SaveSystem;
+using GiantGrey.TileWorldCreator;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -39,8 +40,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IRiverPathfinder _riverPathfinder;
         private readonly IWFCService _wfcService;
         private readonly TileRegistrySO _tileRegistry;
+        private readonly MoyvaProjectSettingsSO _projectSettings;
         private readonly IGeneratorDataRegistry _generatorDataRegistry;
         private readonly IGeneratorTerrainLevelService _terrainLevelService;
+        private readonly TileWorldCreatorIdMappingSO _tileWorldCreatorMapping;
+        private readonly Configuration _tileWorldCreatorConfiguration;
+        private readonly TileWorldCreatorBuildOptions _tileWorldCreatorBuildOptions;
 
         public GraphBasedMapDataGenerator(
             GraphAsset graphAsset,
@@ -51,8 +56,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IRiverPathfinder riverPathfinder,
             IWFCService wfcService,
             [Zenject.InjectOptional] TileRegistrySO tileRegistry = null,
+            [Zenject.InjectOptional] MoyvaProjectSettingsSO projectSettings = null,
             [Zenject.InjectOptional] IGeneratorDataRegistry generatorDataRegistry = null,
-            [Zenject.InjectOptional] IGeneratorTerrainLevelService terrainLevelService = null)
+            [Zenject.InjectOptional] IGeneratorTerrainLevelService terrainLevelService = null,
+            [Zenject.InjectOptional] TileWorldCreatorIdMappingSO tileWorldCreatorMapping = null,
+            [Zenject.InjectOptional] Configuration tileWorldCreatorConfiguration = null,
+            [Zenject.InjectOptional] TileWorldCreatorBuildOptions tileWorldCreatorBuildOptions = null)
         {
             _graphAsset = graphAsset;
             _graphRunner = graphRunner;
@@ -62,8 +71,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _riverPathfinder = riverPathfinder;
             _wfcService = wfcService;
             _tileRegistry = tileRegistry;
+            _projectSettings = projectSettings;
             _generatorDataRegistry = generatorDataRegistry;
             _terrainLevelService = terrainLevelService;
+            _tileWorldCreatorMapping = tileWorldCreatorMapping;
+            _tileWorldCreatorConfiguration = tileWorldCreatorConfiguration;
+            _tileWorldCreatorBuildOptions = tileWorldCreatorBuildOptions;
         }
 
         public void GenerateMapData(int width, int height,
@@ -107,14 +120,23 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     context.RegisterService(_wfcService);
                 if (_tileRegistry != null)
                     context.RegisterService(_tileRegistry);
+                if (_projectSettings != null)
+                    context.RegisterService(_projectSettings);
                 if (_generatorDataRegistry != null)
                     context.RegisterService(_generatorDataRegistry);
+                RegisterTileWorldCreatorServices(context);
 
                 // Реєструємо GraphSharedSettings
                 if (sharedSettings != null)
                 {
                     context.ApplySharedSettings(sharedSettings);
                     context.RegisterService(sharedSettings);
+                }
+
+                if (_projectSettings != null)
+                {
+                    context.ApplyProjectSettings(_projectSettings);
+                    Debug.Log($"[MoyvaTWCHeight] NodeContext project settings applied: visualMode={_projectSettings.ResolveProjectVisualMode()}, advanced={_projectSettings.UseAdvancedProjectSettings}, projection={context.ProjectionMode}, render={context.RenderMode}, topology={context.GridTopology}, neighborhood={context.NeighborhoodMode}.");
                 }
 
                 var layerDataList = new List<WorldLayerData>();
@@ -152,7 +174,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     return;
                 }
 
-                CaptureHillTerrainLevelData(result);
+                CaptureTerrainLevelData(result, width, height);
 
                 // OutputNode і його мапи опціональні: граф може працювати лише side-effects (напр. LayerData).
                 var biomeMap = new string[width, height];
@@ -230,42 +252,120 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
         }
 
-        private void CaptureHillTerrainLevelData(GraphExecutionResult result)
+        private void CaptureTerrainLevelData(GraphExecutionResult result, int width, int height)
         {
             if (result == null || _graphAsset?.Nodes == null)
                 return;
 
+            int[,] bestLevelMap = null;
+            string bestNodeId = null;
+            int bestScore = int.MinValue;
+
             foreach (var node in _graphAsset.Nodes)
             {
-                if (node is not Nodes.HillGeneratorNode)
+                if (node == null)
                     continue;
 
                 var outputs = result.GetOutputs(node.NodeId);
                 if (outputs == null || outputs.Length == 0)
                     continue;
 
-                var levelMap = outputs.Length > 1 ? outputs[1] as int[,] : null;
-                var hillLevelData = outputs.Length > 2 ? outputs[2] as HillLevelDataMap : null;
+                var outputDefinitions = node.Outputs;
 
-                if (hillLevelData != null)
+                for (int outputIndex = 0; outputIndex < outputs.Length; outputIndex++)
                 {
-                    LastHillLevelData = hillLevelData.Clone();
-                    _terrainLevelService?.SetHillLevelData(hillLevelData);
-                    LastTerrainLevelMap = _terrainLevelService?.CopyLevelMap() ?? BuildLevelMapFromHillData(hillLevelData);
-                    _generatorDataRegistry?.Set("hill-levels", LastHillLevelData);
-                    _generatorDataRegistry?.Set($"hill-levels:{node.NodeId}", LastHillLevelData);
-                    return;
-                }
+                    if (outputs[outputIndex] is HillLevelDataMap hillLevelData
+                        && HasSameSize(hillLevelData, width, height))
+                    {
+                        LastHillLevelData = hillLevelData.Clone();
+                        _terrainLevelService?.SetHillLevelData(hillLevelData);
+                        LastTerrainLevelMap = _terrainLevelService?.CopyLevelMap() ?? BuildLevelMapFromHillData(hillLevelData);
+                        _generatorDataRegistry?.Set("hill-levels", LastHillLevelData);
+                        _generatorDataRegistry?.Set($"hill-levels:{node.NodeId}", LastHillLevelData);
+                        _generatorDataRegistry?.Set("terrain-level-map", CloneLevelMap(LastTerrainLevelMap));
+                        _generatorDataRegistry?.Set($"terrain-level-map:{node.NodeId}", CloneLevelMap(LastTerrainLevelMap));
+                        return;
+                    }
 
-                if (levelMap != null)
-                {
-                    LastTerrainLevelMap = CloneLevelMap(levelMap);
-                    _terrainLevelService?.SetLevelMap(LastTerrainLevelMap);
-                    _generatorDataRegistry?.Set("hill-level-map", CloneLevelMap(LastTerrainLevelMap));
-                    _generatorDataRegistry?.Set($"hill-level-map:{node.NodeId}", CloneLevelMap(LastTerrainLevelMap));
-                    return;
+                    if (outputs[outputIndex] is not int[,] levelMap
+                        || !HasSameSize(levelMap, width, height))
+                    {
+                        continue;
+                    }
+
+                    string portName = outputDefinitions != null && outputIndex < outputDefinitions.Length
+                        ? outputDefinitions[outputIndex].Name
+                        : null;
+                    int score = TerrainLevelOutputScore(node, portName);
+                    if (score <= bestScore)
+                        continue;
+
+                    bestLevelMap = levelMap;
+                    bestNodeId = node.NodeId;
+                    bestScore = score;
                 }
             }
+
+            if (bestLevelMap == null || bestScore <= 0)
+                return;
+
+            LastTerrainLevelMap = CloneLevelMap(bestLevelMap);
+            _terrainLevelService?.SetLevelMap(LastTerrainLevelMap);
+            _generatorDataRegistry?.Set("terrain-level-map", CloneLevelMap(LastTerrainLevelMap));
+            if (!string.IsNullOrEmpty(bestNodeId))
+                _generatorDataRegistry?.Set($"terrain-level-map:{bestNodeId}", CloneLevelMap(LastTerrainLevelMap));
+        }
+
+        private void RegisterTileWorldCreatorServices(NodeContext context)
+        {
+            if (context == null)
+                return;
+
+            if (_tileWorldCreatorMapping != null)
+                context.RegisterService(_tileWorldCreatorMapping);
+            if (_tileWorldCreatorConfiguration != null)
+                context.RegisterService(_tileWorldCreatorConfiguration);
+            if (_tileWorldCreatorBuildOptions != null)
+                context.RegisterService(_tileWorldCreatorBuildOptions);
+
+            if ((_tileWorldCreatorMapping == null) != (_tileWorldCreatorConfiguration == null))
+            {
+                Debug.LogWarning(
+                    "[GraphBasedGenerator] TileWorldCreator asset context is incomplete. " +
+                    $"Mapping='{(_tileWorldCreatorMapping != null ? _tileWorldCreatorMapping.name : "<null>")}', " +
+                    $"Configuration='{(_tileWorldCreatorConfiguration != null ? _tileWorldCreatorConfiguration.name : "<null>")}'.");
+            }
+        }
+
+        private static int TerrainLevelOutputScore(NodeBase node, string portName)
+        {
+            if (node is Nodes.HillGeneratorNode)
+                return 100;
+
+            if (string.IsNullOrWhiteSpace(portName))
+                return 0;
+
+            string normalized = portName.Replace(" ", string.Empty).Replace("_", string.Empty).ToLowerInvariant();
+            if (normalized == "levelmap" || normalized == "terrainlevelmap")
+                return 95;
+
+            if (normalized == "layerindexmap")
+                return 70;
+
+            if (normalized.Contains("waterlevel"))
+                return 0;
+
+            return normalized.Contains("level") ? 40 : 0;
+        }
+
+        private static bool HasSameSize(int[,] map, int width, int height)
+        {
+            return map != null && map.GetLength(0) == width && map.GetLength(1) == height;
+        }
+
+        private static bool HasSameSize(HillLevelDataMap data, int width, int height)
+        {
+            return data != null && data.Width == width && data.Height == height;
         }
 
         private static int[,] BuildLevelMapFromHillData(HillLevelDataMap data)
@@ -302,6 +402,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             sb.AppendLine("[GraphBasedGenerator] Diagnostics dump:");
             sb.AppendLine($"- Seed: {GetSeedFromGraph()}");
             sb.AppendLine($"- GraphAsset is null: {_graphAsset == null}");
+            sb.AppendLine($"- TileWorldCreator mapping: {(_tileWorldCreatorMapping != null ? _tileWorldCreatorMapping.name : "<null>")}");
+            sb.AppendLine($"- TileWorldCreator configuration: {(_tileWorldCreatorConfiguration != null ? _tileWorldCreatorConfiguration.name : "<null>")}");
+            sb.AppendLine($"- TileWorldCreator build options injected: {_tileWorldCreatorBuildOptions != null}");
 
             if (_graphAsset == null)
                 return sb.ToString();

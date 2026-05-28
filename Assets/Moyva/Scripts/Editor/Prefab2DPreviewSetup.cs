@@ -25,7 +25,6 @@ namespace Kruty1918.Moyva.Editor
             // 2D режим налаштовується автоматично при редаганні префабу через Prefab Mode
         }
 
-        [MenuItem("Moyva/Setup/Apply Adaptive Preview Defaults to Selected Prefab", priority = 101)]
         public static void ApplyAdaptivePreviewDefaultsToSelectedPrefab()
         {
             var selectedObject = Selection.activeObject;

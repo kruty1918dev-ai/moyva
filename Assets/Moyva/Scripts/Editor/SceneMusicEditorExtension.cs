@@ -85,7 +85,6 @@ namespace Kruty1918.Moyva.Editor.Audio
         private bool _createGlobalProfile = true;
         private Vector2 _scroll;
 
-        [MenuItem("Moyva/Tools/Audio Infrastructure Wizard", priority = 32)]
         public static void Open()
         {
             var w = GetWindow<AudioInfrastructureWizardWindow>(true, "Audio Infrastructure Wizard");

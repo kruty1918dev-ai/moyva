@@ -45,7 +45,6 @@ namespace Kruty1918.Moyva.Editor
         // ═════════════════════════════════════════════════════════════
         //  Menu Item
         // ═════════════════════════════════════════════════════════════
-        [MenuItem("Moyva/Інструменти/Наповнити реєстр будівель", priority = 200)]
         private static void Execute()
         {
             var registry = FindRegistry();

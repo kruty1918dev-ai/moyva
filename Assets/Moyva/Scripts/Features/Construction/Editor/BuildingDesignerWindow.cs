@@ -211,7 +211,6 @@ namespace Kruty1918.Moyva.Construction.Editor
             window.Focus();
         }
 
-        [MenuItem("Moyva/Construction/Building Designer", priority = 0)]
         public static void OpenConstructionMenu()
         {
             Open();

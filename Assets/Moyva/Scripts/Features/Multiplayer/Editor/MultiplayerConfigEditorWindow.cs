@@ -54,7 +54,6 @@ namespace Kruty1918.Moyva.Multiplayer.Editor
         private MessageType _validationMessageType;
         private Vector2 _scroll;
 
-        [MenuItem("Moyva/Multiplayer/Config Hub")]
         public static void Open()
         {
             var window = GetWindow<MultiplayerConfigEditorWindow>("Multiplayer Config Hub");

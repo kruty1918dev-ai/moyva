@@ -13,60 +13,597 @@ MonoBehaviour:
   m_Name: Tile3DRegistry
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.API.TileRegistrySO
   _definitions:
-  - _id: water-tile
-    _movementCost: 1
-    _visualPrefab: {fileID: 4329283859322598317, guid: f159a1eb9faed5e249cb7620ba03aca5, type: 3}
   - _id: TileGrass
     _movementCost: 1
-    _visualPrefab: {fileID: 4329283859322598317, guid: 5456fc4e5b39c7450b3d39758446d240, type: 3}
-  - _id: water-deep-depth-tile-001
-    _movementCost: 1
-    _visualPrefab: {fileID: 8282189633118392519, guid: cf171a132921da3efa5d1bae04f9a9ba, type: 3}
-  - _id: water-deep-depth-tile-002
-    _movementCost: 1
-    _visualPrefab: {fileID: 1696104003082180676, guid: 010478bea22c1c7a6be833dc928b6651, type: 3}
-  - _id: water-middle-depth-tile-001
-    _movementCost: 1
-    _visualPrefab: {fileID: 3213976384180829521, guid: f42e5bf6590d0a5a89451dfca85a8b11, type: 3}
-  - _id: sand-tile-003
-    _movementCost: 1
-    _visualPrefab: {fileID: 1991431936498055131, guid: 74150fecc7a5caff8bba0338a2abe73a, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: grass-tile-001
     _movementCost: 1
-    _visualPrefab: {fileID: 7966136710849035844, guid: f9791baa039db8e74a5e35c01a0048fc, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: texture-grass-tile-001
     _movementCost: 1
-    _visualPrefab: {fileID: 3279324195366833361, guid: 36c0de5853f9b1bdcb9571a189253f07, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: texture-grass-tile-002
     _movementCost: 1
-    _visualPrefab: {fileID: 4701585843203515928, guid: dbb76b41c28a16523a3c4ad8417257d6, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: texture-grass-tile-003
     _movementCost: 1
-    _visualPrefab: {fileID: 4767315111446220782, guid: aeef854f2b1eaa258a31cd743ccd6fa9, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: texture-grass-tile-004
     _movementCost: 1
-    _visualPrefab: {fileID: 8971650722287722829, guid: acc94b497dd4806719954cf9c5054c37, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: texture-grass-tile-005
     _movementCost: 1
-    _visualPrefab: {fileID: 6627631165414677781, guid: dfada238862ca85dba63aaa02e36ca7b, type: 3}
-  - _id: texture-grass-tile-008
-    _movementCost: 1
-    _visualPrefab: {fileID: 4544566536593508589, guid: 2de65fac4bd56b8c890d1fc7c4532f20, type: 3}
-  - _id: texture-grass-tile-007
-    _movementCost: 1
-    _visualPrefab: {fileID: 7984446846503356110, guid: fb0b6ed7228d9654880bae38acd12e9f, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: texture-grass-tile-006
     _movementCost: 1
-    _visualPrefab: {fileID: 9218854386558987901, guid: 8c1f56a1308be7be5b060ca449338d3e, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
+  - _id: texture-grass-tile-007
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
+  - _id: texture-grass-tile-008
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: grass-tile-level-1-001
     _movementCost: 1
-    _visualPrefab: {fileID: 5705023750674074305, guid: fe9a1591fedb440508444d718b963988, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: grass-tile-level-2-001
     _movementCost: 1
-    _visualPrefab: {fileID: 5302667273615761019, guid: 06db334edf785d255a74c42647ec7d65, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
   - _id: grass-tile-level-3-001
     _movementCost: 1
-    _visualPrefab: {fileID: 2873162266757005405, guid: c66acd7d7643af1328687256cfc153c0, type: 3}
-  - _id: snow-tile-001
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: f7ede9f1-eac0-416f-833c-5218ae7df6bf
+    _tileWorldCreatorBlueprintLayerName: Grass
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}
+  - _id: grass-coast-down-left-corner-tile-001
     _movementCost: 1
-    _visualPrefab: {fileID: 4721971937291970928, guid: 5707d18245bbb267e83b163280fe25db, type: 3}
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: f32af768544365b4ea7c23d6ef4b1c86, type: 3}
+  - _id: grass-coast-down-left-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: 3d361b2bfc98db248a3fee4164c1c4e4, type: 3}
+  - _id: grass-coast-down-middle-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: 3d361b2bfc98db248a3fee4164c1c4e4, type: 3}
+  - _id: grass-coast-down-right-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: f32af768544365b4ea7c23d6ef4b1c86, type: 3}
+  - _id: grass-coast-down-right-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: 3d361b2bfc98db248a3fee4164c1c4e4, type: 3}
+  - _id: grass-coast-left-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: 3d361b2bfc98db248a3fee4164c1c4e4, type: 3}
+  - _id: grass-coast-right-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: 3d361b2bfc98db248a3fee4164c1c4e4, type: 3}
+  - _id: grass-coast-top-left-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: f32af768544365b4ea7c23d6ef4b1c86, type: 3}
+  - _id: grass-coast-top-left-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: 3d361b2bfc98db248a3fee4164c1c4e4, type: 3}
+  - _id: grass-coast-top-middle-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: 3d361b2bfc98db248a3fee4164c1c4e4, type: 3}
+  - _id: grass-coast-top-right-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: f32af768544365b4ea7c23d6ef4b1c86, type: 3}
+  - _id: grass-coast-top-right-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: 3d361b2bfc98db248a3fee4164c1c4e4, type: 3}
+  - _id: sand-tile-003
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 2559abb3-0fda-4b47-9f27-b520a9fbc436
+    _tileWorldCreatorBlueprintLayerName: Sand
+    _visualPrefab: {fileID: 7486491380029859929, guid: 6f7566a5feac92a48a18dcf6a52b544d, type: 3}
+  - _id: water-tile
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+  - _id: water-deep-depth-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+  - _id: water-deep-depth-tile-002
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+  - _id: water-deep-depth-tile-003
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+  - _id: water-deep-depth-to-middle-down-left-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 1327582878135713183, guid: 01241bf96eccd2544af67614bf04a6b7, type: 3}
+  - _id: water-deep-depth-to-middle-down-left-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-deep-depth-to-middle-down-middle-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-deep-depth-to-middle-down-right-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 1327582878135713183, guid: 01241bf96eccd2544af67614bf04a6b7, type: 3}
+  - _id: water-deep-depth-to-middle-down-right-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-deep-depth-to-middle-left-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-deep-depth-to-middle-right-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-deep-depth-to-middle-top-left-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 1327582878135713183, guid: 01241bf96eccd2544af67614bf04a6b7, type: 3}
+  - _id: water-deep-depth-to-middle-top-left-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-deep-depth-to-middle-top-middle-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-deep-depth-to-middle-top-right-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 1327582878135713183, guid: 01241bf96eccd2544af67614bf04a6b7, type: 3}
+  - _id: water-deep-depth-to-middle-top-right-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-middle-depth-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+  - _id: water-middle-depth-tile-002
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+  - _id: water-middle-depth-tile-003
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+  - _id: water-middle-depth-to-shoal-down-left-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 1327582878135713183, guid: 01241bf96eccd2544af67614bf04a6b7, type: 3}
+  - _id: water-middle-depth-to-shoal-down-left-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-middle-depth-to-shoal-down-middle-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-middle-depth-to-shoal-down-right-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 1327582878135713183, guid: 01241bf96eccd2544af67614bf04a6b7, type: 3}
+  - _id: water-middle-depth-to-shoal-down-right-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-middle-depth-to-shoal-left-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-middle-depth-to-shoal-right-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-middle-depth-to-shoal-top-left-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 1327582878135713183, guid: 01241bf96eccd2544af67614bf04a6b7, type: 3}
+  - _id: water-middle-depth-to-shoal-top-left-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-middle-depth-to-shoal-top-middle-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-middle-depth-to-shoal-top-right-corner-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 1327582878135713183, guid: 01241bf96eccd2544af67614bf04a6b7, type: 3}
+  - _id: water-middle-depth-to-shoal-top-right-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 8392027412113010434, guid: ae2a5d310bcc727469233dcdb294f7df, type: 3}
+  - _id: water-shoal-depth-tile-001
+    _movementCost: 1
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 8829f5ee433a00249b90aab66cbcf096, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 213245b1-3f37-402c-8bcf-cebec84930fb
+    _tileWorldCreatorBlueprintLayerName: Water
+    _visualPrefab: {fileID: 6864620678140451330, guid: af07a11cc83a6e5458165bd9407005b5, type: 3}
+  - _id: stone-hill-down-left-inner-corner-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 6257598106904757255, guid: ab54ac39e5d418d4f94a3a7f0c4d9912, type: 3}
+  - _id: stone-hill-down-left-inner-corner-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 6257598106904757255, guid: ab54ac39e5d418d4f94a3a7f0c4d9912, type: 3}
+  - _id: stone-hill-down-left-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-down-left-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-down-middle-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-down-middle-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-down-right-inner-corner-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 6257598106904757255, guid: ab54ac39e5d418d4f94a3a7f0c4d9912, type: 3}
+  - _id: stone-hill-down-right-inner-corner-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 6257598106904757255, guid: ab54ac39e5d418d4f94a3a7f0c4d9912, type: 3}
+  - _id: stone-hill-down-right-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-down-right-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-down-road-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-down-stairs-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-down-stairs-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-left-diagonal-corners-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 7018083955539282771, guid: cb04245913edfeb4da5014da5be69b5c, type: 3}
+  - _id: stone-hill-left-diagonal-corners-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 7018083955539282771, guid: cb04245913edfeb4da5014da5be69b5c, type: 3}
+  - _id: stone-hill-left-road-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-left-stairs-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-left-stairs-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-left-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-left-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-right-diagonal-corners-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 7018083955539282771, guid: cb04245913edfeb4da5014da5be69b5c, type: 3}
+  - _id: stone-hill-right-diagonal-corners-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 7018083955539282771, guid: cb04245913edfeb4da5014da5be69b5c, type: 3}
+  - _id: stone-hill-right-road-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-right-stairs-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-right-stairs-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-right-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-right-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-top-left-inner-corner-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 6257598106904757255, guid: ab54ac39e5d418d4f94a3a7f0c4d9912, type: 3}
+  - _id: stone-hill-top-left-inner-corner-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 6257598106904757255, guid: ab54ac39e5d418d4f94a3a7f0c4d9912, type: 3}
+  - _id: stone-hill-top-left-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-top-left-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-top-middle-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-top-middle-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-top-right-inner-corner-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 6257598106904757255, guid: ab54ac39e5d418d4f94a3a7f0c4d9912, type: 3}
+  - _id: stone-hill-top-right-inner-corner-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 6257598106904757255, guid: ab54ac39e5d418d4f94a3a7f0c4d9912, type: 3}
+  - _id: stone-hill-top-right-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-top-right-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-top-road-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-top-stairs-tile-001
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: stone-hill-top-stairs-tile-002
+    _movementCost: 1.2
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: e6decb8e0bd11314cbe8173581d68379, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 10e0b895-7e55-4656-93cc-964ab8d6152c
+    _tileWorldCreatorBlueprintLayerName: Hill
+    _visualPrefab: {fileID: 1805709187963644353, guid: 8ef036247fa094b48825f2064e712786, type: 3}
+  - _id: snow-tile-001
+    _movementCost: 2.5
+    _tileWorldCreatorPreset: {fileID: 11400000, guid: 17be7ba49986bf94992ad02a4dc3f9ed, type: 2}
+    _tileWorldCreatorBlueprintLayerGuid: 4b3b8cd0-44ae-4923-aadb-bc49251bbc6b
+    _tileWorldCreatorBlueprintLayerName: Snow
+    _visualPrefab: {fileID: 2476405463459381448, guid: d81af35c7a056f342acd698c4f029c61, type: 3}

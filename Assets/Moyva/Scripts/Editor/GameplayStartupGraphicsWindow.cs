@@ -17,7 +17,6 @@ namespace Kruty1918.Moyva.Editor
         private Texture2D _stripe;
         private float _previewZoomNormalized = 0.5f;
 
-        [MenuItem("Moyva/Tools/Gameplay Startup Graphics", priority = 42)]
         public static void Open()
         {
             var window = GetWindow<GameplayStartupGraphicsWindow>("Startup Graphics");

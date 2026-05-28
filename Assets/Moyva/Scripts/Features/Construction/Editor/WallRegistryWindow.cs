@@ -81,7 +81,6 @@ namespace Kruty1918.Moyva.Construction.Editor
         private GUIStyle _boxedContentStyle;
 
         // ── Відкрити вікно ─────────────────────────────────────────────────────
-        [MenuItem("Moyva/Construction/Wall Registry Editor")]
         public static void Open()
         {
             var window = GetWindow<WallRegistryWindow>("Реєстр стін");

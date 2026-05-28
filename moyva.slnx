@@ -6,6 +6,7 @@
   <Project Path="Kruty1918.Moyva.Animations.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
+  <Project Path="Kruty1918.Moyva.Generator.Editor.csproj" />
   <Project Path="Zenject-ReflectionBaking-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Interactions.API.csproj" />
   <Project Path="Zenject-UnitTests-Editor.csproj" />
@@ -19,10 +20,10 @@
   <Project Path="Kruty1918.Moyva.Tests.Faction.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.csproj" />
   <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
+  <Project Path="GiantGrey.TileWorldCreator.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.BotAI.csproj" />
-  <Project Path="Kruty1918.Moyva.Generator.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Multiplayer.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Pathfinding.csproj" />
@@ -41,6 +42,7 @@
   <Project Path="Kruty1918.Moyva.BotAI.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Kruty1918.Moyva.GraphSystem.Editor.csproj" />
+  <Project Path="GiantGrey.TileWorldCreator.Samples.csproj" />
   <Project Path="Kruty1918.Moyva.Signals.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.csproj" />
   <Project Path="Kruty1918.Moyva.WorldCreation.UI.csproj" />

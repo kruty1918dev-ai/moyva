@@ -18,7 +18,6 @@ namespace Kruty1918.Moyva.Construction.Editor
         private Vector2 _scroll;
         private readonly List<string> _messages = new List<string>();
 
-        [MenuItem("Moyva/Construction/UI Setup Tool")]
         public static void Open()
         {
             var window = GetWindow<ConstructionUISetupWindow>("Construction UI Setup");

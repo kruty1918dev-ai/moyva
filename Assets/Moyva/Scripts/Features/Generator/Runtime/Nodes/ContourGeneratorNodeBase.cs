@@ -46,6 +46,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
     /// </summary>
     public abstract class ContourGeneratorNodeBase : NodeBase, IPreviewableNode, ICustomEditorNode
     {
+        private const string LogTag = "[MoyvaTWCHeight]";
+
         [Header("Zone Filter")]
         [Tooltip("Мінімальна кількість клітинок у зв'язній зоні контуру. 0 або 1 = без обмежень.")]
         [SerializeField, Min(0)] protected int _minZoneSize = 0;
@@ -136,6 +138,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             _lastLevelMap = levelMap;
             _lastEdgeMask = new bool[w, h];
 
+            if (ShouldKeepBaseTileMapForAssetDriven3D(context))
+            {
+                _lastDirectionMap = new HillDirection?[w, h];
+                Debug.Log($"{LogTag} {GetType().Name} kept base TileMap for asset-driven 3D/TWC mode. nodeId='{NodeId}', size={w}x{h}, projection={context?.ProjectionMode}, render={context?.RenderMode}, levelStats={FormatLevelStats(levelMap)}.");
+                return BuildOutput((string[,])tileMap.Clone(), levelMap);
+            }
+
             bool[,] zoneMask = null;
             if (_minZoneSize > 1)
             {
@@ -176,6 +185,49 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         /// </summary>
         protected virtual NodeOutput BuildOutput(string[,] tileMap, int[,] levelMap)
             => NodeOutput.Success(tileMap, levelMap);
+
+        private static string FormatLevelStats(int[,] levelMap)
+        {
+            if (levelMap == null)
+                return "null";
+
+            int width = levelMap.GetLength(0);
+            int height = levelMap.GetLength(1);
+            if (width <= 0 || height <= 0)
+                return $"{width}x{height}, empty";
+
+            int min = int.MaxValue;
+            int max = int.MinValue;
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    int value = levelMap[x, y];
+                    min = Mathf.Min(min, value);
+                    max = Mathf.Max(max, value);
+                }
+            }
+
+            return $"{width}x{height}, min={min}, max={max}, samples=(0,0:{levelMap[0, 0]}), (mid:{levelMap[width / 2, height / 2]}), (last:{levelMap[width - 1, height - 1]})";
+        }
+
+        private static bool ShouldKeepBaseTileMapForAssetDriven3D(NodeContext context)
+        {
+            if (context == null)
+                return false;
+
+            if (context.TryGetService<MoyvaProjectSettingsSO>(out var projectSettings)
+                && projectSettings != null
+                && projectSettings.Uses3DProjectMode())
+            {
+                return true;
+            }
+
+            return context.ProjectionMode == GridProjectionMode.Orthographic3D
+                || context.ProjectionMode == GridProjectionMode.Isometric3DPreview
+                || context.RenderMode == GridRenderMode.Mesh3D
+                || context.RenderMode == GridRenderMode.Mesh3DPreview;
+        }
 
         protected virtual bool TryResolveTileIdForCell(
             int x,

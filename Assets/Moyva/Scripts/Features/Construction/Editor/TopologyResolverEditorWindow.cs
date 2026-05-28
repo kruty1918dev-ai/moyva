@@ -10,7 +10,6 @@ namespace Kruty1918.Moyva.Construction.Editor
         private Object _registryAsset;
         private Vector2 _scroll;
 
-        [MenuItem("Moyva/Construction/Topology Resolver Editor")]
         public static void Open()
         {
             var window = GetWindow<TopologyResolverEditorWindow>("Topology Resolver");

@@ -41,6 +41,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly GraphBasedMapDataGenerator _graphBasedGenerator;
         private readonly ShoreMaskPrepass _shoreMaskPrepass;
         private readonly WaterLayerMaterialSettings _waterLayerMaterialSettings;
+        private readonly TileWorldCreatorWorldBuildBridge _tileWorldCreatorBridge;
         private readonly List<Sprite> _runtimeLayerSprites = new List<Sprite>();
         private readonly List<Material> _runtimeLayerMaterials = new List<Material>();
 
@@ -58,7 +59,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             [InjectOptional] GraphBasedMapDataGenerator graphBasedGenerator,
             [InjectOptional] ShoreMaskPrepass shoreMaskPrepass,
             [InjectOptional] IGridProjection gridProjection = null,
-            [InjectOptional] WaterLayerMaterialSettings waterLayerMaterialSettings = null)
+            [InjectOptional] WaterLayerMaterialSettings waterLayerMaterialSettings = null,
+            [InjectOptional] TileWorldCreatorWorldBuildBridge tileWorldCreatorBridge = null)
         {
             _tileRegistry = tileRegistry;
             _objectRegistry = objectRegistry;
@@ -74,16 +76,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _graphBasedGenerator = graphBasedGenerator;
             _shoreMaskPrepass = shoreMaskPrepass;
             _waterLayerMaterialSettings = waterLayerMaterialSettings;
+            _tileWorldCreatorBridge = tileWorldCreatorBridge;
         }
 
         public void Initialize()
         {
-            foreach (var def in _tileRegistry.Definitions)
+            if (_tileRegistry?.Definitions != null)
             {
-                if (def == null || string.IsNullOrEmpty(def.Id))
-                    continue;
+                foreach (var def in _tileRegistry.Definitions)
+                {
+                    if (def == null || string.IsNullOrEmpty(def.Id))
+                        continue;
 
-                _definitionsCache[def.Id] = def;
+                    _definitionsCache[def.Id] = def;
+                }
             }
 
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
@@ -232,6 +238,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _terrainSurfaceYByPosition.Clear();
             ReleaseRuntimeLayerResources();
 
+            NormalizeBiomeMapIds(worldData);
+
+            var tileWorldCreatorResult = _tileWorldCreatorBridge?.Build(worldData)
+                ?? TileWorldCreatorWorldBuildResult.Disabled;
+
             // Ініціалізуємо LayerData до основного проходу, щоб знати чи працюємо у layer-only режимі.
             if (worldData.LayerData == null || worldData.LayerData.Length == 0)
                 worldData.LayerData = _graphBasedGenerator?.LastLayerData;
@@ -255,7 +266,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         string resolvedBiomeId = ResolveGridTileId(biomeId);
                         worldData.BiomeMap[x, y] = resolvedBiomeId;
 
-                        if (useLayerOnlyTiles)
+                        bool replaceTerrain = tileWorldCreatorResult.ShouldReplaceTerrainVisual(biomeId)
+                            || tileWorldCreatorResult.ShouldReplaceTerrainVisual(resolvedBiomeId);
+
+                        if (useLayerOnlyTiles || replaceTerrain)
                             _gridService.SetTileData(pos, resolvedBiomeId);
                         else
                             CreateTileView(pos, resolvedBiomeId, _tilesRoot, -1, elevation);
@@ -264,7 +278,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     string objectId = worldData.ObjectMap[x, y];
                     if (!string.IsNullOrEmpty(objectId))
                     {
-                        CreateObjectLayerEntity(pos, objectId, elevation);
+                        if (tileWorldCreatorResult.ShouldReplaceObjectVisual(objectId))
+                            RegisterTileWorldCreatorObjectEntity(pos, objectId);
+                        else
+                            CreateObjectLayerEntity(pos, objectId, elevation);
                     }
 
                     if (worldData.BuildingMap != null)
@@ -272,14 +289,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
                         string buildingId = worldData.BuildingMap[x, y];
                         if (!string.IsNullOrEmpty(buildingId))
                         {
-                            CreateBuildingView(pos, buildingId, elevation);
+                            if (!tileWorldCreatorResult.ShouldReplaceBuildingVisual(buildingId))
+                                CreateBuildingView(pos, buildingId, elevation);
                         }
                     }
                 }
             }
 
             // Шари рендеримо після створення тайлів/об'єктів.
-            ApplyLayerData(worldData);
+            if (!tileWorldCreatorResult.SuppressMoyvaLayerData)
+                ApplyLayerData(worldData);
 
             _currentWorldData = worldData.Clone();
             _signalBus.Fire(new WorldBuiltSignal());
@@ -332,6 +351,25 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             Debug.LogWarning($"[MapVisualInstantiator] Grid size {_gridService.GridWidth}x{_gridService.GridHeight} does not match world size {width}x{height}, and the grid service cannot resize. World build may fail if tiles exceed grid bounds.");
+        }
+
+        private void NormalizeBiomeMapIds(GeneratedWorldData worldData)
+        {
+            if (worldData?.BiomeMap == null)
+                return;
+
+            int width = Mathf.Min(worldData.Width, worldData.BiomeMap.GetLength(0));
+            int height = Mathf.Min(worldData.Height, worldData.BiomeMap.GetLength(1));
+
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    string biomeId = worldData.BiomeMap[x, y];
+                    if (!string.IsNullOrEmpty(biomeId))
+                        worldData.BiomeMap[x, y] = ResolveGridTileId(biomeId);
+                }
+            }
         }
 
         private void ApplyLayerData(GeneratedWorldData worldData)
@@ -534,12 +572,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             resolvedTileId = tileId;
 
-            if (!string.IsNullOrEmpty(tileId) && TryGetUsableTileDefinition(tileId, out tileType))
+            if (!string.IsNullOrEmpty(tileId) && TryGetRegisteredTileDefinition(tileId, out tileType))
                 return true;
 
             foreach (string fallbackTileId in ResolveFallbackTileIds(tileId))
             {
-                if (TryGetUsableTileDefinition(fallbackTileId, out tileType))
+                if (TryGetRegisteredTileDefinition(fallbackTileId, out tileType))
                 {
                     resolvedTileId = fallbackTileId;
                     LogTileFallbackOnce(tileId, fallbackTileId);
@@ -554,12 +592,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return false;
         }
 
-        private bool TryGetUsableTileDefinition(string tileId, out TileTypeDefinition tileType)
+        private bool TryGetRegisteredTileDefinition(string tileId, out TileTypeDefinition tileType)
         {
             if (!string.IsNullOrEmpty(tileId)
                 && _definitionsCache.TryGetValue(tileId, out tileType)
-                && tileType != null
-                && tileType.VisualPrefab != null)
+                && tileType != null)
             {
                 return true;
             }
@@ -693,6 +730,27 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             Debug.LogWarning($"[MapVisualInstantiator] Object layer ID '{layerEntityId}' не знайдено ні в MapObjectRegistry, ні в UnitRegistry.");
+        }
+
+        private void RegisterTileWorldCreatorObjectEntity(Vector2Int position, string objectId)
+        {
+            if (_objectRegistry.TryGetDefinition(objectId, out _))
+            {
+                _signalBus.Fire(new OnMapObjectSpawnedSignal
+                {
+                    ObjectId = objectId,
+                    Position = position
+                });
+                return;
+            }
+
+            if (TryResolveTileDefinition(objectId, out _, out string resolvedTileId))
+            {
+                _gridService.SetTileData(position, resolvedTileId);
+                return;
+            }
+
+            Debug.LogWarning($"[MapVisualInstantiator] TWC object ID '{objectId}' has no MapObjectRegistry or TileRegistry entry. Gameplay occupancy was not registered.");
         }
 
         private void CreateObjectView(Vector2Int position, string objectId, Transform root, int sortingOrder, float elevation)

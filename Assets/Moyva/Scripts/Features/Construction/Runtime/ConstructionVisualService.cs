@@ -719,10 +719,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             for (int i = 0; i < _tileRegistry.Definitions.Length; i++)
             {
                 var definition = _tileRegistry.Definitions[i];
-                if (definition == null || definition.Id != tileId || definition.VisualPrefab == null)
+                var surfacePrefab = definition?.SurfaceReferencePrefab;
+                if (definition == null || definition.Id != tileId || surfacePrefab == null)
                     continue;
 
-                if (!GridSurfacePlacementUtility.TryResolveTopOffsetY(definition.VisualPrefab, out offsetY))
+                if (!GridSurfacePlacementUtility.TryResolveTopOffsetY(surfacePrefab, out offsetY))
                     offsetY = 0f;
 
                 _tileSurfaceOffsetYById[tileId] = offsetY;

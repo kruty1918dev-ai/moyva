@@ -43,6 +43,56 @@ namespace Kruty1918.Moyva.GraphSystem.API
             NeighborhoodMode = settings.ResolveNeighborhoodMode();
         }
 
+        public void ApplyProjectSettings(MoyvaProjectSettingsSO settings)
+        {
+            if (settings == null)
+                return;
+
+            if (!settings.UseAdvancedProjectSettings)
+            {
+                if (settings.ResolveProjectVisualMode() == MoyvaProjectVisualMode.Full3D)
+                {
+                    GridTopology = GridTopology.Layered;
+                    ProjectionMode = GridProjectionMode.Orthographic3D;
+                    RenderMode = GridRenderMode.Mesh3D;
+                    NeighborhoodMode = ResolveNeighborhoodMode(GridTopology, ProjectionMode, GridNeighborhoodMode.Auto);
+                    return;
+                }
+
+                GridTopology = GridTopology.Orthogonal;
+                ProjectionMode = GridProjectionMode.Orthographic2D;
+                RenderMode = GridRenderMode.Sprite2D;
+                NeighborhoodMode = ResolveNeighborhoodMode(GridTopology, ProjectionMode, GridNeighborhoodMode.Auto);
+                return;
+            }
+
+            GridTopology = settings.DefaultGridTopology;
+            ProjectionMode = settings.DefaultProjectionMode;
+            RenderMode = settings.DefaultRenderMode;
+            NeighborhoodMode = ResolveNeighborhoodMode(GridTopology, ProjectionMode, settings.DefaultNeighborhood);
+        }
+
+        private static GridNeighborhoodMode ResolveNeighborhoodMode(
+            GridTopology topology,
+            GridProjectionMode projectionMode,
+            GridNeighborhoodMode neighborhoodMode)
+        {
+            if (neighborhoodMode != GridNeighborhoodMode.Auto)
+                return neighborhoodMode;
+
+            if (topology == GridTopology.HexAxial
+                || projectionMode == GridProjectionMode.HexPointy2D
+                || projectionMode == GridProjectionMode.HexFlat2D)
+            {
+                return GridNeighborhoodMode.HexAxial6;
+            }
+
+            return projectionMode == GridProjectionMode.Isometric2D
+                || projectionMode == GridProjectionMode.Isometric3DPreview
+                    ? GridNeighborhoodMode.VonNeumann4
+                    : GridNeighborhoodMode.Moore8;
+        }
+
         public T GetService<T>()
         {
             if (_services.TryGetValue(typeof(T), out var service))

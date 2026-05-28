@@ -1,3 +1,4 @@
+using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Grid.API;
 using UnityEditor;
 using UnityEngine;
@@ -7,15 +8,12 @@ namespace Kruty1918.Moyva.Editor
     [CustomEditor(typeof(TileRegistrySO))]
     public sealed class TileRegistryEditor : UnityEditor.Editor
     {
-        private const string TilePrefabFolder = "Assets/Moyva/Prefabs/Tiles";
-
         private SerializedProperty _definitions;
         private Vector2 _scroll;
         private bool _createOpen;
         private string _newId = "";
         private float _newCost = 1f;
-        private Sprite _newSprite;
-        private GameObject _newPrefab;
+        private TilePreset _newTilePreset;
 
         private void OnEnable()
         {
@@ -50,6 +48,7 @@ namespace Kruty1918.Moyva.Editor
                 var el = _definitions.GetArrayElementAtIndex(i);
                 string id   = el.FindPropertyRelative("_id")?.stringValue ?? "?";
                 float  cost = el.FindPropertyRelative("_movementCost")?.floatValue ?? 0f;
+                var    preset = el.FindPropertyRelative("_tileWorldCreatorPreset")?.objectReferenceValue;
                 var    pfb  = el.FindPropertyRelative("_visualPrefab")?.objectReferenceValue;
 
                 GUIStyle style = i % 2 == 0 ? RegistryEditorStyles.Card : RegistryEditorStyles.CardAlt;
@@ -69,7 +68,9 @@ namespace Kruty1918.Moyva.Editor
                 // Деталі
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField($"Рух: {cost:F1}", EditorStyles.miniLabel, GUILayout.Width(80));
-                EditorGUILayout.LabelField(pfb ? $"Prefab: {pfb.name}" : "Prefab: \u2717", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField(preset ? $"TWC: {preset.name}" : "TWC: not assigned", EditorStyles.miniLabel);
+                if (pfb)
+                    EditorGUILayout.LabelField($"Legacy prefab: {pfb.name}", EditorStyles.miniLabel);
                 EditorGUILayout.EndHorizontal();
 
                 // Inline редагування через PropertyField
@@ -77,7 +78,10 @@ namespace Kruty1918.Moyva.Editor
                 EditorGUILayout.PropertyField(el.FindPropertyRelative("_id"), new GUIContent("ID"));
                 ValidateInlineId(el.FindPropertyRelative("_id")?.stringValue);
                 EditorGUILayout.PropertyField(el.FindPropertyRelative("_movementCost"), new GUIContent("Movement Cost"));
-                EditorGUILayout.PropertyField(el.FindPropertyRelative("_visualPrefab"), new GUIContent("Visual Prefab"));
+                EditorGUILayout.PropertyField(el.FindPropertyRelative("_tileWorldCreatorPreset"), new GUIContent("TWC Tile Preset"));
+                EditorGUILayout.PropertyField(el.FindPropertyRelative("_tileWorldCreatorBlueprintLayerName"), new GUIContent("TWC Layer Name"));
+                EditorGUILayout.PropertyField(el.FindPropertyRelative("_tileWorldCreatorBlueprintLayerGuid"), new GUIContent("TWC Layer GUID"));
+                EditorGUILayout.PropertyField(el.FindPropertyRelative("_visualPrefab"), new GUIContent("Legacy Visual Prefab"));
                 EditorGUI.indentLevel--;
 
                 EditorGUILayout.EndVertical();
@@ -102,10 +106,8 @@ namespace Kruty1918.Moyva.Editor
                 EditorGUILayout.BeginVertical(RegistryEditorStyles.SectionBox);
                 _newId     = RegistryEditorStyles.IdFieldWithDuplicateCheck("ID", _newId, _definitions, "_id");
                 _newCost   = EditorGUILayout.FloatField("Movement Cost", _newCost);
-                _newSprite = (Sprite)EditorGUILayout.ObjectField("Sprite", _newSprite, typeof(Sprite), false);
-                _newPrefab = (GameObject)EditorGUILayout.ObjectField("Prefab (override)", _newPrefab, typeof(GameObject), false);
-                if (!_newPrefab && !_newSprite)
-                    EditorGUILayout.HelpBox("Prefab буде створено автоматично (порожній).", MessageType.Info);
+                _newTilePreset = (TilePreset)EditorGUILayout.ObjectField("TWC Tile Preset", _newTilePreset, typeof(TilePreset), false);
+                EditorGUILayout.HelpBox("Новий запис бере registry prefab із TWC TilePreset. Runtime-візуал усе одно будує TileWorldCreator через Mapping/Wizard.", MessageType.Info);
                 EditorGUILayout.Space(4);
 
                 bool valid = RegistryEditorStyles.ValidateIdFull(_newId, _definitions, "_id") == null;
@@ -124,18 +126,37 @@ namespace Kruty1918.Moyva.Editor
             string id = _newId.Trim();
             if (RegistryEditorStyles.ValidateIdFull(id, _definitions, "_id") != null) return;
 
-            GameObject pfb = _newPrefab ? _newPrefab : CreatePrefab(id, _newSprite);
-            if (!pfb) pfb = CreateEmptyPrefab(id);
-
             int idx = _definitions.arraySize;
             _definitions.InsertArrayElementAtIndex(idx);
             var el = _definitions.GetArrayElementAtIndex(idx);
             el.FindPropertyRelative("_id").stringValue = id;
             el.FindPropertyRelative("_movementCost").floatValue = _newCost;
-            el.FindPropertyRelative("_visualPrefab").objectReferenceValue = pfb;
+            el.FindPropertyRelative("_tileWorldCreatorPreset").objectReferenceValue = _newTilePreset;
+            el.FindPropertyRelative("_visualPrefab").objectReferenceValue = ResolvePresetVisualPrefab(_newTilePreset);
             serializedObject.ApplyModifiedProperties();
             AssetDatabase.SaveAssets();
-            _newId = ""; _newSprite = null; _newPrefab = null;
+            _newId = ""; _newTilePreset = null;
+        }
+
+        private static GameObject ResolvePresetVisualPrefab(TilePreset preset)
+        {
+            if (preset == null)
+                return null;
+
+            if (preset.gridtype == TilePreset.GridType.dual)
+            {
+                if (preset.DUALGRD_fillTile != null) return preset.DUALGRD_fillTile;
+                if (preset.DUALGRD_edgeTile != null) return preset.DUALGRD_edgeTile;
+                if (preset.DUALGRD_cornerTile != null) return preset.DUALGRD_cornerTile;
+                if (preset.DUALGRD_invertedCornerTile != null) return preset.DUALGRD_invertedCornerTile;
+                return preset.DUALGRD_doubleInteriorCornerTile;
+            }
+
+            if (preset.NRMGRD_fillTile != null) return preset.NRMGRD_fillTile;
+            if (preset.NRMGRD_singleTile != null) return preset.NRMGRD_singleTile;
+            if (preset.NRMGRD_edgeFillTile != null) return preset.NRMGRD_edgeFillTile;
+            if (preset.NRMGRD_cornerFillTile != null) return preset.NRMGRD_cornerFillTile;
+            return preset.NRMGRD_interiorCornerTile;
         }
 
         private bool ContainsId(string id)
@@ -147,20 +168,6 @@ namespace Kruty1918.Moyva.Editor
                     return true;
             }
             return false;
-        }
-
-        private static GameObject CreatePrefab(string id, Sprite sprite)
-        {
-            if (!sprite) return null;
-            EnsureFolder(TilePrefabFolder);
-            string safe = id.Replace('/', '-').Replace('\\', '-');
-            string path = AssetDatabase.GenerateUniqueAssetPath($"{TilePrefabFolder}/{safe}.prefab");
-            var go = new GameObject(safe);
-            go.AddComponent<SpriteRenderer>().sprite = sprite;
-            var pfb = PrefabUtility.SaveAsPrefabAsset(go, path);
-            DestroyImmediate(go);
-            AssetDatabase.Refresh();
-            return pfb;
         }
 
         private static void DrawIdLabel(string id)
@@ -183,29 +190,5 @@ namespace Kruty1918.Moyva.Editor
             }
         }
 
-        private static void EnsureFolder(string folder)
-        {
-            string[] parts = folder.Replace('\\', '/').TrimEnd('/').Split('/');
-            if (parts.Length == 0 || parts[0] != "Assets") return;
-            string cur = parts[0];
-            for (int i = 1; i < parts.Length; i++)
-            {
-                string next = $"{cur}/{parts[i]}";
-                if (!AssetDatabase.IsValidFolder(next)) AssetDatabase.CreateFolder(cur, parts[i]);
-                cur = next;
-            }
-        }
-
-        private static GameObject CreateEmptyPrefab(string id)
-        {
-            EnsureFolder(TilePrefabFolder);
-            string safe = id.Replace('/', '-').Replace('\\', '-');
-            string path = AssetDatabase.GenerateUniqueAssetPath($"{TilePrefabFolder}/{safe}.prefab");
-            var go = new GameObject(safe);
-            var pfb = PrefabUtility.SaveAsPrefabAsset(go, path);
-            DestroyImmediate(go);
-            AssetDatabase.Refresh();
-            return pfb;
-        }
     }
 }

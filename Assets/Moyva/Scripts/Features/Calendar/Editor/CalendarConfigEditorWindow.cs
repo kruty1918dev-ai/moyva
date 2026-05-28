@@ -90,7 +90,6 @@ namespace Kruty1918.Moyva.Calendar.Editor
         private string _validationMessage;
         private MessageType _validationMessageType;
 
-        [MenuItem("Moyva/Calendar/Config Hub")]
         public static void Open()
         {
             var window = GetWindow<CalendarConfigEditorWindow>("Календар: налаштування");

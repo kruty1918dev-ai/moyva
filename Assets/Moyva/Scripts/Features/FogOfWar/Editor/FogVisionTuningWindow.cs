@@ -133,7 +133,6 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private float _previewBlockerHeight = 0.8f;
         private int _previewBlockerDistance = 2;
 
-        [MenuItem("Moyva/Tools/Fog of War/Vision Tuner")]
         private static void Open()
         {
             var window = GetWindow<FogVisionTuningWindow>();

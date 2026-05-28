@@ -1,0 +1,10 @@
+fileFormatVersion: 2
+guid: 7af1799729d647c89d4036f9b5117209
+timeCreated: 1775306076
+AssetOrigin:
+  serializedVersion: 1
+  productId: 320067
+  packageName: TileWorldCreator 4
+  packageVersion: 4.2.2
+  assetPath: Assets/TileWorldCreator/Code/Data/Layers/HeightAwareness.cs
+  uploadId: 911104

@@ -83,7 +83,6 @@ namespace Kruty1918.Moyva.SaveSystem.Editor
         private string _payloadHexEditor = string.Empty;
         private Vector2 _knownBlockScroll;
 
-        [MenuItem("Moyva/Save System/Designer Tool")]
         public static void OpenWindow()
         {
             var window = GetWindow<SaveSystemDesignerToolWindow>("Save Designer Tool");

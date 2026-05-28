@@ -23,7 +23,6 @@ namespace Kruty1918.Moyva.Editor
         /// <summary>
         /// Показує інформацію про 2D гізмо
         /// </summary>
-        [MenuItem("Moyva/Gizmo/Show Sprite Bounds", priority = 200)]
         public static void ShowSpriteBounds()
         {
             EditorUtility.DisplayDialog("Info", 
@@ -38,7 +37,6 @@ namespace Kruty1918.Moyva.Editor
         /// <summary>
         /// Вимикає 3D гізмо для очищення перегляду
         /// </summary>
-        [MenuItem("Moyva/Gizmo/Hide 3D Bounds", priority = 201)]
         public static void Hide3DBounds()
         {
             EditorUtility.DisplayDialog("Info", 

@@ -15,7 +15,6 @@ namespace Kruty1918.Moyva.Editor
         private float _previewZoom = 1f;
         private Vector2 _scrollPosition;
 
-        [MenuItem("Moyva/Windows/Prefab 2D Preview Setup", priority = 10)]
         public static void ShowWindow()
         {
             GetWindow<PrefabPreview2DWindow>("Adaptive Preview Setup");
