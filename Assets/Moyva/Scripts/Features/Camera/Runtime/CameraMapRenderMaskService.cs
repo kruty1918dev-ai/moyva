@@ -71,10 +71,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private bool ShouldUseSpriteMask()
         {
-            if (_settings == null || !_settings.mapRenderMaskEnabled)
-                return false;
-
-            return _gridProjection == null || _gridProjection.WorldPlane != GridWorldPlane.XZ;
+            // Full3D-only project: SpriteMask / TilemapRenderer paths are disabled.
+            return false;
         }
 
         private void EnsureMask()

@@ -3,7 +3,6 @@ namespace Kruty1918.Moyva.Grid.API
     public enum MoyvaProjectVisualMode
     {
         Auto = 0,
-        Classic2D = 1,
         Full3D = 2,
     }
 
@@ -16,18 +15,13 @@ namespace Kruty1918.Moyva.Grid.API
 
     public enum GridProjectionMode
     {
-        Orthographic2D = 0,
-        Isometric2D = 1,
-        HexPointy2D = 2,
-        HexFlat2D = 3,
+        // 2D projection modes removed — project is Full3D-only.
         Isometric3DPreview = 4,
         Orthographic3D = 5,
     }
 
     public enum GridRenderMode
     {
-        Sprite2D = 0,
-        Isometric2D = 1,
         Mesh3DPreview = 2,
         Mesh3D = 3,
     }
@@ -55,7 +49,6 @@ namespace Kruty1918.Moyva.Grid.API
     public enum MoyvaCameraProjectPolicy
     {
         AutoFromGrid = 0,
-        Force2D = 1,
         Force3DOrthographic = 2,
         Force3DPerspective = 3,
     }

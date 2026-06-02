@@ -60,10 +60,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             // Страховка від коротких артефактів при старті/перезавантаженні сцени:
             // глобальний fog-culling вимикаємо до повної ініціалізації fog texture.
             Shader.SetGlobalFloat(GlobalFogCullEnabledId, 0f);
-<<<<<<< HEAD
             Shader.SetGlobalFloat(GlobalFogWorldPlaneId, 0f);
-=======
->>>>>>> origin/main
         }
 
         private void OnDestroy()
@@ -88,7 +85,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _mapWidth = w;
             _mapHeight = h;
 
-            _projectionMode = _gridProjection != null ? (int)_gridProjection.ProjectionMode : (int)GridProjectionMode.Orthographic2D;
+            _projectionMode = _gridProjection != null ? (int)_gridProjection.ProjectionMode : (int)GridProjectionMode.Orthographic3D;
 
             Bounds worldBounds = ResolveWorldBounds(w, h);
             Vector2 edgePadding = ResolveEdgePaddingInCells();

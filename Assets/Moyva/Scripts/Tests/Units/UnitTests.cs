@@ -212,6 +212,10 @@ namespace Kruty1918.Moyva.Tests.Units
         private sealed class FakeTileSettingsService : Grid.API.ITileSettingsService
         {
             public float GetTileWeight(string tileTypeId) => 1f;
+
+            public bool IsBuildBlocked(string tileId) => false;
+
+            public float GetSurfaceOffset(string tileId) => 0f;
         }
 
         private sealed class FakeUnitClassConfig : IUnitClassConfig

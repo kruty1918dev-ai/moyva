@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
+using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEditor;
@@ -43,10 +44,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private bool _isReadOnly;
         private MiniMap _miniMap;
         private bool _inlinePreviewsVisible = true;
+        private string _activeLayerId;
         private readonly Dictionary<GeneratorNodeView, NodeBorderSnapshot> _edgeHoverNodeSnapshots = new();
         private readonly Dictionary<string, string> _edgeTooltipTexts = new();
         private Label _floatingTooltip;
         public event Action GraphChanged;
+        public event Action CanvasBackgroundClicked;
 
         private struct NodeBorderSnapshot
         {
@@ -132,6 +135,26 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             // Keyboard shortcuts
             RegisterCallback<KeyDownEvent>(OnKeyDown);
+            RegisterCallback<MouseDownEvent>(OnBackgroundMouseDown);
+        }
+
+        private void OnBackgroundMouseDown(MouseDownEvent evt)
+        {
+            if (evt == null || evt.button != 0)
+                return;
+
+            var target = evt.target as VisualElement;
+            if (target == null)
+                return;
+
+            if (target.GetFirstAncestorOfType<GeneratorNodeView>() != null)
+                return;
+            if (target.GetFirstAncestorOfType<Edge>() != null)
+                return;
+            if (target is Port || target.GetFirstAncestorOfType<Port>() != null)
+                return;
+
+            CanvasBackgroundClicked?.Invoke();
         }
 
         public void SetMinimapVisible(bool visible) => _miniMap.visible = visible;
@@ -702,11 +725,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (node == null || outputs == null || outputs.Length == 0)
                 return outputs;
 
-            // 1) LakeGenerationNode: завжди віддаємо пріоритет WaterMask (port #1).
-            if (node is LakeGenerationNode && outputs.Length > 1 && outputs[1] is bool[,])
-                return new object[] { outputs[1] };
-
-            // 2) Загальне правило: якщо є bool[,] вихід з назвою "*Mask*", показуємо його.
+            // 1) Загальне правило: якщо є bool[,] вихід з назвою "*Mask*", показуємо його.
             var defs = node.Outputs;
             if (defs != null)
             {
@@ -960,6 +979,83 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (node == null) return;
 
             node.EditorPosition = position;
+            AssignActiveLayer(node);
+
+            var view = new GeneratorNodeView(node);
+            AddElement(view);
+            SetupNodeVisuals(view);
+            view.SetPreviewVisible(_inlinePreviewsVisible);
+
+            EditorUtility.SetDirty(_graphAsset);
+            GraphChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Активний шар графа. Нові вузли призначаються цьому шару.
+        /// </summary>
+        public string ActiveLayerId
+        {
+            get => _activeLayerId;
+            set => _activeLayerId = value;
+        }
+
+        private void AssignActiveLayer(NodeBase node)
+        {
+            if (node == null) return;
+            if (string.IsNullOrEmpty(_activeLayerId) && _graphAsset != null)
+                _activeLayerId = _graphAsset.EnsureDefaultLayer();
+            node.LayerId = _activeLayerId;
+        }
+
+        /// <summary>
+        /// Показує лише вузли активного шару (та глобальні вузли без шару),
+        /// решту приховує. Ребра між прихованими вузлами теж приховуються.
+        /// </summary>
+        public void SetVisibleLayer(string layerId)
+        {
+            _activeLayerId = layerId;
+
+            foreach (var element in graphElements.ToList())
+            {
+                if (element is GeneratorNodeView nodeView)
+                {
+                    bool visible = IsNodeVisibleForLayer(nodeView.NodeData, layerId);
+                    nodeView.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+                else if (element is Edge edge)
+                {
+                    bool inputVisible = edge.input?.node is not GeneratorNodeView inView
+                        || IsNodeVisibleForLayer(inView.NodeData, layerId);
+                    bool outputVisible = edge.output?.node is not GeneratorNodeView outView
+                        || IsNodeVisibleForLayer(outView.NodeData, layerId);
+                    edge.style.display = inputVisible && outputVisible ? DisplayStyle.Flex : DisplayStyle.None;
+                }
+            }
+        }
+
+        private static bool IsNodeVisibleForLayer(NodeBase node, string layerId)
+        {
+            if (node == null) return true;
+            // Глобальні вузли (без шару) видимі завжди.
+            if (string.IsNullOrEmpty(node.LayerId)) return true;
+            return node.LayerId == layerId;
+        }
+
+        /// <summary>
+        /// Створює вузол-обгортку TileWorldCreator-модифікатора заданого типу
+        /// та призначає його активному шару.
+        /// </summary>
+        public void CreateTwcModifierNode(Type modifierType, Vector2 position)
+        {
+            if (_graphAsset == null || _isReadOnly || modifierType == null) return;
+
+            Undo.RecordObject(_graphAsset, "Add TWC Node");
+            var node = _graphAsset.AddNode<TwcModifierNode>();
+            if (node == null) return;
+
+            node.ConfigureModifier(modifierType);
+            node.EditorPosition = position;
+            AssignActiveLayer(node);
 
             var view = new GeneratorNodeView(node);
             AddElement(view);
@@ -1483,6 +1579,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 else
                     ResolveExistingSOReferences(node);
 
+                if (node is TwcModifierNode twcImportedNode && string.IsNullOrEmpty(twcImportedNode.LayerId))
+                    twcImportedNode.LayerId = _graphAsset.EnsureDefaultLayer();
+
                 var view = new GeneratorNodeView(node);
                 AddElement(view);
                 SetupNodeVisuals(view);
@@ -1658,6 +1757,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     matched.EditorPosition = entry.position;
                     ResolveExistingSOReferences(matched);
 
+                    if (matched is TwcModifierNode twcMatchedNode && string.IsNullOrEmpty(twcMatchedNode.LayerId))
+                        twcMatchedNode.LayerId = _graphAsset.EnsureDefaultLayer();
+
                     string presetNodeId = string.IsNullOrWhiteSpace(entry.originalNodeId)
                         ? keepId
                         : entry.originalNodeId;
@@ -1681,6 +1783,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     node.NodeId = newId;
                     node.EditorPosition = entry.position;
                     ResolveExistingSOReferences(node);
+
+                    if (node is TwcModifierNode twcAddedNode && string.IsNullOrEmpty(twcAddedNode.LayerId))
+                        twcAddedNode.LayerId = _graphAsset.EnsureDefaultLayer();
 
                     string presetNodeId = string.IsNullOrWhiteSpace(entry.originalNodeId)
                         ? newId
@@ -1945,6 +2050,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var jsonData = RemapScriptableObjectGuids(entry.jsonData, soMap);
             EditorJsonUtility.FromJsonOverwrite(jsonData, node);
             AssignSerializedSOReferencesFromJson(node, jsonData);
+
+            // Ensure imported TWC nodes have a live modifier instance so
+            // their parameters are editable in the node inspector immediately.
+            if (node is TwcModifierNode twcNode)
+                twcNode.TryRestoreModifierInEditor();
         }
 
         private static string RemapScriptableObjectGuids(string jsonData,
@@ -2431,44 +2541,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void FlattenLegacyRoutePoints()
         {
-            if (_graphAsset == null)
-                return;
-
-            var routeNodes = _graphAsset.Nodes
-                .OfType<RoutePointNode>()
-                .Where(node => node != null)
-                .ToList();
-
-            if (routeNodes.Count == 0)
-                return;
-
-            foreach (var routeNode in routeNodes)
-            {
-                var incomingConnections = _graphAsset.Connections
-                    .Where(conn => conn.TargetNodeId == routeNode.NodeId)
-                    .ToList();
-
-                var outgoingConnections = _graphAsset.Connections
-                    .Where(conn => conn.SourceNodeId == routeNode.NodeId)
-                    .ToList();
-
-                foreach (var incomingConn in incomingConnections)
-                {
-                    foreach (var outgoingConn in outgoingConnections)
-                    {
-                        _graphAsset.AddConnection(
-                            incomingConn.SourceNodeId,
-                            incomingConn.SourcePortIndex,
-                            outgoingConn.TargetNodeId,
-                            outgoingConn.TargetPortIndex,
-                            incomingConn.SourceElementIndex);
-                    }
-                }
-
-                _graphAsset.RemoveNode(routeNode);
-            }
-
-            EditorUtility.SetDirty(_graphAsset);
+            // RoutePointNode видалено разом зі старим алгоритмом доріг.
+            // Метод лишається як no-op для сумісності зі старими графами.
         }
 
 

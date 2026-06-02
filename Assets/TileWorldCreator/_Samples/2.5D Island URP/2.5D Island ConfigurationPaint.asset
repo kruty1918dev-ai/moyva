@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   random:
-    state: 2683926162
+    state: 3638352566
   isEnabled: 1
   layerName: Build Sand
   guid: b8088034-3c7c-495a-9fc8-1d1599d177d3
   assignedBlueprintLayerGuid: a2e7e077-01a0-4746-83d7-acc7fb1a133d
+  currentBlueprintLayer: {fileID: -5398853214598126160}
   foldoutState: 0
   useMultiLayers: 0
   masks: []
@@ -37,6 +38,7 @@ MonoBehaviour:
   colliderType: 1
   tileColliderHeight: 0
   tileColliderExtrusionHeight: 0
+  invertCollisionWalls: 0
   tilePresetsTop:
   - preset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
     tileHeight: 0
@@ -105,6 +107,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 8}
+    - {x: 6, y: 8}
+    - {x: 5, y: 9}
+    - {x: 6, y: 9}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 8.5}
     worldMapPosition: {x: 6, y: 9}
@@ -121,6 +128,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 8}
+    - {x: 7, y: 8}
+    - {x: 6, y: 9}
+    - {x: 7, y: 9}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 7.5}
     worldMapPosition: {x: 7, y: 8}
@@ -137,6 +149,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 7}
+    - {x: 7, y: 7}
+    - {x: 6, y: 8}
+    - {x: 7, y: 8}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 7.5}
     worldMapPosition: {x: 7, y: 8}
@@ -153,6 +170,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 7}
+    - {x: 8, y: 7}
+    - {x: 7, y: 8}
+    - {x: 8, y: 8}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 8.5}
     worldMapPosition: {x: 7, y: 8}
@@ -169,6 +191,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 8}
+    - {x: 8, y: 8}
+    - {x: 7, y: 9}
+    - {x: 8, y: 9}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 8.5}
     worldMapPosition: {x: 8, y: 9}
@@ -185,6 +212,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 8}
+    - {x: 9, y: 8}
+    - {x: 8, y: 9}
+    - {x: 9, y: 9}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 7.5}
     worldMapPosition: {x: 8, y: 8}
@@ -201,6 +233,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 7}
+    - {x: 9, y: 7}
+    - {x: 8, y: 8}
+    - {x: 9, y: 8}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 6.5}
     worldMapPosition: {x: 8, y: 7}
@@ -217,6 +254,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 6}
+    - {x: 8, y: 6}
+    - {x: 7, y: 7}
+    - {x: 8, y: 7}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 6.5}
     worldMapPosition: {x: 8, y: 7}
@@ -233,6 +275,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 6}
+    - {x: 9, y: 6}
+    - {x: 8, y: 7}
+    - {x: 9, y: 7}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 5.5}
     worldMapPosition: {x: 9, y: 6}
@@ -249,6 +296,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 5}
+    - {x: 9, y: 5}
+    - {x: 8, y: 6}
+    - {x: 9, y: 6}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 4.5}
     worldMapPosition: {x: 8, y: 5}
@@ -265,6 +317,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 4}
+    - {x: 8, y: 4}
+    - {x: 7, y: 5}
+    - {x: 8, y: 5}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 5.5}
     worldMapPosition: {x: 8, y: 5}
@@ -281,6 +338,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 5}
+    - {x: 8, y: 5}
+    - {x: 7, y: 6}
+    - {x: 8, y: 6}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 4.5}
     worldMapPosition: {x: 8, y: 5}
@@ -297,6 +359,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 4}
+    - {x: 9, y: 4}
+    - {x: 8, y: 5}
+    - {x: 9, y: 5}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 7.5}
     worldMapPosition: {x: 6, y: 8}
@@ -313,6 +380,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 7}
+    - {x: 6, y: 7}
+    - {x: 5, y: 8}
+    - {x: 6, y: 8}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 6.5}
     worldMapPosition: {x: 7, y: 7}
@@ -329,6 +401,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 6}
+    - {x: 7, y: 6}
+    - {x: 6, y: 7}
+    - {x: 7, y: 7}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 9.5}
     worldMapPosition: {x: 6, y: 9}
@@ -345,6 +422,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 9}
+    - {x: 6, y: 9}
+    - {x: 5, y: 10}
+    - {x: 6, y: 10}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 9.5}
     worldMapPosition: {x: 6, y: 9}
@@ -361,6 +443,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 9}
+    - {x: 7, y: 9}
+    - {x: 6, y: 10}
+    - {x: 7, y: 10}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 9.5}
     worldMapPosition: {x: 7, y: 9}
@@ -377,6 +464,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 9}
+    - {x: 8, y: 9}
+    - {x: 7, y: 10}
+    - {x: 8, y: 10}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 10.5}
     worldMapPosition: {x: 7, y: 10}
@@ -393,6 +485,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 10}
+    - {x: 7, y: 10}
+    - {x: 6, y: 11}
+    - {x: 7, y: 11}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 10.5}
     worldMapPosition: {x: 7, y: 10}
@@ -409,6 +506,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 10}
+    - {x: 8, y: 10}
+    - {x: 7, y: 11}
+    - {x: 8, y: 11}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 9.5}
     worldMapPosition: {x: 8, y: 9}
@@ -425,6 +527,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 9}
+    - {x: 9, y: 9}
+    - {x: 8, y: 10}
+    - {x: 9, y: 10}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 10.5}
     worldMapPosition: {x: 8, y: 10}
@@ -441,6 +548,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 10}
+    - {x: 9, y: 10}
+    - {x: 8, y: 11}
+    - {x: 9, y: 11}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 11.5}
     worldMapPosition: {x: 8, y: 11}
@@ -457,6 +569,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 11}
+    - {x: 8, y: 11}
+    - {x: 7, y: 12}
+    - {x: 8, y: 12}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 11.5}
     worldMapPosition: {x: 8, y: 11}
@@ -473,6 +590,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 11}
+    - {x: 9, y: 11}
+    - {x: 8, y: 12}
+    - {x: 9, y: 12}
   - isAssigned: 1
     tilePosition: {x: 4.5, y: 9.5}
     worldMapPosition: {x: 5, y: 10}
@@ -489,6 +611,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 4, y: 9}
+    - {x: 5, y: 9}
+    - {x: 4, y: 10}
+    - {x: 5, y: 10}
   - isAssigned: 1
     tilePosition: {x: 4.5, y: 10.5}
     worldMapPosition: {x: 5, y: 10}
@@ -505,6 +632,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 4, y: 10}
+    - {x: 5, y: 10}
+    - {x: 4, y: 11}
+    - {x: 5, y: 11}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 10.5}
     worldMapPosition: {x: 5, y: 10}
@@ -521,6 +653,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 10}
+    - {x: 6, y: 10}
+    - {x: 5, y: 11}
+    - {x: 6, y: 11}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 8.5}
     worldMapPosition: {x: 9, y: 9}
@@ -537,6 +674,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 8}
+    - {x: 10, y: 8}
+    - {x: 9, y: 9}
+    - {x: 10, y: 9}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 7.5}
     worldMapPosition: {x: 9, y: 8}
@@ -553,6 +695,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 7}
+    - {x: 10, y: 7}
+    - {x: 9, y: 8}
+    - {x: 10, y: 8}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 5.5}
     worldMapPosition: {x: 9, y: 6}
@@ -569,6 +716,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 5}
+    - {x: 10, y: 5}
+    - {x: 9, y: 6}
+    - {x: 10, y: 6}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 6.5}
     worldMapPosition: {x: 9, y: 6}
@@ -585,6 +737,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 6}
+    - {x: 10, y: 6}
+    - {x: 9, y: 7}
+    - {x: 10, y: 7}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 4.5}
     worldMapPosition: {x: 10, y: 5}
@@ -601,6 +758,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 4}
+    - {x: 10, y: 4}
+    - {x: 9, y: 5}
+    - {x: 10, y: 5}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 4.5}
     worldMapPosition: {x: 10, y: 5}
@@ -617,6 +779,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 4}
+    - {x: 11, y: 4}
+    - {x: 10, y: 5}
+    - {x: 11, y: 5}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 5.5}
     worldMapPosition: {x: 10, y: 5}
@@ -633,6 +800,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 5}
+    - {x: 11, y: 5}
+    - {x: 10, y: 6}
+    - {x: 11, y: 6}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 6.5}
     worldMapPosition: {x: 10, y: 6}
@@ -649,6 +821,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 6}
+    - {x: 11, y: 6}
+    - {x: 10, y: 7}
+    - {x: 11, y: 7}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 7.5}
     worldMapPosition: {x: 10, y: 7}
@@ -665,6 +842,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 7}
+    - {x: 11, y: 7}
+    - {x: 10, y: 8}
+    - {x: 11, y: 8}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 5.5}
     worldMapPosition: {x: 11, y: 6}
@@ -681,6 +863,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 5}
+    - {x: 12, y: 5}
+    - {x: 11, y: 6}
+    - {x: 12, y: 6}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 6.5}
     worldMapPosition: {x: 11, y: 6}
@@ -697,6 +884,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 6}
+    - {x: 12, y: 6}
+    - {x: 11, y: 7}
+    - {x: 12, y: 7}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 9.5}
     worldMapPosition: {x: 9, y: 9}
@@ -713,6 +905,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 9}
+    - {x: 10, y: 9}
+    - {x: 9, y: 10}
+    - {x: 10, y: 10}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 10.5}
     worldMapPosition: {x: 9, y: 10}
@@ -729,6 +926,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 10}
+    - {x: 10, y: 10}
+    - {x: 9, y: 11}
+    - {x: 10, y: 11}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 3.5}
     worldMapPosition: {x: 9, y: 4}
@@ -745,6 +947,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 3}
+    - {x: 9, y: 3}
+    - {x: 8, y: 4}
+    - {x: 9, y: 4}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 3.5}
     worldMapPosition: {x: 9, y: 4}
@@ -761,6 +968,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 3}
+    - {x: 10, y: 3}
+    - {x: 9, y: 4}
+    - {x: 10, y: 4}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 3.5}
     worldMapPosition: {x: 10, y: 4}
@@ -777,6 +989,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 3}
+    - {x: 11, y: 3}
+    - {x: 10, y: 4}
+    - {x: 11, y: 4}
   allPositions: []
 --- !u!114 &-5398853214598126160
 MonoBehaviour:
@@ -876,17 +1093,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   random:
-    state: 2097123507
+    state: 739136774
   isEnabled: 1
   layerName: Build Island
   guid: 4fd43861-5e0b-4a6c-a66e-1bd384701f70
   assignedBlueprintLayerGuid: 14b36c32-2c08-44a4-b0f6-b1b0dc313a42
+  currentBlueprintLayer: {fileID: 0}
   foldoutState: 0
   useMultiLayers: 0
   masks: []
   hierarchyLayerID: 4fd43861-5e0b-4a6c-a66e-1bd384701f70
   lastHierarchyLayerID: 4fd43861-5e0b-4a6c-a66e-1bd384701f70
-  configuration: {fileID: 11400000}
+  configuration: {fileID: 11400000, guid: 125a49166f37f134cb431993c77da893, type: 2}
   useDualGrid: 1
   meshGenerationOverride: 0
   mergeTiles: 0
@@ -900,6 +1118,7 @@ MonoBehaviour:
   colliderType: 1
   tileColliderHeight: 0
   tileColliderExtrusionHeight: 0
+  invertCollisionWalls: 0
   tilePresetsTop:
   - preset: {fileID: 11400000, guid: ea0b15228b82a6844a4b7fd4ec9a130f, type: 2}
     tileHeight: 0
@@ -927,101 +1146,7 @@ MonoBehaviour:
       blueprintOverrideLayer: a2e7e077-01a0-4746-83d7-acc7fb1a133d
       preset: {fileID: 11400000, guid: 2daeba1cea32b5e4f82a4b5dedaf731d, type: 2}
       requiredNeighbourCount: 4
-  serializedWorldPositions:
-  - {x: 11, y: 13}
-  - {x: 10, y: 14}
-  - {x: 10, y: 10}
-  - {x: 10, y: 11}
-  - {x: 10, y: 12}
-  - {x: 10, y: 13}
-  - {x: 11, y: 14}
-  - {x: 11, y: 12}
-  - {x: 12, y: 13}
-  - {x: 6, y: 12}
-  - {x: 6, y: 13}
-  - {x: 6, y: 14}
-  - {x: 7, y: 12}
-  - {x: 7, y: 13}
-  - {x: 8, y: 12}
-  - {x: 8, y: 13}
-  - {x: 8, y: 14}
-  - {x: 6, y: 11}
-  - {x: 7, y: 11}
-  - {x: 8, y: 11}
-  - {x: 6, y: 10}
-  - {x: 7, y: 10}
-  - {x: 8, y: 10}
-  - {x: 9, y: 10}
-  - {x: 9, y: 11}
-  - {x: 9, y: 12}
-  - {x: 9, y: 13}
-  - {x: 5, y: 14}
-  - {x: 5, y: 13}
-  - {x: 5, y: 12}
-  - {x: 9, y: 14}
-  - {x: 9, y: 17}
-  - {x: 9, y: 16}
-  - {x: 9, y: 18}
-  - {x: 5, y: 15}
-  - {x: 5, y: 16}
-  - {x: 9, y: 15}
-  - {x: 11, y: 16}
-  - {x: 11, y: 15}
-  - {x: 10, y: 15}
-  - {x: 10, y: 17}
-  - {x: 10, y: 16}
-  - {x: 4, y: 14}
-  - {x: 4, y: 13}
-  - {x: 4, y: 15}
-  - {x: 19, y: 9}
-  - {x: 15, y: 6}
-  - {x: 17, y: 9}
-  - {x: 15, y: 9}
-  - {x: 15, y: 8}
-  - {x: 16, y: 9}
-  - {x: 16, y: 7}
-  - {x: 15, y: 7}
-  - {x: 16, y: 6}
-  - {x: 17, y: 6}
-  - {x: 15, y: 5}
-  - {x: 16, y: 5}
-  - {x: 17, y: 5}
-  - {x: 18, y: 5}
-  - {x: 16, y: 8}
-  - {x: 18, y: 11}
-  - {x: 19, y: 10}
-  - {x: 19, y: 11}
-  - {x: 16, y: 10}
-  - {x: 16, y: 11}
-  - {x: 17, y: 10}
-  - {x: 17, y: 11}
-  - {x: 15, y: 10}
-  - {x: 15, y: 11}
-  - {x: 15, y: 12}
-  - {x: 16, y: 12}
-  - {x: 16, y: 13}
-  - {x: 17, y: 12}
-  - {x: 17, y: 13}
-  - {x: 18, y: 12}
-  - {x: 18, y: 10}
-  - {x: 20, y: 9}
-  - {x: 20, y: 11}
-  - {x: 20, y: 10}
-  - {x: 14, y: 6}
-  - {x: 13, y: 6}
-  - {x: 14, y: 7}
-  - {x: 14, y: 8}
-  - {x: 14, y: 9}
-  - {x: 13, y: 5}
-  - {x: 13, y: 7}
-  - {x: 11, y: 5}
-  - {x: 12, y: 5}
-  - {x: 12, y: 6}
-  - {x: 14, y: 5}
-  - {x: 12, y: 4}
-  - {x: 14, y: 4}
-  - {x: 16, y: 4}
-  - {x: 15, y: 4}
+  serializedWorldPositions: []
   serializedTiles:
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 12.5}
@@ -1039,6 +1164,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 12}
+    - {x: 12, y: 12}
+    - {x: 11, y: 13}
+    - {x: 12, y: 13}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 13.5}
     worldMapPosition: {x: 12, y: 13}
@@ -1055,6 +1185,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 13}
+    - {x: 12, y: 13}
+    - {x: 11, y: 14}
+    - {x: 12, y: 14}
   - isAssigned: 1
     tilePosition: {x: 12.5, y: 12.5}
     worldMapPosition: {x: 12, y: 13}
@@ -1071,6 +1206,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 12, y: 12}
+    - {x: 13, y: 12}
+    - {x: 12, y: 13}
+    - {x: 13, y: 13}
   - isAssigned: 1
     tilePosition: {x: 12.5, y: 13.5}
     worldMapPosition: {x: 12, y: 13}
@@ -1087,6 +1227,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 12, y: 13}
+    - {x: 13, y: 13}
+    - {x: 12, y: 14}
+    - {x: 13, y: 14}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 12.5}
     worldMapPosition: {x: 11, y: 13}
@@ -1103,6 +1248,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 12}
+    - {x: 11, y: 12}
+    - {x: 10, y: 13}
+    - {x: 11, y: 13}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 13.5}
     worldMapPosition: {x: 11, y: 13}
@@ -1119,6 +1269,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 13}
+    - {x: 11, y: 13}
+    - {x: 10, y: 14}
+    - {x: 11, y: 14}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 13.5}
     worldMapPosition: {x: 10, y: 14}
@@ -1135,13 +1290,18 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 13}
+    - {x: 10, y: 13}
+    - {x: 9, y: 14}
+    - {x: 10, y: 14}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 9.5}
     worldMapPosition: {x: 9, y: 10}
     yRotation: 0
     yRotationOffset: 0
-    configuration: 3
-    tileType: 4
+    configuration: 7
+    tileType: 2
     location:
       north: 0
       west: 0
@@ -1151,6 +1311,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 9}
+    - {x: 10, y: 9}
+    - {x: 9, y: 10}
+    - {x: 10, y: 10}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 10.5}
     worldMapPosition: {x: 9, y: 10}
@@ -1167,6 +1332,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 10}
+    - {x: 10, y: 10}
+    - {x: 9, y: 11}
+    - {x: 10, y: 11}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 11.5}
     worldMapPosition: {x: 9, y: 11}
@@ -1183,6 +1353,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 11}
+    - {x: 10, y: 11}
+    - {x: 9, y: 12}
+    - {x: 10, y: 12}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 12.5}
     worldMapPosition: {x: 9, y: 12}
@@ -1199,6 +1374,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 12}
+    - {x: 10, y: 12}
+    - {x: 9, y: 13}
+    - {x: 10, y: 13}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 9.5}
     worldMapPosition: {x: 10, y: 10}
@@ -1215,6 +1395,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 9}
+    - {x: 11, y: 9}
+    - {x: 10, y: 10}
+    - {x: 11, y: 10}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 10.5}
     worldMapPosition: {x: 10, y: 10}
@@ -1231,6 +1416,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 10}
+    - {x: 11, y: 10}
+    - {x: 10, y: 11}
+    - {x: 11, y: 11}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 11.5}
     worldMapPosition: {x: 10, y: 11}
@@ -1247,6 +1437,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 11}
+    - {x: 11, y: 11}
+    - {x: 10, y: 12}
+    - {x: 11, y: 12}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 11.5}
     worldMapPosition: {x: 11, y: 12}
@@ -1263,6 +1458,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 11}
+    - {x: 12, y: 11}
+    - {x: 11, y: 12}
+    - {x: 12, y: 12}
   - isAssigned: 1
     tilePosition: {x: 13.5, y: 9.5}
     worldMapPosition: {x: 14, y: 9}
@@ -1279,6 +1479,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 13, y: 9}
+    - {x: 14, y: 9}
+    - {x: 13, y: 10}
+    - {x: 14, y: 10}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 14.5}
     worldMapPosition: {x: 10, y: 14}
@@ -1295,6 +1500,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 14}
+    - {x: 10, y: 14}
+    - {x: 9, y: 15}
+    - {x: 10, y: 15}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 14.5}
     worldMapPosition: {x: 10, y: 14}
@@ -1311,6 +1521,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 14}
+    - {x: 11, y: 14}
+    - {x: 10, y: 15}
+    - {x: 11, y: 15}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 15.5}
     worldMapPosition: {x: 9, y: 15}
@@ -1327,6 +1542,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 15}
+    - {x: 10, y: 15}
+    - {x: 9, y: 16}
+    - {x: 10, y: 16}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 16.5}
     worldMapPosition: {x: 9, y: 17}
@@ -1343,6 +1563,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 16}
+    - {x: 10, y: 16}
+    - {x: 9, y: 17}
+    - {x: 10, y: 17}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 17.5}
     worldMapPosition: {x: 9, y: 17}
@@ -1359,6 +1584,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 17}
+    - {x: 10, y: 17}
+    - {x: 9, y: 18}
+    - {x: 10, y: 18}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 15.5}
     worldMapPosition: {x: 10, y: 16}
@@ -1375,6 +1605,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 15}
+    - {x: 11, y: 15}
+    - {x: 10, y: 16}
+    - {x: 11, y: 16}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 16.5}
     worldMapPosition: {x: 10, y: 16}
@@ -1391,6 +1626,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 16}
+    - {x: 11, y: 16}
+    - {x: 10, y: 17}
+    - {x: 11, y: 17}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 15.5}
     worldMapPosition: {x: 11, y: 16}
@@ -1407,6 +1647,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 15}
+    - {x: 12, y: 15}
+    - {x: 11, y: 16}
+    - {x: 12, y: 16}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 16.5}
     worldMapPosition: {x: 11, y: 16}
@@ -1423,6 +1668,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 16}
+    - {x: 12, y: 16}
+    - {x: 11, y: 17}
+    - {x: 12, y: 17}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 14.5}
     worldMapPosition: {x: 11, y: 15}
@@ -1439,6 +1689,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 14}
+    - {x: 12, y: 14}
+    - {x: 11, y: 15}
+    - {x: 12, y: 15}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 17.5}
     worldMapPosition: {x: 10, y: 17}
@@ -1455,6 +1710,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 17}
+    - {x: 11, y: 17}
+    - {x: 10, y: 18}
+    - {x: 11, y: 18}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 18.5}
     worldMapPosition: {x: 9, y: 18}
@@ -1471,6 +1731,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 18}
+    - {x: 10, y: 18}
+    - {x: 9, y: 19}
+    - {x: 10, y: 19}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 13.5}
     worldMapPosition: {x: 9, y: 14}
@@ -1487,6 +1752,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 13}
+    - {x: 9, y: 13}
+    - {x: 8, y: 14}
+    - {x: 9, y: 14}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 11.5}
     worldMapPosition: {x: 6, y: 12}
@@ -1503,6 +1773,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 11}
+    - {x: 6, y: 11}
+    - {x: 5, y: 12}
+    - {x: 6, y: 12}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 12.5}
     worldMapPosition: {x: 6, y: 12}
@@ -1519,6 +1794,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 12}
+    - {x: 6, y: 12}
+    - {x: 5, y: 13}
+    - {x: 6, y: 13}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 11.5}
     worldMapPosition: {x: 6, y: 12}
@@ -1535,6 +1815,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 11}
+    - {x: 7, y: 11}
+    - {x: 6, y: 12}
+    - {x: 7, y: 12}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 12.5}
     worldMapPosition: {x: 6, y: 12}
@@ -1551,6 +1836,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 12}
+    - {x: 7, y: 12}
+    - {x: 6, y: 13}
+    - {x: 7, y: 13}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 13.5}
     worldMapPosition: {x: 6, y: 13}
@@ -1567,6 +1857,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 13}
+    - {x: 6, y: 13}
+    - {x: 5, y: 14}
+    - {x: 6, y: 14}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 13.5}
     worldMapPosition: {x: 6, y: 13}
@@ -1583,6 +1878,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 13}
+    - {x: 7, y: 13}
+    - {x: 6, y: 14}
+    - {x: 7, y: 14}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 11.5}
     worldMapPosition: {x: 7, y: 12}
@@ -1599,6 +1899,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 11}
+    - {x: 8, y: 11}
+    - {x: 7, y: 12}
+    - {x: 8, y: 12}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 12.5}
     worldMapPosition: {x: 7, y: 12}
@@ -1615,6 +1920,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 12}
+    - {x: 8, y: 12}
+    - {x: 7, y: 13}
+    - {x: 8, y: 13}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 13.5}
     worldMapPosition: {x: 7, y: 13}
@@ -1631,6 +1941,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 13}
+    - {x: 8, y: 13}
+    - {x: 7, y: 14}
+    - {x: 8, y: 14}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 11.5}
     worldMapPosition: {x: 8, y: 12}
@@ -1647,6 +1962,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 11}
+    - {x: 9, y: 11}
+    - {x: 8, y: 12}
+    - {x: 9, y: 12}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 12.5}
     worldMapPosition: {x: 8, y: 12}
@@ -1663,13 +1983,18 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 12}
+    - {x: 9, y: 12}
+    - {x: 8, y: 13}
+    - {x: 9, y: 13}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 10.5}
     worldMapPosition: {x: 6, y: 11}
-    yRotation: 90
+    yRotation: 180
     yRotationOffset: 0
-    configuration: 10
-    tileType: 4
+    configuration: 14
+    tileType: 2
     location:
       north: 0
       west: 0
@@ -1679,6 +2004,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 10}
+    - {x: 6, y: 10}
+    - {x: 5, y: 11}
+    - {x: 6, y: 11}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 10.5}
     worldMapPosition: {x: 6, y: 11}
@@ -1695,6 +2025,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 10}
+    - {x: 7, y: 10}
+    - {x: 6, y: 11}
+    - {x: 7, y: 11}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 10.5}
     worldMapPosition: {x: 7, y: 11}
@@ -1711,6 +2046,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 10}
+    - {x: 8, y: 10}
+    - {x: 7, y: 11}
+    - {x: 8, y: 11}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 10.5}
     worldMapPosition: {x: 8, y: 11}
@@ -1727,13 +2067,18 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 10}
+    - {x: 9, y: 10}
+    - {x: 8, y: 11}
+    - {x: 9, y: 11}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 9.5}
     worldMapPosition: {x: 6, y: 10}
     yRotation: 90
     yRotationOffset: 0
-    configuration: 2
-    tileType: 1
+    configuration: 11
+    tileType: 2
     location:
       north: 0
       west: 0
@@ -1743,13 +2088,18 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 9}
+    - {x: 6, y: 9}
+    - {x: 5, y: 10}
+    - {x: 6, y: 10}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 9.5}
     worldMapPosition: {x: 6, y: 10}
     yRotation: 0
     yRotationOffset: 0
-    configuration: 3
-    tileType: 4
+    configuration: 15
+    tileType: 5
     location:
       north: 0
       west: 0
@@ -1759,13 +2109,18 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 9}
+    - {x: 7, y: 9}
+    - {x: 6, y: 10}
+    - {x: 7, y: 10}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 9.5}
     worldMapPosition: {x: 7, y: 10}
     yRotation: 0
     yRotationOffset: 0
-    configuration: 3
-    tileType: 4
+    configuration: 15
+    tileType: 5
     location:
       north: 0
       west: 0
@@ -1775,13 +2130,18 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 9}
+    - {x: 8, y: 9}
+    - {x: 7, y: 10}
+    - {x: 8, y: 10}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 9.5}
     worldMapPosition: {x: 8, y: 10}
     yRotation: 0
     yRotationOffset: 0
-    configuration: 3
-    tileType: 4
+    configuration: 15
+    tileType: 5
     location:
       north: 0
       west: 0
@@ -1791,6 +2151,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 9}
+    - {x: 9, y: 9}
+    - {x: 8, y: 10}
+    - {x: 9, y: 10}
   - isAssigned: 1
     tilePosition: {x: 4.5, y: 13.5}
     worldMapPosition: {x: 5, y: 14}
@@ -1807,6 +2172,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 4, y: 13}
+    - {x: 5, y: 13}
+    - {x: 4, y: 14}
+    - {x: 5, y: 14}
   - isAssigned: 1
     tilePosition: {x: 4.5, y: 12.5}
     worldMapPosition: {x: 5, y: 13}
@@ -1823,6 +2193,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 4, y: 12}
+    - {x: 5, y: 12}
+    - {x: 4, y: 13}
+    - {x: 5, y: 13}
   - isAssigned: 1
     tilePosition: {x: 4.5, y: 11.5}
     worldMapPosition: {x: 5, y: 12}
@@ -1839,6 +2214,53 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 4, y: 11}
+    - {x: 5, y: 11}
+    - {x: 4, y: 12}
+    - {x: 5, y: 12}
+  - isAssigned: 1
+    tilePosition: {x: 4.5, y: 9.5}
+    worldMapPosition: {x: 5, y: 10}
+    yRotation: 90
+    yRotationOffset: 0
+    configuration: 2
+    tileType: 1
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 4, y: 9}
+    - {x: 5, y: 9}
+    - {x: 4, y: 10}
+    - {x: 5, y: 10}
+  - isAssigned: 1
+    tilePosition: {x: 4.5, y: 10.5}
+    worldMapPosition: {x: 5, y: 10}
+    yRotation: 180
+    yRotationOffset: 0
+    configuration: 8
+    tileType: 1
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 4, y: 10}
+    - {x: 5, y: 10}
+    - {x: 4, y: 11}
+    - {x: 5, y: 11}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 14.5}
     worldMapPosition: {x: 9, y: 14}
@@ -1855,6 +2277,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 14}
+    - {x: 9, y: 14}
+    - {x: 8, y: 15}
+    - {x: 9, y: 15}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 15.5}
     worldMapPosition: {x: 9, y: 15}
@@ -1871,6 +2298,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 15}
+    - {x: 9, y: 15}
+    - {x: 8, y: 16}
+    - {x: 9, y: 16}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 16.5}
     worldMapPosition: {x: 9, y: 17}
@@ -1887,6 +2319,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 16}
+    - {x: 9, y: 16}
+    - {x: 8, y: 17}
+    - {x: 9, y: 17}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 17.5}
     worldMapPosition: {x: 9, y: 17}
@@ -1903,6 +2340,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 17}
+    - {x: 9, y: 17}
+    - {x: 8, y: 18}
+    - {x: 9, y: 18}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 14.5}
     worldMapPosition: {x: 6, y: 14}
@@ -1919,6 +2361,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 14}
+    - {x: 6, y: 14}
+    - {x: 5, y: 15}
+    - {x: 6, y: 15}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 14.5}
     worldMapPosition: {x: 6, y: 14}
@@ -1935,6 +2382,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 14}
+    - {x: 7, y: 14}
+    - {x: 6, y: 15}
+    - {x: 7, y: 15}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 14.5}
     worldMapPosition: {x: 8, y: 14}
@@ -1951,6 +2403,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 14}
+    - {x: 8, y: 14}
+    - {x: 7, y: 15}
+    - {x: 8, y: 15}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 18.5}
     worldMapPosition: {x: 9, y: 18}
@@ -1967,6 +2424,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 18}
+    - {x: 9, y: 18}
+    - {x: 8, y: 19}
+    - {x: 9, y: 19}
   - isAssigned: 1
     tilePosition: {x: 4.5, y: 14.5}
     worldMapPosition: {x: 5, y: 14}
@@ -1983,6 +2445,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 4, y: 14}
+    - {x: 5, y: 14}
+    - {x: 4, y: 15}
+    - {x: 5, y: 15}
   - isAssigned: 1
     tilePosition: {x: 4.5, y: 15.5}
     worldMapPosition: {x: 5, y: 15}
@@ -1999,6 +2466,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 4, y: 15}
+    - {x: 5, y: 15}
+    - {x: 4, y: 16}
+    - {x: 5, y: 16}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 15.5}
     worldMapPosition: {x: 5, y: 15}
@@ -2015,6 +2487,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 15}
+    - {x: 6, y: 15}
+    - {x: 5, y: 16}
+    - {x: 6, y: 16}
   - isAssigned: 1
     tilePosition: {x: 4.5, y: 16.5}
     worldMapPosition: {x: 5, y: 16}
@@ -2031,6 +2508,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 4, y: 16}
+    - {x: 5, y: 16}
+    - {x: 4, y: 17}
+    - {x: 5, y: 17}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 16.5}
     worldMapPosition: {x: 5, y: 16}
@@ -2047,6 +2529,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 16}
+    - {x: 6, y: 16}
+    - {x: 5, y: 17}
+    - {x: 6, y: 17}
   - isAssigned: 1
     tilePosition: {x: 3.5, y: 12.5}
     worldMapPosition: {x: 4, y: 13}
@@ -2063,6 +2550,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 3, y: 12}
+    - {x: 4, y: 12}
+    - {x: 3, y: 13}
+    - {x: 4, y: 13}
   - isAssigned: 1
     tilePosition: {x: 3.5, y: 13.5}
     worldMapPosition: {x: 4, y: 13}
@@ -2079,6 +2571,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 3, y: 13}
+    - {x: 4, y: 13}
+    - {x: 3, y: 14}
+    - {x: 4, y: 14}
   - isAssigned: 1
     tilePosition: {x: 3.5, y: 14.5}
     worldMapPosition: {x: 4, y: 14}
@@ -2095,6 +2592,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 3, y: 14}
+    - {x: 4, y: 14}
+    - {x: 3, y: 15}
+    - {x: 4, y: 15}
   - isAssigned: 1
     tilePosition: {x: 3.5, y: 15.5}
     worldMapPosition: {x: 4, y: 15}
@@ -2111,6 +2613,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 3, y: 15}
+    - {x: 4, y: 15}
+    - {x: 3, y: 16}
+    - {x: 4, y: 16}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 7.5}
     worldMapPosition: {x: 16, y: 8}
@@ -2127,6 +2634,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 7}
+    - {x: 16, y: 7}
+    - {x: 15, y: 8}
+    - {x: 16, y: 8}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 8.5}
     worldMapPosition: {x: 16, y: 8}
@@ -2143,6 +2655,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 8}
+    - {x: 16, y: 8}
+    - {x: 15, y: 9}
+    - {x: 16, y: 9}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 7.5}
     worldMapPosition: {x: 16, y: 8}
@@ -2159,6 +2676,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 7}
+    - {x: 17, y: 7}
+    - {x: 16, y: 8}
+    - {x: 17, y: 8}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 8.5}
     worldMapPosition: {x: 16, y: 8}
@@ -2175,6 +2697,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 8}
+    - {x: 17, y: 8}
+    - {x: 16, y: 9}
+    - {x: 17, y: 9}
   - isAssigned: 1
     tilePosition: {x: 18.5, y: 8.5}
     worldMapPosition: {x: 19, y: 9}
@@ -2191,6 +2718,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 18, y: 8}
+    - {x: 19, y: 8}
+    - {x: 18, y: 9}
+    - {x: 19, y: 9}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 5.5}
     worldMapPosition: {x: 15, y: 6}
@@ -2207,6 +2739,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 5}
+    - {x: 15, y: 5}
+    - {x: 14, y: 6}
+    - {x: 15, y: 6}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 6.5}
     worldMapPosition: {x: 15, y: 6}
@@ -2223,6 +2760,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 6}
+    - {x: 15, y: 6}
+    - {x: 14, y: 7}
+    - {x: 15, y: 7}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 5.5}
     worldMapPosition: {x: 15, y: 6}
@@ -2239,6 +2781,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 5}
+    - {x: 16, y: 5}
+    - {x: 15, y: 6}
+    - {x: 16, y: 6}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 6.5}
     worldMapPosition: {x: 15, y: 6}
@@ -2255,6 +2802,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 6}
+    - {x: 16, y: 6}
+    - {x: 15, y: 7}
+    - {x: 16, y: 7}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 8.5}
     worldMapPosition: {x: 17, y: 9}
@@ -2271,6 +2823,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 8}
+    - {x: 18, y: 8}
+    - {x: 17, y: 9}
+    - {x: 18, y: 9}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 8.5}
     worldMapPosition: {x: 15, y: 9}
@@ -2287,6 +2844,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 8}
+    - {x: 15, y: 8}
+    - {x: 14, y: 9}
+    - {x: 15, y: 9}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 4.5}
     worldMapPosition: {x: 14, y: 5}
@@ -2303,6 +2865,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 4}
+    - {x: 15, y: 4}
+    - {x: 14, y: 5}
+    - {x: 15, y: 5}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 7.5}
     worldMapPosition: {x: 15, y: 8}
@@ -2319,6 +2886,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 7}
+    - {x: 15, y: 7}
+    - {x: 14, y: 8}
+    - {x: 15, y: 8}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 6.5}
     worldMapPosition: {x: 16, y: 7}
@@ -2335,6 +2907,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 6}
+    - {x: 17, y: 6}
+    - {x: 16, y: 7}
+    - {x: 17, y: 7}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 5.5}
     worldMapPosition: {x: 16, y: 6}
@@ -2351,6 +2928,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 5}
+    - {x: 17, y: 5}
+    - {x: 16, y: 6}
+    - {x: 17, y: 6}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 5.5}
     worldMapPosition: {x: 17, y: 6}
@@ -2367,6 +2949,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 5}
+    - {x: 18, y: 5}
+    - {x: 17, y: 6}
+    - {x: 18, y: 6}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 6.5}
     worldMapPosition: {x: 17, y: 6}
@@ -2383,6 +2970,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 6}
+    - {x: 18, y: 6}
+    - {x: 17, y: 7}
+    - {x: 18, y: 7}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 4.5}
     worldMapPosition: {x: 15, y: 5}
@@ -2399,6 +2991,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 4}
+    - {x: 16, y: 4}
+    - {x: 15, y: 5}
+    - {x: 16, y: 5}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 4.5}
     worldMapPosition: {x: 16, y: 5}
@@ -2415,6 +3012,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 4}
+    - {x: 17, y: 4}
+    - {x: 16, y: 5}
+    - {x: 17, y: 5}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 4.5}
     worldMapPosition: {x: 17, y: 5}
@@ -2431,6 +3033,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 4}
+    - {x: 18, y: 4}
+    - {x: 17, y: 5}
+    - {x: 18, y: 5}
   - isAssigned: 1
     tilePosition: {x: 18.5, y: 4.5}
     worldMapPosition: {x: 18, y: 5}
@@ -2447,6 +3054,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 18, y: 4}
+    - {x: 19, y: 4}
+    - {x: 18, y: 5}
+    - {x: 19, y: 5}
   - isAssigned: 1
     tilePosition: {x: 18.5, y: 5.5}
     worldMapPosition: {x: 18, y: 5}
@@ -2463,6 +3075,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 18, y: 5}
+    - {x: 19, y: 5}
+    - {x: 18, y: 6}
+    - {x: 19, y: 6}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 9.5}
     worldMapPosition: {x: 18, y: 10}
@@ -2479,6 +3096,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 9}
+    - {x: 18, y: 9}
+    - {x: 17, y: 10}
+    - {x: 18, y: 10}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 10.5}
     worldMapPosition: {x: 18, y: 10}
@@ -2495,6 +3117,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 10}
+    - {x: 18, y: 10}
+    - {x: 17, y: 11}
+    - {x: 18, y: 11}
   - isAssigned: 1
     tilePosition: {x: 18.5, y: 9.5}
     worldMapPosition: {x: 18, y: 10}
@@ -2511,6 +3138,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 18, y: 9}
+    - {x: 19, y: 9}
+    - {x: 18, y: 10}
+    - {x: 19, y: 10}
   - isAssigned: 1
     tilePosition: {x: 18.5, y: 10.5}
     worldMapPosition: {x: 18, y: 10}
@@ -2527,6 +3159,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 18, y: 10}
+    - {x: 19, y: 10}
+    - {x: 18, y: 11}
+    - {x: 19, y: 11}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 11.5}
     worldMapPosition: {x: 18, y: 11}
@@ -2543,6 +3180,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 11}
+    - {x: 18, y: 11}
+    - {x: 17, y: 12}
+    - {x: 18, y: 12}
   - isAssigned: 1
     tilePosition: {x: 18.5, y: 11.5}
     worldMapPosition: {x: 18, y: 11}
@@ -2559,6 +3201,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 18, y: 11}
+    - {x: 19, y: 11}
+    - {x: 18, y: 12}
+    - {x: 19, y: 12}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 9.5}
     worldMapPosition: {x: 16, y: 10}
@@ -2575,6 +3222,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 9}
+    - {x: 16, y: 9}
+    - {x: 15, y: 10}
+    - {x: 16, y: 10}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 10.5}
     worldMapPosition: {x: 16, y: 10}
@@ -2591,6 +3243,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 10}
+    - {x: 16, y: 10}
+    - {x: 15, y: 11}
+    - {x: 16, y: 11}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 9.5}
     worldMapPosition: {x: 16, y: 10}
@@ -2607,6 +3264,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 9}
+    - {x: 17, y: 9}
+    - {x: 16, y: 10}
+    - {x: 17, y: 10}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 10.5}
     worldMapPosition: {x: 16, y: 10}
@@ -2623,6 +3285,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 10}
+    - {x: 17, y: 10}
+    - {x: 16, y: 11}
+    - {x: 17, y: 11}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 11.5}
     worldMapPosition: {x: 16, y: 11}
@@ -2639,6 +3306,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 11}
+    - {x: 16, y: 11}
+    - {x: 15, y: 12}
+    - {x: 16, y: 12}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 11.5}
     worldMapPosition: {x: 16, y: 11}
@@ -2655,6 +3327,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 11}
+    - {x: 17, y: 11}
+    - {x: 16, y: 12}
+    - {x: 17, y: 12}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 9.5}
     worldMapPosition: {x: 15, y: 9}
@@ -2671,6 +3348,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 9}
+    - {x: 15, y: 9}
+    - {x: 14, y: 10}
+    - {x: 15, y: 10}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 10.5}
     worldMapPosition: {x: 15, y: 10}
@@ -2687,6 +3369,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 10}
+    - {x: 15, y: 10}
+    - {x: 14, y: 11}
+    - {x: 15, y: 11}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 11.5}
     worldMapPosition: {x: 15, y: 11}
@@ -2703,6 +3390,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 11}
+    - {x: 15, y: 11}
+    - {x: 14, y: 12}
+    - {x: 15, y: 12}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 12.5}
     worldMapPosition: {x: 15, y: 12}
@@ -2719,6 +3411,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 12}
+    - {x: 15, y: 12}
+    - {x: 14, y: 13}
+    - {x: 15, y: 13}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 12.5}
     worldMapPosition: {x: 15, y: 12}
@@ -2735,6 +3432,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 12}
+    - {x: 16, y: 12}
+    - {x: 15, y: 13}
+    - {x: 16, y: 13}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 12.5}
     worldMapPosition: {x: 16, y: 12}
@@ -2751,6 +3453,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 12}
+    - {x: 17, y: 12}
+    - {x: 16, y: 13}
+    - {x: 17, y: 13}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 13.5}
     worldMapPosition: {x: 16, y: 13}
@@ -2767,6 +3474,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 13}
+    - {x: 16, y: 13}
+    - {x: 15, y: 14}
+    - {x: 16, y: 14}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 13.5}
     worldMapPosition: {x: 16, y: 13}
@@ -2783,6 +3495,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 13}
+    - {x: 17, y: 13}
+    - {x: 16, y: 14}
+    - {x: 17, y: 14}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 12.5}
     worldMapPosition: {x: 17, y: 12}
@@ -2799,6 +3516,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 12}
+    - {x: 18, y: 12}
+    - {x: 17, y: 13}
+    - {x: 18, y: 13}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 13.5}
     worldMapPosition: {x: 17, y: 13}
@@ -2815,6 +3537,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 13}
+    - {x: 18, y: 13}
+    - {x: 17, y: 14}
+    - {x: 18, y: 14}
   - isAssigned: 1
     tilePosition: {x: 18.5, y: 12.5}
     worldMapPosition: {x: 18, y: 12}
@@ -2831,6 +3558,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 18, y: 12}
+    - {x: 19, y: 12}
+    - {x: 18, y: 13}
+    - {x: 19, y: 13}
   - isAssigned: 1
     tilePosition: {x: 19.5, y: 8.5}
     worldMapPosition: {x: 19, y: 9}
@@ -2847,6 +3579,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 19, y: 8}
+    - {x: 20, y: 8}
+    - {x: 19, y: 9}
+    - {x: 20, y: 9}
   - isAssigned: 1
     tilePosition: {x: 20.5, y: 8.5}
     worldMapPosition: {x: 20, y: 9}
@@ -2863,6 +3600,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 20, y: 8}
+    - {x: 21, y: 8}
+    - {x: 20, y: 9}
+    - {x: 21, y: 9}
   - isAssigned: 1
     tilePosition: {x: 19.5, y: 9.5}
     worldMapPosition: {x: 19, y: 9}
@@ -2879,6 +3621,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 19, y: 9}
+    - {x: 20, y: 9}
+    - {x: 19, y: 10}
+    - {x: 20, y: 10}
   - isAssigned: 1
     tilePosition: {x: 19.5, y: 10.5}
     worldMapPosition: {x: 19, y: 10}
@@ -2895,6 +3642,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 19, y: 10}
+    - {x: 20, y: 10}
+    - {x: 19, y: 11}
+    - {x: 20, y: 11}
   - isAssigned: 1
     tilePosition: {x: 19.5, y: 11.5}
     worldMapPosition: {x: 19, y: 11}
@@ -2911,6 +3663,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 19, y: 11}
+    - {x: 20, y: 11}
+    - {x: 19, y: 12}
+    - {x: 20, y: 12}
   - isAssigned: 1
     tilePosition: {x: 20.5, y: 9.5}
     worldMapPosition: {x: 20, y: 9}
@@ -2927,6 +3684,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 20, y: 9}
+    - {x: 21, y: 9}
+    - {x: 20, y: 10}
+    - {x: 21, y: 10}
   - isAssigned: 1
     tilePosition: {x: 20.5, y: 10.5}
     worldMapPosition: {x: 20, y: 10}
@@ -2943,6 +3705,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 20, y: 10}
+    - {x: 21, y: 10}
+    - {x: 20, y: 11}
+    - {x: 21, y: 11}
   - isAssigned: 1
     tilePosition: {x: 20.5, y: 11.5}
     worldMapPosition: {x: 20, y: 11}
@@ -2959,6 +3726,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 20, y: 11}
+    - {x: 21, y: 11}
+    - {x: 20, y: 12}
+    - {x: 21, y: 12}
   - isAssigned: 1
     tilePosition: {x: 13.5, y: 4.5}
     worldMapPosition: {x: 14, y: 5}
@@ -2975,6 +3747,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 13, y: 4}
+    - {x: 14, y: 4}
+    - {x: 13, y: 5}
+    - {x: 14, y: 5}
   - isAssigned: 1
     tilePosition: {x: 13.5, y: 5.5}
     worldMapPosition: {x: 14, y: 5}
@@ -2991,6 +3768,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 13, y: 5}
+    - {x: 14, y: 5}
+    - {x: 13, y: 6}
+    - {x: 14, y: 6}
   - isAssigned: 1
     tilePosition: {x: 13.5, y: 6.5}
     worldMapPosition: {x: 14, y: 6}
@@ -3007,6 +3789,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 13, y: 6}
+    - {x: 14, y: 6}
+    - {x: 13, y: 7}
+    - {x: 14, y: 7}
   - isAssigned: 1
     tilePosition: {x: 12.5, y: 5.5}
     worldMapPosition: {x: 13, y: 6}
@@ -3023,6 +3810,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 12, y: 5}
+    - {x: 13, y: 5}
+    - {x: 12, y: 6}
+    - {x: 13, y: 6}
   - isAssigned: 1
     tilePosition: {x: 12.5, y: 6.5}
     worldMapPosition: {x: 13, y: 6}
@@ -3039,6 +3831,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 12, y: 6}
+    - {x: 13, y: 6}
+    - {x: 12, y: 7}
+    - {x: 13, y: 7}
   - isAssigned: 1
     tilePosition: {x: 13.5, y: 7.5}
     worldMapPosition: {x: 14, y: 7}
@@ -3055,6 +3852,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 13, y: 7}
+    - {x: 14, y: 7}
+    - {x: 13, y: 8}
+    - {x: 14, y: 8}
   - isAssigned: 1
     tilePosition: {x: 13.5, y: 8.5}
     worldMapPosition: {x: 14, y: 8}
@@ -3071,6 +3873,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 13, y: 8}
+    - {x: 14, y: 8}
+    - {x: 13, y: 9}
+    - {x: 14, y: 9}
   - isAssigned: 1
     tilePosition: {x: 12.5, y: 4.5}
     worldMapPosition: {x: 13, y: 5}
@@ -3087,6 +3894,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 12, y: 4}
+    - {x: 13, y: 4}
+    - {x: 12, y: 5}
+    - {x: 13, y: 5}
   - isAssigned: 1
     tilePosition: {x: 12.5, y: 7.5}
     worldMapPosition: {x: 13, y: 7}
@@ -3103,13 +3915,18 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 12, y: 7}
+    - {x: 13, y: 7}
+    - {x: 12, y: 8}
+    - {x: 13, y: 8}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 4.5}
     worldMapPosition: {x: 11, y: 5}
-    yRotation: 90
+    yRotation: 0
     yRotationOffset: 0
-    configuration: 2
-    tileType: 1
+    configuration: 7
+    tileType: 2
     location:
       north: 0
       west: 0
@@ -3119,13 +3936,18 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 4}
+    - {x: 11, y: 4}
+    - {x: 10, y: 5}
+    - {x: 11, y: 5}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 5.5}
     worldMapPosition: {x: 11, y: 5}
-    yRotation: 180
+    yRotation: 0
     yRotationOffset: 0
-    configuration: 8
-    tileType: 1
+    configuration: 15
+    tileType: 5
     location:
       north: 0
       west: 0
@@ -3135,6 +3957,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 5}
+    - {x: 11, y: 5}
+    - {x: 10, y: 6}
+    - {x: 11, y: 6}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 4.5}
     worldMapPosition: {x: 11, y: 5}
@@ -3151,12 +3978,80 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 4}
+    - {x: 12, y: 4}
+    - {x: 11, y: 5}
+    - {x: 12, y: 5}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 5.5}
     worldMapPosition: {x: 11, y: 5}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 11, y: 5}
+    - {x: 12, y: 5}
+    - {x: 11, y: 6}
+    - {x: 12, y: 6}
+  - isAssigned: 1
+    tilePosition: {x: 11.5, y: 6.5}
+    worldMapPosition: {x: 12, y: 6}
     yRotation: 180
     yRotationOffset: 0
-    configuration: 14
+    configuration: 12
+    tileType: 4
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 11, y: 6}
+    - {x: 12, y: 6}
+    - {x: 11, y: 7}
+    - {x: 12, y: 7}
+  - isAssigned: 1
+    tilePosition: {x: 9.5, y: 8.5}
+    worldMapPosition: {x: 9, y: 9}
+    yRotation: 270
+    yRotationOffset: 0
+    configuration: 5
+    tileType: 4
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 9, y: 8}
+    - {x: 10, y: 8}
+    - {x: 9, y: 9}
+    - {x: 10, y: 9}
+  - isAssigned: 1
+    tilePosition: {x: 9.5, y: 7.5}
+    worldMapPosition: {x: 9, y: 8}
+    yRotation: 270
+    yRotationOffset: 0
+    configuration: 13
     tileType: 2
     location:
       north: 0
@@ -3167,12 +4062,101 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 7}
+    - {x: 10, y: 7}
+    - {x: 9, y: 8}
+    - {x: 10, y: 8}
   - isAssigned: 1
-    tilePosition: {x: 11.5, y: 6.5}
-    worldMapPosition: {x: 12, y: 6}
-    yRotation: 180
+    tilePosition: {x: 9.5, y: 5.5}
+    worldMapPosition: {x: 9, y: 6}
+    yRotation: 0
     yRotationOffset: 0
-    configuration: 8
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 9, y: 5}
+    - {x: 10, y: 5}
+    - {x: 9, y: 6}
+    - {x: 10, y: 6}
+  - isAssigned: 1
+    tilePosition: {x: 9.5, y: 6.5}
+    worldMapPosition: {x: 9, y: 6}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 9, y: 6}
+    - {x: 10, y: 6}
+    - {x: 9, y: 7}
+    - {x: 10, y: 7}
+  - isAssigned: 1
+    tilePosition: {x: 9.5, y: 4.5}
+    worldMapPosition: {x: 10, y: 5}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 9, y: 4}
+    - {x: 10, y: 4}
+    - {x: 9, y: 5}
+    - {x: 10, y: 5}
+  - isAssigned: 1
+    tilePosition: {x: 10.5, y: 6.5}
+    worldMapPosition: {x: 10, y: 6}
+    yRotation: 270
+    yRotationOffset: 0
+    configuration: 13
+    tileType: 2
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 10, y: 6}
+    - {x: 11, y: 6}
+    - {x: 10, y: 7}
+    - {x: 11, y: 7}
+  - isAssigned: 1
+    tilePosition: {x: 10.5, y: 7.5}
+    worldMapPosition: {x: 10, y: 7}
+    yRotation: 270
+    yRotationOffset: 0
+    configuration: 4
     tileType: 1
     location:
       north: 0
@@ -3183,6 +4167,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 7}
+    - {x: 11, y: 7}
+    - {x: 10, y: 8}
+    - {x: 11, y: 8}
   - isAssigned: 1
     tilePosition: {x: 13.5, y: 3.5}
     worldMapPosition: {x: 14, y: 4}
@@ -3199,6 +4188,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 13, y: 3}
+    - {x: 14, y: 3}
+    - {x: 13, y: 4}
+    - {x: 14, y: 4}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 3.5}
     worldMapPosition: {x: 12, y: 4}
@@ -3215,6 +4209,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 3}
+    - {x: 12, y: 3}
+    - {x: 11, y: 4}
+    - {x: 12, y: 4}
   - isAssigned: 1
     tilePosition: {x: 12.5, y: 3.5}
     worldMapPosition: {x: 12, y: 4}
@@ -3231,6 +4230,53 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 12, y: 3}
+    - {x: 13, y: 3}
+    - {x: 12, y: 4}
+    - {x: 13, y: 4}
+  - isAssigned: 1
+    tilePosition: {x: 9.5, y: 3.5}
+    worldMapPosition: {x: 9, y: 4}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 3
+    tileType: 4
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 9, y: 3}
+    - {x: 10, y: 3}
+    - {x: 9, y: 4}
+    - {x: 10, y: 4}
+  - isAssigned: 1
+    tilePosition: {x: 10.5, y: 3.5}
+    worldMapPosition: {x: 10, y: 4}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 1
+    tileType: 1
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 10, y: 3}
+    - {x: 11, y: 3}
+    - {x: 10, y: 4}
+    - {x: 11, y: 4}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 3.5}
     worldMapPosition: {x: 14, y: 4}
@@ -3247,6 +4293,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 3}
+    - {x: 15, y: 3}
+    - {x: 14, y: 4}
+    - {x: 15, y: 4}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 3.5}
     worldMapPosition: {x: 15, y: 4}
@@ -3263,6 +4314,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 3}
+    - {x: 16, y: 3}
+    - {x: 15, y: 4}
+    - {x: 16, y: 4}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 3.5}
     worldMapPosition: {x: 16, y: 4}
@@ -3279,6 +4335,347 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 3}
+    - {x: 17, y: 3}
+    - {x: 16, y: 4}
+    - {x: 17, y: 4}
+  - isAssigned: 1
+    tilePosition: {x: 5.5, y: 8.5}
+    worldMapPosition: {x: 6, y: 9}
+    yRotation: 90
+    yRotationOffset: 0
+    configuration: 10
+    tileType: 4
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 5, y: 8}
+    - {x: 6, y: 8}
+    - {x: 5, y: 9}
+    - {x: 6, y: 9}
+  - isAssigned: 1
+    tilePosition: {x: 6.5, y: 8.5}
+    worldMapPosition: {x: 6, y: 9}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 6, y: 8}
+    - {x: 7, y: 8}
+    - {x: 6, y: 9}
+    - {x: 7, y: 9}
+  - isAssigned: 1
+    tilePosition: {x: 6.5, y: 7.5}
+    worldMapPosition: {x: 7, y: 8}
+    yRotation: 90
+    yRotationOffset: 0
+    configuration: 11
+    tileType: 2
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 6, y: 7}
+    - {x: 7, y: 7}
+    - {x: 6, y: 8}
+    - {x: 7, y: 8}
+  - isAssigned: 1
+    tilePosition: {x: 7.5, y: 7.5}
+    worldMapPosition: {x: 7, y: 8}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 7, y: 7}
+    - {x: 8, y: 7}
+    - {x: 7, y: 8}
+    - {x: 8, y: 8}
+  - isAssigned: 1
+    tilePosition: {x: 7.5, y: 8.5}
+    worldMapPosition: {x: 7, y: 8}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 7, y: 8}
+    - {x: 8, y: 8}
+    - {x: 7, y: 9}
+    - {x: 8, y: 9}
+  - isAssigned: 1
+    tilePosition: {x: 8.5, y: 8.5}
+    worldMapPosition: {x: 8, y: 9}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 8, y: 8}
+    - {x: 9, y: 8}
+    - {x: 8, y: 9}
+    - {x: 9, y: 9}
+  - isAssigned: 1
+    tilePosition: {x: 8.5, y: 7.5}
+    worldMapPosition: {x: 8, y: 8}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 8, y: 7}
+    - {x: 9, y: 7}
+    - {x: 8, y: 8}
+    - {x: 9, y: 8}
+  - isAssigned: 1
+    tilePosition: {x: 7.5, y: 6.5}
+    worldMapPosition: {x: 8, y: 7}
+    yRotation: 90
+    yRotationOffset: 0
+    configuration: 11
+    tileType: 2
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 7, y: 6}
+    - {x: 8, y: 6}
+    - {x: 7, y: 7}
+    - {x: 8, y: 7}
+  - isAssigned: 1
+    tilePosition: {x: 8.5, y: 6.5}
+    worldMapPosition: {x: 8, y: 7}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 8, y: 6}
+    - {x: 9, y: 6}
+    - {x: 8, y: 7}
+    - {x: 9, y: 7}
+  - isAssigned: 1
+    tilePosition: {x: 8.5, y: 5.5}
+    worldMapPosition: {x: 9, y: 6}
+    yRotation: 0
+    yRotationOffset: 0
+    configuration: 15
+    tileType: 5
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 8, y: 5}
+    - {x: 9, y: 5}
+    - {x: 8, y: 6}
+    - {x: 9, y: 6}
+  - isAssigned: 1
+    tilePosition: {x: 7.5, y: 4.5}
+    worldMapPosition: {x: 8, y: 5}
+    yRotation: 90
+    yRotationOffset: 0
+    configuration: 2
+    tileType: 1
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 7, y: 4}
+    - {x: 8, y: 4}
+    - {x: 7, y: 5}
+    - {x: 8, y: 5}
+  - isAssigned: 1
+    tilePosition: {x: 7.5, y: 5.5}
+    worldMapPosition: {x: 8, y: 5}
+    yRotation: 90
+    yRotationOffset: 0
+    configuration: 10
+    tileType: 4
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 7, y: 5}
+    - {x: 8, y: 5}
+    - {x: 7, y: 6}
+    - {x: 8, y: 6}
+  - isAssigned: 1
+    tilePosition: {x: 8.5, y: 4.5}
+    worldMapPosition: {x: 8, y: 5}
+    yRotation: 90
+    yRotationOffset: 0
+    configuration: 11
+    tileType: 2
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 8, y: 4}
+    - {x: 9, y: 4}
+    - {x: 8, y: 5}
+    - {x: 9, y: 5}
+  - isAssigned: 1
+    tilePosition: {x: 5.5, y: 7.5}
+    worldMapPosition: {x: 6, y: 8}
+    yRotation: 90
+    yRotationOffset: 0
+    configuration: 2
+    tileType: 1
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 5, y: 7}
+    - {x: 6, y: 7}
+    - {x: 5, y: 8}
+    - {x: 6, y: 8}
+  - isAssigned: 1
+    tilePosition: {x: 6.5, y: 6.5}
+    worldMapPosition: {x: 7, y: 7}
+    yRotation: 90
+    yRotationOffset: 0
+    configuration: 2
+    tileType: 1
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 6, y: 6}
+    - {x: 7, y: 6}
+    - {x: 6, y: 7}
+    - {x: 7, y: 7}
+  - isAssigned: 1
+    tilePosition: {x: 8.5, y: 3.5}
+    worldMapPosition: {x: 9, y: 4}
+    yRotation: 90
+    yRotationOffset: 0
+    configuration: 2
+    tileType: 1
+    location:
+      north: 0
+      west: 0
+      east: 0
+      south: 0
+      northWest: 0
+      northEast: 0
+      southWest: 0
+      southEast: 0
+    contributingCells:
+    - {x: 8, y: 3}
+    - {x: 9, y: 3}
+    - {x: 8, y: 4}
+    - {x: 9, y: 4}
   allPositions: []
 --- !u!114 &-1118338709149609795
 MonoBehaviour:
@@ -3293,11 +4690,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   random:
-    state: 1820665547
+    state: 3638352566
   isEnabled: 1
   layerName: Build Path
   guid: f7e0413e-7dfe-44f4-a485-ea1863e20f2d
   assignedBlueprintLayerGuid: 1fc780b1-9fad-4d6e-be61-729c83ec8c8b
+  currentBlueprintLayer: {fileID: 6235136083116652736}
   foldoutState: 0
   useMultiLayers: 0
   masks: []
@@ -3317,6 +4715,7 @@ MonoBehaviour:
   colliderType: 1
   tileColliderHeight: 0
   tileColliderExtrusionHeight: 0
+  invertCollisionWalls: 0
   tilePresetsTop:
   - preset: {fileID: 11400000, guid: 84e89fcbc3283cf4a881d5973ac7c6e4, type: 2}
     tileHeight: 0
@@ -3388,6 +4787,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 9}
+    - {x: 17, y: 9}
+    - {x: 16, y: 10}
+    - {x: 17, y: 10}
   - isAssigned: 1
     tilePosition: {x: 16.5, y: 10.5}
     worldMapPosition: {x: 17, y: 10}
@@ -3404,6 +4808,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 16, y: 10}
+    - {x: 17, y: 10}
+    - {x: 16, y: 11}
+    - {x: 17, y: 11}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 9.5}
     worldMapPosition: {x: 17, y: 10}
@@ -3420,6 +4829,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 9}
+    - {x: 18, y: 9}
+    - {x: 17, y: 10}
+    - {x: 18, y: 10}
   - isAssigned: 1
     tilePosition: {x: 17.5, y: 10.5}
     worldMapPosition: {x: 17, y: 10}
@@ -3436,6 +4850,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 17, y: 10}
+    - {x: 18, y: 10}
+    - {x: 17, y: 11}
+    - {x: 18, y: 11}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 9.5}
     worldMapPosition: {x: 16, y: 10}
@@ -3452,6 +4871,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 9}
+    - {x: 16, y: 9}
+    - {x: 15, y: 10}
+    - {x: 16, y: 10}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 10.5}
     worldMapPosition: {x: 16, y: 10}
@@ -3468,6 +4892,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 10}
+    - {x: 16, y: 10}
+    - {x: 15, y: 11}
+    - {x: 16, y: 11}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 9.5}
     worldMapPosition: {x: 15, y: 10}
@@ -3484,6 +4913,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 9}
+    - {x: 15, y: 9}
+    - {x: 14, y: 10}
+    - {x: 15, y: 10}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 10.5}
     worldMapPosition: {x: 15, y: 10}
@@ -3500,6 +4934,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 10}
+    - {x: 15, y: 10}
+    - {x: 14, y: 11}
+    - {x: 15, y: 11}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 8.5}
     worldMapPosition: {x: 15, y: 9}
@@ -3516,6 +4955,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 8}
+    - {x: 15, y: 8}
+    - {x: 14, y: 9}
+    - {x: 15, y: 9}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 8.5}
     worldMapPosition: {x: 15, y: 9}
@@ -3532,6 +4976,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 8}
+    - {x: 16, y: 8}
+    - {x: 15, y: 9}
+    - {x: 16, y: 9}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 7.5}
     worldMapPosition: {x: 15, y: 8}
@@ -3548,6 +4997,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 7}
+    - {x: 15, y: 7}
+    - {x: 14, y: 8}
+    - {x: 15, y: 8}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 7.5}
     worldMapPosition: {x: 15, y: 8}
@@ -3564,6 +5018,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 7}
+    - {x: 16, y: 7}
+    - {x: 15, y: 8}
+    - {x: 16, y: 8}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 6.5}
     worldMapPosition: {x: 15, y: 7}
@@ -3580,6 +5039,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 6}
+    - {x: 15, y: 6}
+    - {x: 14, y: 7}
+    - {x: 15, y: 7}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 6.5}
     worldMapPosition: {x: 15, y: 7}
@@ -3596,6 +5060,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 6}
+    - {x: 16, y: 6}
+    - {x: 15, y: 7}
+    - {x: 16, y: 7}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 5.5}
     worldMapPosition: {x: 15, y: 6}
@@ -3612,6 +5081,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 5}
+    - {x: 15, y: 5}
+    - {x: 14, y: 6}
+    - {x: 15, y: 6}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 5.5}
     worldMapPosition: {x: 15, y: 6}
@@ -3628,6 +5102,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 5}
+    - {x: 16, y: 5}
+    - {x: 15, y: 6}
+    - {x: 16, y: 6}
   - isAssigned: 1
     tilePosition: {x: 14.5, y: 4.5}
     worldMapPosition: {x: 15, y: 5}
@@ -3644,6 +5123,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 14, y: 4}
+    - {x: 15, y: 4}
+    - {x: 14, y: 5}
+    - {x: 15, y: 5}
   - isAssigned: 1
     tilePosition: {x: 15.5, y: 4.5}
     worldMapPosition: {x: 15, y: 5}
@@ -3660,6 +5144,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 15, y: 4}
+    - {x: 16, y: 4}
+    - {x: 15, y: 5}
+    - {x: 16, y: 5}
   - isAssigned: 1
     tilePosition: {x: 13.5, y: 4.5}
     worldMapPosition: {x: 14, y: 5}
@@ -3676,6 +5165,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 13, y: 4}
+    - {x: 14, y: 4}
+    - {x: 13, y: 5}
+    - {x: 14, y: 5}
   - isAssigned: 1
     tilePosition: {x: 13.5, y: 5.5}
     worldMapPosition: {x: 14, y: 5}
@@ -3692,6 +5186,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 13, y: 5}
+    - {x: 14, y: 5}
+    - {x: 13, y: 6}
+    - {x: 14, y: 6}
   - isAssigned: 1
     tilePosition: {x: 12.5, y: 4.5}
     worldMapPosition: {x: 13, y: 5}
@@ -3708,6 +5207,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 12, y: 4}
+    - {x: 13, y: 4}
+    - {x: 12, y: 5}
+    - {x: 13, y: 5}
   - isAssigned: 1
     tilePosition: {x: 12.5, y: 5.5}
     worldMapPosition: {x: 13, y: 5}
@@ -3724,6 +5228,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 12, y: 5}
+    - {x: 13, y: 5}
+    - {x: 12, y: 6}
+    - {x: 13, y: 6}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 4.5}
     worldMapPosition: {x: 12, y: 5}
@@ -3740,6 +5249,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 4}
+    - {x: 12, y: 4}
+    - {x: 11, y: 5}
+    - {x: 12, y: 5}
   - isAssigned: 1
     tilePosition: {x: 11.5, y: 5.5}
     worldMapPosition: {x: 12, y: 5}
@@ -3756,6 +5270,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 11, y: 5}
+    - {x: 12, y: 5}
+    - {x: 11, y: 6}
+    - {x: 12, y: 6}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 4.5}
     worldMapPosition: {x: 11, y: 5}
@@ -3772,6 +5291,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 4}
+    - {x: 11, y: 4}
+    - {x: 10, y: 5}
+    - {x: 11, y: 5}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 5.5}
     worldMapPosition: {x: 11, y: 5}
@@ -3788,6 +5312,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 5}
+    - {x: 11, y: 5}
+    - {x: 10, y: 6}
+    - {x: 11, y: 6}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 4.5}
     worldMapPosition: {x: 10, y: 5}
@@ -3804,6 +5333,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 4}
+    - {x: 10, y: 4}
+    - {x: 9, y: 5}
+    - {x: 10, y: 5}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 5.5}
     worldMapPosition: {x: 10, y: 5}
@@ -3820,6 +5354,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 5}
+    - {x: 10, y: 5}
+    - {x: 9, y: 6}
+    - {x: 10, y: 6}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 6.5}
     worldMapPosition: {x: 10, y: 6}
@@ -3836,6 +5375,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 6}
+    - {x: 10, y: 6}
+    - {x: 9, y: 7}
+    - {x: 10, y: 7}
   - isAssigned: 1
     tilePosition: {x: 10.5, y: 6.5}
     worldMapPosition: {x: 10, y: 6}
@@ -3852,6 +5396,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 10, y: 6}
+    - {x: 11, y: 6}
+    - {x: 10, y: 7}
+    - {x: 11, y: 7}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 7.5}
     worldMapPosition: {x: 9, y: 7}
@@ -3868,6 +5417,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 7}
+    - {x: 10, y: 7}
+    - {x: 9, y: 8}
+    - {x: 10, y: 8}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 5.5}
     worldMapPosition: {x: 9, y: 6}
@@ -3884,6 +5438,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 5}
+    - {x: 9, y: 5}
+    - {x: 8, y: 6}
+    - {x: 9, y: 6}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 6.5}
     worldMapPosition: {x: 9, y: 6}
@@ -3900,6 +5459,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 6}
+    - {x: 9, y: 6}
+    - {x: 8, y: 7}
+    - {x: 9, y: 7}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 7.5}
     worldMapPosition: {x: 9, y: 7}
@@ -3916,6 +5480,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 7}
+    - {x: 9, y: 7}
+    - {x: 8, y: 8}
+    - {x: 9, y: 8}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 6.5}
     worldMapPosition: {x: 8, y: 7}
@@ -3932,6 +5501,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 6}
+    - {x: 8, y: 6}
+    - {x: 7, y: 7}
+    - {x: 8, y: 7}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 7.5}
     worldMapPosition: {x: 8, y: 7}
@@ -3948,6 +5522,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 7}
+    - {x: 8, y: 7}
+    - {x: 7, y: 8}
+    - {x: 8, y: 8}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 8.5}
     worldMapPosition: {x: 8, y: 8}
@@ -3964,6 +5543,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 8}
+    - {x: 8, y: 8}
+    - {x: 7, y: 9}
+    - {x: 8, y: 9}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 8.5}
     worldMapPosition: {x: 8, y: 8}
@@ -3980,6 +5564,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 8}
+    - {x: 9, y: 8}
+    - {x: 8, y: 9}
+    - {x: 9, y: 9}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 8.5}
     worldMapPosition: {x: 7, y: 9}
@@ -3996,6 +5585,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 8}
+    - {x: 7, y: 8}
+    - {x: 6, y: 9}
+    - {x: 7, y: 9}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 9.5}
     worldMapPosition: {x: 8, y: 9}
@@ -4012,6 +5606,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 9}
+    - {x: 8, y: 9}
+    - {x: 7, y: 10}
+    - {x: 8, y: 10}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 9.5}
     worldMapPosition: {x: 8, y: 9}
@@ -4028,6 +5627,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 9}
+    - {x: 9, y: 9}
+    - {x: 8, y: 10}
+    - {x: 9, y: 10}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 9.5}
     worldMapPosition: {x: 7, y: 9}
@@ -4044,6 +5648,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 9}
+    - {x: 7, y: 9}
+    - {x: 6, y: 10}
+    - {x: 7, y: 10}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 10.5}
     worldMapPosition: {x: 7, y: 10}
@@ -4060,6 +5669,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 10}
+    - {x: 7, y: 10}
+    - {x: 6, y: 11}
+    - {x: 7, y: 11}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 10.5}
     worldMapPosition: {x: 7, y: 10}
@@ -4076,6 +5690,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 10}
+    - {x: 8, y: 10}
+    - {x: 7, y: 11}
+    - {x: 8, y: 11}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 11.5}
     worldMapPosition: {x: 7, y: 11}
@@ -4092,6 +5711,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 11}
+    - {x: 7, y: 11}
+    - {x: 6, y: 12}
+    - {x: 7, y: 12}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 11.5}
     worldMapPosition: {x: 7, y: 11}
@@ -4108,6 +5732,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 11}
+    - {x: 8, y: 11}
+    - {x: 7, y: 12}
+    - {x: 8, y: 12}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 10.5}
     worldMapPosition: {x: 6, y: 11}
@@ -4124,6 +5753,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 10}
+    - {x: 6, y: 10}
+    - {x: 5, y: 11}
+    - {x: 6, y: 11}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 11.5}
     worldMapPosition: {x: 6, y: 11}
@@ -4140,6 +5774,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 11}
+    - {x: 6, y: 11}
+    - {x: 5, y: 12}
+    - {x: 6, y: 12}
   - isAssigned: 1
     tilePosition: {x: 5.5, y: 12.5}
     worldMapPosition: {x: 6, y: 12}
@@ -4156,6 +5795,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 5, y: 12}
+    - {x: 6, y: 12}
+    - {x: 5, y: 13}
+    - {x: 6, y: 13}
   - isAssigned: 1
     tilePosition: {x: 6.5, y: 12.5}
     worldMapPosition: {x: 6, y: 12}
@@ -4172,6 +5816,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 6, y: 12}
+    - {x: 7, y: 12}
+    - {x: 6, y: 13}
+    - {x: 7, y: 13}
   - isAssigned: 1
     tilePosition: {x: 7.5, y: 12.5}
     worldMapPosition: {x: 7, y: 12}
@@ -4188,6 +5837,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 7, y: 12}
+    - {x: 8, y: 12}
+    - {x: 7, y: 13}
+    - {x: 8, y: 13}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 11.5}
     worldMapPosition: {x: 8, y: 12}
@@ -4204,6 +5858,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 11}
+    - {x: 9, y: 11}
+    - {x: 8, y: 12}
+    - {x: 9, y: 12}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 12.5}
     worldMapPosition: {x: 8, y: 12}
@@ -4220,6 +5879,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 12}
+    - {x: 9, y: 12}
+    - {x: 8, y: 13}
+    - {x: 9, y: 13}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 13.5}
     worldMapPosition: {x: 9, y: 13}
@@ -4236,6 +5900,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 13}
+    - {x: 9, y: 13}
+    - {x: 8, y: 14}
+    - {x: 9, y: 14}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 11.5}
     worldMapPosition: {x: 9, y: 12}
@@ -4252,6 +5921,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 11}
+    - {x: 10, y: 11}
+    - {x: 9, y: 12}
+    - {x: 10, y: 12}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 12.5}
     worldMapPosition: {x: 9, y: 12}
@@ -4268,6 +5942,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 12}
+    - {x: 10, y: 12}
+    - {x: 9, y: 13}
+    - {x: 10, y: 13}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 13.5}
     worldMapPosition: {x: 9, y: 13}
@@ -4284,6 +5963,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 13}
+    - {x: 10, y: 13}
+    - {x: 9, y: 14}
+    - {x: 10, y: 14}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 14.5}
     worldMapPosition: {x: 9, y: 14}
@@ -4300,6 +5984,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 14}
+    - {x: 9, y: 14}
+    - {x: 8, y: 15}
+    - {x: 9, y: 15}
   - isAssigned: 1
     tilePosition: {x: 8.5, y: 15.5}
     worldMapPosition: {x: 9, y: 15}
@@ -4316,6 +6005,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 8, y: 15}
+    - {x: 9, y: 15}
+    - {x: 8, y: 16}
+    - {x: 9, y: 16}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 14.5}
     worldMapPosition: {x: 9, y: 14}
@@ -4332,6 +6026,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 14}
+    - {x: 10, y: 14}
+    - {x: 9, y: 15}
+    - {x: 10, y: 15}
   - isAssigned: 1
     tilePosition: {x: 9.5, y: 15.5}
     worldMapPosition: {x: 9, y: 15}
@@ -4348,6 +6047,11 @@ MonoBehaviour:
       northEast: 0
       southWest: 0
       southEast: 0
+    contributingCells:
+    - {x: 9, y: 15}
+    - {x: 10, y: 15}
+    - {x: 9, y: 16}
+    - {x: 10, y: 16}
   allPositions: []
 --- !u!114 &11400000
 MonoBehaviour:
@@ -4371,12 +6075,14 @@ MonoBehaviour:
   clusterCellSize: 5
   useGlobalRandomSeed: 0
   globalRandomSeed: 103
-  currentRandomSeed: 2251155376
+  currentRandomSeed: 2906241405
   layerChanged: 0
   showGizmos: 0
   showPaintGrid: 0
   gizmoLayer: {fileID: 0}
   paintLayer: {fileID: -5398853214598126160}
+  brushSize: 0
+  selectedPaintLayerGuid: 
   tileMapLayers: []
   blueprintLayerFolders:
   - folderName: Root
@@ -4409,6 +6115,7 @@ MonoBehaviour:
   colliderType: 1
   tileColliderHeight: 0
   tileColliderExtrusionHeight: 0
+  invertCollisionWalls: 0
 --- !u!28 &1504369534307310597
 Texture2D:
   m_ObjectHideFlags: 61
@@ -4420,7 +6127,7 @@ Texture2D:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
   m_IsAlphaChannelOptional: 0
-  serializedVersion: 3
+  serializedVersion: 4
   m_Width: 50
   m_Height: 50
   m_CompleteImageSize: 13260
@@ -4468,7 +6175,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   random:
-    state: 1638179197
+    state: 2842587126
   guid: 14b36c32-2c08-44a4-b0f6-b1b0dc313a42
   layerName: Island
   icon: {fileID: 0}
@@ -4685,7 +6392,7 @@ Texture2D:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
   m_IsAlphaChannelOptional: 0
-  serializedVersion: 3
+  serializedVersion: 4
   m_Width: 50
   m_Height: 50
   m_CompleteImageSize: 13260
@@ -4731,7 +6438,7 @@ Texture2D:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
   m_IsAlphaChannelOptional: 0
-  serializedVersion: 3
+  serializedVersion: 4
   m_Width: 50
   m_Height: 50
   m_CompleteImageSize: 13260
@@ -4779,7 +6486,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   random:
-    state: 1638179197
+    state: 2842587126
   guid: 1fc780b1-9fad-4d6e-be61-729c83ec8c8b
   layerName: Path
   icon: {fileID: 0}

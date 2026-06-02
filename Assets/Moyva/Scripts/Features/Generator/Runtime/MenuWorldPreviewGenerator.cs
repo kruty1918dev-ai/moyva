@@ -49,7 +49,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 var layerDataList = new List<WorldLayerData>();
                 context.RegisterService(layerDataList);
 
-                RegisterServices(context, graphAsset);
+                RegisterContextData(context, graphAsset);
 
                 var result = new GraphRunner().Execute(graphAsset, context);
                 if (!result.Success)
@@ -111,13 +111,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
         }
 
-        private static void RegisterServices(NodeContext context, GraphAsset graphAsset)
+        private static void RegisterContextData(NodeContext context, GraphAsset graphAsset)
         {
-            context.RegisterService<INoiseProvider>(new NoiseMapGeneratorService());
-            context.RegisterService<IRiverPathfinder>(new RiverPathfinder());
-            context.RegisterService<IGeneratorDataRegistry>(new GeneratorDataRegistry());
-            context.RegisterService<IGeneratorTerrainLevelService>(new GeneratorTerrainLevelService());
-
             if (graphAsset.SharedSettings != null)
             {
                 context.ApplySharedSettings(graphAsset.SharedSettings);

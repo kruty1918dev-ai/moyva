@@ -151,7 +151,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
             float minBoundY = bounds.MinY - overflow.y;
             float maxBoundY = bounds.MaxY + overflow.y;
 
-<<<<<<< HEAD
             if (!TryResolveNavigationPlaneCenter(_targetPosition, out var targetPlaneCenter, out float distanceToPlane))
             {
                 ApplyFixedPlaneAxis();
@@ -159,10 +158,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
             }
 
             ResolveViewportHalfExtents(out float halfW, out float halfH);
-=======
-            float halfH = _camera.orthographicSize;
-            float halfW = halfH * _camera.aspect;
->>>>>>> origin/main
             float width = Mathf.Max(0.01f, maxBoundX - minBoundX);
             float height = Mathf.Max(0.01f, maxBoundY - minBoundY);
 

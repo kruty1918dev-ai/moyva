@@ -38,8 +38,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly SignalBus _signalBus;
         private GeneratedWorldData _currentWorldData;
         private GeneratedWorldData _pendingWorldData;
-        private readonly GraphBasedMapDataGenerator _graphBasedGenerator;
-        private readonly ShoreMaskPrepass _shoreMaskPrepass;
+        private readonly GraphTwcMapDataGenerator _graphTwcGenerator;
         private readonly WaterLayerMaterialSettings _waterLayerMaterialSettings;
         private readonly TileWorldCreatorWorldBuildBridge _tileWorldCreatorBridge;
         private readonly List<Sprite> _runtimeLayerSprites = new List<Sprite>();
@@ -56,8 +55,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IMapDataGenerator mapDataGenerator,
             DiContainer container,
             SignalBus signalBus,
-            [InjectOptional] GraphBasedMapDataGenerator graphBasedGenerator,
-            [InjectOptional] ShoreMaskPrepass shoreMaskPrepass,
+            [InjectOptional] GraphTwcMapDataGenerator graphTwcGenerator,
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] WaterLayerMaterialSettings waterLayerMaterialSettings = null,
             [InjectOptional] TileWorldCreatorWorldBuildBridge tileWorldCreatorBridge = null)
@@ -73,8 +71,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _mapDataGenerator = mapDataGenerator;
             _container = container;
             _signalBus = signalBus;
-            _graphBasedGenerator = graphBasedGenerator;
-            _shoreMaskPrepass = shoreMaskPrepass;
+            _graphTwcGenerator = graphTwcGenerator;
             _waterLayerMaterialSettings = waterLayerMaterialSettings;
             _tileWorldCreatorBridge = tileWorldCreatorBridge;
         }
@@ -157,7 +154,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BiomeMap = virtualBiomeMap,
                 ObjectMap = virtualObjectMap,
                 HeightMap = finalHeightMap,
-                TerrainLevelMap = _graphBasedGenerator?.LastTerrainLevelMap,
+                TerrainLevelMap = null,
                 BuildingMap = virtualBuildingMap,
             };
 
@@ -185,13 +182,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private static GridRenderMode ResolveRenderMode(GridProjectionMode projectionMode)
         {
-            return projectionMode switch
-            {
-                GridProjectionMode.Orthographic3D => GridRenderMode.Mesh3D,
-                GridProjectionMode.Isometric2D => GridRenderMode.Isometric2D,
-                GridProjectionMode.Isometric3DPreview => GridRenderMode.Mesh3DPreview,
-                _ => GridRenderMode.Sprite2D,
-            };
+            return projectionMode == GridProjectionMode.Isometric3DPreview
+                ? GridRenderMode.Mesh3DPreview
+                : GridRenderMode.Mesh3D;
         }
 
         private static GridNeighborhoodMode ResolveNeighborhoodMode(IGridProjection projection)
@@ -202,10 +195,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (projection.Topology == GridTopology.HexAxial)
                 return GridNeighborhoodMode.HexAxial6;
 
-            return projection.ProjectionMode == GridProjectionMode.Isometric2D
-                || projection.ProjectionMode == GridProjectionMode.Isometric3DPreview
-                    ? GridNeighborhoodMode.VonNeumann4
-                    : GridNeighborhoodMode.Moore8;
+            return projection.ProjectionMode == GridProjectionMode.Isometric3DPreview
+                ? GridNeighborhoodMode.VonNeumann4
+                : GridNeighborhoodMode.Moore8;
         }
 
         private static void ApplyLaunchMetadata(GeneratedWorldData data)
@@ -240,17 +232,34 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             NormalizeBiomeMapIds(worldData);
 
+            // Новий TWC-конвеєр: 3D-візуал вже побудував TileWorldCreator.
+            // Тут лише наповнюємо GridService layer-id'ами для ігроладу (рух/будівництво).
+            if (_graphTwcGenerator != null)
+            {
+                BuildGridFromLayerIds(worldData);
+                _currentWorldData = worldData.Clone();
+                _signalBus.Fire(new WorldBuiltSignal());
+                FireSavedSpawnPositions(_currentWorldData);
+                _signalBus.Fire(new WorldGeneratedDataSignal
+                {
+                    Width = _currentWorldData.Width,
+                    Height = _currentWorldData.Height,
+                    GridTopology = (int)_currentWorldData.GridTopology,
+                    ProjectionMode = (int)_currentWorldData.ProjectionMode,
+                    RenderMode = (int)_currentWorldData.RenderMode,
+                    NeighborhoodMode = (int)_currentWorldData.NeighborhoodMode,
+                    TileMap = MapArrayUtils.CloneStringMap(_currentWorldData.BiomeMap),
+                    ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
+                    HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
+                    TerrainLevelMap = MapArrayUtils.CloneIntMap(_currentWorldData.TerrainLevelMap),
+                });
+                return;
+            }
+
             var tileWorldCreatorResult = _tileWorldCreatorBridge?.Build(worldData)
                 ?? TileWorldCreatorWorldBuildResult.Disabled;
 
-            // Ініціалізуємо LayerData до основного проходу, щоб знати чи працюємо у layer-only режимі.
-            if (worldData.LayerData == null || worldData.LayerData.Length == 0)
-                worldData.LayerData = _graphBasedGenerator?.LastLayerData;
-
-            bool useLayerOnlyTiles = _graphBasedGenerator != null
-                && _graphBasedGenerator.LastBiomeMapDerivedFromLayers
-                && worldData.LayerData != null
-                && worldData.LayerData.Length > 0;
+            bool useLayerOnlyTiles = false;
 
             for (int x = 0; x < worldData.Width; x++)
             {
@@ -318,11 +327,32 @@ namespace Kruty1918.Moyva.Generator.Runtime
             });
         }
 
+        private void BuildGridFromLayerIds(GeneratedWorldData worldData)
+        {
+            EnsureGridMatchesWorld(worldData);
+
+            if (worldData.BiomeMap == null)
+                return;
+
+            for (int x = 0; x < worldData.Width; x++)
+            {
+                for (int y = 0; y < worldData.Height; y++)
+                {
+                    string layerId = worldData.BiomeMap[x, y];
+                    if (string.IsNullOrEmpty(layerId))
+                        continue;
+
+                    // У новому конвеєрі biomeMap уже містить id шару графа —
+                    // не мапимо через legacy ResolveGridTileId.
+                    _gridService.SetTileData(new Vector2Int(x, y), layerId);
+                }
+            }
+        }
+
         private void OnWorldSpawnPositions(WorldSpawnPositionsSignal signal)
         {
             if (_currentWorldData == null || signal.Assignments == null || signal.Assignments.Length == 0)
                 return;
-
             _currentWorldData.SpawnPositions = (SpawnPositionAssignment[])signal.Assignments.Clone();
         }
 
@@ -374,6 +404,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private void ApplyLayerData(GeneratedWorldData worldData)
         {
+            // 2D sprite-based layer rendering is disabled in Full3D mode.
+            // Terrain is built exclusively via TileWorldCreator bridge (mesh-based).
+            return;
+
+#pragma warning disable CS0162 // Unreachable code detected
             var layerData = worldData.LayerData;
 
             if (layerData == null || layerData.Length == 0)
@@ -381,7 +416,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             // Список матеріалів що мають _LandMaskTex — в них записуємо RT після побудови шарів.
             var waterMaterials = new List<Material>();
-            var shoreMaskSources = new List<ShoreMaskLayerSource>();
 
             for (int i = 0; i < layerData.Length; i++)
             {
@@ -459,28 +493,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 bool isWaterLayer = spriteRenderer.sharedMaterial != null
                     && spriteRenderer.sharedMaterial.HasProperty("_LandMaskTex");
 
-                shoreMaskSources.Add(new ShoreMaskLayerSource
-                {
-                    Texture = texture,
-                    LayerTransform = layerObj.transform,
-                    BasePosition = layerObj.transform.position,
-                    BaseScale = layerObj.transform.localScale,
-                    IsWater = isWaterLayer,
-                });
+                _ = isWaterLayer;
             }
 
-            // Якщо є хоча б один матеріал з _LandMaskTex і ShoreMaskPrepass доступний —
-            // рендеримо RT-маску суші на GPU і передаємо у всі водні матеріали.
-            if (waterMaterials.Count > 0 && _shoreMaskPrepass != null)
-            {
-                // Розмір RT — розмір мапи (1 піксель = 1 тайл).
-                _shoreMaskPrepass.RebuildMask(
-                    shoreMaskSources,
-                    waterMaterials,
-                    worldData.BiomeMap,
-                    worldData.Width,
-                    worldData.Height);
-            }
+            // Legacy ShoreMaskPrepass вимкнено разом зі старим генераторним конвеєром.
+#pragma warning restore CS0162
         }
 
         private void EnsureRoots()

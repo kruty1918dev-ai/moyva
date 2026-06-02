@@ -44,7 +44,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         public GeneratorNodeView(NodeBase nodeData)
         {
             NodeData = nodeData;
-            IsRoutePoint = nodeData is RoutePointNode;
+            IsRoutePoint = false;
             viewDataKey = nodeData.NodeId;
 
             if (IsRoutePoint)

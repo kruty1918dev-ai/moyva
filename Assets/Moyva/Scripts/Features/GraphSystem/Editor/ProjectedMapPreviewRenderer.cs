@@ -19,10 +19,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (settings == null)
                 return false;
 
-            return settings.ProjectionMode == GridProjectionMode.Isometric2D
+            return settings.GridTopology == GridTopology.HexAxial
                 || settings.ProjectionMode == GridProjectionMode.Isometric3DPreview
-                || settings.ProjectionMode == GridProjectionMode.HexPointy2D
-                || settings.ProjectionMode == GridProjectionMode.HexFlat2D
                 || settings.ProjectionMode == GridProjectionMode.Orthographic3D;
         }
 
@@ -38,7 +36,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (mapWidth <= 0 || mapHeight <= 0 || !ShouldProject(settings) || resolveBaseColor == null)
                 return null;
 
-            var cells = BuildCells(mapWidth, mapHeight, settings.ProjectionMode);
+            var cells = BuildCells(mapWidth, mapHeight, settings);
             if (cells.Count == 0)
                 return null;
 
@@ -84,16 +82,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return texture;
         }
 
-        private static List<ProjectedCell> BuildCells(int mapWidth, int mapHeight, GridProjectionMode mode)
+        private static List<ProjectedCell> BuildCells(int mapWidth, int mapHeight, GraphSharedSettings settings)
         {
             var cells = new List<ProjectedCell>(mapWidth * mapHeight);
             for (int y = 0; y < mapHeight; y++)
             {
                 for (int x = 0; x < mapWidth; x++)
                 {
-                    Vector2 center = GetCenter(x, y, mode);
-                    Vector2[] vertices = mode == GridProjectionMode.HexPointy2D || mode == GridProjectionMode.HexFlat2D
-                        ? BuildHex(center, mode == GridProjectionMode.HexPointy2D)
+                    Vector2 center = GetCenter(x, y, settings.ProjectionMode, settings.GridTopology);
+                    bool isHex = settings.GridTopology == GridTopology.HexAxial;
+                    Vector2[] vertices = isHex
+                        ? BuildHex(center, AdaptivePrefabPreviewUtility.ProjectSettings.HexOrientation == HexOrientation.PointyTop)
                         : BuildDiamond(center);
 
                     cells.Add(new ProjectedCell
@@ -101,7 +100,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         Grid = new Vector2Int(x, y),
                         Center = center,
                         Vertices = vertices,
-                        MarkerRadius = mode == GridProjectionMode.HexPointy2D || mode == GridProjectionMode.HexFlat2D ? 0.32f : 0.24f
+                        MarkerRadius = isHex ? 0.32f : 0.24f
                     });
                 }
             }
@@ -109,14 +108,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return cells;
         }
 
-        private static Vector2 GetCenter(int x, int y, GridProjectionMode mode)
+        private static Vector2 GetCenter(int x, int y, GridProjectionMode mode, GridTopology topology)
         {
-            return mode switch
+            if (topology == GridTopology.HexAxial)
             {
-                GridProjectionMode.HexPointy2D => new Vector2(Mathf.Sqrt(3f) * (x + y * 0.5f), 1.5f * y),
-                GridProjectionMode.HexFlat2D => new Vector2(1.5f * x, Mathf.Sqrt(3f) * (y + x * 0.5f)),
-                _ => new Vector2(x - y, (x + y) * 0.5f),
-            };
+                bool pointy = AdaptivePrefabPreviewUtility.ProjectSettings.HexOrientation == HexOrientation.PointyTop;
+                return pointy
+                    ? new Vector2(Mathf.Sqrt(3f) * (x + y * 0.5f), 1.5f * y)
+                    : new Vector2(1.5f * x, Mathf.Sqrt(3f) * (y + x * 0.5f));
+            }
+
+            return new Vector2(x - y, (x + y) * 0.5f);
         }
 
         private static Vector2[] BuildDiamond(Vector2 center)

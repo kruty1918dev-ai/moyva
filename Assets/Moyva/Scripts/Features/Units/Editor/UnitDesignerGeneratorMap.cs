@@ -44,7 +44,6 @@ namespace Kruty1918.Moyva.Units.Editor
         private const string DataNoiseSettingsTypeName = "Kruty1918.Moyva.Generator.API.DataNoiseSettings";
         private const string HeightMapSettingsTypeName = "Kruty1918.Moyva.Generator.API.HeightMapSettings";
         private const string GraphAssetTypeName = "Kruty1918.Moyva.GraphSystem.API.GraphAsset";
-        private const string HillGeneratorNodeTypeName = "Kruty1918.Moyva.Generator.Runtime.Nodes.HillGeneratorNode";
 
         private static readonly Color[] GeneratorLevelPalette =
         {
@@ -61,7 +60,6 @@ namespace Kruty1918.Moyva.Units.Editor
         private ScriptableObject _generatorAsset;
         private ScriptableObject _noiseSettingsAsset;
         private ScriptableObject _heightSettingsAsset;
-        private ScriptableObject _hillGeneratorNodeAsset;
         private SerializedObject _noiseSettingsObject;
         private SerializedObject _heightSettingsObject;
         private Texture2D _generatorPreviewTexture;
@@ -1665,14 +1663,10 @@ namespace Kruty1918.Moyva.Units.Editor
         private void DrawGeneratorPreviewLegend()
         {
             BeginSection("Легенда", "d_FilterByLabel", "Поточні рівні висоти та їхні кольори у preview.");
-            var levels = _generatorPreviewUsesHillNodeLevels
-                ? BuildHillGeneratorPreviewLevels()
-                : BuildPreviewLevels();
+            var levels = BuildPreviewLevels();
             if (levels.Count == 0)
             {
-                EditorGUILayout.HelpBox(_generatorPreviewUsesHillNodeLevels
-                    ? "HillGeneratorNode не має доступних рівнів для легенди."
-                    : "Немає HeightLayers для легенди.", MessageType.Info);
+                EditorGUILayout.HelpBox("Немає HeightLayers для легенди.", MessageType.Info);
                 EndSection();
                 return;
             }
@@ -1881,17 +1875,14 @@ namespace Kruty1918.Moyva.Units.Editor
             EnsureGeneratorScenarioInitialized();
             ClampScenarioUnitPositions();
 
-            bool canUseHillNode = _hillGeneratorNodeAsset != null;
-            if (_noiseSettingsObject == null || (!canUseHillNode && _heightSettingsObject == null))
+            if (_noiseSettingsObject == null || _heightSettingsObject == null)
             {
-                _generatorPreviewStatus = canUseHillNode
-                    ? "Потрібні Noise Settings для Hill Generator preview."
-                    : "Потрібні Noise Settings і Height Settings.";
+                _generatorPreviewStatus = "Потрібні Noise Settings і Height Settings.";
                 return;
             }
 
             var levels = BuildPreviewLevels();
-            if (!canUseHillNode && levels.Count == 0)
+            if (levels.Count == 0)
             {
                 _generatorPreviewStatus = "HeightLayers порожній.";
                 return;
@@ -1903,19 +1894,8 @@ namespace Kruty1918.Moyva.Units.Editor
             EnsureGeneratorPreviewTexture(_generatorPreviewWidth, _generatorPreviewHeight);
 
             string fallbackTileId = ResolveFirstExistingTileId();
-            string hillBuildMessage = string.Empty;
-            bool usedHillNodeLevels = TryBuildHillGeneratorPreview(
-                _generatorPreviewNoiseMap,
-                levels,
-                fallbackTileId,
-                out var hillTileMap,
-                out var hillLevelMap,
-                out hillBuildMessage);
-
-            _generatorPreviewUsesHillNodeLevels = usedHillNodeLevels;
-            _generatorPreviewLevelSource = usedHillNodeLevels
-                ? $"Hill Generator ({_hillGeneratorNodeAsset.name})"
-                : "HeightLayers fallback";
+            _generatorPreviewUsesHillNodeLevels = false;
+            _generatorPreviewLevelSource = "HeightLayers";
 
             int totalCells = _generatorPreviewWidth * _generatorPreviewHeight;
             float minHeight = float.MaxValue;
@@ -1930,21 +1910,9 @@ namespace Kruty1918.Moyva.Units.Editor
                     minHeight = Mathf.Min(minHeight, heightValue);
                     maxHeight = Mathf.Max(maxHeight, heightValue);
                     heightSum += heightValue;
-                    int levelIndex;
-                    string tileId;
-                    if (usedHillNodeLevels)
-                    {
-                        levelIndex = Mathf.Max(0, hillLevelMap[x, y]);
-                        tileId = !string.IsNullOrWhiteSpace(hillTileMap[x, y])
-                            ? hillTileMap[x, y]
-                            : fallbackTileId;
-                    }
-                    else
-                    {
-                        levelIndex = ResolvePreviewLevel(levels, heightValue);
-                        var level = levels[Mathf.Clamp(levelIndex, 0, levels.Count - 1)];
-                        tileId = SelectPreviewTile(level, x, y, _generatorPreviewSeed, fallbackTileId);
-                    }
+                    int levelIndex = ResolvePreviewLevel(levels, heightValue);
+                    var level = levels[Mathf.Clamp(levelIndex, 0, levels.Count - 1)];
+                    string tileId = SelectPreviewTile(level, x, y, _generatorPreviewSeed, fallbackTileId);
 
                     _generatorPreviewTileMap[x, y] = tileId;
                     _generatorPreviewLevelMap[x, y] = levelIndex;
@@ -1960,11 +1928,7 @@ namespace Kruty1918.Moyva.Units.Editor
             _generatorPreviewMaxHeight = maxHeight > float.MinValue ? maxHeight : 0f;
             _generatorPreviewAverageHeight = totalCells > 0 ? heightSum / totalCells : 0f;
             RebuildGeneratorVisibilityPreview();
-            string sourceSuffix = usedHillNodeLevels
-                ? "levels HillGeneratorNode"
-                : string.IsNullOrWhiteSpace(hillBuildMessage)
-                    ? "levels HeightLayers"
-                    : $"levels HeightLayers ({hillBuildMessage})";
+            const string sourceSuffix = "levels HeightLayers";
             _generatorPreviewStatus = $"{_generatorPreviewWidth}x{_generatorPreviewHeight} | seed {_generatorPreviewSeed} | {sourceSuffix} | scenario {_generatorScenarioUnits.Count} | visible {_generatorPreviewVisibleCells}";
         }
 
@@ -2065,7 +2029,6 @@ namespace Kruty1918.Moyva.Units.Editor
                 hash = hash * 31 + _generatorPreviewSeed;
                 hash = hash * 31 + ComputeNoiseSettingsSignature();
                 hash = hash * 31 + ComputeHeightSettingsSignature();
-                hash = hash * 31 + ComputeSerializedObjectSignature(_hillGeneratorNodeAsset);
                 return hash;
             }
         }
@@ -2286,127 +2249,6 @@ namespace Kruty1918.Moyva.Units.Editor
             return noiseMap;
         }
 
-        private bool TryBuildHillGeneratorPreview(
-            float[,] heightMap,
-            IReadOnlyList<PreviewHeightLevel> fallbackLevels,
-            string fallbackTileId,
-            out string[,] tileMap,
-            out int[,] levelMap,
-            out string message)
-        {
-            tileMap = null;
-            levelMap = null;
-            message = string.Empty;
-
-            if (_hillGeneratorNodeAsset == null)
-                return false;
-
-            if (heightMap == null)
-            {
-                message = "HillGeneratorNode без HeightMap";
-                return false;
-            }
-
-            try
-            {
-                string[,] sourceTileMap = BuildHillSourceTileMap(heightMap, fallbackLevels, fallbackTileId);
-                var executeMethod = _hillGeneratorNodeAsset.GetType().GetMethod("Execute");
-                if (executeMethod == null)
-                {
-                    message = "HillGeneratorNode.Execute не знайдено";
-                    return false;
-                }
-
-                object[] inputs = { heightMap, sourceTileMap, null, null, null };
-                object output = executeMethod.Invoke(_hillGeneratorNodeAsset, new object[] { inputs, null });
-                if (!TryGetNodeOutputValues(output, out var values, out string status, out string nodeMessage))
-                {
-                    message = string.IsNullOrWhiteSpace(nodeMessage) ? "HillGeneratorNode не повернув outputs" : nodeMessage;
-                    return false;
-                }
-
-                if (string.Equals(status, "Error", StringComparison.OrdinalIgnoreCase))
-                {
-                    message = string.IsNullOrWhiteSpace(nodeMessage) ? "HillGeneratorNode error" : nodeMessage;
-                    return false;
-                }
-
-                var outputTileMap = values.Length > 0 ? values[0] as string[,] : null;
-                var outputLevelMap = values.Length > 1 ? values[1] as int[,] : null;
-                if (!HasSamePreviewSize(outputLevelMap, _generatorPreviewWidth, _generatorPreviewHeight))
-                {
-                    message = "HillGeneratorNode LevelMap має інший розмір";
-                    return false;
-                }
-
-                tileMap = HasSamePreviewSize(outputTileMap, _generatorPreviewWidth, _generatorPreviewHeight)
-                    ? outputTileMap
-                    : sourceTileMap;
-                levelMap = outputLevelMap;
-                message = string.Equals(status, "Warning", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(nodeMessage)
-                    ? nodeMessage
-                    : string.Empty;
-                return true;
-            }
-            catch (Exception e)
-            {
-                message = e.InnerException != null ? e.InnerException.Message : e.Message;
-                return false;
-            }
-        }
-
-        private string[,] BuildHillSourceTileMap(float[,] heightMap, IReadOnlyList<PreviewHeightLevel> fallbackLevels, string fallbackTileId)
-        {
-            int width = heightMap.GetLength(0);
-            int height = heightMap.GetLength(1);
-            var result = new string[width, height];
-            bool hasFallbackLevels = fallbackLevels != null && fallbackLevels.Count > 0;
-
-            for (int y = 0; y < height; y++)
-            {
-                for (int x = 0; x < width; x++)
-                {
-                    if (hasFallbackLevels)
-                    {
-                        int levelIndex = ResolvePreviewLevel(fallbackLevels, heightMap[x, y]);
-                        var level = fallbackLevels[Mathf.Clamp(levelIndex, 0, fallbackLevels.Count - 1)];
-                        result[x, y] = SelectPreviewTile(level, x, y, _generatorPreviewSeed, fallbackTileId);
-                    }
-                    else
-                    {
-                        result[x, y] = fallbackTileId;
-                    }
-                }
-            }
-
-            return result;
-        }
-
-        private static bool TryGetNodeOutputValues(object output, out object[] values, out string status, out string message)
-        {
-            values = null;
-            status = string.Empty;
-            message = string.Empty;
-
-            if (output == null)
-                return false;
-
-            var outputType = output.GetType();
-            values = outputType.GetProperty("Values")?.GetValue(output) as object[];
-            object statusValue = outputType.GetProperty("Status")?.GetValue(output);
-            status = statusValue != null ? statusValue.ToString() : string.Empty;
-            message = outputType.GetProperty("Message")?.GetValue(output) as string ?? string.Empty;
-            return values != null;
-        }
-
-        private static bool HasSamePreviewSize(Array map, int width, int height)
-        {
-            return map != null
-                && map.Rank == 2
-                && map.GetLength(0) == width
-                && map.GetLength(1) == height;
-        }
-
         private List<PreviewHeightLevel> BuildPreviewLevels()
         {
             var result = new List<PreviewHeightLevel>();
@@ -2428,53 +2270,6 @@ namespace Kruty1918.Moyva.Units.Editor
                     MaxHeight = Mathf.Clamp01(layer.FindPropertyRelative("MaxHeight")?.floatValue ?? 1f),
                     Variants = ReadWeightedVariants(layer),
                 });
-            }
-
-            return result;
-        }
-
-        private List<PreviewHeightLevel> BuildHillGeneratorPreviewLevels()
-        {
-            var result = new List<PreviewHeightLevel>();
-            if (_hillGeneratorNodeAsset == null)
-                return result;
-
-            try
-            {
-                var serializedNode = new SerializedObject(_hillGeneratorNodeAsset);
-                int levelCount = Mathf.Max(1, serializedNode.FindProperty("_levels")?.intValue ?? 1);
-                bool useCustomThresholds = serializedNode.FindProperty("_useCustomThresholds")?.boolValue ?? false;
-                var thresholds = serializedNode.FindProperty("_levelThresholds");
-                float previous = 0f;
-
-                for (int i = 0; i < levelCount; i++)
-                {
-                    float max = 1f;
-                    if (i < levelCount - 1)
-                    {
-                        max = useCustomThresholds && thresholds != null && thresholds.isArray && i < thresholds.arraySize
-                            ? Mathf.Clamp01(thresholds.GetArrayElementAtIndex(i).floatValue)
-                            : (float)(i + 1) / levelCount;
-                    }
-
-                    if (max < previous)
-                        max = previous;
-
-                    result.Add(new PreviewHeightLevel
-                    {
-                        TileId = $"Hill level {i + 1}",
-                        TileChance = 1f,
-                        MinHeight = previous,
-                        MaxHeight = max,
-                        Variants = Array.Empty<PreviewWeightedTile>(),
-                    });
-
-                    previous = max;
-                }
-            }
-            catch
-            {
-                return result;
             }
 
             return result;
@@ -3414,8 +3209,6 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private void ExtractGeneratorReferencesFromAsset(bool applyMapSize)
         {
-            _hillGeneratorNodeAsset = null;
-
             if (_generatorAsset == null)
                 return;
 
@@ -3423,9 +3216,6 @@ namespace Kruty1918.Moyva.Units.Editor
                 _noiseSettingsAsset = _generatorAsset;
             if (IsObjectOfType(_generatorAsset, HeightMapSettingsTypeName))
                 _heightSettingsAsset = _generatorAsset;
-            if (IsObjectOfType(_generatorAsset, HillGeneratorNodeTypeName))
-                _hillGeneratorNodeAsset = _generatorAsset;
-
             string path = AssetDatabase.GetAssetPath(_generatorAsset);
             if (!string.IsNullOrEmpty(path))
             {
@@ -3448,9 +3238,6 @@ namespace Kruty1918.Moyva.Units.Editor
             {
                 if (applyMapSize && IsObjectOfType(source, GraphAssetTypeName))
                     TryApplyGraphSharedMapSize(source);
-                if (_hillGeneratorNodeAsset == null && IsObjectOfType(source, HillGeneratorNodeTypeName))
-                    _hillGeneratorNodeAsset = source as ScriptableObject;
-
                 var serialized = new SerializedObject(source);
                 var property = serialized.GetIterator();
                 bool enterChildren = true;
@@ -3468,8 +3255,6 @@ namespace Kruty1918.Moyva.Units.Editor
                         _noiseSettingsAsset = referenced;
                     if (_heightSettingsAsset == null && IsObjectOfType(referenced, HeightMapSettingsTypeName))
                         _heightSettingsAsset = referenced;
-                    if (_hillGeneratorNodeAsset == null && IsObjectOfType(referenced, HillGeneratorNodeTypeName))
-                        _hillGeneratorNodeAsset = referenced;
                 }
             }
             catch (Exception e)

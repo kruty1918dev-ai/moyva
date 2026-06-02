@@ -22,8 +22,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
         [Header("Grid Mode")]
         [SerializeField] private GridTopology _gridTopology = GridTopology.Orthogonal;
-        [SerializeField] private GridProjectionMode _projectionMode = GridProjectionMode.Orthographic2D;
-        [SerializeField] private GridRenderMode _renderMode = GridRenderMode.Sprite2D;
+        [SerializeField] private GridProjectionMode _projectionMode = GridProjectionMode.Orthographic3D;
+        [SerializeField] private GridRenderMode _renderMode = GridRenderMode.Mesh3D;
         [SerializeField] private GridNeighborhoodMode _neighborhoodMode = GridNeighborhoodMode.Auto;
 
         public int MapWidth => _mapWidth;
@@ -46,17 +46,14 @@ namespace Kruty1918.Moyva.GraphSystem.API
             if (_neighborhoodMode != GridNeighborhoodMode.Auto)
                 return _neighborhoodMode;
 
-            if (_gridTopology == GridTopology.HexAxial
-                || _projectionMode == GridProjectionMode.HexPointy2D
-                || _projectionMode == GridProjectionMode.HexFlat2D)
+            if (_gridTopology == GridTopology.HexAxial)
             {
                 return GridNeighborhoodMode.HexAxial6;
             }
 
-            return _projectionMode == GridProjectionMode.Isometric2D
-                || _projectionMode == GridProjectionMode.Isometric3DPreview
-                    ? GridNeighborhoodMode.VonNeumann4
-                    : GridNeighborhoodMode.Moore8;
+            return _projectionMode == GridProjectionMode.Isometric3DPreview
+                ? GridNeighborhoodMode.VonNeumann4
+                : GridNeighborhoodMode.Moore8;
         }
     }
 }

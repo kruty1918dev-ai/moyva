@@ -65,6 +65,14 @@ namespace GiantGrey.TileWorldCreator
         {
             root.Clear();
 
+            // Коли підключено графовий генератор Moyva, менеджер показує ЛИШЕ його панель.
+            // TWC виступає виконавцем і отримує всі інструкції від графа, тож власні
+            // (Advanced) налаштування на менеджері не відображаються.
+            if (TryAppendMoyvaGraphGeneratorPanel(root))
+                return;
+
+            VisualElement nativeRoot = root;
+
             var _header = new VisualElement();
             _header.style.backgroundColor = new Color(36f/255f, 36f/255f,36f/255f);
             _header.style.marginBottom = 2;
@@ -81,7 +89,7 @@ namespace GiantGrey.TileWorldCreator
 
             _header.Add(_logo);
 
-            root.Add(_header);
+            nativeRoot.Add(_header);
 
 #region Configuration
             var _config = new VisualElement();
@@ -169,13 +177,36 @@ namespace GiantGrey.TileWorldCreator
 
 #endregion
 
-            root.Add(_config);
-            root.Add(_export);
+            nativeRoot.Add(_config);
+            nativeRoot.Add(_export);
 
             if (_manager.configuration != null)
             {
                 var _editor = Editor.CreateEditor(_manager.configuration) as ConfigurationEditor;
-                root.Add(_editor.CreateInspectorGUI());
+                nativeRoot.Add(_editor.CreateInspectorGUI());
+            }
+        }
+
+        bool TryAppendMoyvaGraphGeneratorPanel(VisualElement parent)
+        {
+            try
+            {
+                var bridgeType = System.Type.GetType(
+                    "Kruty1918.Moyva.Generator.Editor.MoyvaTileWorldCreatorManagerInspectorBridge, Kruty1918.Moyva.Generator.Editor");
+                var method = bridgeType?.GetMethod(
+                    "AppendPanel",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+                if (method == null)
+                    return false;
+
+                var result = method.Invoke(null, new object[] { serializedObject, _manager, parent });
+                return result is bool handled && handled;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[TileWorldCreatorManagerEditor] Moyva graph inspector bridge failed: {ex.Message}");
+                return false;
             }
         }
     }

@@ -66,20 +66,65 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 }
             }
 
+            AppendTwcEntries(entries);
+
             return entries;
+        }
+
+        private static void AppendTwcEntries(List<SearchTreeEntry> entries)
+        {
+            var byCategory = new SortedDictionary<string, List<Generator.Runtime.Nodes.Twc.TwcModifierMenuItem>>(StringComparer.Ordinal);
+            foreach (var item in Generator.Runtime.Nodes.Twc.TwcModifierCatalog.MenuItems)
+            {
+                if (!byCategory.TryGetValue(item.MenuCategory, out var list))
+                {
+                    list = new List<Generator.Runtime.Nodes.Twc.TwcModifierMenuItem>();
+                    byCategory[item.MenuCategory] = list;
+                }
+                list.Add(item);
+            }
+
+            foreach (var kvp in byCategory)
+            {
+                entries.Add(new SearchTreeGroupEntry(new GUIContent(kvp.Key), 1));
+
+                foreach (var item in kvp.Value.OrderBy(i => i.DisplayName, StringComparer.Ordinal))
+                {
+                    string tooltip = item.IsGenerator
+                        ? $"{item.DisplayName}\n\nTileWorldCreator генератор. Створює матрицю з нуля."
+                        : $"{item.DisplayName}\n\nTileWorldCreator модифікатор. Трансформує вхідну маску.";
+
+                    entries.Add(new SearchTreeEntry(new GUIContent(item.DisplayName, tooltip))
+                    {
+                        userData = new TwcMenuUserData(item.ModifierType),
+                        level = 2
+                    });
+                }
+            }
+        }
+
+        private sealed class TwcMenuUserData
+        {
+            public readonly Type ModifierType;
+            public TwcMenuUserData(Type modifierType) => ModifierType = modifierType;
         }
 
         public bool OnSelectEntry(SearchTreeEntry entry,
             SearchWindowContext context)
         {
-            var nodeType = (Type)entry.userData;
-
             // Convert screen position to local graph position
             var windowPos = context.screenMousePosition
                 - _graphView.EditorWindow.position.position;
             var graphPos = ((VisualElement)_graphView).ChangeCoordinatesTo(
                 _graphView.contentViewContainer, windowPos);
 
+            if (entry.userData is TwcMenuUserData twc)
+            {
+                _graphView.CreateTwcModifierNode(twc.ModifierType, graphPos);
+                return true;
+            }
+
+            var nodeType = (Type)entry.userData;
             _graphView.CreateNode(nodeType, graphPos);
             return true;
         }

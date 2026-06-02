@@ -9,6 +9,7 @@ using System.Threading;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
+using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.GraphSystem.Runtime;
@@ -39,7 +40,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private GeneratorGraphView _graphView;
         private VisualElement _contentContainer;
         private ScrollView _rightPanel;
+        private VisualElement _leftPanel;
+        private VisualElement _layerListContainer;
+        private Image _compositePreviewImage;
+        private string _selectedLayerId;
+        private GraphExecutionResult _lastResult;
+        private Texture2D _layerCompositeTexture;
+        private readonly List<Texture2D> _layerThumbnails = new List<Texture2D>();
+        private Dictionary<string, bool[,]> _layerMatrices;
         private IMGUIContainer _nodeInspectorGui;
+        private VisualElement _twcNodeInspectorGui;
         private IMGUIContainer _graphSettingsGui;
         [SerializeField] private bool _isInspectorVisible = true;
       
@@ -52,13 +62,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private NodeBase _selectedNode;
         private UnityEditor.Editor _selectedNodeEditor;
 
-        private enum InspectorTab { Settings = 0, Preview = 1 }
-        [SerializeField] private InspectorTab _activeInspectorTab = InspectorTab.Preview;
+        private enum InspectorTab { Settings = 0, Preview = 1, BuildLayers = 2 }
+        [SerializeField] private InspectorTab _activeInspectorTab = InspectorTab.Settings;
         private VisualElement _inspectorTabsHeader;
         private VisualElement _tabSettingsContent;
         private VisualElement _tabPreviewContent;
+        private VisualElement _tabBuildLayersContent;
+        private VisualElement _buildLayersHost;
         private Button _tabSettingsButton;
         private Button _tabPreviewButton;
+        private Button _tabBuildLayersButton;
         [SerializeField] private bool _isMultiSelection;
 
         // Survives domain reload / play mode transition
@@ -137,7 +150,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _inlineObjectEditors.Clear();
 
             if (_graphView != null)
+            {
                 _graphView.GraphChanged -= OnGraphChanged;
+                _graphView.CanvasBackgroundClicked -= OnGraphCanvasBackgroundClicked;
+            }
+
+            DisposeLayerPreviewTextures();
 
             if (_contentContainer != null)
                 rootVisualElement.Remove(_contentContainer);
@@ -159,6 +177,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 MigrateLegacySharedSettingsNode(_graphAsset);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
                 RestoreCameraTransform();
+                RebuildLayerList();
                 UpdateStatusBar();
                 return;
             }
@@ -175,6 +194,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 MigrateLegacySharedSettingsNode(_graphAsset);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
                 RestoreCameraTransform();
+                RebuildLayerList();
                 UpdateStatusBar();
             }
         }
@@ -220,12 +240,289 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             };
             rootVisualElement.Add(_contentContainer);
 
+            ConstructLeftPanel();
+
             _graphView = new GeneratorGraphView(this);
             _graphView.GraphChanged += OnGraphChanged;
+            _graphView.CanvasBackgroundClicked += OnGraphCanvasBackgroundClicked;
             _graphView.style.flexGrow = 1;
             _contentContainer.Add(_graphView);
 
             ConstructRightPanel();
+        }
+
+        private void ConstructLeftPanel()
+        {
+            _leftPanel = new VisualElement
+            {
+                style =
+                {
+                    width = 200,
+                    minWidth = 160,
+                    flexShrink = 0,
+                    borderRightWidth = 1,
+                    borderRightColor = new Color(0.22f, 0.22f, 0.22f),
+                    backgroundColor = new Color(0.12f, 0.12f, 0.12f),
+                    paddingLeft = 6,
+                    paddingRight = 6,
+                    paddingTop = 6,
+                    paddingBottom = 8
+                }
+            };
+
+            var header = new Label("Шари генератора")
+            {
+                style =
+                {
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginBottom = 6
+                }
+            };
+            _leftPanel.Add(header);
+
+            _layerListContainer = new VisualElement();
+            _leftPanel.Add(_layerListContainer);
+
+            var buttonsRow = new VisualElement
+            {
+                style = { flexDirection = FlexDirection.Row, marginTop = 6 }
+            };
+
+            var addButton = new Button(AddLayer) { text = "+ Шар" };
+            addButton.style.flexGrow = 1;
+            addButton.style.marginRight = 4;
+            addButton.tooltip = "Додати новий шар генератора.";
+            buttonsRow.Add(addButton);
+
+            var removeButton = new Button(RemoveSelectedLayer) { text = "–" };
+            removeButton.style.width = 28;
+            removeButton.tooltip = "Видалити вибраний шар (разом із його вузлами).";
+            buttonsRow.Add(removeButton);
+
+            _leftPanel.Add(buttonsRow);
+
+            var compositeHeader = new Label("Ізометричне превʼю")
+            {
+                style =
+                {
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginTop = 10,
+                    marginBottom = 4
+                }
+            };
+            _leftPanel.Add(compositeHeader);
+
+            _compositePreviewImage = new Image
+            {
+                scaleMode = ScaleMode.ScaleToFit,
+                style =
+                {
+                    height = 150,
+                    backgroundColor = new Color(0.05f, 0.06f, 0.08f)
+                }
+            };
+            _compositePreviewImage.tooltip =
+                "Складений ізометричний 3D-вид усіх шарів (Run для оновлення).";
+            _leftPanel.Add(_compositePreviewImage);
+
+            _contentContainer.Add(_leftPanel);
+        }
+
+        private void RebuildLayerList()
+        {
+            if (_layerListContainer == null)
+                return;
+
+            _layerListContainer.Clear();
+
+            // Старі мініатюри більше не на екрані — звільняємо (композит лишаємо).
+            foreach (var thumb in _layerThumbnails)
+            {
+                if (thumb != null)
+                    DestroyImmediate(thumb);
+            }
+            _layerThumbnails.Clear();
+
+            if (_graphAsset == null)
+                return;
+
+            _graphAsset.EnsureDefaultLayer();
+
+            if (!string.IsNullOrEmpty(_selectedLayerId)
+                && _graphAsset.GetLayerById(_selectedLayerId) == null)
+                _selectedLayerId = null;
+
+            var orderedLayers = _graphAsset.Layers
+                .Where(l => l != null)
+                .OrderBy(l => l.SortingOrder)
+                .ToList();
+
+            foreach (var layer in orderedLayers)
+            {
+                string layerId = layer.Id;
+                bool isSelected = layerId == _selectedLayerId;
+
+                var row = new VisualElement
+                {
+                    style =
+                    {
+                        flexDirection = FlexDirection.Row,
+                        alignItems = Align.Center,
+                        marginBottom = 2,
+                        paddingLeft = 4,
+                        paddingRight = 4,
+                        paddingTop = 3,
+                        paddingBottom = 3,
+                        backgroundColor = isSelected
+                            ? new Color(0.24f, 0.36f, 0.5f)
+                            : new Color(0.16f, 0.16f, 0.16f)
+                    }
+                };
+
+                var swatch = new VisualElement
+                {
+                    style =
+                    {
+                        width = 12,
+                        height = 12,
+                        marginRight = 6,
+                        backgroundColor = layer.Color
+                    }
+                };
+                row.Add(swatch);
+
+                var nameLabel = new Label(layer.Name)
+                {
+                    style = { flexGrow = 1, unityTextOverflowPosition = TextOverflowPosition.End }
+                };
+                row.Add(nameLabel);
+
+                row.RegisterCallback<MouseDownEvent>(_ => SelectLayer(layerId));
+                _layerListContainer.Add(row);
+
+                // Мініатюра матриці шару (якщо граф уже виконано).
+                if (_layerMatrices != null && _layerMatrices.TryGetValue(layerId, out var matrix))
+                {
+                    var thumb = GeneratorLayerPreviewBuilder.BuildLayerThumbnail(matrix, layer.Color);
+                    if (thumb != null)
+                    {
+                        _layerThumbnails.Add(thumb);
+                        var thumbImage = new Image
+                        {
+                            image = thumb,
+                            scaleMode = ScaleMode.ScaleToFit,
+                            style =
+                            {
+                                height = 48,
+                                marginBottom = 4,
+                                marginLeft = 2,
+                                marginRight = 2
+                            }
+                        };
+                        _layerListContainer.Add(thumbImage);
+                    }
+                }
+            }
+
+            _graphView?.SetVisibleLayer(_selectedLayerId);
+        }
+
+        /// <summary>
+        /// Перераховує матриці шарів, мініатюри та складене ізометричне превʼю
+        /// з останнього результату виконання графа.
+        /// </summary>
+        private void RebuildLayerPreviews()
+        {
+            DisposeLayerPreviewTextures();
+
+            if (_graphAsset == null || _lastResult == null)
+            {
+                _layerMatrices = null;
+                RebuildLayerList();
+                return;
+            }
+
+            _layerMatrices = GeneratorLayerPreviewBuilder.ComputeLayerMatrices(
+                _graphAsset, _lastResult, out int w, out int h);
+
+            _layerCompositeTexture = GeneratorLayerPreviewBuilder.BuildIsometricComposite(
+                _graphAsset, _layerMatrices, w, h);
+
+            if (_compositePreviewImage != null)
+                _compositePreviewImage.image = _layerCompositeTexture;
+
+            RebuildLayerList();
+            GraphPreviewWindow.RequestRepaint();
+        }
+
+        private void DisposeLayerPreviewTextures()
+        {
+            foreach (var thumb in _layerThumbnails)
+            {
+                if (thumb != null)
+                    DestroyImmediate(thumb);
+            }
+            _layerThumbnails.Clear();
+
+            if (_layerCompositeTexture != null)
+            {
+                if (_compositePreviewImage != null)
+                    _compositePreviewImage.image = null;
+                DestroyImmediate(_layerCompositeTexture);
+                _layerCompositeTexture = null;
+            }
+        }
+
+        private void SelectLayer(string layerId)
+        {
+            _selectedLayerId = _selectedLayerId == layerId ? null : layerId;
+            if (_graphView != null)
+                _graphView.ActiveLayerId = _selectedLayerId;
+            RebuildLayerList();
+            RefreshInspectorPanel();
+        }
+
+        private void AddLayer()
+        {
+            if (_graphAsset == null)
+                return;
+
+            Undo.RecordObject(_graphAsset, "Add Layer");
+            var layer = _graphAsset.AddLayer($"Layer {_graphAsset.Layers.Count + 1}");
+            EditorUtility.SetDirty(_graphAsset);
+            SelectLayer(layer.Id);
+        }
+
+        private void RemoveSelectedLayer()
+        {
+            if (_graphAsset == null || string.IsNullOrEmpty(_selectedLayerId))
+                return;
+
+            if (_graphAsset.Layers.Count <= 1)
+            {
+                EditorUtility.DisplayDialog("Шари генератора",
+                    "Не можна видалити останній шар.", "OK");
+                return;
+            }
+
+            var layer = _graphAsset.GetLayerById(_selectedLayerId);
+            string layerName = layer != null ? layer.Name : _selectedLayerId;
+
+            if (!EditorUtility.DisplayDialog("Видалити шар",
+                    $"Видалити шар '{layerName}' разом з усіма його вузлами?", "Видалити", "Скасувати"))
+                return;
+
+            Undo.RecordObject(_graphAsset, "Remove Layer");
+            _graphAsset.RemoveLayer(_selectedLayerId);
+            EditorUtility.SetDirty(_graphAsset);
+
+            _selectedLayerId = _graphAsset.Layers.Count > 0 ? _graphAsset.Layers[0].Id : null;
+            if (_graphView != null)
+            {
+                _graphView.ActiveLayerId = _selectedLayerId;
+                _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
+            }
+            RebuildLayerList();
         }
 
         private void ConstructRightPanel()
@@ -259,8 +556,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             _tabSettingsButton = new Button(() => SetInspectorTab(InspectorTab.Settings))
             {
-                text = "Base Settings",
-                tooltip = "Показати налаштування прев'ю та сервісів."
+                text = "Загальні",
+                tooltip = "Загальні налаштування графа або вибраного шару."
             };
             _tabSettingsButton.style.flexGrow = 1;
             _tabSettingsButton.style.marginRight = 4;
@@ -268,49 +565,76 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             _tabPreviewButton = new Button(() => SetInspectorTab(InspectorTab.Preview))
             {
-                text = "Node Settings",
-                tooltip = "Показати дані вибраної ноди."
+                text = "Ноди",
+                tooltip = "Налаштування вибраної ноди."
             };
             _tabPreviewButton.style.flexGrow = 1;
+            _tabPreviewButton.style.marginRight = 4;
             tabHeaderRow.Add(_tabPreviewButton);
+
+            _tabBuildLayersButton = new Button(() => SetInspectorTab(InspectorTab.BuildLayers))
+            {
+                text = "Тайли",
+                tooltip = "Налаштування тайлів і build-шарів (TileWorldCreator)."
+            };
+            _tabBuildLayersButton.style.flexGrow = 1;
+            tabHeaderRow.Add(_tabBuildLayersButton);
 
             _nodeInspectorSection = new VisualElement();
             _nodeInspectorSection.Add(tabHeaderRow);
 
-            // Preview tab (shows node data)
-            _tabPreviewContent = new VisualElement();
-            _nodeInspectorGui = new IMGUIContainer(DrawSelectedNodeInspector)
-            {
-                style =
-                {
-                    marginBottom = 10
-                }
-            };
-            _tabPreviewContent.Add(_nodeInspectorGui);
-            _nodeInspectorSection.Add(_tabPreviewContent);
-
-            _nodeInspectorDivider = new VisualElement
-            {
-                style =
-                {
-                    height = 1,
-                    marginBottom = 8,
-                    backgroundColor = new Color(0.25f, 0.25f, 0.25f)
-                }
-            };
-            _nodeInspectorSection.Add(_nodeInspectorDivider);
-
-            // Settings tab (shows EditorPreviewSettings)
             _tabSettingsContent = new VisualElement();
-            _graphSettingsGui = new IMGUIContainer(DrawGraphSettingsInspector);
+            _graphSettingsGui = new IMGUIContainer(DrawGeneralInspectorTab)
+            {
+                style = { marginBottom = 10 }
+            };
             _tabSettingsContent.Add(_graphSettingsGui);
             _nodeInspectorSection.Add(_tabSettingsContent);
+
+            _tabPreviewContent = new VisualElement();
+            _nodeInspectorGui = new IMGUIContainer(DrawNodeInspectorTab)
+            {
+                style = { marginBottom = 10 }
+            };
+            _tabPreviewContent.Add(_nodeInspectorGui);
+
+            _twcNodeInspectorGui = new VisualElement
+            {
+                style =
+                {
+                    marginBottom = 10,
+                    display = DisplayStyle.None
+                }
+            };
+            _tabPreviewContent.Add(_twcNodeInspectorGui);
+            _nodeInspectorSection.Add(_tabPreviewContent);
+
+            _tabBuildLayersContent = new VisualElement();
+            var buildLayersHeader = new VisualElement
+            {
+                style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 4 }
+            };
+            var buildLayersTitle = new Label("Build-шари (TileWorldCreator)")
+            {
+                style = { unityFontStyleAndWeight = FontStyle.Bold, flexGrow = 1 }
+            };
+            buildLayersHeader.Add(buildLayersTitle);
+            var refreshBuildLayers = new Button(RebuildBuildLayersPanel) { text = "↻" };
+            refreshBuildLayers.tooltip = "Пересинхронізувати build-шари зі шарами графа.";
+            buildLayersHeader.Add(refreshBuildLayers);
+            _tabBuildLayersContent.Add(buildLayersHeader);
+
+            _buildLayersHost = new VisualElement();
+            _tabBuildLayersContent.Add(_buildLayersHost);
+            _nodeInspectorSection.Add(_tabBuildLayersContent);
 
             _rightPanel.Add(_nodeInspectorSection);
 
             _contentContainer.Add(_rightPanel);
             SetInspectorVisible(_isInspectorVisible);
             UpdateInspectorTabVisibility();
+            if (_activeInspectorTab == InspectorTab.BuildLayers)
+                RebuildBuildLayersPanel();
         }
 
         private void ConstructToolbar()
@@ -602,6 +926,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _graphView.SetInlinePreviewsVisible(_showInlinePreviews);
             SetSelectedNode(null);
             RefreshInspectorPanel();
+            RebuildLayerList();
             UpdateStatusBar();
         }
 
@@ -793,6 +1118,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var result = runner.Execute(_graphAsset, context);
             int previewSize = ResolvePreviewSize(mapW, mapH);
             _graphView?.UpdateNodePreviews(result, _previewSettings, layerDataList, previewSize, _previewHeatmap);
+            _lastResult = result;
+            RebuildLayerPreviews();
             GraphPreviewWindow.RequestRepaint();
 
             sw.Stop();
@@ -845,8 +1172,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         internal bool TryGetBestPreview(out Texture2D previewTexture, out string status)
         {
-            if (_graphView != null)
-                return _graphView.TryGetBestPreview(out previewTexture, out status);
+            if (_graphView != null && _graphView.TryGetBestPreview(out previewTexture, out status))
+                return true;
+
+            // Фолбек: складене ізометричне 3D-превʼю шарів (TWC-конвеєр).
+            if (_layerCompositeTexture != null)
+            {
+                previewTexture = _layerCompositeTexture;
+                status = "Ізометричне превʼю шарів";
+                return true;
+            }
 
             previewTexture = null;
             status = "Graph view is not ready";
@@ -870,44 +1205,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         /// </summary>
         private void RegisterEditorServices(NodeContext context, RuntimeExecutionSettings runtimeSettings)
         {
-            // INoiseProvider — не потребує залежностей
-            context.RegisterService<INoiseProvider>(new NoiseMapGeneratorService());
-            Debug.Log("[EditorPreview] ✓ INoiseProvider registered.");
-
             context.RegisterService<IGeneratorDataRegistry>(new GeneratorDataRegistry());
             Debug.Log("[EditorPreview] ✓ IGeneratorDataRegistry registered.");
-
-            // IVirtualHeightMapGenerator — потребує HeightMapSettings
-            var heightSettings = runtimeSettings.HeightMapSettings ?? _previewSettings?.HeightMapSettings;
-            if (heightSettings != null)
-            {
-                context.RegisterService<IVirtualHeightMapGenerator>(
-                    new VirtualHeightMapGenerator(heightSettings));
-                Debug.Log("[EditorPreview] ✓ IVirtualHeightMapGenerator registered.");
-            }
-            else
-            {
-                Debug.LogWarning("[EditorPreview] ⚠ HeightMapSettings not assigned in EditorPreviewSettings. " +
-                    "HeightToTileNode will fail. Assign it in the Preview Settings asset.");
-            }
-
-            // IBiomeResolver — потребує DataBiomesSettings
-            var biomesSettings = runtimeSettings.BiomesSettings ?? _previewSettings?.BiomesSettings;
-            if (biomesSettings != null)
-            {
-                context.RegisterService<IBiomeResolver>(
-                    new BiomeResolver(biomesSettings));
-                Debug.Log("[EditorPreview] ✓ IBiomeResolver registered.");
-            }
-            else
-            {
-                Debug.LogWarning("[EditorPreview] ⚠ BiomesSettings not assigned in EditorPreviewSettings. " +
-                    "BiomeResolverNode will fail. Assign it in the Preview Settings asset.");
-            }
-
-            // IRiverPathfinder — не потребує залежностей
-            context.RegisterService<IRiverPathfinder>(new RiverPathfinder());
-            Debug.Log("[EditorPreview] ✓ IRiverPathfinder registered.");
 
             var tileRegistry = runtimeSettings.TileRegistry ?? _previewSettings?.TileRegistry;
             if (tileRegistry != null)
@@ -919,19 +1218,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 Debug.LogWarning("[EditorPreview] ⚠ TileRegistrySO not assigned in EditorPreviewSettings. " +
                     "SingleTileLayerNode sprite fallback will not be available.");
-            }
-
-            // IWFCService — потребує WFCDataSettings
-            var wfcSettings = runtimeSettings.WfcSettings ?? _previewSettings?.WFCDataSettings;
-            if (wfcSettings != null)
-            {
-                context.RegisterService<IWFCService>(new WFCService(wfcSettings));
-                Debug.Log("[EditorPreview] ✓ IWFCService registered.");
-            }
-            else
-            {
-                Debug.LogWarning("[EditorPreview] ⚠ WFCDataSettings not assigned in EditorPreviewSettings. " +
-                    "WFC nodes will fail. Assign it in the Preview Settings asset.");
             }
 
             if (!string.IsNullOrEmpty(runtimeSettings.Source))
@@ -1124,7 +1410,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _previewResolution = Mathf.Clamp(settings.previewResolution, 0, 2);
             _previewHeatmap = settings.previewHeatmap;
             _isInspectorVisible = settings.isInspectorVisible;
-            _activeInspectorTab = (InspectorTab)Mathf.Clamp(settings.inspectorTabIndex, 0, 1);
+            _activeInspectorTab = (InspectorTab)Mathf.Clamp(settings.inspectorTabIndex, 0, 2);
             _savedCameraPosition = settings.cameraPosition;
             _savedCameraScale = settings.cameraScale;
         }
@@ -1373,8 +1659,139 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void RefreshInspectorPanel()
         {
+            RebuildTwcNodeInspectorPanel();
             _nodeInspectorGui?.MarkDirtyRepaint();
             _graphSettingsGui?.MarkDirtyRepaint();
+        }
+
+        private void RebuildTwcNodeInspectorPanel()
+        {
+            if (_nodeInspectorGui == null || _twcNodeInspectorGui == null)
+                return;
+
+            bool isTwcNode = _selectedNode is TwcModifierNode;
+            _nodeInspectorGui.style.display = isTwcNode ? DisplayStyle.None : DisplayStyle.Flex;
+            _twcNodeInspectorGui.style.display = isTwcNode ? DisplayStyle.Flex : DisplayStyle.None;
+            _twcNodeInspectorGui.Clear();
+
+            if (_selectedNode is not TwcModifierNode twcNode)
+                return;
+
+            _twcNodeInspectorGui.Add(new Label(twcNode.Title)
+            {
+                style =
+                {
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginBottom = 2
+                }
+            });
+
+            _twcNodeInspectorGui.Add(new Label($"Type: {twcNode.GetType().Name}")
+            {
+                style =
+                {
+                    color = new Color(0.65f, 0.65f, 0.65f),
+                    marginBottom = 4
+                }
+            });
+
+            _twcNodeInspectorGui.Add(new Label(twcNode.IsGenerator ? "Тип: Генератор" : "Тип: Модифікатор")
+            {
+                style =
+                {
+                    color = new Color(0.75f, 0.75f, 0.75f),
+                    marginBottom = 6
+                }
+            });
+
+            if (!twcNode.TryRestoreModifierInEditor())
+            {
+                _twcNodeInspectorGui.Add(new HelpBox(
+                    $"TWC-модифікатор '{twcNode.ModifierTypeName}' не ініціалізовано.",
+                    HelpBoxMessageType.Warning));
+                return;
+            }
+
+            var modifier = twcNode.ModifierAsset;
+            if (modifier == null)
+            {
+                _twcNodeInspectorGui.Add(new HelpBox("TWC-модифікатор не знайдено.", HelpBoxMessageType.Warning));
+                return;
+            }
+
+            VisualElement nativeInspector = null;
+            try
+            {
+                nativeInspector = twcNode.CreateModifierInspectorElement(ResolveInspectorMapSize());
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[GraphEditorWindow] Failed to build native TWC inspector for {twcNode.Title}: {ex.Message}");
+            }
+
+            if (nativeInspector != null && nativeInspector.childCount > 0)
+            {
+                nativeInspector.RegisterCallback<SerializedPropertyChangeEvent>(_ => OnTwcNodeInspectorChanged(twcNode));
+                _twcNodeInspectorGui.Add(nativeInspector);
+            }
+            else
+            {
+                _twcNodeInspectorGui.Add(new IMGUIContainer(() => DrawTwcModifierSerializedFallback(twcNode)));
+            }
+        }
+
+        private Vector2Int ResolveInspectorMapSize()
+        {
+            var size = _graphAsset?.SharedSettings?.MapSize ?? Vector2Int.zero;
+            if (size.x > 0 && size.y > 0)
+                return size;
+
+            return new Vector2Int(Mathf.Max(1, _previewWidth), Mathf.Max(1, _previewHeight));
+        }
+
+        private void OnTwcNodeInspectorChanged(TwcModifierNode node)
+        {
+            if (node == null)
+                return;
+
+            EditorUtility.SetDirty(node);
+            if (node.ModifierAsset != null)
+                EditorUtility.SetDirty(node.ModifierAsset);
+            if (_graphAsset != null)
+                EditorUtility.SetDirty(_graphAsset);
+            RequestAutoRun();
+        }
+
+        private void DrawTwcModifierSerializedFallback(TwcModifierNode node)
+        {
+            if (node == null || node.ModifierAsset == null)
+                return;
+
+            var serializedModifier = new SerializedObject(node.ModifierAsset);
+            serializedModifier.Update();
+
+            EditorGUI.BeginChangeCheck();
+            var property = serializedModifier.GetIterator();
+            bool enterChildren = true;
+            while (property.Next(enterChildren))
+            {
+                enterChildren = false;
+                if (property.propertyPath.StartsWith("m_", StringComparison.Ordinal)
+                    || property.propertyPath is "asset" or "isEnabled")
+                    continue;
+
+                EditorGUILayout.PropertyField(property, true);
+            }
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedModifier.ApplyModifiedProperties();
+                OnTwcNodeInspectorChanged(node);
+            }
+            else
+            {
+                serializedModifier.ApplyModifiedProperties();
+            }
         }
 
         private void DrawSelectedNodeInspector()
@@ -1405,16 +1822,134 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             EditorGUILayout.LabelField("Type", _selectedNode.GetType().Name);
             EditorGUILayout.Space(4);
 
+            bool layerRefChanged = false;
+            if (_selectedNode is LayerMaskReferenceNode layerRefNode)
+                layerRefChanged = DrawLayerReferenceControls(layerRefNode);
+
             EditorGUI.BeginChangeCheck();
             _selectedNodeEditor.OnInspectorGUI();
             bool inspectorChanged = EditorGUI.EndChangeCheck();
             bool seedChanged = DrawSeedNodeControls(_selectedNode);
 
-            if (inspectorChanged || seedChanged)
+            if (inspectorChanged || seedChanged || layerRefChanged)
             {
                 EditorUtility.SetDirty(_selectedNode);
                 EditorUtility.SetDirty(_graphAsset);
                 RequestAutoRun();
+            }
+        }
+
+        private bool DrawLayerReferenceControls(LayerMaskReferenceNode node)
+        {
+            if (node == null || _graphAsset == null)
+                return false;
+
+            var layers = _graphAsset.Layers?.Where(l => l != null).OrderBy(l => l.SortingOrder).ToList();
+            if (layers == null || layers.Count == 0)
+            {
+                EditorGUILayout.HelpBox("У графі немає шарів для посилання.", MessageType.Info);
+                return false;
+            }
+
+            var options = new List<string>(layers.Count);
+            int selectedIndex = 0;
+            string currentId = node.SourceLayerId;
+
+            for (int i = 0; i < layers.Count; i++)
+            {
+                var layer = layers[i];
+                options.Add($"{layer.Name} (order {layer.SortingOrder})");
+                if (!string.IsNullOrEmpty(currentId) && layer.Id == currentId)
+                    selectedIndex = i;
+            }
+
+            EditorGUI.BeginChangeCheck();
+            int newIndex = EditorGUILayout.Popup("Шар-джерело", selectedIndex, options.ToArray());
+            if (!EditorGUI.EndChangeCheck())
+                return false;
+
+            newIndex = Mathf.Clamp(newIndex, 0, layers.Count - 1);
+            Undo.RecordObject(node, "Change Layer Ref Source");
+            node.SetSourceLayerId(layers[newIndex].Id);
+            return true;
+        }
+
+        private void DrawGeneralInspectorTab()
+        {
+            if (_graphAsset == null)
+            {
+                EditorGUILayout.HelpBox("Спочатку відкрийте GraphAsset.", MessageType.Info);
+                return;
+            }
+
+            if (_selectedNode != null)
+            {
+                EditorGUILayout.HelpBox("Обрано ноду. Перейдіть у вкладку 'Ноди' для редагування ноди.", MessageType.Info);
+                return;
+            }
+
+            if (_isMultiSelection)
+            {
+                EditorGUILayout.HelpBox("Множинний вибір нод. Вкладка 'Загальні' показує лише параметри графа/шару.", MessageType.Info);
+                return;
+            }
+
+            var layer = _graphAsset.GetLayerById(_selectedLayerId);
+            if (layer != null)
+            {
+                DrawSelectedLayerInspector(layer);
+                return;
+            }
+
+            DrawGraphSettingsInspector();
+        }
+
+        private void DrawNodeInspectorTab()
+        {
+            DrawSelectedNodeInspector();
+        }
+
+        private void DrawSelectedLayerInspector(GeneratorLayerDefinition layer)
+        {
+            if (layer == null || _graphAsset == null)
+            {
+                EditorGUILayout.HelpBox("Шар не знайдено.", MessageType.Warning);
+                return;
+            }
+
+            EditorGUILayout.LabelField("Layer Settings", EditorStyles.boldLabel);
+            EditorGUILayout.Space(4);
+
+            EditorGUI.BeginChangeCheck();
+
+            string newName = EditorGUILayout.TextField("Name", layer.Name ?? string.Empty);
+            int newOrder = EditorGUILayout.IntField("Sorting Order", layer.SortingOrder);
+            bool newEnabled = EditorGUILayout.Toggle("Enabled", layer.Enabled);
+            float newHeight = EditorGUILayout.FloatField("Default Height", layer.DefaultHeight);
+            Color newColor = EditorGUILayout.ColorField("Color", layer.Color);
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                Undo.RecordObject(_graphAsset, "Edit Layer Settings");
+                layer.Name = string.IsNullOrWhiteSpace(newName) ? "Layer" : newName;
+                layer.SortingOrder = newOrder;
+                layer.Enabled = newEnabled;
+                layer.DefaultHeight = newHeight;
+                layer.Color = newColor;
+
+                EditorUtility.SetDirty(_graphAsset);
+                RebuildLayerList();
+                _graphView?.RefreshFromAsset();
+                RequestAutoRun();
+            }
+
+            EditorGUILayout.Space(8);
+            EditorGUILayout.LabelField("Build Layer Key", EditorStyles.miniBoldLabel);
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.TextField(string.IsNullOrEmpty(layer.BuildLayerKey)
+                    ? "(буде призначено після синхронізації Build-шарів)"
+                    : layer.BuildLayerKey);
             }
         }
 
@@ -1462,6 +1997,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             if (GUI.changed)
                 RequestAutoRun();
+        }
+
+        private void OnGraphCanvasBackgroundClicked()
+        {
+            _selectedLayerId = null;
+            _isMultiSelection = false;
+            SetSelectedNode(null);
+            RebuildLayerList();
+            SetInspectorTab(InspectorTab.Settings);
+            RefreshInspectorPanel();
         }
 
         private void OnGraphChanged()
@@ -1514,6 +2059,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_activeInspectorTab == tab) return;
             _activeInspectorTab = tab;
             UpdateInspectorTabVisibility();
+            if (tab == InspectorTab.BuildLayers)
+                RebuildBuildLayersPanel();
             SaveWindowSettings();
         }
 
@@ -1529,6 +2076,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     ? DisplayStyle.Flex
                     : DisplayStyle.None;
 
+            if (_tabBuildLayersContent != null)
+                _tabBuildLayersContent.style.display = _activeInspectorTab == InspectorTab.BuildLayers
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
+
+            if (_nodeInspectorDivider != null)
+                _nodeInspectorDivider.style.display = _activeInspectorTab == InspectorTab.BuildLayers
+                    ? DisplayStyle.None
+                    : DisplayStyle.Flex;
+
             if (_tabSettingsButton != null)
                 _tabSettingsButton.style.unityFontStyleAndWeight = _activeInspectorTab == InspectorTab.Settings
                     ? FontStyle.Bold
@@ -1539,8 +2096,71 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     ? FontStyle.Bold
                     : FontStyle.Normal;
 
+            if (_tabBuildLayersButton != null)
+                _tabBuildLayersButton.style.unityFontStyleAndWeight = _activeInspectorTab == InspectorTab.BuildLayers
+                    ? FontStyle.Bold
+                    : FontStyle.Normal;
+
             _nodeInspectorGui?.MarkDirtyRepaint();
             _graphSettingsGui?.MarkDirtyRepaint();
+        }
+
+        /// <summary>
+        /// Будує панель build-шарів через рефлексію до
+        /// Kruty1918.Moyva.Generator.Editor.GraphBuildLayersPanel.Build(GraphAsset).
+        /// GraphSystem.Editor не посилається на Generator.Editor напряму.
+        /// </summary>
+        private void RebuildBuildLayersPanel()
+        {
+            if (_buildLayersHost == null)
+                return;
+
+            _buildLayersHost.Clear();
+
+            if (_graphAsset == null)
+            {
+                _buildLayersHost.Add(new HelpBox(
+                    "Відкрийте граф-асет, щоб налаштувати build-шари.",
+                    HelpBoxMessageType.Info));
+                return;
+            }
+
+            try
+            {
+                var type = System.Type.GetType(
+                    "Kruty1918.Moyva.Generator.Editor.GraphBuildLayersPanel, Kruty1918.Moyva.Generator.Editor");
+
+                if (type == null)
+                {
+                    foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        type = assembly.GetType("Kruty1918.Moyva.Generator.Editor.GraphBuildLayersPanel");
+                        if (type != null)
+                            break;
+                    }
+                }
+
+                var method = type?.GetMethod(
+                    "Build",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+
+                if (method == null)
+                {
+                    _buildLayersHost.Add(new HelpBox(
+                        "Модуль Generator.Editor недоступний (GraphBuildLayersPanel не знайдено).",
+                        HelpBoxMessageType.Warning));
+                    return;
+                }
+
+                if (method.Invoke(null, new object[] { _graphAsset }) is VisualElement panel)
+                    _buildLayersHost.Add(panel);
+            }
+            catch (System.Exception e)
+            {
+                _buildLayersHost.Add(new HelpBox(
+                    "Помилка побудови панелі build-шарів: " + e.Message,
+                    HelpBoxMessageType.Error));
+            }
         }
 
         private void DrawSerializedObjectWithoutScript(SerializedObject serializedObject)

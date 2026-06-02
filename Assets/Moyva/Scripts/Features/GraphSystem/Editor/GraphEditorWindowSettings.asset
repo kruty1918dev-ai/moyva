@@ -22,7 +22,7 @@ MonoBehaviour:
   autoRunOnChange: 1
   previewResolution: 1
   previewHeatmap: 0
-  inspectorTabIndex: 1
+  inspectorTabIndex: 2
   isInspectorVisible: 1
-  cameraPosition: {x: -14204, y: 386, z: 0}
-  cameraScale: {x: 0.7561437, y: 0.7561437, z: 1}
+  cameraPosition: {x: 74, y: 334, z: 0}
+  cameraScale: {x: 0.375937, y: 0.375937, z: 1}

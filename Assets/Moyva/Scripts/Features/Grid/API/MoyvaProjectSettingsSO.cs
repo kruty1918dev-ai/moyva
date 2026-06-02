@@ -13,8 +13,8 @@ namespace Kruty1918.Moyva.Grid.API
 
         [Header("Grid Mode")]
         public GridTopology DefaultGridTopology = GridTopology.Orthogonal;
-        public GridProjectionMode DefaultProjectionMode = GridProjectionMode.Orthographic2D;
-        public GridRenderMode DefaultRenderMode = GridRenderMode.Sprite2D;
+        public GridProjectionMode DefaultProjectionMode = GridProjectionMode.Orthographic3D;
+        public GridRenderMode DefaultRenderMode = GridRenderMode.Mesh3D;
         public GridNeighborhoodMode DefaultNeighborhood = GridNeighborhoodMode.Auto;
 
         [Header("Cell Size")]
@@ -109,19 +109,17 @@ namespace Kruty1918.Moyva.Grid.API
 
         public void Normalize()
         {
-            if (!UseAdvancedProjectSettings)
-                ApplyVisualModeDefaults(ResolveProjectVisualMode());
-
+            // Full3D-only project: always force Full3D defaults regardless of asset values.
+            ProjectVisualMode = MoyvaProjectVisualMode.Full3D;
+            UseAdvancedProjectSettings = false;
+            ApplyVisualModeDefaults(MoyvaProjectVisualMode.Full3D);
             NormalizeScalarValues();
         }
 
         public MoyvaProjectVisualMode ResolveProjectVisualMode()
         {
-            return ProjectVisualMode != MoyvaProjectVisualMode.Auto
-                ? ProjectVisualMode
-                : Uses3DProjectModeRaw()
-                    ? MoyvaProjectVisualMode.Full3D
-                    : MoyvaProjectVisualMode.Classic2D;
+            // Project is locked to Full3D; legacy Classic2D path is retired.
+            return MoyvaProjectVisualMode.Full3D;
         }
 
         public void UseFull3DDefaults()
@@ -134,9 +132,10 @@ namespace Kruty1918.Moyva.Grid.API
 
         public void UseClassic2DDefaults()
         {
-            ProjectVisualMode = MoyvaProjectVisualMode.Classic2D;
+            // Classic2D path is removed; fall back to Full3D defaults.
+            ProjectVisualMode = MoyvaProjectVisualMode.Full3D;
             UseAdvancedProjectSettings = false;
-            ApplyVisualModeDefaults(MoyvaProjectVisualMode.Classic2D);
+            ApplyVisualModeDefaults(MoyvaProjectVisualMode.Full3D);
             NormalizeScalarValues();
         }
 
@@ -165,8 +164,8 @@ namespace Kruty1918.Moyva.Grid.API
             }
 
             DefaultGridTopology = GridTopology.Orthogonal;
-            DefaultProjectionMode = GridProjectionMode.Orthographic2D;
-            DefaultRenderMode = GridRenderMode.Sprite2D;
+            DefaultProjectionMode = GridProjectionMode.Orthographic3D;
+            DefaultRenderMode = GridRenderMode.Mesh3D;
             DefaultNeighborhood = GridNeighborhoodMode.Auto;
             CameraPolicy = MoyvaCameraProjectPolicy.AutoFromGrid;
             CameraAnglePolicy = MoyvaCameraAnglePolicy.Auto;
@@ -220,7 +219,6 @@ namespace Kruty1918.Moyva.Grid.API
         {
             return CameraPolicy switch
             {
-                MoyvaCameraProjectPolicy.Force2D => false,
                 MoyvaCameraProjectPolicy.Force3DOrthographic => true,
                 MoyvaCameraProjectPolicy.Force3DPerspective => true,
                 _ => autoValue,
@@ -276,17 +274,12 @@ namespace Kruty1918.Moyva.Grid.API
             if (DefaultNeighborhood != GridNeighborhoodMode.Auto)
                 return DefaultNeighborhood;
 
-            if (DefaultGridTopology == GridTopology.HexAxial
-                || DefaultProjectionMode == GridProjectionMode.HexPointy2D
-                || DefaultProjectionMode == GridProjectionMode.HexFlat2D)
-            {
+            if (DefaultGridTopology == GridTopology.HexAxial)
                 return GridNeighborhoodMode.HexAxial6;
-            }
 
-            return DefaultProjectionMode == GridProjectionMode.Isometric2D
-                || DefaultProjectionMode == GridProjectionMode.Isometric3DPreview
-                    ? GridNeighborhoodMode.VonNeumann4
-                    : GridNeighborhoodMode.Moore8;
+            return DefaultProjectionMode == GridProjectionMode.Isometric3DPreview
+                ? GridNeighborhoodMode.VonNeumann4
+                : GridNeighborhoodMode.Moore8;
         }
     }
 }

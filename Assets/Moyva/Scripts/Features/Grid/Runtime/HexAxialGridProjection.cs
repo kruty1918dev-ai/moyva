@@ -20,12 +20,11 @@ namespace Kruty1918.Moyva.Grid.Runtime
         private readonly float _heightScale;
         private readonly HexOrientation _orientation;
 
-        public GridProjectionMode ProjectionMode => _orientation == HexOrientation.PointyTop
-            ? GridProjectionMode.HexPointy2D
-            : GridProjectionMode.HexFlat2D;
+        // Expose a 3D-capable projection mode for hex grids.
+        public GridProjectionMode ProjectionMode => GridProjectionMode.Isometric3DPreview;
 
         public GridTopology Topology => GridTopology.HexAxial;
-        public GridWorldPlane WorldPlane => GridWorldPlane.XY;
+        public GridWorldPlane WorldPlane => GridWorldPlane.XZ;
 
         public HexAxialGridProjection()
             : this(null)
@@ -61,7 +60,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
                 y = _radius * Mathf.Sqrt(3f) * (r + q * 0.5f);
             }
 
-            return new Vector3(x, y, elevation * _heightScale + layerOffset);
+            return new Vector3(x, elevation * _heightScale + layerOffset, y);
         }
 
         public Vector2Int WorldToGrid(Vector3 worldPosition)
@@ -71,13 +70,13 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
             if (_orientation == HexOrientation.PointyTop)
             {
-                q = (Mathf.Sqrt(3f) / 3f * worldPosition.x - 1f / 3f * worldPosition.y) / _radius;
-                r = (2f / 3f * worldPosition.y) / _radius;
+                q = (Mathf.Sqrt(3f) / 3f * worldPosition.x - 1f / 3f * worldPosition.z) / _radius;
+                r = (2f / 3f * worldPosition.z) / _radius;
             }
             else
             {
                 q = (2f / 3f * worldPosition.x) / _radius;
-                r = (-1f / 3f * worldPosition.x + Mathf.Sqrt(3f) / 3f * worldPosition.y) / _radius;
+                r = (-1f / 3f * worldPosition.x + Mathf.Sqrt(3f) / 3f * worldPosition.z) / _radius;
             }
 
             return RoundAxial(q, r);
@@ -99,7 +98,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
             bounds.Encapsulate(GridToWorld(new Vector2Int(Mathf.Max(0, width - 1), 0)));
             bounds.Encapsulate(GridToWorld(new Vector2Int(0, Mathf.Max(0, height - 1))));
             bounds.Encapsulate(GridToWorld(new Vector2Int(Mathf.Max(0, width - 1), Mathf.Max(0, height - 1))));
-            bounds.Expand(new Vector3(_radius * 2f, _radius * 2f, 1f));
+            bounds.Expand(new Vector3(_radius * 2f, Mathf.Max(1f, _heightScale), _radius * 2f));
             return bounds;
         }
 

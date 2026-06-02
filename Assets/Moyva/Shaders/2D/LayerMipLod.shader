@@ -6,10 +6,7 @@ Shader "Moyva/2D/LayerMipLod"
         _Color ("Tint", Color) = (1,1,1,1)
         _MipBias ("Base Mip Bias", Range(0, 4)) = 0
         _ZoomLodStrength ("Zoom LOD Strength", Range(0, 2)) = 1
-<<<<<<< HEAD
         _GlobalMipBiasWeight ("Global Zoom Mip Bias Weight", Range(0, 1)) = 1
-=======
->>>>>>> origin/main
         _AlphaStabilization ("Alpha Stabilization", Range(0, 1)) = 1
         _AlphaClipThreshold ("Alpha Clip Threshold", Range(0, 1)) = 0.2
     }

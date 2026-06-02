@@ -1,0 +1,48 @@
+{
+    "preset": {
+        "version": 2,
+        "nodes": [
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.Twc.TwcModifierNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "2f2bf7e2-5d26-4d45-a338-f7a794578c0e",
+                "position": {
+                    "x": -360.0,
+                    "y": 120.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"TwcModifierNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.Twc.TwcModifierNode\",\"_nodeId\":\"2f2bf7e2-5d26-4d45-a338-f7a794578c0e\",\"_editorPosition\":{\"x\":-360.0,\"y\":120.0},\"_layerId\":\"\",\"_modifierTypeName\":\"GiantGrey.TileWorldCreator.Checkerboard\",\"_modifier\":{\"fileID\":11400000,\"guid\":\"1a9b4474527f4c8f8b9530f74d4f90b4\",\"type\":2}}}"
+            },
+            {
+                "nodeTypeAssemblyQualifiedName": "Kruty1918.Moyva.Generator.Runtime.Nodes.Twc.TwcModifierNode, Kruty1918.Moyva.Generator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "originalNodeId": "0ab018e3-a19a-4ff4-986d-c80d315afef9",
+                "position": {
+                    "x": 10.0,
+                    "y": 120.0
+                },
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"TwcModifierNode\",\"m_EditorClassIdentifier\":\"Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.Nodes.Twc.TwcModifierNode\",\"_nodeId\":\"0ab018e3-a19a-4ff4-986d-c80d315afef9\",\"_editorPosition\":{\"x\":10.0,\"y\":120.0},\"_layerId\":\"\",\"_modifierTypeName\":\"GiantGrey.TileWorldCreator.Smooth\",\"_modifier\":{\"fileID\":11400000,\"guid\":\"f56a9dfb88ff4329a2cbef553c680cff\",\"type\":2}}}"
+            }
+        ],
+        "connections": [
+            {
+                "sourceNodeId": "2f2bf7e2-5d26-4d45-a338-f7a794578c0e",
+                "sourcePortIndex": 0,
+                "targetNodeId": "0ab018e3-a19a-4ff4-986d-c80d315afef9",
+                "targetPortIndex": 0,
+                "sourceElementIndex": -1
+            }
+        ],
+        "scriptableObjects": [
+            {
+                "originalGuid": "1a9b4474527f4c8f8b9530f74d4f90b4",
+                "typeAssemblyQualifiedName": "GiantGrey.TileWorldCreator.Checkerboard, GiantGrey.TileWorldCreator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "TWC_Checkerboard",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"TWC_Checkerboard\",\"horizontal\":true,\"vertical\":true,\"spacing\":2}}"
+            },
+            {
+                "originalGuid": "f56a9dfb88ff4329a2cbef553c680cff",
+                "typeAssemblyQualifiedName": "GiantGrey.TileWorldCreator.Smooth, GiantGrey.TileWorldCreator, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null",
+                "assetName": "TWC_Smooth",
+                "jsonData": "{\"MonoBehaviour\":{\"m_Enabled\":true,\"m_EditorHideFlags\":0,\"m_Name\":\"TWC_Smooth\",\"smoothCount\":1}}"
+            }
+        ]
+    }
+}

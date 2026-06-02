@@ -13,8 +13,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public int Width;
         public int Height;
         public GridTopology GridTopology = GridTopology.Orthogonal;
-        public GridProjectionMode ProjectionMode = GridProjectionMode.Orthographic2D;
-        public GridRenderMode RenderMode = GridRenderMode.Sprite2D;
+        public GridProjectionMode ProjectionMode = GridProjectionMode.Orthographic3D;
+        public GridRenderMode RenderMode = GridRenderMode.Mesh3D;
         public GridNeighborhoodMode NeighborhoodMode = GridNeighborhoodMode.Moore8;
         public string[,] BiomeMap;
         public string[,] ObjectMap;

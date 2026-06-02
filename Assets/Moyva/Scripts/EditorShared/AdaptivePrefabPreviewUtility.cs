@@ -84,11 +84,9 @@ namespace Kruty1918.Moyva.Editor.Shared
 
         public static bool UsesProjectedGrid(GridProjectionMode projectionMode)
         {
-            return projectionMode == GridProjectionMode.Isometric2D
-                || projectionMode == GridProjectionMode.Isometric3DPreview
-                || projectionMode == GridProjectionMode.HexPointy2D
-                || projectionMode == GridProjectionMode.HexFlat2D
-                || projectionMode == GridProjectionMode.Orthographic3D;
+            return projectionMode == GridProjectionMode.Isometric3DPreview
+                || projectionMode == GridProjectionMode.Orthographic3D
+                || ProjectSettings.DefaultGridTopology == GridTopology.HexAxial;
         }
 
         public static bool Uses3DPreview(MoyvaProjectSettingsSO settings = null)
@@ -320,10 +318,9 @@ namespace Kruty1918.Moyva.Editor.Shared
 
             Handles.BeginGUI();
             Handles.color = fill;
-            Vector3[] points = settings.DefaultProjectionMode == GridProjectionMode.HexPointy2D
-                || settings.DefaultProjectionMode == GridProjectionMode.HexFlat2D
-                    ? BuildHex(rect, settings.DefaultProjectionMode == GridProjectionMode.HexPointy2D)
-                    : BuildDiamond(rect, settings.DefaultProjectionMode == GridProjectionMode.Orthographic3D);
+            Vector3[] points = settings.DefaultGridTopology == GridTopology.HexAxial
+                ? BuildHex(rect, settings.HexOrientation == HexOrientation.PointyTop)
+                : BuildDiamond(rect, settings.DefaultProjectionMode == GridProjectionMode.Orthographic3D);
             Handles.DrawAAConvexPolygon(points);
             Handles.color = line;
             Handles.DrawAAPolyLine(1.5f, Close(points));

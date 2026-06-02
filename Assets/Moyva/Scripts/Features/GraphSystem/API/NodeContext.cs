@@ -13,8 +13,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public IProgress<float> Progress { get; }
         public Vector2Int MapSize { get; set; }
         public GridTopology GridTopology { get; private set; } = GridTopology.Orthogonal;
-        public GridProjectionMode ProjectionMode { get; private set; } = GridProjectionMode.Orthographic2D;
-        public GridRenderMode RenderMode { get; private set; } = GridRenderMode.Sprite2D;
+        public GridProjectionMode ProjectionMode { get; private set; } = GridProjectionMode.Orthographic3D;
+        public GridRenderMode RenderMode { get; private set; } = GridRenderMode.Mesh3D;
         public GridNeighborhoodMode NeighborhoodMode { get; private set; } = GridNeighborhoodMode.Moore8;
 
         private readonly Dictionary<Type, object> _services = new();
@@ -60,8 +60,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 }
 
                 GridTopology = GridTopology.Orthogonal;
-                ProjectionMode = GridProjectionMode.Orthographic2D;
-                RenderMode = GridRenderMode.Sprite2D;
+                ProjectionMode = GridProjectionMode.Orthographic3D;
+                RenderMode = GridRenderMode.Mesh3D;
                 NeighborhoodMode = ResolveNeighborhoodMode(GridTopology, ProjectionMode, GridNeighborhoodMode.Auto);
                 return;
             }
@@ -80,17 +80,12 @@ namespace Kruty1918.Moyva.GraphSystem.API
             if (neighborhoodMode != GridNeighborhoodMode.Auto)
                 return neighborhoodMode;
 
-            if (topology == GridTopology.HexAxial
-                || projectionMode == GridProjectionMode.HexPointy2D
-                || projectionMode == GridProjectionMode.HexFlat2D)
-            {
+            if (topology == GridTopology.HexAxial)
                 return GridNeighborhoodMode.HexAxial6;
-            }
 
-            return projectionMode == GridProjectionMode.Isometric2D
-                || projectionMode == GridProjectionMode.Isometric3DPreview
-                    ? GridNeighborhoodMode.VonNeumann4
-                    : GridNeighborhoodMode.Moore8;
+            return projectionMode == GridProjectionMode.Isometric3DPreview
+                ? GridNeighborhoodMode.VonNeumann4
+                : GridNeighborhoodMode.Moore8;
         }
 
         public T GetService<T>()

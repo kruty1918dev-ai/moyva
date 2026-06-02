@@ -366,6 +366,10 @@ namespace Kruty1918.Moyva.Tests.MovementPlayMode
             {
                 return _weights.TryGetValue(tileId, out var weight) ? weight : 1f;
             }
+
+            public bool IsBuildBlocked(string tileId) => false;
+
+            public float GetSurfaceOffset(string tileId) => 0f;
         }
 
         private sealed class TestUnitClassConfig : IUnitClassConfig

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEditor;
 using UnityEngine;
@@ -25,6 +26,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             serializedObject.Update();
 
+            var twcNode = target as TwcModifierNode;
+
             if (target is NodeBase node)
             {
                 var info = System.Attribute.GetCustomAttribute(node.GetType(), typeof(NodeInfoAttribute)) as NodeInfoAttribute;
@@ -43,6 +46,15 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (property.name is "_nodeId" or "_editorPosition")
                     continue;
 
+                if (twcNode != null && property.name is "_modifierTypeName")
+                    continue;
+
+                if (twcNode != null && property.name is "_modifier")
+                {
+                    DrawTwcModifierInspector(twcNode);
+                    continue;
+                }
+
                 EditorGUILayout.PropertyField(property, true);
 
                 if (property.propertyType == SerializedPropertyType.ObjectReference
@@ -55,6 +67,43 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             serializedObject.ApplyModifiedProperties();
         }
 
+        private void DrawTwcModifierInspector(TwcModifierNode node)
+        {
+            var modifier = node?.ModifierAsset;
+
+            EditorGUILayout.LabelField("TileWorldCreator", EditorStyles.boldLabel);
+
+            if (modifier == null)
+            {
+                EditorGUILayout.HelpBox(
+                    $"TWC-модифікатор '{node.ModifierTypeName}' не ініціалізовано.",
+                    MessageType.Warning);
+
+                if (GUILayout.Button("Відновити модифікатор"))
+                {
+                    Undo.RecordObject(node, "Restore TWC modifier");
+                    if (node.TryRestoreModifierInEditor())
+                    {
+                        EditorUtility.SetDirty(node);
+                        GUI.changed = true;
+                        Repaint();
+                    }
+                    else
+                    {
+                        EditorGUILayout.HelpBox("Не вдалося відновити модифікатор за TypeName.", MessageType.Error);
+                    }
+                }
+
+                return;
+            }
+
+            EditorGUILayout.LabelField(
+                node.IsGenerator ? "Тип: Генератор" : "Тип: Модифікатор",
+                EditorStyles.miniLabel);
+
+            DrawNestedEditor($"twc:{node.GetInstanceID()}", modifier);
+        }
+
         private void DrawNestedEditor(string key, string displayName, ScriptableObject so)
         {
             _foldouts.TryGetValue(key, out var expanded);
@@ -63,6 +112,31 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _foldouts[key] = expanded;
 
             if (!expanded) return;
+
+            if (!_nestedEditors.TryGetValue(key, out var editor)
+                || editor == null
+                || editor.target != so)
+            {
+                if (editor != null)
+                    DestroyImmediate(editor);
+                editor = CreateEditor(so);
+                _nestedEditors[key] = editor;
+            }
+
+            EditorGUI.indentLevel++;
+            editor.OnInspectorGUI();
+            EditorGUI.indentLevel--;
+        }
+
+        private void DrawNestedEditor(string key, ScriptableObject so)
+        {
+            _foldouts.TryGetValue(key, out var expanded);
+
+            expanded = EditorGUILayout.Foldout(expanded, "    \u25B6 Parameters", true);
+            _foldouts[key] = expanded;
+
+            if (!expanded)
+                return;
 
             if (!_nestedEditors.TryGetValue(key, out var editor)
                 || editor == null

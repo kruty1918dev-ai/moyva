@@ -125,6 +125,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ApplyPositions(objectLayerPositions);
                 ApplyPositions(buildingLayerPositions);
 
+                var occlusion = TileWorldCreatorLayerOcclusionOptimizer.CullOccludedTileCells(configuration);
+                if (occlusion.RemovedCellCount > 0)
+                    Debug.Log($"{LogTag} Removed {occlusion.RemovedCellCount} occluded TWC tile cells across {occlusion.ProcessedLayerCount} build layers before spawning.");
+
                 Debug.Log($"{LogTag} Calling ExecuteBuildLayers(FromScratch). Config size={configuration.width}x{configuration.height}, cellSize={configuration.cellSize}, mergeTiles={configuration.mergeTiles}, terrainLayers={terrainLayerPositions.Count}. Runtime cells were already pushed with AddCellsToLayerByGuid, so GenerateCompleteMap is intentionally skipped because it re-executes and resets blueprint layers.");
 
                 _manager.ExecuteBuildLayers(ExecutionMode.FromScratch);

@@ -14,6 +14,10 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
         [SerializeField] private GraphSharedSettings _sharedSettings = new();
 
+        [Header("Layers")]
+        [Tooltip("Шари генератора. Кожен шар має власний підграф і компілюється в blueprint-шар TileWorldCreator.")]
+        [SerializeField] private List<GeneratorLayerDefinition> _layers = new();
+
         [Header("Tile Registry")]
         [Tooltip("Реєстр тайлів цього графа.")]
         [SerializeField] private TileRegistrySO _tileRegistry;
@@ -21,6 +25,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public IReadOnlyList<NodeBase> Nodes => _nodes;
         public IReadOnlyList<Connection> Connections => _connections;
         public int Version => _version;
+        public IReadOnlyList<GeneratorLayerDefinition> Layers => _layers;
 
         /// <summary>
         /// Спільні налаштування графа (розмір мапи тощо).
@@ -35,6 +40,58 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 if (_nodes[i] != null && _nodes[i].NodeId == nodeId)
                     return _nodes[i];
             return null;
+        }
+
+        public GeneratorLayerDefinition GetLayerById(string layerId)
+        {
+            if (string.IsNullOrEmpty(layerId))
+                return null;
+            for (int i = 0; i < _layers.Count; i++)
+                if (_layers[i] != null && _layers[i].Id == layerId)
+                    return _layers[i];
+            return null;
+        }
+
+        /// <summary>
+        /// Повертає вузли, що належать вказаному шару. Якщо <paramref name="layerId"/>
+        /// порожній — повертає вузли без призначеного шару (глобальні).
+        /// </summary>
+        public List<NodeBase> GetNodesForLayer(string layerId)
+        {
+            var result = new List<NodeBase>();
+            for (int i = 0; i < _nodes.Count; i++)
+            {
+                var node = _nodes[i];
+                if (node == null) continue;
+
+                if (string.IsNullOrEmpty(layerId))
+                {
+                    if (string.IsNullOrEmpty(node.LayerId))
+                        result.Add(node);
+                }
+                else if (node.LayerId == layerId)
+                {
+                    result.Add(node);
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Гарантує наявність хоча б одного шару. Повертає id першого шару.
+        /// </summary>
+        public string EnsureDefaultLayer()
+        {
+            if (_layers.Count == 0)
+            {
+                var layer = new GeneratorLayerDefinition("Base");
+                _layers.Add(layer);
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(this);
+#endif
+                return layer.Id;
+            }
+            return _layers[0].Id;
         }
 
         public Connection AddConnection(string sourceNodeId, int sourcePort,
@@ -65,6 +122,35 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 c.SourceNodeId == nodeId || c.TargetNodeId == nodeId);
 
 #if UNITY_EDITOR
+        public GeneratorLayerDefinition AddLayer(string name = "Layer")
+        {
+            var layer = new GeneratorLayerDefinition(name);
+            _layers.Add(layer);
+            UnityEditor.EditorUtility.SetDirty(this);
+            return layer;
+        }
+
+        /// <summary>
+        /// Видаляє шар та всі вузли його підграфа. Не дозволяє видалити останній шар.
+        /// </summary>
+        public bool RemoveLayer(string layerId)
+        {
+            if (string.IsNullOrEmpty(layerId) || _layers.Count <= 1)
+                return false;
+
+            var layer = GetLayerById(layerId);
+            if (layer == null)
+                return false;
+
+            var layerNodes = GetNodesForLayer(layerId);
+            for (int i = 0; i < layerNodes.Count; i++)
+                RemoveNode(layerNodes[i]);
+
+            _layers.Remove(layer);
+            UnityEditor.EditorUtility.SetDirty(this);
+            return true;
+        }
+
         public NodeBase AddNode(Type nodeType, bool allowStaticGraphNode = false)
         {
             if (!allowStaticGraphNode && nodeType != null && Attribute.IsDefined(nodeType, typeof(StaticGraphNodeAttribute)))

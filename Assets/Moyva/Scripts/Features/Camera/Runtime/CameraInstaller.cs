@@ -107,7 +107,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             GridRenderMode renderMode = _projectSettings != null
                 ? _projectSettings.DefaultRenderMode
-                : GridRenderMode.Sprite2D;
+                : GridRenderMode.Mesh3D;
             return renderMode == GridRenderMode.Mesh3D || renderMode == GridRenderMode.Mesh3DPreview;
         }
 
@@ -157,7 +157,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             return _projectSettings != null
                 ? _projectSettings.DefaultProjectionMode
-                : GridProjectionMode.Orthographic2D;
+                : GridProjectionMode.Orthographic3D;
         }
 
         private Vector3 ResolveWorldFocusPoint()

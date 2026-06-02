@@ -348,13 +348,13 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                     blockedBuildingLevels,
                     "Будівництво: заборонені діапазони рівнів",
                     hillLevelCount,
-                    "На цих рівнях HillGenerator розміщення будівель буде заборонено.");
+                    "На цих рівнях генератора розміщення будівель буде заборонено.");
 
                 DrawLevelRangesEditor(
                     blockedUnitLevels,
                     "Юніти: заборонені діапазони рівнів",
                     hillLevelCount,
-                    "На цих рівнях HillGenerator розміщення або рух юнітів буде заборонено.");
+                    "На цих рівнях генератора розміщення або рух юнітів буде заборонено.");
             }
 
             EditorGUILayout.Space(6f);
@@ -396,7 +396,7 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                 {
                     TryCollectTileIdsFromOverride(overrideTileRegistry, tileIds);
                     status = tileIds.Count > 0
-                        ? $"GraphAsset не задано — HillGenerator levels недоступні. Tile ID з реєстру: {tileIds.Count}."
+                        ? $"GraphAsset не задано — рівні генератора недоступні. Tile ID з реєстру: {tileIds.Count}."
                         : "GraphAsset не задано. Реєстр тайлів порожній або не містить Definitions.";
                 }
                 else
@@ -406,15 +406,10 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
                 return false;
             }
 
-            if (!TryReadGraphNodes(graphAsset, out var nodes))
+            hillLevelCount = ResolveGraphLevelCount(graphAsset);
+            if (hillLevelCount <= 0)
             {
-                status = "Об'єкт не схожий на GraphAsset (не знайдено список нод).";
-                return false;
-            }
-
-            if (!TryReadHillLevels(nodes, out hillLevelCount))
-            {
-                status = "У графі не знайдено HillGeneratorNode з доступною кількістю рівнів.";
+                status = "У графі немає доступних шарів генератора.";
                 return false;
             }
 
@@ -424,65 +419,24 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
 
             if (tileIds.Count == 0)
             {
-                status = "HillGenerator знайдено, але TileRegistry не задано ні в GraphAsset, ні напряму.";
+                status = $"Шарів генератора: {hillLevelCount}. TileRegistry не задано ні в GraphAsset, ні напряму.";
                 return true;
             }
 
-            status = $"HillGenerator levels: {hillLevelCount}. Доступно Tile ID: {tileIds.Count}.";
+            status = $"Шарів генератора: {hillLevelCount}. Доступно Tile ID: {tileIds.Count}.";
             return true;
         }
 
-        private static bool TryReadGraphNodes(GraphAsset graphAsset, out List<UnityEngine.Object> nodes)
+        private static int ResolveGraphLevelCount(GraphAsset graphAsset)
         {
-            nodes = new List<UnityEngine.Object>();
-            var serialized = new SerializedObject(graphAsset);
-            var nodesProperty = serialized.FindProperty("_nodes");
-            if (nodesProperty == null || !nodesProperty.isArray)
-                return false;
+            if (graphAsset == null)
+                return 0;
 
-            for (int i = 0; i < nodesProperty.arraySize; i++)
-            {
-                var element = nodesProperty.GetArrayElementAtIndex(i);
-                var node = element?.objectReferenceValue;
-                if (node != null)
-                    nodes.Add(node);
-            }
+            var layers = graphAsset.Layers;
+            if (layers == null)
+                return 0;
 
-            return true;
-        }
-
-        private static bool TryReadHillLevels(IReadOnlyList<UnityEngine.Object> nodes, out int levelCount)
-        {
-            levelCount = 0;
-            if (nodes == null)
-                return false;
-
-            for (int i = 0; i < nodes.Count; i++)
-            {
-                var node = nodes[i];
-                if (node == null)
-                    continue;
-
-                var type = node.GetType();
-                if (type.Name != "HillGeneratorNode")
-                    continue;
-
-                var levelProperty = type.GetProperty("LevelCount", BindingFlags.Public | BindingFlags.Instance);
-                if (levelProperty != null && levelProperty.PropertyType == typeof(int))
-                {
-                    levelCount = Mathf.Max(0, (int)levelProperty.GetValue(node, null));
-                    return levelCount > 0;
-                }
-
-                var levelField = type.GetField("_levels", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (levelField != null && levelField.FieldType == typeof(int))
-                {
-                    levelCount = Mathf.Max(0, (int)levelField.GetValue(node));
-                    return levelCount > 0;
-                }
-            }
-
-            return false;
+            return layers.Count;
         }
 
         private static void TryCollectTileIdsFromGraphSettings(
@@ -552,7 +506,7 @@ namespace Kruty1918.Moyva.WorldCreation.Editor
         {
             EditorGUILayout.Space(4f);
             EditorGUILayout.LabelField(label, EditorStyles.boldLabel);
-            EditorGUILayout.LabelField($"Рівні у HillGenerator: 1..{maxLevel}", _mutedStyle);
+            EditorGUILayout.LabelField($"Рівні у генераторі: 1..{maxLevel}", _mutedStyle);
             EditorGUILayout.LabelField(description, _mutedStyle);
 
             int removeIndex = -1;

@@ -1,4 +1,5 @@
 ﻿<Solution>
+  <Project Path="Kruty1918.Moyva.GraphSystem.csproj" />
   <Project Path="Kruty1918.Moyva.WorldCreation.API.csproj" />
   <Project Path="Zenject.csproj" />
   <Project Path="Zenject-IntegrationTests-Editor.csproj" />
@@ -15,7 +16,6 @@
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.UI.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
-  <Project Path="Kruty1918.Moyva.GraphSystem.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Faction.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.csproj" />
@@ -58,10 +58,6 @@
   <Project Path="Kruty1918.Moyva.Faction.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
   <Project Path="Kruty1918.Moyva.Bootstrap.csproj" />
-<<<<<<< HEAD
-=======
-  <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
->>>>>>> origin/main
   <Project Path="Kruty1918.Moyva.HomeMenu.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.FogOfWar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />

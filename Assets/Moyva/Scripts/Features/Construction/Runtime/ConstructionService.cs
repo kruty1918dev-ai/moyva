@@ -52,6 +52,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IGridService _gridService;
         private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
         private readonly WorldCreationDefaultsSO _worldDefaults;
+        private readonly ITileSettingsService _tileSettings; // може бути null
         private bool _initialized;
         private bool _disposed;
 
@@ -85,7 +86,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IEconomyInfoMediator economyInfoMediator,
             [InjectOptional] IGridService gridService,
             [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery,
-            [InjectOptional] WorldCreationDefaultsSO worldDefaults = null)
+            [InjectOptional] WorldCreationDefaultsSO worldDefaults = null,
+            [InjectOptional] ITileSettingsService tileSettings = null)
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
@@ -98,6 +100,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _gridService = gridService;
             _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
             _worldDefaults = worldDefaults;
+            _tileSettings = tileSettings;
         }
 
         public void Initialize()
@@ -1292,6 +1295,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (IsBlockedBuildingTile(tileTypeId))
             {
                 reason = $"blocked tile '{tileTypeId}'";
+                return true;
+            }
+
+            // Нова layer-based ідентичність: блокування за профілем шару terrain.
+            if (_tileSettings != null && _tileSettings.IsBuildBlocked(tileTypeId))
+            {
+                reason = $"build-blocked layer '{tileTypeId}'";
                 return true;
             }
 

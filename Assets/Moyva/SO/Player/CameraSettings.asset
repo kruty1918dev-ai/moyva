@@ -43,16 +43,6 @@ MonoBehaviour:
   zoomOutExtraTiles: {x: 1, y: 1}
   zoomOutBoundsFactor: 2
   defaultCameraZ: -10
-<<<<<<< HEAD
-  adaptToProject3DMode: 1
-  useOrthographicCameraIn3D: 1
-  default3DCameraDistance: 35
-  default3DOrthographicSize: 20
-  default3DFieldOfView: 45
-  orthographic3DEuler: {x: 90, y: 0, z: 0}
-  isometric3DEuler: {x: 60, y: 45, z: 0}
-=======
->>>>>>> origin/main
   mapRenderMaskEnabled: 1
   mapMaskRefreshSeconds: 0.5
   mapMaskLayers:

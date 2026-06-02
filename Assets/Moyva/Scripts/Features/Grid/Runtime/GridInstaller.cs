@@ -21,6 +21,12 @@ namespace Kruty1918.Moyva.Grid.Runtime
         /// </summary>
         [SerializeField] private TileRegistrySO tileRegistry;
 
+        /// <summary>
+        /// Профілі шарів terrain (нова layer-based ідентичність). Якщо задано,
+        /// сервіси читають вагу руху/блокування будівництва саме звідси.
+        /// </summary>
+        [SerializeField] private TerrainLayerProfileSO terrainLayerProfiles;
+
         [SerializeField] private MoyvaProjectSettingsSO projectSettings;
 
         /// <summary>
@@ -51,6 +57,10 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
             // 3) Публікуємо TileRegistry як singleton instance для всіх споживачів.
             Container.BindInstance(tileRegistry).AsSingle();
+
+            // 3b) Профілі шарів terrain (опційно) — нове джерело параметрів за id шару.
+            if (terrainLayerProfiles != null)
+                Container.BindInstance(terrainLayerProfiles).AsSingle();
 
             var resolvedProjectSettings = ResolveProjectSettings();
             if (!Container.HasBinding<MoyvaProjectSettingsSO>())

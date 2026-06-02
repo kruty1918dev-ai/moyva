@@ -32,10 +32,9 @@ namespace Kruty1918.Moyva.Grid.Runtime
             _cellWidth = settings != null ? settings.OrthogonalCellWidth : 1f;
             _cellDepth = settings != null ? settings.OrthogonalCellDepth : 1f;
             _heightScale = settings != null ? settings.HeightScale : 0.25f;
-            _projectionMode = settings != null && settings.DefaultProjectionMode == GridProjectionMode.Isometric3DPreview
-                ? GridProjectionMode.Isometric3DPreview
-                : GridProjectionMode.Isometric2D;
-            _uses3DWorldPlane = _projectionMode == GridProjectionMode.Isometric3DPreview;
+            // In Full3D-only project we always use the 3D isometric projection.
+            _projectionMode = GridProjectionMode.Isometric3DPreview;
+            _uses3DWorldPlane = true;
         }
 
         public Vector3 GridToWorld(Vector2Int gridPosition)

@@ -47,16 +47,26 @@ namespace GiantGrey.TileWorldCreator.Utilities
         public static Texture2D LoadImage(string _name)
 		{
 			#if UNITY_EDITOR
+			var _iconPath = GetRelativeResPath() + "/" + _name;
+
 			if (_icons.ContainsKey(_name))
 			{
 				if (_icons[_name] == null)
 				{
-					var _icon = (Texture2D)(AssetDatabase.LoadAssetAtPath<Texture2D>(GetRelativeResPath() + "/" + _name));
+					var _icon = (Texture2D)(AssetDatabase.LoadAssetAtPath<Texture2D>(_iconPath));
 					if (_icon == null)
 					{
-						byte[] textureData = System.IO.File.ReadAllBytes(GetRelativeResPath() + "/" + _name);
-						_icon = new Texture2D(2, 2);
-						_icon.LoadImage(textureData);
+						if (System.IO.File.Exists(_iconPath))
+						{
+							byte[] textureData = System.IO.File.ReadAllBytes(_iconPath);
+							_icon = new Texture2D(2, 2);
+							_icon.LoadImage(textureData);
+						}
+						else
+						{
+							Debug.LogWarning($"TileWorldCreator icon not found: {_iconPath}");
+							_icon = Texture2D.grayTexture;
+						}
 					
 					}
 					
@@ -67,12 +77,20 @@ namespace GiantGrey.TileWorldCreator.Utilities
 			}
 			else
 			{
-				var _icon = (Texture2D)(AssetDatabase.LoadAssetAtPath<Texture2D>(GetRelativeResPath() + "/" + _name));
+				var _icon = (Texture2D)(AssetDatabase.LoadAssetAtPath<Texture2D>(_iconPath));
 				if (_icon == null)
 				{
-					byte[] textureData = System.IO.File.ReadAllBytes(GetRelativeResPath() + "/" + _name);
-					_icon = new Texture2D(2, 2);
-					_icon.LoadImage(textureData);
+					if (System.IO.File.Exists(_iconPath))
+					{
+						byte[] textureData = System.IO.File.ReadAllBytes(_iconPath);
+						_icon = new Texture2D(2, 2);
+						_icon.LoadImage(textureData);
+					}
+					else
+					{
+						Debug.LogWarning($"TileWorldCreator icon not found: {_iconPath}");
+						_icon = Texture2D.grayTexture;
+					}
 				
 				}
 				_icons.Add(_name, _icon);

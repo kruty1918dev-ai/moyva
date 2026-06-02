@@ -21,7 +21,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 		[SerializeField] private MapObjectRegistrySO _mapObjectRegistry;
 
 		[Header("Graph-Based Generator")]
-		[SerializeField] private bool _useGraphGenerator;
 		[SerializeField] private GraphAsset _graphAsset;
 
 		[Header("Water Runtime Setup")]
@@ -33,36 +32,38 @@ namespace Kruty1918.Moyva.Generator.Runtime
 		[SerializeField] private TileWorldCreatorIdMappingSO _tileWorldCreatorIdMapping;
 		[SerializeField] private TileWorldCreatorBuildOptions _tileWorldCreatorBuildOptions = new();
 
+		[Header("TileWorldCreator Graph Pipeline (NEW)")]
+		[Tooltip("Граф компілюється у TWC Configuration, а генерацію виконує TileWorldCreator. " +
+			"Має пріоритет над класичним граф-генератором. Потребує GraphAsset + TileWorldCreatorManager.")]
+		[SerializeField] private bool _useTwcGraphPipeline;
+
 		public override void InstallBindings()
 		{
+			var graphAsset = ResolveGraphAsset();
+
+			Container.BindInstance(_mapObjectRegistry).AsSingle();
 			Container.BindInstance(_wfcDataSettings).AsSingle();
 			Container.BindInstance(_riverConfig).AsSingle();
 			Container.BindInstance(_noiseSettings).AsSingle();
 			Container.BindInstance(_biomesSettings).AsSingle();
 			Container.BindInstance(_generationRules).AsSingle();
 			Container.BindInstance(_heightMapSettings).AsSingle();
-			Container.BindInstance(_mapObjectRegistry).AsSingle();
-			Container.Bind<IVirtualHeightMapGenerator>().To<VirtualHeightMapGenerator>().AsSingle();
 
-			Container.Bind<IWFCService>().To<WFCService>().AsSingle();
-			Container.Bind<IRiverPathfinder>().To<RiverPathfinder>().AsSingle();
-			Container.Bind<INoiseProvider>().To<NoiseMapGeneratorService>().AsSingle();
-			Container.Bind<IBiomeResolver>().To<BiomeResolver>().AsSingle();
-
-			if (_useGraphGenerator && _graphAsset != null)
+			if (_useTwcGraphPipeline && graphAsset != null && _tileWorldCreatorManager != null)
 			{
-				Container.BindInstance(_graphAsset).AsSingle();
-				Container.Bind<IGraphRunner>().To<GraphRunner>().AsSingle();
-				Container.BindInterfacesAndSelfTo<GraphBasedMapDataGenerator>().AsSingle();
+				// Новий конвеєр: граф -> TWC Configuration -> TileWorldCreator будує мапу.
+				Container.BindInstance(graphAsset).AsSingle();
+				Container.BindInstance(_tileWorldCreatorManager).IfNotBound();
+				if (_tileWorldCreatorManager.configuration != null)
+					Container.BindInstance(_tileWorldCreatorManager.configuration).IfNotBound();
+				Container.BindInterfacesAndSelfTo<GraphTwcMapDataGenerator>().AsSingle();
 			}
 			else
 			{
-				Container.Bind<IMapDataGenerator>()
-					.To<MapDataGenerator>().AsSingle();
+				Debug.LogWarning("[GeneratorInstaller] TWC graph pipeline is disabled or incomplete. Binding disabled fallback map generator.");
+				Container.Bind<IMapDataGenerator>().To<DisabledMapDataGenerator>().AsSingle();
 			}
 
-			Container.Bind<IMapFeatureGenerator>().To<RiverFeatureGenerator>().AsTransient();
-			Container.Bind<IMapFeatureGenerator>().To<WaterPostProcessor>().AsTransient();
 			Container.Bind<IMapObjectRegistryService>().To<MapObjectRegistryService>().AsSingle();
 			Container.Bind<IMapObjectVisualRegistryService>().To<MapObjectVisualRegistryService>().AsSingle();
 			Container.Bind<IMapLayerRegistry>().To<MapLayerRegistry>().AsSingle();
@@ -72,7 +73,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
 			if (_useTileWorldCreatorVisuals && _tileWorldCreatorManager != null && _tileWorldCreatorIdMapping != null)
 			{
-				Container.BindInstance(_tileWorldCreatorManager).AsSingle();
+				Container.BindInstance(_tileWorldCreatorManager).IfNotBound();
 				Container.BindInstance(_tileWorldCreatorIdMapping).AsSingle();
 				Container.BindInstance(_tileWorldCreatorBuildOptions ?? new TileWorldCreatorBuildOptions()).AsSingle();
 				Container.Bind<TileWorldCreatorWorldBuildBridge>().AsSingle();
@@ -80,19 +81,28 @@ namespace Kruty1918.Moyva.Generator.Runtime
 				// Прокидаємо TWC Configuration з менеджера як окремий binding,
 				// щоб граф і будь-який внутрішній сервіс міг резолвити його через DI.
 				if (_tileWorldCreatorManager.configuration != null)
-					Container.BindInstance(_tileWorldCreatorManager.configuration).AsSingle();
+					Container.BindInstance(_tileWorldCreatorManager.configuration).IfNotBound();
 			}
 
 			Container.BindInterfacesAndSelfTo<MapVisualInstantiator>().AsSingle();
 			Container.BindInterfacesAndSelfTo<GeneratedWorldSaveModule>().AsSingle();
 			Container.BindInterfacesTo<SaveModuleRegistrar<GeneratedWorldSaveModule>>().AsSingle().NonLazy();
 			Container.BindInstance(_waterLayerMaterialSettings).AsSingle();
+		}
 
-			Container.Bind<ShoreMaskPrepass>()
-				.FromNewComponentOnNewGameObject()
-				.WithGameObjectName("ShoreMaskPrepass")
-				.AsSingle()
-				.NonLazy();
+		private GraphAsset ResolveGraphAsset()
+		{
+			if (_graphAsset != null)
+				return _graphAsset;
+
+			if (_tileWorldCreatorManager != null
+				&& _tileWorldCreatorManager.TryGetComponent<MoyvaTileWorldCreatorGraphBinding>(out var binding)
+				&& binding.GraphAsset != null)
+			{
+				return binding.GraphAsset;
+			}
+
+			return null;
 		}
 
 		public override void Start()

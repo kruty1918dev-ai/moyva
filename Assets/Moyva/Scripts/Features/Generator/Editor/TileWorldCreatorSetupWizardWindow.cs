@@ -3,23 +3,56 @@ using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
+using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Grid.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Generator.Editor
 {
     public sealed class TileWorldCreatorSetupWizardWindow : EditorWindow
     {
+        public enum TileWorldCreatorSetupPreset
+        {
+            WaterGrassHills,
+        }
+
+        private readonly struct PresetLayerDefinition
+        {
+            public PresetLayerDefinition(string blueprintLayerName, string buildLayerName, float height, string tilePresetHint)
+            {
+                BlueprintLayerName = blueprintLayerName;
+                BuildLayerName = buildLayerName;
+                Height = height;
+                TilePresetHint = tilePresetHint;
+            }
+
+            public string BlueprintLayerName { get; }
+            public string BuildLayerName { get; }
+            public float Height { get; }
+            public string TilePresetHint { get; }
+        }
+
         private const string DefaultAssetFolder = "Assets/Moyva/SO/Generation/TileWorldCreator";
         private const string DefaultConfigurationName = "MoyvaTileWorldCreatorConfiguration.asset";
         private const string DefaultMappingName = "MoyvaTileWorldCreatorIdMapping.asset";
+        private const string DefaultSceneContextName = "SceneContext";
+        private const string DefaultGridInstallerName = "GridInstaller";
+        private const string DefaultGeneratorInstallerName = "GeneratorInstaller";
+        private const string DefaultPreviewCameraName = "Generator Preview Camera";
+        private const string SignalsInstallerTypeName = "Kruty1918.Moyva.Signals.SignalBusInstaller, Kruty1918.Moyva.Signals";
 
         private TileWorldCreatorManager _manager;
+        private SceneContext _sceneContext;
+        private GridInstaller _gridInstaller;
         private GeneratorInstaller _generatorInstaller;
+        private GraphAsset _graphAsset;
         private TileRegistrySO _tileRegistry;
         private TileWorldCreatorIdMappingSO _mapping;
+        private Camera _previewCamera;
         private string _assetFolder = DefaultAssetFolder;
         private bool _seedMappingFromTileRegistry = true;
         private bool _createTerrainBuildLayers = true;
@@ -27,7 +60,15 @@ namespace Kruty1918.Moyva.Generator.Editor
         private bool _syncTileRegistry = true;
         private bool _rebuildTileRegistryFromMapping = true;
         private bool _assignGeneratorInstaller = true;
+        private bool _autoSetupSceneContext = true;
+        private bool _autoSetupSignalBusInstaller = true;
+        private bool _autoSetupGridInstaller = true;
+        private bool _autoSetupGeneratorInstaller = true;
+        private bool _autoSetupPreviewCamera = true;
+        private bool _registerInstallersInSceneContext = true;
+        private bool _forceTwcPipelineOnGeneratorInstaller = true;
         private bool _drawMappingInspector = true;
+        private TileWorldCreatorSetupPreset _selectedPreset = TileWorldCreatorSetupPreset.WaterGrassHills;
         private Vector2 _scroll;
         private UnityEditor.Editor _mappingEditor;
 
@@ -35,6 +76,48 @@ namespace Kruty1918.Moyva.Generator.Editor
         public static void Open()
         {
             GetWindow<TileWorldCreatorSetupWizardWindow>("TWC Setup Wizard");
+        }
+
+        public static void OpenForManager(TileWorldCreatorManager manager, TileWorldCreatorSetupPreset preset = TileWorldCreatorSetupPreset.WaterGrassHills)
+        {
+            var window = GetWindow<TileWorldCreatorSetupWizardWindow>("TWC Setup Wizard");
+            window._manager = manager;
+            window._selectedPreset = preset;
+            window.AutoFindReferences();
+            window.Focus();
+        }
+
+        [MenuItem("CONTEXT/TileWorldCreatorManager/Moyva/Open Setup Wizard")]
+        private static void OpenWizardFromContext(MenuCommand command)
+        {
+            OpenForManager(command.context as TileWorldCreatorManager);
+        }
+
+        [MenuItem("CONTEXT/TileWorldCreatorManager/Moyva/Apply Preset/Water Grass Hills")]
+        private static void ApplyWaterGrassHillsPresetFromContext(MenuCommand command)
+        {
+            ApplyPreset(command.context as TileWorldCreatorManager, TileWorldCreatorSetupPreset.WaterGrassHills);
+        }
+
+        public static void ApplyPreset(TileWorldCreatorManager manager, TileWorldCreatorSetupPreset preset)
+        {
+            if (manager == null)
+                return;
+
+            var window = CreateInstance<TileWorldCreatorSetupWizardWindow>();
+            window._manager = manager;
+            window._selectedPreset = preset;
+            window.AutoFindReferences();
+            EnsureAssetFolder(window._assetFolder);
+            window.EnsureManagerAndConfiguration();
+            window.ApplySelectedPreset();
+            SaveAll();
+            DestroyImmediate(window);
+
+            EditorUtility.DisplayDialog(
+                "TWC Setup Wizard",
+                $"Пресет '{GetPresetLabel(preset)}' застосовано до {manager.name}.",
+                "OK");
         }
 
         private void OnEnable()
@@ -53,6 +136,7 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             DrawReferencesSection();
             DrawAutomationSection();
+            DrawPresetSection();
             DrawMappingSection();
             DrawActionsSection();
 
@@ -65,9 +149,13 @@ namespace Kruty1918.Moyva.Generator.Editor
             EditorGUILayout.LabelField("Scene & Assets", EditorStyles.boldLabel);
 
             _manager = (TileWorldCreatorManager)EditorGUILayout.ObjectField("TWC Manager", _manager, typeof(TileWorldCreatorManager), true);
+            _sceneContext = (SceneContext)EditorGUILayout.ObjectField("Scene Context", _sceneContext, typeof(SceneContext), true);
+            _gridInstaller = (GridInstaller)EditorGUILayout.ObjectField("Grid Installer", _gridInstaller, typeof(GridInstaller), true);
             _generatorInstaller = (GeneratorInstaller)EditorGUILayout.ObjectField("Generator Installer", _generatorInstaller, typeof(GeneratorInstaller), true);
+            _graphAsset = (GraphAsset)EditorGUILayout.ObjectField("Graph Asset", _graphAsset, typeof(GraphAsset), false);
             _tileRegistry = (TileRegistrySO)EditorGUILayout.ObjectField("Tile Registry", _tileRegistry, typeof(TileRegistrySO), false);
             _mapping = (TileWorldCreatorIdMappingSO)EditorGUILayout.ObjectField("ID Mapping", _mapping, typeof(TileWorldCreatorIdMappingSO), false);
+            _previewCamera = (Camera)EditorGUILayout.ObjectField("Preview/Main Camera", _previewCamera, typeof(Camera), true);
             _assetFolder = EditorGUILayout.TextField("Generated Assets Folder", _assetFolder);
 
             using (new EditorGUILayout.HorizontalScope())
@@ -92,6 +180,34 @@ namespace Kruty1918.Moyva.Generator.Editor
             using (new EditorGUI.DisabledScope(!_syncTileRegistry))
                 _rebuildTileRegistryFromMapping = EditorGUILayout.Toggle("Rebuild TileRegistry Entries", _rebuildTileRegistryFromMapping);
             _assignGeneratorInstaller = EditorGUILayout.Toggle("Assign GeneratorInstaller", _assignGeneratorInstaller);
+
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.LabelField("Scene Auto-Setup", EditorStyles.boldLabel);
+                _autoSetupSceneContext = EditorGUILayout.Toggle("Create SceneContext", _autoSetupSceneContext);
+                _autoSetupSignalBusInstaller = EditorGUILayout.Toggle("Ensure SignalBusInstaller", _autoSetupSignalBusInstaller);
+                _autoSetupGridInstaller = EditorGUILayout.Toggle("Ensure GridInstaller", _autoSetupGridInstaller);
+                _autoSetupGeneratorInstaller = EditorGUILayout.Toggle("Ensure GeneratorInstaller", _autoSetupGeneratorInstaller);
+                _registerInstallersInSceneContext = EditorGUILayout.Toggle("Register Installers in SceneContext", _registerInstallersInSceneContext);
+                _autoSetupPreviewCamera = EditorGUILayout.Toggle("Ensure Preview Camera", _autoSetupPreviewCamera);
+                _forceTwcPipelineOnGeneratorInstaller = EditorGUILayout.Toggle("Force TWC Graph Pipeline", _forceTwcPipelineOnGeneratorInstaller);
+        }
+
+        private void DrawPresetSection()
+        {
+            EditorGUILayout.Space(8f);
+            EditorGUILayout.LabelField("Quick Preset", EditorStyles.boldLabel);
+
+            _selectedPreset = (TileWorldCreatorSetupPreset)EditorGUILayout.EnumPopup("Preset", _selectedPreset);
+
+            EditorGUILayout.HelpBox(
+                "Water Grass Hills створює paint-ready сценарій: Water = 0.00, Grass = 0.05 і декілька hill layers зі сходинками по 0.05 для ручного нарощування пагорбів.",
+                MessageType.Info);
+
+            using (new EditorGUI.DisabledScope(_manager == null))
+            {
+                if (GUILayout.Button("Apply Preset To Manager", GUILayout.Height(28f)))
+                    ApplySelectedPreset();
+            }
         }
 
         private void DrawMappingSection()
@@ -115,6 +231,9 @@ namespace Kruty1918.Moyva.Generator.Editor
             {
                 if (GUILayout.Button("Build Full TileWorldCreator Setup", GUILayout.Height(34f)))
                     BuildFullSetup();
+
+                if (GUILayout.Button("Auto-Setup Generator Scene", GUILayout.Height(34f)))
+                    AutoSetupGeneratorScene();
             }
 
             EditorGUILayout.HelpBox(
@@ -122,13 +241,65 @@ namespace Kruty1918.Moyva.Generator.Editor
                 MessageType.None);
         }
 
+        private void ApplySelectedPreset()
+        {
+            EnsureManagerAndConfiguration();
+
+            switch (_selectedPreset)
+            {
+                case TileWorldCreatorSetupPreset.WaterGrassHills:
+                    ApplyWaterGrassHillsPreset();
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            SaveAll();
+        }
+
         private void AutoFindReferences()
         {
             _manager ??= FindFirstSceneObject<TileWorldCreatorManager>();
+            _sceneContext ??= FindFirstSceneObject<SceneContext>();
+            _gridInstaller ??= FindFirstSceneObject<GridInstaller>();
             _generatorInstaller ??= FindFirstSceneObject<GeneratorInstaller>();
+            _graphAsset ??= FindFirstAsset<GraphAsset>();
             _tileRegistry ??= FindFirstAsset<TileRegistrySO>();
             _mapping ??= FindFirstAsset<TileWorldCreatorIdMappingSO>();
+            _previewCamera ??= Camera.main ?? FindFirstSceneObject<Camera>();
             Repaint();
+        }
+
+        private void AutoSetupGeneratorScene()
+        {
+            EnsureAssetFolder(_assetFolder);
+            EnsureManagerAndConfiguration();
+            EnsureMappingAsset();
+            EnsureSceneScaffolding();
+
+            if (_seedMappingFromTileRegistry)
+                SeedMappingFromTileRegistry();
+
+            if (_createTerrainBuildLayers)
+                EnsureTerrainLayersAndBuildLayers();
+
+            if (_createObjectBuildLayers)
+                EnsureObjectLayersAndBuildLayers();
+
+            if (_syncTileRegistry)
+            {
+                if (_rebuildTileRegistryFromMapping)
+                    TileWorldCreatorRegistrySyncUtility.RebuildTerrainIds(_tileRegistry, _mapping, out _, out _, out _);
+                else
+                    TileWorldCreatorRegistrySyncUtility.SyncTerrainIds(_tileRegistry, _mapping, true, out _, out _, out _);
+            }
+
+            EnsureGridInstallerBindings();
+            if (_assignGeneratorInstaller)
+                AssignGeneratorInstaller();
+
+            SaveAll();
+            EditorUtility.DisplayDialog("TWC Setup Wizard", "Scene auto-setup завершено. Сцена готова до запуску генератора.", "OK");
         }
 
         private void CreateMissingAssetsOnly()
@@ -198,6 +369,94 @@ namespace Kruty1918.Moyva.Generator.Editor
             _mapping = CreateInstance<TileWorldCreatorIdMappingSO>();
             AssetDatabase.CreateAsset(_mapping, AssetDatabase.GenerateUniqueAssetPath($"{_assetFolder}/{DefaultMappingName}"));
             EditorUtility.SetDirty(_mapping);
+        }
+
+        private void ApplyWaterGrassHillsPreset()
+        {
+            var configuration = _manager?.configuration;
+            if (configuration == null)
+                return;
+
+            Undo.RecordObject(_manager, "Apply TWC Water Grass Hills Preset");
+            Undo.RecordObject(configuration, "Apply TWC Water Grass Hills Preset");
+
+            var layers = new[]
+            {
+                new PresetLayerDefinition("Water", "Build Water", 0f, "water"),
+                new PresetLayerDefinition("Grass", "Build Grass", 0.05f, "grass"),
+                new PresetLayerDefinition("Hill 01", "Build Hill 01", 0.10f, "hill"),
+                new PresetLayerDefinition("Hill 02", "Build Hill 02", 0.15f, "hill"),
+                new PresetLayerDefinition("Hill 03", "Build Hill 03", 0.20f, "hill"),
+            };
+
+            for (int i = 0; i < layers.Length; i++)
+            {
+                ApplyPresetLayer(configuration, layers[i]);
+            }
+
+            EditorUtility.SetDirty(_manager);
+            EditorUtility.SetDirty(configuration);
+
+            if (_generatorInstaller != null)
+                ApplyPresetToGeneratorInstaller();
+        }
+
+        private void ApplyPresetLayer(Configuration configuration, PresetLayerDefinition definition)
+        {
+            var blueprintLayer = EnsureBlueprintLayer(configuration, definition.BlueprintLayerName);
+            Undo.RecordObject(blueprintLayer, "Apply TWC Preset Layer");
+            blueprintLayer.defaultLayerHeight = definition.Height;
+            blueprintLayer.isEnabled = true;
+            EditorUtility.SetDirty(blueprintLayer);
+
+            var buildLayer = EnsureBuildLayer<TilesBuildLayer>(configuration, definition.BuildLayerName);
+            Undo.RecordObject(buildLayer, "Apply TWC Preset Build Layer");
+            buildLayer.SetBlueprintLayer(blueprintLayer);
+            buildLayer.isEnabled = true;
+            buildLayer.layerYOffset = 0f;
+
+            TilePreset preset = GuessTilePreset(definition.TilePresetHint);
+            if (preset != null)
+            {
+                buildLayer.SetNewTilePreset(preset);
+                ApplyTilesBuildLayerSettings(buildLayer, preset, null);
+            }
+            else
+            {
+                buildLayer.tileLayers ??= new List<TilesBuildLayer.TileLayers>();
+                if (buildLayer.tileLayers.Count == 0)
+                    buildLayer.tileLayers.Add(new TilesBuildLayer.TileLayers());
+
+                for (int i = 0; i < buildLayer.tileLayers.Count; i++)
+                {
+                    buildLayer.tileLayers[i] ??= new TilesBuildLayer.TileLayers();
+                    buildLayer.tileLayers[i].heightOffset = 0f;
+                }
+            }
+
+            EditorUtility.SetDirty(buildLayer);
+        }
+
+        private void ApplyPresetToGeneratorInstaller()
+        {
+            var installerObject = new SerializedObject(_generatorInstaller);
+            installerObject.FindProperty("_useTileWorldCreatorVisuals").boolValue = true;
+            installerObject.FindProperty("_tileWorldCreatorManager").objectReferenceValue = _manager;
+
+            var options = installerObject.FindProperty("_tileWorldCreatorBuildOptions");
+            if (options != null)
+            {
+                options.FindPropertyRelative("_applyIntegerTerrainHeights").boolValue = true;
+                options.FindPropertyRelative("_normalizeTerrainLevelsForTileWorldCreator").boolValue = true;
+                options.FindPropertyRelative("_waterTerrainLevel").intValue = 0;
+                options.FindPropertyRelative("_shoreTerrainLevel").intValue = 1;
+                options.FindPropertyRelative("_landTerrainLevel").intValue = 1;
+                options.FindPropertyRelative("_hillTerrainLevel").intValue = 3;
+                options.FindPropertyRelative("_maxTerrainLevel").intValue = 5;
+            }
+
+            installerObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(_generatorInstaller);
         }
 
         private void SeedMappingFromTileRegistry()
@@ -317,6 +576,16 @@ namespace Kruty1918.Moyva.Generator.Editor
             installerObject.FindProperty("_tileWorldCreatorManager").objectReferenceValue = _manager;
             installerObject.FindProperty("_tileWorldCreatorIdMapping").objectReferenceValue = _mapping;
 
+            var graphAsset = _graphAsset != null ? _graphAsset : FindFirstAsset<GraphAsset>();
+            if (graphAsset != null)
+            {
+                installerObject.FindProperty("_graphAsset").objectReferenceValue = graphAsset;
+                EnsureGraphBinding(graphAsset);
+            }
+
+            if (_forceTwcPipelineOnGeneratorInstaller)
+                installerObject.FindProperty("_useTwcGraphPipeline").boolValue = true;
+
             var options = installerObject.FindProperty("_tileWorldCreatorBuildOptions");
             if (options != null)
             {
@@ -329,6 +598,225 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             installerObject.ApplyModifiedProperties();
             EditorUtility.SetDirty(_generatorInstaller);
+        }
+
+        private MoyvaTileWorldCreatorGraphBinding EnsureGraphBinding(GraphAsset graphAsset)
+        {
+            if (_manager == null)
+                return null;
+
+            var binding = _manager.GetComponent<MoyvaTileWorldCreatorGraphBinding>();
+            if (binding == null)
+            {
+                binding = Undo.AddComponent<MoyvaTileWorldCreatorGraphBinding>(_manager.gameObject);
+            }
+
+            if (graphAsset != null && binding.GraphAsset != graphAsset)
+            {
+                Undo.RecordObject(binding, "Assign Moyva graph binding");
+                binding.SetGraphAsset(graphAsset);
+                EditorUtility.SetDirty(binding);
+            }
+
+            return binding;
+        }
+
+        private void EnsureSceneScaffolding()
+        {
+            if (_autoSetupSceneContext)
+                _sceneContext = EnsureSceneContext();
+
+            if (_autoSetupGridInstaller)
+                _gridInstaller = EnsureGridInstaller();
+
+            if (_autoSetupGeneratorInstaller)
+                _generatorInstaller = EnsureGeneratorInstaller();
+
+            MonoBehaviour signalsInstaller = null;
+            if (_autoSetupSignalBusInstaller)
+                signalsInstaller = EnsureInstallerByTypeName(SignalsInstallerTypeName, "SignalBusInstaller");
+
+            if (_registerInstallersInSceneContext && _sceneContext != null)
+            {
+                if (signalsInstaller != null)
+                    EnsureSceneContextContainsInstaller(_sceneContext, signalsInstaller);
+                if (_gridInstaller != null)
+                    EnsureSceneContextContainsInstaller(_sceneContext, _gridInstaller);
+                if (_generatorInstaller != null)
+                    EnsureSceneContextContainsInstaller(_sceneContext, _generatorInstaller);
+            }
+
+            if (_autoSetupPreviewCamera)
+                _previewCamera = EnsurePreviewCamera();
+        }
+
+        private SceneContext EnsureSceneContext()
+        {
+            if (_sceneContext != null)
+                return _sceneContext;
+
+            var go = new GameObject(DefaultSceneContextName);
+            Undo.RegisterCreatedObjectUndo(go, "Create SceneContext");
+            _sceneContext = go.AddComponent<SceneContext>();
+            EditorUtility.SetDirty(_sceneContext);
+            return _sceneContext;
+        }
+
+        private GridInstaller EnsureGridInstaller()
+        {
+            if (_gridInstaller != null)
+                return _gridInstaller;
+
+            var existing = FindFirstSceneObject<GridInstaller>();
+            if (existing != null)
+            {
+                _gridInstaller = existing;
+                return _gridInstaller;
+            }
+
+            var go = new GameObject(DefaultGridInstallerName);
+            Undo.RegisterCreatedObjectUndo(go, "Create GridInstaller");
+            _gridInstaller = go.AddComponent<GridInstaller>();
+            EditorUtility.SetDirty(_gridInstaller);
+            return _gridInstaller;
+        }
+
+        private GeneratorInstaller EnsureGeneratorInstaller()
+        {
+            if (_generatorInstaller != null)
+                return _generatorInstaller;
+
+            var existing = FindFirstSceneObject<GeneratorInstaller>();
+            if (existing != null)
+            {
+                _generatorInstaller = existing;
+                return _generatorInstaller;
+            }
+
+            var go = new GameObject(DefaultGeneratorInstallerName);
+            Undo.RegisterCreatedObjectUndo(go, "Create GeneratorInstaller");
+            _generatorInstaller = go.AddComponent<GeneratorInstaller>();
+            EditorUtility.SetDirty(_generatorInstaller);
+            return _generatorInstaller;
+        }
+
+        private MonoBehaviour EnsureInstallerByTypeName(string assemblyQualifiedTypeName, string fallbackGameObjectName)
+        {
+            var type = ResolveType(assemblyQualifiedTypeName);
+            if (type == null || !typeof(MonoBehaviour).IsAssignableFrom(type))
+                return null;
+
+            var existing = FindFirstSceneObject(type) as MonoBehaviour;
+            if (existing != null)
+                return existing;
+
+            var go = new GameObject(fallbackGameObjectName);
+            Undo.RegisterCreatedObjectUndo(go, $"Create {fallbackGameObjectName}");
+            var installer = go.AddComponent(type) as MonoBehaviour;
+            if (installer != null)
+                EditorUtility.SetDirty(installer);
+            return installer;
+        }
+
+        private void EnsureGridInstallerBindings()
+        {
+            if (_gridInstaller == null || _tileRegistry == null)
+                return;
+
+            var so = new SerializedObject(_gridInstaller);
+            var tileRegistryProperty = so.FindProperty("tileRegistry");
+            if (tileRegistryProperty != null)
+                tileRegistryProperty.objectReferenceValue = _tileRegistry;
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(_gridInstaller);
+        }
+
+        private static void EnsureSceneContextContainsInstaller(SceneContext sceneContext, MonoBehaviour installer)
+        {
+            if (sceneContext == null || installer == null)
+                return;
+
+            var sceneContextSo = new SerializedObject(sceneContext);
+            var installersProperty = sceneContextSo.FindProperty("_monoInstallers");
+            if (installersProperty == null || !installersProperty.isArray)
+                return;
+
+            for (int i = 0; i < installersProperty.arraySize; i++)
+            {
+                if (installersProperty.GetArrayElementAtIndex(i).objectReferenceValue == installer)
+                    return;
+            }
+
+            int index = installersProperty.arraySize;
+            installersProperty.InsertArrayElementAtIndex(index);
+            installersProperty.GetArrayElementAtIndex(index).objectReferenceValue = installer;
+            sceneContextSo.ApplyModifiedProperties();
+            EditorUtility.SetDirty(sceneContext);
+        }
+
+        private Camera EnsurePreviewCamera()
+        {
+            if (_previewCamera != null)
+                return _previewCamera;
+
+            _previewCamera = Camera.main ?? FindFirstSceneObject<Camera>();
+            if (_previewCamera != null)
+                return _previewCamera;
+
+            var cameraGo = new GameObject(DefaultPreviewCameraName);
+            Undo.RegisterCreatedObjectUndo(cameraGo, "Create Preview Camera");
+            _previewCamera = cameraGo.AddComponent<Camera>();
+            cameraGo.tag = "MainCamera";
+            _previewCamera.transform.position = new Vector3(0f, 24f, -24f);
+            _previewCamera.transform.rotation = Quaternion.Euler(35f, 45f, 0f);
+            _previewCamera.clearFlags = CameraClearFlags.Skybox;
+            _previewCamera.nearClipPlane = 0.01f;
+            _previewCamera.farClipPlane = 1000f;
+            EditorUtility.SetDirty(_previewCamera);
+            return _previewCamera;
+        }
+
+        private static Type ResolveType(string assemblyQualifiedTypeName)
+        {
+            if (string.IsNullOrWhiteSpace(assemblyQualifiedTypeName))
+                return null;
+
+            var type = Type.GetType(assemblyQualifiedTypeName);
+            if (type != null)
+                return type;
+
+            string fullTypeName = assemblyQualifiedTypeName.Split(',')[0].Trim();
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            for (int i = 0; i < assemblies.Length; i++)
+            {
+                type = assemblies[i].GetType(fullTypeName, false);
+                if (type != null)
+                    return type;
+            }
+
+            return null;
+        }
+
+        private static UnityEngine.Object FindFirstSceneObject(Type type)
+        {
+            if (type == null)
+                return null;
+
+#if UNITY_2023_1_OR_NEWER
+            var found = UnityEngine.Object.FindFirstObjectByType(type, FindObjectsInactive.Include);
+            if (found is Component c && c.gameObject.scene.IsValid())
+                return found;
+            return null;
+#else
+            var objects = Resources.FindObjectsOfTypeAll(type);
+            for (int i = 0; i < objects.Length; i++)
+            {
+                if (objects[i] is Component component && component.gameObject.scene.IsValid())
+                    return objects[i];
+            }
+
+            return null;
+#endif
         }
 
         private BlueprintLayer EnsureBlueprintLayer(Configuration configuration, string layerName)
@@ -417,12 +905,12 @@ namespace Kruty1918.Moyva.Generator.Editor
 
         private static void ApplyTilesBuildLayerSettings(TilesBuildLayer buildLayer, TilePreset tilePreset, SerializedProperty mappingElement)
         {
-            if (buildLayer == null || tilePreset == null || mappingElement == null)
+            if (buildLayer == null || tilePreset == null)
                 return;
 
             bool useDualGrid = NormalizeMappingGridSettings(tilePreset, mappingElement);
             buildLayer.useDualGrid = useDualGrid;
-            buildLayer.scaleTileToCellSize = mappingElement.FindPropertyRelative("_scaleTileToCellSize")?.boolValue ?? useDualGrid;
+            buildLayer.scaleTileToCellSize = mappingElement?.FindPropertyRelative("_scaleTileToCellSize")?.boolValue ?? useDualGrid;
             buildLayer.layerYOffset = 0f;
 
             buildLayer.tileLayers ??= new List<TilesBuildLayer.TileLayers>();
@@ -438,11 +926,11 @@ namespace Kruty1918.Moyva.Generator.Editor
 
         private static bool NormalizeMappingGridSettings(TilePreset tilePreset, SerializedProperty mappingElement)
         {
-            if (tilePreset == null || mappingElement == null)
+            if (tilePreset == null)
                 return false;
 
-            var useDualGridProperty = mappingElement.FindPropertyRelative("_useDualGrid");
-            var scaleToCellSizeProperty = mappingElement.FindPropertyRelative("_scaleTileToCellSize");
+            var useDualGridProperty = mappingElement?.FindPropertyRelative("_useDualGrid");
+            var scaleToCellSizeProperty = mappingElement?.FindPropertyRelative("_scaleTileToCellSize");
 
             bool useDualGrid = ShouldUseDualGrid(tilePreset, useDualGridProperty?.boolValue ?? false);
             bool scaleTileToCellSize = (scaleToCellSizeProperty?.boolValue ?? false) || useDualGrid;
@@ -597,6 +1085,15 @@ namespace Kruty1918.Moyva.Generator.Editor
         {
             AssetDatabase.SaveAssets();
             EditorSceneManager.MarkAllScenesDirty();
+        }
+
+        private static string GetPresetLabel(TileWorldCreatorSetupPreset preset)
+        {
+            return preset switch
+            {
+                TileWorldCreatorSetupPreset.WaterGrassHills => "Water Grass Hills",
+                _ => preset.ToString(),
+            };
         }
     }
 }

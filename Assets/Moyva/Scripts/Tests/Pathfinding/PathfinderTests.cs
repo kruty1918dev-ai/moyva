@@ -52,6 +52,10 @@ namespace Kruty1918.Moyva.Tests.Pathfinding
             {
                 return _weights.TryGetValue(tileTypeId ?? "", out var w) ? w : 1f;
             }
+
+            public bool IsBuildBlocked(string tileId) => false;
+
+            public float GetSurfaceOffset(string tileId) => 0f;
         }
 
         private sealed class FakeObjectsMapService : IObjectsMapService

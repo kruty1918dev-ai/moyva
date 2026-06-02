@@ -7,6 +7,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
     {
         [HideInInspector, SerializeField] private string _nodeId;
         [HideInInspector, SerializeField] private Vector2 _editorPosition;
+        [HideInInspector, SerializeField] private string _layerId;
 
         public string NodeId
         {
@@ -17,6 +18,16 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 return _nodeId;
             }
             set => _nodeId = value;
+        }
+
+        /// <summary>
+        /// Ідентифікатор шару (<see cref="GeneratorLayerDefinition.Id"/>), до підграфа
+        /// якого належить цей вузол. Порожній рядок означає глобальний/нерозподілений вузол.
+        /// </summary>
+        public string LayerId
+        {
+            get => _layerId;
+            set => _layerId = value;
         }
 
         public Vector2 EditorPosition

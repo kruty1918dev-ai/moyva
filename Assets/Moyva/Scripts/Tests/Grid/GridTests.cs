@@ -297,13 +297,9 @@ namespace Kruty1918.Moyva.Tests.Grid
 
         private static GridRenderMode ResolveRenderMode(GridProjectionMode projectionMode)
         {
-            return projectionMode switch
-            {
-                GridProjectionMode.Orthographic3D => GridRenderMode.Mesh3D,
-                GridProjectionMode.Isometric2D => GridRenderMode.Isometric2D,
-                GridProjectionMode.Isometric3DPreview => GridRenderMode.Mesh3DPreview,
-                _ => GridRenderMode.Sprite2D,
-            };
+            return projectionMode == GridProjectionMode.Isometric3DPreview
+                ? GridRenderMode.Mesh3DPreview
+                : GridRenderMode.Mesh3D;
         }
     }
 

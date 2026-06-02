@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
         public GraphExecutionResult Execute(GraphAsset graph, NodeContext context)
         {
             var logs = new List<NodeExecutionLog>();
+            var layerMaskRegistry = EnsureLayerMaskRegistry(context);
 
             var uniqueNodeError = ValidateUniqueNodes(graph, logs);
             if (uniqueNodeError != null)
@@ -75,7 +76,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     return new GraphExecutionResult(node.NodeId, output.Message, logs, cache);
 
                 if (output.Values != null)
+                {
                     cache[node.NodeId] = output.Values;
+                    CaptureLayerMask(node, output.Values, layerMaskRegistry);
+                }
             }
 
             return new GraphExecutionResult(cache, logs);
@@ -85,6 +89,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             NodeContext context)
         {
             var logs = new List<NodeExecutionLog>();
+            var layerMaskRegistry = EnsureLayerMaskRegistry(context);
 
             var uniqueNodeError = ValidateUniqueNodes(graph, logs);
             if (uniqueNodeError != null)
@@ -145,7 +150,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     return new GraphExecutionResult(node.NodeId, output.Message, logs, cache);
 
                 if (output.Values != null)
+                {
                     cache[node.NodeId] = output.Values;
+                    CaptureLayerMask(node, output.Values, layerMaskRegistry);
+                }
             }
 
             context.Progress?.Report(1f);
@@ -266,6 +274,31 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             }
 
             return 0;
+        }
+
+        private static LayerMaskRegistry EnsureLayerMaskRegistry(NodeContext context)
+        {
+            if (context != null && context.TryGetService<LayerMaskRegistry>(out var existing) && existing != null)
+                return existing;
+
+            var created = new LayerMaskRegistry();
+            context?.RegisterService(created);
+            return created;
+        }
+
+        private static void CaptureLayerMask(NodeBase node, object[] outputs, LayerMaskRegistry registry)
+        {
+            if (node == null || outputs == null || registry == null || string.IsNullOrEmpty(node.LayerId))
+                return;
+
+            for (int i = 0; i < outputs.Length; i++)
+            {
+                if (outputs[i] is bool[,] mask)
+                {
+                    registry.SetLatestMask(node.LayerId, mask);
+                    return;
+                }
+            }
         }
     }
 }

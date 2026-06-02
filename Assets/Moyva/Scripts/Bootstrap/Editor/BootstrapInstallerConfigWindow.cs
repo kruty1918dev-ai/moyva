@@ -44,7 +44,6 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
             _fogSettings ??= MoyvaProjectEditorContext.Get<FogOfWarSettings>() ?? FindFogSettings();
 
             EnsureSerializedObject();
-            BuildStyles();
         }
 
         private void OnSelectionChange()
@@ -525,6 +524,12 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
 
         private void BuildStyles()
         {
+            if (!EditorGUIUtility.isProSkin && EditorStyles.label == null)
+                return;
+
+            if (EditorStyles.label == null || EditorStyles.boldLabel == null || EditorStyles.miniLabel == null || EditorStyles.toolbarButton == null)
+                return;
+
             _titleStyle ??= new GUIStyle(EditorStyles.boldLabel)
             {
                 fontSize = 18,

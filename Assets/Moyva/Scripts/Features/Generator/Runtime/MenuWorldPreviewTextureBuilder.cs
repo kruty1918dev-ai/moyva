@@ -1663,6 +1663,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             public bool UseHeight;
             public bool IsProjected;
             public bool IsHex;
+            public bool IsHexPointy;
             public bool IsIsometricLike;
 
             public static PreviewLayout Create(MenuWorldPreviewData previewData, int pixelsPerTile, int maxTextureEdge, MoyvaProjectSettingsSO settings)
@@ -1681,34 +1682,37 @@ namespace Kruty1918.Moyva.Generator.Runtime
             public Vector2Int GetTileCenter(MenuWorldPreviewData previewData, int x, int y)
             {
                 int heightOffset = GetHeightOffset(previewData, x, y);
-                switch (ProjectionMode)
+                if (IsIsometricLike)
                 {
-                    case GridProjectionMode.Isometric2D:
-                    case GridProjectionMode.Isometric3DPreview:
-                        return new Vector2Int(
-                            OffsetX + (x - y) * StepX,
-                            OffsetY + (x + y) * StepY - heightOffset);
+                    return new Vector2Int(
+                        OffsetX + (x - y) * StepX,
+                        OffsetY + (x + y) * StepY - heightOffset);
+                }
 
-                    case GridProjectionMode.HexPointy2D:
+                if (IsHex)
+                {
+                    if (IsHexPointy)
+                    {
                         return new Vector2Int(
                             OffsetX + x * StepX + ((y & 1) != 0 ? StepX / 2 : 0),
                             OffsetY + y * StepY - heightOffset);
+                    }
 
-                    case GridProjectionMode.HexFlat2D:
-                        return new Vector2Int(
-                            OffsetX + x * StepX,
-                            OffsetY + y * StepY + ((x & 1) != 0 ? StepY / 2 : 0) - heightOffset);
-
-                    case GridProjectionMode.Orthographic3D:
-                        return new Vector2Int(
-                            OffsetX + x * PixelsPerTile + PixelsPerTile / 2,
-                            OffsetY + y * PixelsPerTile + PixelsPerTile / 2 - heightOffset);
-
-                    default:
-                        return new Vector2Int(
-                            x * PixelsPerTile + PixelsPerTile / 2,
-                            y * PixelsPerTile + PixelsPerTile / 2);
+                    return new Vector2Int(
+                        OffsetX + x * StepX,
+                        OffsetY + y * StepY + ((x & 1) != 0 ? StepY / 2 : 0) - heightOffset);
                 }
+
+                if (ProjectionMode == GridProjectionMode.Orthographic3D)
+                {
+                    return new Vector2Int(
+                        OffsetX + x * PixelsPerTile + PixelsPerTile / 2,
+                        OffsetY + y * PixelsPerTile + PixelsPerTile / 2 - heightOffset);
+                }
+
+                return new Vector2Int(
+                    x * PixelsPerTile + PixelsPerTile / 2,
+                    y * PixelsPerTile + PixelsPerTile / 2);
             }
 
             public float GetNormalizedHeight(MenuWorldPreviewData previewData, int x, int y)
@@ -1739,16 +1743,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
             private static PreviewLayout CreateUnscaled(MenuWorldPreviewData previewData, int pixelsPerTile, MoyvaProjectSettingsSO settings)
             {
                 GridProjectionMode mode = settings.DefaultProjectionMode;
+                GridTopology topology = settings.DefaultGridTopology;
                 bool useHeight = settings.UseHeightForPreview && previewData.HeightMap != null;
                 CalculateHeightRange(previewData, out float minHeight, out float maxHeight);
                 int heightPixels = useHeight ? Mathf.RoundToInt(pixelsPerTile * Mathf.Max(0f, settings.HeightScale) * 3f) : 0;
                 float heightSpan = Mathf.Max(0.0001f, maxHeight - minHeight);
 
-                bool projected = mode == GridProjectionMode.Isometric2D
-                    || mode == GridProjectionMode.Isometric3DPreview
-                    || mode == GridProjectionMode.HexPointy2D
-                    || mode == GridProjectionMode.HexFlat2D
-                    || mode == GridProjectionMode.Orthographic3D;
+                bool projected = mode == GridProjectionMode.Isometric3DPreview
+                    || mode == GridProjectionMode.Orthographic3D
+                    || topology == GridTopology.HexAxial;
 
                 var layout = new PreviewLayout
                 {
@@ -1758,7 +1761,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     MinHeight = minHeight,
                     HeightSpan = heightSpan,
                     HeightPixelRange = heightPixels,
-                    IsProjected = projected
+                    IsProjected = projected,
+                    IsHex = topology == GridTopology.HexAxial,
+                    IsHexPointy = settings.HexOrientation == HexOrientation.PointyTop,
+                    IsIsometricLike = mode == GridProjectionMode.Isometric3DPreview
                 };
 
                 if (!projected)
@@ -1771,7 +1777,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     return layout;
                 }
 
-                if (mode == GridProjectionMode.Isometric2D || mode == GridProjectionMode.Isometric3DPreview)
+                if (layout.IsIsometricLike)
                 {
                     int halfWidth = Mathf.Max(2, pixelsPerTile);
                     int halfHeight = Mathf.Max(1, Mathf.RoundToInt(pixelsPerTile * 0.5f));
@@ -1788,7 +1794,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     return layout;
                 }
 
-                if (mode == GridProjectionMode.HexPointy2D)
+                if (layout.IsHex && layout.IsHexPointy)
                 {
                     int radius = Mathf.Max(2, pixelsPerTile);
                     int hexWidth = Mathf.Max(2, Mathf.RoundToInt(Mathf.Sqrt(3f) * radius));
@@ -1806,7 +1812,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     return layout;
                 }
 
-                if (mode == GridProjectionMode.HexFlat2D)
+                if (layout.IsHex && !layout.IsHexPointy)
                 {
                     int radius = Mathf.Max(2, pixelsPerTile);
                     int hexWidth = radius * 2;

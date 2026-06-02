@@ -61,11 +61,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 .Where(node => node is ISeedProvider)
                 .Select(node => node.NodeId));
 
-            var heightSourceNodeIds = new HashSet<string>(graphAsset.Nodes
-                .Where(node => node is HeightSourceNode)
-                .Select(node => node.NodeId));
-
-            if (seedNodeIds.Count == 0 && heightSourceNodeIds.Count == 0)
+            if (seedNodeIds.Count == 0)
                 return false;
 
             bool changed = false;
@@ -81,19 +77,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     graphAsset.RemoveConnection(connection);
                     changed = true;
                     continue;
-                }
-
-                if (heightSourceNodeIds.Contains(connection.TargetNodeId)
-                    && connection.TargetPortIndex == 1)
-                {
-                    graphAsset.RemoveConnection(connection);
-                    var newConnection = graphAsset.AddConnection(
-                        connection.SourceNodeId,
-                        connection.SourcePortIndex,
-                        connection.TargetNodeId,
-                        0);
-                    newConnection.SetSourceElementIndex(connection.SourceElementIndex);
-                    changed = true;
                 }
             }
 

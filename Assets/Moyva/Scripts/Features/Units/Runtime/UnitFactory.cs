@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IGridProjection _gridProjection;
         private readonly IGeneratedTerrainLevelQuery _terrainLevelQuery;
         private readonly TileRegistrySO _tileRegistry;
+        private readonly ITileSettingsService _tileSettings;
         private readonly Dictionary<string, float> _tileSurfaceOffsetYById = new();
         
         private readonly Dictionary<string, int> _typeCounters = new();
@@ -34,7 +35,8 @@ namespace Kruty1918.Moyva.Units.Runtime
             IObjectsMapService objectsMapService,
             [InjectOptional] IGridProjection gridProjection = null,
             [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null,
-            [InjectOptional] TileRegistrySO tileRegistry = null)
+            [InjectOptional] TileRegistrySO tileRegistry = null,
+            [InjectOptional] ITileSettingsService tileSettings = null)
         {
             _container = container;
             _unitClassConfig = unitClassConfig;
@@ -45,6 +47,7 @@ namespace Kruty1918.Moyva.Units.Runtime
             _gridProjection = gridProjection;
             _terrainLevelQuery = terrainLevelQuery;
             _tileRegistry = tileRegistry;
+            _tileSettings = tileSettings;
         }
 
         public string CreateUnit(string typeId, Vector2Int gridPosition)
@@ -168,11 +171,25 @@ namespace Kruty1918.Moyva.Units.Runtime
         private bool TryResolveTileSurfaceOffsetY(string tileId, out float offsetY)
         {
             offsetY = 0f;
-            if (string.IsNullOrWhiteSpace(tileId) || _tileRegistry?.Definitions == null)
+            if (string.IsNullOrWhiteSpace(tileId))
                 return false;
 
             if (_tileSurfaceOffsetYById.TryGetValue(tileId, out offsetY))
                 return true;
+
+            // Новий layer-based шлях: зсув поверхні з профілю шару terrain.
+            if (_tileSettings != null)
+            {
+                offsetY = _tileSettings.GetSurfaceOffset(tileId);
+                if (offsetY != 0f)
+                {
+                    _tileSurfaceOffsetYById[tileId] = offsetY;
+                    return true;
+                }
+            }
+
+            if (_tileRegistry?.Definitions == null)
+                return false;
 
             for (int i = 0; i < _tileRegistry.Definitions.Length; i++)
             {
