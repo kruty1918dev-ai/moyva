@@ -231,12 +231,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ReleaseRuntimeLayerResources();
 
             NormalizeBiomeMapIds(worldData);
+            BuildGridFromLayerIds(worldData);
 
             // Новий TWC-конвеєр: 3D-візуал вже побудував TileWorldCreator.
             // Тут лише наповнюємо GridService layer-id'ами для ігроладу (рух/будівництво).
             if (_graphTwcGenerator != null)
             {
-                BuildGridFromLayerIds(worldData);
                 _currentWorldData = worldData.Clone();
                 _signalBus.Fire(new WorldBuiltSignal());
                 FireSavedSpawnPositions(_currentWorldData);

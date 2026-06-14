@@ -12,6 +12,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     /// </summary>
     internal sealed class WorldLoadRevealOverlayService : IInitializable, ITickable, System.IDisposable
     {
+        private const float FallbackStartFadeTimeoutSeconds = 8f;
+
         private enum FadeState
         {
             Idle,
@@ -41,6 +43,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public void Initialize()
         {
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
+            _signalBus.Subscribe<WorldBuiltSignal>(OnWorldBuilt);
 
             var fadeSettings = _settings?.WorldRevealFade;
             if (fadeSettings == null || !fadeSettings.Enabled)
@@ -61,6 +64,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public void Dispose()
         {
             _signalBus.TryUnsubscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
+            _signalBus.TryUnsubscribe<WorldBuiltSignal>(OnWorldBuilt);
 
             if (_canvas != null)
                 Object.Destroy(_canvas.gameObject);
@@ -77,8 +81,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             switch (_state)
             {
+                case FadeState.WaitingSignal:
+                    _timer += Time.unscaledDeltaTime;
+                    if (_timer >= FallbackStartFadeTimeoutSeconds)
+                        BeginFade();
+                    break;
+
                 case FadeState.Delay:
-                    _timer += Time.deltaTime;
+                    _timer += Time.unscaledDeltaTime;
                     if (_timer >= _delay)
                     {
                         _timer = 0f;
@@ -89,7 +99,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     break;
 
                 case FadeState.Fading:
-                    _timer += Time.deltaTime;
+                    _timer += Time.unscaledDeltaTime;
                     float t = Mathf.Clamp01(_timer / Mathf.Max(0.0001f, _duration));
                     // SmoothStep для мʼякого входу/виходу без ривків.
                     float eased = t * t * (3f - 2f * t);
@@ -101,6 +111,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         private void OnWorldGenerated(WorldGeneratedDataSignal _)
+        {
+            BeginFade();
+        }
+
+        private void OnWorldBuilt(WorldBuiltSignal _)
+        {
+            BeginFade();
+        }
+
+        private void BeginFade()
         {
             if (_state != FadeState.WaitingSignal)
                 return;

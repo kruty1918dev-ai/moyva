@@ -30,14 +30,13 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private SerializedProperty _fogTileSizeInCellsProp;
         private SerializedProperty _fogTileSeamOverlapPixelsProp;
         private SerializedProperty _fogMapEdgePaddingPixelsProp;
+        private SerializedProperty _fogMapEdgeOverhangCellsProp;
         private SerializedProperty _fogTileTilingProp;
         private SerializedProperty _fogIconSpritesProp;
         private SerializedProperty _fogIconSpritePixelSizeProp;
         private SerializedProperty _fogIconGridSizeProp;
         private SerializedProperty _fogIconScaleProp;
-        private SerializedProperty _enable3DVolumeFogProp;
         private SerializedProperty _fog3DTopClearanceProp;
-        private SerializedProperty _fog3DVolumeHeightProp;
         private SerializedProperty _enableRendererCullingProp;
         private SerializedProperty _requireOpaqueUnexploredForCullingProp;
         private SerializedProperty _rendererCullingLayerMaskProp;
@@ -79,14 +78,13 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             _fogTileSizeInCellsProp     = serializedObject.FindProperty("FogTileSizeInCells");
             _fogTileSeamOverlapPixelsProp = serializedObject.FindProperty("FogTileSeamOverlapPixels");
             _fogMapEdgePaddingPixelsProp = serializedObject.FindProperty("FogMapEdgePaddingPixels");
+            _fogMapEdgeOverhangCellsProp = serializedObject.FindProperty("FogMapEdgeOverhangCells");
             _fogTileTilingProp          = serializedObject.FindProperty("FogTileTiling");
             _fogIconSpritesProp         = serializedObject.FindProperty("FogIconSprites");
             _fogIconSpritePixelSizeProp = serializedObject.FindProperty("FogIconSpritePixelSize");
             _fogIconGridSizeProp        = serializedObject.FindProperty("FogIconGridSize");
             _fogIconScaleProp           = serializedObject.FindProperty("FogIconScale");
-            _enable3DVolumeFogProp      = serializedObject.FindProperty("Enable3DVolumeFog");
             _fog3DTopClearanceProp      = serializedObject.FindProperty("Fog3DTopClearance");
-            _fog3DVolumeHeightProp      = serializedObject.FindProperty("Fog3DVolumeHeight");
             _enableRendererCullingProp  = serializedObject.FindProperty("EnableRendererCulling");
             _requireOpaqueUnexploredForCullingProp = serializedObject.FindProperty("RequireOpaqueUnexploredForCulling");
             _rendererCullingLayerMaskProp = serializedObject.FindProperty("RendererCullingLayerMask");
@@ -280,9 +278,7 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
                     new GUIContent("Перекриття швів, px", "Додаткове перекриття країв тайла у пікселях спрайта. 1-2 px зазвичай прибирають просвіти на зумі без накопичення альфи"));
                 DrawTileSeamOverlapValidation();
 
-                EditorGUILayout.PropertyField(_fogMapEdgePaddingPixelsProp,
-                    new GUIContent("Запас краю мапи, px", "Наскільки розширити геометрію туману за зовнішній край мапи, у пікселях спрайта. Прибирає просвіти саме на краю мапи під час зуму"));
-                DrawMapEdgePaddingValidation();
+                DrawMapEdgeSection();
 
                 if (_fogTileSpriteProp.objectReferenceValue == null)
                 {
@@ -414,17 +410,13 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         private void Draw3DVolumeSection()
         {
             _volume3DFoldout = EditorGUILayout.BeginFoldoutHeaderGroup(_volume3DFoldout,
-                new GUIContent("3D volume", "Як Fog of War розміщується у XZ/3D світах"));
+                new GUIContent("3D plane", "Як верхня площина Fog of War розміщується у XZ/3D світах"));
 
             if (_volume3DFoldout)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_enable3DVolumeFogProp,
-                    new GUIContent("Увімкнути 3D volume", "У 3D світі туман стає world-space шаром над рельєфом з вертикальними боками"));
                 EditorGUILayout.PropertyField(_fog3DTopClearanceProp,
                     new GUIContent("Відступ над рельєфом", "Наскільки підняти верхню площину туману над найвищою точкою рельєфу"));
-                EditorGUILayout.PropertyField(_fog3DVolumeHeightProp,
-                    new GUIContent("Висота volume", "Вертикальна товщина бокових площин туману"));
                 EditorGUI.indentLevel--;
             }
 
@@ -573,6 +565,26 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             }
         }
 
+        private void DrawMapEdgeSection()
+        {
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField("Край мапи", EditorStyles.miniBoldLabel);
+            EditorGUILayout.HelpBox(
+                "Ці параметри додають зовнішню смугу туману на межі мапи. Вони не змінюють розмір клітинки, fog texture або сітку видимості.",
+                MessageType.Info);
+
+            EditorGUILayout.PropertyField(_fogMapEdgePaddingPixelsProp,
+                new GUIContent("Анти-шов краю, px", "Малий технічний запас у пікселях спрайта проти raster/filtering просвітів на зовнішньому краю мапи"));
+            DrawMapEdgePaddingValidation();
+
+            EditorGUILayout.PropertyField(_fogMapEdgeOverhangCellsProp,
+                new GUIContent("Контур за межами мапи", "На скільки клітинок туман виходить за край мапи. Не змінює розмір клітинки або fog texture, лише додає зовнішню смугу туману"));
+            DrawMapEdgeOverhangValidation();
+
+            EditorGUILayout.EndVertical();
+        }
+
         private void DrawMapEdgePaddingValidation()
         {
             if (_fogMapEdgePaddingPixelsProp == null)
@@ -589,7 +601,28 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
             if (padding > 8f)
             {
                 EditorGUILayout.HelpBox(
-                    "Зазвичай достатньо 1-4 px. Великі значення можуть помітно виводити туман за межі мапи.",
+                    "Зазвичай достатньо 1-4 px. Для видимого контуру за межами мапи використовуйте окреме поле \"Контур за межами мапи\".",
+                    MessageType.Info);
+            }
+        }
+
+        private void DrawMapEdgeOverhangValidation()
+        {
+            if (_fogMapEdgeOverhangCellsProp == null)
+                return;
+
+            float overhang = _fogMapEdgeOverhangCellsProp.floatValue;
+            if (overhang < 0f)
+            {
+                EditorGUILayout.HelpBox(
+                    "Контур за межами мапи не може бути від'ємним. Значення буде затиснуто в runtime.",
+                    MessageType.Warning);
+            }
+
+            if (overhang > 2f)
+            {
+                EditorGUILayout.HelpBox(
+                    "Зазвичай достатньо 0.25-1 клітинки. Великі значення збільшують площу overlay і можуть зайво перекривати простір навколо мапи.",
                     MessageType.Info);
             }
         }

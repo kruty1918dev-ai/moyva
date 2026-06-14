@@ -67,6 +67,47 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _camera.transform.position = _targetPosition;
         }
 
+        public void MoveCameraFocusToWorldPoint(Vector3 focusPoint, bool immediate)
+        {
+            if (_forceBlockTimer > 0f || _camera == null)
+                return;
+
+            if (!TryResolveNavigationPlaneCenter(_targetPosition, out _, out float distanceToPlane))
+                distanceToPlane = ResolveDefaultDistanceToNavigationPlane();
+
+            _targetPosition = focusPoint - _camera.transform.forward * Mathf.Max(0.1f, distanceToPlane);
+            _fixedPlaneAxisValue = UsesXzPlane ? _targetPosition.y : _targetPosition.z;
+            ClampTargetToBounds();
+
+            if (!immediate)
+                return;
+
+            _currentVelocity = Vector3.zero;
+            _camera.transform.position = _targetPosition;
+        }
+
+        public void SetCameraDistanceToNavigationPlane(float distance, bool immediate)
+        {
+            if (_camera == null)
+                return;
+
+            float resolvedDistance = Mathf.Max(0.1f, distance);
+            if (!TryResolveNavigationPlaneCenter(_targetPosition, out Vector3 focusPoint, out _)
+                && !TryResolveNavigationPlaneCenter(_camera.transform.position, out focusPoint, out _))
+            {
+                return;
+            }
+
+            _targetPosition = focusPoint - _camera.transform.forward * resolvedDistance;
+            _fixedPlaneAxisValue = UsesXzPlane ? _targetPosition.y : _targetPosition.z;
+
+            if (!immediate)
+                return;
+
+            _currentVelocity = Vector3.zero;
+            _camera.transform.position = _targetPosition;
+        }
+
         private void ApplyScreenDelta(Vector3 delta, float speedMultiplier, bool immediate)
         {
             if (_forceBlockTimer > 0f) return;
@@ -123,10 +164,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 _forceBlockTimer -= Time.deltaTime;
             }
 
-            // Тримаємо ціль усередині bounds на кожному кадрі, бо зум міг змінити
-            // допустиму "напіввисоту" viewport.
-            ClampTargetToBounds();
-
             // Плавно рухаємо камеру до _targetPosition
             _camera.transform.position = Vector3.SmoothDamp(
                 _camera.transform.position,
@@ -157,14 +194,13 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 return;
             }
 
-            ResolveViewportHalfExtents(out float halfW, out float halfH);
+            ResolveViewportHalfExtents(_targetPosition, out float halfW, out float halfH);
             float width = Mathf.Max(0.01f, maxBoundX - minBoundX);
             float height = Mathf.Max(0.01f, maxBoundY - minBoundY);
 
             float minX, maxX;
             if (width <= halfW * 2f)
             {
-                // Якщо viewport ширший за bounds, єдина валідна позиція — центр.
                 minX = maxX = (minBoundX + maxBoundX) * 0.5f;
             }
             else
@@ -223,6 +259,22 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return Mathf.Max(0.001f, worldHeight / screenHeight);
         }
 
+        private float ResolveDefaultDistanceToNavigationPlane()
+        {
+            if (_camera == null)
+                return 1f;
+
+            Vector3 normal = ResolveNavigationPlaneNormal();
+            float denominator = Vector3.Dot(normal, _camera.transform.forward);
+            if (Mathf.Abs(denominator) <= 0.0001f)
+                return 1f;
+
+            float distance = -Vector3.Dot(normal, _camera.transform.position) / denominator;
+            return distance > 0.1f && !float.IsNaN(distance) && !float.IsInfinity(distance)
+                ? distance
+                : 1f;
+        }
+
         private bool TryResolveDragWorldDelta(Vector2 screenDelta, out Vector3 worldDelta)
         {
             worldDelta = Vector3.zero;
@@ -245,7 +297,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return worldDelta.sqrMagnitude > 0.000001f;
         }
 
-        private bool TryScreenPointToNavigationPlane(Vector2 screenPoint, out Vector3 worldPoint)
+        public bool TryScreenPointToNavigationPlane(Vector2 screenPoint, out Vector3 worldPoint)
         {
             worldPoint = Vector3.zero;
             if (_camera == null)
@@ -281,26 +333,29 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return true;
         }
 
-        private void ResolveViewportHalfExtents(out float halfWidth, out float halfHeight)
+        private void ResolveViewportHalfExtents(Vector3 cameraPosition, out float halfWidth, out float halfHeight)
         {
             halfHeight = _camera.orthographic ? _camera.orthographicSize : 0f;
             halfWidth = halfHeight * _camera.aspect;
 
-            if (!TryResolveNavigationPlaneViewportHalfExtents(out var planeHalfExtents))
+            if (_camera.orthographic)
+                return;
+
+            if (!TryResolveNavigationPlaneViewportHalfExtents(cameraPosition, out var planeHalfExtents))
                 return;
 
             halfWidth = planeHalfExtents.x;
             halfHeight = planeHalfExtents.y;
         }
 
-        private bool TryResolveNavigationPlaneViewportHalfExtents(out Vector2 halfExtents)
+        private bool TryResolveNavigationPlaneViewportHalfExtents(Vector3 cameraPosition, out Vector2 halfExtents)
         {
             halfExtents = Vector2.zero;
             if (_camera == null || Screen.width <= 0 || Screen.height <= 0)
                 return false;
 
             Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
-            if (!TryScreenPointToNavigationPlane(screenCenter, out var centerWorld))
+            if (!TryScreenPointToNavigationPlane(screenCenter, cameraPosition, out var centerWorld))
                 return false;
 
             _viewportWorldCorners[0] = new Vector3(0f, 0f, 0f);
@@ -313,7 +368,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             for (int cornerIndex = 0; cornerIndex < _viewportWorldCorners.Length; cornerIndex++)
             {
                 Vector3 screenCorner = _viewportWorldCorners[cornerIndex];
-                if (!TryScreenPointToNavigationPlane(new Vector2(screenCorner.x, screenCorner.y), out var cornerWorld))
+                if (!TryScreenPointToNavigationPlane(new Vector2(screenCorner.x, screenCorner.y), cameraPosition, out var cornerWorld))
                     return false;
 
                 Vector2 offset = ToNavigationPlaneCoordinates(cornerWorld) - centerPlane;
@@ -325,6 +380,22 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 return false;
 
             halfExtents = maxOffset;
+            return true;
+        }
+
+        private bool TryScreenPointToNavigationPlane(Vector2 screenPoint, Vector3 cameraPosition, out Vector3 worldPoint)
+        {
+            worldPoint = Vector3.zero;
+            if (_camera == null)
+                return false;
+
+            Ray cameraRay = _camera.ScreenPointToRay(screenPoint);
+            Ray ray = new Ray(cameraPosition, cameraRay.direction);
+            Plane navigationPlane = new Plane(ResolveNavigationPlaneNormal(), Vector3.zero);
+            if (!navigationPlane.Raycast(ray, out float distance) || distance < 0f)
+                return false;
+
+            worldPoint = ray.GetPoint(distance);
             return true;
         }
 

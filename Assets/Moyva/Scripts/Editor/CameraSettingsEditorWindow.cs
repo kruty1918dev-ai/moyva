@@ -32,7 +32,7 @@ namespace Kruty1918.Moyva.Editor
             EditorGUILayout.Space(8f);
             EditorGUILayout.LabelField("Camera Settings", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Окремий редактор налаштувань камери: базові параметри, офсет меж мапи та роздільні профілі Desktop/Mobile.",
+                "Мінімальні налаштування камери: 3D ізометричний perspective-режим, межі, єдиний профіль керування та базові стартові параметри.",
                 MessageType.Info);
 
             using (new EditorGUILayout.HorizontalScope())
@@ -58,39 +58,28 @@ namespace Kruty1918.Moyva.Editor
             _serialized.Update();
 
             EditorGUILayout.Space(4f);
-            EditorGUILayout.LabelField("Base", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_serialized.FindProperty("defaultCameraZ"), new GUIContent("Default Camera Z"));
+            EditorGUILayout.LabelField("3D Camera", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_serialized.FindProperty("adaptToProject3DMode"), new GUIContent("Adapt To Project 3D"));
+            EditorGUILayout.PropertyField(_serialized.FindProperty("useOrthographicCameraIn3D"), new GUIContent("Use Orthographic In 3D"));
+            EditorGUILayout.PropertyField(_serialized.FindProperty("default3DCameraDistance"), new GUIContent("Default 3D Distance"));
+            EditorGUILayout.PropertyField(_serialized.FindProperty("default3DFieldOfView"), new GUIContent("Default 3D Field Of View"));
+            EditorGUILayout.PropertyField(_serialized.FindProperty("isometric3DEuler"), new GUIContent("Isometric Euler"));
+            EditorGUILayout.PropertyField(_serialized.FindProperty("orthographic3DEuler"), new GUIContent("Orthographic Euler"));
+
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.LabelField("World Bounds", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(
                 _serialized.FindProperty("boundsOverflowTiles"),
                 new GUIContent("Bounds Overflow (Tiles)", "На скільки тайлів дозволено вихід камери за межі мапи по X/Y."));
 
             EditorGUILayout.Space(6f);
-            EditorGUILayout.LabelField("Desktop Profile", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_serialized.FindProperty("desktopProfile"), true);
+            EditorGUILayout.LabelField("Control Profile", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Єдиний профіль для всіх платформ. Рекомендовано збільшувати лише Smooth Time і зменшувати Zoom Speed для більш ніжної камери.", MessageType.None);
+            EditorGUILayout.PropertyField(_serialized.FindProperty("controlProfile"), true);
 
             EditorGUILayout.Space(6f);
-            EditorGUILayout.LabelField("Mobile Profile", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_serialized.FindProperty("mobileProfile"), true);
-
-            EditorGUILayout.Space(6f);
-            EditorGUILayout.LabelField("Map Render Mask", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(_serialized.FindProperty("mapRenderMaskEnabled"));
-            EditorGUILayout.PropertyField(_serialized.FindProperty("mapMaskRefreshSeconds"));
-            EditorGUILayout.PropertyField(_serialized.FindProperty("mapMaskLayers"));
-            EditorGUILayout.PropertyField(_serialized.FindProperty("mapMaskSortingLayerName"));
-            EditorGUILayout.PropertyField(_serialized.FindProperty("mapMaskBackSortingOrder"));
-            EditorGUILayout.PropertyField(_serialized.FindProperty("mapMaskFrontSortingOrder"));
-            EditorGUILayout.PropertyField(_serialized.FindProperty("manualMapMaskCenter"));
-            EditorGUILayout.PropertyField(_serialized.FindProperty("manualMapMaskSize"));
-
-            EditorGUILayout.Space(6f);
-            EditorGUILayout.LabelField("Shader / Mip Bias", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(
-                _serialized.FindProperty("enableAutomaticMipBias"),
-                new GUIContent("Enable Automatic Mip Bias", "Вмикає глобальний mip-bias від зуму. Для tile atlas часто краще вимкнути."));
-            EditorGUILayout.PropertyField(
-                _serialized.FindProperty("automaticMipBiasMax"),
-                new GUIContent("Automatic Mip Bias Max", "Максимальна сила mip-bias, якщо опція увімкнена."));
+            EditorGUILayout.LabelField("Zoom", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox("Min/Max zoom підлаштовуються автоматично від реального розміру мапи після генерації.", MessageType.None);
 
             if (_serialized.ApplyModifiedProperties())
             {
@@ -107,11 +96,10 @@ namespace Kruty1918.Moyva.Editor
                     EditorGUIUtility.PingObject(_settingsAsset);
                 }
 
-                if (GUILayout.Button("Reset Profiles to Defaults", GUILayout.Width(180f)))
+                if (GUILayout.Button("Reset Profile to Gentle Defaults", GUILayout.Width(220f)))
                 {
-                    Undo.RecordObject(_settingsAsset, "Reset Camera Profiles");
-                    _settingsAsset.desktopProfile = CameraControlProfile.CreateDesktopDefaults();
-                    _settingsAsset.mobileProfile = CameraControlProfile.CreateMobileDefaults();
+                    Undo.RecordObject(_settingsAsset, "Reset Camera Control Profile");
+                    _settingsAsset.controlProfile = CameraControlProfile.CreateGentleDefaults();
                     EditorUtility.SetDirty(_settingsAsset);
                     AssetDatabase.SaveAssets();
                     _serialized.Update();
@@ -151,8 +139,7 @@ namespace Kruty1918.Moyva.Editor
             if (_settingsAsset == null)
             {
                 _settingsAsset = CreateInstance<CameraSettingsSO>();
-                _settingsAsset.desktopProfile = CameraControlProfile.CreateDesktopDefaults();
-                _settingsAsset.mobileProfile = CameraControlProfile.CreateMobileDefaults();
+                _settingsAsset.controlProfile = CameraControlProfile.CreateGentleDefaults();
                 AssetDatabase.CreateAsset(_settingsAsset, DefaultAssetPath);
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();

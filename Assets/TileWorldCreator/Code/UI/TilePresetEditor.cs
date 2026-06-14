@@ -95,6 +95,16 @@ namespace GiantGrey.TileWorldCreator
 
             _root.Add(_header);      
 
+            var _tileId = new PropertyField();
+            _tileId.label = "Tile ID";
+            _tileId.BindProperty(serializedObject.FindProperty(nameof(tilePreset.tileId)));
+            _tileId.SetMargin(10, 10, 0, 0);
+            _tileId.SetPadding(5, 5, 5, 5);
+            _tileId.style.backgroundColor = EditorGUIUtility.isProSkin
+                ? TileWorldCreatorColor.DarkGrey.GetColor()
+                : TileWorldCreatorColor.VeryLightGrey.GetColor();
+            _root.Add(_tileId);
+
              var _materialOverride = new PropertyField();
             _materialOverride.BindProperty(serializedObject.FindProperty("materialOverride"));
             _materialOverride.SetMargin( 10, 10, 0, 0);
@@ -289,6 +299,7 @@ namespace GiantGrey.TileWorldCreator
             _title.style.unityFontStyleAndWeight = FontStyle.Bold;
             _title.style.fontSize = 12;
 
+            string _xRotationPropertyName = "";
             string _rotationPropertyName = "";
             switch (_propertyName)
             {
@@ -296,26 +307,31 @@ namespace GiantGrey.TileWorldCreator
                 case nameof(tilePreset.DUALGRD_edgeTile):
                     _icon.style.backgroundImage = DUALGRD_edgeTileIcon;
                     _title.text = "Edge Tile";
+                    _xRotationPropertyName = nameof(tilePreset.edgeTileXRotationOffset);
                     _rotationPropertyName = nameof(tilePreset.edgeTileYRotationOffset);
                     break;
                 case nameof(tilePreset.DUALGRD_fillTile):
                     _icon.style.backgroundImage = DUALGRD_fillTileIcon;
                     _title.text = "Fill Tile";
+                    _xRotationPropertyName = nameof(tilePreset.fillTileXRotationOffset);
                     _rotationPropertyName = nameof(tilePreset.fillTileYRotationOffset);
                     break;
                 case nameof(tilePreset.DUALGRD_cornerTile):
                     _icon.style.backgroundImage = DUALGRD_cornerTileIcon;
                     _title.text = "Corner Tile";
+                    _xRotationPropertyName = nameof(tilePreset.cornerTileXRotationOffset);
                     _rotationPropertyName = nameof(tilePreset.cornerTileYRotationOffset);
                     break;
                 case nameof(tilePreset.DUALGRD_invertedCornerTile):
                     _icon.style.backgroundImage = DUALGRD_invertedCornerTileIcon;
                     _title.text = "Int. Corner Tile";
+                    _xRotationPropertyName = nameof(tilePreset.invertedCornerTileXRotationOffset);
                     _rotationPropertyName = nameof(tilePreset.invertedCornerTileYRotationOffset);
                     break;
                 case nameof(tilePreset.DUALGRD_doubleInteriorCornerTile):
                    _icon.style.backgroundImage = DUALGRD_mergedCornerTileIcon;
                    _title.text = "Double Corner Tile";
+                   _xRotationPropertyName = nameof(tilePreset.doubleInteriorCornerTileXRotationOffset);
                    _rotationPropertyName = nameof(tilePreset.doubleInteriorCornerTileYRotationOffset);
                     break;
 
@@ -405,6 +421,15 @@ namespace GiantGrey.TileWorldCreator
             _tile.Add(_title);
             _tile.Add(_icon);
             _tile.Add(_property);
+            if (!string.IsNullOrEmpty(_xRotationPropertyName))
+            {
+                var _xRotationProperty = new PropertyField();
+                _xRotationProperty.label = "";
+                _xRotationProperty.BindProperty(serializedObject.FindProperty(_xRotationPropertyName));
+
+                _tile.Add(new Label("X Rotation Offset:"));
+                _tile.Add(_xRotationProperty);
+            }
             _tile.Add(new Label("Y Rotation Offset:"));
             _tile.Add(_rotationProperty);
 

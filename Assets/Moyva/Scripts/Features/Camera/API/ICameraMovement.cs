@@ -7,6 +7,9 @@ namespace Kruty1918.Moyva.Camera.API
         void MoveCamera(Vector3 direction);
         void MoveCameraImmediate(Vector3 direction, float speedMultiplier);
         void ShiftCameraWorld(Vector3 worldDelta, bool immediate);
+        void MoveCameraFocusToWorldPoint(Vector3 focusPoint, bool immediate);
+        void SetCameraDistanceToNavigationPlane(float distance, bool immediate);
+        bool TryScreenPointToNavigationPlane(Vector2 screenPoint, out Vector3 worldPoint);
         void ForceMoveCameraToPosition(Vector3 position);
 
         /// <summary>

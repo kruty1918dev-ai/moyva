@@ -75,8 +75,10 @@ namespace Kruty1918.Moyva.Construction.UI
 
             if (iconImage != null)
             {
-                iconImage.sprite = data.Icon;
-                iconImage.enabled = data.Icon != null;
+                var previewSprite = data.PreviewSprite != null ? data.PreviewSprite : data.Icon;
+                iconImage.sprite = previewSprite;
+                iconImage.enabled = previewSprite != null;
+                iconImage.preserveAspect = true;
             }
 
             if (button != null)

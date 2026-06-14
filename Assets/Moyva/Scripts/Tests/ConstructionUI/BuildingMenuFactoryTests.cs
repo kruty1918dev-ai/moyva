@@ -86,6 +86,27 @@ namespace Kruty1918.Moyva.Tests.ConstructionUI
             Assert.AreSame(iconFallback, sprite);
         }
 
+        [Test]
+        public void BuildMenuItems_ShouldUseRuntimePreview_WhenCachedPreviewExists()
+        {
+            var factory = new BuildingMenuFactory();
+            var iconFallback = CreateSprite(4, 4);
+            var runtimePreview = CreateSprite(32, 32);
+            var definition = new BuildingDefinition
+            {
+                Id = "workshop",
+                DisplayName = "Майстерня",
+                Category = BuildingCategory.Industrial,
+                Icon = iconFallback,
+                RuntimePreview = runtimePreview,
+            };
+
+            var result = factory.BuildMenuItems(new[] { definition }, null, null);
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreSame(runtimePreview, result[0].PreviewSprite);
+        }
+
         private BuildingDefinition CreateDefinition(string id, string name, BuildingCategory category)
         {
             return new BuildingDefinition

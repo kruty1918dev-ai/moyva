@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Camera.API;
-using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -15,9 +14,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
     {
         private readonly ICameraMovement _cameraMovement;
         private readonly ICameraZoom _cameraZoom;
-        private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
-        private readonly IGridProjection _gridProjection;
 
         private readonly InputAction _moveAction;
         private readonly InputAction _zoomAction;
@@ -27,18 +24,20 @@ namespace Kruty1918.Moyva.Camera.Runtime
         public CameraPlayerController(
             ICameraMovement cameraMovement,
             ICameraZoom cameraZoom,
-            UnityEngine.Camera camera,
             CameraSettingsSO settings,
-            InputActionAsset inputAsset,
-            [InjectOptional] IGridProjection gridProjection = null)
+            InputActionAsset inputAsset)
         {
             _cameraMovement = cameraMovement;
             _cameraZoom = cameraZoom;
-            _camera = camera;
             _settings = settings;
-            _gridProjection = gridProjection;
+
+            if (inputAsset == null)
+                return;
 
             var map = inputAsset.FindActionMap("Player");
+            if (map == null)
+                return;
+
             _moveAction = map.FindAction("Move");
             _zoomAction = map.FindAction("Zoom");
 
@@ -48,6 +47,9 @@ namespace Kruty1918.Moyva.Camera.Runtime
         public void Tick()
         {
             if (TryHandleTouchGestures())
+                return;
+
+            if (_moveAction == null || _zoomAction == null)
                 return;
 
             // Отримуємо сирі пікселі дельти (Mouse Delta або Touch Delta)
@@ -101,12 +103,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
             Vector2 secondPreviousPosition = secondTouch.Position - secondTouch.Delta;
 
             Vector2 currentCenter = (firstTouch.Position + secondTouch.Position) * 0.5f;
-            Vector2 previousCenter = (firstPreviousPosition + secondPreviousPosition) * 0.5f;
-            Vector2 centerDelta = ClampTouchDelta(currentCenter - previousCenter);
-
-            float dragDeadZone = _settings.ResolveTouchDragDeadZonePixels();
-            if (centerDelta.sqrMagnitude > dragDeadZone * dragDeadZone)
-                _cameraMovement.MoveCameraImmediate(centerDelta, Mathf.Max(0.01f, _settings.ResolveTouchMoveSpeed()));
 
             float currentDistance = Vector2.Distance(firstTouch.Position, secondTouch.Position);
             float previousDistance = Vector2.Distance(firstPreviousPosition, secondPreviousPosition);
@@ -114,24 +110,25 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 return;
 
             float pinchDelta = currentDistance - previousDistance;
-            if (Mathf.Abs(pinchDelta) <= _settings.ResolveTouchPinchDeadZonePixels())
-                return;
+            float pinchDeadZone = _settings.ResolveTouchPinchDeadZonePixels();
+            bool isPinching = Mathf.Abs(pinchDelta) > pinchDeadZone;
 
-            Vector3 worldBeforeZoom = ScreenToWorld(currentCenter);
+            if (!isPinching)
+            {
+                Vector2 previousCenter = (firstPreviousPosition + secondPreviousPosition) * 0.5f;
+                Vector2 centerDelta = ClampTouchDelta(currentCenter - previousCenter);
+                float dragDeadZone = _settings.ResolveTouchDragDeadZonePixels();
+                if (centerDelta.sqrMagnitude > dragDeadZone * dragDeadZone)
+                    _cameraMovement.MoveCameraImmediate(centerDelta, Mathf.Max(0.01f, _settings.ResolveTouchMoveSpeed()));
+                return;
+            }
+
             float scaleFactor = previousDistance / currentDistance;
             bool immediate = _settings.ResolveUseImmediateTouchGestures();
-            _cameraZoom.ZoomCameraByScale(scaleFactor, immediate);
-
-            if (immediate && _settings.ResolveKeepPinchFocusUnderFingers())
-            {
-                Vector3 worldAfterZoom = ScreenToWorld(currentCenter);
-                Vector3 correction = worldBeforeZoom - worldAfterZoom;
-                if (_gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ)
-                    correction.y = 0f;
-                else
-                    correction.z = 0f;
-                _cameraMovement.ShiftCameraWorld(correction, immediate: true);
-            }
+            if (_settings.ResolveKeepPinchFocusUnderFingers())
+                _cameraZoom.ZoomCameraByScale(scaleFactor, immediate, currentCenter);
+            else
+                _cameraZoom.ZoomCameraByScale(scaleFactor, immediate);
         }
 
         private int TryReadActiveTouches(Touchscreen touchscreen, out TouchGestureSample firstTouch, out TouchGestureSample secondTouch)
@@ -169,24 +166,6 @@ namespace Kruty1918.Moyva.Camera.Runtime
             return delta.sqrMagnitude > maxDelta * maxDelta
                 ? delta.normalized * maxDelta
                 : delta;
-        }
-
-        private Vector3 ScreenToWorld(Vector2 screenPosition)
-        {
-            if (_camera == null)
-                return Vector3.zero;
-
-            if (_gridProjection == null)
-                return _camera.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, -_camera.transform.position.z));
-
-            Ray ray = _camera.ScreenPointToRay(screenPosition);
-            Plane plane = _gridProjection.WorldPlane == GridWorldPlane.XZ
-                ? new Plane(Vector3.up, Vector3.zero)
-                : new Plane(Vector3.forward, Vector3.zero);
-
-            return plane.Raycast(ray, out float distance)
-                ? ray.GetPoint(distance)
-                : _camera.ScreenToWorldPoint(new Vector3(screenPosition.x, screenPosition.y, -_camera.transform.position.z));
         }
 
         private bool IsTouchOverInteractiveUi(TouchGestureSample touch)

@@ -37,6 +37,12 @@ namespace Kruty1918.Moyva.Editor
             EditorGUILayout.LabelField($"{count} будівл(ь)", EditorStyles.boldLabel);
             if (GUILayout.Button("Відкрити Registry Hub", GUILayout.Width(160)))
                 RegistryHubWindow.Open(3);
+            if (GUILayout.Button("Rebuild previews", GUILayout.Width(140)))
+            {
+                BuildingPrefabPreviewCacheUtility.RebuildSerializedRegistryPreviews(serializedObject, target);
+                serializedObject.ApplyModifiedProperties();
+                AssetDatabase.SaveAssets();
+            }
             EditorGUILayout.EndHorizontal();
 
             RegistryEditorStyles.DrawSeparator();
@@ -81,7 +87,17 @@ namespace Kruty1918.Moyva.Editor
                 ValidateInlineId(el.FindPropertyRelative("Id")?.stringValue);
                 EditorGUILayout.PropertyField(el.FindPropertyRelative("DisplayName"));
                 EditorGUILayout.PropertyField(el.FindPropertyRelative("Category"));
-                EditorGUILayout.PropertyField(el.FindPropertyRelative("Prefab"));
+                var prefabProp = el.FindPropertyRelative("Prefab");
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(prefabProp);
+                if (EditorGUI.EndChangeCheck())
+                    BuildingPrefabPreviewCacheUtility.RebuildSerializedBuildingPreview(el, target);
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    var previewProp = el.FindPropertyRelative("RuntimePreview");
+                    if (previewProp != null)
+                        EditorGUILayout.PropertyField(previewProp, new GUIContent("Cached Preview"));
+                }
                 EditorGUILayout.LabelField("Вартість будівництва", EditorStyles.boldLabel);
                 BuildingConstructionCostEditorShared.DrawCostList(
                     el.FindPropertyRelative("ConstructionCost"),
@@ -140,7 +156,11 @@ namespace Kruty1918.Moyva.Editor
             el.FindPropertyRelative("Id").stringValue = id;
             el.FindPropertyRelative("DisplayName").stringValue = _newDisplayName;
             el.FindPropertyRelative("Category").enumValueIndex = (int)_newCategory;
+            var iconProp = el.FindPropertyRelative("Icon");
+            if (iconProp != null)
+                iconProp.objectReferenceValue = _newSprite;
             el.FindPropertyRelative("Prefab").objectReferenceValue = pfb;
+            BuildingPrefabPreviewCacheUtility.RebuildSerializedBuildingPreview(el, target);
             serializedObject.ApplyModifiedProperties();
             AssetDatabase.SaveAssets();
             _newId = ""; _newDisplayName = ""; _newPrefab = null; _newSprite = null;

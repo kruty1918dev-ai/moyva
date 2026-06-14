@@ -1,5 +1,4 @@
 using Kruty1918.Moyva.Camera.API;
-using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using Zenject;
 
@@ -14,21 +13,15 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private const float ZoomEpsilon = 0.0005f;
         private const float MouseWheelStepDelta = 120f;
         private const float RawMouseWheelThreshold = 10f;
-        private const float MaxWheelZoomStepFraction = 0.075f;
         private const float MaxPinchTargetStepFraction = 0.1f;
-        private const float MaxImmediatePinchStepFraction = 0.04f;
-        private const float MinZoomStep = 0.1f;
-        private const float PerspectiveMinFieldOfView = 10f;
-        private const float PerspectiveMaxFieldOfView = 80f;
+        private const float MinimumPerspectiveFieldOfView = 1f;
+        private const float MaximumPerspectiveFieldOfView = 179f;
         private static readonly int GlobalMipBiasId = Shader.PropertyToID(GlobalMipBiasProperty);
 
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
-        private readonly ICameraBoundsProvider _boundsProvider;
-        private readonly MoyvaProjectSettingsSO _projectSettings;
 
         private float _targetZoom;
-        private float _currentVelocity; // Необхідно для Mathf.SmoothDamp
         private float _lastPushedMipBias = float.NaN;
 
         private float _forceBlockTimer;
@@ -36,32 +29,24 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         public CameraZoom(
             UnityEngine.Camera camera,
-            CameraSettingsSO settings,
-            [InjectOptional] ICameraBoundsProvider boundsProvider = null,
-            [InjectOptional] MoyvaProjectSettingsSO projectSettings = null)
+            CameraSettingsSO settings)
         {
             _camera = camera;
             _settings = settings;
-            _boundsProvider = boundsProvider;
-            _projectSettings = projectSettings;
         }
 
         public void Initialize()
         {
-            // На старті синхронізуємо цільовий зум з поточним Field of View або Orthographic Size
-            if (_camera.orthographic)
-            {
-                _targetZoom = _camera.orthographicSize;
-            }
-            else
-            {
-                _targetZoom = _camera.fieldOfView;
-            }
+            // На старті синхронізуємо цільовий зум з поточним Orthographic Size або Field Of View.
+            _targetZoom = GetCurrentZoom();
 
             UpdateGlobalMipBias();
         }
 
         public void ZoomCamera(float delta)
+            => ZoomCamera(delta, ResolveScreenCenter());
+
+        public void ZoomCamera(float delta, Vector2 screenFocalPoint)
         {
             // Якщо діє блокування від форсованого зуму — ігноруємо інпут гравця
             if (_forceBlockTimer > 0f) return;
@@ -70,40 +55,53 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (Mathf.Abs(normalizedDelta) <= ZoomEpsilon)
                 return;
 
-            // Віднімаємо дельту (щоб скрол вперед наближав, а назад — віддаляв)
-            // і обмежуємо крок, щоб raw wheel delta не кидав камеру відразу в min/max
-            float zoomStep = Mathf.Min(Mathf.Max(0.01f, _settings.ResolveZoomSpeed()), ResolveMaxZoomStep(MaxWheelZoomStepFraction));
-            float minZoom = ResolveEffectiveMinZoom();
-            _targetZoom = Mathf.Clamp(
-                _targetZoom - normalizedDelta * zoomStep,
-                minZoom,
-                ResolveEffectiveMaxZoom()
-            );
+            // Віднімаємо дельту: скрол вперед наближає, назад віддаляє.
+            float zoomStep = Mathf.Max(0.01f, _settings.ResolveZoomSpeed());
+            ResolveZoomRange(out float minZoom, out float maxZoom);
+            float previousTargetZoom = _targetZoom;
+            _targetZoom = Mathf.Clamp(_targetZoom - normalizedDelta * zoomStep, minZoom, maxZoom);
+
+            if (Mathf.Abs(_targetZoom - previousTargetZoom) <= ZoomEpsilon)
+                return;
         }
 
         public void ZoomCameraByScale(float scaleFactor, bool immediate)
+            => ZoomCameraByScale(scaleFactor, immediate, ResolveScreenCenter());
+
+        public void ZoomCameraByScale(float scaleFactor, bool immediate, Vector2 screenFocalPoint)
         {
             if (_forceBlockTimer > 0f) return;
             if (scaleFactor <= 0f || float.IsNaN(scaleFactor) || float.IsInfinity(scaleFactor)) return;
 
             float sensitivity = Mathf.Max(0.01f, _settings.ResolveTouchPinchZoomSensitivity());
-            float minZoom = ResolveEffectiveMinZoom();
+            ResolveZoomRange(out float minZoom, out float maxZoom);
             float adjustedScale = Mathf.Pow(scaleFactor, sensitivity);
-            float nextTarget = Mathf.Clamp(_targetZoom * adjustedScale, minZoom, ResolveEffectiveMaxZoom());
-            _targetZoom = Mathf.MoveTowards(_targetZoom, nextTarget, ResolveMaxZoomStep(MaxPinchTargetStepFraction));
+            float nextTarget = Mathf.Clamp(_targetZoom * adjustedScale, minZoom, maxZoom);
+            float previousTargetZoom = _targetZoom;
+            float maxPinchStep = Mathf.Max(0.1f, (maxZoom - minZoom) * MaxPinchTargetStepFraction);
+            _targetZoom = Mathf.MoveTowards(_targetZoom, nextTarget, maxPinchStep);
+
+            if (Mathf.Abs(_targetZoom - previousTargetZoom) <= ZoomEpsilon)
+                return;
 
             if (!immediate)
                 return;
 
-            _currentVelocity = 0f;
-            ApplyZoomValue(Mathf.MoveTowards(GetCurrentZoom(), _targetZoom, ResolveMaxZoomStep(MaxImmediatePinchStepFraction)));
+            ApplyZoomValue(_targetZoom);
             UpdateGlobalMipBias();
+        }
+
+        private Vector2 ResolveScreenCenter()
+        {
+            float width = Screen.width > 0 ? Screen.width : (_camera != null ? Mathf.Max(1, _camera.pixelWidth) : 1f);
+            float height = Screen.height > 0 ? Screen.height : (_camera != null ? Mathf.Max(1, _camera.pixelHeight) : 1f);
+            return new Vector2(width * 0.5f, height * 0.5f);
         }
 
         public void ForceZoomCamera(float zoomLevel)
         {
-            // Встановлюємо новий цільовий зум (теж обмежуємо про всяк випадок)
-            _targetZoom = Mathf.Clamp(zoomLevel, ResolveEffectiveMinZoom(), ResolveEffectiveMaxZoom());
+            ResolveZoomRange(out float minZoom, out float maxZoom);
+            _targetZoom = Mathf.Clamp(zoomLevel, minZoom, maxZoom);
 
             // Блокуємо ручне керування на заданий час
             _forceBlockTimer = ForceBlockDuration;
@@ -117,28 +115,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 _forceBlockTimer -= Time.deltaTime;
             }
 
-            // Continuously clamp against effective max (bounds can change once
-            // tilemaps load asynchronously after the camera was already alive).
-            _targetZoom = Mathf.Clamp(_targetZoom, ResolveEffectiveMinZoom(), ResolveEffectiveMaxZoom());
+            ResolveZoomRange(out float minZoom, out float maxZoom);
+            _targetZoom = Mathf.Clamp(_targetZoom, minZoom, maxZoom);
 
-            if (_camera.orthographic)
-            {
-                // Логіка для 2D (Orthographic)
-                ApplyZoomValue(Mathf.SmoothDamp(
-                    _camera.orthographicSize,
-                    _targetZoom,
-                    ref _currentVelocity,
-                    _settings.ResolveSmoothTime()));
-            }
-            else
-            {
-                // Логіка для 3D (Perspective)
-                ApplyZoomValue(Mathf.SmoothDamp(
-                    _camera.fieldOfView,
-                    _targetZoom,
-                    ref _currentVelocity,
-                    _settings.ResolveSmoothTime()));
-            }
+            float currentZoom = GetCurrentZoom();
+            float interpolation = ResolveInterpolationFactor(_settings.ResolveSmoothTime());
+            float nextZoom = Mathf.Lerp(currentZoom, _targetZoom, interpolation);
+            if (Mathf.Abs(nextZoom - _targetZoom) <= ZoomEpsilon)
+                nextZoom = _targetZoom;
+
+            ApplyZoomValue(nextZoom);
 
             UpdateGlobalMipBias();
         }
@@ -146,73 +132,41 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private void ApplyZoomValue(float zoomValue)
         {
             if (_camera.orthographic)
+            {
                 _camera.orthographicSize = zoomValue;
-            else
-                _camera.fieldOfView = zoomValue;
+                return;
+            }
+
+            _camera.fieldOfView = zoomValue;
         }
 
         private float GetCurrentZoom()
         {
-            return _camera.orthographic ? _camera.orthographicSize : _camera.fieldOfView;
+            if (_camera.orthographic)
+                return _camera.orthographicSize;
+
+            return _camera.fieldOfView;
         }
 
-        private float ResolveMaxZoomStep(float fraction)
+        private void ResolveZoomRange(out float minZoom, out float maxZoom)
         {
-            float zoomRange = Mathf.Max(MinZoomStep, ResolveEffectiveMaxZoom() - ResolveEffectiveMinZoom());
-            return Mathf.Max(MinZoomStep, zoomRange * Mathf.Clamp01(fraction));
-        }
+            minZoom = _settings.ResolveMinZoom();
+            maxZoom = Mathf.Max(minZoom + 0.1f, _settings.ResolveMaxZoom());
 
-        private float ResolveEffectiveMinZoom()
-        {
-            return _camera != null && !_camera.orthographic
-                ? PerspectiveMinFieldOfView
-                : _settings.ResolveMinZoom();
-        }
-
-        /// <summary>
-        /// Returns the effective maximum orthographic size that keeps the viewport
-        /// fully inside the world bounds (so the player cannot zoom out beyond the map).
-        /// Falls back to <see cref="CameraSettingsSO.maxZoom"/> when bounds are not yet
-        /// available.
-        /// </summary>
-        private float ResolveEffectiveMaxZoom()
-        {
-            float settingsMin = _settings.ResolveMinZoom();
-            float settingsMax = _settings.ResolveMaxZoom();
-            if (!_camera.orthographic)
+            if (_camera != null && !_camera.orthographic)
             {
-                float configuredDefault = _projectSettings != null
-                    ? _projectSettings.ResolveProject3DFieldOfView()
-                    : _settings.ResolveDefault3DFieldOfView();
-                return Mathf.Clamp(Mathf.Max(PerspectiveMaxFieldOfView, configuredDefault), PerspectiveMinFieldOfView + 0.1f, 179f);
+                minZoom = Mathf.Clamp(minZoom, MinimumPerspectiveFieldOfView, MaximumPerspectiveFieldOfView - 0.1f);
+                float configuredDefaultFov = _settings.ResolveDefault3DFieldOfView();
+                maxZoom = Mathf.Clamp(Mathf.Max(maxZoom, configuredDefaultFov), minZoom + 0.1f, MaximumPerspectiveFieldOfView);
             }
+        }
 
-            if (_boundsProvider == null)
-                return settingsMax;
+        private static float ResolveInterpolationFactor(float smoothTime)
+        {
+            if (smoothTime <= 0.0001f)
+                return 1f;
 
-            var bounds = _boundsProvider.GetWorldBounds();
-            if (!bounds.HasValue)
-                return settingsMax;
-
-            // Автоматичний max zoom рахуємо з тих самих меж, що й рух камери:
-            // map bounds + overflow для руху.
-            Vector2 overflow = _settings.ResolveBoundsOverflowWorldUnits();
-            float expandedWidth = Mathf.Max(0.01f, bounds.Width + overflow.x * 2f);
-            float expandedHeight = Mathf.Max(0.01f, bounds.Height + overflow.y * 2f);
-
-            // viewport height (in world units) = orthographicSize * 2
-            // viewport width  = orthographicSize * 2 * aspect
-            // Constrain so neither exceeds bounds. Multiply by safety pad ~0.999
-            // so we never sit exactly on the edge (which causes rounding jitter).
-            float maxByHeight = expandedHeight * 0.5f;
-            float maxByWidth = _camera.aspect > 0.0001f
-                ? (expandedWidth * 0.5f) / _camera.aspect
-                : settingsMax;
-            float boundsMax = Mathf.Min(maxByHeight, maxByWidth);
-            // Коли bounds відомі, верхній ліміт зуму визначається саме розміром мапи
-            // (з урахуванням overflow), а не профільним maxZoom.
-            float allowed = boundsMax;
-            return Mathf.Max(settingsMin + 0.01f, allowed);
+            return 1f - Mathf.Exp(-Time.deltaTime / smoothTime);
         }
 
         private static float NormalizeWheelDelta(float delta)
@@ -240,8 +194,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             }
 
             float currentZoom = GetCurrentZoom();
-            float minZoom = ResolveEffectiveMinZoom();
-            float maxZoom = ResolveEffectiveMaxZoom();
+            ResolveZoomRange(out float minZoom, out float maxZoom);
 
             float normalized = maxZoom > minZoom
                 ? Mathf.InverseLerp(minZoom, maxZoom, currentZoom)

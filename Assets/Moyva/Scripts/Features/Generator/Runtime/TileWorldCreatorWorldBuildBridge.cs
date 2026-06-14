@@ -14,23 +14,28 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly TileWorldCreatorManager _manager;
         private readonly TileWorldCreatorIdMappingSO _mapping;
         private readonly TileWorldCreatorBuildOptions _options;
+        private readonly IGeneratorTerrainLevelService _terrainLevelService;
         private readonly HashSet<string> _loggedMissingLayers = new HashSet<string>();
         private readonly HashSet<string> _loggedInvalidBuildLayers = new HashSet<string>();
 
         public TileWorldCreatorWorldBuildBridge(
             TileWorldCreatorManager manager,
             TileWorldCreatorIdMappingSO mapping,
-            TileWorldCreatorBuildOptions options)
+            TileWorldCreatorBuildOptions options,
+            IGeneratorTerrainLevelService terrainLevelService = null)
         {
             _manager = manager;
             _mapping = mapping;
             _options = options ?? new TileWorldCreatorBuildOptions();
+            _terrainLevelService = terrainLevelService;
         }
 
         public TileWorldCreatorWorldBuildResult Build(GeneratedWorldData worldData)
         {
             if (_manager == null || _mapping == null || worldData == null)
                 return TileWorldCreatorWorldBuildResult.Disabled;
+
+            _terrainLevelService?.Clear();
 
             var configuration = _manager.configuration;
             if (configuration == null)
@@ -137,6 +142,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 if (_options.ApplyIntegerTerrainHeights)
                     ApplyIntegerTerrainHeights(worldData, configuration);
+
+                PublishTerrainHeights(worldData, configuration);
 
                 return new TileWorldCreatorWorldBuildResult(
                     mappedTerrainIds,
@@ -691,6 +698,125 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             return hasBaseHeight ? baseHeight : 0f;
+        }
+
+        private void PublishTerrainHeights(GeneratedWorldData worldData, Configuration configuration)
+        {
+            if (_terrainLevelService == null || worldData == null)
+                return;
+
+            if (worldData.TerrainLevelMap != null)
+                _terrainLevelService.SetLevelMap(worldData.TerrainLevelMap);
+
+            float[,] surfaceHeightMap = BuildTerrainSurfaceHeightMap(worldData, configuration);
+            if (surfaceHeightMap != null)
+                _terrainLevelService.SetSurfaceHeightMap(surfaceHeightMap);
+        }
+
+        private float[,] BuildTerrainSurfaceHeightMap(GeneratedWorldData worldData, Configuration configuration)
+        {
+            int width = Mathf.Max(0, worldData.Width);
+            int height = Mathf.Max(0, worldData.Height);
+            if (width <= 0 || height <= 0)
+                return null;
+
+            var surfaceHeightMap = new float[width, height];
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                {
+                    float baseHeight = ResolveFallbackSurfaceBaseHeight(worldData, x, y);
+                    if (TryGetBiomeId(worldData.BiomeMap, x, y, out string biomeId)
+                        && _mapping.TryResolveTerrainLayer(biomeId, out var mapping))
+                    {
+                        baseHeight = ResolveMappedTwcTerrainBaseHeight(configuration, mapping);
+                    }
+
+                    surfaceHeightMap[x, y] = baseHeight + ResolveIntegerTerrainHeightOffset(worldData, x, y);
+                }
+            }
+
+            return surfaceHeightMap;
+        }
+
+        private float ResolveMappedTwcTerrainBaseHeight(Configuration configuration, TileWorldCreatorIdMappingSO.LayerMapping mapping)
+        {
+            if (configuration == null || mapping == null)
+                return 0f;
+
+            if (!TryResolveBlueprintLayerGuid(configuration, mapping, out string blueprintLayerGuid))
+                return 0f;
+
+            var blueprint = configuration.GetBlueprintLayerByGuid(blueprintLayerGuid);
+            var buildLayer = FindTilesBuildLayer(configuration, blueprintLayerGuid);
+            return ResolveTilesBuildLayerTopHeight(blueprint, buildLayer);
+        }
+
+        private static float ResolveTilesBuildLayerTopHeight(BlueprintLayer blueprint, TilesBuildLayer buildLayer)
+        {
+            float baseHeight = blueprint != null ? blueprint.defaultLayerHeight : 0f;
+            if (buildLayer == null)
+                return baseHeight;
+
+            float layerBaseHeight = baseHeight + buildLayer.layerYOffset;
+            if (buildLayer.tileLayers == null || buildLayer.tileLayers.Count == 0)
+                return layerBaseHeight;
+
+            bool hasTileLayer = false;
+            float topHeight = layerBaseHeight;
+            for (int i = 0; i < buildLayer.tileLayers.Count; i++)
+            {
+                var tileLayer = buildLayer.tileLayers[i];
+                if (tileLayer == null)
+                    continue;
+
+                float candidate = layerBaseHeight + tileLayer.heightOffset;
+                topHeight = hasTileLayer ? Mathf.Max(topHeight, candidate) : candidate;
+                hasTileLayer = true;
+            }
+
+            return hasTileLayer ? topHeight : layerBaseHeight;
+        }
+
+        private float ResolveIntegerTerrainHeightOffset(GeneratedWorldData worldData, int x, int y)
+        {
+            if (!_options.ApplyIntegerTerrainHeights || worldData?.TerrainLevelMap == null)
+                return 0f;
+
+            if (x < 0 || x >= worldData.TerrainLevelMap.GetLength(0)
+                || y < 0 || y >= worldData.TerrainLevelMap.GetLength(1))
+            {
+                return 0f;
+            }
+
+            return Mathf.Max(0, worldData.TerrainLevelMap[x, y]) * _options.TerrainHeightStep;
+        }
+
+        private static float ResolveFallbackSurfaceBaseHeight(GeneratedWorldData worldData, int x, int y)
+        {
+            if (worldData?.HeightMap == null
+                || x < 0 || x >= worldData.HeightMap.GetLength(0)
+                || y < 0 || y >= worldData.HeightMap.GetLength(1))
+            {
+                return 0f;
+            }
+
+            float value = worldData.HeightMap[x, y];
+            return float.IsNaN(value) || float.IsInfinity(value) ? 0f : value;
+        }
+
+        private static bool TryGetBiomeId(string[,] biomeMap, int x, int y, out string biomeId)
+        {
+            biomeId = null;
+            if (biomeMap == null
+                || x < 0 || x >= biomeMap.GetLength(0)
+                || y < 0 || y >= biomeMap.GetLength(1))
+            {
+                return false;
+            }
+
+            biomeId = biomeMap[x, y];
+            return !string.IsNullOrWhiteSpace(biomeId);
         }
 
         private void EnsureTerrainLevelMap(GeneratedWorldData worldData)

@@ -41,14 +41,13 @@ namespace Kruty1918.Moyva.Generator.Editor
         private const string DefaultMappingName = "MoyvaTileWorldCreatorIdMapping.asset";
         private const string DefaultSceneContextName = "SceneContext";
         private const string DefaultGridInstallerName = "GridInstaller";
-        private const string DefaultGeneratorInstallerName = "GeneratorInstaller";
         private const string DefaultPreviewCameraName = "Generator Preview Camera";
         private const string SignalsInstallerTypeName = "Kruty1918.Moyva.Signals.SignalBusInstaller, Kruty1918.Moyva.Signals";
 
         private TileWorldCreatorManager _manager;
         private SceneContext _sceneContext;
         private GridInstaller _gridInstaller;
-        private GeneratorInstaller _generatorInstaller;
+        private MoyvaTileWorldCreatorGraphBinding _graphBinding;
         private GraphAsset _graphAsset;
         private TileRegistrySO _tileRegistry;
         private TileWorldCreatorIdMappingSO _mapping;
@@ -59,14 +58,13 @@ namespace Kruty1918.Moyva.Generator.Editor
         private bool _createObjectBuildLayers;
         private bool _syncTileRegistry = true;
         private bool _rebuildTileRegistryFromMapping = true;
-        private bool _assignGeneratorInstaller = true;
+        private bool _assignGraphBinding = true;
         private bool _autoSetupSceneContext = true;
         private bool _autoSetupSignalBusInstaller = true;
         private bool _autoSetupGridInstaller = true;
-        private bool _autoSetupGeneratorInstaller = true;
+        private bool _autoSetupGraphBinding = true;
         private bool _autoSetupPreviewCamera = true;
         private bool _registerInstallersInSceneContext = true;
-        private bool _forceTwcPipelineOnGeneratorInstaller = true;
         private bool _drawMappingInspector = true;
         private TileWorldCreatorSetupPreset _selectedPreset = TileWorldCreatorSetupPreset.WaterGrassHills;
         private Vector2 _scroll;
@@ -131,7 +129,7 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             EditorGUILayout.LabelField("TileWorldCreator Setup Wizard", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Цей wizard створює TWC Manager/Configuration, заповнює TWC layers із ID Mapping, перебудовує TileRegistry як gameplay/TWC-реєстр і підключає все до GeneratorInstaller.",
+                "Цей wizard створює TWC Manager/Configuration, заповнює TWC layers із ID Mapping, перебудовує TileRegistry як gameplay/TWC-реєстр і підключає runtime через Moyva TWC Graph Binding.",
                 MessageType.Info);
 
             DrawReferencesSection();
@@ -151,7 +149,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             _manager = (TileWorldCreatorManager)EditorGUILayout.ObjectField("TWC Manager", _manager, typeof(TileWorldCreatorManager), true);
             _sceneContext = (SceneContext)EditorGUILayout.ObjectField("Scene Context", _sceneContext, typeof(SceneContext), true);
             _gridInstaller = (GridInstaller)EditorGUILayout.ObjectField("Grid Installer", _gridInstaller, typeof(GridInstaller), true);
-            _generatorInstaller = (GeneratorInstaller)EditorGUILayout.ObjectField("Generator Installer", _generatorInstaller, typeof(GeneratorInstaller), true);
+            _graphBinding = (MoyvaTileWorldCreatorGraphBinding)EditorGUILayout.ObjectField("TWC Graph Binding", _graphBinding, typeof(MoyvaTileWorldCreatorGraphBinding), true);
             _graphAsset = (GraphAsset)EditorGUILayout.ObjectField("Graph Asset", _graphAsset, typeof(GraphAsset), false);
             _tileRegistry = (TileRegistrySO)EditorGUILayout.ObjectField("Tile Registry", _tileRegistry, typeof(TileRegistrySO), false);
             _mapping = (TileWorldCreatorIdMappingSO)EditorGUILayout.ObjectField("ID Mapping", _mapping, typeof(TileWorldCreatorIdMappingSO), false);
@@ -179,17 +177,16 @@ namespace Kruty1918.Moyva.Generator.Editor
             _syncTileRegistry = EditorGUILayout.Toggle("Sync TileRegistry From TWC", _syncTileRegistry);
             using (new EditorGUI.DisabledScope(!_syncTileRegistry))
                 _rebuildTileRegistryFromMapping = EditorGUILayout.Toggle("Rebuild TileRegistry Entries", _rebuildTileRegistryFromMapping);
-            _assignGeneratorInstaller = EditorGUILayout.Toggle("Assign GeneratorInstaller", _assignGeneratorInstaller);
+            _assignGraphBinding = EditorGUILayout.Toggle("Assign TWC Graph Binding", _assignGraphBinding);
 
                 EditorGUILayout.Space(4f);
                 EditorGUILayout.LabelField("Scene Auto-Setup", EditorStyles.boldLabel);
                 _autoSetupSceneContext = EditorGUILayout.Toggle("Create SceneContext", _autoSetupSceneContext);
                 _autoSetupSignalBusInstaller = EditorGUILayout.Toggle("Ensure SignalBusInstaller", _autoSetupSignalBusInstaller);
                 _autoSetupGridInstaller = EditorGUILayout.Toggle("Ensure GridInstaller", _autoSetupGridInstaller);
-                _autoSetupGeneratorInstaller = EditorGUILayout.Toggle("Ensure GeneratorInstaller", _autoSetupGeneratorInstaller);
+                _autoSetupGraphBinding = EditorGUILayout.Toggle("Ensure TWC Graph Binding", _autoSetupGraphBinding);
                 _registerInstallersInSceneContext = EditorGUILayout.Toggle("Register Installers in SceneContext", _registerInstallersInSceneContext);
                 _autoSetupPreviewCamera = EditorGUILayout.Toggle("Ensure Preview Camera", _autoSetupPreviewCamera);
-                _forceTwcPipelineOnGeneratorInstaller = EditorGUILayout.Toggle("Force TWC Graph Pipeline", _forceTwcPipelineOnGeneratorInstaller);
         }
 
         private void DrawPresetSection()
@@ -262,7 +259,9 @@ namespace Kruty1918.Moyva.Generator.Editor
             _manager ??= FindFirstSceneObject<TileWorldCreatorManager>();
             _sceneContext ??= FindFirstSceneObject<SceneContext>();
             _gridInstaller ??= FindFirstSceneObject<GridInstaller>();
-            _generatorInstaller ??= FindFirstSceneObject<GeneratorInstaller>();
+            _graphBinding ??= _manager != null
+                ? _manager.GetComponent<MoyvaTileWorldCreatorGraphBinding>()
+                : FindFirstSceneObject<MoyvaTileWorldCreatorGraphBinding>();
             _graphAsset ??= FindFirstAsset<GraphAsset>();
             _tileRegistry ??= FindFirstAsset<TileRegistrySO>();
             _mapping ??= FindFirstAsset<TileWorldCreatorIdMappingSO>();
@@ -295,8 +294,8 @@ namespace Kruty1918.Moyva.Generator.Editor
             }
 
             EnsureGridInstallerBindings();
-            if (_assignGeneratorInstaller)
-                AssignGeneratorInstaller();
+            if (_assignGraphBinding)
+                AssignGraphBinding();
 
             SaveAll();
             EditorUtility.DisplayDialog("TWC Setup Wizard", "Scene auto-setup завершено. Сцена готова до запуску генератора.", "OK");
@@ -333,8 +332,8 @@ namespace Kruty1918.Moyva.Generator.Editor
                     TileWorldCreatorRegistrySyncUtility.SyncTerrainIds(_tileRegistry, _mapping, true, out _, out _, out _);
             }
 
-            if (_assignGeneratorInstaller)
-                AssignGeneratorInstaller();
+            if (_assignGraphBinding)
+                AssignGraphBinding();
 
             SaveAll();
             EditorUtility.DisplayDialog("TWC Setup Wizard", "TileWorldCreator setup оновлено.", "OK");
@@ -397,8 +396,8 @@ namespace Kruty1918.Moyva.Generator.Editor
             EditorUtility.SetDirty(_manager);
             EditorUtility.SetDirty(configuration);
 
-            if (_generatorInstaller != null)
-                ApplyPresetToGeneratorInstaller();
+            if (_graphBinding != null)
+                ApplyPresetToGraphBinding();
         }
 
         private void ApplyPresetLayer(Configuration configuration, PresetLayerDefinition definition)
@@ -437,13 +436,11 @@ namespace Kruty1918.Moyva.Generator.Editor
             EditorUtility.SetDirty(buildLayer);
         }
 
-        private void ApplyPresetToGeneratorInstaller()
+        private void ApplyPresetToGraphBinding()
         {
-            var installerObject = new SerializedObject(_generatorInstaller);
-            installerObject.FindProperty("_useTileWorldCreatorVisuals").boolValue = true;
-            installerObject.FindProperty("_tileWorldCreatorManager").objectReferenceValue = _manager;
+            var bindingObject = new SerializedObject(_graphBinding);
 
-            var options = installerObject.FindProperty("_tileWorldCreatorBuildOptions");
+            var options = bindingObject.FindProperty("_tileWorldCreatorBuildOptions");
             if (options != null)
             {
                 options.FindPropertyRelative("_applyIntegerTerrainHeights").boolValue = true;
@@ -455,8 +452,8 @@ namespace Kruty1918.Moyva.Generator.Editor
                 options.FindPropertyRelative("_maxTerrainLevel").intValue = 5;
             }
 
-            installerObject.ApplyModifiedProperties();
-            EditorUtility.SetDirty(_generatorInstaller);
+            bindingObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(_graphBinding);
         }
 
         private void SeedMappingFromTileRegistry()
@@ -566,27 +563,27 @@ namespace Kruty1918.Moyva.Generator.Editor
             mappingObject.ApplyModifiedProperties();
         }
 
-        private void AssignGeneratorInstaller()
+        private void AssignGraphBinding()
         {
-            if (_generatorInstaller == null || _manager == null || _mapping == null)
+            if (_manager == null || _mapping == null)
                 return;
 
-            var installerObject = new SerializedObject(_generatorInstaller);
-            installerObject.FindProperty("_useTileWorldCreatorVisuals").boolValue = true;
-            installerObject.FindProperty("_tileWorldCreatorManager").objectReferenceValue = _manager;
-            installerObject.FindProperty("_tileWorldCreatorIdMapping").objectReferenceValue = _mapping;
+            _graphBinding = EnsureGraphBinding(_graphAsset != null ? _graphAsset : FindFirstAsset<GraphAsset>());
+            if (_graphBinding == null)
+                return;
+
+            var bindingObject = new SerializedObject(_graphBinding);
+            bindingObject.FindProperty("_manager").objectReferenceValue = _manager;
+            bindingObject.FindProperty("_tileWorldCreatorIdMapping").objectReferenceValue = _mapping;
 
             var graphAsset = _graphAsset != null ? _graphAsset : FindFirstAsset<GraphAsset>();
             if (graphAsset != null)
             {
-                installerObject.FindProperty("_graphAsset").objectReferenceValue = graphAsset;
+                bindingObject.FindProperty("_graphAsset").objectReferenceValue = graphAsset;
                 EnsureGraphBinding(graphAsset);
             }
 
-            if (_forceTwcPipelineOnGeneratorInstaller)
-                installerObject.FindProperty("_useTwcGraphPipeline").boolValue = true;
-
-            var options = installerObject.FindProperty("_tileWorldCreatorBuildOptions");
+            var options = bindingObject.FindProperty("_tileWorldCreatorBuildOptions");
             if (options != null)
             {
                 options.FindPropertyRelative("_replaceMappedTerrainVisuals").boolValue = true;
@@ -596,8 +593,8 @@ namespace Kruty1918.Moyva.Generator.Editor
                 options.FindPropertyRelative("_useWorldSeed").boolValue = true;
             }
 
-            installerObject.ApplyModifiedProperties();
-            EditorUtility.SetDirty(_generatorInstaller);
+            bindingObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(_graphBinding);
         }
 
         private MoyvaTileWorldCreatorGraphBinding EnsureGraphBinding(GraphAsset graphAsset)
@@ -629,8 +626,8 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (_autoSetupGridInstaller)
                 _gridInstaller = EnsureGridInstaller();
 
-            if (_autoSetupGeneratorInstaller)
-                _generatorInstaller = EnsureGeneratorInstaller();
+            if (_autoSetupGraphBinding)
+                _graphBinding = EnsureGraphBinding(_graphAsset != null ? _graphAsset : FindFirstAsset<GraphAsset>());
 
             MonoBehaviour signalsInstaller = null;
             if (_autoSetupSignalBusInstaller)
@@ -642,8 +639,8 @@ namespace Kruty1918.Moyva.Generator.Editor
                     EnsureSceneContextContainsInstaller(_sceneContext, signalsInstaller);
                 if (_gridInstaller != null)
                     EnsureSceneContextContainsInstaller(_sceneContext, _gridInstaller);
-                if (_generatorInstaller != null)
-                    EnsureSceneContextContainsInstaller(_sceneContext, _generatorInstaller);
+                if (_graphBinding != null)
+                    EnsureSceneContextContainsInstaller(_sceneContext, _graphBinding);
             }
 
             if (_autoSetupPreviewCamera)
@@ -679,25 +676,6 @@ namespace Kruty1918.Moyva.Generator.Editor
             _gridInstaller = go.AddComponent<GridInstaller>();
             EditorUtility.SetDirty(_gridInstaller);
             return _gridInstaller;
-        }
-
-        private GeneratorInstaller EnsureGeneratorInstaller()
-        {
-            if (_generatorInstaller != null)
-                return _generatorInstaller;
-
-            var existing = FindFirstSceneObject<GeneratorInstaller>();
-            if (existing != null)
-            {
-                _generatorInstaller = existing;
-                return _generatorInstaller;
-            }
-
-            var go = new GameObject(DefaultGeneratorInstallerName);
-            Undo.RegisterCreatedObjectUndo(go, "Create GeneratorInstaller");
-            _generatorInstaller = go.AddComponent<GeneratorInstaller>();
-            EditorUtility.SetDirty(_generatorInstaller);
-            return _generatorInstaller;
         }
 
         private MonoBehaviour EnsureInstallerByTypeName(string assemblyQualifiedTypeName, string fallbackGameObjectName)

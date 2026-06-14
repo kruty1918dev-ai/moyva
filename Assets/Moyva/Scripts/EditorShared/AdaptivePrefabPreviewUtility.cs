@@ -1,4 +1,7 @@
 using System.Collections.Generic;
+using System.IO;
+using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
 using UnityEditor;
@@ -431,6 +434,347 @@ namespace Kruty1918.Moyva.Editor.Shared
 
             for (int i = 0; i < pixels.Length; i++)
                 pixels[i] *= tint;
+        }
+    }
+
+    public static class BuildingPrefabPreviewCacheUtility
+    {
+        public const string PreviewFolder = "Assets/Moyva/Generated/Construction/BuildingPreviews";
+        private const int MinimumPreviewSize = 64;
+        private const int MaximumPreviewSize = 256;
+
+        public static bool RebuildRegistryPreviews(BuildingRegistrySO registry, bool saveAssets = false)
+        {
+            if (registry == null)
+                return false;
+
+            var serializedRegistry = new SerializedObject(registry);
+            serializedRegistry.Update();
+
+            bool changed = RebuildSerializedRegistryPreviews(serializedRegistry, registry);
+            if (!changed)
+                return false;
+
+            serializedRegistry.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(registry);
+
+            if (saveAssets)
+                AssetDatabase.SaveAssets();
+
+            return true;
+        }
+
+        public static bool RebuildSerializedRegistryPreviews(SerializedObject registryObject, Object dirtyTarget = null)
+        {
+            if (registryObject == null)
+                return false;
+
+            var buildings = registryObject.FindProperty("Buildings");
+            if (buildings == null || !buildings.isArray)
+                return false;
+
+            bool changed = false;
+            Object target = dirtyTarget != null ? dirtyTarget : registryObject.targetObject;
+            for (int index = 0; index < buildings.arraySize; index++)
+                changed |= RebuildSerializedBuildingPreview(buildings.GetArrayElementAtIndex(index), target);
+
+            return changed;
+        }
+
+        public static bool RebuildSerializedBuildingPreview(SerializedProperty buildingProperty, Object dirtyTarget = null)
+        {
+            if (buildingProperty == null)
+                return false;
+
+            var previewProperty = buildingProperty.FindPropertyRelative("RuntimePreview");
+            if (previewProperty == null)
+                return false;
+
+            string id = buildingProperty.FindPropertyRelative("Id")?.stringValue;
+            var prefab = buildingProperty.FindPropertyRelative("Prefab")?.objectReferenceValue as GameObject;
+            var icon = buildingProperty.FindPropertyRelative("Icon")?.objectReferenceValue as Sprite;
+
+            bool hasPreview = TryBakePreviewSprite(id, prefab, icon, out var previewSprite);
+            Object previousPreview = previewProperty.objectReferenceValue;
+            Object nextPreview = hasPreview ? previewSprite : null;
+            if (previousPreview == nextPreview)
+                return false;
+
+            previewProperty.objectReferenceValue = nextPreview;
+            if (dirtyTarget != null)
+                EditorUtility.SetDirty(dirtyTarget);
+
+            return true;
+        }
+
+        public static bool TryBakePreviewSprite(string id, GameObject prefab, Sprite fallbackSprite, out Sprite previewSprite)
+        {
+            previewSprite = null;
+            if (prefab == null && fallbackSprite == null)
+                return false;
+
+            if (!TryBuildPreviewPixels(prefab, fallbackSprite, out var pixels, out int width, out int height, out var filterMode))
+                return false;
+
+            string assetId = !string.IsNullOrWhiteSpace(id)
+                ? id.Trim()
+                : prefab != null ? prefab.name : fallbackSprite.name;
+
+            return TrySavePreviewSprite(assetId, pixels, width, height, filterMode, out previewSprite);
+        }
+
+        private static bool TryBuildPreviewPixels(
+            GameObject prefab,
+            Sprite fallbackSprite,
+            out Color[] pixels,
+            out int width,
+            out int height,
+            out FilterMode filterMode)
+        {
+            pixels = null;
+            width = 0;
+            height = 0;
+
+            var settings = AdaptivePrefabPreviewUtility.ProjectSettings;
+            int targetSize = Mathf.Clamp(settings.ResolvePreviewTextureSize(), MinimumPreviewSize, MaximumPreviewSize);
+            filterMode = AdaptivePrefabPreviewUtility.Uses3DPreview(settings) ? settings.PreviewFilterMode : FilterMode.Bilinear;
+
+            if (prefab != null && MoyvaPrefabPreviewRenderer.TryRenderMeshPrefabPreview(prefab, settings, out var meshPreview) && meshPreview.IsValid)
+            {
+                pixels = FitPixelsToSquare(meshPreview.Pixels, meshPreview.Width, meshPreview.Height, targetSize);
+                width = targetSize;
+                height = targetSize;
+                return true;
+            }
+
+            if (prefab != null
+                && AdaptivePrefabPreviewUtility.TryGetPrimarySprite(prefab, out var prefabSprite, out var prefabTint)
+                && TryBuildSpritePreviewPixels(prefabSprite, prefabTint, targetSize, out pixels))
+            {
+                width = targetSize;
+                height = targetSize;
+                return true;
+            }
+
+            if (fallbackSprite != null && TryBuildSpritePreviewPixels(fallbackSprite, Color.white, targetSize, out pixels))
+            {
+                width = targetSize;
+                height = targetSize;
+                return true;
+            }
+
+            if (prefab != null && TryBuildAssetPreviewPixels(prefab, targetSize, out pixels))
+            {
+                width = targetSize;
+                height = targetSize;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryBuildSpritePreviewPixels(Sprite sprite, Color tint, int targetSize, out Color[] pixels)
+        {
+            pixels = null;
+            if (!AdaptivePrefabPreviewUtility.TryGetSpritePixels(sprite, tint, Color.clear, out var spriteData) || !spriteData.IsValid)
+                return false;
+
+            pixels = FitPixelsToSquare(spriteData.Pixels, spriteData.Width, spriteData.Height, targetSize);
+            return HasVisiblePixels(pixels);
+        }
+
+        private static bool TryBuildAssetPreviewPixels(GameObject prefab, int targetSize, out Color[] pixels)
+        {
+            pixels = null;
+            Texture preview = AssetPreview.GetAssetPreview(prefab) ?? AssetPreview.GetMiniThumbnail(prefab);
+            if (preview == null || !TryReadTexturePixels(preview, out var sourcePixels, out int sourceWidth, out int sourceHeight))
+                return false;
+
+            pixels = FitPixelsToSquare(sourcePixels, sourceWidth, sourceHeight, targetSize);
+            return HasVisiblePixels(pixels);
+        }
+
+        private static bool TryReadTexturePixels(Texture texture, out Color[] pixels, out int width, out int height)
+        {
+            pixels = null;
+            width = texture != null ? texture.width : 0;
+            height = texture != null ? texture.height : 0;
+            if (texture == null || width <= 0 || height <= 0)
+                return false;
+
+            if (texture is Texture2D texture2D)
+            {
+                try
+                {
+                    pixels = texture2D.GetPixels();
+                    return pixels != null && pixels.Length > 0;
+                }
+                catch
+                {
+                    // Fall through to RenderTexture readback for non-readable editor textures.
+                }
+            }
+
+            RenderTexture previous = RenderTexture.active;
+            RenderTexture temporary = null;
+            Texture2D readable = null;
+            try
+            {
+                temporary = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+                Graphics.Blit(texture, temporary);
+                RenderTexture.active = temporary;
+
+                readable = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
+                {
+                    hideFlags = HideFlags.HideAndDontSave,
+                    wrapMode = TextureWrapMode.Clamp,
+                    filterMode = FilterMode.Bilinear
+                };
+                readable.ReadPixels(new Rect(0, 0, width, height), 0, 0, false);
+                readable.Apply(false, false);
+                pixels = readable.GetPixels();
+                return pixels != null && pixels.Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                RenderTexture.active = previous;
+                if (temporary != null)
+                    RenderTexture.ReleaseTemporary(temporary);
+                if (readable != null)
+                    Object.DestroyImmediate(readable);
+            }
+        }
+
+        private static Color[] FitPixelsToSquare(Color[] source, int sourceWidth, int sourceHeight, int targetSize)
+        {
+            targetSize = Mathf.Clamp(targetSize, MinimumPreviewSize, MaximumPreviewSize);
+            var result = new Color[targetSize * targetSize];
+            if (source == null || source.Length == 0 || sourceWidth <= 0 || sourceHeight <= 0)
+                return result;
+
+            float scale = Mathf.Min(targetSize / (float)sourceWidth, targetSize / (float)sourceHeight);
+            int drawWidth = Mathf.Clamp(Mathf.RoundToInt(sourceWidth * scale), 1, targetSize);
+            int drawHeight = Mathf.Clamp(Mathf.RoundToInt(sourceHeight * scale), 1, targetSize);
+            int offsetX = (targetSize - drawWidth) / 2;
+            int offsetY = (targetSize - drawHeight) / 2;
+
+            for (int y = 0; y < drawHeight; y++)
+            {
+                int sourceY = Mathf.Clamp(Mathf.FloorToInt(y / scale), 0, sourceHeight - 1);
+                for (int x = 0; x < drawWidth; x++)
+                {
+                    int sourceX = Mathf.Clamp(Mathf.FloorToInt(x / scale), 0, sourceWidth - 1);
+                    result[(offsetY + y) * targetSize + offsetX + x] = source[sourceY * sourceWidth + sourceX];
+                }
+            }
+
+            return result;
+        }
+
+        private static bool TrySavePreviewSprite(
+            string id,
+            Color[] pixels,
+            int width,
+            int height,
+            FilterMode filterMode,
+            out Sprite previewSprite)
+        {
+            previewSprite = null;
+            if (pixels == null || pixels.Length == 0 || width <= 0 || height <= 0)
+                return false;
+
+            EnsureFolder(PreviewFolder);
+            string path = $"{PreviewFolder}/{SanitizeAssetName(id)}_preview.png";
+
+            Texture2D texture = null;
+            try
+            {
+                texture = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
+                {
+                    hideFlags = HideFlags.HideAndDontSave,
+                    filterMode = filterMode,
+                    wrapMode = TextureWrapMode.Clamp
+                };
+                texture.SetPixels(pixels);
+                texture.Apply(false, false);
+
+                File.WriteAllBytes(path, texture.EncodeToPNG());
+            }
+            finally
+            {
+                if (texture != null)
+                    Object.DestroyImmediate(texture);
+            }
+
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer != null)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.alphaIsTransparency = true;
+                importer.mipmapEnabled = false;
+                importer.filterMode = filterMode;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.spritePixelsPerUnit = 100f;
+                importer.SaveAndReimport();
+            }
+
+            previewSprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            return previewSprite != null;
+        }
+
+        private static bool HasVisiblePixels(Color[] pixels)
+        {
+            if (pixels == null)
+                return false;
+
+            for (int i = 0; i < pixels.Length; i++)
+            {
+                if (pixels[i].a > 0.01f)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static string SanitizeAssetName(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return "building";
+
+            var chars = id.Trim().ToLowerInvariant().ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                char ch = chars[i];
+                bool allowed = (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '-' || ch == '_';
+                if (!allowed)
+                    chars[i] = '-';
+            }
+
+            string result = new string(chars).Trim('-');
+            return string.IsNullOrWhiteSpace(result) ? "building" : result;
+        }
+
+        private static void EnsureFolder(string folder)
+        {
+            string[] parts = folder.Replace('\\', '/').TrimEnd('/').Split('/');
+            if (parts.Length == 0 || parts[0] != "Assets")
+                return;
+
+            string current = parts[0];
+            for (int index = 1; index < parts.Length; index++)
+            {
+                string next = current + "/" + parts[index];
+                if (!AssetDatabase.IsValidFolder(next))
+                    AssetDatabase.CreateFolder(current, parts[index]);
+                current = next;
+            }
         }
     }
 }

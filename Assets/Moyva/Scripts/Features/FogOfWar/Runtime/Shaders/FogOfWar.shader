@@ -139,8 +139,41 @@ Shader "Moyva/FogOfWar"
                 float2 tileSize = max(0.001.xx, _FogTileSizeInCells.xy);
                 float2 tileHalfTexel = 0.5 / max(1.0.xx, _FogTileSpritePixelSize.xy);
                 float2 seamOverlapUV = _FogTileSeamOverlapPixels.xx / max(1.0.xx, _FogTileSpritePixelSize.xy);
+                float mapInside = step(0.0, mapUV.x) * step(mapUV.x, 1.0) * step(0.0, mapUV.y) * step(mapUV.y, 1.0);
+                float mapOutside = 1.0 - mapInside;
+                float4 unexploredFogState = float4(0.0, 0.0, 1.0, 1.0);
                 half4 blended = half4(0.0, 0.0, 0.0, 0.0);
-                int sampleRadius = _MoyvaMobileFillRatePressure >= 0.65 ? 2 : 4;
+                float maxTileSize = max(tileSize.x, tileSize.y);
+                float maxSeamCells = max(seamOverlapUV.x * tileSize.x, seamOverlapUV.y * tileSize.y);
+                int platformSampleRadius = _MoyvaMobileFillRatePressure >= 0.65 ? 2 : 4;
+                int tileSampleRadius = min(4, max(1, (int)ceil(maxTileSize * 0.5 + maxSeamCells)));
+                int sampleRadius = min(platformSampleRadius, tileSampleRadius);
+
+                if (mapOutside > 0.5)
+                {
+                    for (int y = -4; y <= 4; y++)
+                    {
+                        for (int x = -4; x <= 4; x++)
+                        {
+                            if (x < -sampleRadius || x > sampleRadius || y < -sampleRadius || y > sampleRadius)
+                                continue;
+
+                            float2 cell = baseCell + float2(x, y);
+                            float2 spriteUVInCells = (fogCoord - (cell + 0.5.xx)) / tileSize + 0.5.xx;
+                            float inside = step(-seamOverlapUV.x, spriteUVInCells.x) * step(spriteUVInCells.x, 1.0 + seamOverlapUV.x) *
+                                           step(-seamOverlapUV.y, spriteUVInCells.y) * step(spriteUVInCells.y, 1.0 + seamOverlapUV.y);
+
+                            float2 clampedSpriteUV = min(saturate(spriteUVInCells), 0.9999.xx);
+                            float2 tiledUV = frac(clampedSpriteUV * _FogTileTiling);
+                            tiledUV = lerp(tileHalfTexel, 1.0.xx - tileHalfTexel, tiledUV);
+                            float2 tileSpriteUV = _FogTileUVRect.xy + tiledUV * _FogTileUVRect.zw;
+                            half4 tileSample = SAMPLE_TEXTURE2D(_FogTileTex, sampler_FogTileTex, tileSpriteUV) * inside;
+                            blended = BlendWithoutAlphaAccumulation(blended, TintTileByFog(tileSample, unexploredFogState));
+                        }
+                    }
+
+                    return blended;
+                }
 
                 for (int y = -4; y <= 4; y++)
                 {
@@ -178,7 +211,6 @@ Shader "Moyva/FogOfWar"
 
                     float2 iconUV = _FogIconUVRect.xy + iconUVInSprite * _FogIconUVRect.zw;
                     half4 iconSample = SAMPLE_TEXTURE2D(_FogIconTex, sampler_FogIconTex, iconUV);
-                    float mapInside = step(0.0, mapUV.x) * step(mapUV.x, 1.0) * step(0.0, mapUV.y) * step(mapUV.y, 1.0);
                     float4 currentFogState = BuildFogState(SAMPLE_TEXTURE2D(_FogTex, sampler_FogTex, saturate(mapUV)).r);
                     iconSample.a *= (_UnexploredAlpha * currentFogState.z + _ExploredAlpha * currentFogState.y) * (1.0 - currentFogState.x);
                     iconSample.a *= mapInside * _FogIconIntensity;

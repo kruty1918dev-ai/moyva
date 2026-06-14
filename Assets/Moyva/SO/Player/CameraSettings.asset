@@ -12,11 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a0e69e5eb0637123bab2515a1998437, type: 3}
   m_Name: CameraSettings
   m_EditorClassIdentifier: Kruty1918.Moyva.Camera::Kruty1918.Moyva.Camera.API.CameraSettingsSO
-  desktopProfile:
-    moveSpeed: 5
-    smoothTime: 0.3
+  controlProfile:
+    moveSpeed: 4
+    smoothTime: 0.4
     zoomSpeed: 5
-    minZoom: 2
+    minZoom: 4
     maxZoom: 10
     touchMoveSpeed: 1
     touchPinchZoomSensitivity: 1
@@ -25,24 +25,17 @@ MonoBehaviour:
     maxTouchDeltaPixels: 96
     useImmediateTouchGestures: 1
     keepPinchFocusUnderFingers: 1
-  mobileProfile:
-    moveSpeed: 4
-    smoothTime: 0.22
-    zoomSpeed: 4
-    minZoom: 2
-    maxZoom: 10
-    touchMoveSpeed: 1.1
-    touchPinchZoomSensitivity: 1.15
-    touchDragDeadZonePixels: 1
-    touchPinchDeadZonePixels: 2.5
-    maxTouchDeltaPixels: 96
-    useImmediateTouchGestures: 1
-    keepPinchFocusUnderFingers: 1
   boundsOverflowTiles: {x: 25, y: 25}
-  limitZoomByMapBounds: 1
-  zoomOutExtraTiles: {x: 1, y: 1}
-  zoomOutBoundsFactor: 2
   defaultCameraZ: -10
+  adaptToProject3DMode: 1
+  useOrthographicCameraIn3D: 0
+  default3DCameraDistance: 35
+  default3DOrthographicSize: 20
+  default3DFieldOfView: 40
+  orthographic3DEuler: {x: 90, y: 0, z: 0}
+  isometric3DEuler: {x: 52, y: 45, z: 0}
+  enableAutomaticMipBias: 0
+  automaticMipBiasMax: 0.75
   mapRenderMaskEnabled: 1
   mapMaskRefreshSeconds: 0.5
   mapMaskLayers:

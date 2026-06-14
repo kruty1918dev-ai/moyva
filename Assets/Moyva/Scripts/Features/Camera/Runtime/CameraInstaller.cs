@@ -4,6 +4,10 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Zenject;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace Kruty1918.Moyva.Camera.Runtime
 {
     public class CameraInstaller : MonoInstaller
@@ -15,15 +19,33 @@ namespace Kruty1918.Moyva.Camera.Runtime
         [SerializeField] private CameraSettingsSO _cameraSettings;
         [SerializeField] private InputActionAsset _cameraInputAsset;
 
+        private const string DefaultCameraInputAssetPath = "Assets/Moyva/SO/Input/InputSystem_Actions.inputactions";
+        private CameraSettingsSO _runtimeFallbackSettings;
+
         public override void InstallBindings()
         {
             // 1. Якщо камера не призначена в інспекторі, шукаємо MainCamera
             var camera = _sceneCamera != null ? _sceneCamera : UnityEngine.Camera.main;
+            if (camera == null)
+            {
+                Debug.LogError("[CameraInstaller] Scene camera is missing. Assign _sceneCamera or tag a camera as MainCamera.");
+                return;
+            }
+
             Container.BindInstance(camera).AsSingle();
 
+            var cameraInputAsset = ResolveCameraInputAsset();
+
             // 2. Біндимо налаштування
-            Container.BindInstance(_cameraSettings).AsSingle();
-            Container.BindInstance(_cameraInputAsset).AsSingle();
+            var cameraSettings = _cameraSettings != null ? _cameraSettings : CreateRuntimeFallbackCameraSettings();
+            if (_cameraSettings == null)
+                Debug.LogWarning("[CameraInstaller] CameraSettingsSO is not assigned. Using runtime fallback isometric camera settings.");
+
+            Container.BindInstance(cameraSettings).AsSingle();
+            if (cameraInputAsset != null)
+                Container.BindInstance(cameraInputAsset).AsSingle();
+            else
+                Debug.LogWarning("[CameraInstaller] Camera input asset is not assigned. Camera input controller is disabled.");
 
             // 3. Біндимо сервіси. 
             // Використовуємо BindInterfacesAndSelfTo, щоб підхопити ITickable, IInitializable та самі інтерфейси API
@@ -32,14 +54,51 @@ namespace Kruty1918.Moyva.Camera.Runtime
             Container.BindInterfacesAndSelfTo<CameraMovement>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraZoom>().AsSingle();
             Container.BindInterfacesAndSelfTo<CameraMapRenderMaskService>().AsSingle();
+            Container.BindInterfacesAndSelfTo<CameraAutoFramingService>().AsSingle();
             
             // CameraFocused не має Tick/Initializable, тому можна просто до інтерфейсу
             Container.BindInterfacesTo<CameraFocused>().AsSingle();
 
-            // 4. Біндимо контролер гравця
-            Container.BindInterfacesAndSelfTo<CameraPlayerController>().AsSingle();
+            // 4. Біндимо контролер гравця (лише коли є input actions)
+            if (cameraInputAsset != null)
+                Container.BindInterfacesAndSelfTo<CameraPlayerController>().AsSingle();
 
             Container.BindExecutionOrder<CameraProjectSettingsAdapter>(-100);
+            Container.BindExecutionOrder<CameraAutoFramingService>(-90);
+        }
+
+        private InputActionAsset ResolveCameraInputAsset()
+        {
+            if (_cameraInputAsset != null)
+                return _cameraInputAsset;
+
+#if UNITY_EDITOR
+            var defaultAsset = AssetDatabase.LoadAssetAtPath<InputActionAsset>(DefaultCameraInputAssetPath);
+            if (defaultAsset != null)
+            {
+                Debug.LogWarning($"[CameraInstaller] Camera input asset is not assigned. Using default asset at '{DefaultCameraInputAssetPath}'.");
+                return defaultAsset;
+            }
+#endif
+
+            return null;
+        }
+
+        private CameraSettingsSO CreateRuntimeFallbackCameraSettings()
+        {
+            if (_runtimeFallbackSettings != null)
+                return _runtimeFallbackSettings;
+
+            _runtimeFallbackSettings = ScriptableObject.CreateInstance<CameraSettingsSO>();
+            _runtimeFallbackSettings.name = "RuntimeFallback_CameraSettings";
+            _runtimeFallbackSettings.adaptToProject3DMode = true;
+            _runtimeFallbackSettings.useOrthographicCameraIn3D = false;
+            _runtimeFallbackSettings.default3DCameraDistance = 35f;
+            _runtimeFallbackSettings.default3DOrthographicSize = 20f;
+            _runtimeFallbackSettings.default3DFieldOfView = 40f;
+            _runtimeFallbackSettings.orthographic3DEuler = new Vector3(90f, 0f, 0f);
+            _runtimeFallbackSettings.isometric3DEuler = new Vector3(52f, 45f, 0f);
+            return _runtimeFallbackSettings;
         }
     }
 
@@ -123,6 +182,9 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private bool ResolveUsePerspectiveCamera()
         {
+            if (ResolveProjectionMode() == GridProjectionMode.Isometric3DPreview)
+                return true;
+
             bool autoUseOrthographic = _cameraSettings.ResolveUseOrthographicCameraIn3D();
             return _projectSettings != null
                 ? _projectSettings.ResolveUsePerspectiveCamera(autoUseOrthographic)

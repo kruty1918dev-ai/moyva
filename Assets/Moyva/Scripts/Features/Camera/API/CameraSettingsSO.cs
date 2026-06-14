@@ -1,13 +1,8 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Kruty1918.Moyva.Camera.API
 {
-    public enum CameraRuntimePlatform
-    {
-        Desktop = 0,
-        Mobile = 1,
-    }
-
     [System.Serializable]
     public struct CameraControlProfile
     {
@@ -45,89 +40,78 @@ namespace Kruty1918.Moyva.Camera.API
             };
         }
 
-        public static CameraControlProfile CreateDesktopDefaults()
+        public static CameraControlProfile CreateGentleDefaults()
         {
             return new CameraControlProfile
             {
-                moveSpeed = 5f,
-                smoothTime = 0.3f,
-                zoomSpeed = 5f,
+                moveSpeed = 3.2f,
+                smoothTime = 0.42f,
+                zoomSpeed = 2.4f,
                 minZoom = 2f,
-                maxZoom = 10f,
-                touchMoveSpeed = 1f,
-                touchPinchZoomSensitivity = 1f,
-                touchDragDeadZonePixels = 0.5f,
-                touchPinchDeadZonePixels = 2f,
-                maxTouchDeltaPixels = 96f,
-                useImmediateTouchGestures = true,
+                maxZoom = 70f,
+                touchMoveSpeed = 0.9f,
+                touchPinchZoomSensitivity = 0.85f,
+                touchDragDeadZonePixels = 1f,
+                touchPinchDeadZonePixels = 3f,
+                maxTouchDeltaPixels = 80f,
+                useImmediateTouchGestures = false,
                 keepPinchFocusUnderFingers = true,
             };
-        }
-
-        public static CameraControlProfile CreateMobileDefaults()
-        {
-            var profile = CreateDesktopDefaults();
-            profile.moveSpeed = 4f;
-            profile.smoothTime = 0.22f;
-            profile.zoomSpeed = 4f;
-            profile.touchMoveSpeed = 1.1f;
-            profile.touchPinchZoomSensitivity = 1.15f;
-            profile.touchDragDeadZonePixels = 1f;
-            profile.touchPinchDeadZonePixels = 2.5f;
-            return profile;
         }
     }
 
     [CreateAssetMenu(fileName = "CameraSettings", menuName = "Moyva/Camera/CameraSettings")]
     public class CameraSettingsSO : ScriptableObject
     {
-        [Header("Platform Profiles")]
-        public CameraControlProfile desktopProfile = CameraControlProfile.CreateDesktopDefaults();
-        public CameraControlProfile mobileProfile = CameraControlProfile.CreateMobileDefaults();
+        [Header("Control Profile")]
+        [FormerlySerializedAs("desktopProfile")]
+        public CameraControlProfile controlProfile = CameraControlProfile.CreateGentleDefaults();
 
         [Header("World Bounds")]
         [Tooltip("How many tile units the camera viewport is allowed to go outside map bounds.")]
         public Vector2 boundsOverflowTiles = Vector2.zero;
 
         [Header("Shared")]
+        [HideInInspector]
         public float defaultCameraZ = -10f;
 
         [Header("3D Project Adaptation")]
         public bool adaptToProject3DMode = true;
-        public bool useOrthographicCameraIn3D = true;
+        public bool useOrthographicCameraIn3D = false;
         [Min(0.1f)] public float default3DCameraDistance = 35f;
         [Min(0.1f)] public float default3DOrthographicSize = 20f;
-        [Range(1f, 179f)] public float default3DFieldOfView = 45f;
+        [Range(1f, 179f)] public float default3DFieldOfView = 40f;
         public Vector3 orthographic3DEuler = new Vector3(90f, 0f, 0f);
-        public Vector3 isometric3DEuler = new Vector3(60f, 45f, 0f);
+        public Vector3 isometric3DEuler = new Vector3(52f, 45f, 0f);
 
         [Header("Shader / Mip Bias")]
         [Tooltip("Applies global automatic mip bias for zoom. Disable to avoid tile atlas artifacts/bleeding on zoom-out.")]
+        [HideInInspector]
         public bool enableAutomaticMipBias = false;
+        [HideInInspector]
         [Range(0f, 3f)] public float automaticMipBiasMax = 0.75f;
 
         [Header("Map Render Mask")]
+        [HideInInspector]
         public bool mapRenderMaskEnabled = true;
+        [HideInInspector]
         [Min(0.05f)] public float mapMaskRefreshSeconds = 0.5f;
+        [HideInInspector]
         public LayerMask mapMaskLayers = ~0;
+        [HideInInspector]
         public string mapMaskSortingLayerName = "Default";
+        [HideInInspector]
         [Range(-32768, 32767)] public int mapMaskBackSortingOrder = -32768;
+        [HideInInspector]
         [Range(-32768, 32767)] public int mapMaskFrontSortingOrder = 32767;
+        [HideInInspector]
         public Vector2 manualMapMaskCenter = new Vector2(4.5f, 4.5f);
+        [HideInInspector]
         public Vector2 manualMapMaskSize = new Vector2(10f, 10f);
 
         public CameraControlProfile ResolveActiveProfile()
         {
-            return Application.isMobilePlatform
-                ? mobileProfile.Normalize()
-                : desktopProfile.Normalize();
-        }
-
-        public CameraControlProfile ResolveProfile(CameraRuntimePlatform platform)
-        {
-            return platform == CameraRuntimePlatform.Mobile
-                ? mobileProfile.Normalize()
-                : desktopProfile.Normalize();
+            return controlProfile.Normalize();
         }
 
         public float ResolveMoveSpeed() => ResolveActiveProfile().moveSpeed;
@@ -155,8 +139,7 @@ namespace Kruty1918.Moyva.Camera.API
 
         private void OnValidate()
         {
-            desktopProfile = desktopProfile.Normalize();
-            mobileProfile = mobileProfile.Normalize();
+            controlProfile = controlProfile.Normalize();
             boundsOverflowTiles = new Vector2(
                 Mathf.Max(0f, boundsOverflowTiles.x),
                 Mathf.Max(0f, boundsOverflowTiles.y));

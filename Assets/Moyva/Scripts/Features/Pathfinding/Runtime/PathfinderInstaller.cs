@@ -15,21 +15,20 @@ namespace Kruty1918.Moyva.Pathfinding.Runtime
 
         public override void InstallBindings()
         {
-            var projectSettings = ResolveProjectSettings();
-
             if (!Container.HasBinding<INeighborhoodStrategy>())
             {
-                var strategy = NeighborhoodStrategyFactory.Create(projectSettings);
-                Container.Bind<INeighborhoodStrategy>().FromInstance(strategy).AsSingle();
+                Container.Bind<INeighborhoodStrategy>()
+                    .FromMethod(context => NeighborhoodStrategyFactory.Create(ResolveProjectSettings(context.Container)))
+                    .AsSingle();
             }
 
             Container.Bind<IPathfinder>().To<Pathfinder>().AsSingle();
         }
 
-        private MoyvaProjectSettingsSO ResolveProjectSettings()
+        private MoyvaProjectSettingsSO ResolveProjectSettings(DiContainer container)
         {
-            MoyvaProjectSettingsSO resolved = Container.HasBinding<MoyvaProjectSettingsSO>()
-                ? Container.Resolve<MoyvaProjectSettingsSO>()
+            MoyvaProjectSettingsSO resolved = container.HasBinding<MoyvaProjectSettingsSO>()
+                ? container.Resolve<MoyvaProjectSettingsSO>()
                 : _projectSettings != null
                     ? _projectSettings
                     : LoadProjectSettingsAssetOrDefault();

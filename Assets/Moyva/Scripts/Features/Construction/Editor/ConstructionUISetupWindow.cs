@@ -599,6 +599,7 @@ namespace Kruty1918.Moyva.Construction.Editor
 
             int missingPrefab = 0;
             int missingSprite = 0;
+            int missingRuntimePreview = 0;
 
             foreach (var building in buildings)
             {
@@ -612,16 +613,20 @@ namespace Kruty1918.Moyva.Construction.Editor
                     continue;
                 }
 
-                bool hasSprite = AdaptivePrefabPreviewUtility.TryGetPrimarySprite(building.Prefab, out _, out _);
+                bool hasRuntimePreview = building.RuntimePreview != null;
+                bool hasSprite = hasRuntimePreview || AdaptivePrefabPreviewUtility.TryGetPrimarySprite(building.Prefab, out _, out _);
+
+                if (!hasRuntimePreview)
+                    missingRuntimePreview++;
 
                 if (!hasSprite && building.Icon == null)
                 {
                     missingSprite++;
-                    _messages.Add($"Помилка: '{building.Id}' не має sprite ні в prefab, ні в полі Icon.");
+                    _messages.Add($"Помилка: '{building.Id}' не має cached preview, sprite у prefab або Icon.");
                 }
             }
 
-            _messages.Add($"Підсумок реєстру: будівель {buildings.Length}, без prefab {missingPrefab}, без sprite {missingSprite}.");
+            _messages.Add($"Підсумок реєстру: будівель {buildings.Length}, без prefab {missingPrefab}, без cached preview {missingRuntimePreview}, без візуалу {missingSprite}.");
         }
 
         private void CheckRequiredReference(SerializedObject so, string fieldName, string failMessage)

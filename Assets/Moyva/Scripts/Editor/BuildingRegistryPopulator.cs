@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
+using Kruty1918.Moyva.Editor.Shared;
 using UnityEditor;
 using UnityEngine;
 
@@ -83,6 +84,7 @@ namespace Kruty1918.Moyva.Editor
 
             Undo.RecordObject(registry, "Наповнити реєстр будівель");
             PopulateBuildings(registry);
+            BuildingPrefabPreviewCacheUtility.RebuildRegistryPreviews(registry);
             EditorUtility.SetDirty(registry);
             AssetDatabase.SaveAssets();
         }

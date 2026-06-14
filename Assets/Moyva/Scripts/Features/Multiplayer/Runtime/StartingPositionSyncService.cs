@@ -101,8 +101,11 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
         private bool ShouldBroadcastFromThisPeer()
         {
-            if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
+            if (_sessionManager == null)
                 return true;
+
+            if (_sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
+                return string.IsNullOrEmpty(_sessionManager.LocalPlayerId) || _sessionManager.IsLocalPlayerHost;
 
             return _sessionManager.IsLocalPlayerHost;
         }

@@ -49,9 +49,9 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             IGridService gridService,
             IObjectsMapService objectsMapService,
             IBuildingRegistry buildingRegistry,
-            IMapObjectRegistryService mapObjectRegistryService,
-            IMapObjectEconomyService mapObjectEconomyService,
-            IUnitMovementService unitMovementService, 
+            [InjectOptional] IMapObjectRegistryService mapObjectRegistryService,
+            [InjectOptional] IMapObjectEconomyService mapObjectEconomyService,
+            [InjectOptional] IUnitMovementService unitMovementService,
             SignalBus signalBus)
         {
             _gridService = gridService;

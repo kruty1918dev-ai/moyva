@@ -1657,13 +1657,13 @@ namespace GiantGrey.TileWorldCreator
             Material _materialOverride = null;
             if (_tilePreset != null)
             {
-                _prefab = _tilePreset.GetTile(_tileData.tileType, out _tileData.yRotationOffset);
+                _prefab = _tilePreset.GetTile(_tileData.tileType, out _tileData.xRotationOffset, out _tileData.yRotationOffset);
                 _materialOverride = _tilePreset.GetMaterialOverride();
             }
             if (_prefab != null)
             {
 
-                var _newTile = GameObject.Instantiate(_prefab, Vector3.zero, Quaternion.Euler(new Vector3(0, _tileData.yRotation + _tileData.yRotationOffset, 0)));
+                var _newTile = GameObject.Instantiate(_prefab, Vector3.zero, Quaternion.Euler(new Vector3(_tileData.xRotationOffset, _tileData.yRotation + _tileData.yRotationOffset, 0)));
                 // new Vector3((_tileData.tilePosition.x) * configuration.cellSize + owner.transform.position.x, blueprintLayer.defaultLayerHeight + layerYOffset + (tileLayers[_tileLayerIndex].heightOffset) + owner.transform.position.y, (_tileData.tilePosition.y) * configuration.cellSize + owner.transform.position.z), Quaternion.Euler(new Vector3(0, _tileData.yRotation + _tileData.yRotationOffset, 0)));
 
                 if (_materialOverride != null)

@@ -23,13 +23,29 @@ MonoBehaviour:
   MaxDownhillVisionBonus: 2
   MaxUphillVisionPenalty: 4
   OcclusionSlopeBias: 0.03
+  TerrainRaySamplesPerTile: 5
+  TerrainVisibilityThreshold: 0.5
+  PartialVisibilityDetectionMultiplier: 1
+  TerrainRayStepTiles: 0.5
+  ObserverEyeHeightOffset: 0.35
+  TargetSampleHeightOffset: 0.1
+  TerrainFarSampleDistanceRatio: 0.65
+  TerrainVisibilityCacheCapacity: 24576
+  EnableTerrainEdgeLineOfSight: 1
+  TerrainEdgeHeightThreshold: 0.12
+  TerrainEdgePeekDistanceTiles: 1
+  TerrainEdgeBlindZoneTiles: 2
+  TerrainEdgeBlindZoneDistanceScale: 0.35
+  TerrainEdgeMaxBlindZoneTiles: 4
+  TerrainEdgeUphillPeekStrength: 0.65
   UnexploredColor: {r: 1, g: 1, b: 1, a: 1}
   ExploredColor: {r: 1, g: 1, b: 1, a: 0.4627451}
   FogTileSprite: {fileID: 21300000, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
   FogTileSpritePixelSize: {x: 64, y: 64}
   FogTileSizeInCells: {x: 2, y: 2}
   FogTileSeamOverlapPixels: 1
-  FogMapEdgePaddingPixels: 2
+  FogMapEdgePaddingPixels: 5
+  FogMapEdgeOverhangCells: 5
   FogTileTiling: 1
   FogIconSprites: []
   FogIconSpritePixelSize: {x: 16, y: 16}
@@ -39,3 +55,14 @@ MonoBehaviour:
   UnexploredAlpha: 1
   ExploredAlpha: 0.8
   FullyTransparentWhenVisible: 1
+  Fog3DTopClearance: 0.08
+  EnableRendererCulling: 1
+  RequireOpaqueUnexploredForCulling: 1
+  RendererCullingLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  EnableShaderFogCulling: 1
+  RendererCullingMaxRenderersPerFrame: 384
+  RendererCullingDiscoveryInterval: 0.75
+  RendererCullingBoundsPaddingCells: 0
+  ShaderFogCullThreshold: 0.01

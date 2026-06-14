@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     public sealed class CompiledLayerMap
     {
         public string GraphLayerId;
+        public string GridTileId;
         public string BlueprintLayerGuid;
         public string LayerName;
         public int SortingOrder;
@@ -88,6 +89,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 result.Add(new CompiledLayerMap
                 {
                     GraphLayerId = layerDef.Id,
+                    GridTileId = ResolveGridTileIdForLayer(config, layerDef, blueprint.guid),
                     BlueprintLayerGuid = blueprint.guid,
                     LayerName = blueprint.layerName,
                     SortingOrder = layerDef.SortingOrder
@@ -310,6 +312,91 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             root.blueprintLayers = orderedBlueprints;
+        }
+
+        private static string ResolveGridTileIdForLayer(
+            Configuration config,
+            GeneratorLayerDefinition layerDef,
+            string blueprintLayerGuid)
+        {
+            if (layerDef == null || config == null)
+                return null;
+
+            TilesBuildLayer buildLayer = FindTilesBuildLayer(config, layerDef.BuildLayerKey, blueprintLayerGuid);
+            if (buildLayer == null)
+                return layerDef.Id;
+
+            string tileId = ResolveTileIdFromBuildLayer(buildLayer);
+            return !string.IsNullOrWhiteSpace(tileId)
+                ? tileId.Trim()
+                : layerDef.Id;
+        }
+
+        private static TilesBuildLayer FindTilesBuildLayer(
+            Configuration configuration,
+            string buildLayerKey,
+            string blueprintLayerGuid)
+        {
+            if (configuration?.buildLayerFolders == null)
+                return null;
+
+            for (int folderIndex = 0; folderIndex < configuration.buildLayerFolders.Count; folderIndex++)
+            {
+                var folder = configuration.buildLayerFolders[folderIndex];
+                if (folder?.buildLayers == null)
+                    continue;
+
+                for (int layerIndex = 0; layerIndex < folder.buildLayers.Count; layerIndex++)
+                {
+                    if (folder.buildLayers[layerIndex] is not TilesBuildLayer buildLayer)
+                        continue;
+
+                    if (!string.IsNullOrWhiteSpace(buildLayerKey)
+                        && string.Equals(buildLayer.guid, buildLayerKey, StringComparison.Ordinal))
+                    {
+                        return buildLayer;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(blueprintLayerGuid)
+                        && (string.Equals(buildLayer.assignedBlueprintLayerGuid, blueprintLayerGuid, StringComparison.Ordinal)
+                            || string.Equals(buildLayer.currentBlueprintLayer?.guid, blueprintLayerGuid, StringComparison.Ordinal)))
+                    {
+                        return buildLayer;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static string ResolveTileIdFromBuildLayer(TilesBuildLayer buildLayer)
+        {
+            string tileId = ResolveTileIdFromPresetSelections(buildLayer.tilePresetsTop);
+            if (!string.IsNullOrWhiteSpace(tileId))
+                return tileId;
+
+            tileId = ResolveTileIdFromPresetSelections(buildLayer.tilePresetsMiddle);
+            if (!string.IsNullOrWhiteSpace(tileId))
+                return tileId;
+
+            return ResolveTileIdFromPresetSelections(buildLayer.tilePresetsBottom);
+        }
+
+        private static string ResolveTileIdFromPresetSelections(List<TilesBuildLayer.TilePresetSelection> selections)
+        {
+            if (selections == null)
+                return null;
+
+            for (int i = 0; i < selections.Count; i++)
+            {
+                var preset = selections[i]?.preset;
+                if (preset == null || string.IsNullOrWhiteSpace(preset.tileId))
+                    continue;
+
+                return preset.tileId;
+            }
+
+            return null;
         }
     }
 }

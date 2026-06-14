@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 {
     public sealed class GraphEditorWindow : EditorWindow
     {
-        private const string GeneratorInstallerTypeName = "Kruty1918.Moyva.Generator.Runtime.GeneratorInstaller";
+        private const string RuntimeGraphBindingTypeName = "Kruty1918.Moyva.Generator.Runtime.MoyvaTileWorldCreatorGraphBinding";
         private const string GridInstallerTypeName = "Kruty1918.Moyva.Grid.Runtime.GridInstaller";
 
         private sealed class RuntimeExecutionSettings
@@ -1229,18 +1229,18 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private RuntimeExecutionSettings ResolveRuntimeExecutionSettings()
         {
             var resolved = new RuntimeExecutionSettings();
-            var generatorInstaller = FindGeneratorInstallerForActiveGraph();
+            var graphBinding = FindRuntimeGraphBindingForActiveGraph();
 
-            if (generatorInstaller != null)
+            if (graphBinding != null)
             {
-                var so = new SerializedObject(generatorInstaller);
+                var so = new SerializedObject(graphBinding);
                 resolved.HeightMapSettings = so.FindProperty("_heightMapSettings")?.objectReferenceValue as HeightMapSettings;
                 resolved.BiomesSettings = so.FindProperty("_biomesSettings")?.objectReferenceValue as DataBiomesSettings;
                 resolved.WfcSettings = so.FindProperty("_wfcDataSettings")?.objectReferenceValue as WFCDataSettings;
-                resolved.Source = $"GeneratorInstaller: {generatorInstaller.gameObject.scene.name}/{generatorInstaller.name}";
+                resolved.Source = $"MoyvaTWCGraphBinding: {graphBinding.gameObject.scene.name}/{graphBinding.name}";
             }
 
-            var gridInstaller = FindGridInstallerInSameScene(generatorInstaller);
+            var gridInstaller = FindGridInstallerInSameScene(graphBinding);
             if (gridInstaller != null)
             {
                 var so = new SerializedObject(gridInstaller);
@@ -1264,20 +1264,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return resolved;
         }
 
-        private MonoBehaviour FindGeneratorInstallerForActiveGraph()
+        private MonoBehaviour FindRuntimeGraphBindingForActiveGraph()
         {
             var all = Resources.FindObjectsOfTypeAll<MonoBehaviour>();
             foreach (var installer in all)
             {
-                if (installer == null || installer.GetType().FullName != GeneratorInstallerTypeName)
+                if (installer == null || installer.GetType().FullName != RuntimeGraphBindingTypeName)
                     continue;
                 if (!IsSceneObject(installer))
                     continue;
 
                 var so = new SerializedObject(installer);
-                var useGraph = so.FindProperty("_useGraphGenerator")?.boolValue ?? false;
                 var graph = so.FindProperty("_graphAsset")?.objectReferenceValue as GraphAsset;
-                if (!useGraph || graph == null)
+                if (graph == null)
                     continue;
 
                 if (_graphAsset == null || graph == _graphAsset)
@@ -1287,13 +1286,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return null;
         }
 
-        private MonoBehaviour FindGridInstallerInSameScene(MonoBehaviour generatorInstaller)
+        private MonoBehaviour FindGridInstallerInSameScene(MonoBehaviour graphBinding)
         {
             var all = Resources.FindObjectsOfTypeAll<MonoBehaviour>();
 
-            if (generatorInstaller != null)
+            if (graphBinding != null)
             {
-                var targetScene = generatorInstaller.gameObject.scene;
+                var targetScene = graphBinding.gameObject.scene;
                 foreach (var installer in all)
                 {
                     if (installer == null || installer.GetType().FullName != GridInstallerTypeName)

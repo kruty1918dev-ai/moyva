@@ -14,9 +14,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         private const bool VerboseLogs = true;
         private const int BuildingLayerMinSortingOrder = 5;
+        private const float BuildingSurfaceOffsetY = 0.5f;
         private const float GhostAlpha = 0.55f;
         private const float BlockedFlashDuration = 0.35f;
         private const string InfluenceRadiusShaderName = "Moyva/2D/InfluenceRadius";
+        private const string InfluenceRadiusMeshOverlayShaderName = "Moyva/3D/InfluenceRadiusExistingMeshOverlay";
 
         private readonly SignalBus _signalBus;
         private readonly IBuildingRegistry _buildingRegistry;
@@ -60,6 +62,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private MeshRenderer _inspectionRadiusMR;
         private Material _inspectionRadiusMat;
         private Vector2Int? _selectedBuildingPosition;
+
+        private sealed class InfluenceRadiusMeshOverlayState
+        {
+            public bool Active;
+            public Vector2Int Center;
+            public int Radius;
+            public Bounds Bounds;
+            public Material Material;
+            public readonly List<MeshRenderer> Renderers = new();
+        }
+
+        private readonly InfluenceRadiusMeshOverlayState _previewRadiusOverlay = new();
+        private readonly InfluenceRadiusMeshOverlayState _inspectionRadiusOverlay = new();
 
         [Inject]
         public ConstructionVisualService(
@@ -148,23 +163,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Tick()
         {
-            if (_flashRestores.Count == 0) return;
-            float now = Time.time;
-            for (int i = _flashRestores.Count - 1; i >= 0; i--)
+            if (_flashRestores.Count > 0)
             {
-                var entry = _flashRestores[i];
-                if (now >= entry.RestoreAt)
+                float now = Time.time;
+                for (int i = _flashRestores.Count - 1; i >= 0; i--)
                 {
-                    if (entry.Target != null)
+                    var entry = _flashRestores[i];
+                    if (now >= entry.RestoreAt)
                     {
-                        if (entry.IsGhostPreview)
-                            ApplyGhostStyle(entry.Target, true);
-                        else
-                            ApplySolidStyle(entry.Target);
+                        if (entry.Target != null)
+                        {
+                            if (entry.IsGhostPreview)
+                                ApplyGhostStyle(entry.Target, true);
+                            else
+                                ApplySolidStyle(entry.Target);
+                        }
+                        _flashRestores.RemoveAt(i);
                     }
-                    _flashRestores.RemoveAt(i);
                 }
             }
+
+            DrawInfluenceRadiusMeshOverlay(_previewRadiusOverlay);
+            DrawInfluenceRadiusMeshOverlay(_inspectionRadiusOverlay);
         }
 
         private void OnBuildingPreviewChanged(BuildingPreviewChangedSignal signal)
@@ -495,8 +515,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placedRoot  = EnsureRoot("PlayerBuildingsRoot");
             _radiusRoot  = EnsureRoot("ConstructionRadiusRoot");
 
-            // Кешуємо один спільний меш — простий quad 1×1
-            _radiusMesh = BuildQuadMesh();
+            _radiusMesh = GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection)
+                ? null
+                : BuildQuadMesh();
 
             _previewRadiusGo = EnsureRadiusMeshObject(
                 "PreviewInfluenceRadius", _radiusRoot,
@@ -546,20 +567,22 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var go = new GameObject(objectName);
             go.transform.SetParent(parent, false);
 
-            // MeshFilter ОБОВЯЗКОВО до MeshRenderer (вимога Unity)
-            var mf = go.AddComponent<MeshFilter>();
-            mf.sharedMesh = _radiusMesh;
-
             mr = go.AddComponent<MeshRenderer>();
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             mr.receiveShadows    = false;
             mr.sortingLayerName  = "Default";
             mr.sortingOrder      = sortingOrder;
 
-            var shader = Shader.Find(InfluenceRadiusShaderName);
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
+            {
+                var mf = go.AddComponent<MeshFilter>();
+                mf.sharedMesh = _radiusMesh;
+            }
+
+            var shader = Shader.Find(ResolveInfluenceRadiusShaderName());
             if (shader == null)
             {
-                Debug.LogError($"[ConstructionVisual] Shader '{InfluenceRadiusShaderName}' not found. Influence radius overlay is disabled to avoid rendering a fallback quad.");
+                Debug.LogError($"[ConstructionVisual] Shader '{ResolveInfluenceRadiusShaderName()}' not found. Influence radius overlay is disabled to avoid rendering a fallback quad.");
                 mat = null;
                 mr.sharedMaterial = null;
                 mr.enabled = false;
@@ -592,6 +615,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return BuildingDefinitionCapabilities.GetInfluenceRadius(def, _townHallBuildRadius);
         }
 
+        private string ResolveInfluenceRadiusShaderName()
+        {
+            return GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection)
+                ? InfluenceRadiusMeshOverlayShaderName
+                : InfluenceRadiusShaderName;
+        }
+
         /// <summary>
         /// Позиціонує, масштабує та вмикає зону впливу.
         /// localScale = (2r+1) × (2r+1) → кожен юніт = один тайл.
@@ -602,7 +632,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             GameObject go, MeshRenderer mr, Material mat,
             Vector2Int center, int radius)
         {
-            if (go == null || mr == null || mat == null) return;
+            if (mat == null)
+                return;
+
+            if (GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
+            {
+                DrawInfluenceRadiusMeshOverlay(mr, mat, center, radius);
+                return;
+            }
+
+            if (go == null || mr == null)
+                return;
 
             float size = radius * 2f + 1f;
             go.transform.position = ResolveWorldPosition(center, 0.05f);
@@ -621,10 +661,130 @@ namespace Kruty1918.Moyva.Construction.Runtime
             mr.enabled = true;
         }
 
-        private static void SetRadiusVisible(MeshRenderer mr, bool visible)
+        private void DrawInfluenceRadiusMeshOverlay(MeshRenderer radiusRenderer, Material mat, Vector2Int center, int radius)
         {
+            if (radiusRenderer != null)
+                radiusRenderer.enabled = false;
+
+            var state = radiusRenderer == _inspectionRadiusMR
+                ? _inspectionRadiusOverlay
+                : _previewRadiusOverlay;
+
+            Vector3 centerWorld = _gridProjection.GridToWorld(center, 0f, 0f);
+            float halfExtent = Mathf.Max(0, radius) + 0.5f;
+
+            state.Active = true;
+            state.Center = center;
+            state.Radius = Mathf.Max(0, radius);
+            state.Material = mat;
+            state.Bounds = new Bounds(
+                new Vector3(centerWorld.x, 0f, centerWorld.z),
+                new Vector3(halfExtent * 2f, 2048f, halfExtent * 2f));
+
+            mat.SetVector("_CenterXZ", new Vector4(centerWorld.x, centerWorld.z, 0f, 0f));
+            mat.SetFloat("_HalfExtent", halfExtent);
+            mat.SetColor("_Color", new Color(1f, 1f, 1f, 0.95f));
+            mat.SetColor("_FillColor", new Color(1f, 1f, 1f, 0.055f));
+            mat.SetFloat("_BorderWidth", 0.5f);
+
+            RebuildInfluenceRadiusMeshOverlayRenderers(state);
+        }
+
+        private void RebuildInfluenceRadiusMeshOverlayRenderers(InfluenceRadiusMeshOverlayState state)
+        {
+            state.Renderers.Clear();
+            if (!state.Active)
+                return;
+
+            var renderers = UnityEngine.Object.FindObjectsByType<MeshRenderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                var renderer = renderers[i];
+                if (!IsInfluenceRadiusMeshOverlayCandidate(renderer, state.Bounds))
+                    continue;
+
+                state.Renderers.Add(renderer);
+            }
+        }
+
+        private bool IsInfluenceRadiusMeshOverlayCandidate(MeshRenderer renderer, Bounds influenceBounds)
+        {
+            if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy)
+                return false;
+
+            if (_radiusRoot != null && renderer.transform.IsChildOf(_radiusRoot))
+                return false;
+
+            if (!renderer.bounds.Intersects(influenceBounds))
+                return false;
+
+            var meshFilter = renderer.GetComponent<MeshFilter>();
+            return meshFilter != null && meshFilter.sharedMesh != null;
+        }
+
+        private void DrawInfluenceRadiusMeshOverlay(InfluenceRadiusMeshOverlayState state)
+        {
+            if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection)
+                || state == null
+                || !state.Active
+                || state.Material == null)
+            {
+                return;
+            }
+
+            for (int i = state.Renderers.Count - 1; i >= 0; i--)
+            {
+                var renderer = state.Renderers[i];
+                if (!IsInfluenceRadiusMeshOverlayCandidate(renderer, state.Bounds))
+                {
+                    state.Renderers.RemoveAt(i);
+                    continue;
+                }
+
+                var meshFilter = renderer.GetComponent<MeshFilter>();
+                Mesh mesh = meshFilter.sharedMesh;
+                int subMeshCount = Mathf.Max(1, mesh.subMeshCount);
+                for (int subMeshIndex = 0; subMeshIndex < subMeshCount; subMeshIndex++)
+                {
+                    Graphics.DrawMesh(
+                        mesh,
+                        meshFilter.transform.localToWorldMatrix,
+                        state.Material,
+                        renderer.gameObject.layer,
+                        null,
+                        subMeshIndex);
+                }
+            }
+        }
+
+        private void SetRadiusVisible(MeshRenderer mr, bool visible)
+        {
+            if (GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
+            {
+                if (mr == _previewRadiusMR)
+                    SetInfluenceRadiusMeshOverlayVisible(_previewRadiusOverlay, visible);
+                else if (mr == _inspectionRadiusMR)
+                    SetInfluenceRadiusMeshOverlayVisible(_inspectionRadiusOverlay, visible);
+
+                if (mr != null)
+                    mr.enabled = false;
+                return;
+            }
+
             if (mr != null)
                 mr.enabled = visible;
+        }
+
+        private static void SetInfluenceRadiusMeshOverlayVisible(InfluenceRadiusMeshOverlayState state, bool visible)
+        {
+            if (state == null)
+                return;
+
+            if (visible)
+                return;
+
+            state.Active = false;
+            state.Renderers.Clear();
         }
 
         private GameObject CreateInstance(GameObject prefab, Vector2Int tile, Transform parent, string objectName, Quaternion? forcedRotation = null)
@@ -681,6 +841,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (_gridProjection == null)
                 return new Vector3(tile.x, tile.y, layerOffset);
 
+            if (GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection)
+                && TryGetGeneratedTerrainSurfaceY(tile, out float surfaceY))
+            {
+                Vector3 position = _gridProjection.GridToWorld(tile, 0f, 0f);
+                position.y = surfaceY + layerOffset;
+                return position;
+            }
+
             float elevation = _generatedTerrainLevelQuery != null && _generatedTerrainLevelQuery.TryGetTerrainLevel(tile, out int level)
                 ? level
                 : 0f;
@@ -692,19 +860,41 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection) || instance == null)
                 return;
 
-            GridSurfacePlacementUtility.AlignBottomToSurface(instance, ResolveTerrainSurfaceY(tile));
+            GridSurfacePlacementUtility.AlignBottomToSurface(instance, ResolveTerrainSurfaceY(tile) + BuildingSurfaceOffsetY);
         }
 
         private float ResolveTerrainSurfaceY(Vector2Int tile)
         {
-            Vector3 basePosition = ResolveWorldPosition(tile, 0f);
             if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
-                return basePosition.y;
+                return ResolveWorldPosition(tile, 0f).y;
+
+            float baseY = TryGetGeneratedTerrainSurfaceY(tile, out float surfaceY)
+                ? surfaceY
+                : ResolveProjectedTerrainBaseY(tile);
 
             if (_gridService.TryGetTileData(tile, out string tileId) && TryResolveTileSurfaceOffsetY(tileId, out float offsetY))
-                return basePosition.y + offsetY;
+                return baseY + offsetY;
 
-            return basePosition.y;
+            return baseY;
+        }
+
+        private bool TryGetGeneratedTerrainSurfaceY(Vector2Int tile, out float surfaceY)
+        {
+            surfaceY = 0f;
+            return _generatedTerrainLevelQuery != null
+                && _generatedTerrainLevelQuery.TryGetTerrainSurfaceY(tile, out surfaceY);
+        }
+
+        private float ResolveProjectedTerrainBaseY(Vector2Int tile)
+        {
+            if (_gridProjection == null)
+                return 0f;
+
+            float elevation = _generatedTerrainLevelQuery != null && _generatedTerrainLevelQuery.TryGetTerrainLevel(tile, out int level)
+                ? level
+                : 0f;
+
+            return _gridProjection.GridToWorld(tile, elevation, 0f).y;
         }
 
         private bool TryResolveTileSurfaceOffsetY(string tileId, out float offsetY)

@@ -17,7 +17,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         public MapObjectSelectionHighlightService(
             SignalBus signalBus,
-            IMapObjectVisualRegistryService mapObjectVisualRegistryService)
+            [InjectOptional] IMapObjectVisualRegistryService mapObjectVisualRegistryService)
         {
             _signalBus = signalBus;
             _mapObjectVisualRegistryService = mapObjectVisualRegistryService;

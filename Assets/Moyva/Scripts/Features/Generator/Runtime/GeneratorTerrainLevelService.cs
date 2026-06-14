@@ -6,22 +6,31 @@ namespace Kruty1918.Moyva.Generator.Runtime
     public sealed class GeneratorTerrainLevelService : IGeneratorTerrainLevelService
     {
         private int[,] _levelMap;
+        private float[,] _surfaceHeightMap;
 
         public bool HasLevelMap => _levelMap != null;
-        public int Width => _levelMap?.GetLength(0) ?? 0;
-        public int Height => _levelMap?.GetLength(1) ?? 0;
+        public bool HasSurfaceHeightMap => _surfaceHeightMap != null;
+        public int Width => _levelMap?.GetLength(0) ?? _surfaceHeightMap?.GetLength(0) ?? 0;
+        public int Height => _levelMap?.GetLength(1) ?? _surfaceHeightMap?.GetLength(1) ?? 0;
         public HillLevelDataMap CurrentHillLevelData { get; private set; }
 
         public void Clear()
         {
             _levelMap = null;
+            _surfaceHeightMap = null;
             CurrentHillLevelData = null;
         }
 
         public void SetLevelMap(int[,] levelMap)
         {
             _levelMap = CloneLevelMap(levelMap);
+            _surfaceHeightMap = BuildSurfaceHeightMapFromLevels(_levelMap);
             CurrentHillLevelData = null;
+        }
+
+        public void SetSurfaceHeightMap(float[,] surfaceHeightMap)
+        {
+            _surfaceHeightMap = CloneSurfaceHeightMap(surfaceHeightMap);
         }
 
         public void SetHillLevelData(HillLevelDataMap data)
@@ -30,6 +39,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (data == null)
             {
                 _levelMap = null;
+                _surfaceHeightMap = null;
                 return;
             }
 
@@ -39,6 +49,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 levels[x, y] = Mathf.Max(0, data.GetTile(x, y).Level);
 
             _levelMap = levels;
+            _surfaceHeightMap = BuildSurfaceHeightMapFromLevels(_levelMap);
         }
 
         public bool TryGetLevel(Vector2Int position, out int level)
@@ -60,6 +71,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public int[,] CopyLevelMap() => CloneLevelMap(_levelMap);
 
+        public bool TryGetSurfaceHeight(Vector2Int position, out float surfaceY)
+        {
+            if (_surfaceHeightMap == null
+                || position.x < 0 || position.x >= _surfaceHeightMap.GetLength(0)
+                || position.y < 0 || position.y >= _surfaceHeightMap.GetLength(1))
+            {
+                surfaceY = 0f;
+                return false;
+            }
+
+            surfaceY = _surfaceHeightMap[position.x, position.y];
+            return true;
+        }
+
+        public float[,] CopySurfaceHeightMap() => CloneSurfaceHeightMap(_surfaceHeightMap);
+
         private static int[,] CloneLevelMap(int[,] source)
         {
             if (source == null)
@@ -71,6 +98,39 @@ namespace Kruty1918.Moyva.Generator.Runtime
             for (int x = 0; x < width; x++)
             for (int y = 0; y < height; y++)
                 clone[x, y] = Mathf.Max(0, source[x, y]);
+
+            return clone;
+        }
+
+        private static float[,] BuildSurfaceHeightMapFromLevels(int[,] source)
+        {
+            if (source == null)
+                return null;
+
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            var clone = new float[width, height];
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                clone[x, y] = Mathf.Max(0, source[x, y]);
+
+            return clone;
+        }
+
+        private static float[,] CloneSurfaceHeightMap(float[,] source)
+        {
+            if (source == null)
+                return null;
+
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            var clone = new float[width, height];
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+            {
+                float value = source[x, y];
+                clone[x, y] = float.IsNaN(value) || float.IsInfinity(value) ? 0f : value;
+            }
 
             return clone;
         }

@@ -446,7 +446,7 @@ namespace Kruty1918.Moyva.Construction.UI
 
             // Фіксуємо вигляд у коді, щоб не залежати від довільних налаштувань prefab/scene.
             text.enableAutoSizing = false;
-            text.enableWordWrapping = true;
+            text.textWrappingMode = TextWrappingModes.Normal;
             text.overflowMode = TextOverflowModes.Overflow;
             text.alignment = isHeader
                 ? TextAlignmentOptions.TopLeft

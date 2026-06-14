@@ -68,6 +68,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Min(0f)] public float FogTileSeamOverlapPixels = 1f;
         [Tooltip("Extra fog overlay geometry past the map border, measured in sprite pixels. This hides zoom/rasterization gaps on the outer map edge while fog UVs stay aligned to the real map.")]
         [Min(0f)] public float FogMapEdgePaddingPixels = 2f;
+        [Tooltip("Extra fog overlay contour past the map border, measured in map cells. This expands only the overlay geometry and does not change fog cell size or fog texture resolution.")]
+        [Min(0f)] public float FogMapEdgeOverhangCells = 0.5f;
         [Tooltip("Scale for tiling the fog cell texture. Higher = more tiles per cell")]
         [Min(1f)] public float FogTileTiling = 1f;
 
@@ -91,13 +93,9 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Tooltip("Visible areas are fully transparent (alpha=0)")]
         public bool FullyTransparentWhenVisible = true;
 
-        [Header("3D Volume Fog")]
-        [Tooltip("In XZ/3D worlds, places the fog overlay above terrain and adds vertical side planes so the fog reads as a world-space volume.")]
-        public bool Enable3DVolumeFog = true;
+        [Header("3D Fog Plane")]
         [Tooltip("Small gap above the highest generated terrain point where the top fog plane is placed.")]
         [Min(0f)] public float Fog3DTopClearance = 0.08f;
-        [Tooltip("Vertical thickness of the 3D fog volume sides in world units.")]
-        [Min(0.01f)] public float Fog3DVolumeHeight = 2.5f;
 
         [Header("Visibility Culling")]
         [Tooltip("Disables world renderers that are fully covered by unexplored fog.")]
@@ -145,9 +143,9 @@ namespace Kruty1918.Moyva.FogOfWar.API
             FogTileSizeInCells = ClampTileSizeInCells(FogTileSizeInCells);
             FogTileSeamOverlapPixels = Mathf.Max(0f, FogTileSeamOverlapPixels);
             FogMapEdgePaddingPixels = Mathf.Max(0f, FogMapEdgePaddingPixels);
+            FogMapEdgeOverhangCells = Mathf.Max(0f, FogMapEdgeOverhangCells);
             FogIconSpritePixelSize = ClampSpritePixelSize(FogIconSpritePixelSize);
             Fog3DTopClearance = Mathf.Max(0f, Fog3DTopClearance);
-            Fog3DVolumeHeight = Mathf.Max(0.01f, Fog3DVolumeHeight);
             RendererCullingMaxRenderersPerFrame = Mathf.Max(1, RendererCullingMaxRenderersPerFrame);
             RendererCullingDiscoveryInterval = Mathf.Max(0.05f, RendererCullingDiscoveryInterval);
             RendererCullingBoundsPaddingCells = Mathf.Max(0f, RendererCullingBoundsPaddingCells);

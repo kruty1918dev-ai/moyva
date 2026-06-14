@@ -11,9 +11,11 @@
   <Project Path="Zenject-ReflectionBaking-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Interactions.API.csproj" />
   <Project Path="Zenject-UnitTests-Editor.csproj" />
+  <Project Path="Unity.RenderPipelines.Universal.Runtime.csproj" />
   <Project Path="Zenject-Editor.csproj" />
   <Project Path="Zenject-IntegrationTests.csproj" />
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
+  <Project Path="FlatKit.Utils.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.UI.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.csproj" />
@@ -21,6 +23,7 @@
   <Project Path="Kruty1918.Moyva.Grid.csproj" />
   <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
   <Project Path="GiantGrey.TileWorldCreator.csproj" />
+  <Project Path="ExternAttributes.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.BotAI.csproj" />
@@ -38,6 +41,7 @@
   <Project Path="Kruty1918.Moyva.Tests.Multiplayer.csproj" />
   <Project Path="Kruty1918.Moyva.Shared.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Economy.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Zenject-TestFramework.csproj" />
   <Project Path="Kruty1918.Moyva.BotAI.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
@@ -51,7 +55,6 @@
   <Project Path="Kruty1918.Moyva.Tests.InfoPanel.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />
-  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.GameMode.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Units.csproj" />
   <Project Path="Zenject-PoolMonitor-Editor.csproj" />

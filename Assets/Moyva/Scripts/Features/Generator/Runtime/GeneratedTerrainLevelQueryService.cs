@@ -25,5 +25,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             return _terrainLevelService.TryGetLevel(position, out level);
         }
+
+        public bool TryGetTerrainSurfaceY(Vector2Int position, out float surfaceY)
+        {
+            if (_terrainLevelService == null)
+            {
+                surfaceY = 0f;
+                return false;
+            }
+
+            return _terrainLevelService.TryGetSurfaceHeight(position, out surfaceY);
+        }
     }
 }

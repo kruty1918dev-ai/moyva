@@ -23,6 +23,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class StartingPositionInitializer : IInitializable, IDisposable
     {
         private const string StartVisionAnchorId = "bootstrap-start-vision-anchor";
+        private const string StartRevealAnchorId = "bootstrap-start-vision-anchor-initial";
 
         private readonly IFogOfWarService _fogOfWarService;
         private readonly ISaveService _saveService;
@@ -45,6 +46,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private bool _startAnchorRegistered;
         private int _registeredStartAnchorCount;
         private bool _startLogicApplied;
+        private bool _startRevealApplied;
+        private bool _startupCameraTeleported;
+        private Vector2Int _appliedStartRevealCenter;
+        private int _appliedStartRevealWidth;
+        private int _appliedStartRevealHeight;
         private bool _hasPendingWorldGeneratedSignal;
         private WorldGeneratedDataSignal _pendingWorldGeneratedSignal;
 
@@ -82,6 +88,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
 
             _startingPositionState.Set(signal.Assignments);
+
+            if (!_hasPendingWorldGeneratedSignal)
+                return;
+
+            if (_startLogicApplied)
+            {
+                ReapplyStartRevealIfNeeded(_pendingWorldGeneratedSignal);
+                return;
+            }
+
             TryApplyStartLogic();
         }
 
@@ -134,34 +150,72 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                     });
                 }
 
-                return;
+                if (_startLogicApplied)
+                    return;
             }
 
             if (!CanRunStartLogic() || !_startingPositionState.IsSet)
                 return;
 
-            _startLogicApplied = true;
-            RevealStartingAreas(signal.Width, signal.Height);
+            ApplyStartReveal(signal, teleportCamera: true);
+        }
 
-            if (_settings.keepCoreFullyVisible)
+        private void ApplyStartReveal(WorldGeneratedDataSignal signal, bool teleportCamera)
+        {
+            Vector2Int revealCenter = ResolveLocalRevealCenter(signal.Width, signal.Height);
+            bool revealChanged = !_startRevealApplied
+                || _appliedStartRevealWidth != signal.Width
+                || _appliedStartRevealHeight != signal.Height
+                || _appliedStartRevealCenter != revealCenter;
+
+            if (revealChanged)
             {
-                // Уникаємо попередження FogOfWar «UnregisterUnit before Initialize»:
-                // на першому виклику якорь ще не зареєстровано — пропускаємо unregister.
-                if (_startAnchorRegistered)
-                    UnregisterStartVisionAnchors();
-
-                int visibleRange = _settings.coreVisibleRadiusOverride > 0
-                    ? _settings.coreVisibleRadiusOverride
-                    : _settings.ResolveCoreVisibleRadius(signal.Width, signal.Height);
-                Vector2Int revealCenter = ResolveLocalRevealCenter(signal.Width, signal.Height);
-                _fogOfWarService.RegisterFixedVisionArea(ResolveStartVisionAnchorId(0), revealCenter, visibleRange, _settings.ResolveRevealShape());
-                _startAnchorRegistered = true;
-                _registeredStartAnchorCount = 1;
+                RevealStartingAreas(signal.Width, signal.Height, revealCenter);
+                RegisterStartupCoreVisibility(signal.Width, signal.Height, revealCenter);
+                _startRevealApplied = true;
+                _appliedStartRevealWidth = signal.Width;
+                _appliedStartRevealHeight = signal.Height;
+                _appliedStartRevealCenter = revealCenter;
             }
 
-            TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height), signal);
+            if (teleportCamera && !_startupCameraTeleported)
+            {
+                TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height), signal);
+                _startupCameraTeleported = true;
+            }
 
-            Debug.Log($"[Bootstrap] Стартова позиція: {ResolveLocalRevealCenter(signal.Width, signal.Height)}. Туман розкрито, камеру переміщено.");
+            _startLogicApplied = true;
+            Debug.Log($"[Bootstrap] Стартова позиція: {revealCenter}. Туман розкрито, камеру переміщено.");
+        }
+
+        private void ReapplyStartRevealIfNeeded(WorldGeneratedDataSignal signal)
+        {
+            Vector2Int revealCenter = ResolveLocalRevealCenter(signal.Width, signal.Height);
+            if (_startRevealApplied
+                && _appliedStartRevealWidth == signal.Width
+                && _appliedStartRevealHeight == signal.Height
+                && _appliedStartRevealCenter == revealCenter)
+            {
+                return;
+            }
+
+            ApplyStartReveal(signal, teleportCamera: !_startupCameraTeleported);
+        }
+
+        private void RegisterStartupCoreVisibility(int width, int height, Vector2Int revealCenter)
+        {
+            if (!_settings.keepCoreFullyVisible)
+                return;
+
+            if (_startAnchorRegistered)
+                UnregisterStartVisionAnchors();
+
+            int visibleRange = _settings.coreVisibleRadiusOverride > 0
+                ? _settings.coreVisibleRadiusOverride
+                : _settings.ResolveCoreVisibleRadius(width, height);
+            _fogOfWarService.RegisterFixedVisionArea(ResolveStartVisionAnchorId(0), revealCenter, visibleRange, _settings.ResolveRevealShape());
+            _startAnchorRegistered = true;
+            _registeredStartAnchorCount = 1;
         }
 
         private void TeleportMainCamera(Vector2Int startPos, WorldGeneratedDataSignal signal)
@@ -177,11 +231,73 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_cameraMovement == null)
                 return false;
 
+            ApplyConfiguredStartupCameraPose();
             Vector3 focusPoint = ResolveStartupFocusPoint(startPos, signal);
             float distance = ResolveStartupCameraDistance();
             _cameraMovement.TeleportCameraToFocusPoint(focusPoint, distance);
             ApplyStartupCameraZoom(startPos, focusPoint, signal);
             return true;
+        }
+
+        private void ApplyConfiguredStartupCameraPose()
+        {
+            if (_camera == null)
+                return;
+
+            _camera.transform.rotation = Quaternion.Euler(ResolveStartupCameraEuler());
+            bool usePerspective = ResolveUsePerspectiveStartupCamera();
+            _camera.orthographic = !usePerspective;
+
+            if (_camera.orthographic)
+                _camera.orthographicSize = ResolveStartupOrthographicSize();
+            else
+                _camera.fieldOfView = ResolveStartupFieldOfView();
+        }
+
+        private Vector3 ResolveStartupCameraEuler()
+        {
+            GridProjectionMode projectionMode = ResolveProjectionMode();
+            if (_projectSettings != null)
+                return _projectSettings.Resolve3DCameraEuler(projectionMode);
+
+            return projectionMode == GridProjectionMode.Orthographic3D
+                ? (_cameraSettings != null ? _cameraSettings.orthographic3DEuler : new Vector3(90f, 0f, 0f))
+                : (_cameraSettings != null ? _cameraSettings.isometric3DEuler : new Vector3(52f, 45f, 0f));
+        }
+
+        private bool ResolveUsePerspectiveStartupCamera()
+        {
+            bool autoOrthographic = _cameraSettings != null && _cameraSettings.ResolveUseOrthographicCameraIn3D();
+            if (_projectSettings != null)
+                return _projectSettings.ResolveUsePerspectiveCamera(autoOrthographic);
+
+            return ResolveProjectionMode() == GridProjectionMode.Isometric3DPreview || !autoOrthographic;
+        }
+
+        private GridProjectionMode ResolveProjectionMode()
+        {
+            if (_gridProjection != null)
+                return _gridProjection.ProjectionMode;
+
+            return _projectSettings != null
+                ? _projectSettings.DefaultProjectionMode
+                : GridProjectionMode.Isometric3DPreview;
+        }
+
+        private float ResolveStartupFieldOfView()
+        {
+            if (_projectSettings != null)
+                return _projectSettings.ResolveProject3DFieldOfView();
+
+            return _cameraSettings != null ? _cameraSettings.ResolveDefault3DFieldOfView() : 40f;
+        }
+
+        private float ResolveStartupOrthographicSize()
+        {
+            if (_projectSettings != null)
+                return _projectSettings.ResolveProject3DOrthographicSize();
+
+            return _cameraSettings != null ? _cameraSettings.ResolveDefault3DOrthographicSize() : 20f;
         }
 
         private Vector3 ResolveStartupFocusPoint(Vector2Int startPos, WorldGeneratedDataSignal signal)
@@ -194,15 +310,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private float ResolveStartupCameraDistance()
         {
-            if (TryResolveCurrentCameraPlaneDistance(out float currentDistance))
-                return currentDistance;
-
             if (_projectSettings != null)
                 return _projectSettings.ResolveProject3DCameraDistance();
 
-            return _cameraSettings != null
-                ? _cameraSettings.ResolveDefault3DCameraDistance()
-                : 35f;
+            if (_cameraSettings != null)
+                return _cameraSettings.ResolveDefault3DCameraDistance();
+
+            if (TryResolveCurrentCameraPlaneDistance(out float currentDistance))
+                return currentDistance;
+
+            return 35f;
         }
 
         private bool TryResolveCurrentCameraPlaneDistance(out float distance)
@@ -230,16 +347,17 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             float radius = ResolveStartupCameraRadius(signal.Width, signal.Height) + ResolveStartupCameraPaddingTiles();
             Vector3[] corners = BuildStartupZoneCorners(startPos, focusPoint, radius, signal);
-            float zoom = _camera.orthographic
-                ? ResolveOrthographicZoomToFit(focusPoint, corners)
-                : ResolvePerspectiveFieldOfViewToFit(focusPoint, corners);
-
             if (_camera.orthographic)
+            {
+                float zoom = ResolveOrthographicZoomToFit(focusPoint, corners);
                 _camera.orthographicSize = zoom;
-            else
-                _camera.fieldOfView = zoom;
+                _cameraZoom.ForceZoomCamera(zoom);
+                return;
+            }
 
-            _cameraZoom.ForceZoomCamera(zoom);
+            float fieldOfView = ResolvePerspectiveFieldOfViewToFit(focusPoint, corners);
+            _camera.fieldOfView = fieldOfView;
+            _cameraZoom.ForceZoomCamera(fieldOfView);
         }
 
         private bool ShouldEnsureStartupCameraShowsRevealedArea()
@@ -731,14 +849,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         /// <returns>Повертає true, якщо локальний гравець може виконати логіку стартової позиції.</returns>
         private bool CanRunStartLogic()
         {
-            // Якщо немає даних про сесію, припускаємо,
+            if (_startingPositionState.IsSet)
+                return true;
+
+            if (_sessionManager != null && _sessionManager.IsLocalPlayerHost)
+                return true;
+
             if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
-                return true;
-            // що це не мультиплеєр або локальна гра,
-            if (_sessionManager.IsLocalPlayerHost)
-                return true;
-            // і дозволяємо застосувати логіку стартової позиції.
-            return _startingPositionState.IsSet;
+                return !IsMultiplayerLaunchContext();
+
+            return false;
         }
 
         /// <summary>
@@ -759,7 +879,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         /// Рівномірно розкриває круглу ділянку туману навколо стартової позиції.
         /// Імітує стартову позицію на мапі, якщо гравець є локальним.
         /// </summary>
-        private void RevealStartingAreas(int width, int height)
+        private void RevealStartingAreas(int width, int height, Vector2Int center)
         {
             // Якщо стартова позиція не визначена, розкриваємо центр мапи.
             int radius = _settings.ResolveRevealedRadius(width, height);
@@ -767,10 +887,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             // Якщо є збереження і автозавантаження ввімкнено — стартова позиція вже розкрита 
             // FogOfWarSaveModule, додатково не розкриваємо.
             var shape = _settings.ResolveRevealShape();
-
-            // Якщо гравець є локальним, розкриваємо стартову позицію навколо його спавну 
-            // (якщо він є) або навколо позиції, визначеної у WorldSpawnPositionsSignal.
-            var center = ResolveLocalRevealCenter(width, height);
 
             // Якщо стартова позиція виявиться у чорному тумані, 
             // камера буде переміщена до найближчої видимої ділянки. 
@@ -792,7 +908,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             // Гарантуємо, що стартова область буде 
             // у exploredTiles через RegisterFixedVisionArea
-            _fogOfWarService.RegisterFixedVisionArea("bootstrap-start-vision-anchor-initial", center, radius, shape);
+            _fogOfWarService.RegisterFixedVisionArea(StartRevealAnchorId, center, radius, shape);
 
             // Після розкриття стартової області — зберігаємо слот, щоб зміни (туман) були персистентні.
             try
@@ -814,9 +930,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private bool ShouldComputeHostStartPositions()
         {
             if (_sessionManager == null || _sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
-                return true;
+                return !IsMultiplayerLaunchContext();
 
             return _sessionManager.IsLocalPlayerHost;
+        }
+
+        private static bool IsMultiplayerLaunchContext()
+        {
+            return GameLaunchContext.Mode == GameLaunchMode.MenuJoinGame
+                || GameLaunchContext.Mode == GameLaunchMode.MenuMultiplayerGame
+                || (GameLaunchContext.HasWorldSettings && GameLaunchContext.MaxPlayers > 1);
         }
 
 

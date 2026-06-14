@@ -76,6 +76,7 @@ namespace GiantGrey.TileWorldCreator
             public Vector2 worldMapPosition; // the actual position the user has clicked on. - position from the blueprint layer cell
             // public Vector2[] worldMapPositions;
             public int yRotation;
+            public float xRotationOffset;
             public float yRotationOffset;
             public int configuration;
             public TilePreset.TileType tileType;

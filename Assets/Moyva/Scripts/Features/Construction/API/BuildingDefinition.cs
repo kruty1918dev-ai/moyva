@@ -43,6 +43,8 @@ namespace Kruty1918.Moyva.Construction.API
         public string DisplayName;      // Назва для UI, наприклад "Казарма"
         public BuildingCategory Category;
         public Sprite Icon;             // Іконка будівлі для меню будівництва
+        [Tooltip("Runtime-safe preview префаба будівлі. Генерується редактором і використовується toolbar UI у білді.")]
+        public Sprite RuntimePreview;
         public GameObject Prefab;       // Prefab будівлі (stub: null поки арт не готовий)
 
         [Header("Вартість будівництва")]

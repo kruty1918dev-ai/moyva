@@ -29,8 +29,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private int _projectionMode = int.MinValue;
         private float _maxTerrainWorldY = float.MinValue;
         private bool _subscribed;
-        private readonly GameObject[] _volumeSideObjects = new GameObject[4];
-        private readonly MeshRenderer[] _volumeSideRenderers = new MeshRenderer[4];
 
         [Inject]
         private void ConstructOptionalDependencies(
@@ -70,7 +68,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             Shader.SetGlobalFloat(GlobalFogCullEnabledId, 0f);
             Shader.SetGlobalFloat(GlobalFogWorldPlaneId, 0f);
-            DestroyVolumeSides();
             ReleaseMaterialInstance();
         }
 
@@ -154,19 +151,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void ApplyOverlayTransform(Bounds worldBounds, Vector2 edgePadding)
         {
+            Vector2 edgePaddingWorld = ResolveEdgePaddingInWorldUnits(worldBounds, edgePadding);
             if (_gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ)
             {
                 float topY = Resolve3DFogTopY(worldBounds);
                 transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-                transform.localScale = new Vector3(worldBounds.size.x + edgePadding.x * 2f, worldBounds.size.z + edgePadding.y * 2f, 1f);
+                transform.localScale = new Vector3(worldBounds.size.x + edgePaddingWorld.x * 2f, worldBounds.size.z + edgePaddingWorld.y * 2f, 1f);
                 transform.position = new Vector3(worldBounds.center.x, topY, worldBounds.center.z);
-                Apply3DVolumeSides(worldBounds, edgePadding, topY);
                 return;
             }
 
-            SetVolumeSidesActive(false);
             transform.rotation = Quaternion.identity;
-            transform.localScale = new Vector3(worldBounds.size.x + edgePadding.x * 2f, worldBounds.size.y + edgePadding.y * 2f, 1f);
+            transform.localScale = new Vector3(worldBounds.size.x + edgePaddingWorld.x * 2f, worldBounds.size.y + edgePaddingWorld.y * 2f, 1f);
             transform.position = new Vector3(worldBounds.center.x, worldBounds.center.y, -0.5f);
         }
 
@@ -207,87 +203,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return float.MinValue;
 
             return _gridProjection.GridToWorld(Vector2Int.zero, maxElevation, 0f).y;
-        }
-
-        private void Apply3DVolumeSides(Bounds worldBounds, Vector2 edgePadding, float topY)
-        {
-            if (_settings != null && !_settings.Enable3DVolumeFog)
-            {
-                SetVolumeSidesActive(false);
-                return;
-            }
-
-            float volumeHeight = _settings != null ? Mathf.Max(0.01f, _settings.Fog3DVolumeHeight) : 2.5f;
-            float width = worldBounds.size.x + edgePadding.x * 2f;
-            float depth = worldBounds.size.z + edgePadding.y * 2f;
-            float minX = worldBounds.center.x - width * 0.5f;
-            float maxX = worldBounds.center.x + width * 0.5f;
-            float minZ = worldBounds.center.z - depth * 0.5f;
-            float maxZ = worldBounds.center.z + depth * 0.5f;
-            float bottomY = Mathf.Min(worldBounds.min.y, topY - volumeHeight);
-            float sideHeight = Mathf.Max(0.01f, topY - bottomY);
-            float centerY = (topY + bottomY) * 0.5f;
-
-            ConfigureVolumeSide(0, new Vector3(worldBounds.center.x, centerY, minZ), Quaternion.identity, new Vector3(width, sideHeight, 1f));
-            ConfigureVolumeSide(1, new Vector3(worldBounds.center.x, centerY, maxZ), Quaternion.Euler(0f, 180f, 0f), new Vector3(width, sideHeight, 1f));
-            ConfigureVolumeSide(2, new Vector3(minX, centerY, worldBounds.center.z), Quaternion.Euler(0f, 90f, 0f), new Vector3(depth, sideHeight, 1f));
-            ConfigureVolumeSide(3, new Vector3(maxX, centerY, worldBounds.center.z), Quaternion.Euler(0f, -90f, 0f), new Vector3(depth, sideHeight, 1f));
-        }
-
-        private void ConfigureVolumeSide(int index, Vector3 position, Quaternion rotation, Vector3 scale)
-        {
-            var renderer = EnsureVolumeSide(index);
-            if (renderer == null)
-                return;
-
-            var side = renderer.transform;
-            side.position = position;
-            side.rotation = rotation;
-            side.localScale = scale;
-            renderer.sharedMaterial = _mat;
-            ApplyOverlayRenderPriority(renderer);
-            renderer.gameObject.SetActive(true);
-        }
-
-        private MeshRenderer EnsureVolumeSide(int index)
-        {
-            if (index < 0 || index >= _volumeSideObjects.Length)
-                return null;
-
-            if (_volumeSideObjects[index] != null && _volumeSideRenderers[index] != null)
-                return _volumeSideRenderers[index];
-
-            var side = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            side.name = $"Fog3DVolumeSide_{index}";
-            side.transform.SetParent(null, worldPositionStays: true);
-            var collider = side.GetComponent<Collider>();
-            if (collider != null)
-                Destroy(collider);
-
-            _volumeSideObjects[index] = side;
-            _volumeSideRenderers[index] = side.GetComponent<MeshRenderer>();
-            return _volumeSideRenderers[index];
-        }
-
-        private void SetVolumeSidesActive(bool active)
-        {
-            for (int i = 0; i < _volumeSideObjects.Length; i++)
-            {
-                if (_volumeSideObjects[i] != null)
-                    _volumeSideObjects[i].SetActive(active);
-            }
-        }
-
-        private void DestroyVolumeSides()
-        {
-            for (int i = 0; i < _volumeSideObjects.Length; i++)
-            {
-                if (_volumeSideObjects[i] != null)
-                    Destroy(_volumeSideObjects[i]);
-
-                _volumeSideObjects[i] = null;
-                _volumeSideRenderers[i] = null;
-            }
         }
 
         private void ApplySettingsToMaterial()
@@ -437,9 +352,24 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Mathf.Max(0.001f, _settings.FogTileSizeInCells.x),
                 Mathf.Max(0.001f, _settings.FogTileSizeInCells.y));
             float paddingPixels = Mathf.Max(0f, _settings.FogMapEdgePaddingPixels);
+            float overhangCells = Mathf.Max(0f, _settings.FogMapEdgeOverhangCells);
             return new Vector2(
-                paddingPixels / spriteSize.x * tileSize.x,
-                paddingPixels / spriteSize.y * tileSize.y);
+                paddingPixels / spriteSize.x * tileSize.x + overhangCells,
+                paddingPixels / spriteSize.y * tileSize.y + overhangCells);
+        }
+
+        private Vector2 ResolveEdgePaddingInWorldUnits(Bounds worldBounds, Vector2 edgePaddingCells)
+        {
+            float cellsX = Mathf.Max(1, _mapWidth);
+            float cellsY = Mathf.Max(1, _mapHeight);
+            float worldUnitsPerCellX = Mathf.Max(0.0001f, worldBounds.size.x / cellsX);
+            float worldUnitsPerCellY = _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ
+                ? Mathf.Max(0.0001f, worldBounds.size.z / cellsY)
+                : Mathf.Max(0.0001f, worldBounds.size.y / cellsY);
+
+            return new Vector2(
+                edgePaddingCells.x * worldUnitsPerCellX,
+                edgePaddingCells.y * worldUnitsPerCellY);
         }
 
         private void ApplyOverlayRenderPriority(Renderer renderer)

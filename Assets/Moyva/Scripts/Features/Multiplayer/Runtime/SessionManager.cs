@@ -557,6 +557,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _participants.Clear();
             _currentSessionId = roomId;
             _currentRules = opts.Rules ?? SoloFallbackRules;
+            _isHost = true;
             _participants.Add(new Participant(opts.LocalIdentity, isBot: false, isHost: true));
             _logger.Info($"Offline solo session '{roomId}' started.");
             return true;

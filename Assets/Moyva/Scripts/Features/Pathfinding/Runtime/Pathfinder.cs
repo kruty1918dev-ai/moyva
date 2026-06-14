@@ -1,135 +1,154 @@
+using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Pathfinding.API;
-using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
-using Zenject;
 
 namespace Kruty1918.Moyva.Pathfinding.Runtime
 {
-    internal sealed class Pathfinder : IPathfinder
-    {
-        private readonly IGridService _gridService;
-        private readonly ITileSettingsService _tileSettings;
-        private readonly IObjectsMapService _objectsMapService;
-        private readonly INeighborhoodStrategy _neighborhoodStrategy;
+	public sealed class Pathfinder : IPathfinder
+	{
+		private readonly IGridService _gridService;
+		private readonly ITileSettingsService _tileSettingsService;
+		private readonly IObjectsMapService _objectsMapService;
+		private readonly INeighborhoodStrategy _neighborhoodStrategy;
 
-        public Pathfinder(IGridService gridService, ITileSettingsService tileSettings, IObjectsMapService objectsMapService)
-            : this(gridService, tileSettings, objectsMapService, new MooreNeighborhoodStrategy())
-        {
-        }
+		public Pathfinder(
+			IGridService gridService,
+			ITileSettingsService tileSettingsService,
+			IObjectsMapService objectsMapService)
+			: this(gridService, tileSettingsService, objectsMapService, null)
+		{
+		}
 
-        [Inject]
-        public Pathfinder(
-            IGridService gridService,
-            ITileSettingsService tileSettings,
-            IObjectsMapService objectsMapService,
-            [InjectOptional] INeighborhoodStrategy neighborhoodStrategy)
-        {
-            _gridService = gridService;
-            _tileSettings = tileSettings;
-            _objectsMapService = objectsMapService;
-            _neighborhoodStrategy = neighborhoodStrategy ?? new MooreNeighborhoodStrategy();
-        }
+		public Pathfinder(
+			IGridService gridService,
+			ITileSettingsService tileSettingsService,
+			IObjectsMapService objectsMapService,
+			INeighborhoodStrategy neighborhoodStrategy)
+		{
+			_gridService = gridService ?? throw new ArgumentNullException(nameof(gridService));
+			_tileSettingsService = tileSettingsService ?? throw new ArgumentNullException(nameof(tileSettingsService));
+			_objectsMapService = objectsMapService ?? throw new ArgumentNullException(nameof(objectsMapService));
+			_neighborhoodStrategy = neighborhoodStrategy ?? new MooreNeighborhoodStrategy();
+		}
 
-        public IEnumerable<Vector2Int> GetNeighbors(Vector2Int pos)
-        {
-            return _neighborhoodStrategy.GetNeighbors(pos, _gridService);
-        }
+		public List<Vector2Int> FindPath(Vector2Int start, Vector2Int end)
+		{
+			if (start == end)
+				return new List<Vector2Int> { start };
 
-        public List<Vector2Int> FindPath(Vector2Int start, Vector2Int end)
-        {
-            if (start == end) return new List<Vector2Int> { start };
+			if (!IsWalkableTile(start) || !IsWalkableTile(end))
+				return new List<Vector2Int>();
 
-            var openSet = new List<Vector2Int> { start };
-            var cameFrom = new Dictionary<Vector2Int, Vector2Int>();
-            var gScore = new Dictionary<Vector2Int, float> { [start] = 0 };
-            var fScore = new Dictionary<Vector2Int, float> { [start] = Heuristic(start, end) };
+			// Occupied target is not a valid destination, but occupied start is allowed.
+			if (_objectsMapService.IsOccupied(end))
+				return new List<Vector2Int>();
 
-            while (openSet.Count > 0)
-            {
-                Vector2Int current = GetNodeWithLowestFScore(openSet, fScore);
+			var openSet = new HashSet<Vector2Int> { start };
+			var cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+			var gScore = new Dictionary<Vector2Int, float> { [start] = 0f };
+			var fScore = new Dictionary<Vector2Int, float>
+			{
+				[start] = _neighborhoodStrategy.EstimateDistance(start, end)
+			};
 
-                if (current == end)
-                {
-                    return ReconstructPath(cameFrom, current);
-                }
+			while (openSet.Count > 0)
+			{
+				Vector2Int current = GetLowestFScore(openSet, fScore);
+				if (current == end)
+					return ReconstructPath(cameFrom, current);
 
-                openSet.Remove(current);
+				openSet.Remove(current);
 
-                foreach (var neighbor in GetNeighbors(current))
-                {
-                    if (!_gridService.TryGetTileData(neighbor, out var tileTypeId)) continue;
-                    if (string.IsNullOrEmpty(tileTypeId)) continue;
+				foreach (Vector2Int neighbor in _neighborhoodStrategy.GetNeighbors(current, _gridService))
+				{
+					if (!IsTraversable(neighbor, start, end))
+						continue;
 
-                    // 1. ПЕРЕВІРКА ОКУПАЦІЇ: зайняті тайли не можна використовувати в маршруті.
-                    // Стартовий тайл ігноруємо, бо на ньому вже стоїть поточний юніт.
-                    if (_objectsMapService.IsOccupied(neighbor) && neighbor != start)
-                    {
-                        continue;
-                    }
+					float currentG = GetScoreOrInfinity(gScore, current);
+					float tentativeG = currentG +
+									   _neighborhoodStrategy.GetStepCost(current, neighbor) *
+									   ResolveTileWeight(neighbor);
 
-                    // 2. ВРАХУВАННЯ ВАГИ (СТАМІНИ)
-                    float tileWeight = _tileSettings.GetTileWeight(tileTypeId);
-                    
-                    float stepCost = _neighborhoodStrategy.GetStepCost(current, neighbor) * tileWeight;
+					if (tentativeG >= GetScoreOrInfinity(gScore, neighbor))
+						continue;
 
-                    float tentativeGScore = GetScore(gScore, current) + stepCost;
+					cameFrom[neighbor] = current;
+					gScore[neighbor] = tentativeG;
+					fScore[neighbor] = tentativeG + _neighborhoodStrategy.EstimateDistance(neighbor, end);
+					openSet.Add(neighbor);
+				}
+			}
 
-                    if (tentativeGScore < GetScore(gScore, neighbor))
-                    {
-                        cameFrom[neighbor] = current;
-                        gScore[neighbor] = tentativeGScore;
-                        fScore[neighbor] = tentativeGScore + Heuristic(neighbor, end);
+			return new List<Vector2Int>();
+		}
 
-                        if (!openSet.Contains(neighbor))
-                        {
-                            openSet.Add(neighbor);
-                        }
-                    }
-                }
-            }
+		public IEnumerable<Vector2Int> GetNeighbors(Vector2Int position)
+			=> _neighborhoodStrategy.GetNeighbors(position, _gridService);
 
-            return new List<Vector2Int>(); // Шлях не знайдено
-        }
+		private bool IsTraversable(Vector2Int position, Vector2Int start, Vector2Int end)
+		{
+			if (!IsWalkableTile(position))
+				return false;
 
-        private float Heuristic(Vector2Int a, Vector2Int b)
-        {
-            return _neighborhoodStrategy.EstimateDistance(a, b);
-        }
+			if (position == start || position == end)
+				return true;
 
-        private float GetScore(Dictionary<Vector2Int, float> scores, Vector2Int node)
-        {
-            return scores.TryGetValue(node, out float score) ? score : float.PositiveInfinity;
-        }
+			return !_objectsMapService.IsOccupied(position);
+		}
 
-        private Vector2Int GetNodeWithLowestFScore(List<Vector2Int> openSet, Dictionary<Vector2Int, float> fScore)
-        {
-            Vector2Int lowestNode = openSet[0];
-            float lowestScore = GetScore(fScore, lowestNode);
+		private bool IsWalkableTile(Vector2Int position)
+		{
+			if (!_gridService.TryGetTileData(position, out string tileId))
+				return false;
 
-            for (int i = 1; i < openSet.Count; i++)
-            {
-                float score = GetScore(fScore, openSet[i]);
-                if (score < lowestScore)
-                {
-                    lowestScore = score;
-                    lowestNode = openSet[i];
-                }
-            }
-            return lowestNode;
-        }
+			return !string.IsNullOrEmpty(tileId);
+		}
 
-        private List<Vector2Int> ReconstructPath(Dictionary<Vector2Int, Vector2Int> cameFrom, Vector2Int current)
-        {
-            var path = new List<Vector2Int> { current };
-            while (cameFrom.ContainsKey(current))
-            {
-                current = cameFrom[current];
-                path.Add(current);
-            }
-            path.Reverse();
-            return path;
-        }
-    }
+		private float ResolveTileWeight(Vector2Int position)
+		{
+			_gridService.TryGetTileData(position, out string tileId);
+			return Mathf.Max(0.0001f, _tileSettingsService.GetTileWeight(tileId));
+		}
+
+		private static float GetScoreOrInfinity(Dictionary<Vector2Int, float> scoreMap, Vector2Int key)
+			=> scoreMap.TryGetValue(key, out float score) ? score : float.PositiveInfinity;
+
+		private static Vector2Int GetLowestFScore(HashSet<Vector2Int> openSet, Dictionary<Vector2Int, float> fScore)
+		{
+			Vector2Int best = default;
+			float bestScore = float.PositiveInfinity;
+			bool initialized = false;
+
+			foreach (Vector2Int candidate in openSet)
+			{
+				float score = GetScoreOrInfinity(fScore, candidate);
+				if (!initialized || score < bestScore)
+				{
+					initialized = true;
+					best = candidate;
+					bestScore = score;
+				}
+			}
+
+			return best;
+		}
+
+		private static List<Vector2Int> ReconstructPath(
+			IReadOnlyDictionary<Vector2Int, Vector2Int> cameFrom,
+			Vector2Int current)
+		{
+			var path = new List<Vector2Int> { current };
+			while (cameFrom.TryGetValue(current, out Vector2Int previous))
+			{
+				current = previous;
+				path.Add(current);
+			}
+
+			path.Reverse();
+			return path;
+		}
+	}
 }

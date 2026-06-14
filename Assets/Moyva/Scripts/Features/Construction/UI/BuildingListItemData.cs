@@ -21,15 +21,24 @@ namespace Kruty1918.Moyva.Construction.UI
         /// <summary>Icon sprite shown on the building button. May be null.</summary>
         public Sprite Icon { get; }
 
+        /// <summary>Editor-baked prefab preview shown on the toolbar. Falls back to Icon when null.</summary>
+        public Sprite PreviewSprite { get; }
+
         /// <summary>True when this item is currently allowed to be clicked in the build menu.</summary>
         public bool IsInteractable { get; }
 
         public BuildingListItemData(string id, string displayName, BuildingCategory category, Sprite icon = null, bool isInteractable = true)
+            : this(id, displayName, category, icon, null, isInteractable)
+        {
+        }
+
+        public BuildingListItemData(string id, string displayName, BuildingCategory category, Sprite icon, Sprite previewSprite, bool isInteractable)
         {
             Id = id;
             DisplayName = string.IsNullOrWhiteSpace(displayName) ? id : displayName;
             Category = category;
             Icon = icon;
+            PreviewSprite = previewSprite;
             IsInteractable = isInteractable;
         }
     }

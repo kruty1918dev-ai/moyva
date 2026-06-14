@@ -314,6 +314,9 @@ namespace Kruty1918.Moyva.Construction.Editor
                 if (GUILayout.Button(IconContent("SaveActive", "Save", "Зберегти зміни в BuildingRegistrySO зараз."), EditorStyles.toolbarButton, GUILayout.Width(56f)))
                     SaveRegistry();
 
+                if (GUILayout.Button(IconContent("d_PreMatCube", "Preview", "Перегенерувати runtime preview для всіх prefab-ів будівель."), EditorStyles.toolbarButton, GUILayout.Width(78f)))
+                    RebuildAllRuntimePreviews();
+
                 if (GUILayout.Button(IconContent("d_RectTransform Icon", "Layout", "Скинути ручні ширини панелей Building Designer."), EditorStyles.toolbarButton, GUILayout.Width(64f)))
                     ResetLayoutPreferences();
 
@@ -916,7 +919,10 @@ namespace Kruty1918.Moyva.Construction.Editor
             {
                 EditorGUILayout.PropertyField(buildingProperty.FindPropertyRelative("DisplayName"), new GUIContent("Назва у UI", "Текст, який бачить гравець у меню будівництва."));
                 EditorGUILayout.PropertyField(buildingProperty.FindPropertyRelative("Category"), new GUIContent("Категорія", "Категорія впливає на фільтри та групування в UI."));
+                EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(buildingProperty.FindPropertyRelative("Icon"), new GUIContent("Icon", "Fallback-іконка для menu preview, якщо prefab не має SpriteRenderer."));
+                if (EditorGUI.EndChangeCheck())
+                    BuildingPrefabPreviewCacheUtility.RebuildSerializedBuildingPreview(buildingProperty, _registry);
             }
 
             using (new EditorGUILayout.VerticalScope(CardStyle()))
@@ -945,7 +951,17 @@ namespace Kruty1918.Moyva.Construction.Editor
                 if (_showTechnicalBuildingFields)
                 {
                     EditorGUILayout.PropertyField(buildingProperty.FindPropertyRelative("Id"), new GUIContent("ID", "Унікальний код будівлі в реєстрі."));
+                    EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(buildingProperty.FindPropertyRelative("Prefab"), new GUIContent("Prefab", "Prefab для runtime preview та ігрового представлення."));
+                    if (EditorGUI.EndChangeCheck())
+                        BuildingPrefabPreviewCacheUtility.RebuildSerializedBuildingPreview(buildingProperty, _registry);
+
+                    using (new EditorGUI.DisabledScope(true))
+                    {
+                        var previewProp = buildingProperty.FindPropertyRelative("RuntimePreview");
+                        if (previewProp != null)
+                            EditorGUILayout.PropertyField(previewProp, new GUIContent("Cached Preview", "Sprite, запечений редактором для runtime toolbar UI."));
+                    }
                 }
             }
 
@@ -2887,6 +2903,7 @@ namespace Kruty1918.Moyva.Construction.Editor
             buildingProperty.FindPropertyRelative("Category").enumValueIndex = (int)_newBuildingCategory;
             buildingProperty.FindPropertyRelative("Icon").objectReferenceValue = _newBuildingSprite;
             buildingProperty.FindPropertyRelative("Prefab").objectReferenceValue = ResolvePrefab(id, _newBuildingPrefab, _newBuildingSprite);
+            BuildingPrefabPreviewCacheUtility.RebuildSerializedBuildingPreview(buildingProperty, _registry);
             ApplyWizardConstructionCost(buildingProperty.FindPropertyRelative("ConstructionCost"));
             ApplyWizardRoleModules(buildingProperty.FindPropertyRelative("Modules"));
             buildingProperty.FindPropertyRelative("UseCustomTownHallRules").boolValue = false;
@@ -3440,6 +3457,24 @@ namespace Kruty1918.Moyva.Construction.Editor
             EditorContentChangeLog.Write("BuildingDesigner", "SaveRegistry", _registry, changesForLog);
             RefreshSavedSnapshot();
             _staleTracker.Capture(_registry);
+        }
+
+        private void RebuildAllRuntimePreviews()
+        {
+            if (_registry == null || _registryObject == null)
+                return;
+
+            _registryObject.Update();
+            bool changed = BuildingPrefabPreviewCacheUtility.RebuildSerializedRegistryPreviews(_registryObject, _registry);
+            if (!changed)
+                return;
+
+            _registryObject.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(_registry);
+            AssetDatabase.SaveAssets();
+            RefreshSavedSnapshot();
+            _staleTracker.Capture(_registry);
+            Repaint();
         }
 
         private void RefreshSavedSnapshot()
