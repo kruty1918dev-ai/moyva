@@ -1925,6 +1925,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             int newOrder = EditorGUILayout.IntField("Sorting Order", layer.SortingOrder);
             bool newEnabled = EditorGUILayout.Toggle("Enabled", layer.Enabled);
             float newHeight = EditorGUILayout.FloatField("Default Height", layer.DefaultHeight);
+            bool newZeroPadding = EditorGUILayout.Toggle(new GUIContent("Zero Layer Padding (+16)", "Позначає шар як розширений: #sym:width/#sym:height стають більшими на 16."), layer.UseZeroLayerPadding);
             Color newColor = EditorGUILayout.ColorField("Color", layer.Color);
 
             if (EditorGUI.EndChangeCheck())
@@ -1934,6 +1935,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 layer.SortingOrder = newOrder;
                 layer.Enabled = newEnabled;
                 layer.DefaultHeight = newHeight;
+                layer.UseZeroLayerPadding = newZeroPadding;
                 layer.Color = newColor;
 
                 EditorUtility.SetDirty(_graphAsset);

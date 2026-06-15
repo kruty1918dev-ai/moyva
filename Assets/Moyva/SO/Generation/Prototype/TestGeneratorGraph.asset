@@ -109,6 +109,8 @@ MonoBehaviour:
   customRandomSeed: 0
   customSeed: 0
   defaultLayerHeight: 0
+  useZeroLayerPadding: 1
+  borderPaddingCells: 16
   lockFromPaint: 0
   foldoutState: 0
   tileMapModifiers:
@@ -1313,6 +1315,7 @@ MonoBehaviour:
   brushSize: 0
   selectedPaintLayerGuid: 
   tileMapLayers: []
+  zeroLayerPaddingBlueprintLayerGuids: []
   blueprintLayerFolders:
   - folderName: Root
     guid: 1f4b4a76-25af-44ee-a9fa-37689025bcb4
@@ -1401,7 +1404,9 @@ MonoBehaviour:
   randomSeedOverride: 0
   customRandomSeed: 0
   customSeed: 0
-  defaultLayerHeight: 1
+  defaultLayerHeight: 0.5
+  useZeroLayerPadding: 0
+  borderPaddingCells: 0
   lockFromPaint: 0
   foldoutState: 0
   tileMapModifiers:
@@ -30976,7 +30981,9 @@ MonoBehaviour:
   randomSeedOverride: 0
   customRandomSeed: 0
   customSeed: 0
-  defaultLayerHeight: 0.1
+  defaultLayerHeight: 0.05
+  useZeroLayerPadding: 0
+  borderPaddingCells: 0
   lockFromPaint: 0
   foldoutState: 0
   tileMapModifiers:
@@ -56730,20 +56737,23 @@ MonoBehaviour:
     _sortingOrder: 0
     _enabled: 1
     _defaultHeight: 0
+    _useZeroLayerPadding: 1
     _buildLayerKey: 2baa3f1f-1db4-4674-aa1a-2c8768774147
   - _id: 70c45675-6356-40df-bc61-28c2ecf24723
     _name: Layer 2
     _color: {r: 1, g: 1, b: 1, a: 1}
     _sortingOrder: 1
     _enabled: 1
-    _defaultHeight: 0.1
+    _defaultHeight: 0.05
+    _useZeroLayerPadding: 0
     _buildLayerKey: a22b11a4-e7c7-4290-a3fc-c9f1842b1710
   - _id: c4333f3f-bc5f-46f6-ada6-15c52af2e897
     _name: Layer 3
     _color: {r: 1, g: 1, b: 1, a: 1}
     _sortingOrder: 2
     _enabled: 1
-    _defaultHeight: 1
+    _defaultHeight: 0.5
+    _useZeroLayerPadding: 0
     _buildLayerKey: c44c83e4-f6eb-47b8-bac7-3b35feb4068b
   _tileRegistry: {fileID: 11400000, guid: 5a57832fb61b869c4a38191aa4236799, type: 2}
 --- !u!114 &332949947074943817

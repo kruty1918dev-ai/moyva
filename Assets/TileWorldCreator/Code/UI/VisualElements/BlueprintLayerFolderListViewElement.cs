@@ -368,6 +368,10 @@ namespace GiantGrey.TileWorldCreator.UI
                 _defaultLayerHeight.tooltip = "The default layer height is used for the assigned build layers. + Y offset";
                 _defaultLayerHeight.BindProperty(_layerSerializedObject.FindProperty("defaultLayerHeight"));
 
+                var _useZeroLayerPadding = new PropertyField();
+                _useZeroLayerPadding.tooltip = "Extends this blueprint layer generation size by 16 cells.";
+                _useZeroLayerPadding.BindProperty(_layerSerializedObject.FindProperty("useZeroLayerPadding"));
+
     #if TWC_DEBUG
                 var _layerGuid = new TextField();
                 _layerGuid.BindProperty(_layerSerializedObject.FindProperty("guid"));
@@ -387,6 +391,7 @@ namespace GiantGrey.TileWorldCreator.UI
                 _layerVerticalContainer.Add(_customSeed);
 
                 _layerVerticalContainer.Add(_defaultLayerHeight);
+                _layerVerticalContainer.Add(_useZeroLayerPadding);
 
                 var _layerModifierRoot = new VisualElement();
 
@@ -594,7 +599,7 @@ namespace GiantGrey.TileWorldCreator.UI
             _foldoutToggle.style.marginLeft = 5;
             _foldoutToggle.Add(_removeModifier);
 
-            var _ed = Editor.CreateEditor(blueprintLayer.tileMapModifiers[_modifierIndex]);
+            var _ed = UnityEditor.Editor.CreateEditor(blueprintLayer.tileMapModifiers[_modifierIndex]);
             List<SerializedProperty> _properties = new List<SerializedProperty>();
             using (var iterator = _ed.serializedObject.GetIterator())
             {

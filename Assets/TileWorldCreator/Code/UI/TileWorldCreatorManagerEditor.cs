@@ -15,6 +15,7 @@
 
 #if UNITY_EDITOR
 using UnityEditor;
+using Editor = UnityEditor.Editor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -25,7 +26,7 @@ using GiantGrey.TileWorldCreator.Utilities;
 namespace GiantGrey.TileWorldCreator
 {
     [CustomEditor(typeof(TileWorldCreatorManager))]
-    public class TileWorldCreatorManagerEditor : Editor
+    public class TileWorldCreatorManagerEditor : global::UnityEditor.Editor
     {
         TileWorldCreatorManager _manager;
 
@@ -182,7 +183,7 @@ namespace GiantGrey.TileWorldCreator
 
             if (_manager.configuration != null)
             {
-                var _editor = Editor.CreateEditor(_manager.configuration) as ConfigurationEditor;
+                var _editor = UnityEditor.Editor.CreateEditor(_manager.configuration) as ConfigurationEditor;
                 nativeRoot.Add(_editor.CreateInspectorGUI());
             }
         }

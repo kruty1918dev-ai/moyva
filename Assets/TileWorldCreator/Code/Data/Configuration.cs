@@ -30,9 +30,37 @@ namespace GiantGrey.TileWorldCreator
     [CreateAssetMenu(menuName = "TileWorldCreator/Configuration")]
     public class Configuration : ScriptableObject
     {
+        public const int ZeroLayerPaddingCells = 16;
+
         public bool useParallel;
         public int width = 50;
         public int height = 50;
+
+        public int GetBlueprintLayerWidth(BlueprintLayer layer)
+        {
+            return width + GetBlueprintLayerPaddingCells(layer);
+        }
+
+        public int GetBlueprintLayerHeight(BlueprintLayer layer)
+        {
+            return height + GetBlueprintLayerPaddingCells(layer);
+        }
+
+        public int GetBlueprintLayerPaddingCells(BlueprintLayer layer)
+        {
+            if (layer == null)
+            {
+                return 0;
+            }
+
+            if (layer.useZeroLayerPadding ||
+                (zeroLayerPaddingBlueprintLayerGuids != null && zeroLayerPaddingBlueprintLayerGuids.Contains(layer.guid)))
+            {
+                return ZeroLayerPaddingCells;
+            }
+
+            return Mathf.Max(0, layer.borderPaddingCells);
+        }
 
         [FormerlySerializedAs("cellSize")]
         public int cellSizeOld = 1;
@@ -58,6 +86,7 @@ namespace GiantGrey.TileWorldCreator
 
         // Blueprint layers
         public List<BlueprintLayer> tileMapLayers = new List<BlueprintLayer>();
+        public List<string> zeroLayerPaddingBlueprintLayerGuids = new List<string>();
 
         // Build layers
         public List<BlueprintLayerFolder> blueprintLayerFolders = new List<BlueprintLayerFolder>();
@@ -455,7 +484,48 @@ namespace GiantGrey.TileWorldCreator
             }
             return null;
         }
-        
+
+        public bool IsZeroBlueprintLayer(string _layerGuid)
+        {
+            return IsZeroBlueprintLayer(GetBlueprintLayerByGuid(_layerGuid));
+        }
+
+        public bool IsZeroBlueprintLayer(BlueprintLayer layer)
+        {
+            return layer != null && (layer.useZeroLayerPadding ||
+                layer.borderPaddingCells > 0 ||
+                (zeroLayerPaddingBlueprintLayerGuids != null && zeroLayerPaddingBlueprintLayerGuids.Contains(layer.guid)));
+        }
+
+        public void SetZeroBlueprintLayer(BlueprintLayer layer, bool enabled)
+        {
+            if (layer == null || string.IsNullOrEmpty(layer.guid))
+            {
+                return;
+            }
+
+            if (zeroLayerPaddingBlueprintLayerGuids == null)
+            {
+                zeroLayerPaddingBlueprintLayerGuids = new List<string>();
+            }
+
+            if (enabled)
+            {
+                layer.useZeroLayerPadding = true;
+                layer.borderPaddingCells = ZeroLayerPaddingCells;
+
+                if (!zeroLayerPaddingBlueprintLayerGuids.Contains(layer.guid))
+                {
+                    zeroLayerPaddingBlueprintLayerGuids.Add(layer.guid);
+                }
+            }
+            else
+            {
+                layer.useZeroLayerPadding = false;
+                layer.borderPaddingCells = 0;
+                zeroLayerPaddingBlueprintLayerGuids.Remove(layer.guid);
+            }
+        }
 
         public BuildLayer GetBuildLayerByGuid(string _layerGuid)
         {

@@ -1,4 +1,4 @@
-using UnityEngine;
+ using UnityEngine;
 
 namespace Kruty1918.Moyva.FogOfWar.API
 {

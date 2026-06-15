@@ -38,6 +38,8 @@ namespace GiantGrey.TileWorldCreator
         public bool customRandomSeed;
         public int customSeed;
         public float defaultLayerHeight = 0f;
+        public bool useZeroLayerPadding;
+        public int borderPaddingCells = 0;
         public bool lockFromPaint;
         public bool foldoutState;
         public List<BlueprintModifier> tileMapModifiers = new List<BlueprintModifier>();

@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
         [SerializeField] private int _sortingOrder;
         [SerializeField] private bool _enabled = true;
         [SerializeField] private float _defaultHeight;
+        [SerializeField] private bool _useZeroLayerPadding;
 
         /// <summary>
         /// Опціональний TilePreset/біулд-маркер для зв'язку шару з візуалом TWC.
@@ -74,6 +75,12 @@ namespace Kruty1918.Moyva.GraphSystem.API
         {
             get => _defaultHeight;
             set => _defaultHeight = value;
+        }
+
+        public bool UseZeroLayerPadding
+        {
+            get => _useZeroLayerPadding;
+            set => _useZeroLayerPadding = value;
         }
 
         public string BuildLayerKey

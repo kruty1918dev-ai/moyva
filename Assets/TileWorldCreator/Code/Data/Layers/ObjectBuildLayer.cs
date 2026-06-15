@@ -28,6 +28,7 @@ using GiantGrey.TileWorldCreator.UI;
 
 #if UNITY_EDITOR
 using UnityEditor;
+using Editor = UnityEditor.Editor;
 using UnityEditor.UIElements;
 #endif
 
@@ -1147,7 +1148,8 @@ namespace GiantGrey.TileWorldCreator
                                 _layer.GetAllCellPositions(_allPositions);
 
                                 var _clusterPositions = _layer.GetPositionsInCluster(modifiedClusters[i]);
-                                var _collisionMesh = GridMeshGenerator.GenerateMesh(_clusterPositions, _allPositions, configuration.cellSize, blueprintLayer.defaultLayerHeight + layerOffset.y + _tileColliderHeight, _tileColliderExtrusion, _invertWalls);
+                                int _paddingCells = configuration.GetBlueprintLayerPaddingCells(blueprintLayer);
+                                var _collisionMesh = GridMeshGenerator.GenerateMesh(_clusterPositions, _allPositions, configuration.cellSize, blueprintLayer.defaultLayerHeight + layerOffset.y + _tileColliderHeight, _tileColliderExtrusion, _invertWalls, _paddingCells);
                                 if (_meshFilter.sharedMesh.vertexCount > 0)
                                 {
                                     var _meshCollider2 = _cluster.AddComponent<MeshCollider>();
@@ -1382,7 +1384,7 @@ namespace GiantGrey.TileWorldCreator
 
 #if UNITY_EDITOR
 #region Inspector
-        public override VisualElement CreateInspectorGUI(Configuration _asset, Editor _editor, LayerFoldoutElement _foldout)
+        public override VisualElement CreateInspectorGUI(Configuration _asset, global::UnityEditor.Editor _editor, LayerFoldoutElement _foldout)
         {
             childSpawnSettingsContainer = new VisualElement();
             var _layerItem = new VisualElement();

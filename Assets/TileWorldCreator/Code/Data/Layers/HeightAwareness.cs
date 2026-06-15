@@ -14,6 +14,7 @@ using GiantGrey.TileWorldCreator.UI;
 using GiantGrey.TileWorldCreator.Attributes;
 #if UNITY_EDITOR
 using UnityEditor;
+using Editor = UnityEditor.Editor;
 using UnityEditor.UIElements;
 #endif
 
@@ -305,7 +306,7 @@ namespace GiantGrey.TileWorldCreator
 
 
         #if UNITY_EDITOR
-        public override VisualElement CreateInspectorGUI(Configuration _asset, Editor _editor, LayerFoldoutElement _foldout)
+        public override VisualElement CreateInspectorGUI(Configuration _asset, global::UnityEditor.Editor _editor, LayerFoldoutElement _foldout)
         {
             var _root = base.CreateInspectorGUI(_asset, _editor, _foldout);
             

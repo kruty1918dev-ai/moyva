@@ -17,6 +17,7 @@
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
+using Editor = UnityEditor.Editor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using System.Linq;
@@ -30,7 +31,7 @@ using GiantGrey.TileWorldCreator.Attributes;
 namespace GiantGrey.TileWorldCreator
 {
     [CustomEditor(typeof(Configuration))]
-    public class ConfigurationEditor : Editor
+    public class ConfigurationEditor : UnityEditor.Editor
     {
         Configuration configuration;
         TileWorldCreatorManager manager;

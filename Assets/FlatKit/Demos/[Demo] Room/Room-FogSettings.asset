@@ -93,8 +93,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Effect Material
-  m_Shader: {fileID: -6465566751694194690, guid: c77db07224d9f784d90d7eb0e84c57f7,
-    type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: c77db07224d9f784d90d7eb0e84c57f7, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
@@ -134,13 +133,13 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _DistanceFogIntensity: 0.055
-    - _DistanceHeightBlend: 0.791
-    - _Far: 44.9
-    - _HeightFogIntensity: 0.091
-    - _HighWorldY: 10.6
-    - _LowWorldY: -0.7
-    - _Near: 1
+    - _DistanceFogIntensity: 0.277
+    - _DistanceHeightBlend: 0.579
+    - _Far: 100
+    - _HeightFogIntensity: 0.271
+    - _HighWorldY: 10
+    - _LowWorldY: 0
+    - _Near: 0
     m_Colors: []
   m_BuildTextureStacks: []
   m_AllowLocking: 1

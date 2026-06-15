@@ -14,6 +14,7 @@
 */
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace GiantGrey.TileWorldCreator.Utilities
@@ -22,19 +23,46 @@ namespace GiantGrey.TileWorldCreator.Utilities
     public static class GridMeshGenerator
     {
 
-        public static Mesh GenerateMesh(HashSet<Vector2> cellPositions, HashSet<Vector2> allCells, float cellSize, float height, float extrusionHeight, bool invertWalls)
+        public static Mesh GenerateMesh(HashSet<Vector2> cellPositions, HashSet<Vector2> allCells, float cellSize, float height, float extrusionHeight, bool invertWalls, int paddingCells = 0)
         {
             Mesh mesh = new Mesh();
             List<Vector3> vertices = new List<Vector3>();
             List<int> triangles = new List<int>();
-            float insetAmount = 0.0f; // Experimental
+            float insetAmount = 0.0f;
+
+            if (cellPositions == null || cellPositions.Count == 0)
+            {
+                return mesh;
+            }
+
+            HashSet<Vector2> workingCells = cellPositions;
+            HashSet<Vector2> workingAllCells = allCells ?? new HashSet<Vector2>();
+
+            if (paddingCells > 0)
+            {
+                int minX = Mathf.FloorToInt(cellPositions.Min(c => c.x));
+                int maxX = Mathf.CeilToInt(cellPositions.Max(c => c.x));
+                int minY = Mathf.FloorToInt(cellPositions.Min(c => c.y));
+                int maxY = Mathf.CeilToInt(cellPositions.Max(c => c.y));
+
+                workingCells = new HashSet<Vector2>(cellPositions);
+                for (int x = minX - paddingCells; x <= maxX + paddingCells; x++)
+                {
+                    for (int y = minY - paddingCells; y <= maxY + paddingCells; y++)
+                    {
+                        workingCells.Add(new Vector2(x, y));
+                    }
+                }
+
+                workingAllCells = new HashSet<Vector2>(workingAllCells);
+                workingAllCells.UnionWith(workingCells);
+            }
 
             // For our base quad the vertices are:
             // 0: bottom-left, 1: bottom-right, 2: top-right, 3: top-left
 
             // Mapping for wall edges corresponding to a missing neighbor
             // Order: left, right, up, down
-            // For each, tuple (v0, v1) from the base quad to extrude along.
             int[,] edgeIndices = new int[4, 2] {
                 { 0, 3 }, // Left edge: bottom-left → top-left
                 { 2, 1 }, // Right edge: top-right → bottom-right (reversed order)
@@ -42,17 +70,11 @@ namespace GiantGrey.TileWorldCreator.Utilities
                 { 1, 0 }  // Down edge: bottom-right → bottom-left (reversed order)
             };
 
-            // Directions to check (should correspond to the above order)
             Vector2[] directions = new Vector2[] { Vector2.left, Vector2.right, Vector2.up, Vector2.down };
 
-
-            foreach (Vector2 cell in cellPositions)
+            foreach (Vector2 cell in workingCells)
             {
                 Vector3 basePos = new Vector3(cell.x * cellSize - cellSize * 0.5f, height, cell.y * cellSize - cellSize * 0.5f);
-                // Vector3 basePos = new Vector3(cell.x * cellSize, height, cell.y * cellSize);
-                //         Vector3 basePos = new Vector3(cell.x, 0, cell.y) - parentOffset;
-                // basePos *= cellSize;
-                // basePos.y = height;
 
                 // Create the base quad for the cell (floor)
                 int baseIndex = vertices.Count;
@@ -61,7 +83,7 @@ namespace GiantGrey.TileWorldCreator.Utilities
                 vertices.Add(basePos + new Vector3(cellSize, 0, cellSize));  // 2: top-right
                 vertices.Add(basePos + new Vector3(0, 0, cellSize));          // 3: top-left
         
-                // Create floor triangles (two triangles forming the quad)
+                // Create floor triangles
                 triangles.Add(baseIndex + 0);
                 triangles.Add(baseIndex + 2);
                 triangles.Add(baseIndex + 1);
@@ -70,77 +92,119 @@ namespace GiantGrey.TileWorldCreator.Utilities
                 triangles.Add(baseIndex + 3);
                 triangles.Add(baseIndex + 2);
 
-            
-                // Wall triangles
-                // for (int d = 0; d < 4; d++)
-                // {
-                //     Vector2 neighborPos = cell + directions[d];
-
-                //     // Use the full map to decide if a wall is needed
-                //     if (!allCells.Contains(neighborPos))
-                //     {
-                //         int idxA = baseIndex + edgeIndices[d, 0];
-                //         int idxB = baseIndex + edgeIndices[d, 1];
-                //         Vector3 v0 = vertices[idxA];
-                //         Vector3 v1 = vertices[idxB];
-
-                //         int wallBaseIndex = vertices.Count;
-                //         vertices.Add(v0);
-                //         vertices.Add(v1);
-                //         vertices.Add(v1 + Vector3.up * extrusionHeight);
-                //         vertices.Add(v0 + Vector3.up * extrusionHeight);
-
-                //         if (!invertWalls)
-                //         {
-                //             triangles.Add(wallBaseIndex + 0);
-                //             triangles.Add(wallBaseIndex + 1);
-                //             triangles.Add(wallBaseIndex + 2);
-
-                //             triangles.Add(wallBaseIndex + 0);
-                //             triangles.Add(wallBaseIndex + 2);
-                //             triangles.Add(wallBaseIndex + 3);
-                //         }
-                //         else
-                //         {
-                //             // Reverse winding to flip normals
-                //             triangles.Add(wallBaseIndex + 0);
-                //             triangles.Add(wallBaseIndex + 2);
-                //             triangles.Add(wallBaseIndex + 1);
-
-                //             triangles.Add(wallBaseIndex + 0);
-                //             triangles.Add(wallBaseIndex + 3);
-                //             triangles.Add(wallBaseIndex + 2);
-                //         }
-                //     }
-                // }
-
+                // Detect which walls are needed
+                bool[] wallNeeded = new bool[4];
                 for (int d = 0; d < 4; d++)
                 {
                     Vector2 neighborPos = cell + directions[d];
-                    if (!allCells.Contains(neighborPos))
+                    wallNeeded[d] = !workingAllCells.Contains(neighborPos);
+                }
+
+                // Build walls, handling corners specially
+                for (int d = 0; d < 4; d++)
+                {
+                    if (!wallNeeded[d])
+                        continue;
+
+                    int idxA = baseIndex + edgeIndices[d, 0];
+                    int idxB = baseIndex + edgeIndices[d, 1];
+                    Vector3 v0 = vertices[idxA];
+                    Vector3 v1 = vertices[idxB];
+
+                    Vector3 edgeDir = (v1 - v0).normalized;
+                    Vector3 outward = new Vector3(-edgeDir.z, 0, edgeDir.x);
+
+                    Vector3 v0Offset = v0 + outward * insetAmount;
+                    Vector3 v1Offset = v1 + outward * insetAmount;
+
+                    // Check if this wall is part of a corner (2 adjacent walls)
+                    int prevDir = (d - 1 + 4) % 4;
+                    int nextDir = (d + 1) % 4;
+                    bool cornerBefore = wallNeeded[prevDir];
+                    bool cornerAfter = wallNeeded[nextDir];
+
+                    if (cornerBefore || cornerAfter)
                     {
-                        int idxA = baseIndex + edgeIndices[d, 0];
-                        int idxB = baseIndex + edgeIndices[d, 1];
-                        Vector3 v0 = vertices[idxA];
-                        Vector3 v1 = vertices[idxB];
+                        // Corner wall: add extra middle vertex to avoid fan topology
+                        int wallBaseIndex = vertices.Count;
+                        
+                        vertices.Add(v0Offset);                                     // 0 bottom offset start
+                        vertices.Add(v1Offset);                                     // 1 bottom offset end
+                        
+                        // Middle point at bottom for better distribution
+                        Vector3 midBottom = (v0Offset + v1Offset) * 0.5f;
+                        vertices.Add(midBottom);                                    // 2 middle bottom
+                        
+                        vertices.Add(v0Offset + Vector3.up * extrusionHeight);     // 3 top offset start
+                        vertices.Add(v1Offset + Vector3.up * extrusionHeight);     // 4 top offset end
+                        
+                        // Middle point at top
+                        Vector3 midTop = (v0Offset + v1Offset) * 0.5f + Vector3.up * extrusionHeight;
+                        vertices.Add(midTop);                                       // 5 middle top
 
-                        // Compute outward normal in XZ plane
-                        Vector3 edgeDir = (v1 - v0).normalized;
-                        Vector3 outward = new Vector3(-edgeDir.z, 0, edgeDir.x);
+                        if (!invertWalls)
+                        {
+                            // Bottom triangle
+                            triangles.Add(wallBaseIndex + 0);
+                            triangles.Add(wallBaseIndex + 2);
+                            triangles.Add(wallBaseIndex + 1);
 
-                        // Offset both bottom and top
-                        Vector3 v0Offset = v0 + outward * insetAmount;
-                        Vector3 v1Offset = v1 + outward * insetAmount;
+                            // Top triangle
+                            triangles.Add(wallBaseIndex + 3);
+                            triangles.Add(wallBaseIndex + 4);
+                            triangles.Add(wallBaseIndex + 5);
 
+                            // Side triangles
+                            triangles.Add(wallBaseIndex + 0);
+                            triangles.Add(wallBaseIndex + 3);
+                            triangles.Add(wallBaseIndex + 5);
+                            triangles.Add(wallBaseIndex + 0);
+                            triangles.Add(wallBaseIndex + 5);
+                            triangles.Add(wallBaseIndex + 2);
+
+                            triangles.Add(wallBaseIndex + 2);
+                            triangles.Add(wallBaseIndex + 5);
+                            triangles.Add(wallBaseIndex + 4);
+                            triangles.Add(wallBaseIndex + 2);
+                            triangles.Add(wallBaseIndex + 4);
+                            triangles.Add(wallBaseIndex + 1);
+                        }
+                        else
+                        {
+                            // Reverse winding
+                            triangles.Add(wallBaseIndex + 0);
+                            triangles.Add(wallBaseIndex + 1);
+                            triangles.Add(wallBaseIndex + 2);
+
+                            triangles.Add(wallBaseIndex + 3);
+                            triangles.Add(wallBaseIndex + 5);
+                            triangles.Add(wallBaseIndex + 4);
+
+                            triangles.Add(wallBaseIndex + 0);
+                            triangles.Add(wallBaseIndex + 5);
+                            triangles.Add(wallBaseIndex + 3);
+                            triangles.Add(wallBaseIndex + 0);
+                            triangles.Add(wallBaseIndex + 2);
+                            triangles.Add(wallBaseIndex + 5);
+
+                            triangles.Add(wallBaseIndex + 2);
+                            triangles.Add(wallBaseIndex + 4);
+                            triangles.Add(wallBaseIndex + 5);
+                            triangles.Add(wallBaseIndex + 2);
+                            triangles.Add(wallBaseIndex + 1);
+                            triangles.Add(wallBaseIndex + 4);
+                        }
+                    }
+                    else
+                    {
+                        // Normal wall without corner
                         int wallBaseIndex = vertices.Count;
 
-                        // Wall vertices (offset)
-                        vertices.Add(v0Offset);                         // 0 bottom offset
-                        vertices.Add(v1Offset);                         // 1 bottom offset
-                        vertices.Add(v1Offset + Vector3.up * extrusionHeight); // 2 top offset
-                        vertices.Add(v0Offset + Vector3.up * extrusionHeight); // 3 top offset
+                        vertices.Add(v0Offset);                         
+                        vertices.Add(v1Offset);                         
+                        vertices.Add(v1Offset + Vector3.up * extrusionHeight);
+                        vertices.Add(v0Offset + Vector3.up * extrusionHeight);
 
-                        // Wall face (vertical, offset outward)
                         if (!invertWalls)
                         {
                             triangles.Add(wallBaseIndex + 0);
@@ -162,15 +226,13 @@ namespace GiantGrey.TileWorldCreator.Utilities
                             triangles.Add(wallBaseIndex + 2);
                         }
 
-                        // ----- Extra connector strip between ground and offset bottom -----
+                        // Connector strip
                         int connectorBase = vertices.Count;
+                        vertices.Add(v0);        
+                        vertices.Add(v1);        
+                        vertices.Add(v1Offset);  
+                        vertices.Add(v0Offset);  
 
-                        vertices.Add(v0);        // 0 original ground
-                        vertices.Add(v1);        // 1 original ground
-                        vertices.Add(v1Offset);  // 2 offset bottom
-                        vertices.Add(v0Offset);  // 3 offset bottom
-
-                        // Triangles for connector
                         triangles.Add(connectorBase + 0);
                         triangles.Add(connectorBase + 1);
                         triangles.Add(connectorBase + 2);
@@ -179,7 +241,6 @@ namespace GiantGrey.TileWorldCreator.Utilities
                         triangles.Add(connectorBase + 2);
                         triangles.Add(connectorBase + 3);
                     }
-
                 }
             }
 
@@ -187,12 +248,52 @@ namespace GiantGrey.TileWorldCreator.Utilities
             // Assign data to the mesh
             mesh.vertices = vertices.ToArray();
             mesh.triangles = triangles.ToArray();
+            
+            // Generate UV coordinates for proper water shader wrapping
+            GeneratePlanarUVs(mesh, cellSize);
+            
+            // Recalculate normals and tangents for shader detail quality
             mesh.RecalculateNormals();
+            mesh.RecalculateTangents();  // Critical for water shader with normal maps
             mesh.RecalculateBounds();
 
             return mesh;
         }
 
+
+        /// <summary>
+        /// Generates planar UV coordinates for tile meshes to ensure smooth water shader wrapping.
+        /// Maps vertices to normalized 0..1 space per tile cell to prevent UV stretching/artifacts.
+        /// </summary>
+        private static void GeneratePlanarUVs(Mesh mesh, float cellSize)
+        {
+            Vector3[] vertices = mesh.vertices;
+            Vector2[] uvs = new Vector2[vertices.Length];
+            
+            Vector3 meshMin = vertices[0];
+            Vector3 meshMax = vertices[0];
+            
+            for (int i = 1; i < vertices.Length; i++)
+            {
+                meshMin = Vector3.Min(meshMin, vertices[i]);
+                meshMax = Vector3.Max(meshMax, vertices[i]);
+            }
+            
+            Vector3 meshSize = meshMax - meshMin;
+            float scale = 1f / cellSize;  // Normalize to cell-based coordinates
+            
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                // Map X-Z coordinates to UV space (0..1 per cell)
+                float u = (vertices[i].x - meshMin.x) * scale;
+                float v = (vertices[i].z - meshMin.z) * scale;
+                
+                // Fract to get local tile coordinates for seamless tiling
+                uvs[i] = new Vector2(u - Mathf.Floor(u), v - Mathf.Floor(v));
+            }
+            
+            mesh.uv = uvs;
+        }
 
         /// <summary>
         /// A simple struct representing an edge (line segment) between two 2D points.

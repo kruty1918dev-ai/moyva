@@ -16,6 +16,7 @@
 using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
+using Editor = UnityEditor.Editor;
 #endif
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -34,7 +35,7 @@ namespace GiantGrey.TileWorldCreator
         public bool isEnabled = true;
         public string layerName;
         public string guid;
-        
+
         public string assignedBlueprintLayerGuid;
         public BlueprintLayer currentBlueprintLayer;
         // public List<string> assignedBlueprintLayerGuids = new List<string>();
@@ -48,7 +49,7 @@ namespace GiantGrey.TileWorldCreator
 
         public List<BuildLayerMask> masks = new List<BuildLayerMask>();
 
-       
+
 
         [SerializeField]
         public string hierarchyLayerID;
@@ -109,7 +110,7 @@ namespace GiantGrey.TileWorldCreator
                     return Equals(other);
                 return false;
             }
-            
+
             public override int GetHashCode()
             {
                 int hash = 17;
@@ -160,17 +161,17 @@ namespace GiantGrey.TileWorldCreator
             guid = System.Guid.NewGuid().ToString();
         }
 
-        public virtual void ResetLayer(TileWorldCreatorManager _manager = null) {}
+        public virtual void ResetLayer(TileWorldCreatorManager _manager = null) { }
 
         public void ClearWorldPositions()
         {
             worldGrid.Clear();
         }
 
-        public virtual void ExecuteLayer(Configuration _configuration, GameObject _owner, TileWorldCreatorManager _manager) {}
+        public virtual void ExecuteLayer(Configuration _configuration, GameObject _owner, TileWorldCreatorManager _manager) { }
 
 #if UNITY_EDITOR
-        public virtual VisualElement CreateInspectorGUI(Configuration _asset, Editor _assetEditor, LayerFoldoutElement _layerFoldout) { return null; }
+    public virtual VisualElement CreateInspectorGUI(Configuration _asset, global::UnityEditor.Editor _assetEditor, LayerFoldoutElement _layerFoldout) { return null; }
 #endif 
 
         public virtual List<TileData> GetTilesAtBlueprintCell(Vector2 _cellPosition)

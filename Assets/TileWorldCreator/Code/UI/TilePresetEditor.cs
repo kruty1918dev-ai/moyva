@@ -16,6 +16,7 @@
 #if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
+using Editor = UnityEditor.Editor;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
 
@@ -25,7 +26,7 @@ using GiantGrey.TileWorldCreator.Utilities;
 namespace GiantGrey.TileWorldCreator
 {
     [CustomEditor(typeof(TilePreset))]
-    public class TilePresetEditor : Editor
+    public class TilePresetEditor : global::UnityEditor.Editor
     {
         TilePreset tilePreset;
         VisualElement normalGridContainer;

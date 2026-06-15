@@ -33,6 +33,7 @@ using GiantGrey.TileWorldCreator.UI;
 
 #if UNITY_EDITOR
 using UnityEditor;
+using Editor = UnityEditor.Editor;
 using UnityEditor.UIElements;
 #endif
 
@@ -1150,7 +1151,8 @@ namespace GiantGrey.TileWorldCreator
                                 _layer.GetAllCellPositions(_allPositions);
 
                                 var _clusterPositions = _layer.GetPositionsInCluster(modifiedClusters[i]);
-                                var _collisionMesh = GridMeshGenerator.GenerateMesh(_clusterPositions, _allPositions, configuration.cellSize, _layer.defaultLayerHeight + layerYOffset + _tileColliderHeight, _tileColliderExtrusion, _invertWalls);
+                                int _paddingCells = configuration.GetBlueprintLayerPaddingCells(_layer);
+                                var _collisionMesh = GridMeshGenerator.GenerateMesh(_clusterPositions, _allPositions, configuration.cellSize, _layer.defaultLayerHeight + layerYOffset + _tileColliderHeight, _tileColliderExtrusion, _invertWalls, _paddingCells);
                                 
                                 if (_collisionMesh != null && _collisionMesh.vertexCount > 0)
                                 {
@@ -1994,7 +1996,7 @@ namespace GiantGrey.TileWorldCreator
 
 #if UNITY_EDITOR
         #region Inspector
-        public override VisualElement CreateInspectorGUI(Configuration _asset, Editor _editor, LayerFoldoutElement _foldout)
+        public override VisualElement CreateInspectorGUI(Configuration _asset, global::UnityEditor.Editor _editor, LayerFoldoutElement _foldout)
         {
             var _layerItem = new VisualElement();
 
@@ -2003,7 +2005,7 @@ namespace GiantGrey.TileWorldCreator
             return _layerItem;
         }
         
-        void BuildLayerUI(Configuration _asset, Editor _editor, LayerFoldoutElement _foldout, VisualElement _layerItem)
+        void BuildLayerUI(Configuration _asset, global::UnityEditor.Editor _editor, LayerFoldoutElement _foldout, VisualElement _layerItem)
         {
             _layerItem.Clear();
             var _assetEditor = _editor as ConfigurationEditor;

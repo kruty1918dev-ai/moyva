@@ -307,6 +307,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _mesh.SetTriangles(_triangles, 0);
             _mesh.SetUVs(0, _uvs);
             _mesh.RecalculateNormals();
+            _mesh.RecalculateTangents();  // Critical for water shader with normal maps
             _mesh.RecalculateBounds();
 
             Debug.Log($"{LogTag} Rebuild complete. map={width}x{height}, levelRange={minLevel}..{maxLevel}, edgeLevel={edgeLevel}, cellSize={FormatNumber(cellSize)}, heightStep={heightStep}, baseY={FormatNumber(baseY)}, includeMapBoundaryWalls={includeMapBoundaryWalls}, skippedBoundaryWalls={skippedBoundaryWalls}, walls={wallCount} (E={eastWalls}, W={westWalls}, N={northWalls}, S={southWalls}), totalLevelDiff={totalLevelDifference}, maxLevelDiff={maxLevelDifference}, diffHistogram={FormatHistogram(differenceHistogram)}, vertices={_vertices.Count}, triangles={_triangles.Count / 3}, indexFormat={_mesh.indexFormat}, bounds={FormatBounds(_mesh.bounds)}, samples={FormatSamples(_samples)}.");
