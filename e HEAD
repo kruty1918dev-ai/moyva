@@ -1,0 +1,47 @@
+  add-layer-node-to-generator                                                [m 1d491ecd [[34morigin/add-layer-node-to-generator[m] Add generator layer and simplified water shader updates
+  add-new-nod                                                                [m ede7dc71 update
+  added-save-load-units                                                      [m 55f8b498 [[34morigin/added-save-load-units[m] Added unit save and save tool
+  backup/feature-unit-designer-animations-audio-improvements-before-10commits[m 22dacfa0 fix(unit-designer): persist registry edits with explicit save
+  backup/feature-unit-designer-before-100-split-20260511                     [m 976250f3 Update
+  backup/plan-economy-logic-pre-main-sync-20260413                           [m 41c0e3cc wip: save uncommitted local changes before main integration
+  build-setup                                                                [m 5ea83f00 [[34morigin/build-setup[m] chore(content): refresh generation assets, presets and project config
+  chore/android-prep-and-homemenu-diagnostics                                [m a3711797 [[34morigin/chore/android-prep-and-homemenu-diagnostics[m] chore: prepare android build and add menu/lobby diagnostics
+  copilot/featuresave-system                                                 [m f5e105a7 [[34morigin/copilot/featuresave-system[m] update
+  copilot/fix-map-objects-issue                                              [m c3ba1c85 [[34morigin/copilot/fix-map-objects-issue[m: відсутнє] update
+  copilot/organize-ui-for-expansion                                          [m 560e597a [[34morigin/copilot/organize-ui-for-expansion[m: відсутнє] feat(GameMode): centralize UI panel visibility via IGameModePanel + GameModePanelController
+  copilot/refactor-construction-logic-ui                                     [m 13bbd78b [[34morigin/copilot/refactor-construction-logic-ui[m: відсутнє] docs: повний аудит документації — оновлення signals, game-mode, construction, pages.json
+  copilot/vscode-mnptpdg5-lswn                                               [m 4ae6a507 Checkpoint from VS Code for cloud agent session
+  copilot/vscode-mpftv49d-6mg0                                               [m 265999a8 [[34morigin/copilot/vscode-mpftv49d-6mg0[m: відсутнє] Checkpoint from VS Code for cloud agent session
++ [36mcopilot/worktree-2026-05-21T18-43-34                                       [m dd79b1d4 ([36m/home/oleks/moyva.worktrees/copilot-worktree-2026-05-21T18-43-34[m) Checkpoint from VS Code for cloud agent session (#87)
+  feature/economy-system-mvp                                                 [m 6be83db4 [[34morigin/feature/economy-system-mvp[m] оновлення
+  feature/folder-setup-tool                                                  [m ba45d976 [[34morigin/feature/folder-setup-tool[m: відсутнє] feat(editor): add Moyva/Script/Folder Setup tool
+  feature/generated-unity-assets                                             [m 56bb77a8 [[34morigin/feature/generated-unity-assets[m] Create MultiplayerRoomLifecycle.cs
+  feature/health-system                                                      [m 0f98b477 [[34morigin/feature/health-system[m: відсутнє] feat(combat): implement centralized health system and editor + installers (move local changes)
+  feature/migrate-to-2d-pipeline                                             [m c0a5666c [[34morigin/feature/migrate-to-2d-pipeline[m: відсутнє] fix: address PR review comments for redo validation and 2d docs
+  feature/multiplayer-lifecycle-reconnect                                    [m 6a2932db [[34morigin/feature/multiplayer-lifecycle-reconnect[m] Add multiplayer lobby reconnect lifecycle
+  feature/unit-designer-animations-audio-improvements                        [m c8f91bcb [[34morigin/feature/unit-designer-animations-audio-improvements[m] Economy(Editor/Tests): add build-forecast UI and update tests for Money support
+  feature/walls-gates-construction                                           [m 62656ed1 [[34morigin/feature/walls-gates-construction[m: відсутнє] chore(project): update unity settings and solution artifacts
+  feature/world-fog-save-tools                                               [m bd93fe43 [[34morigin/feature/world-fog-save-tools[m] Tune startup spawn defaults
+  fix-bugs                                                                   [m 3cf0bf0d chore: add Unity meta files for new modules (BotAI, Calendar, Faction, Multiplayer)
+  fix-generator-graph                                                        [m 519d997c [[34morigin/fix-generator-graph[m] update
+  fix/camera-bounds-                                                         [m 8e79c6e8 [[34morigin/fix/camera-bounds-[m: відсутнє] update
+  fix/construction-bugs                                                      [m 81248650 [[34morigin/fix/construction-bugs[m: відсутнє] fix: Construction placement system bugs and drag support
+  fix/multiplayer-gameplay-ui                                                [m 430f2054 [[34morigin/fix/multiplayer-gameplay-ui[m: відсутнє] Update
+  fog-of-war-save-system                                                     [m bd797719 [[34morigin/fog-of-war-save-system[m] addded fog of war save load
+  game-logic                                                                 [m 4f645aaa feat(combat): implement centralized health system and editor + installers (move local changes) (#83)
+  general-updates                                                            [m 715217f0 update
+* [32mgeneral-updates-clean                                                      [m ba8579ef update
+  generator-modify                                                           [m 22945794 [[34morigin/generator-modify[m] added documentstion
+  home-menu-ui                                                               [m 07cd33b6 [[34morigin/home-menu-ui[m] merge(main): resolve GeneratorGraph.asset conflict using main graph state
+  main                                                                       [m f0730281 [[34morigin/main[m] Fix/camera bounds  (#88)
+  merge/main-add-layer-plan                                                  [m 227ad3c5 [[34morigin/merge/main-add-layer-plan[m: відсутнє] Update GeneratorGraphView.cs
+  optimaze-tile-system                                                       [m 59336743 [[34morigin/optimaze-tile-system[m] update
+  plan/economy-logic                                                         [m e54dbca6 [[34morigin/plan/economy-logic[m] Update
+  prototype-map-generation                                                   [m 42159cc5 [[34morigin/prototype-map-generation[m] Merge branch 'prototype-map-generation' of https://github.com/kruty1918dev-ai/moyva into prototype-map-generation
+  rewrite/feature-unit-designer-10commits                                    [m b6a75ccb [[34morigin/rewrite/feature-unit-designer-10commits[m] Merge main into feature branch and resolve conflicts
+  rewrite/feature-unit-designer-10commits-100commits                         [m dd7ca16f [[34morigin/rewrite/feature-unit-designer-10commits-100commits[m] chore(split-100): commit 100/100
+  rewrite/feature-unit-designer-10commits-v3                                 [m 3b2c8037 content(units): add sample unit assets and tune archipelago height layers
+  tile-generation-save-load                                                  [m dd3526f2 [[34morigin/tile-generation-save-load[m] done
+  unit-radius-von-width-                                                     [m 68cfbbaa [[34morigin/unit-radius-von-width-[m: відсутнє] feat(fog): add vision tuner editor tooling
+  water                                                                      [m 6bac514f [[34morigin/water[m] update (#66)
+  фікс-багів                                                                 [m 0576c0d1 [[34morigin/фікс-багів[m: відсутнє] update

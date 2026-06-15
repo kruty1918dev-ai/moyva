@@ -1,0 +1,440 @@
+[33mcommit ba8579ef35ad2e36c9741cca4cd039e312f9e0b1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mgeneral-updates-clean[m[33m)[m
+Author: Kruty1918 <kruty1918.dev@gmail.com>
+Date:   Mon Jun 15 18:01:25 2026 +0200
+
+    update
+
+[33mcommit 9ef4b30803492f8cd1790f5b3b7aa38373b2e88e[m
+Author: Kruty1918 <kruty1918.dev@gmail.com>
+Date:   Sun Jun 14 20:30:19 2026 +0200
+
+    Update
+
+[33mcommit 715217f0d66a27824efb7d55b1dd8362eeab882b[m[33m ([m[1;32mgeneral-updates[m[33m)[m
+Author: Kruty1918 <kruty1918.dev@gmail.com>
+Date:   Mon Jun 15 18:01:25 2026 +0200
+
+    update
+
+[33mcommit 626ce490845f3d422975e6f71986fcd8d297e0a8[m
+Author: Kruty1918 <kruty1918.dev@gmail.com>
+Date:   Sun Jun 14 20:30:19 2026 +0200
+
+    Update
+
+[33mcommit bfcf1ea04d7e391b95ca9d5e10ff721d7a93d167[m
+Author: Kruty1918 <kruty1918.dev@gmail.com>
+Date:   Fri May 8 21:26:08 2026 +0200
+
+    Enhance map generation with new tiles, objects, and fog of war features (#74)
+    
+    * AddPrototypeArt
+    
+    Add art tiles, buildings, units, UI elements
+    
+    * added save graph to so
+    
+    * виправлено невідповідність генепації  при повторному використані
+    
+    * update
+    
+    * Node field parameters
+    
+    Added field parameters to the node
+    
+    * Add tiles to TileRegistry
+    
+    Add 192 tiles from PunyWorld Asset to TileRegistry
+    
+    * noise
+    
+    * update
+    
+    * Add map objects to Registry Hub
+    
+    Add 59 map objects(majority forests) to Registry Hub
+    
+    * update
+    
+    * update
+    
+    * chore(recovery): add recovered map scenes
+    
+    Add Unity recovery scenes to preserve local editor recovery state used during generator iterations.
+    
+    * chore(art): update tree texture metadata
+    
+    Refresh import metadata for tree object and tile textures used by map visuals.
+    
+    * feat(tiles): add dedicated snow tile prefab
+    
+    Introduce separate snow tile prefab asset and register its Unity metadata.
+    
+    * chore(tiles): tune terrain tile prefabs
+    
+    Adjust existing terrain prefab configurations for beach, hill, lowland, mountain, ocean, snow, and deep water variants.
+    
+    * chore(generation-assets): refresh terrain generation presets
+    
+    Update generation ScriptableObjects for archipelago layers, shore polish, and test graph wiring.
+    
+    * chore(registry-assets): update object and tile registries
+    
+    Synchronize map object and tile registry assets with newly added generator nodes and tile variants.
+    
+    * fix(editor): improve registry hub handling
+    
+    Apply incremental fixes to Registry Hub window behavior and integration with updated registries.
+    
+    * feat(generator-api): add generator data registry contracts
+    
+    Introduce shared generator data interfaces and hill-level data contract for graph nodes.
+    
+    * feat(generator-runtime): register shared generator data services
+    
+    Add runtime GeneratorDataRegistry service and wire it into generator installation.
+    
+    * chore(generator-runtime): update graph map data flow
+    
+    Adjust graph-based map data generator pipeline for updated node outputs and runtime contracts.
+    
+    * feat(generator-node): add contour generator base
+    
+    Add contour generator base abstractions and direction mapping utilities for contour-oriented nodes.
+    
+    * feat(generator-node): add terrain slope filter node
+    
+    Introduce terrain slope filtering node to derive masks from local elevation gradients.
+    
+    * feat(generator-node): add tile mask node
+    
+    Add tile mask generation node and custom editor for filtering by tile ids.
+    
+    * feat(generator-node): add static generator data node
+    
+    Provide graph node that exposes static generator registry data into runtime graph execution.
+    
+    * feat(generator-node): improve object map merge and forest cluster
+    
+    Extend object map merge and forest cluster generation behavior with dedicated editors.
+    
+    * feat(generator-node): add island noise node and editor
+    
+    Introduce island-shaped noise generation node with custom inspector support.
+    
+    * feat(generator-node): add height supplement node and editor
+    
+    Add node to supplement height map within configured range using external noise mask.
+    
+    * feat(generator-node): add soft target height node and editor
+    
+    Introduce soft height target adjustment node with neighborhood-aware smoothing editor controls.
+    
+    * feat(generator-node): add steppe mountain balance node and editor
+    
+    Add steppe/mountain balancing node with keyboard-first inspector and preview diagnostics.
+    
+    * feat(generator-node): add hill generator editor stack
+    
+    Add hill generator runtime nodes, contour editor base, and hill-level override documentation.
+    
+    * feat(generator-node): add water contour and normalizer
+    
+    Introduce water contour and water normalization runtime nodes with dedicated inspectors.
+    
+    * chore(generator-node): align existing node behavior
+    
+    Refine existing seed/bool/height-to-tile nodes to work with expanded terrain graph flow.
+    
+    * feat(graph-api): extend graph contracts
+    
+    Update graph API types for connections, preset composition, execution output, and port definitions.
+    
+    * feat(graph-editor): improve graph preview and UX
+    
+    Revise graph editor views, preview composition, node ports, and window settings handling.
+    
+    * chore(graph-runtime): update runner and validator
+    
+    Adjust runtime graph execution and validation logic for updated node and port contracts.
+    
+    * chore(grid-editor): refine tile id drawer
+    
+    Update tile id drawer behavior to reflect registry and editor flow updates.
+    
+    * docs(graph-system): refresh api and node docs
+    
+    Synchronize Graph System documentation with the latest generator and terrain node behavior.
+    
+    * chore(solution): sync solution and TMP sample asset
+    
+    Apply solution file updates and accompanying TMP sample asset metadata/content adjustments.
+    
+    * feat(fog-of-war): extend settings for tile texture and icons
+    
+    Add fog tile texture, icon atlas, tiling/scaling parameters, and transparency blending controls to FogOfWarSettings.
+    
+    * feat(fog-of-war): enhance shader with tiled textures and icons
+    
+    Add support for tiled fog cell texture, icon atlas sampling with cell-based selection, and zone-based transparency blending in the fog of war overlay.
+    
+    * feat(fog-of-war): wire settings to material for dynamic texture updates
+    
+    Update FogQuadController to pass fog tile texture, icon atlas, tiling parameters, and transparency settings to the material at runtime.
+    
+    * fix(fog-of-war): replace mod() with fmod() for HLSL compatibility
+    
+    HLSL does not have mod() function. Use fmod() instead for floating-point modulo operations in shader to fix glcore compilation error.
+    
+    * feat(fog-of-war): support sprite icons from texture atlas
+    
+    Replace FogIconTextures array with FogIconSprites array. Icons are now specified as Sprite objects, allowing direct texture selection from any sprite atlas. Controller extracts texture from first sprite to use as atlas texture.
+    
+    * feat(fog-of-war): use sprite for tile texture instead of direct texture
+    
+    Change FogTileTexture to FogTileSprite for consistency with icon handling. Controller extracts texture from sprite, allowing direct sprite selection from any atlas.
+    
+    * fix(fog-of-war): tile fog sprite per visibility cell
+    
+    Use fog texture resolution (_FogTex_TexelSize) to derive cell grid, so FogTileSprite is applied once per fog cell. For a 50x50 fog map this yields exactly 50x50 tile cells.
+    
+    * fix(fog-of-war): declare _FogTex_TexelSize for glcore
+    
+    Add explicit _FogTex_TexelSize declaration in UnityPerMaterial CBUFFER to resolve undeclared identifier error on glcore.
+    
+    * fix(fog-of-war): sample exact tile sprite rect and respect RGBA alpha
+    
+    Pass FogTileSprite UV rect from C# to shader, sample only selected sprite area from atlas, and use pattern alpha in fog color/opacity blending.
+    
+    * feat(fog-of-war): place icons on independent sequential grid
+    
+    Add FogIconGridSize setting and shader support so icon placement is independent from tile grid while keeping deterministic sequential ordering. RGBA icon alpha continues to drive blending and final fog opacity.
+    
+    * fix(fog-of-war): render icons from exact sprite rect
+    
+    Stop sampling icons as synthetic NxN atlas cells. Pass selected sprite UV rect to shader and sample icon texture from that exact region, preserving RGBA alpha.
+    
+    * fix(fog-of-war): support per-icon sprite rect array
+    
+    Pass UV rect array for FogIconSprites and sample rect by sequential icon-grid index. This supports different rect for each sprite while preserving RGBA icon blending.
+    
+    * fix(fog-of-war): fallback icon rect when array data is unavailable
+    
+    If per-icon UV rect array returns zero-sized data on backend, shader falls back to primary icon rect to prevent dark squares and keep icons visible.
+    
+    * feat(fog-of-war): make icon sequence symmetric across grid
+    
+    Use mirrored icon-grid coordinates to preserve sequential ordering while enforcing X/Y symmetry for icon distribution.
+    
+    * feat(fog-of-war): add bitmask autotiling data model
+    
+    * feat(fog-of-war): generate bitmask index texture per fog cell
+    
+    * feat(fog-of-war): sample bitmask sprites in shader
+    
+    * feat(fog-of-war): wire bitmask settings to material
+    
+    * feat(fog-of-war): custom settings inspector with Ukrainian UI
+    
+    * chore: update asset and solution after fog-of-war bitmask changes
+    
+    * fix(fog-of-war): improve settings inspector usability
+    
+    * fix(fog-of-war): preserve sprite colors with white tint
+    
+    * fix(fog-of-war): sample only assigned sprite rects
+    
+    * feat(fog-of-war): randomize icon placement deterministically
+    
+    * fix(fog-of-war): keep icon placement on grid
+    
+    * fix(fog-of-war): build bitmasks at fog zone transitions
+    
+    * Use pixel circle for start fog reveal
+    
+    * Remove fog bitmask rendering
+    
+    * Support fog sprite pixel sizes
+    
+    * Add fog tile size setting
+    
+    * Scale fog tile pattern independently
+    
+    * Render overlapping fog tile sprites
+    
+    * Prevent fog overlap alpha buildup
+    
+    * Add fog tile seam overlap
+    
+    * Pad fog overlay map edges
+    
+    * Improve start position selection
+    
+    * Add drifting clouds system
+    
+    * Improve clouds settings inspector
+    
+    * Spawn initial clouds in view
+    
+    * Preview clouds settings and dissolve
+    
+    * Mask clouds to map bounds
+    
+    * Make initial fog reveal circular
+    
+    * Tune fog texture settings asset
+    
+    * Add pixel cloud sprite atlas
+    
+    * Add clouds settings asset
+    
+    * Wire clouds into gameplay scene
+    
+    * update scene
+    
+    * Update
+    
+    ---------
+    
+    Co-authored-by: justwtf <nazaruy.kyshenko@gmail.com>
+
+[33mcommit 180bc244eaeb8c4985ba8e66a6cda7b08622d213[m
+Merge: 2a52e2f6 bf6333ac
+Author: Kruty1918 <kruty1918.dev@gmail.com>
+Date:   Fri May 8 20:20:03 2026 +0200
+
+    Merge main into prototype-map-generation
+
+[33mcommit bf6333ac1c680797bc8adf73411ae5b4ce0d5461[m
+Author: Kruty1918 <kruty1918.dev@gmail.com>
+Date:   Sun May 3 11:43:06 2026 +0200
+
+    Enhance home menu and multiplayer features with new tools and updates (#73)
+    
+    * feat(editor): add Moyva/Script/Folder Setup tool (#69) (#70)
+    
+    Додає команду у контекстне меню Project (Assets/Moyva/Script/Folder Setup),
+    яка:
+    - створює підтеки API, Runtime, Editor для обраної фічі;
+    - генерує Kruty1918.Moyva.<Feature>.asmdef та
+      Kruty1918.Moyva.<Feature>.Editor.asmdef із коректним rootNamespace;
+    - нормалізує namespace у існуючих .cs-файлах відповідно до підтеки
+      (<Base>.API, <Base>.Runtime, <Base>.Editor);
+    - приводить top-level типи у Runtime до internal, залишаючи public лише в API/Editor;
+    - підключає AssetModificationProcessor, який автоматично виставляє namespace
+      та модифікатор доступу для щойно створених скриптів у цих підтеках.
+    
+    * feat(home-menu): add menu architecture and scene builder tool
+    
+    * feat(home-menu): add generated HomeMenu scene and menu assets
+    
+    * chore(home-menu): remove menu scene builder editor tool
+    
+    * chore(tmp): update TMP font assets for menu setup
+    
+    * chore(project): sync solution and Unity metadata
+    
+    * Bootstrap: update initializers, installers and launch mode logic
+    
+    * HomeMenu: update UI flow, navigation and launch services
+    
+    * Multiplayer: update relay provider, session manager, identity and lobby UI
+    
+    * FogOfWar: update fog quad controller and bot fog initialization
+    
+    * BotAI: update bot brain logic
+    
+    * SaveSystem: update installer and game launch context
+    
+    * WorldCreation: update UI controller and installer
+    
+    * Visuals: update TileView rendering logic
+    
+    * Scenes: update gameplay scene
+    
+    * Project: update ProjectContext prefab bindings
+    
+    * Tests: update construction, fog of war and multiplayer tests
+    
+    * Packages: update manifest and lock file
+    
+    * TMP: update SDF font assets
+    
+    * Zenject: update AnimatorIkHandlerManager
+    
+    * ProjectSettings: update virtual projects config
+    
+    * Project: update solution file
+    
+    * Update
+    
+    * Update
+    
+    * Added overlay hiding
+    
+    * added confirm panel and check the user internet connect
+    
+    * update
+    
+    * Fix navigation botton for open last
+    
+    * update
+    
+    * update
+    
+    * chore(multiplayer): remove embedded com.unity.transport; pin transport=2.6.0 and adjust UTP type references
+    
+    * chore(packages): untrack local transport backup and ignore it
+    
+    * chore(multiplayer): add Unity.Networking.Transport and Unity.Collections asmdef references
+    
+    * fix(multiplayer): safe dispose check and NetworkDriver IsCreated check
+    
+    * feat(world-creation): add shared world settings API
+    
+    * feat(home-menu): introduce panel service contracts and menu DTOs
+    
+    * feat(home-menu): add runtime menu composition and config assets
+    
+    * feat(home-menu): implement panel services and flow orchestration
+    
+    * feat(home-menu-ui): update base panels and navigation components
+    
+    * feat(home-menu-ui): add multiplayer mode, lobby and password panel views
+    
+    * feat(multiplayer-lobby): add password-protected room support
+    
+    * feat(multiplayer): add mode selector and provider switching logic
+    
+    * fix(multiplayer): harden relay transport wiring and session startup
+    
+    * test(home-menu,multiplayer): add resolver, room info and switching tests
+    
+    * chore(project): wire home menu services and relay package dependencies
+    
+    * feat(home-menu-scene): update menu scene, lighting and network prefabs
+    
+    * chore(visuals): update quality, volume profile and TMP font assets
+    
+    * chore(editor): remove stale graph settings and add missing-script finder
+    
+    * chore(recovery): add latest Unity recovery scene snapshots
+    
+    * fix(home-menu): keep loading overlay until scene activation
+    
+    * fix(multiplayer): harden provider cleanup and unauthorized lobby handling
+    
+    * chore(tmp-fonts): update glyph atlases for additional characters
+
+[33mcommit 07cd33b6c416d514a288e6ff3c8199440f42c761[m[33m ([m[1;31morigin/home-menu-ui[m[33m, [m[1;32mhome-menu-ui[m[33m)[m
+Merge: efe89ef4 e633f6a4
+Author: Kruty1918 <kruty1918.dev@gmail.com>
+Date:   Sun May 3 11:37:24 2026 +0200
+
+    merge(main): resolve GeneratorGraph.asset conflict using main graph state
+
+[33mcommit 04fbdc749b54b25686d4b06610121e25815226fd[m
+Author: Kruty1918 <kruty1918.dev@gmail.com>
+Date:   Sun May 3 00:58:32 2026 +0200
+
+    chore(recovery): add latest Unity recovery scene snapshots
