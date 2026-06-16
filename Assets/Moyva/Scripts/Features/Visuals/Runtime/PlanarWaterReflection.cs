@@ -9,6 +9,8 @@ namespace Kruty1918.Moyva.Visuals
     public sealed class PlanarWaterReflection : MonoBehaviour
     {
         private static readonly int WaterReflectionTextureId = Shader.PropertyToID("_WaterReflectionTexture");
+        private static readonly int ReflectionVPId = Shader.PropertyToID("_ReflectionVP");
+        private static readonly int ReflectionVerticalFlipId = Shader.PropertyToID("_ReflectionVerticalFlip");
         private static bool _isRenderingReflection;
 
         [Tooltip("Plane used for mirroring the camera. Leave empty to use this transform.")]
@@ -26,6 +28,9 @@ namespace Kruty1918.Moyva.Visuals
         [Tooltip("When enabled, the reflection camera uses the source camera skybox/background.")]
         public bool reflectSkybox = true;
 
+        [Tooltip("Turn this on if the reflection texture appears vertically inverted on the current graphics API.")]
+        public bool verticalFlip;
+
         [Tooltip("Water materials that should receive the reflection texture. Materials on this renderer are also updated.")]
         public Material[] targetWaterMaterials;
 
@@ -35,6 +40,7 @@ namespace Kruty1918.Moyva.Visuals
         private MaterialPropertyBlock _propertyBlock;
         private int _textureWidth;
         private int _textureHeight;
+        private Matrix4x4 _lastReflectionVP = Matrix4x4.identity;
 
         private void OnEnable()
         {
@@ -102,6 +108,8 @@ namespace Kruty1918.Moyva.Visuals
                 _reflectionCamera.cullingMask = GetReflectionCullingMask();
                 _reflectionCamera.targetTexture = _reflectionTexture;
 
+                Matrix4x4 gpuProjection = GL.GetGPUProjectionMatrix(_reflectionCamera.projectionMatrix, true);
+                _lastReflectionVP = gpuProjection * _reflectionCamera.worldToCameraMatrix;
                 ApplyReflectionTexture();
 
                 GL.invertCulling = true;
@@ -201,6 +209,8 @@ namespace Kruty1918.Moyva.Visuals
                 return;
 
             Shader.SetGlobalTexture(WaterReflectionTextureId, _reflectionTexture);
+            Shader.SetGlobalMatrix(ReflectionVPId, _lastReflectionVP);
+            Shader.SetGlobalFloat(ReflectionVerticalFlipId, verticalFlip ? 1f : 0f);
             ApplyReflectionTextureToMaterials(targetWaterMaterials);
 
             if (TryGetComponent(out Renderer waterRenderer))
@@ -208,6 +218,8 @@ namespace Kruty1918.Moyva.Visuals
                 _propertyBlock ??= new MaterialPropertyBlock();
                 waterRenderer.GetPropertyBlock(_propertyBlock);
                 _propertyBlock.SetTexture(WaterReflectionTextureId, _reflectionTexture);
+                _propertyBlock.SetMatrix(ReflectionVPId, _lastReflectionVP);
+                _propertyBlock.SetFloat(ReflectionVerticalFlipId, verticalFlip ? 1f : 0f);
                 waterRenderer.SetPropertyBlock(_propertyBlock);
             }
         }
@@ -219,8 +231,15 @@ namespace Kruty1918.Moyva.Visuals
 
             foreach (Material material in materials)
             {
-                if (material != null && material.HasProperty(WaterReflectionTextureId))
+                if (material == null)
+                    continue;
+
+                if (material.HasProperty(WaterReflectionTextureId))
                     material.SetTexture(WaterReflectionTextureId, _reflectionTexture);
+                if (material.HasProperty(ReflectionVPId))
+                    material.SetMatrix(ReflectionVPId, _lastReflectionVP);
+                if (material.HasProperty(ReflectionVerticalFlipId))
+                    material.SetFloat(ReflectionVerticalFlipId, verticalFlip ? 1f : 0f);
             }
         }
 

@@ -8,6 +8,10 @@ public class PlanarReflectionRenderer : MonoBehaviour
     public Camera SourceCamera;
     public Material WaterMaterial;
 
+    [Header("Reflection Background")]
+    public bool TransparentBackground = true;
+    public Color BackgroundColor = new Color(0f, 0f, 0f, 0f);
+
     [Header("Reflection Render Texture")]
     [Min(64)] public int TextureSize = 1024;
     public LayerMask ReflectionMask = ~0;
@@ -105,6 +109,7 @@ public class PlanarReflectionRenderer : MonoBehaviour
                 name = "Planar Reflection Texture",
                 hideFlags = HideFlags.HideAndDontSave,
                 filterMode = TextureFilterMode,
+                wrapMode = TextureWrapMode.Clamp,
                 useMipMap = false,
                 autoGenerateMips = false
             };
@@ -185,6 +190,11 @@ public class PlanarReflectionRenderer : MonoBehaviour
         CalculateReflectionMatrix(ref reflectionMatrix, reflectionPlane);
 
         _reflectionCamera.CopyFrom(sourceCamera);
+        if (TransparentBackground)
+        {
+            _reflectionCamera.clearFlags = CameraClearFlags.SolidColor;
+            _reflectionCamera.backgroundColor = BackgroundColor;
+        }
         _reflectionCamera.enabled = false;
         _reflectionCamera.targetTexture = _reflectionTexture;
         _reflectionCamera.cullingMask = ReflectionMask;
@@ -211,11 +221,16 @@ public class PlanarReflectionRenderer : MonoBehaviour
         }
 
         bool oldInvertCulling = GL.invertCulling;
-        GL.invertCulling = !oldInvertCulling;
 
-        _reflectionCamera.Render();
-
-        GL.invertCulling = oldInvertCulling;
+        try
+        {
+            GL.invertCulling = !oldInvertCulling;
+            _reflectionCamera.Render();
+        }
+        finally
+        {
+            GL.invertCulling = oldInvertCulling;
+        }
 
         Matrix4x4 gpuProjection = GL.GetGPUProjectionMatrix(_reflectionCamera.projectionMatrix, true);
         Matrix4x4 reflectionVP = gpuProjection * _reflectionCamera.worldToCameraMatrix;
@@ -223,6 +238,10 @@ public class PlanarReflectionRenderer : MonoBehaviour
         WaterMaterial.SetTexture(WaterReflectionTextureId, _reflectionTexture);
         WaterMaterial.SetMatrix(ReflectionVPId, reflectionVP);
         WaterMaterial.SetFloat(ReflectionVerticalFlipId, VerticalFlip ? 1f : 0f);
+
+        Shader.SetGlobalTexture(WaterReflectionTextureId, _reflectionTexture);
+        Shader.SetGlobalMatrix(ReflectionVPId, reflectionVP);
+        Shader.SetGlobalFloat(ReflectionVerticalFlipId, VerticalFlip ? 1f : 0f);
 
         _isRendering = false;
     }

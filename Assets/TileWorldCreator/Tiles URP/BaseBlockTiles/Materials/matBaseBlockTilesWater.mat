@@ -175,6 +175,15 @@ Material:
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
     - _ColorMode: 0
+    - _ContactFoamDistance: 0.22
+    - _ContactFoamEdgeSize: 1.5
+    - _ContactFoamEdgeSoftness: 0.08
+    - _ContactFoamEdgeThreshold: 0.03
+    - _ContactFoamNoiseAmount: 0.5
+    - _ContactFoamNoiseScale: 9
+    - _ContactFoamSoftness: 0.08
+    - _ContactFoamSpeed: 0.18
+    - _ContactFoamStrength: 0.8
     - _CrestSharpness: 0.1
     - _CrestSize: 0.03
     - _Cuastics_Strength: 7.91
@@ -189,16 +198,23 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
-    - _FadeDistance: -0.57
+    - _FadeDistance: 0.1
     - _Float: 0
-    - _FoamAmount: 0.25
-    - _FoamDepth: 0.7
-    - _FoamDirection: 0
+    - _FoamAmount: 0.72
+    - _FoamBlobAmount: 0.229
+    - _FoamBlobDistance: 0.35
+    - _FoamBlobScale: 11.82
+    - _FoamBrokenness: 0.172
+    - _FoamDepth: 0
+    - _FoamDirection: 0.07
+    - _FoamEdgeWobble: 0.348
+    - _FoamEdgeWobbleDistance: 2.66
+    - _FoamEdgeWobbleScale: 5.93
     - _FoamMode: 1
-    - _FoamNoiseAmount: 0.5
-    - _FoamScale: 0.7
-    - _FoamSharpness: 0.3
-    - _FoamSpeed: 0.05
+    - _FoamNoiseAmount: 0.436
+    - _FoamScale: 0.53
+    - _FoamSharpness: 0
+    - _FoamSpeed: 0.5
     - _FoamStretchX: 1
     - _FoamStretchY: 1
     - _Foam_Amount: 0.65
@@ -215,28 +231,44 @@ Material:
     - _GlossyReflections: 0
     - _Height_Deep_Color: 1.04
     - _Height_Top_Color: 0.59
-    - _LightContribution: 0.15
+    - _LightContribution: 0.08
+    - _MaxWaterDepth: 10
     - _Metallic: 0
     - _NoiseSource: 1
     - _NormalStrength: 0.94
     - _OcclusionStrength: 1
     - _Opaque: 0
+    - _OpenWaterDepth: 4
     - _Parallax: 0.005
     - _QueueControl: 0
     - _QueueOffset: -16
     - _ReceiveShadows: 1
-    - _ReflectionDepthFade: 1
+    - _ReflectionBackgroundFade: 1
+    - _ReflectionDepthFade: 0
     - _ReflectionDistortion: 0.005
+    - _ReflectionEdgeFade: 0.05
     - _ReflectionFresnelPower: 2
+    - _ReflectionScreenEdgeFade: 0.04
+    - _ReflectionSkyboxRoughness: 0.55
+    - _ReflectionSkyboxStrength: 0.06
     - _ReflectionStrength: 0.857
-    - _RefractionAmplitude: 0.002
+    - _ReflectionVerticalFlip: 0
+    - _RefractionAmplitude: 0.0068
     - _RefractionFrequency: 20
     - _RefractionScale: 1
-    - _RefractionSpeed: 0.05
+    - _RefractionSpeed: 1
     - _Refraction_Scale: 50
     - _Refraction_Speed: 0.5
     - _Refraction_Strength: 0.01
-    - _ShadowStrength: 0.2
+    - _ScreenEdgeGuard: 0.035
+    - _ShadowStrength: 0.18
+    - _ShoreTintDistance: 1.25
+    - _ShoreTintNoise: 0.22
+    - _ShoreTintNoiseScale: 5.5
+    - _ShoreTintSoftness: 0.85
+    - _ShoreTintStrength: 0.38
+    - _SkyboxReflectionRoughness: 0
+    - _SkyboxReflectionStrength: 0
     - _SmoothA: 0.64
     - _SmoothB: 1
     - _Smoothness: 0.5
@@ -246,8 +278,10 @@ Material:
     - _SrcBlendAlpha: 1
     - _Strength: 1.58
     - _Surface: 0
-    - _WaterClearness: 0.4
-    - _WaterDepth: 6
+    - _VisibilityDepth: 0.22
+    - _VisibilityFalloff: 2
+    - _WaterClearness: 0
+    - _WaterDepth: 5.5
     - _Waterfall_Foam_Height: -1.89
     - _Waterfall_Foam_Scale: 100
     - _Waterfall_Foam_Smoothness: 0.01
@@ -272,12 +306,13 @@ Material:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Caustics_Color: {r: 0, g: 1, b: 0.7329502, a: 1}
     - _Color: {r: 0, g: 1, b: 0.7287984, a: 1}
-    - _ColorDeep: {r: 0.27450982, g: 0.49019608, b: 0.60784316, a: 1}
+    - _ColorDeep: {r: 0.29803923, g: 0.4392157, b: 0.5686275, a: 1}
     - _ColorOuterWorldBottom: {r: 0, g: 0.9490196, b: 1, a: 0.4745098}
     - _ColorOuterWorldMid: {r: 0, g: 0.9490197, b: 1, a: 1}
-    - _ColorShallow: {r: 0.47058824, g: 0.6862745, b: 0.74509805, a: 1}
+    - _ColorShallow: {r: 0.29803923, g: 0.4392157, b: 0.5686275, a: 1}
     - _Color_Deep: {r: 0.017799927, g: 0.538088, b: 0.754717, a: 1}
     - _Color_Surface: {r: 0, g: 0.83557034, b: 1, a: 1}
+    - _ContactFoamColor: {r: 0.92, g: 0.96, b: 0.92, a: 0.85}
     - _CrestColor: {r: 1, g: 1, b: 1, a: 0.7058824}
     - _Deep_Color: {r: 0, g: 0, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
@@ -287,6 +322,9 @@ Material:
     - _Mid_Color: {r: 0, g: 0.26570487, b: 0.509434, a: 1}
     - _Normal_Tiling_Far: {r: 2, g: 2, b: 0, a: 0}
     - _Normal_Tiling_Near: {r: 1, g: 1, b: 0, a: 0}
+    - _ReflectionSkyboxTint: {r: 0.75, g: 0.9, b: 1, a: 1}
+    - _ShoreTintColor: {r: 0.72, g: 0.88, b: 0.9, a: 0.55}
+    - _SkyboxReflectionTint: {r: 0.78, g: 0.89, b: 1, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Top_Color: {r: 0, g: 0.9500499, b: 1, a: 1}
     - _Vector2: {r: 0, g: 0, b: 0, a: 0}
