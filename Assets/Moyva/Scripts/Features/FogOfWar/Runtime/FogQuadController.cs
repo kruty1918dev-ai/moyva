@@ -11,6 +11,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     {
         private const int FogOverlaySortingOrder = short.MaxValue;
         private const int FogOverlayRenderQueue = 4000; // Overlay queue
+        private const string DebugTag = "[MoyvaFogTrace]";
         private static readonly int GlobalFogCullEnabledId = Shader.PropertyToID("_MoyvaFogCullEnabled");
         private static readonly int GlobalFogCullThresholdId = Shader.PropertyToID("_MoyvaFogCullThreshold");
         private static readonly int GlobalFogWorldPlaneId = Shader.PropertyToID("_MoyvaFogWorldPlane");
@@ -28,6 +29,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private int _mapHeight = 10;
         private int _projectionMode = int.MinValue;
         private float _maxTerrainWorldY = float.MinValue;
+        private float _worldCellSize = 1f;
         private bool _subscribed;
 
         [Inject]
@@ -49,6 +51,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             int w = _gridService != null ? _gridService.GridWidth  : 10;
             int h = _gridService != null ? _gridService.GridHeight : 10;
+            Debug.Log($"{DebugTag} FogQuad.Start grid={w}x{h}, hasGrid={_gridService != null}, hasFog={_fogService != null}, hasTextureUpdater={_textureUpdater != null}, hasSignalBus={_signalBus != null}.");
             InitializeOverlay(w, h);
             SubscribeToWorldGeneratedSignal();
         }
@@ -81,6 +84,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int h = Mathf.Max(1, height);
             _mapWidth = w;
             _mapHeight = h;
+            Debug.Log($"{DebugTag} FogQuad.InitializeOverlay begin map={w}x{h}, hasFog={_fogService != null}, hasTextureUpdater={_textureUpdater != null}, hasSettings={_settings != null}.");
 
             _projectionMode = _gridProjection != null ? (int)_gridProjection.ProjectionMode : (int)GridProjectionMode.Orthographic3D;
 
@@ -114,6 +118,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (_settings != null)
                 ApplySettingsToMaterial();
+
+            Debug.Log($"{DebugTag} FogQuad.InitializeOverlay end map={_mapWidth}x{_mapHeight}, projection={_projectionMode}, position={transform.position}, scale={transform.localScale}.");
         }
 
         private void SubscribeToWorldGeneratedSignal()
@@ -123,24 +129,41 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _subscribed = true;
+            Debug.Log($"{DebugTag} FogQuad.SubscribeToWorldGeneratedSignal subscribed=true.");
         }
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
             int width = Mathf.Max(1, signal.Width);
             int height = Mathf.Max(1, signal.Height);
+            float cellSize = ResolveSignalCellSize(signal);
             float maxTerrainWorldY = ResolveMaxTerrainWorldY(signal);
             bool terrainHeightChanged = !Mathf.Approximately(maxTerrainWorldY, _maxTerrainWorldY);
+            bool cellSizeChanged = !Mathf.Approximately(cellSize, _worldCellSize);
             _maxTerrainWorldY = maxTerrainWorldY;
+            _worldCellSize = cellSize;
 
-            if (width == _mapWidth && height == _mapHeight && signal.ProjectionMode == _projectionMode && !terrainHeightChanged)
+            if (width == _mapWidth && height == _mapHeight && signal.ProjectionMode == _projectionMode && !terrainHeightChanged && !cellSizeChanged)
+            {
+                Debug.Log($"{DebugTag} FogQuad.OnWorldGenerated no-reinit signal={width}x{height}, current={_mapWidth}x{_mapHeight}, projection={signal.ProjectionMode}, cellSize={cellSize}, terrainHeightChanged={terrainHeightChanged}.");
                 return;
+            }
 
+            Debug.Log($"{DebugTag} FogQuad.OnWorldGenerated reinit signal={width}x{height}, previous={_mapWidth}x{_mapHeight}, projection={_projectionMode}->{signal.ProjectionMode}, cellSize={_worldCellSize}, terrainHeightChanged={terrainHeightChanged}, cellSizeChanged={cellSizeChanged}.");
             InitializeOverlay(width, height);
         }
 
         private Bounds ResolveWorldBounds(int width, int height)
         {
+            if (_worldCellSize > 0.0001f && _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ)
+            {
+                float safeWidth = Mathf.Max(1, width) * _worldCellSize;
+                float safeDepth = Mathf.Max(1, height) * _worldCellSize;
+                return new Bounds(
+                    new Vector3((safeWidth - _worldCellSize) * 0.5f, 0f, (safeDepth - _worldCellSize) * 0.5f),
+                    new Vector3(safeWidth, 1f, safeDepth));
+            }
+
             if (_gridProjection != null)
                 return _gridProjection.GetWorldBounds(width, height);
 
@@ -148,6 +171,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 new Vector3((width - 1) * 0.5f, (height - 1) * 0.5f, 0f),
                 new Vector3(width, height, 1f));
         }
+
+        private static float ResolveSignalCellSize(WorldGeneratedDataSignal signal)
+            => signal.CellSize > 0.0001f ? signal.CellSize : 1f;
 
         private void ApplyOverlayTransform(Bounds worldBounds, Vector2 edgePadding)
         {

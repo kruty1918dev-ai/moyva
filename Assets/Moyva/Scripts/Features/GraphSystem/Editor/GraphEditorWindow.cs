@@ -1926,6 +1926,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             bool newEnabled = EditorGUILayout.Toggle("Enabled", layer.Enabled);
             float newHeight = EditorGUILayout.FloatField("Default Height", layer.DefaultHeight);
             bool newZeroPadding = EditorGUILayout.Toggle(new GUIContent("Zero Layer Padding (+16)", "Позначає шар як розширений: #sym:width/#sym:height стають більшими на 16."), layer.UseZeroLayerPadding);
+            int newExtraWidth = Mathf.Max(0, EditorGUILayout.IntField(new GUIContent("Extra Width Cells", "Додає клітинки до ширини цього шару понад розмір мапи. Шар центрується навколо основної мапи."), layer.ExtraWidthCells));
+            int newExtraLength = Mathf.Max(0, EditorGUILayout.IntField(new GUIContent("Extra Length Cells", "Додає клітинки до довжини цього шару понад розмір мапи. Корисно для води/океану навколо острова."), layer.ExtraLengthCells));
             Color newColor = EditorGUILayout.ColorField("Color", layer.Color);
 
             if (EditorGUI.EndChangeCheck())
@@ -1936,6 +1938,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 layer.Enabled = newEnabled;
                 layer.DefaultHeight = newHeight;
                 layer.UseZeroLayerPadding = newZeroPadding;
+                layer.ExtraWidthCells = newExtraWidth;
+                layer.ExtraLengthCells = newExtraLength;
                 layer.Color = newColor;
 
                 EditorUtility.SetDirty(_graphAsset);

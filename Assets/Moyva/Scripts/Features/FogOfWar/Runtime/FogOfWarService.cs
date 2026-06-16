@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -23,6 +24,24 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         public Vector2Int Position { get; }
         public int VisionRange { get; }
         public FogRevealShape Shape { get; }
+    }
+
+    internal readonly struct FogPendingRevealArea
+    {
+        public FogPendingRevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId)
+        {
+            Center = center;
+            Radius = radius;
+            Shape = shape;
+            KeepVisible = keepVisible;
+            VisibleAreaId = visibleAreaId;
+        }
+
+        public Vector2Int Center { get; }
+        public int Radius { get; }
+        public FogRevealShape Shape { get; }
+        public bool KeepVisible { get; }
+        public string VisibleAreaId { get; }
     }
 
     /// <summary>
@@ -47,6 +66,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// - Оновлення текстури: _lastDirtyTiles; Version — внутрішня версія; IsReady — готовність.
         /// </summary>
         private const string BuildingVisionAreaPrefix = "building:";
+        private const string StartupFallbackRevealAreaId = "fog-service-startup-fallback-reveal";
+        private const string DebugTag = "[MoyvaFogTrace]";
 
         /// <summary>
         /// Сервіс, який обчислює базовий набір видимих клітин з позиції з урахуванням перешкод.
@@ -112,6 +133,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         // unitId -> відкладені дані реєстрації, отримані до Initialize(width,height)
         private readonly Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape, FogVisionModifiers Modifiers)> _pendingUnits
             = new Dictionary<string, (Vector2Int Position, int VisionRange, FogRevealShape? Shape, FogVisionModifiers Modifiers)>();
+
+        private readonly List<FogPendingRevealArea> _pendingRevealAreas = new List<FogPendingRevealArea>();
 
         private HashSet<Vector2Int> _lastDirtyTiles = new HashSet<Vector2Int>();
 
@@ -179,8 +202,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// <param name="height">Висота карти в клітинах (мінімум 1).</param>
         public void Initialize(int width, int height)
         {
+            bool wasInitialized = _initialized;
             width = Mathf.Max(1, width);
             height = Mathf.Max(1, height);
+
+            Debug.Log($"{DebugTag} FogService.Initialize begin requested={width}x{height}, wasInitialized={wasInitialized}, previous={_width}x{_height}, pendingReveals={_pendingRevealAreas.Count}, units={_unitPositions.Count}, fixedAreas={_fixedVisionShapes.Count}.");
 
             _width  = width;
             _height = height;
@@ -193,9 +219,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             // Відновити стан досліджених клітин із відкладеного сніпшоту (якщо завантаження відбулося до ініціалізації карти).
             var snapshot = _pendingExploredSnapshot ?? _saveProvider?.LoadExploredData();
+            bool hasLoadedSnapshot = snapshot != null;
+            Debug.Log($"{DebugTag} FogService.Initialize snapshot={(snapshot != null ? $"{snapshot.GetLength(0)}x{snapshot.GetLength(1)}" : "null")}.");
             if (snapshot != null)
                 LoadFromSnapshot(snapshot);
             _pendingExploredSnapshot = null;
+
+            ApplyPendingRevealAreas("Initialize");
+            ApplyStartupFallbackRevealIfNeeded(hasLoadedSnapshot);
 
             // Обробити одиниці, які були створені/переміщені до ініціалізації карти
             if (_pendingUnits.Count > 0)
@@ -213,6 +244,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             // Переконатися, що текстура відображає поточний стан після обробки відкладених одиниць
             _textureUpdater?.RebuildFullTexture(this);
             BumpVersion();
+            Debug.Log($"{DebugTag} FogService.Initialize end map={_width}x{_height}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, pendingReveals={_pendingRevealAreas.Count}, version={Version}.");
         }
 
         /// <summary>
@@ -280,6 +312,162 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// <param name="shape">Форма відкриття.</param>
         public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape)
             => RegisterVisionArea(areaId, position, visionRange, shape);
+
+        public void RevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId = null)
+        {
+            radius = Mathf.Max(0, radius);
+
+            if (!_initialized)
+            {
+                _pendingRevealAreas.Add(new FogPendingRevealArea(center, radius, shape, keepVisible, visibleAreaId));
+                Debug.Log($"{DebugTag} FogService.RevealArea queued-not-initialized center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={visibleAreaId ?? "<auto>"}, pending={_pendingRevealAreas.Count}.");
+                return;
+            }
+
+            if (!RevealTouchesCurrentMap(center, radius))
+            {
+                _pendingRevealAreas.Add(new FogPendingRevealArea(center, radius, shape, keepVisible, visibleAreaId));
+                Debug.LogWarning($"{DebugTag} FogService.RevealArea queued-outside-current-map center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={visibleAreaId ?? "<auto>"}, currentMap={_width}x{_height}, pending={_pendingRevealAreas.Count}. This usually means startup reveal arrived before fog resized to the generated world.");
+                return;
+            }
+
+            ApplyRevealArea(center, radius, shape, keepVisible, visibleAreaId);
+        }
+
+        private void ApplyRevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId)
+        {
+            radius = Mathf.Max(0, radius);
+
+            string areaId = null;
+            bool removedOldVisibility = false;
+            if (keepVisible)
+            {
+                areaId = ResolveRevealVisibilityAreaId(center, radius, shape, visibleAreaId);
+                removedOldVisibility = RemoveVisibleTiles(areaId);
+                _unitVisionRange.Remove(areaId);
+                _unitPositions.Remove(areaId);
+                _fixedVisionShapes.Remove(areaId);
+                _unitVisionModifiers.Remove(areaId);
+            }
+
+            var tiles = ComputeShapeTiles(center, radius, shape);
+            if (tiles.Count == 0)
+            {
+                Debug.LogWarning($"{DebugTag} FogService.ApplyRevealArea zero-tiles center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={areaId ?? visibleAreaId ?? "<explored-only>"}, map={_width}x{_height}.");
+                if (removedOldVisibility)
+                    FlushTexture();
+                return;
+            }
+
+            if (keepVisible)
+            {
+                _unitVisionRange[areaId] = radius;
+                _unitPositions[areaId] = center;
+                _unitVisionModifiers[areaId] = default;
+                _fixedVisionShapes[areaId] = shape;
+                _unitVisibleTiles[areaId] = tiles;
+
+                foreach (var tile in tiles)
+                {
+                    _visibilityCounters[tile.x, tile.y]++;
+                    _exploredTiles[tile.x, tile.y] = true;
+                    _lastDirtyTiles.Add(tile);
+                }
+
+                FlushTexture();
+                Debug.Log($"{DebugTag} FogService.ApplyRevealArea visible center={center}, radius={radius}, shape={shape}, id={areaId}, tiles={tiles.Count}, map={_width}x{_height}, centerState={GetFogState(center)}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}.");
+                return;
+            }
+
+            bool changed = false;
+            foreach (var tile in tiles)
+            {
+                if (_exploredTiles[tile.x, tile.y])
+                    continue;
+
+                _exploredTiles[tile.x, tile.y] = true;
+                _lastDirtyTiles.Add(tile);
+                changed = true;
+            }
+
+            if (changed)
+                FlushTexture();
+
+            Debug.Log($"{DebugTag} FogService.ApplyRevealArea explored center={center}, radius={radius}, shape={shape}, tiles={tiles.Count}, changed={changed}, map={_width}x{_height}, centerState={GetFogState(center)}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}.");
+        }
+
+        private static string ResolveRevealVisibilityAreaId(Vector2Int center, int radius, FogRevealShape shape, string visibleAreaId)
+            => !string.IsNullOrWhiteSpace(visibleAreaId)
+                ? visibleAreaId
+                : $"fog-reveal:{center.x}:{center.y}:{radius}:{(int)shape}";
+
+        private bool RevealTouchesCurrentMap(Vector2Int center, int radius)
+        {
+            radius = Mathf.Max(0, radius);
+            return center.x + radius >= 0
+                && center.y + radius >= 0
+                && center.x - radius < _width
+                && center.y - radius < _height;
+        }
+
+        private void ApplyPendingRevealAreas(string reason)
+        {
+            if (_pendingRevealAreas.Count == 0)
+                return;
+
+            var reveals = _pendingRevealAreas.ToArray();
+            _pendingRevealAreas.Clear();
+            Debug.Log($"{DebugTag} FogService.ApplyPendingRevealAreas reason={reason}, count={reveals.Length}, map={_width}x{_height}.");
+
+            for (int index = 0; index < reveals.Length; index++)
+            {
+                var reveal = reveals[index];
+                ApplyRevealArea(reveal.Center, reveal.Radius, reveal.Shape, reveal.KeepVisible, reveal.VisibleAreaId);
+            }
+        }
+
+        private void ApplyStartupFallbackRevealIfNeeded(bool hasLoadedSnapshot)
+        {
+            if (_settings == null || !_settings.EnableStartupFallbackReveal)
+            {
+                Debug.Log($"{DebugTag} FogService.StartupFallback skipped settingsDisabled={_settings == null || !_settings.EnableStartupFallbackReveal}.");
+                return;
+            }
+
+            if (hasLoadedSnapshot || GameLaunchContext.IsAutoLoadEnabled())
+            {
+                Debug.Log($"{DebugTag} FogService.StartupFallback skipped loadContext hasSnapshot={hasLoadedSnapshot}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, mode={GameLaunchContext.Mode}.");
+                return;
+            }
+
+            if (_pendingRevealAreas.Count > 0 || _unitPositions.Count > 0 || _fixedVisionShapes.Count > 0 || CountExploredTiles() > 0)
+            {
+                Debug.Log($"{DebugTag} FogService.StartupFallback skipped existingState pending={_pendingRevealAreas.Count}, units={_unitPositions.Count}, fixedAreas={_fixedVisionShapes.Count}, explored={CountExploredTiles()}.");
+                return;
+            }
+
+            int radius = Mathf.Max(1, _settings.StartupFallbackRevealRadius);
+            var center = PickStartupFallbackCenter();
+            var shape = _settings.StartupFallbackRevealShape;
+            Debug.LogWarning($"{DebugTag} FogService.StartupFallback applying center={center}, radius={radius}, shape={shape}, map={_width}x{_height}, mode={GameLaunchContext.Mode}. Bootstrap reveal did not arrive before fog init.");
+            ApplyRevealArea(center, radius, shape, true, StartupFallbackRevealAreaId);
+        }
+
+        private Vector2Int PickStartupFallbackCenter()
+        {
+            int minSide = Mathf.Min(_width, _height);
+            int relativeMargin = Mathf.FloorToInt(minSide * Mathf.Clamp01(_settings != null ? _settings.StartupFallbackRelativeMarginFactor : 0.1667f));
+            int margin = Mathf.Max(_settings != null ? _settings.StartupFallbackMinMarginFromBorder : 5, relativeMargin);
+
+            int xMin = Mathf.Clamp(margin, 0, Mathf.Max(0, _width - 1));
+            int xMax = Mathf.Clamp(_width - margin - 1, xMin, Mathf.Max(0, _width - 1));
+            int yMin = Mathf.Clamp(margin, 0, Mathf.Max(0, _height - 1));
+            int yMax = Mathf.Clamp(_height - margin - 1, yMin, Mathf.Max(0, _height - 1));
+
+            return new Vector2Int(
+                UnityEngine.Random.Range(xMin, xMax + 1),
+                UnityEngine.Random.Range(yMin, yMax + 1));
+        }
 
         /// <summary>
         /// Реєструє зону огляду для заданого ідентифікатора (одиниці або фіксованої зони).
@@ -582,6 +770,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             int signalWidth = Mathf.Max(1, signal.Width);
             int signalHeight = Mathf.Max(1, signal.Height);
+            Debug.Log($"{DebugTag} FogService.OnWorldGeneratedData signal={signalWidth}x{signalHeight}, initialized={_initialized}, current={_width}x{_height}, pendingReveals={_pendingRevealAreas.Count}.");
 
             if (!_initialized)
             {
@@ -592,7 +781,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_width != signalWidth || _height != signalHeight)
                 ResizeToWorldDimensions(signalWidth, signalHeight);
 
+            ApplyPendingRevealAreas("WorldGeneratedData");
             RecalculateAllVisibility();
+            Debug.Log($"{DebugTag} FogService.OnWorldGeneratedData end map={_width}x{_height}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, pendingReveals={_pendingRevealAreas.Count}.");
         }
 
         private static float[,] BuildVisibilityHeightMap(int[,] terrainLevelMap, float[,] fallbackHeightMap)
@@ -896,6 +1087,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _textureUpdater?.RebuildFullTexture(this);
             BumpVersion();
             _lastDirtyTiles.Clear();
+            Debug.Log($"{DebugTag} FogService.RecalculateAllVisibility map={_width}x{_height}, units={_unitPositions.Count}, fixedAreas={_fixedVisionShapes.Count}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, version={Version}.");
         }
 
         /// <summary>
@@ -929,6 +1121,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private void ResizeToWorldDimensions(int width, int height)
         {
             var exploredSnapshot = GetExploredSnapshot();
+            Debug.Log($"{DebugTag} FogService.ResizeToWorldDimensions from={_width}x{_height} to={Mathf.Max(1, width)}x{Mathf.Max(1, height)}, snapshot={(exploredSnapshot != null ? $"{exploredSnapshot.GetLength(0)}x{exploredSnapshot.GetLength(1)}" : "null")}.");
 
             _width = Mathf.Max(1, width);
             _height = Mathf.Max(1, height);
@@ -939,6 +1132,34 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (exploredSnapshot != null)
                 LoadFromSnapshot(exploredSnapshot);
+        }
+
+        private int CountVisibleTiles()
+        {
+            if (!_initialized || _visibilityCounters == null)
+                return 0;
+
+            int count = 0;
+            for (int x = 0; x < _width; x++)
+            for (int y = 0; y < _height; y++)
+                if (_visibilityCounters[x, y] > 0)
+                    count++;
+
+            return count;
+        }
+
+        private int CountExploredTiles()
+        {
+            if (!_initialized || _exploredTiles == null)
+                return 0;
+
+            int count = 0;
+            for (int x = 0; x < _width; x++)
+            for (int y = 0; y < _height; y++)
+                if (_exploredTiles[x, y] || _visibilityCounters[x, y] > 0)
+                    count++;
+
+            return count;
         }
     }
 

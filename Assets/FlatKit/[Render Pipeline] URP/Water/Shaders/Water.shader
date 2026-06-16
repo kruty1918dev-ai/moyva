@@ -47,6 +47,12 @@
         _RefractionSpeed("Speed", Float) = 0.1
         _RefractionScale("Scale", Float) = 1
 
+        [NoScaleOffset] _WaterReflectionTexture("[FOLDOUT(Reflection){5}]Texture{Reflection}", 2D) = "black" {}
+        _ReflectionStrength("Strength{Reflection}", Range(0, 1)) = 0
+        _ReflectionDistortion("Distortion{Reflection}", Range(0, 0.1)) = 0.01
+        _ReflectionFresnelPower("Fresnel Power{Reflection}", Range(0.1, 8)) = 2
+        _ReflectionDepthFade("Depth Fade{Reflection}", Range(0, 1)) = 1
+
         /*
         _SpecularAmount("[FOLDOUT(Specular){2}]Amount{Specular}", Range(0, 1)) = 0.5
         [HDR] _SpecularColor("Color{Specular}", Color) = (1, 1, 1, 1)
@@ -139,6 +145,8 @@
 
             TEXTURE2D(_NoiseMap);
             SAMPLER(sampler_NoiseMap);
+            TEXTURE2D(_WaterReflectionTexture);
+            SAMPLER(sampler_WaterReflectionTexture);
 
             CBUFFER_START(UnityPerMaterial)
             float _FadeDistance, _WaterDepth;
@@ -152,7 +160,8 @@
             half4 _FoamColor;
             half _FoamDepth, _FoamAmount, _FoamScale, _FoamSharpness, _FoamStretchX, _FoamStretchY, _FoamSpeed,
                  _FoamDirection, _FoamNoiseAmount, _RefractionFrequency, _RefractionAmplitude, _RefractionSpeed,
-                 _RefractionScale, _FresnelAmount, _FresnelSharpness, _SunReflection;
+                 _RefractionScale, _ReflectionStrength, _ReflectionDistortion, _ReflectionFresnelPower,
+                 _ReflectionDepthFade, _FresnelAmount, _FresnelSharpness, _SunReflection;
 
             /*
             half _SpecularAmount;
@@ -380,6 +389,19 @@
                 #endif
 
                 c = lerp(depth_color.rgb, c, _WaterClearness * depth_color.a);
+
+                // Reflection.
+                {
+                    const float2 reflection_uv = saturate(screen_uv + noise11_refraction * _ReflectionDistortion);
+                    const half3 reflection_color =
+                        SAMPLE_TEXTURE2D(_WaterReflectionTexture, sampler_WaterReflectionTexture, reflection_uv).rgb;
+                    const float3 viewDirWS = normalize(i.viewDir);
+                    const float3 normalWS = normalize(i.normal);
+                    const half fresnel = pow(1.0h - saturate(dot(normalWS, viewDirWS)), _ReflectionFresnelPower);
+                    const half depth_mask = lerp(1.0h, depth_fade, _ReflectionDepthFade);
+                    const half reflection = saturate(_ReflectionStrength * fresnel * depth_mask);
+                    c = lerp(c, reflection_color, reflection);
+                }
 
                 // Crest.
                 {

@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     {
         private const string StartVisionAnchorId = "bootstrap-start-vision-anchor";
         private const string StartRevealAnchorId = "bootstrap-start-vision-anchor-initial";
+        private const string DebugTag = "[MoyvaFogTrace]";
 
         private readonly IFogOfWarService _fogOfWarService;
         private readonly ISaveService _saveService;
@@ -85,9 +86,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void OnWorldSpawnPositions(WorldSpawnPositionsSignal signal)
         {
             if (signal.Assignments == null || signal.Assignments.Length == 0)
+            {
+                Debug.LogWarning($"{DebugTag} Bootstrap.OnWorldSpawnPositions ignored empty assignments.");
                 return;
+            }
 
             _startingPositionState.Set(signal.Assignments);
+            Debug.Log($"{DebugTag} Bootstrap.OnWorldSpawnPositions assignments={signal.Assignments.Length}, hasPendingWorld={_hasPendingWorldGeneratedSignal}, startLogicApplied={_startLogicApplied}.");
 
             if (!_hasPendingWorldGeneratedSignal)
                 return;
@@ -107,6 +112,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         {
             _pendingWorldGeneratedSignal = signal;
             _hasPendingWorldGeneratedSignal = true;
+            Debug.Log($"{DebugTag} Bootstrap.OnWorldGenerated map={signal.Width}x{signal.Height}, startStateSet={_startingPositionState.IsSet}, startLogicApplied={_startLogicApplied}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, slot={GameLaunchContext.SaveSlot}.");
 
             TryApplyStartLogic();
         }
@@ -114,17 +120,25 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private void TryApplyStartLogic()
         {
             if (_startLogicApplied || !_hasPendingWorldGeneratedSignal)
+            {
+                Debug.Log($"{DebugTag} Bootstrap.TryApplyStartLogic skipped startLogicApplied={_startLogicApplied}, hasWorld={_hasPendingWorldGeneratedSignal}.");
                 return;
+            }
 
             var signal = _pendingWorldGeneratedSignal;
+            bool autoLoad = GameLaunchContext.IsAutoLoadEnabled();
+            int slot = GameLaunchContext.SaveSlot;
+            bool hasSave = _saveService != null && _saveService.HasSave(slot);
+            Debug.Log($"{DebugTag} Bootstrap.TryApplyStartLogic begin map={signal.Width}x{signal.Height}, startStateSet={_startingPositionState.IsSet}, canRun={CanRunStartLogic()}, shouldCompute={ShouldComputeHostStartPositions()}, autoLoad={autoLoad}, hasSave={hasSave}, slot={slot}.");
 
             // Якщо є збереження і автозавантаження ввімкнено —
             // туман відновить FogOfWarSaveModule. Якщо snapshot битий, робимо repair.
-            int slot = GameLaunchContext.SaveSlot;
-            if (GameLaunchContext.IsAutoLoadEnabled() && _saveService.HasSave(slot))
+            if (autoLoad && hasSave)
             {
+                Debug.Log($"{DebugTag} Bootstrap.TryApplyStartLogic auto-load path: repair-check and camera teleport.");
                 RepairLoadedFogIfNeeded(signal);
-                TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height), signal);
+                Vector2Int baseMapSize = ResolveBaseMapSize(signal);
+                TeleportMainCamera(ResolveStartupCameraTarget(baseMapSize.x, baseMapSize.y, preferStartTile: false), signal);
                 _startLogicApplied = true;
                 return;
             }
@@ -134,7 +148,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 List<Vector2Int> startPositions = PickStartingPositions(signal);
                 Vector2Int startPos = startPositions.Count > 0
                     ? startPositions[0]
-                    : PickStartingPosition(signal.Width, signal.Height);
+                    : PickStartingPosition(ResolveBaseMapSize(signal));
+                Vector2Int baseMapSize = ResolveBaseMapSize(signal);
+                startPos = ClampToMap(startPos, baseMapSize.x, baseMapSize.y);
+                Debug.Log($"{DebugTag} Bootstrap.TryApplyStartLogic picked start count={startPositions.Count}, chosen={startPos}, map={signal.Width}x{signal.Height}, baseMap={baseMapSize.x}x{baseMapSize.y}.");
 
                 // Зберігаємо позиції, щоб BootstrapGameInitializer міг розмістити замок на першій з них.
                 if (startPositions.Count > 0)
@@ -151,36 +168,44 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 }
 
                 if (_startLogicApplied)
+                {
+                    Debug.Log($"{DebugTag} Bootstrap.TryApplyStartLogic reentrant apply completed after WorldSpawnPositionsSignal.");
                     return;
+                }
             }
 
             if (!CanRunStartLogic() || !_startingPositionState.IsSet)
+            {
+                Debug.LogWarning($"{DebugTag} Bootstrap.TryApplyStartLogic blocked canRun={CanRunStartLogic()}, startStateSet={_startingPositionState.IsSet}, sessionManager={_sessionManager != null}, multiplayerLaunch={IsMultiplayerLaunchContext()}.");
                 return;
+            }
 
             ApplyStartReveal(signal, teleportCamera: true);
         }
 
         private void ApplyStartReveal(WorldGeneratedDataSignal signal, bool teleportCamera)
         {
-            Vector2Int revealCenter = ResolveLocalRevealCenter(signal.Width, signal.Height);
+            Vector2Int baseMapSize = ResolveBaseMapSize(signal);
+            Vector2Int revealCenter = ResolveLocalRevealCenter(baseMapSize.x, baseMapSize.y);
             bool revealChanged = !_startRevealApplied
-                || _appliedStartRevealWidth != signal.Width
-                || _appliedStartRevealHeight != signal.Height
+                || _appliedStartRevealWidth != baseMapSize.x
+                || _appliedStartRevealHeight != baseMapSize.y
                 || _appliedStartRevealCenter != revealCenter;
+            Debug.Log($"{DebugTag} Bootstrap.ApplyStartReveal center={revealCenter}, map={signal.Width}x{signal.Height}, baseMap={baseMapSize.x}x{baseMapSize.y}, revealChanged={revealChanged}, teleportCamera={teleportCamera}, alreadyTeleported={_startupCameraTeleported}.");
 
             if (revealChanged)
             {
-                RevealStartingAreas(signal.Width, signal.Height, revealCenter);
-                RegisterStartupCoreVisibility(signal.Width, signal.Height, revealCenter);
+                RevealStartingAreas(baseMapSize.x, baseMapSize.y, revealCenter);
+                RegisterStartupCoreVisibility(baseMapSize.x, baseMapSize.y, revealCenter);
                 _startRevealApplied = true;
-                _appliedStartRevealWidth = signal.Width;
-                _appliedStartRevealHeight = signal.Height;
+                _appliedStartRevealWidth = baseMapSize.x;
+                _appliedStartRevealHeight = baseMapSize.y;
                 _appliedStartRevealCenter = revealCenter;
             }
 
             if (teleportCamera && !_startupCameraTeleported)
             {
-                TeleportMainCamera(ResolveStartupCameraTarget(signal.Width, signal.Height), signal);
+                TeleportMainCamera(ResolveStartupCameraTarget(baseMapSize.x, baseMapSize.y, preferStartTile: true), signal);
                 _startupCameraTeleported = true;
             }
 
@@ -190,10 +215,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void ReapplyStartRevealIfNeeded(WorldGeneratedDataSignal signal)
         {
-            Vector2Int revealCenter = ResolveLocalRevealCenter(signal.Width, signal.Height);
+            Vector2Int baseMapSize = ResolveBaseMapSize(signal);
+            Vector2Int revealCenter = ResolveLocalRevealCenter(baseMapSize.x, baseMapSize.y);
             if (_startRevealApplied
-                && _appliedStartRevealWidth == signal.Width
-                && _appliedStartRevealHeight == signal.Height
+                && _appliedStartRevealWidth == baseMapSize.x
+                && _appliedStartRevealHeight == baseMapSize.y
                 && _appliedStartRevealCenter == revealCenter)
             {
                 return;
@@ -262,7 +288,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             return projectionMode == GridProjectionMode.Orthographic3D
                 ? (_cameraSettings != null ? _cameraSettings.orthographic3DEuler : new Vector3(90f, 0f, 0f))
-                : (_cameraSettings != null ? _cameraSettings.isometric3DEuler : new Vector3(52f, 45f, 0f));
+                : (_cameraSettings != null ? _cameraSettings.isometric3DEuler : new Vector3(50f, 45f, 0f));
         }
 
         private bool ResolveUsePerspectiveStartupCamera()
@@ -289,7 +315,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (_projectSettings != null)
                 return _projectSettings.ResolveProject3DFieldOfView();
 
-            return _cameraSettings != null ? _cameraSettings.ResolveDefault3DFieldOfView() : 40f;
+            return _cameraSettings != null ? _cameraSettings.ResolveDefault3DFieldOfView() : 30f;
         }
 
         private float ResolveStartupOrthographicSize()
@@ -302,6 +328,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private Vector3 ResolveStartupFocusPoint(Vector2Int startPos, WorldGeneratedDataSignal signal)
         {
+            if (signal.CellSize > 0.0001f && _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ)
+                return new Vector3(startPos.x * signal.CellSize, ResolveHeight(signal, startPos), startPos.y * signal.CellSize);
+
             if (_gridProjection != null)
                 return _gridProjection.GridToWorld(startPos, ResolveHeight(signal, startPos));
 
@@ -319,7 +348,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (TryResolveCurrentCameraPlaneDistance(out float currentDistance))
                 return currentDistance;
 
-            return 35f;
+            return 20f;
         }
 
         private bool TryResolveCurrentCameraPlaneDistance(out float distance)
@@ -345,7 +374,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (!ShouldEnsureStartupCameraShowsRevealedArea() || _cameraZoom == null || _camera == null)
                 return;
 
-            float radius = ResolveStartupCameraRadius(signal.Width, signal.Height) + ResolveStartupCameraPaddingTiles();
+            Vector2Int baseMapSize = ResolveBaseMapSize(signal);
+            float radius = ResolveStartupCameraRadius(baseMapSize.x, baseMapSize.y) + ResolveStartupCameraPaddingTiles();
             Vector3[] corners = BuildStartupZoneCorners(startPos, focusPoint, radius, signal);
             if (_camera.orthographic)
             {
@@ -392,6 +422,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private Vector3[] BuildStartupZoneCorners(Vector2Int startPos, Vector3 focusPoint, float radius, WorldGeneratedDataSignal signal)
         {
+            Vector2Int baseMapSize = ResolveBaseMapSize(signal);
             if (_gridProjection == null)
             {
                 return new[]
@@ -404,8 +435,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             int tileRadius = Mathf.Max(1, Mathf.CeilToInt(radius));
-            var min = ClampToMap(new Vector2Int(startPos.x - tileRadius, startPos.y - tileRadius), signal.Width, signal.Height);
-            var max = ClampToMap(new Vector2Int(startPos.x + tileRadius, startPos.y + tileRadius), signal.Width, signal.Height);
+            var min = ClampToMap(new Vector2Int(startPos.x - tileRadius, startPos.y - tileRadius), baseMapSize.x, baseMapSize.y);
+            var max = ClampToMap(new Vector2Int(startPos.x + tileRadius, startPos.y + tileRadius), baseMapSize.x, baseMapSize.y);
             return new[]
             {
                 ProjectStartupCorner(new Vector2Int(min.x, min.y), signal),
@@ -416,7 +447,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         }
 
         private Vector3 ProjectStartupCorner(Vector2Int gridPosition, WorldGeneratedDataSignal signal)
-            => _gridProjection.GridToWorld(gridPosition, ResolveHeight(signal, gridPosition));
+        {
+            if (signal.CellSize > 0.0001f && _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ)
+                return new Vector3(gridPosition.x * signal.CellSize, ResolveHeight(signal, gridPosition), gridPosition.y * signal.CellSize);
+
+            return _gridProjection.GridToWorld(gridPosition, ResolveHeight(signal, gridPosition));
+        }
 
         private float ResolveOrthographicZoomToFit(Vector3 focusPoint, Vector3[] corners)
         {
@@ -439,8 +475,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             float requiredFov = Mathf.Atan(requiredHalfHeight / distance) * 2f * Mathf.Rad2Deg;
             float configuredFov = _projectSettings != null
                 ? _projectSettings.ResolveProject3DFieldOfView()
-                : (_cameraSettings != null ? _cameraSettings.ResolveDefault3DFieldOfView() : 45f);
-            return Mathf.Clamp(Mathf.Max(configuredFov, requiredFov), 1f, 179f);
+                : (_cameraSettings != null ? _cameraSettings.ResolveDefault3DFieldOfView() : 30f);
+            return Mathf.Clamp(Mathf.Max(configuredFov, Mathf.Min(requiredFov, 35f)), 25f, 35f);
         }
 
         private static void ResolveViewHalfExtents(Vector3 focusPoint, Vector3[] corners, Quaternion worldToView, out float halfWidth, out float halfHeight)
@@ -471,8 +507,37 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return signal.HeightMap[position.x, position.y];
         }
 
-        private Vector2Int ResolveStartupCameraTarget(int width, int height)
+        private static Vector2Int ResolveBaseMapSize(WorldGeneratedDataSignal signal)
         {
+            int width = Mathf.Max(0, signal.Width);
+            int height = Mathf.Max(0, signal.Height);
+
+            ApplyBaseMapSize(signal.TileMap, ref width, ref height);
+            ApplyBaseMapSize(signal.HeightMap, ref width, ref height);
+            ApplyBaseMapSize(signal.TerrainLevelMap, ref width, ref height);
+
+            return new Vector2Int(Mathf.Max(1, width), Mathf.Max(1, height));
+        }
+
+        private static void ApplyBaseMapSize<T>(T[,] map, ref int width, ref int height)
+        {
+            if (map == null)
+                return;
+
+            int mapWidth = map.GetLength(0);
+            int mapHeight = map.GetLength(1);
+            if (mapWidth <= 0 || mapHeight <= 0)
+                return;
+
+            width = width > 0 ? Mathf.Min(width, mapWidth) : mapWidth;
+            height = height > 0 ? Mathf.Min(height, mapHeight) : mapHeight;
+        }
+
+        private Vector2Int ResolveStartupCameraTarget(int width, int height, bool preferStartTile)
+        {
+            if (preferStartTile && _startingPositionState.IsSet)
+                return ClampToMap(_startingPositionState.StartPosition, width, height);
+
             Vector2Int preferred = ResolvePreferredPlayerPosition(width, height);
             return ResolveVisibleCameraTarget(preferred, width, height);
         }
@@ -619,9 +684,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             int attempts,
             out Vector2Int position)
         {
+            Vector2Int baseMapSize = ResolveBaseMapSize(signal);
             for (int attempt = 0; attempt < attempts; attempt++)
             {
-                Vector2Int candidate = PickStartingPosition(signal.Width, signal.Height);
+                Vector2Int candidate = PickStartingPosition(baseMapSize);
                 if (!IsValidStartHeight(signal, candidate))
                     continue;
 
@@ -632,12 +698,12 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return true;
             }
 
-            for (int x = 0; x < signal.Width; x++)
+            for (int x = 0; x < baseMapSize.x; x++)
             {
-                for (int y = 0; y < signal.Height; y++)
+                for (int y = 0; y < baseMapSize.y; y++)
                 {
                     Vector2Int candidate = new Vector2Int(x, y);
-                    if (IsInsideStartBounds(candidate, signal.Width, signal.Height) &&
+                    if (IsInsideStartBounds(candidate, baseMapSize.x, baseMapSize.y) &&
                         IsValidStartHeight(signal, candidate) &&
                         HasRequiredDistance(candidate, existingPositions))
                     {
@@ -653,6 +719,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private Vector2Int PickStartingPosition(int width, int height)
         {
+            return PickStartingPosition(new Vector2Int(width, height));
+        }
+
+        private Vector2Int PickStartingPosition(Vector2Int baseMapSize)
+        {
+            int width = Mathf.Max(0, baseMapSize.x);
+            int height = Mathf.Max(0, baseMapSize.y);
             if (width <= 0 || height <= 0)
                 return Vector2Int.zero;
 
@@ -881,46 +954,11 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         /// </summary>
         private void RevealStartingAreas(int width, int height, Vector2Int center)
         {
-            // Якщо стартова позиція не визначена, розкриваємо центр мапи.
             int radius = _settings.ResolveRevealedRadius(width, height);
-
-            // Якщо є збереження і автозавантаження ввімкнено — стартова позиція вже розкрита 
-            // FogOfWarSaveModule, додатково не розкриваємо.
             var shape = _settings.ResolveRevealShape();
 
-            // Якщо стартова позиція виявиться у чорному тумані, 
-            // камера буде переміщена до найближчої видимої ділянки. 
-            // Щоб уникнути неприємного сюрпризу, 
-            // розкриваємо стартову область до телепортації камери.
-            Debug.Log($"[Bootstrap] Стартовий туман: center={center}, radius={radius}, shape={shape}, map={width}x{height}, scaled={_settings.useMapSizeScaledFog}.");
-
-            // Навантажуємо згенерований snapshot, 
-            // щоб гарантовано розкрити стартову позицію. 
-            // Якщо є збереження з валідним snapshot, 
-            // він уже завантажився через FogOfWarSaveModule і додатково не перезапишеться.
-            var snapshot = BuildRevealSnapshot(width, height, center, radius, shape);
-
-            // Навантажуємо згенерований snapshot,
-            // щоб гарантовано розкрити стартову позицію. 
-            // Якщо є збереження з валідним snapshot, 
-            //  він уже завантажився через FogOfWarSaveModule і додатково не перезапишеться.
-            _fogOfWarService.LoadFromSnapshot(snapshot);
-
-            // Гарантуємо, що стартова область буде 
-            // у exploredTiles через RegisterFixedVisionArea
-            _fogOfWarService.RegisterFixedVisionArea(StartRevealAnchorId, center, radius, shape);
-
-            // Після розкриття стартової області — зберігаємо слот, щоб зміни (туман) були персистентні.
-            try
-            {
-                int slot = GameLaunchContext.SaveSlot;
-                _saveService?.Save(slot);
-                Debug.Log($"[Bootstrap] Автосейв після розкриття стартового туману у слот {slot}.");
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"[Bootstrap] Не вдалося зберегти після розкриття туману: {ex}");
-            }
+            Debug.Log($"{DebugTag} Bootstrap.RevealStartingAreas center={center}, radius={radius}, shape={shape}, map={width}x{height}, scaled={_settings.useMapSizeScaledFog}, keepCore={_settings.keepCoreFullyVisible}.");
+            _fogOfWarService.RevealArea(center, radius, shape, keepVisible: true, visibleAreaId: StartRevealAnchorId);
         }
 
         /// <summary>
@@ -970,68 +1008,50 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         /// <param name="signal">Сигнал з даними згенерованого світу.</param>
         private void RepairLoadedFogIfNeeded(WorldGeneratedDataSignal signal)
         {
+            Vector2Int baseMapSize = ResolveBaseMapSize(signal);
             // Якщо є збереження і автозавантаження ввімкнено —
             if (!CanRunStartLogic())
+            {
+                Debug.LogWarning($"{DebugTag} Bootstrap.RepairLoadedFogIfNeeded blocked by CanRunStartLogic=false.");
                 return;
+            }
 
             // туман відновить FogOfWarSaveModule. 
             // Якщо snapshot битий, робимо repair:
             var snapshot = _fogOfWarService.GetExploredSnapshot();
+            Debug.Log($"{DebugTag} Bootstrap.RepairLoadedFogIfNeeded snapshot={(snapshot != null ? $"{snapshot.GetLength(0)}x{snapshot.GetLength(1)}" : "null")}, map={signal.Width}x{signal.Height}, baseMap={baseMapSize.x}x{baseMapSize.y}.");
 
 
             // Якщо snapshot битий або не має видимої ділянки для мапи, 
             // розкриваємо стартову область навколо спавну гравця або позиції з WorldSpawnPositionsSignal.
-            if (IsFogSnapshotUsable(snapshot, signal.Width, signal.Height))
+            if (IsFogSnapshotUsable(snapshot, baseMapSize.x, baseMapSize.y))
+            {
+                Debug.Log($"{DebugTag} Bootstrap.RepairLoadedFogIfNeeded snapshot usable, no reveal repair needed.");
                 return;
+            }
 
 
             // Якщо snapshot битий або не має видимої ділянки для мапи, 
             // розкриваємо стартову область навколо спавну гравця 
             // або позиції з WorldSpawnPositionsSignal.
-            Vector2Int center = ResolveRepairCenter(snapshot, signal.Width, signal.Height);
+            Vector2Int center = ResolveRepairCenter(snapshot, baseMapSize.x, baseMapSize.y);
 
             // Розкриваємо стартову область навколо спавну гравця або позиції з
             //  WorldSpawnPositionsSignal, щоб гарантувати видиму ділянку для старту.
-            int radius = _settings.ResolveRevealedRadius(signal.Width, signal.Height);
+            int radius = _settings.ResolveRevealedRadius(baseMapSize.x, baseMapSize.y);
+            var shape = _settings.ResolveRevealShape();
+            Debug.LogWarning($"{DebugTag} Bootstrap.RepairLoadedFogIfNeeded applying repair center={center}, radius={radius}, shape={shape}, map={signal.Width}x{signal.Height}, baseMap={baseMapSize.x}x{baseMapSize.y}.");
+            _fogOfWarService.RevealArea(center, radius, shape, keepVisible: true, visibleAreaId: StartRevealAnchorId);
 
-
-            // Навантажуємо згенерований snapshot, 
-            // щоб гарантовано розкрити стартову позицію. 
-            // Якщо є збереження з валідним snapshot, він уже завантажився через 
-            // FogOfWarSaveModule і додатково не перезапишеться.
-            var repaired = BuildRevealSnapshot(signal.Width, signal.Height, center, radius, _settings.ResolveRevealShape());
-
-
-            // Навантажуємо згенерований snapshot, 
-            // щоб гарантовано розкрити стартову позицію. 
-            // Якщо є збереження з валідним snapshot, 
-            // оновлений snapshot завантажиться через FogOfWarSaveModule і 
-            // перезапише його, інакше — завантажиться цей відремонтований snapshot.
-            _fogOfWarService.LoadFromSnapshot(repaired);
-
-
-            // Якщо стартова позиція виявиться у чорному тумані, 
-            // камера буде переміщена до найближчої видимої ділянки. 
-            // Щоб уникнути неприємного сюрпризу, розкриваємо стартову 
-            // область до телепортації камери.
             if (_settings.keepCoreFullyVisible)
             {
-                // Уникаємо попередження FogOfWar «UnregisterUnit before Initialize»: 
-                // на першому виклику якорь ще не зареєстровано — пропускаємо unregister.
-                int visibleRange = _settings.ResolveCoreVisibleRadius(signal.Width, signal.Height);
-
-                // Розкриваємо стартову область навколо спавну гравця або позиції з 
-                // WorldSpawnPositionsSignal, щоб гарантувати видиму ділянку для старту.
-                _fogOfWarService.RegisterFixedVisionArea(StartVisionAnchorId, center, visibleRange, _settings.ResolveRevealShape());
-
-
-                // Гарантуємо, що стартова область буде у exploredTiles через RegisterFixedVisionArea
+                RegisterStartupCoreVisibility(baseMapSize.x, baseMapSize.y, center);
                 _startAnchorRegistered = true;
             }
 
             // Якщо snapshot битий або не має видимої ділянки для мапи, 
             // розкриваємо стартову область навколо спавну гравця або позиції з WorldSpawnPositionsSignal.
-            Debug.LogWarning($"[Bootstrap] FogOfWar snapshot був невалідний або без видимої ділянки для мапи {signal.Width}x{signal.Height}. Стартову область відновлено біля {center}.");
+            Debug.LogWarning($"[Bootstrap] FogOfWar snapshot був невалідний або без видимої ділянки для мапи {baseMapSize.x}x{baseMapSize.y}. Стартову область відновлено біля {center}.");
 
         }
 
@@ -1258,44 +1278,6 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return new Vector2Int(
                 Mathf.Clamp(Mathf.RoundToInt(sumX / (float)count), 0, Mathf.Max(0, width - 1)),
                 Mathf.Clamp(Mathf.RoundToInt(sumY / (float)count), 0, Mathf.Max(0, height - 1)));
-        }
-
-        private static bool[,] BuildRevealSnapshot(int width, int height, Vector2Int center, int radius, FogRevealShape shape)
-            => BuildRevealSnapshot(width, height, new[] { center }, radius, shape);
-
-        private static bool[,] BuildRevealSnapshot(int width, int height, IReadOnlyList<Vector2Int> centers, int radius, FogRevealShape shape)
-        {
-            width = Mathf.Max(1, width);
-            height = Mathf.Max(1, height);
-            radius = Mathf.Max(1, radius);
-            float radiusWithCellCoverage = radius + 0.5f;
-            float radiusSqr = radiusWithCellCoverage * radiusWithCellCoverage;
-
-            var snapshot = new bool[width, height];
-            if (centers == null || centers.Count == 0)
-                return snapshot;
-
-            for (int centerIndex = 0; centerIndex < centers.Count; centerIndex++)
-            {
-                Vector2Int center = centers[centerIndex];
-                int minX = Mathf.Max(0, center.x - radius);
-                int maxX = Mathf.Min(width - 1, center.x + radius);
-                int minY = Mathf.Max(0, center.y - radius);
-                int maxY = Mathf.Min(height - 1, center.y + radius);
-
-                for (int x = minX; x <= maxX; x++)
-                {
-                    int deltaX = x - center.x;
-                    for (int y = minY; y <= maxY; y++)
-                    {
-                        int deltaY = y - center.y;
-                        if (IsInsideRevealShape(deltaX, deltaY, radius, radiusSqr, shape))
-                            snapshot[x, y] = true;
-                    }
-                }
-            }
-
-            return snapshot;
         }
 
         private static bool IsInsideRevealShape(int dx, int dy, int radius, float radiusSqr, FogRevealShape shape)

@@ -248,6 +248,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     ProjectionMode = (int)_currentWorldData.ProjectionMode,
                     RenderMode = (int)_currentWorldData.RenderMode,
                     NeighborhoodMode = (int)_currentWorldData.NeighborhoodMode,
+                    CellSize = ResolveWorldCellSize(TileWorldCreatorWorldBuildResult.Disabled),
                     TileMap = MapArrayUtils.CloneStringMap(_currentWorldData.BiomeMap),
                     ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
                     HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
@@ -320,11 +321,23 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ProjectionMode = (int)_currentWorldData.ProjectionMode,
                 RenderMode = (int)_currentWorldData.RenderMode,
                 NeighborhoodMode = (int)_currentWorldData.NeighborhoodMode,
+                CellSize = ResolveWorldCellSize(tileWorldCreatorResult),
                 TileMap = MapArrayUtils.CloneStringMap(_currentWorldData.BiomeMap),
                 ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
                 TerrainLevelMap = MapArrayUtils.CloneIntMap(_currentWorldData.TerrainLevelMap),
             });
+        }
+
+        private float ResolveWorldCellSize(TileWorldCreatorWorldBuildResult tileWorldCreatorResult)
+        {
+            if (tileWorldCreatorResult.CellSize > 0.0001f)
+                return tileWorldCreatorResult.CellSize;
+
+            if (_graphTwcGenerator != null && _graphTwcGenerator.LastCellSize > 0.0001f)
+                return _graphTwcGenerator.LastCellSize;
+
+            return 1f;
         }
 
         private void BuildGridFromLayerIds(GeneratedWorldData worldData)

@@ -78,11 +78,11 @@ namespace Kruty1918.Moyva.Camera.API
         [Header("3D Project Adaptation")]
         public bool adaptToProject3DMode = true;
         public bool useOrthographicCameraIn3D = false;
-        [Min(0.1f)] public float default3DCameraDistance = 35f;
+        [Min(0.1f)] public float default3DCameraDistance = 20f;
         [Min(0.1f)] public float default3DOrthographicSize = 20f;
-        [Range(1f, 179f)] public float default3DFieldOfView = 40f;
+        [Range(1f, 179f)] public float default3DFieldOfView = 30f;
         public Vector3 orthographic3DEuler = new Vector3(90f, 0f, 0f);
-        public Vector3 isometric3DEuler = new Vector3(52f, 45f, 0f);
+        public Vector3 isometric3DEuler = new Vector3(50f, 45f, 0f);
 
         [Header("Shader / Mip Bias")]
         [Tooltip("Applies global automatic mip bias for zoom. Disable to avoid tile atlas artifacts/bleeding on zoom-out.")]

@@ -104,6 +104,7 @@ namespace Kruty1918.Moyva.Signals
         public int ProjectionMode;
         public int RenderMode;
         public int NeighborhoodMode;
+        public float CellSize;
         public string[,] TileMap;
         public string[,] ObjectMap;
         public float[,] HeightMap;

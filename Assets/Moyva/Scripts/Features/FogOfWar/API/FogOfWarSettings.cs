@@ -93,6 +93,18 @@ namespace Kruty1918.Moyva.FogOfWar.API
         [Tooltip("Visible areas are fully transparent (alpha=0)")]
         public bool FullyTransparentWhenVisible = true;
 
+        [Header("Startup Fallback Reveal")]
+        [Tooltip("If no bootstrap startup reveal arrives for a fresh non-load world, FogOfWarService opens a random visible start area so the map never starts fully black.")]
+        public bool EnableStartupFallbackReveal = true;
+        [Tooltip("Radius used by FogOfWarService when bootstrap did not provide a startup reveal.")]
+        [Min(1)] public int StartupFallbackRevealRadius = 15;
+        [Tooltip("Minimum margin from map edge for the fallback random start point.")]
+        [Min(0)] public int StartupFallbackMinMarginFromBorder = 5;
+        [Tooltip("Additional map-relative margin for the fallback random start point.")]
+        [Range(0f, 0.45f)] public float StartupFallbackRelativeMarginFactor = 0.1667f;
+        [Tooltip("Shape used by FogOfWarService fallback startup reveal.")]
+        public FogRevealShape StartupFallbackRevealShape = FogRevealShape.PixelCircle;
+
         [Header("3D Fog Plane")]
         [Tooltip("Small gap above the highest generated terrain point where the top fog plane is placed.")]
         [Min(0f)] public float Fog3DTopClearance = 0.08f;
@@ -146,6 +158,9 @@ namespace Kruty1918.Moyva.FogOfWar.API
             FogMapEdgeOverhangCells = Mathf.Max(0f, FogMapEdgeOverhangCells);
             FogIconSpritePixelSize = ClampSpritePixelSize(FogIconSpritePixelSize);
             Fog3DTopClearance = Mathf.Max(0f, Fog3DTopClearance);
+            StartupFallbackRevealRadius = Mathf.Max(1, StartupFallbackRevealRadius);
+            StartupFallbackMinMarginFromBorder = Mathf.Max(0, StartupFallbackMinMarginFromBorder);
+            StartupFallbackRelativeMarginFactor = Mathf.Clamp(StartupFallbackRelativeMarginFactor, 0f, 0.45f);
             RendererCullingMaxRenderersPerFrame = Mathf.Max(1, RendererCullingMaxRenderersPerFrame);
             RendererCullingDiscoveryInterval = Mathf.Max(0.05f, RendererCullingDiscoveryInterval);
             RendererCullingBoundsPaddingCells = Mathf.Max(0f, RendererCullingBoundsPaddingCells);

@@ -19,6 +19,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
         [SerializeField] private bool _enabled = true;
         [SerializeField] private float _defaultHeight;
         [SerializeField] private bool _useZeroLayerPadding;
+        [SerializeField] private int _extraWidthCells;
+        [SerializeField] private int _extraLengthCells;
 
         /// <summary>
         /// Опціональний TilePreset/біулд-маркер для зв'язку шару з візуалом TWC.
@@ -81,6 +83,18 @@ namespace Kruty1918.Moyva.GraphSystem.API
         {
             get => _useZeroLayerPadding;
             set => _useZeroLayerPadding = value;
+        }
+
+        public int ExtraWidthCells
+        {
+            get => Mathf.Max(0, _extraWidthCells);
+            set => _extraWidthCells = Mathf.Max(0, value);
+        }
+
+        public int ExtraLengthCells
+        {
+            get => Mathf.Max(0, _extraLengthCells);
+            set => _extraLengthCells = Mathf.Max(0, value);
         }
 
         public string BuildLayerKey

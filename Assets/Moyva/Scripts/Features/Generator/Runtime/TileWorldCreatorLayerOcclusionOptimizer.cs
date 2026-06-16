@@ -9,11 +9,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         public readonly int ProcessedLayerCount;
         public readonly int RemovedCellCount;
+        public readonly int OccupiedCellCount;
+        public readonly int SkippedLayerCount;
 
-        public TileWorldCreatorLayerOcclusionResult(int processedLayerCount, int removedCellCount)
+        public TileWorldCreatorLayerOcclusionResult(int processedLayerCount, int removedCellCount, int occupiedCellCount = 0, int skippedLayerCount = 0)
         {
             ProcessedLayerCount = processedLayerCount;
             RemovedCellCount = removedCellCount;
+            OccupiedCellCount = occupiedCellCount;
+            SkippedLayerCount = skippedLayerCount;
         }
     }
 
@@ -26,6 +30,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             manager.ExecuteBlueprintLayers();
             var result = CullOccludedTileCells(manager.configuration);
+            LogOcclusionResult(result, "GenerateCompleteMap");
             manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
             manager.OnMapReady?.Invoke();
             return result;
@@ -37,24 +42,39 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (layers.Count <= 1)
                 return new TileWorldCreatorLayerOcclusionResult(layers.Count, 0);
 
-            var occupiedByHigherLayers = new HashSet<Vector2>();
+            var occupiedByHigherLayers = new HashSet<Vector2Int>();
             int removedCount = 0;
+            int skippedCount = 0;
 
             for (int i = layers.Count - 1; i >= 0; i--)
             {
                 var layer = layers[i];
                 if (layer?.allPositions == null || layer.allPositions.Count == 0)
+                {
+                    skippedCount++;
                     continue;
+                }
 
                 int before = layer.allPositions.Count;
-                layer.allPositions.RemoveWhere(position => occupiedByHigherLayers.Contains(position));
+                layer.allPositions.RemoveWhere(position => occupiedByHigherLayers.Contains(ToCellKey(position)));
                 removedCount += before - layer.allPositions.Count;
 
                 foreach (var position in layer.allPositions)
-                    occupiedByHigherLayers.Add(position);
+                    occupiedByHigherLayers.Add(ToCellKey(position));
             }
 
-            return new TileWorldCreatorLayerOcclusionResult(layers.Count, removedCount);
+            return new TileWorldCreatorLayerOcclusionResult(layers.Count, removedCount, occupiedByHigherLayers.Count, skippedCount);
+        }
+
+        private static Vector2Int ToCellKey(Vector2 position)
+            => new Vector2Int(Mathf.RoundToInt(position.x), Mathf.RoundToInt(position.y));
+
+        private static void LogOcclusionResult(TileWorldCreatorLayerOcclusionResult result, string context)
+        {
+            if (result.RemovedCellCount <= 0)
+                return;
+
+            Debug.Log($"[Moyva TWC Occlusion] {context}: removed {result.RemovedCellCount} lower-layer cells, processed={result.ProcessedLayerCount}, occupied={result.OccupiedCellCount}, skipped={result.SkippedLayerCount}.");
         }
 
         private static List<BlueprintLayer> GetBuildOrderedBlueprintLayers(Configuration configuration)

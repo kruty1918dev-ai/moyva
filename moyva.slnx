@@ -61,6 +61,7 @@
   <Project Path="Kruty1918.Moyva.Faction.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
   <Project Path="Kruty1918.Moyva.Bootstrap.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Generator.csproj" />
   <Project Path="Kruty1918.Moyva.HomeMenu.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.FogOfWar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />

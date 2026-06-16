@@ -30,6 +30,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// після кожної генерації. Дозволяє downstream-коду знати, які шари існують.
         /// </summary>
         internal IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; private set; }
+        internal float LastCellSize { get; private set; } = 1f;
 
         public GraphTwcMapDataGenerator(
             GraphAsset graphAsset,
@@ -73,6 +74,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 // Узгоджуємо фактичний розмір з конфігурацією.
                 width = _manager.configuration.width;
                 height = _manager.configuration.height;
+                LastCellSize = _manager.configuration.cellSize > 0.0001f
+                    ? _manager.configuration.cellSize
+                    : 1f;
 
                 // 2. TWC будує мапу (blueprint-стек + 3D build-стек).
                 TileWorldCreatorLayerOcclusionOptimizer.GenerateCompleteMap(_manager);

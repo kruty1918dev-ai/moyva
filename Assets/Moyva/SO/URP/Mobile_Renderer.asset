@@ -26,7 +26,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a1c5d7e4f2a4c5d9e0b1a2c3d4e5f60, type: 3}
   m_Name: DayNightScreenFilter
   m_EditorClassIdentifier: 
-  m_Active: 1
+  m_Active: 0
   _renderPassEvent: 600
   _dayTint: {r: 1, g: 1, b: 1, a: 1}
   _nightTint: {r: 0.7, g: 0.78, b: 0.95, a: 1}
@@ -67,11 +67,11 @@ MonoBehaviour:
     probeSamplingDebugTexture: {fileID: 0}
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
-  - {fileID: 6142336404066443240}
   - {fileID: 6797719819524517637}
-  - {fileID: -1277754162075699806}
   - {fileID: -889900112233445566}
-  m_RendererFeatureMap: e89f547f6af63d55052f64f5285a565ea27533035c8144ee
+  - {fileID: -1277754162075699806}
+  - {fileID: 2715838963536112315}
+  m_RendererFeatureMap: 052f64f5285a565ea27533035c8144eebb2abcf02599b025
   m_UseNativeRenderPass: 1
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3
@@ -99,7 +99,7 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
---- !u!114 &6142336404066443240
+--- !u!114 &2715838963536112315
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -108,11 +108,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 770acbaed70db4ad696458511aa3f084, type: 3}
-  m_Name: FlatKitFog
-  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::FlatKit.FlatKitFog
+  m_Script: {fileID: 11500000, guid: 9a1c5d7e4f2a4c5d9e0b1a2c3d4e5f60, type: 3}
+  m_Name: DayNightScreenFilterFeature
+  m_EditorClassIdentifier: Kruty1918.Moyva.Visuals::Kruty1918.Moyva.Visuals.DayNightScreenFilterFeature
   m_Active: 0
-  settings: {fileID: 11400000, guid: a31e17a53a60e7eca91c0bac9a718b90, type: 2}
+  _renderPassEvent: 600
+  _dayTint: {r: 0.48516268, g: 0.8718791, b: 1, a: 1}
+  _nightTint: {r: 0.43194702, g: 0.49860844, b: 0.69224405, a: 1}
+  _dawnTint: {r: 1.12, g: 0.84, b: 0.62, a: 1}
+  _duskTint: {r: 0.7, g: 0.52, b: 0.95, a: 1}
+  _filterStrength: 0.86
+  _daySaturation: 0.98
+  _nightSaturation: 0.58
+  _dayContrast: 1
+  _nightContrast: 1.35
+  _dayExposure: 1.02
+  _nightExposure: 0.46
+  _phaseTintStrength: 0.85
+  _nightMinBrightness: 0.14
+  _colorizeStrength: 0.75
 --- !u!114 &6797719819524517637
 MonoBehaviour:
   m_ObjectHideFlags: 0

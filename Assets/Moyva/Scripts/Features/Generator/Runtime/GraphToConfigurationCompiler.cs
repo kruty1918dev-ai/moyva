@@ -82,9 +82,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 blueprint.layerColor = layerDef.Color;
                 blueprint.defaultLayerHeight = layerDef.DefaultHeight;
                 blueprint.useZeroLayerPadding = layerDef.UseZeroLayerPadding;
-                blueprint.borderPaddingCells = layerDef.UseZeroLayerPadding
+                int zeroLayerPadding = layerDef.UseZeroLayerPadding
                     ? Configuration.ZeroLayerPaddingCells
                     : 0;
+                blueprint.borderPaddingWidthCells = Mathf.Max(zeroLayerPadding, layerDef.ExtraWidthCells);
+                blueprint.borderPaddingHeightCells = Mathf.Max(zeroLayerPadding, layerDef.ExtraLengthCells);
+                blueprint.borderPaddingCells = Mathf.Max(
+                    blueprint.borderPaddingWidthCells,
+                    blueprint.borderPaddingHeightCells);
                 blueprint.tileMapModifiers = new List<BlueprintModifier>();
                 usedLayerGuids.Add(blueprint.guid);
                 blueprintGuidByGraphLayerId[layerDef.Id] = blueprint.guid;

@@ -24,5 +24,5 @@ MonoBehaviour:
   previewHeatmap: 0
   inspectorTabIndex: 0
   isInspectorVisible: 1
-  cameraPosition: {x: 41, y: 25, z: 0}
-  cameraScale: {x: 0.7561437, y: 0.7561437, z: 1}
+  cameraPosition: {x: 0, y: 0, z: 0}
+  cameraScale: {x: 1, y: 1, z: 1}

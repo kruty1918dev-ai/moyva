@@ -1,3 +1,4 @@
+using System;
 using Kruty1918.Moyva.Camera.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
@@ -12,6 +13,13 @@ namespace Kruty1918.Moyva.Camera.Runtime
 {
     public class CameraInstaller : MonoInstaller
     {
+        private static readonly Vector3 ReflectionReadyEuler = new(50f, 45f, 0f);
+        private const float ReflectionReadyFieldOfView = 30f;
+        private const float ReflectionReadyNearClip = 0.3f;
+        private const float ReflectionReadyFarClip = 500f;
+        private const string UniversalAdditionalCameraDataTypeName =
+            "UnityEngine.Rendering.Universal.UniversalAdditionalCameraData, Unity.RenderPipelines.Universal.Runtime";
+
         [Header("References")]
         [SerializeField] private UnityEngine.Camera _sceneCamera;
         
@@ -32,6 +40,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 return;
             }
 
+            ApplyReflectionReadyCameraSetup(camera);
             Container.BindInstance(camera).AsSingle();
 
             var cameraInputAsset = ResolveCameraInputAsset();
@@ -93,12 +102,61 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _runtimeFallbackSettings.name = "RuntimeFallback_CameraSettings";
             _runtimeFallbackSettings.adaptToProject3DMode = true;
             _runtimeFallbackSettings.useOrthographicCameraIn3D = false;
-            _runtimeFallbackSettings.default3DCameraDistance = 35f;
+            _runtimeFallbackSettings.default3DCameraDistance = 20f;
             _runtimeFallbackSettings.default3DOrthographicSize = 20f;
-            _runtimeFallbackSettings.default3DFieldOfView = 40f;
+            _runtimeFallbackSettings.default3DFieldOfView = ReflectionReadyFieldOfView;
             _runtimeFallbackSettings.orthographic3DEuler = new Vector3(90f, 0f, 0f);
-            _runtimeFallbackSettings.isometric3DEuler = new Vector3(52f, 45f, 0f);
+            _runtimeFallbackSettings.isometric3DEuler = ReflectionReadyEuler;
             return _runtimeFallbackSettings;
+        }
+
+        internal static void ApplyReflectionReadyCameraSetup(UnityEngine.Camera camera)
+        {
+            if (camera == null)
+                return;
+
+            camera.clearFlags = CameraClearFlags.Skybox;
+            camera.nearClipPlane = ReflectionReadyNearClip;
+            camera.farClipPlane = ReflectionReadyFarClip;
+            camera.orthographic = false;
+            camera.fieldOfView = ReflectionReadyFieldOfView;
+            camera.allowMSAA = true;
+
+            ApplyUniversalCameraData(camera);
+        }
+
+        private static void ApplyUniversalCameraData(UnityEngine.Camera camera)
+        {
+            Type cameraDataType = Type.GetType(UniversalAdditionalCameraDataTypeName);
+            if (cameraDataType == null)
+                return;
+
+            Component cameraData = camera.GetComponent(cameraDataType);
+            if (cameraData == null)
+                cameraData = camera.gameObject.AddComponent(cameraDataType);
+
+            SetEnumProperty(cameraData, cameraDataType, "renderType", "Base");
+            SetBoolProperty(cameraData, cameraDataType, "requiresDepthTexture", true);
+            SetBoolProperty(cameraData, cameraDataType, "requiresColorTexture", true);
+            SetBoolProperty(cameraData, cameraDataType, "renderPostProcessing", false);
+            SetEnumProperty(cameraData, cameraDataType, "antialiasing", "None");
+        }
+
+        private static void SetBoolProperty(Component target, Type targetType, string propertyName, bool value)
+        {
+            var property = targetType.GetProperty(propertyName);
+            if (property != null && property.PropertyType == typeof(bool) && property.CanWrite)
+                property.SetValue(target, value);
+        }
+
+        private static void SetEnumProperty(Component target, Type targetType, string propertyName, string valueName)
+        {
+            var property = targetType.GetProperty(propertyName);
+            if (property == null || !property.PropertyType.IsEnum || !property.CanWrite)
+                return;
+
+            object value = Enum.Parse(property.PropertyType, valueName);
+            property.SetValue(target, value);
         }
     }
 
@@ -153,6 +211,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             Vector3 focusPoint = ResolveWorldFocusPoint();
             _camera.transform.position = focusPoint - _camera.transform.forward * ResolveDefault3DCameraDistance();
+            CameraInstaller.ApplyReflectionReadyCameraSetup(_camera);
         }
 
         private bool ShouldUse3DCameraByGridMode()
