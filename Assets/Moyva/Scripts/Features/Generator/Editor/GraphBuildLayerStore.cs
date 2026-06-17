@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.Runtime;
+using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEditor;
 using UnityEngine;
@@ -130,11 +131,23 @@ namespace Kruty1918.Moyva.Generator.Editor
                     buildLayer.assignedBlueprintLayerGuid = blueprintGuid;
 
                 if (buildLayer is TilesBuildLayer tiles)
+                {
                     tiles.configuration = config;
+                    tiles.generateFlatSurface = layerDef.GenerateFlatSurface;
+                    tiles.flatSurfaceMaterial = layerDef.FlatSurfaceMaterial;
+                }
 
                 layerDef.BuildLayerKey = buildLayer.guid;
                 ordered.Add(buildLayer);
                 EditorUtility.SetDirty(buildLayer);
+            }
+
+            foreach (var generatedObjectLayer in folder.buildLayers
+                         .Where(TWCObjectPlacementAdapter.IsGeneratedObjectLayer)
+                         .ToList())
+            {
+                if (!ordered.Contains(generatedObjectLayer))
+                    ordered.Add(generatedObjectLayer);
             }
 
             // Прибираємо build-шари, для яких більше немає відповідного шару графа.

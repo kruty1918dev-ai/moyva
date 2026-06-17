@@ -8,7 +8,8 @@
         "UnityEditor.TestRunner",
         "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.Grid",
-        "Kruty1918.Moyva.FogOfWar"
+        "Kruty1918.Moyva.FogOfWar",
+        "Kruty1918.Moyva.SaveSystem"
     ],
     "includePlatforms": ["Editor"],
     "excludePlatforms": [],

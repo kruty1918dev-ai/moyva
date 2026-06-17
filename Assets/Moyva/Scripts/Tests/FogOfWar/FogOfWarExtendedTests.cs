@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
 using UnityEngine;
@@ -44,6 +45,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         public override void Setup()
         {
             base.Setup();
+            GameLaunchContext.Reset();
             Zenject.SignalBusInstaller.Install(Container);
             Container.DeclareSignal<UnitCreatedSignal>();
             Container.DeclareSignal<UnitMovedSignal>();
@@ -64,6 +66,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             _settings.MaxObserverHeightBonus = 4;
             _settings.MaxDownhillVisionBonus = 2;
             _settings.MaxUphillVisionPenalty = 4;
+            _settings.EnableStartupFallbackReveal = false;
             Container.BindInstance(_settings).AsSingle();
 
             Container.Bind<IHeightAwareVisionService>().To<HeightAwareVisionService>().AsSingle();
@@ -78,6 +81,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         {
             _service.Dispose();
             Object.DestroyImmediate(_settings);
+            GameLaunchContext.Reset();
             base.Teardown();
         }
 
@@ -341,6 +345,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             public void RegisterUnit(string unitId, Vector2Int position, int visionRange) { }
             public void UpdateUnitVisionRange(string unitId, int visionRange) { }
             public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape) { }
+            public void RevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId = null) { }
             public void UpdateUnitPosition(string unitId, Vector2Int newPosition) { }
             public void UnregisterUnit(string unitId) { }
             public FogStateType GetFogState(Vector2Int position)

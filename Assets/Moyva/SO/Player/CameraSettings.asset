@@ -17,7 +17,7 @@ MonoBehaviour:
     smoothTime: 0.4
     zoomSpeed: 5
     minZoom: 4
-    maxZoom: 10
+    maxZoom: 50
     touchMoveSpeed: 1
     touchPinchZoomSensitivity: 1
     touchDragDeadZonePixels: 0.5
@@ -29,11 +29,11 @@ MonoBehaviour:
   defaultCameraZ: -10
   adaptToProject3DMode: 1
   useOrthographicCameraIn3D: 0
-  default3DCameraDistance: 35
+  default3DCameraDistance: 20
   default3DOrthographicSize: 20
-  default3DFieldOfView: 40
+  default3DFieldOfView: 30
   orthographic3DEuler: {x: 90, y: 0, z: 0}
-  isometric3DEuler: {x: 52, y: 45, z: 0}
+  isometric3DEuler: {x: 50, y: 45, z: 0}
   enableAutomaticMipBias: 0
   automaticMipBiasMax: 0.75
   mapRenderMaskEnabled: 1

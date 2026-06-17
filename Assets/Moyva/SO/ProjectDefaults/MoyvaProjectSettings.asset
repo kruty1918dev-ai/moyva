@@ -35,7 +35,7 @@ MonoBehaviour:
   PreviewRenderTextureFormat: 0
   PreviewRenderTextureReadWrite: 1
   Orthographic3DPreviewEuler: {x: 90, y: 0, z: 0}
-  Isometric3DPreviewEuler: {x: 60, y: 45, z: 0}
+  Isometric3DPreviewEuler: {x: 50, y: 45, z: 0}
   UsePerspectivePreviewCameraIn3D: 1
   PreviewPerspectiveFieldOfView: 55
   PreviewLightEuler: {x: 50, y: -30, z: 0}
@@ -70,10 +70,10 @@ MonoBehaviour:
   Project3DAtmosphericFogDensity: 0.012
   CameraPolicy: 3
   CameraAnglePolicy: 2
-  Custom3DCameraEuler: {x: 60, y: 45, z: 0}
-  Project3DCameraDistance: 35
+  Custom3DCameraEuler: {x: 50, y: 45, z: 0}
+  Project3DCameraDistance: 20
   Project3DOrthographicSize: 20
-  Project3DFieldOfView: 45
+  Project3DFieldOfView: 30
   EnsureStartupCameraShowsRevealedArea: 1
   StartupCameraPaddingTiles: 2
   StartupCameraRadiusSource: 0

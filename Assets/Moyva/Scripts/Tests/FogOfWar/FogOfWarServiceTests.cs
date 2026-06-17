@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.FogOfWar.Runtime;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
 using UnityEngine;
@@ -56,6 +57,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         public override void Setup()
         {
             base.Setup();
+            GameLaunchContext.Reset();
 
             // SignalBus
             Zenject.SignalBusInstaller.Install(Container);
@@ -77,6 +79,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             _settings.MaxObserverHeightBonus = 4;
             _settings.MaxDownhillVisionBonus = 2;
             _settings.MaxUphillVisionPenalty = 4;
+            _settings.EnableStartupFallbackReveal = false;
 
             Container.BindInstance<IGridService>(_gridService).AsSingle();
             Container.BindInstance<IFogTextureUpdater>(_textureUpdater).AsSingle();
@@ -96,6 +99,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         {
             _service.Dispose();
             Object.DestroyImmediate(_settings);
+            GameLaunchContext.Reset();
             base.Teardown();
         }
 
@@ -199,6 +203,25 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
 
         [Test]
+        public void WorldGeneratedDataSignal_UsesBaseMapSize_WhenSignalIncludesExpandedLayerSize()
+        {
+            InitMap(10, 10);
+
+            _signalBus.Fire(new WorldGeneratedDataSignal
+            {
+                Width = 14,
+                Height = 12,
+                TileMap = new string[10, 10],
+                ObjectMap = new string[10, 10],
+                HeightMap = new float[10, 10],
+            });
+
+            var snapshot = _service.GetExploredSnapshot();
+            Assert.AreEqual(10, snapshot.GetLength(0));
+            Assert.AreEqual(10, snapshot.GetLength(1));
+        }
+
+        [Test]
         public void FixedVisionAreasSnapshot_RestoresStarterAnchorVisibility()
         {
             InitMap();
@@ -236,6 +259,96 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
             Assert.AreEqual(FogStateType.Visible, _service.GetFogState(center));
             Assert.IsTrue(_service.IsVisible(center));
+        }
+
+        [Test]
+        public void RevealArea_KeepVisible_MarksStartupRadiusVisible()
+        {
+            InitMap();
+            var center = new Vector2Int(5, 5);
+
+            _service.RevealArea(center, 2, FogRevealShape.Diamond, keepVisible: true, visibleAreaId: "start");
+
+            Assert.AreEqual(FogStateType.Visible, _service.GetFogState(center));
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(7, 5)));
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(6, 6)));
+            Assert.IsFalse(_service.IsVisible(new Vector2Int(7, 7)));
+        }
+
+        [Test]
+        public void RevealArea_AddsExploredTilesWithoutReplacingExistingSnapshot()
+        {
+            InitMap();
+            var snapshot = new bool[10, 10];
+            snapshot[1, 1] = true;
+            _service.LoadFromSnapshot(snapshot);
+
+            _service.RevealArea(new Vector2Int(5, 5), 1, FogRevealShape.Square, keepVisible: false);
+
+            Assert.AreEqual(FogStateType.Explored, _service.GetFogState(new Vector2Int(1, 1)));
+            Assert.AreEqual(FogStateType.Explored, _service.GetFogState(new Vector2Int(5, 5)));
+            Assert.AreEqual(FogStateType.Unexplored, _service.GetFogState(new Vector2Int(9, 9)));
+        }
+
+        [Test]
+        public void RevealArea_NearMapEdge_ClampsToMapBounds()
+        {
+            InitMap(4, 4);
+
+            _service.RevealArea(new Vector2Int(-2, -2), 4, FogRevealShape.Square, keepVisible: true, visibleAreaId: "edge-start");
+
+            Assert.AreEqual(FogStateType.Visible, _service.GetFogState(new Vector2Int(0, 0)));
+            Assert.AreEqual(FogStateType.Visible, _service.GetFogState(new Vector2Int(2, 2)));
+            Assert.AreEqual(FogStateType.Unexplored, _service.GetFogState(new Vector2Int(-1, -1)));
+        }
+
+        [Test]
+        public void RevealArea_BeforeMapInitialize_AppliesAfterInitialize()
+        {
+            var center = new Vector2Int(3, 3);
+
+            _service.RevealArea(center, 1, FogRevealShape.Square, keepVisible: true, visibleAreaId: "pending-start");
+            InitMap(8, 8);
+
+            Assert.AreEqual(FogStateType.Visible, _service.GetFogState(center));
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(4, 4)));
+        }
+
+        [Test]
+        public void RevealArea_WhenCurrentMapIsStale_QueuesUntilNextInitialize()
+        {
+            InitMap(5, 5);
+            var center = new Vector2Int(8, 8);
+
+            _service.RevealArea(center, 1, FogRevealShape.Square, keepVisible: true, visibleAreaId: "stale-start");
+
+            Assert.AreEqual(FogStateType.Unexplored, _service.GetFogState(center));
+
+            InitMap(10, 10);
+
+            Assert.AreEqual(FogStateType.Visible, _service.GetFogState(center));
+            Assert.IsTrue(_service.IsVisible(new Vector2Int(9, 9)));
+        }
+
+        [Test]
+        public void Initialize_FreshNewWorldWithoutBootstrapReveal_AppliesStartupFallbackReveal()
+        {
+            GameLaunchContext.ConfigureMenuNewGame();
+            _settings.EnableStartupFallbackReveal = true;
+            _settings.StartupFallbackRevealRadius = 2;
+            _settings.StartupFallbackMinMarginFromBorder = 2;
+            _settings.StartupFallbackRelativeMarginFactor = 0f;
+            _settings.StartupFallbackRevealShape = FogRevealShape.Square;
+
+            InitMap(10, 10);
+
+            int visibleCount = 0;
+            for (int x = 0; x < 10; x++)
+            for (int y = 0; y < 10; y++)
+                if (_service.IsVisible(new Vector2Int(x, y)))
+                    visibleCount++;
+
+            Assert.Greater(visibleCount, 0);
         }
 
         [Test]

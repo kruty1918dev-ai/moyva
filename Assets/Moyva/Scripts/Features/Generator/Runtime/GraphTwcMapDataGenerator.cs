@@ -30,6 +30,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// після кожної генерації. Дозволяє downstream-коду знати, які шари існують.
         /// </summary>
         internal IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; private set; }
+        internal float LastCellSize { get; private set; } = 1f;
 
         public GraphTwcMapDataGenerator(
             GraphAsset graphAsset,
@@ -56,6 +57,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 height = shared.MapHeight;
             }
 
+            int baseMapWidth = Mathf.Max(1, width);
+            int baseMapHeight = Mathf.Max(1, height);
+
             if (_manager == null || _manager.configuration == null)
             {
                 Debug.LogError("[GraphTwcGenerator] TileWorldCreatorManager/Configuration відсутній. " +
@@ -70,9 +74,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 var compiled = GraphToConfigurationCompiler.Compile(_graphAsset, _manager, seed);
                 LastCompiledLayers = compiled;
 
-                // Узгоджуємо фактичний розмір з конфігурацією.
-                width = _manager.configuration.width;
-                height = _manager.configuration.height;
+                // Gameplay-мапи лишаються розміром базової згенерованої мапи.
+                // Розширення окремих TWC blueprint-шарів через border padding не
+                // повинно збільшувати fog/grid/world data.
+                width = baseMapWidth;
+                height = baseMapHeight;
+                LastCellSize = _manager.configuration.cellSize > 0.0001f
+                    ? _manager.configuration.cellSize
+                    : 1f;
 
                 // 2. TWC будує мапу (blueprint-стек + 3D build-стек).
                 TileWorldCreatorLayerOcclusionOptimizer.GenerateCompleteMap(_manager);

@@ -43,7 +43,7 @@ namespace Kruty1918.Moyva.Grid.API
         public RenderTextureFormat PreviewRenderTextureFormat = RenderTextureFormat.ARGB32;
         public RenderTextureReadWrite PreviewRenderTextureReadWrite = RenderTextureReadWrite.Linear;
         public Vector3 Orthographic3DPreviewEuler = new Vector3(90f, 0f, 0f);
-        public Vector3 Isometric3DPreviewEuler = new Vector3(52f, 45f, 0f);
+        public Vector3 Isometric3DPreviewEuler = new Vector3(50f, 45f, 0f);
         public bool UsePerspectivePreviewCameraIn3D = true;
         [Range(1f, 179f)] public float PreviewPerspectiveFieldOfView = 55f;
         public Vector3 PreviewLightEuler = new Vector3(50f, -30f, 0f);
@@ -84,10 +84,10 @@ namespace Kruty1918.Moyva.Grid.API
         [Header("Camera Defaults")]
         public MoyvaCameraProjectPolicy CameraPolicy = MoyvaCameraProjectPolicy.AutoFromGrid;
         public MoyvaCameraAnglePolicy CameraAnglePolicy = MoyvaCameraAnglePolicy.Auto;
-        public Vector3 Custom3DCameraEuler = new Vector3(60f, 45f, 0f);
-        [Min(0.1f)] public float Project3DCameraDistance = 35f;
+        public Vector3 Custom3DCameraEuler = new Vector3(50f, 45f, 0f);
+        [Min(0.1f)] public float Project3DCameraDistance = 20f;
         [Min(0.1f)] public float Project3DOrthographicSize = 20f;
-        [Range(1f, 179f)] public float Project3DFieldOfView = 40f;
+        [Range(1f, 179f)] public float Project3DFieldOfView = 30f;
 
         [Header("Startup Camera")]
         public bool EnsureStartupCameraShowsRevealedArea = true;

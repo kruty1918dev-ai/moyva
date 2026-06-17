@@ -372,6 +372,16 @@ namespace GiantGrey.TileWorldCreator.UI
                 _useZeroLayerPadding.tooltip = "Extends this blueprint layer generation size by 16 cells.";
                 _useZeroLayerPadding.BindProperty(_layerSerializedObject.FindProperty("useZeroLayerPadding"));
 
+                var _borderPaddingWidthCells = new PropertyField();
+                _borderPaddingWidthCells.label = "Extra Width Cells";
+                _borderPaddingWidthCells.tooltip = "Adds cells to this blueprint layer width beyond the map size.";
+                _borderPaddingWidthCells.BindProperty(_layerSerializedObject.FindProperty("borderPaddingWidthCells"));
+
+                var _borderPaddingHeightCells = new PropertyField();
+                _borderPaddingHeightCells.label = "Extra Length Cells";
+                _borderPaddingHeightCells.tooltip = "Adds cells to this blueprint layer length beyond the map size.";
+                _borderPaddingHeightCells.BindProperty(_layerSerializedObject.FindProperty("borderPaddingHeightCells"));
+
     #if TWC_DEBUG
                 var _layerGuid = new TextField();
                 _layerGuid.BindProperty(_layerSerializedObject.FindProperty("guid"));
@@ -392,6 +402,8 @@ namespace GiantGrey.TileWorldCreator.UI
 
                 _layerVerticalContainer.Add(_defaultLayerHeight);
                 _layerVerticalContainer.Add(_useZeroLayerPadding);
+                _layerVerticalContainer.Add(_borderPaddingWidthCells);
+                _layerVerticalContainer.Add(_borderPaddingHeightCells);
 
                 var _layerModifierRoot = new VisualElement();
 

@@ -31,6 +31,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             public void RegisterUnit(string unitId, Vector2Int position, int visionRange) { }
             public void UpdateUnitVisionRange(string unitId, int visionRange) { }
             public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape) { }
+            public void RevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId = null) { }
             public void UpdateUnitPosition(string unitId, Vector2Int newPosition) { }
             public void UnregisterUnit(string unitId) { }
             public FogStateType GetFogState(Vector2Int position) => _states.TryGetValue(position, out var state) ? state : FogStateType.Visible;

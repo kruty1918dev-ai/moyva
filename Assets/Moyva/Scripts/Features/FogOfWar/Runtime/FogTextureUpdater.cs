@@ -10,6 +10,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// </summary>
     internal sealed class FogTextureUpdater : IFogTextureUpdater
     {
+        private const string DebugTag = "[MoyvaFogTrace]";
         private static readonly int GlobalFogTextureId = Shader.PropertyToID("_MoyvaFogTex");
         private static readonly int GlobalFogMapParamsId = Shader.PropertyToID("_MoyvaFogMapParams");
 
@@ -56,36 +57,75 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _fogTexture.name       = "FogOfWar_Grid";
 
             ApplyBuffer();
+            Debug.Log($"{DebugTag} FogTexture.Initialize map={_mapWidth}x{_mapHeight}, material={(_material != null ? _material.name : "null")}, renderingDisabled={_renderingDisabled}.");
         }
 
         public void UpdateDirtyTiles(IFogOfWarService fogService, IEnumerable<Vector2Int> dirtyTiles)
         {
-            if (_fogTexture == null) return;
+            if (_fogTexture == null)
+            {
+                Debug.LogWarning($"{DebugTag} FogTexture.UpdateDirtyTiles skipped: texture is null.");
+                return;
+            }
 
             bool anyDirty = false;
+            int requested = 0;
+            int applied = 0;
+            int skipped = 0;
 
             foreach (var pos in dirtyTiles)
             {
+                requested++;
                 if (pos.x < 0 || pos.x >= _mapWidth || pos.y < 0 || pos.y >= _mapHeight)
+                {
+                    skipped++;
                     continue;
+                }
 
                 _buffer[pos.y * _mapWidth + pos.x] = StateToPixel(fogService.GetFogState(pos));
                 anyDirty = true;
+                applied++;
             }
 
+            Debug.Log($"{DebugTag} FogTexture.UpdateDirtyTiles requested={requested}, applied={applied}, skipped={skipped}, map={_mapWidth}x{_mapHeight}, anyDirty={anyDirty}.");
             if (anyDirty)
                 ApplyBuffer();
         }
 
         public void RebuildFullTexture(IFogOfWarService fogService)
         {
-            if (_fogTexture == null) return;
+            if (_fogTexture == null)
+            {
+                Debug.LogWarning($"{DebugTag} FogTexture.RebuildFullTexture skipped: texture is null.");
+                return;
+            }
 
+            int visible = 0;
+            int explored = 0;
+            int unexplored = 0;
             for (int y = 0; y < _mapHeight; y++)
+            {
                 for (int x = 0; x < _mapWidth; x++)
-                    _buffer[y * _mapWidth + x] = StateToPixel(fogService.GetFogState(new Vector2Int(x, y)));
+                {
+                    var state = fogService.GetFogState(new Vector2Int(x, y));
+                    _buffer[y * _mapWidth + x] = StateToPixel(state);
+                    switch (state)
+                    {
+                        case FogStateType.Visible:
+                            visible++;
+                            break;
+                        case FogStateType.Explored:
+                            explored++;
+                            break;
+                        default:
+                            unexplored++;
+                            break;
+                    }
+                }
+            }
 
             ApplyBuffer();
+            Debug.Log($"{DebugTag} FogTexture.RebuildFullTexture map={_mapWidth}x{_mapHeight}, visible={visible}, explored={explored}, unexplored={unexplored}.");
         }
 
         private void ApplyBuffer()
@@ -110,6 +150,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Shader.SetGlobalTexture(GlobalFogTextureId, _fogTexture);
             Shader.SetGlobalVector(GlobalFogMapParamsId, _mapParams);
             _shaderGlobalsPublished = true;
+            Debug.Log($"{DebugTag} FogTexture.PublishShaderGlobals map={_mapWidth}x{_mapHeight}, texture={_fogTexture.name}, force={force}.");
         }
 
         private static byte StateToPixel(FogStateType state)

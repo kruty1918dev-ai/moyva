@@ -38,28 +38,47 @@ namespace GiantGrey.TileWorldCreator
 
         public int GetBlueprintLayerWidth(BlueprintLayer layer)
         {
-            return width + GetBlueprintLayerPaddingCells(layer);
+            return width + GetBlueprintLayerPaddingWidthCells(layer);
         }
 
         public int GetBlueprintLayerHeight(BlueprintLayer layer)
         {
-            return height + GetBlueprintLayerPaddingCells(layer);
+            return height + GetBlueprintLayerPaddingHeightCells(layer);
         }
 
         public int GetBlueprintLayerPaddingCells(BlueprintLayer layer)
+        {
+            return Mathf.Max(
+                GetBlueprintLayerPaddingWidthCells(layer),
+                GetBlueprintLayerPaddingHeightCells(layer));
+        }
+
+        public int GetBlueprintLayerPaddingWidthCells(BlueprintLayer layer)
+        {
+            return GetBlueprintLayerPaddingCells(layer, layer?.borderPaddingWidthCells ?? 0);
+        }
+
+        public int GetBlueprintLayerPaddingHeightCells(BlueprintLayer layer)
+        {
+            return GetBlueprintLayerPaddingCells(layer, layer?.borderPaddingHeightCells ?? 0);
+        }
+
+        private int GetBlueprintLayerPaddingCells(BlueprintLayer layer, int axisPaddingCells)
         {
             if (layer == null)
             {
                 return 0;
             }
 
+            int padding = Mathf.Max(0, layer.borderPaddingCells, axisPaddingCells);
+
             if (layer.useZeroLayerPadding ||
                 (zeroLayerPaddingBlueprintLayerGuids != null && zeroLayerPaddingBlueprintLayerGuids.Contains(layer.guid)))
             {
-                return ZeroLayerPaddingCells;
+                padding = Mathf.Max(padding, ZeroLayerPaddingCells);
             }
 
-            return Mathf.Max(0, layer.borderPaddingCells);
+            return padding;
         }
 
         [FormerlySerializedAs("cellSize")]
@@ -494,6 +513,8 @@ namespace GiantGrey.TileWorldCreator
         {
             return layer != null && (layer.useZeroLayerPadding ||
                 layer.borderPaddingCells > 0 ||
+                layer.borderPaddingWidthCells > 0 ||
+                layer.borderPaddingHeightCells > 0 ||
                 (zeroLayerPaddingBlueprintLayerGuids != null && zeroLayerPaddingBlueprintLayerGuids.Contains(layer.guid)));
         }
 
@@ -513,6 +534,8 @@ namespace GiantGrey.TileWorldCreator
             {
                 layer.useZeroLayerPadding = true;
                 layer.borderPaddingCells = ZeroLayerPaddingCells;
+                layer.borderPaddingWidthCells = ZeroLayerPaddingCells;
+                layer.borderPaddingHeightCells = ZeroLayerPaddingCells;
 
                 if (!zeroLayerPaddingBlueprintLayerGuids.Contains(layer.guid))
                 {
@@ -523,6 +546,8 @@ namespace GiantGrey.TileWorldCreator
             {
                 layer.useZeroLayerPadding = false;
                 layer.borderPaddingCells = 0;
+                layer.borderPaddingWidthCells = 0;
+                layer.borderPaddingHeightCells = 0;
                 zeroLayerPaddingBlueprintLayerGuids.Remove(layer.guid);
             }
         }

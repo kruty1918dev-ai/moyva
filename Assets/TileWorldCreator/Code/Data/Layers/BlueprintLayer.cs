@@ -40,6 +40,8 @@ namespace GiantGrey.TileWorldCreator
         public float defaultLayerHeight = 0f;
         public bool useZeroLayerPadding;
         public int borderPaddingCells = 0;
+        public int borderPaddingWidthCells = 0;
+        public int borderPaddingHeightCells = 0;
         public bool lockFromPaint;
         public bool foldoutState;
         public List<BlueprintModifier> tileMapModifiers = new List<BlueprintModifier>();
@@ -159,6 +161,12 @@ namespace GiantGrey.TileWorldCreator
         public void ExecuteLayer(Configuration _configuration, System.Action _onCompleteCallback)
         {
             configuration = _configuration;
+            int originalWidth = _configuration.width;
+            int originalHeight = _configuration.height;
+            int layerWidth = Mathf.Max(1, _configuration.GetBlueprintLayerWidth(this));
+            int layerHeight = Mathf.Max(1, _configuration.GetBlueprintLayerHeight(this));
+            int offsetX = Mathf.FloorToInt(Mathf.Max(0, layerWidth - originalWidth) * 0.5f);
+            int offsetY = Mathf.FloorToInt(Mathf.Max(0, layerHeight - originalHeight) * 0.5f);
 
             uint _seed;
 
@@ -204,29 +212,38 @@ namespace GiantGrey.TileWorldCreator
 
             generatedPositions = new HashSet<Vector2>();
             generatedPositions = GetPaintedCellPositions(generatedPositions);
-           
 
-            // Apply modifiers
-            for (int i = 0; i < tileMapModifiers.Count; i++)
+            try
             {
-                if (tileMapModifiers[i] == null)
-                    continue;
+                _configuration.width = layerWidth;
+                _configuration.height = layerHeight;
 
-                if (!tileMapModifiers[i].isEnabled)
-                    continue;
+                // Apply modifiers
+                for (int i = 0; i < tileMapModifiers.Count; i++)
+                {
+                    if (tileMapModifiers[i] == null)
+                        continue;
 
-                tileMapModifiers[i].asset = _configuration;          
-                generatedPositions = tileMapModifiers[i].Execute(generatedPositions, this);
-                
+                    if (!tileMapModifiers[i].isEnabled)
+                        continue;
+
+                    tileMapModifiers[i].asset = _configuration;
+                    generatedPositions = tileMapModifiers[i].Execute(generatedPositions, this);
+                }
+            }
+            finally
+            {
+                _configuration.width = originalWidth;
+                _configuration.height = originalHeight;
             }
 
-            // Add positions to worldGrid  
+            // Add positions to worldGrid
             allPositions.Clear();
-           
+
             foreach (var pos in generatedPositions)
             {
-                allPositions.Add(pos);
-            }    
+                allPositions.Add(new Vector2(pos.x - offsetX, pos.y - offsetY));
+            }
         }
 
 
@@ -334,8 +351,8 @@ namespace GiantGrey.TileWorldCreator
         {
 #if UNITY_EDITOR
 
-            int w = configuration.width;
-            int h = configuration.height;
+            int w = configuration.GetBlueprintLayerWidth(this);
+            int h = configuration.GetBlueprintLayerHeight(this);
 
             if (w <= 0 || h <= 0)
                 return previousTexture;
@@ -373,8 +390,8 @@ namespace GiantGrey.TileWorldCreator
             // Draw positions
             foreach (var pos in positions)
             {
-                int x = (int)pos.x;
-                int y = (int)pos.y;
+                int x = (int)pos.x + Mathf.FloorToInt(Mathf.Max(0, w - configuration.width) * 0.5f);
+                int y = (int)pos.y + Mathf.FloorToInt(Mathf.Max(0, h - configuration.height) * 0.5f);
 
                 if (x < 0 || y < 0 || x >= size || y >= size)
                     continue;

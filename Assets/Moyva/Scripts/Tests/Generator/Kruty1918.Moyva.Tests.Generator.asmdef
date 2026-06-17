@@ -1,0 +1,20 @@
+{
+    "name": "Kruty1918.Moyva.Tests.Generator",
+    "rootNamespace": "Kruty1918.Moyva.Tests.Generator",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Kruty1918.Moyva.Generator",
+        "Kruty1918.Moyva.GraphSystem",
+        "GiantGrey.TileWorldCreator"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": ["nunit.framework.dll"],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

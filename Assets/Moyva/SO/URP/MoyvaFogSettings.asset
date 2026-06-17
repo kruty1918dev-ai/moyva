@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a6f656ab8114e939b71b289ffd9d7b2, type: 3}
   m_Name: MoyvaFogSettings
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::FlatKit.FogSettings
-  useDistance: 1
+  useDistance: 0
   distanceGradient:
     serializedVersion: 2
     key0: {r: 1, g: 0.9213928, b: 0, a: 0.5568628}
@@ -46,7 +46,7 @@ MonoBehaviour:
   near: 0
   far: 100
   distanceFogIntensity: 0.174
-  useHeight: 1
+  useHeight: 0
   heightGradient:
     serializedVersion: 2
     key0: {r: 0, g: 1, b: 0.67544794, a: 0.93333334}
@@ -84,7 +84,7 @@ MonoBehaviour:
   distanceHeightBlend: 0.579
   renderEvent: 1000
   applyInSceneView: 1
-  effectMaterial: {fileID: 7539142496212529142}
+  effectMaterial: {fileID: 0}
 --- !u!21 &7539142496212529142
 Material:
   serializedVersion: 8
@@ -98,8 +98,6 @@ Material:
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
   - FOG_CAMERA_RELATIVE
-  - USE_DISTANCE_FOG
-  - USE_HEIGHT_FOG
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0

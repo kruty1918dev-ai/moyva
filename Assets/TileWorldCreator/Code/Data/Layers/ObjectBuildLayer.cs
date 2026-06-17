@@ -1021,8 +1021,12 @@ namespace GiantGrey.TileWorldCreator
 
             if (_prefabObject != null)
             {
-                // var _rndPosition = random.NextFloat2Direction() * objectRNDPositionOffsetRadius;
-                // var _position = new Vector3((_tileData.tilePosition.x ) * configuration.cellSize + _rndPosition.x + owner.transform.position.x + layerOffset.x, blueprintLayer.defaultLayerHeight + layerOffset.y + owner.transform.position.y, (_tileData.tilePosition.y) * configuration.cellSize + _rndPosition.y + owner.transform.position.z + layerOffset.z);
+                Vector2 _rndPosition = Vector2.zero;
+                if (objectRNDPositionOffsetRadius > 0f)
+                {
+                    var rndDirection = random.NextFloat2Direction() * objectRNDPositionOffsetRadius;
+                    _rndPosition = new Vector2(rndDirection.x, rndDirection.y);
+                }
 
                 // Get rotation based on orientation layer
                 var _yRotation = 0f;
@@ -1054,9 +1058,12 @@ namespace GiantGrey.TileWorldCreator
                 }
 
                 _newObject.transform.SetParent(_cluster.transform, false);
-            
+
                 // Correct position
-                var _newTilePosition = new Vector3((_tileData.tilePosition.x) * configuration.cellSize, blueprintLayer.defaultLayerHeight + layerOffset.y, (_tileData.tilePosition.y) * configuration.cellSize);
+                var _newTilePosition = new Vector3(
+                    (_tileData.tilePosition.x) * configuration.cellSize + _rndPosition.x + layerOffset.x,
+                    blueprintLayer.defaultLayerHeight + layerOffset.y,
+                    (_tileData.tilePosition.y) * configuration.cellSize + _rndPosition.y + layerOffset.z);
                 _newObject.transform.localPosition = _newTilePosition;
 
                 

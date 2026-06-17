@@ -132,7 +132,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 var occlusion = TileWorldCreatorLayerOcclusionOptimizer.CullOccludedTileCells(configuration);
                 if (occlusion.RemovedCellCount > 0)
-                    Debug.Log($"{LogTag} Removed {occlusion.RemovedCellCount} occluded TWC tile cells across {occlusion.ProcessedLayerCount} build layers before spawning.");
+                    Debug.Log($"{LogTag} Removed {occlusion.RemovedCellCount} occluded TWC tile cells across {occlusion.ProcessedLayerCount} build layers before spawning. occupied={occlusion.OccupiedCellCount}, skipped={occlusion.SkippedLayerCount}.");
 
                 Debug.Log($"{LogTag} Calling ExecuteBuildLayers(FromScratch). Config size={configuration.width}x{configuration.height}, cellSize={configuration.cellSize}, mergeTiles={configuration.mergeTiles}, terrainLayers={terrainLayerPositions.Count}. Runtime cells were already pushed with AddCellsToLayerByGuid, so GenerateCompleteMap is intentionally skipped because it re-executes and resets blueprint layers.");
 
@@ -152,7 +152,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     _options.ReplaceMappedTerrainVisuals,
                     _options.ReplaceMappedObjectVisuals,
                     _options.ReplaceMappedBuildingVisuals,
-                    _options.SuppressMoyvaLayerDataWhenTerrainMapped && mappedTerrainIds.Count > 0);
+                    _options.SuppressMoyvaLayerDataWhenTerrainMapped && mappedTerrainIds.Count > 0,
+                    configuration.cellSize);
             }
             catch (System.Exception ex)
             {
@@ -1319,7 +1320,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             false,
             false,
             false,
-            false);
+            false,
+            1f);
 
         public TileWorldCreatorWorldBuildResult(
             HashSet<string> terrainIds,
@@ -1328,7 +1330,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             bool replaceTerrainVisuals,
             bool replaceObjectVisuals,
             bool replaceBuildingVisuals,
-            bool suppressMoyvaLayerData)
+            bool suppressMoyvaLayerData,
+            float cellSize)
         {
             _terrainIds = terrainIds;
             _objectIds = objectIds;
@@ -1337,12 +1340,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ReplaceMappedObjectVisuals = replaceObjectVisuals;
             ReplaceMappedBuildingVisuals = replaceBuildingVisuals;
             SuppressMoyvaLayerData = suppressMoyvaLayerData;
+            CellSize = cellSize > 0.0001f ? cellSize : 1f;
         }
 
         public bool ReplaceMappedTerrainVisuals { get; }
         public bool ReplaceMappedObjectVisuals { get; }
         public bool ReplaceMappedBuildingVisuals { get; }
         public bool SuppressMoyvaLayerData { get; }
+        public float CellSize { get; }
 
         public bool ShouldReplaceTerrainVisual(string id)
             => ReplaceMappedTerrainVisuals && Contains(_terrainIds, id);
