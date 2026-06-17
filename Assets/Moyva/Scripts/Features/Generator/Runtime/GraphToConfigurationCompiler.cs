@@ -3,7 +3,9 @@ using System.Linq;
 using System;
 using GiantGrey.TileWorldCreator;
 using GiantGrey.TileWorldCreator.Components;
+using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
+using Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement;
 using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.GraphSystem.Runtime;
@@ -118,8 +120,44 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             DisableUnusedLayers(existingLayers, usedLayerGuids);
+            var objectLayers = CollectObjectPlacementLayers(graph, seed, new Vector2Int(config.width, config.height));
+            TWCObjectPlacementAdapter.Apply(config, manager, objectLayers, result);
 
             return result;
+        }
+
+        private static IReadOnlyList<ObjectPlacementLayer> CollectObjectPlacementLayers(
+            GraphAsset graph,
+            int seed,
+            Vector2Int mapSize)
+        {
+            if (graph == null || graph.Nodes == null)
+                return Array.Empty<ObjectPlacementLayer>();
+
+            bool hasObjectOutput = graph.Nodes.Any(node => node is ObjectOutputToTWCNode);
+            if (!hasObjectOutput)
+                return Array.Empty<ObjectPlacementLayer>();
+
+            var context = new NodeContext(seed == 0 ? 1 : seed)
+            {
+                MapSize = new Vector2Int(Mathf.Max(1, mapSize.x), Mathf.Max(1, mapSize.y))
+            };
+            context.ApplySharedSettings(graph.SharedSettings);
+            context.RegisterService(graph.SharedSettings);
+
+            var registry = new ObjectPlacementRegistry();
+            context.RegisterService(registry);
+
+            var runner = new GraphRunner();
+            var execution = runner.Execute(graph, context);
+            if (execution == null || !execution.Success)
+            {
+                Debug.LogWarning(
+                    $"[MoyvaObjectPlacement] Graph object placement output was not compiled: {execution?.ErrorMessage ?? "unknown graph execution error"}");
+                return Array.Empty<ObjectPlacementLayer>();
+            }
+
+            return registry.Layers;
         }
 
         private static void EnsureRootFolder(Configuration config)
@@ -333,6 +371,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             TilesBuildLayer buildLayer = FindTilesBuildLayer(config, layerDef.BuildLayerKey, blueprintLayerGuid);
             if (buildLayer == null)
+                return layerDef.Id;
+
+            if (buildLayer.generateFlatSurface)
                 return layerDef.Id;
 
             string tileId = ResolveTileIdFromBuildLayer(buildLayer);

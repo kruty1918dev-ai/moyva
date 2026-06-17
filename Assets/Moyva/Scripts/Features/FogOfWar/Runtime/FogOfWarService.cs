@@ -768,9 +768,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             _resolver.SetHeightMap(BuildVisibilityHeightMap(signal.TerrainLevelMap, signal.HeightMap));
 
-            int signalWidth = Mathf.Max(1, signal.Width);
-            int signalHeight = Mathf.Max(1, signal.Height);
-            Debug.Log($"{DebugTag} FogService.OnWorldGeneratedData signal={signalWidth}x{signalHeight}, initialized={_initialized}, current={_width}x{_height}, pendingReveals={_pendingRevealAreas.Count}.");
+            Vector2Int baseMapSize = FogWorldSignalUtility.ResolveBaseMapSize(signal);
+            int signalWidth = baseMapSize.x;
+            int signalHeight = baseMapSize.y;
+            Debug.Log($"{DebugTag} FogService.OnWorldGeneratedData signal={signal.Width}x{signal.Height}, baseMap={signalWidth}x{signalHeight}, initialized={_initialized}, current={_width}x{_height}, pendingReveals={_pendingRevealAreas.Count}.");
 
             if (!_initialized)
             {
@@ -1720,6 +1721,36 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Renderer.enabled = _enabledBeforeFog;
                 _hiddenByFog = false;
             }
+        }
+    }
+
+    internal static class FogWorldSignalUtility
+    {
+        public static Vector2Int ResolveBaseMapSize(WorldGeneratedDataSignal signal)
+        {
+            int width = Mathf.Max(0, signal.Width);
+            int height = Mathf.Max(0, signal.Height);
+
+            ApplyBaseMapSize(signal.TileMap, ref width, ref height);
+            ApplyBaseMapSize(signal.ObjectMap, ref width, ref height);
+            ApplyBaseMapSize(signal.HeightMap, ref width, ref height);
+            ApplyBaseMapSize(signal.TerrainLevelMap, ref width, ref height);
+
+            return new Vector2Int(Mathf.Max(1, width), Mathf.Max(1, height));
+        }
+
+        private static void ApplyBaseMapSize<T>(T[,] map, ref int width, ref int height)
+        {
+            if (map == null)
+                return;
+
+            int mapWidth = map.GetLength(0);
+            int mapHeight = map.GetLength(1);
+            if (mapWidth <= 0 || mapHeight <= 0)
+                return;
+
+            width = width > 0 ? Mathf.Min(width, mapWidth) : mapWidth;
+            height = height > 0 ? Mathf.Min(height, mapHeight) : mapHeight;
         }
     }
 }

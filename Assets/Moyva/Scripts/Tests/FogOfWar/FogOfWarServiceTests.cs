@@ -203,6 +203,25 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
 
         [Test]
+        public void WorldGeneratedDataSignal_UsesBaseMapSize_WhenSignalIncludesExpandedLayerSize()
+        {
+            InitMap(10, 10);
+
+            _signalBus.Fire(new WorldGeneratedDataSignal
+            {
+                Width = 14,
+                Height = 12,
+                TileMap = new string[10, 10],
+                ObjectMap = new string[10, 10],
+                HeightMap = new float[10, 10],
+            });
+
+            var snapshot = _service.GetExploredSnapshot();
+            Assert.AreEqual(10, snapshot.GetLength(0));
+            Assert.AreEqual(10, snapshot.GetLength(1));
+        }
+
+        [Test]
         public void FixedVisionAreasSnapshot_RestoresStarterAnchorVisibility()
         {
             InitMap();

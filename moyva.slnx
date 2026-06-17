@@ -5,8 +5,8 @@
   <Project Path="Zenject-IntegrationTests-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.HomeMenu.csproj" />
   <Project Path="Kruty1918.Moyva.Animations.csproj" />
-  <Project Path="Kruty1918.Moyva.Clouds.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
+  <Project Path="Kruty1918.Moyva.Clouds.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.Editor.csproj" />
   <Project Path="Zenject-ReflectionBaking-Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Interactions.API.csproj" />

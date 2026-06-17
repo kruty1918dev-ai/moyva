@@ -55,6 +55,8 @@ namespace GiantGrey.TileWorldCreator
         public float tileColliderHeight;
         public float tileColliderExtrusionHeight;
         public bool invertCollisionWalls;
+        public bool generateFlatSurface;
+        public Material flatSurfaceMaterial;
 
         // public List<TilePresetSelection> tilePresets;
         public List<TilePresetSelection> tilePresetsTop = new List<TilePresetSelection>();
@@ -387,6 +389,9 @@ namespace GiantGrey.TileWorldCreator
         /// <param name="tilePreset"></param>
         public void SetNewTilePreset(TilePreset tilePreset)
         {
+            if (generateFlatSurface)
+                return;
+
             tilePresetsTop.Clear();
             tilePresetsTop.Add(new TilePresetSelection() { preset = tilePreset, weight = 1 });
         }
@@ -473,7 +478,15 @@ namespace GiantGrey.TileWorldCreator
                 return;
             }
 
-            var _layerPositions = new HashSet<Vector2>(); 
+            if (generateFlatSurface)
+            {
+                GenerateFlatSurfaceLayer(_layer);
+                return;
+            }
+
+            DestroyFlatSurfaceClusterIfPresent();
+
+            var _layerPositions = new HashSet<Vector2>();
             _layerPositions = _layer.GetAllCellPositions(_layerPositions);
             removePositions.Clear();
 
@@ -648,6 +661,204 @@ namespace GiantGrey.TileWorldCreator
                     manager.StartCoroutine(GenerateTiles(_newPositions, _layer));
                 }
             }
+        }
+
+        private void GenerateFlatSurfaceLayer(BlueprintLayer blueprintLayer)
+        {
+            worldGrid.Clear();
+            tileGrid.Clear();
+            newTiles.Clear();
+            removePositions.Clear();
+            modifiedClusters.Clear();
+            modifiedClustersHashSet.Clear();
+            serializedWorldPositions.Clear();
+            serializedTiles.Clear();
+
+            if (tmpLayerObject == null)
+                tmpLayerObject = base.GetLayerObject(manager.gameObject);
+
+            if (tmpLayerObject == null)
+                return;
+
+            if (availableClusters == null)
+                availableClusters = new HashSet<ClusterIdentifier>();
+            else
+                availableClusters.Clear();
+
+            var existingClusters = tmpLayerObject.GetComponentsInChildren<ClusterIdentifier>(true);
+            for (int i = 0; i < existingClusters.Length; i++)
+            {
+                if (existingClusters[i] != null)
+                    DestroyGeneratedCluster(existingClusters[i].gameObject);
+            }
+
+            var flatObject = new GameObject(GetFlatSurfaceObjectName());
+            flatObject.transform.SetParent(tmpLayerObject.transform, false);
+            flatObject.transform.localPosition = Vector3.zero;
+            flatObject.transform.localRotation = Quaternion.identity;
+            flatObject.transform.localScale = Vector3.one;
+
+            var cluster = flatObject.AddComponent<ClusterIdentifier>();
+            cluster.clusterID = 0;
+            cluster.layerGuid = guid;
+            availableClusters.Add(cluster);
+
+            int width = Mathf.Max(1, configuration.GetBlueprintLayerWidth(blueprintLayer));
+            int height = Mathf.Max(1, configuration.GetBlueprintLayerHeight(blueprintLayer));
+            int offsetX = Mathf.FloorToInt(Mathf.Max(0, width - configuration.width) * 0.5f);
+            int offsetY = Mathf.FloorToInt(Mathf.Max(0, height - configuration.height) * 0.5f);
+            float cellSize = Mathf.Max(0.0001f, configuration.cellSize);
+            float surfaceY = blueprintLayer.defaultLayerHeight + layerYOffset;
+
+            var mesh = BuildFlatSurfaceMesh(width, height, offsetX, offsetY, cellSize, surfaceY);
+
+            var meshFilter = flatObject.AddComponent<MeshFilter>();
+            meshFilter.sharedMesh = mesh;
+
+            var meshRenderer = flatObject.AddComponent<MeshRenderer>();
+            if (flatSurfaceMaterial != null)
+                meshRenderer.sharedMaterial = flatSurfaceMaterial;
+
+            ApplyFlatSurfaceRenderSettings(flatObject, meshRenderer);
+            ApplyFlatSurfaceCollider(flatObject, mesh);
+        }
+
+        private Mesh BuildFlatSurfaceMesh(int width, int height, int offsetX, int offsetY, float cellSize, float surfaceY)
+        {
+            int vertexWidth = width + 1;
+            int vertexHeight = height + 1;
+            int vertexCount = vertexWidth * vertexHeight;
+            var vertices = new Vector3[vertexCount];
+            var uvs = new Vector2[vertexCount];
+            var triangles = new int[width * height * 6];
+
+            float minCellX = -offsetX - 0.5f;
+            float minCellY = -offsetY - 0.5f;
+
+            for (int y = 0; y < vertexHeight; y++)
+            {
+                for (int x = 0; x < vertexWidth; x++)
+                {
+                    int index = x + y * vertexWidth;
+                    vertices[index] = new Vector3(
+                        (minCellX + x) * cellSize,
+                        surfaceY,
+                        (minCellY + y) * cellSize);
+                    uvs[index] = new Vector2(x, y);
+                }
+            }
+
+            int triangleIndex = 0;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    int bottomLeft = x + y * vertexWidth;
+                    int bottomRight = bottomLeft + 1;
+                    int topLeft = bottomLeft + vertexWidth;
+                    int topRight = topLeft + 1;
+
+                    triangles[triangleIndex++] = bottomLeft;
+                    triangles[triangleIndex++] = topRight;
+                    triangles[triangleIndex++] = bottomRight;
+
+                    triangles[triangleIndex++] = bottomLeft;
+                    triangles[triangleIndex++] = topLeft;
+                    triangles[triangleIndex++] = topRight;
+                }
+            }
+
+            var mesh = new Mesh
+            {
+                name = GetFlatSurfaceMeshName(),
+                indexFormat = vertexCount > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16,
+                vertices = vertices,
+                uv = uvs,
+                triangles = triangles
+            };
+
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private void ApplyFlatSurfaceRenderSettings(GameObject flatObject, MeshRenderer meshRenderer)
+        {
+            var effectiveShadowCastingMode = meshGenerationOverride ? shadowCastingMode : configuration.shadowCastingMode;
+            var effectiveObjectLayer = meshGenerationOverride ? objectLayer : configuration.objectLayer;
+            var effectiveRenderingLayer = meshGenerationOverride ? renderingLayer : configuration.renderingLayer;
+
+            meshRenderer.shadowCastingMode = effectiveShadowCastingMode;
+            if (effectiveRenderingLayer == 0)
+            {
+                int layerIndex = GetRenderingLayerIndex("Default");
+                effectiveRenderingLayer = layerIndex >= 0 ? (uint)(1 << layerIndex) : 1u;
+            }
+            meshRenderer.renderingLayerMask = effectiveRenderingLayer;
+            flatObject.layer = effectiveObjectLayer.value;
+        }
+
+        private void ApplyFlatSurfaceCollider(GameObject flatObject, Mesh mesh)
+        {
+            var effectiveColliderType = meshGenerationOverride ? colliderType : configuration.colliderType;
+            if (effectiveColliderType == Configuration.ColliderType.none)
+                return;
+
+            var meshCollider = flatObject.AddComponent<MeshCollider>();
+            meshCollider.cookingOptions = MeshColliderCookingOptions.None;
+            meshCollider.sharedMesh = mesh;
+        }
+
+        private void DestroyGeneratedCluster(GameObject clusterObject)
+        {
+            if (clusterObject == null)
+                return;
+
+            var meshFilter = clusterObject.GetComponent<MeshFilter>();
+            var mesh = meshFilter != null ? meshFilter.sharedMesh : null;
+            if (mesh != null && mesh.name.EndsWith("_FlatSurfaceMesh"))
+            {
+                if (meshFilter != null)
+                    meshFilter.sharedMesh = null;
+                GameObject.DestroyImmediate(mesh);
+            }
+
+            GameObject.DestroyImmediate(clusterObject);
+        }
+
+        private void DestroyFlatSurfaceClusterIfPresent()
+        {
+            if (tmpLayerObject == null)
+                tmpLayerObject = base.GetLayerObject(manager.gameObject);
+
+            if (tmpLayerObject == null)
+                return;
+
+            var existingClusters = tmpLayerObject.GetComponentsInChildren<ClusterIdentifier>(true);
+            for (int i = 0; i < existingClusters.Length; i++)
+            {
+                var cluster = existingClusters[i];
+                if (cluster == null || cluster.gameObject == null)
+                    continue;
+
+                if (!cluster.gameObject.name.EndsWith("_FlatSurface"))
+                    continue;
+
+                if (availableClusters != null)
+                    availableClusters.Remove(cluster);
+
+                DestroyGeneratedCluster(cluster.gameObject);
+            }
+        }
+
+        private string GetFlatSurfaceObjectName()
+        {
+            return layerName + "_FlatSurface";
+        }
+
+        private string GetFlatSurfaceMeshName()
+        {
+            return layerName + "_FlatSurfaceMesh";
         }
 
 
@@ -2054,6 +2265,23 @@ namespace GiantGrey.TileWorldCreator
             _scaleTileToCellSize.label = "Scale Tiles To Cell Size";
             _scaleTileToCellSize.BindProperty(_layerSerializedObject.FindProperty("scaleTileToCellSize"));
 
+            var _generateFlatSurface = new PropertyField();
+            _generateFlatSurface.label = "Generate Flat Surface";
+            _generateFlatSurface.tooltip = "Generate one subdivided flat mesh for this layer instead of TilePreset prefabs.";
+            _generateFlatSurface.BindProperty(_layerSerializedObject.FindProperty("generateFlatSurface"));
+
+            var _flatSurfaceMaterial = new PropertyField();
+            _flatSurfaceMaterial.label = "Flat Surface Material";
+            _flatSurfaceMaterial.BindProperty(_layerSerializedObject.FindProperty("flatSurfaceMaterial"));
+
+            var _flatSurfaceHelpBox = new HelpBox
+            {
+                text = "Flat Surface mode ignores TilePreset selections and creates one grid mesh using the blueprint layer size and padding.",
+                messageType = HelpBoxMessageType.Info
+            };
+
+            var _tilePresetSection = new VisualElement();
+
             var _tilePresetsTopListView = new ListView();
 
             _tilePresetsTopListView.itemsSource = tilePresetsTop;
@@ -2181,17 +2409,37 @@ namespace GiantGrey.TileWorldCreator
             var _tileLayersTitle = TileWorldCreatorUIElements.Separator("Tile Layers");
             var _tileOverridesTitle = TileWorldCreatorUIElements.Separator("Tile Overrides");
 
+            void ApplyTilePresetLayout(bool multiLayersEnabled, bool flatSurfaceEnabled)
+            {
+                _useDualGrid.SetEnabled(!flatSurfaceEnabled);
+                _useMultiLayers.SetEnabled(!flatSurfaceEnabled);
+                _scaleTileToCellSize.SetEnabled(!flatSurfaceEnabled);
+                _flatSurfaceMaterial.style.display = flatSurfaceEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                _flatSurfaceHelpBox.style.display = flatSurfaceEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                _tilePresetSection.style.display = flatSurfaceEnabled ? DisplayStyle.None : DisplayStyle.Flex;
+
+                if (flatSurfaceEnabled)
+                    return;
+
+                _tileLayersTitle.style.display = multiLayersEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                _tileOverridesTitle.style.display = multiLayersEnabled ? DisplayStyle.None : DisplayStyle.Flex;
+                _presetTagTop.style.display = multiLayersEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                _presetTagMiddle.style.display = multiLayersEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                _presetTagBottom.style.display = multiLayersEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                _tilePresetsMiddleListView.style.display = multiLayersEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                _tilePresetsBottomListView.style.display = multiLayersEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                _tileLayersListView.style.display = multiLayersEnabled ? DisplayStyle.Flex : DisplayStyle.None;
+                _tileOverridesListView.style.display = multiLayersEnabled ? DisplayStyle.None : DisplayStyle.Flex;
+            }
+
             _useMultiLayers.RegisterCallback<ChangeEvent<bool>>(evt =>
             {
-                _tileLayersTitle.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
-                _tileOverridesTitle.style.display = evt.newValue ? DisplayStyle.None : DisplayStyle.Flex;
-                _presetTagTop.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
-                _presetTagMiddle.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
-                _presetTagBottom.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
-                _tilePresetsMiddleListView.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
-                _tilePresetsBottomListView.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
-                _tileLayersListView.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
-                _tileOverridesListView.style.display = evt.newValue ? DisplayStyle.None : DisplayStyle.Flex;
+                ApplyTilePresetLayout(evt.newValue, generateFlatSurface);
+            });
+
+            _generateFlatSurface.RegisterCallback<ChangeEvent<bool>>(evt =>
+            {
+                ApplyTilePresetLayout(useMultiLayers, evt.newValue);
             });
 
             #region MESH
@@ -2320,27 +2568,30 @@ namespace GiantGrey.TileWorldCreator
 
             // _layerItem.Add(_selectBlueprint);
            
-          
+            _layerItem.Add(_generateFlatSurface);
+            _layerItem.Add(_flatSurfaceMaterial);
+            _layerItem.Add(_flatSurfaceHelpBox);
             _layerItem.Add(_useDualGrid);
             _layerItem.Add(_useMultiLayers);
             _layerItem.Add(_scaleTileToCellSize);
-            _layerItem.Add(TileWorldCreatorUIElements.Separator("Tile Presets"));
+            _tilePresetSection.Add(TileWorldCreatorUIElements.Separator("Tile Presets"));
             var _presetHelpBox = new HelpBox();
             _presetHelpBox.text = "When using multiple presets, TWC will randomly select between them based on their weight.";
             _presetHelpBox.messageType = HelpBoxMessageType.Info;
-            _layerItem.Add(_presetHelpBox);
-            _layerItem.Add(_presetTagTop);
-            _layerItem.Add(_tilePresetsTopListView);
-            _layerItem.Add(_presetTagMiddle);
-            _layerItem.Add(_tilePresetsMiddleListView);
-            _layerItem.Add(_presetTagBottom);
-            _layerItem.Add(_tilePresetsBottomListView);
+            _tilePresetSection.Add(_presetHelpBox);
+            _tilePresetSection.Add(_presetTagTop);
+            _tilePresetSection.Add(_tilePresetsTopListView);
+            _tilePresetSection.Add(_presetTagMiddle);
+            _tilePresetSection.Add(_tilePresetsMiddleListView);
+            _tilePresetSection.Add(_presetTagBottom);
+            _tilePresetSection.Add(_tilePresetsBottomListView);
             // Tile layers
-            _layerItem.Add(_tileLayersTitle);
-            _layerItem.Add(_tileLayersListView);
+            _tilePresetSection.Add(_tileLayersTitle);
+            _tilePresetSection.Add(_tileLayersListView);
             // Tile Override (single)
-            _layerItem.Add(_tileOverridesTitle);
-            _layerItem.Add(_tileOverridesListView);
+            _tilePresetSection.Add(_tileOverridesTitle);
+            _tilePresetSection.Add(_tileOverridesListView);
+            _layerItem.Add(_tilePresetSection);
             _layerItem.Add(TileWorldCreatorUIElements.Separator("Mesh Generation"));
             _layerItem.Add(_meshGenerationOverride);
             _layerItem.Add(_mergeTiles);
@@ -2354,6 +2605,8 @@ namespace GiantGrey.TileWorldCreator
             _layerItem.Add(TileWorldCreatorUIElements.Separator("Global Offsets"));
             _layerItem.Add(_layerOffset);
             _layerItem.Add(_scaleOffset);
+
+            ApplyTilePresetLayout(useMultiLayers, generateFlatSurface);
 
         }
 

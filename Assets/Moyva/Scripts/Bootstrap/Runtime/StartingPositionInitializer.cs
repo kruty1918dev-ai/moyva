@@ -205,7 +205,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (teleportCamera && !_startupCameraTeleported)
             {
-                TeleportMainCamera(ResolveStartupCameraTarget(baseMapSize.x, baseMapSize.y, preferStartTile: true), signal);
+                TeleportMainCamera(revealCenter, signal);
                 _startupCameraTeleported = true;
             }
 

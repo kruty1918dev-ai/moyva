@@ -134,8 +134,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
-            int width = Mathf.Max(1, signal.Width);
-            int height = Mathf.Max(1, signal.Height);
+            Vector2Int baseMapSize = FogWorldSignalUtility.ResolveBaseMapSize(signal);
+            int width = baseMapSize.x;
+            int height = baseMapSize.y;
             float cellSize = ResolveSignalCellSize(signal);
             float maxTerrainWorldY = ResolveMaxTerrainWorldY(signal);
             bool terrainHeightChanged = !Mathf.Approximately(maxTerrainWorldY, _maxTerrainWorldY);
@@ -145,11 +146,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             if (width == _mapWidth && height == _mapHeight && signal.ProjectionMode == _projectionMode && !terrainHeightChanged && !cellSizeChanged)
             {
-                Debug.Log($"{DebugTag} FogQuad.OnWorldGenerated no-reinit signal={width}x{height}, current={_mapWidth}x{_mapHeight}, projection={signal.ProjectionMode}, cellSize={cellSize}, terrainHeightChanged={terrainHeightChanged}.");
+                Debug.Log($"{DebugTag} FogQuad.OnWorldGenerated no-reinit signal={signal.Width}x{signal.Height}, baseMap={width}x{height}, current={_mapWidth}x{_mapHeight}, projection={signal.ProjectionMode}, cellSize={cellSize}, terrainHeightChanged={terrainHeightChanged}.");
                 return;
             }
 
-            Debug.Log($"{DebugTag} FogQuad.OnWorldGenerated reinit signal={width}x{height}, previous={_mapWidth}x{_mapHeight}, projection={_projectionMode}->{signal.ProjectionMode}, cellSize={_worldCellSize}, terrainHeightChanged={terrainHeightChanged}, cellSizeChanged={cellSizeChanged}.");
+            Debug.Log($"{DebugTag} FogQuad.OnWorldGenerated reinit signal={signal.Width}x{signal.Height}, baseMap={width}x{height}, previous={_mapWidth}x{_mapHeight}, projection={_projectionMode}->{signal.ProjectionMode}, cellSize={_worldCellSize}, terrainHeightChanged={terrainHeightChanged}, cellSizeChanged={cellSizeChanged}.");
             InitializeOverlay(width, height);
         }
 

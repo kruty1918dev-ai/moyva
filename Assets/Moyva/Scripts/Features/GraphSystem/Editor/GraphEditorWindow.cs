@@ -1928,6 +1928,20 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             bool newZeroPadding = EditorGUILayout.Toggle(new GUIContent("Zero Layer Padding (+16)", "Позначає шар як розширений: #sym:width/#sym:height стають більшими на 16."), layer.UseZeroLayerPadding);
             int newExtraWidth = Mathf.Max(0, EditorGUILayout.IntField(new GUIContent("Extra Width Cells", "Додає клітинки до ширини цього шару понад розмір мапи. Шар центрується навколо основної мапи."), layer.ExtraWidthCells));
             int newExtraLength = Mathf.Max(0, EditorGUILayout.IntField(new GUIContent("Extra Length Cells", "Додає клітинки до довжини цього шару понад розмір мапи. Корисно для води/океану навколо острова."), layer.ExtraLengthCells));
+            bool newGenerateFlatSurface = EditorGUILayout.Toggle(
+                new GUIContent(
+                    "Generate Flat Surface",
+                    "Якщо увімкнено, TWC build-шар створює одну пласку grid-поверхню на весь розмір шару замість TilePreset-тайлів."),
+                layer.GenerateFlatSurface);
+            Material newFlatSurfaceMaterial;
+            using (new EditorGUI.DisabledScope(!newGenerateFlatSurface))
+            {
+                newFlatSurfaceMaterial = (Material)EditorGUILayout.ObjectField(
+                    new GUIContent("Flat Surface Material", "Матеріал, який буде призначений одному пласкому mesh шару."),
+                    layer.FlatSurfaceMaterial,
+                    typeof(Material),
+                    false);
+            }
             Color newColor = EditorGUILayout.ColorField("Color", layer.Color);
 
             if (EditorGUI.EndChangeCheck())
@@ -1940,12 +1954,21 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 layer.UseZeroLayerPadding = newZeroPadding;
                 layer.ExtraWidthCells = newExtraWidth;
                 layer.ExtraLengthCells = newExtraLength;
+                layer.GenerateFlatSurface = newGenerateFlatSurface;
+                layer.FlatSurfaceMaterial = newFlatSurfaceMaterial;
                 layer.Color = newColor;
 
                 EditorUtility.SetDirty(_graphAsset);
                 RebuildLayerList();
                 _graphView?.RefreshFromAsset();
                 RequestAutoRun();
+            }
+
+            if (layer.GenerateFlatSurface)
+            {
+                EditorGUILayout.HelpBox(
+                    "Flat Surface режим ігнорує TilePreset-и цього build-шару і генерує один mesh з grid subdivisions за розміром шару.",
+                    MessageType.Info);
             }
 
             EditorGUILayout.Space(8);
