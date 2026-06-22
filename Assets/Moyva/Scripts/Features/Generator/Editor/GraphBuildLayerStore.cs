@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.Runtime;
+using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.GraphSystem.Runtime;
@@ -15,10 +16,11 @@ namespace Kruty1918.Moyva.Generator.Editor
     /// <summary>
     /// Керує "компаньйон"-конфігурацією TileWorldCreator, що зберігається як під-асет
     /// усередині самого <see cref="GraphAsset"/>. Кожен шар графа отримує власний
-    /// build-шар (<see cref="TilesBuildLayer"/>), у якому налаштовується візуал/тайли.
+    /// blueprint-шар. TilesBuildLayer створюється тільки тоді, коли у graph layer є
+    /// Tile Settings node або legacy flat-surface режим.
     ///
-    /// Граф — джерело правди: blueprint-шари компілюються з графа, а build-шари
-    /// синхронізуються 1:1 зі списком шарів графа.
+    /// Граф — джерело правди: blueprint-шари й tile build-шари синхронізуються
+    /// з node-based налаштувань, а не з окремого TWC inspector-вікна.
     /// </summary>
     public static class GraphBuildLayerStore
     {
@@ -51,7 +53,7 @@ namespace Kruty1918.Moyva.Generator.Editor
         }
 
         /// <summary>
-        /// Перекомпільовує blueprint-шари з графа й синхронізує build-шари 1:1 зі шарами графа.
+        /// Перекомпільовує blueprint-шари з графа й синхронізує tile build-шари з Tile Settings nodes.
         /// Повертає актуальну конфігурацію (компаньйон графа).
         /// </summary>
         public static Configuration Sync(GraphAsset graph)
@@ -282,38 +284,38 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             foreach (var layerDef in orderedLayers)
             {
+                var tileNodes = TileSettingsNode.GetNodesForLayer(graph, layerDef.Id);
+                bool hasNodeTiles = tileNodes.Any(node => node != null && node.HasRenderableTileOutput);
+                bool hasLegacyFlatSurface = layerDef.GenerateFlatSurface;
+
+                // Graph Tile Settings nodes are now the source of truth for TWC TilesBuildLayer creation.
+                // Data-only/internal layers intentionally do not create runtime tile GameObjects.
+                if (!hasNodeTiles && !hasLegacyFlatSurface)
+                    continue;
+
                 var map = maps?.FirstOrDefault(m => m != null && m.GraphLayerId == layerDef.Id);
                 string blueprintGuid = map?.BlueprintLayerGuid;
                 if (string.IsNullOrEmpty(blueprintGuid))
                     blueprintGuid = FindBlueprintGuidByLayerName(config, layerDef.Name);
 
-                BuildLayer buildLayer = null;
+                var blueprint = !string.IsNullOrEmpty(blueprintGuid)
+                    ? config.GetBlueprintLayerByGuid(blueprintGuid)
+                    : null;
+
+                TilesBuildLayer buildLayer = null;
 
                 if (!string.IsNullOrEmpty(layerDef.BuildLayerKey))
-                    buildLayer = folder.buildLayers.FirstOrDefault(
+                    buildLayer = folder.buildLayers.OfType<TilesBuildLayer>().FirstOrDefault(
                         b => b != null && b.guid == layerDef.BuildLayerKey);
 
                 if (buildLayer == null)
-                    buildLayer = folder.buildLayers.FirstOrDefault(
+                    buildLayer = folder.buildLayers.OfType<TilesBuildLayer>().FirstOrDefault(
                         b => b != null && b.layerName == layerDef.Name && !ordered.Contains(b));
 
                 if (buildLayer == null)
                     buildLayer = manager.AddNewBuildLayer<TilesBuildLayer>(layerDef.Name);
 
-                buildLayer.layerName = layerDef.Name;
-                buildLayer.isEnabled = layerDef.Enabled;
-                if (!string.IsNullOrEmpty(blueprintGuid))
-                    buildLayer.assignedBlueprintLayerGuid = blueprintGuid;
-                buildLayer.currentBlueprintLayer = !string.IsNullOrEmpty(blueprintGuid)
-                    ? config.GetBlueprintLayerByGuid(blueprintGuid)
-                    : null;
-
-                if (buildLayer is TilesBuildLayer tiles)
-                {
-                    tiles.configuration = config;
-                    tiles.generateFlatSurface = layerDef.GenerateFlatSurface;
-                    tiles.flatSurfaceMaterial = layerDef.FlatSurfaceMaterial;
-                }
+                TileSettingsNode.ApplyNodesToBuildLayer(buildLayer, tileNodes, config, blueprint, layerDef);
 
                 layerDef.BuildLayerKey = buildLayer.guid;
                 ordered.Add(buildLayer);

@@ -106,7 +106,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 result.Add(new CompiledLayerMap
                 {
                     GraphLayerId = layerDef.Id,
-                    GridTileId = ResolveGridTileIdForLayer(config, layerDef, blueprint.guid),
+                    GridTileId = ResolveGridTileIdForLayer(graph, config, layerDef, blueprint.guid),
                     BlueprintLayerGuid = blueprint.guid,
                     LayerName = blueprint.layerName,
                     SortingOrder = layerDef.SortingOrder
@@ -114,6 +114,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             ReorderBlueprintLayers(config, orderedLayers, blueprintByGraphLayerId);
+            SyncTileBuildLayersFromGraph(graph, config, manager, orderedLayers, blueprintByGraphLayerId, skippedLayerIds);
 
             for (int layerIndex = 0; layerIndex < orderedLayers.Count; layerIndex++)
             {
@@ -429,6 +430,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         private static string ResolveGridTileIdForLayer(
+            GraphAsset graph,
             Configuration config,
             GeneratorLayerDefinition layerDef,
             string blueprintLayerGuid)
@@ -436,17 +438,120 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (layerDef == null || config == null)
                 return null;
 
-            TilesBuildLayer buildLayer = FindTilesBuildLayer(config, layerDef.BuildLayerKey, blueprintLayerGuid);
-            if (buildLayer == null)
-                return layerDef.Id;
+            string nodeTileId = TileSettingsNode.ResolveFirstTileId(graph, layerDef);
+            if (!string.IsNullOrWhiteSpace(nodeTileId))
+                return nodeTileId.Trim();
 
-            if (buildLayer.generateFlatSurface)
+            TilesBuildLayer buildLayer = FindTilesBuildLayer(config, layerDef.BuildLayerKey, blueprintLayerGuid);
+            if (buildLayer == null || buildLayer.generateFlatSurface)
                 return layerDef.Id;
 
             string tileId = ResolveTileIdFromBuildLayer(buildLayer);
             return !string.IsNullOrWhiteSpace(tileId)
                 ? tileId.Trim()
                 : layerDef.Id;
+        }
+
+        private static void SyncTileBuildLayersFromGraph(
+            GraphAsset graph,
+            Configuration config,
+            TileWorldCreatorManager manager,
+            IReadOnlyList<GeneratorLayerDefinition> orderedLayers,
+            Dictionary<string, BlueprintLayer> blueprintByGraphLayerId,
+            ISet<string> skippedLayerIds)
+        {
+            if (graph == null || config == null || manager == null || orderedLayers == null)
+                return;
+
+            config.buildLayerFolders ??= new List<BuildLayerFolder>();
+            if (config.buildLayerFolders.Count == 0)
+                config.buildLayerFolders.Add(new BuildLayerFolder("Root"));
+
+            var folder = config.buildLayerFolders[0];
+            folder.buildLayers ??= new List<BuildLayer>();
+
+            var orderedBuildLayers = new List<BuildLayer>();
+
+            for (int i = 0; i < orderedLayers.Count; i++)
+            {
+                var layerDef = orderedLayers[i];
+                if (layerDef == null)
+                    continue;
+
+                if (skippedLayerIds != null && skippedLayerIds.Contains(layerDef.Id))
+                    continue;
+
+                var tileNodes = TileSettingsNode.GetNodesForLayer(graph, layerDef.Id);
+                bool hasNodeTiles = tileNodes.Any(node => node != null && node.HasRenderableTileOutput);
+                bool hasLegacyFlatSurface = layerDef.GenerateFlatSurface;
+                if (!hasNodeTiles && !hasLegacyFlatSurface)
+                    continue;
+
+                blueprintByGraphLayerId.TryGetValue(layerDef.Id, out var blueprint);
+                string blueprintGuid = blueprint?.guid ?? layerDef.BlueprintLayerGuid;
+
+                var buildLayer = FindTilesBuildLayer(config, layerDef.BuildLayerKey, blueprintGuid);
+                if (buildLayer == null)
+                {
+                    buildLayer = folder.buildLayers
+                        .OfType<TilesBuildLayer>()
+                        .FirstOrDefault(layer => layer != null && layer.layerName == layerDef.Name && !orderedBuildLayers.Contains(layer));
+                }
+
+                if (buildLayer == null)
+                    buildLayer = manager.AddNewBuildLayer<TilesBuildLayer>(layerDef.Name);
+
+                TileSettingsNode.ApplyNodesToBuildLayer(buildLayer, tileNodes, config, blueprint, layerDef);
+
+                if (!string.IsNullOrWhiteSpace(buildLayer.guid))
+                    layerDef.BuildLayerKey = buildLayer.guid;
+
+                if (!orderedBuildLayers.Contains(buildLayer))
+                    orderedBuildLayers.Add(buildLayer);
+            }
+
+            PreserveGeneratedObjectLayers(folder, orderedBuildLayers);
+            RemoveStaleGraphTileBuildLayers(folder, orderedBuildLayers);
+            folder.buildLayers = orderedBuildLayers;
+        }
+
+        private static void PreserveGeneratedObjectLayers(BuildLayerFolder folder, List<BuildLayer> orderedBuildLayers)
+        {
+            if (folder?.buildLayers == null || orderedBuildLayers == null)
+                return;
+
+            foreach (var generatedObjectLayer in folder.buildLayers
+                         .Where(TWCObjectPlacementAdapter.IsGeneratedObjectLayer)
+                         .ToList())
+            {
+                if (generatedObjectLayer != null && !orderedBuildLayers.Contains(generatedObjectLayer))
+                    orderedBuildLayers.Add(generatedObjectLayer);
+            }
+        }
+
+        private static void RemoveStaleGraphTileBuildLayers(BuildLayerFolder folder, List<BuildLayer> orderedBuildLayers)
+        {
+            if (folder?.buildLayers == null || orderedBuildLayers == null)
+                return;
+
+            foreach (var stale in folder.buildLayers.ToList())
+            {
+                if (stale == null || orderedBuildLayers.Contains(stale))
+                    continue;
+
+                if (TWCObjectPlacementAdapter.IsGeneratedObjectLayer(stale))
+                    continue;
+
+                folder.buildLayers.Remove(stale);
+#if UNITY_EDITOR
+                if (UnityEditor.AssetDatabase.Contains(stale))
+                    UnityEditor.AssetDatabase.RemoveObjectFromAsset(stale);
+                else
+                    Object.DestroyImmediate(stale);
+#else
+                Object.Destroy(stale);
+#endif
+            }
         }
 
         private static TilesBuildLayer FindTilesBuildLayer(

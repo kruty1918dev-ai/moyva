@@ -159,7 +159,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         [SerializeField] private string _selectedNodeId;
         private UnityEditor.Editor _selectedNodeEditor;
 
-        private enum InspectorTab { Settings = 0, Preview = 1, BuildLayers = 2 }
+        private enum InspectorTab { Settings = 0, Preview = 1 }
         [SerializeField] private InspectorTab _activeInspectorTab = InspectorTab.Settings;
         private VisualElement _inspectorTabsHeader;
         private VisualElement _tabSettingsContent;
@@ -514,28 +514,53 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 style =
                 {
-                    width = 200,
-                    minWidth = 160,
+                    width = 240,
+                    minWidth = 200,
                     flexShrink = 0,
                     borderRightWidth = 1,
-                    borderRightColor = new Color(0.22f, 0.22f, 0.22f),
-                    backgroundColor = new Color(0.12f, 0.12f, 0.12f),
-                    paddingLeft = 6,
-                    paddingRight = 6,
-                    paddingTop = 6,
-                    paddingBottom = 8
+                    borderRightColor = new Color(0.26f, 0.28f, 0.32f),
+                    backgroundColor = new Color(0.075f, 0.08f, 0.095f),
+                    paddingLeft = 8,
+                    paddingRight = 8,
+                    paddingTop = 8,
+                    paddingBottom = 10
                 }
             };
 
-            var header = new Label("Шари генератора")
+            var headerCard = new VisualElement
+            {
+                style =
+                {
+                    paddingLeft = 8,
+                    paddingRight = 8,
+                    paddingTop = 7,
+                    paddingBottom = 7,
+                    marginBottom = 8,
+                    backgroundColor = new Color(0.105f, 0.115f, 0.135f),
+                    borderTopLeftRadius = 6,
+                    borderTopRightRadius = 6,
+                    borderBottomLeftRadius = 6,
+                    borderBottomRightRadius = 6
+                }
+            };
+            headerCard.Add(new Label("Шари генератора")
             {
                 style =
                 {
                     unityFontStyleAndWeight = FontStyle.Bold,
-                    marginBottom = 6
+                    fontSize = 13,
+                    marginBottom = 1
                 }
-            };
-            _leftPanel.Add(header);
+            });
+            headerCard.Add(new Label("order → graph → runtime")
+            {
+                style =
+                {
+                    fontSize = 10,
+                    color = new Color(0.62f, 0.66f, 0.72f)
+                }
+            });
+            _leftPanel.Add(headerCard);
 
             _layerListContainer = new VisualElement { focusable = true };
             _layerListContainer.RegisterCallback<ContextualMenuPopulateEvent>(evt =>
@@ -551,17 +576,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             var buttonsRow = new VisualElement
             {
-                style = { flexDirection = FlexDirection.Row, marginTop = 6 }
+                style = { flexDirection = FlexDirection.Row, marginTop = 8, marginBottom = 8 }
             };
 
-            var addButton = new Button(AddLayer) { text = "+ Шар" };
+            var addButton = new Button(AddLayer) { text = "+ Layer" };
             addButton.style.flexGrow = 1;
-            addButton.style.marginRight = 4;
+            addButton.style.marginRight = 5;
+            addButton.style.height = 26;
             addButton.tooltip = "Додати новий шар генератора.";
             buttonsRow.Add(addButton);
 
-            var removeButton = new Button(RemoveSelectedLayer) { text = "–" };
-            removeButton.style.width = 28;
+            var removeButton = new Button(RemoveSelectedLayer) { text = "Delete" };
+            removeButton.style.width = 58;
+            removeButton.style.height = 26;
             removeButton.tooltip = "Видалити вибраний шар (разом із його вузлами).";
             buttonsRow.Add(removeButton);
 
@@ -572,8 +599,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 style =
                 {
                     unityFontStyleAndWeight = FontStyle.Bold,
-                    marginTop = 10,
-                    marginBottom = 4
+                    marginTop = 8,
+                    marginBottom = 5,
+                    color = new Color(0.82f, 0.86f, 0.9f)
                 }
             };
             _leftPanel.Add(compositeHeader);
@@ -583,8 +611,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 scaleMode = ScaleMode.ScaleToFit,
                 style =
                 {
-                    height = 150,
-                    backgroundColor = new Color(0.05f, 0.06f, 0.08f)
+                    height = 170,
+                    marginBottom = 6,
+                    backgroundColor = new Color(0.035f, 0.04f, 0.055f),
+                    borderLeftWidth = 1,
+                    borderRightWidth = 1,
+                    borderTopWidth = 1,
+                    borderBottomWidth = 1,
+                    borderLeftColor = new Color(0.22f, 0.24f, 0.28f),
+                    borderRightColor = new Color(0.22f, 0.24f, 0.28f),
+                    borderTopColor = new Color(0.22f, 0.24f, 0.28f),
+                    borderBottomColor = new Color(0.22f, 0.24f, 0.28f)
                 }
             };
             _compositePreviewImage.tooltip =
@@ -631,6 +668,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 string layerId = layer.Id;
                 bool isSelected = layerId == _selectedLayerId;
                 bool hasSyncIssue = syncIssueByLayer.TryGetValue(layerId, out var syncIssue);
+                int nodeCount = _graphAsset.GetNodesForLayer(layerId)?.Count() ?? 0;
+                int tileVariantCount = TileSettingsNode.GetNodesForLayer(_graphAsset, layerId)
+                    .Where(node => node != null)
+                    .Sum(node => node.ConfiguredVariantCount);
 
                 var row = new VisualElement
                 {
@@ -639,36 +680,79 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     {
                         flexDirection = FlexDirection.Row,
                         alignItems = Align.Center,
-                        marginBottom = 2,
-                        paddingLeft = 4,
-                        paddingRight = 4,
-                        paddingTop = 3,
-                        paddingBottom = 3,
+                        marginBottom = 6,
+                        paddingLeft = 6,
+                        paddingRight = 6,
+                        paddingTop = 6,
+                        paddingBottom = 6,
+                        minHeight = 42,
+                        borderLeftWidth = 3,
+                        borderLeftColor = layer.Enabled ? layer.Color : new Color(0.28f, 0.28f, 0.28f),
+                        borderTopLeftRadius = 5,
+                        borderTopRightRadius = 5,
+                        borderBottomLeftRadius = 5,
+                        borderBottomRightRadius = 5,
                         backgroundColor = isSelected
-                            ? new Color(0.24f, 0.36f, 0.5f)
+                            ? new Color(0.17f, 0.25f, 0.36f)
                             : hasSyncIssue
-                                ? new Color(0.34f, 0.16f, 0.12f)
-                            : new Color(0.16f, 0.16f, 0.16f)
+                                ? new Color(0.28f, 0.12f, 0.1f)
+                            : new Color(0.115f, 0.12f, 0.14f)
                     }
                 };
 
-                var swatch = new VisualElement
+                var orderPill = new Label(layer.SortingOrder.ToString())
+                {
+                    tooltip = "Sorting order",
+                    style =
+                    {
+                        minWidth = 24,
+                        height = 18,
+                        unityTextAlign = TextAnchor.MiddleCenter,
+                        fontSize = 10,
+                        marginRight = 6,
+                        color = new Color(0.86f, 0.88f, 0.92f),
+                        backgroundColor = new Color(0.06f, 0.065f, 0.08f),
+                        borderTopLeftRadius = 9,
+                        borderTopRightRadius = 9,
+                        borderBottomLeftRadius = 9,
+                        borderBottomRightRadius = 9
+                    }
+                };
+                row.Add(orderPill);
+
+                var textColumn = new VisualElement
                 {
                     style =
                     {
-                        width = 12,
-                        height = 12,
-                        marginRight = 6,
-                        backgroundColor = layer.Color
+                        flexGrow = 1,
+                        flexDirection = FlexDirection.Column
                     }
                 };
-                row.Add(swatch);
-
-                var nameLabel = new Label(layer.Name)
+                var nameLabel = new Label(layer.Enabled ? layer.Name : $"{layer.Name} (off)")
                 {
-                    style = { flexGrow = 1, unityTextOverflowPosition = TextOverflowPosition.End }
+                    style =
+                    {
+                        flexGrow = 1,
+                        unityTextOverflowPosition = TextOverflowPosition.End,
+                        unityFontStyleAndWeight = isSelected ? FontStyle.Bold : FontStyle.Normal,
+                        color = layer.Enabled ? Color.white : new Color(0.58f, 0.58f, 0.58f)
+                    }
                 };
-                row.Add(nameLabel);
+                textColumn.Add(nameLabel);
+
+                string meta = tileVariantCount > 0
+                    ? $"{nodeCount} nodes · {tileVariantCount} tile variants"
+                    : $"{nodeCount} nodes";
+                textColumn.Add(new Label(meta)
+                {
+                    style =
+                    {
+                        fontSize = 10,
+                        color = new Color(0.62f, 0.66f, 0.72f),
+                        marginTop = 1
+                    }
+                });
+                row.Add(textColumn);
 
                 if (hasSyncIssue)
                 {
@@ -734,10 +818,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                             scaleMode = ScaleMode.ScaleToFit,
                             style =
                             {
-                                height = 48,
-                                marginBottom = 4,
-                                marginLeft = 2,
-                                marginRight = 2
+                                height = 54,
+                                marginBottom = 7,
+                                marginLeft = 8,
+                                marginRight = 8,
+                                backgroundColor = new Color(0.04f, 0.045f, 0.06f),
+                                borderLeftWidth = 1,
+                                borderRightWidth = 1,
+                                borderTopWidth = 1,
+                                borderBottomWidth = 1,
+                                borderLeftColor = new Color(0.18f, 0.2f, 0.24f),
+                                borderRightColor = new Color(0.18f, 0.2f, 0.24f),
+                                borderTopColor = new Color(0.18f, 0.2f, 0.24f),
+                                borderBottomColor = new Color(0.18f, 0.2f, 0.24f)
                             }
                         };
                         _layerListContainer.Add(thumbImage);
@@ -1227,16 +1320,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 style =
                 {
-                    width = 380,
-                    minWidth = 320,
+                    width = 410,
+                    minWidth = 340,
                     flexShrink = 0,
                     borderLeftWidth = 1,
-                    borderLeftColor = new Color(0.22f, 0.22f, 0.22f),
-                    backgroundColor = new Color(0.12f, 0.12f, 0.12f),
-                    paddingLeft = 8,
-                    paddingRight = 8,
-                    paddingTop = 6,
-                    paddingBottom = 8
+                    borderLeftColor = new Color(0.26f, 0.28f, 0.32f),
+                    backgroundColor = new Color(0.085f, 0.09f, 0.105f),
+                    paddingLeft = 10,
+                    paddingRight = 10,
+                    paddingTop = 8,
+                    paddingBottom = 10
                 }
             };
 
@@ -1267,15 +1360,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _tabPreviewButton.style.flexGrow = 1;
             _tabPreviewButton.style.marginRight = 4;
             tabHeaderRow.Add(_tabPreviewButton);
-
-            _tabBuildLayersButton = new Button(() => SetInspectorTab(InspectorTab.BuildLayers))
-            {
-                text = "Тайли",
-                tooltip = "Налаштування тайлів і build-шарів (TileWorldCreator)."
-            };
-            _tabBuildLayersButton.style.flexGrow = 1;
-            tabHeaderRow.Add(_tabBuildLayersButton);
-
             _nodeInspectorSection = new VisualElement();
             _nodeInspectorSection.Add(tabHeaderRow);
 
@@ -1304,34 +1388,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             };
             _tabPreviewContent.Add(_twcNodeInspectorGui);
             _nodeInspectorSection.Add(_tabPreviewContent);
-
-            _tabBuildLayersContent = new VisualElement();
-            var buildLayersHeader = new VisualElement
-            {
-                style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 4 }
-            };
-            var buildLayersTitle = new Label("Build-шари (TileWorldCreator)")
-            {
-                style = { unityFontStyleAndWeight = FontStyle.Bold, flexGrow = 1 }
-            };
-            buildLayersHeader.Add(buildLayersTitle);
-            var refreshBuildLayers = new Button(RebuildBuildLayersPanel) { text = "↻" };
-            refreshBuildLayers.tooltip = "Пересинхронізувати build-шари зі шарами графа.";
-            buildLayersHeader.Add(refreshBuildLayers);
-            _tabBuildLayersContent.Add(buildLayersHeader);
-
-            _buildLayersHost = new VisualElement();
-            _tabBuildLayersContent.Add(_buildLayersHost);
-            _nodeInspectorSection.Add(_tabBuildLayersContent);
-
             _rightPanel.Add(_nodeInspectorSection);
             ConstructValidationPanel();
 
             _contentContainer.Add(_rightPanel);
             SetInspectorVisible(_isInspectorVisible);
             UpdateInspectorTabVisibility();
-            if (_activeInspectorTab == InspectorTab.BuildLayers)
-                RebuildBuildLayersPanel();
         }
 
         private void ConstructValidationPanel()
@@ -3395,9 +3457,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_selectedNodeEditor == null)
                 UnityEditor.Editor.CreateCachedEditor(_selectedNode, null, ref _selectedNodeEditor);
 
-            EditorGUILayout.LabelField(_selectedNode.Title, EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("Type", _selectedNode.GetType().Name);
-            EditorGUILayout.Space(4);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField(_selectedNode.Title, EditorStyles.boldLabel);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUILayout.LabelField("Type", _selectedNode.GetType().Name, EditorStyles.miniLabel);
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.LabelField("Layer", ResolveLayerDisplayName(_selectedNode.LayerId), EditorStyles.miniLabel);
+                }
+            }
+            EditorGUILayout.Space(6);
 
             bool layerRefChanged = false;
             if (_selectedNode is LayerMaskReferenceNode layerRefNode)
@@ -3414,6 +3484,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 EditorUtility.SetDirty(_graphAsset);
                 RequestAutoRun();
             }
+        }
+
+        private string ResolveLayerDisplayName(string layerId)
+        {
+            if (_graphAsset == null || string.IsNullOrEmpty(layerId))
+                return "-";
+
+            return _graphAsset.GetLayerById(layerId)?.Name ?? layerId;
         }
 
         private bool DrawLayerReferenceControls(LayerMaskReferenceNode node)
@@ -3739,16 +3817,20 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void SetInspectorTab(InspectorTab tab)
         {
+            if (tab != InspectorTab.Settings && tab != InspectorTab.Preview)
+                tab = InspectorTab.Settings;
+
             if (_activeInspectorTab == tab) return;
             _activeInspectorTab = tab;
             UpdateInspectorTabVisibility();
-            if (tab == InspectorTab.BuildLayers)
-                RebuildBuildLayersPanel();
             SaveWindowSettings();
         }
 
         private void UpdateInspectorTabVisibility()
         {
+            if (_activeInspectorTab != InspectorTab.Settings && _activeInspectorTab != InspectorTab.Preview)
+                _activeInspectorTab = InspectorTab.Settings;
+
             if (_tabSettingsContent != null)
                 _tabSettingsContent.style.display = _activeInspectorTab == InspectorTab.Settings
                     ? DisplayStyle.Flex
@@ -3760,14 +3842,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     : DisplayStyle.None;
 
             if (_tabBuildLayersContent != null)
-                _tabBuildLayersContent.style.display = _activeInspectorTab == InspectorTab.BuildLayers
-                    ? DisplayStyle.Flex
-                    : DisplayStyle.None;
+                _tabBuildLayersContent.style.display = DisplayStyle.None;
 
             if (_nodeInspectorDivider != null)
-                _nodeInspectorDivider.style.display = _activeInspectorTab == InspectorTab.BuildLayers
-                    ? DisplayStyle.None
-                    : DisplayStyle.Flex;
+                _nodeInspectorDivider.style.display = DisplayStyle.Flex;
 
             if (_tabSettingsButton != null)
                 _tabSettingsButton.style.unityFontStyleAndWeight = _activeInspectorTab == InspectorTab.Settings
@@ -3779,19 +3857,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     ? FontStyle.Bold
                     : FontStyle.Normal;
 
-            if (_tabBuildLayersButton != null)
-                _tabBuildLayersButton.style.unityFontStyleAndWeight = _activeInspectorTab == InspectorTab.BuildLayers
-                    ? FontStyle.Bold
-                    : FontStyle.Normal;
-
             _nodeInspectorGui?.MarkDirtyRepaint();
             _graphSettingsGui?.MarkDirtyRepaint();
         }
 
         /// <summary>
-        /// Будує панель build-шарів через рефлексію до
-        /// Kruty1918.Moyva.Generator.Editor.GraphBuildLayersPanel.Build(GraphAsset).
-        /// GraphSystem.Editor не посилається на Generator.Editor напряму.
+        /// Будує node-based summary для Tile Settings.
+        /// Сирий TileWorldCreator build-layer editor навмисно прихований: graph node є джерелом правди.
         /// </summary>
         private void RebuildBuildLayersPanel()
         {
@@ -3803,40 +3875,123 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_graphAsset == null)
             {
                 _buildLayersHost.Add(new HelpBox(
-                    "Відкрийте граф-асет, щоб налаштувати build-шари.",
+                    "Відкрийте граф-асет, щоб налаштувати tile nodes.",
                     HelpBoxMessageType.Info));
                 return;
             }
 
-            try
+            TrySyncCompanionBlueprintLayers(true);
+
+            _buildLayersHost.Add(new HelpBox(
+                "Налаштування тайлів більше не редагуються через окреме TWC build-layer вікно. " +
+                "Додай Tile Settings node у потрібний graph layer: один node відповідає одному TilePreset/tileset і його build-параметрам. " +
+                "Шари без Tile Settings node не створюють runtime tile GameObject-и.",
+                HelpBoxMessageType.Info));
+
+            if (GUILayoutButtonElement("+ Add Tile Settings Node", AddTileSettingsNodeToSelectedLayer, out var addButton))
             {
-                TrySyncCompanionBlueprintLayers(true);
+                addButton.tooltip = "Створити Tile Settings node у поточному вибраному шарі.";
+                _buildLayersHost.Add(addButton);
+            }
 
-                var type = ResolveType(
-                    "Kruty1918.Moyva.Generator.Editor.GraphBuildLayersPanel, Kruty1918.Moyva.Generator.Editor",
-                    "Kruty1918.Moyva.Generator.Editor.GraphBuildLayersPanel");
+            var selectedLayer = _graphAsset.GetLayerById(_selectedLayerId);
+            if (selectedLayer != null)
+            {
+                var nodes = TileSettingsNode.GetNodesForLayer(_graphAsset, selectedLayer.Id);
+                _buildLayersHost.Add(new Label($"Selected layer: {selectedLayer.Name}")
+                {
+                    style =
+                    {
+                        unityFontStyleAndWeight = FontStyle.Bold,
+                        marginTop = 8,
+                        marginBottom = 4
+                    }
+                });
 
-                var method = type?.GetMethod(
-                    "Build",
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-
-                if (method == null)
+                if (nodes.Count == 0)
                 {
                     _buildLayersHost.Add(new HelpBox(
-                        "Модуль Generator.Editor недоступний (GraphBuildLayersPanel не знайдено).",
+                        "У цьому шарі немає Tile Settings node. Якщо Output Kind = Tiles, валідатор вимагатиме додати її й вибрати TilePreset.",
                         HelpBoxMessageType.Warning));
-                    return;
                 }
+                else
+                {
+                    for (int i = 0; i < nodes.Count; i++)
+                    {
+                        var node = nodes[i];
+                        if (node == null)
+                            continue;
 
-                if (method.Invoke(null, new object[] { _graphAsset }) is VisualElement panel)
-                    _buildLayersHost.Add(panel);
+                        var row = new VisualElement
+                        {
+                            style =
+                            {
+                                flexDirection = FlexDirection.Row,
+                                alignItems = Align.Center,
+                                marginBottom = 4,
+                                paddingTop = 4,
+                                paddingBottom = 4,
+                                paddingLeft = 6,
+                                paddingRight = 6,
+                                borderBottomWidth = 1,
+                                borderBottomColor = new Color(0.18f, 0.18f, 0.18f)
+                            }
+                        };
+
+                        row.Add(new Label(node.Title)
+                        {
+                            style = { flexGrow = 1 }
+                        });
+
+                        var selectButton = new Button(() =>
+                        {
+                            _graphView?.SelectNodeById(node.NodeId, true);
+                            SetSelectedNode(node);
+                            SetInspectorTab(InspectorTab.Preview);
+                            RefreshInspectorPanel();
+                        })
+                        {
+                            text = "Select"
+                        };
+                        row.Add(selectButton);
+                        _buildLayersHost.Add(row);
+                    }
+                }
             }
-            catch (System.Exception e)
+
+            _buildLayersHost.Add(new HelpBox(
+                "Legacy TWC build-layer editor intentionally hidden here. Якщо потрібно подивитися сирий companion Configuration, відкрий його як sub-asset через Project/Inspector, але джерелом правди має бути Tile Settings node.",
+                HelpBoxMessageType.None));
+        }
+
+        private static bool GUILayoutButtonElement(string text, Action action, out Button button)
+        {
+            button = new Button(action) { text = text };
+            button.style.marginTop = 6;
+            button.style.marginBottom = 6;
+            return true;
+        }
+
+        private void AddTileSettingsNodeToSelectedLayer()
+        {
+            if (_graphAsset == null || _graphView == null)
+                return;
+
+            string layerId = EnsureSelectedLayer();
+            if (string.IsNullOrEmpty(layerId))
+                return;
+
+            _graphView.SetActiveLayerWithoutRefresh(layerId);
+            var node = _graphView.CreateNode(typeof(TileSettingsNode), new Vector2(360f, 180f));
+            if (node != null)
             {
-                _buildLayersHost.Add(new HelpBox(
-                "Помилка побудови панелі build-шарів: " + e.Message,
-                    HelpBoxMessageType.Error));
+                _graphView.SelectNodeById(node.NodeId, true);
+                SetSelectedNode(node);
+                SetInspectorTab(InspectorTab.Preview);
             }
+
+            RefreshInspectorPanel();
+            RequestAutoRun();
         }
 
         private static Type ResolveGraphBuildLayerStoreType()

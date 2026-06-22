@@ -1344,13 +1344,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             UpdateNodePreviews(null);
         }
 
-        public void CreateNode(Type nodeType, Vector2 position)
+        public NodeBase CreateNode(Type nodeType, Vector2 position)
         {
-            if (_graphAsset == null || _isReadOnly) return;
+            if (_graphAsset == null || _isReadOnly) return null;
 
             Undo.RecordObject(_graphAsset, "Add Node");
             var node = _graphAsset.AddNode(nodeType, false, ResolveActiveLayerId());
-            if (node == null) return;
+            if (node == null) return null;
 
             node.EditorPosition = position;
 
@@ -1361,6 +1361,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             EditorUtility.SetDirty(_graphAsset);
             GraphChanged?.Invoke();
+            return node;
         }
 
         public bool FocusNode(string nodeId)

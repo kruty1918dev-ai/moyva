@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.GraphSystem.Editor
@@ -71,8 +72,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     if (layerMatrix == null)
                     {
                         layerMatrix = new bool[w, h];
-                        width = Mathf.Max(width, w);
-                        height = Mathf.Max(height, h);
                     }
 
                     int cw = Mathf.Min(w, layerMatrix.GetLength(0));
@@ -83,8 +82,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                                 layerMatrix[x, y] = true;
                 }
 
-                if (layerMatrix != null)
-                    matrices[layer.Id] = layerMatrix;
+                if (layerMatrix == null)
+                    continue;
+
+                layerMatrix = ApplyLayerVisualPadding(layerMatrix, layer);
+                matrices[layer.Id] = layerMatrix;
+                width = Mathf.Max(width, layerMatrix.GetLength(0));
+                height = Mathf.Max(height, layerMatrix.GetLength(1));
             }
 
             return matrices;
@@ -138,7 +142,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (graph == null || matrices == null || matrices.Count == 0 || width <= 0 || height <= 0)
                 return null;
 
-            // Шари знизу-вверх за SortingOrder.
+            // Шари знизу-вверх за SortingOrder, але кожен шар має власну preview-геометрію.
             var layers = graph.Layers
                 .Where(l => l != null && l.Enabled && matrices.ContainsKey(l.Id))
                 .OrderBy(l => l.SortingOrder)
@@ -158,39 +162,45 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             int tileHalfH = Mathf.Max(1, tileHalfW / 2);
             int levelHeight = Mathf.Max(2, tileHalfH);
 
-            // Рахуємо для кожної клітинки: висоту стека та колір верхнього шару.
-            int[,] stack = new int[width, height];
-            Color[,] topColor = new Color[width, height];
-            int maxStack = 0;
-            for (int x = 0; x < width; x++)
+            var cells = new List<IsoCell>();
+            int maxTopLevel = 0;
+            for (int layerIndex = 0; layerIndex < layers.Count; layerIndex++)
             {
-                for (int y = 0; y < height; y++)
-                {
-                    int count = 0;
-                    Color top = Color.clear;
-                    foreach (var layer in layers)
-                    {
-                        var m = matrices[layer.Id];
-                        if (x < m.GetLength(0) && y < m.GetLength(1) && m[x, y])
-                        {
-                            count++;
-                            top = layer.Color;
-                        }
-                    }
+                var layer = layers[layerIndex];
+                var matrix = matrices[layer.Id];
+                int baseLevel = ResolveLayerBaseLevel(graph, layer);
+                int visualHeight = ResolveLayerVisualHeight(graph, layer);
+                int topLevel = baseLevel + visualHeight;
+                maxTopLevel = Mathf.Max(maxTopLevel, topLevel);
 
-                    stack[x, y] = count;
-                    topColor[x, y] = top;
-                    if (count > maxStack)
-                        maxStack = count;
+                int w = matrix.GetLength(0);
+                int h = matrix.GetLength(1);
+                for (int x = 0; x < w; x++)
+                {
+                    for (int y = 0; y < h; y++)
+                    {
+                        if (!matrix[x, y])
+                            continue;
+
+                        cells.Add(new IsoCell
+                        {
+                            X = x,
+                            Y = y,
+                            BaseLevel = baseLevel,
+                            VisualHeight = visualHeight,
+                            SortingOrder = layer.SortingOrder,
+                            Color = layer.Color
+                        });
+                    }
                 }
             }
 
-            if (maxStack == 0)
+            if (cells.Count == 0)
                 return null;
 
-            // Межі полотна.
+            // Межі полотна. maxTopLevel дає місце для per-layer height/y-offset, а не для однакового stack-count.
             int spanX = (width + height) * tileHalfW;
-            int spanY = (width + height) * tileHalfH + maxStack * levelHeight;
+            int spanY = (width + height) * tileHalfH + Mathf.Max(1, maxTopLevel) * levelHeight;
             int pad = tileHalfW + 2;
             int texW = Mathf.Clamp(spanX + pad * 2, 16, MaxCompositeSize);
             int texH = Mathf.Clamp(spanY + pad * 2, 16, MaxCompositeSize);
@@ -201,22 +211,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 pixels[i] = bg;
 
             int originX = pad + height * tileHalfW;
-            int originY = pad + maxStack * levelHeight;
+            int originY = pad + Mathf.Max(1, maxTopLevel) * levelHeight;
 
-            // Малюємо ззаду наперед: менший (x+y) — далі (вгорі), малюється першим.
-            for (int sum = 0; sum <= (width - 1) + (height - 1); sum++)
+            foreach (var cell in cells
+                         .OrderBy(c => c.X + c.Y)
+                         .ThenBy(c => c.BaseLevel)
+                         .ThenBy(c => c.SortingOrder))
             {
-                for (int x = 0; x < width; x++)
-                {
-                    int y = sum - x;
-                    if (y < 0 || y >= height)
-                        continue;
-                    if (stack[x, y] <= 0)
-                        continue;
-
-                    DrawIsoTile(pixels, texW, texH, originX, originY,
-                        x, y, stack[x, y], tileHalfW, tileHalfH, levelHeight, topColor[x, y]);
-                }
+                DrawIsoTile(pixels, texW, texH, originX, originY,
+                    cell.X, cell.Y, cell.BaseLevel, cell.VisualHeight,
+                    tileHalfW, tileHalfH, levelHeight, cell.Color);
             }
 
             var tex = NewTexture(texW, texH);
@@ -225,19 +229,32 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return tex;
         }
 
+        private sealed class IsoCell
+        {
+            public int X;
+            public int Y;
+            public int BaseLevel;
+            public int VisualHeight;
+            public int SortingOrder;
+            public Color Color;
+        }
+
         private static void DrawIsoTile(
             Color[] pixels, int texW, int texH, int originX, int originY,
-            int gx, int gy, int elevation, int tileHalfW, int tileHalfH, int levelHeight, Color color)
+            int gx, int gy, int baseLevel, int visualHeight,
+            int tileHalfW, int tileHalfH, int levelHeight, Color color)
         {
+            int clampedBase = Mathf.Max(0, baseLevel);
+            int clampedHeight = Mathf.Max(1, visualHeight);
             float cx = originX + (gx - gy) * tileHalfW;
-            float cy = originY + (gx + gy) * tileHalfH - elevation * levelHeight;
+            float cy = originY + (gx + gy) * tileHalfH - (clampedBase + clampedHeight) * levelHeight;
 
             var top = new Vector2(cx, cy - tileHalfH);
             var right = new Vector2(cx + tileHalfW, cy);
             var bottom = new Vector2(cx, cy + tileHalfH);
             var left = new Vector2(cx - tileHalfW, cy);
 
-            int wall = Mathf.Max(levelHeight, elevation * levelHeight);
+            int wall = Mathf.Max(levelHeight, clampedHeight * levelHeight);
             var down = new Vector2(0f, wall);
 
             Color leftFace = color * 0.62f;
@@ -303,6 +320,70 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             return inside;
+        }
+
+        private static bool[,] ApplyLayerVisualPadding(bool[,] source, GeneratorLayerDefinition layer)
+        {
+            if (source == null || layer == null)
+                return source;
+
+            int extraX = Mathf.Max(0, layer.ExtraWidthCells);
+            int extraY = Mathf.Max(0, layer.ExtraLengthCells);
+            if (extraX == 0 && extraY == 0)
+                return source;
+
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            if (width <= 0 || height <= 0)
+                return source;
+
+            int paddedWidth = width + extraX * 2;
+            int paddedHeight = height + extraY * 2;
+            var padded = new bool[paddedWidth, paddedHeight];
+
+            // TWC border padding is visual/build-layer-local. For preview we extend edge occupancy
+            // per layer, instead of forcing all layers into the same unpadded matrix size.
+            for (int x = 0; x < paddedWidth; x++)
+            {
+                int sourceX = Mathf.Clamp(x - extraX, 0, width - 1);
+                for (int y = 0; y < paddedHeight; y++)
+                {
+                    int sourceY = Mathf.Clamp(y - extraY, 0, height - 1);
+                    padded[x, y] = source[sourceX, sourceY];
+                }
+            }
+
+            return padded;
+        }
+
+        private static int ResolveLayerBaseLevel(GraphAsset graph, GeneratorLayerDefinition layer)
+        {
+            if (layer == null)
+                return 0;
+
+            float level = Mathf.Max(0f, layer.DefaultHeight);
+            var primaryTileSettings = TileSettingsNode.GetNodesForLayer(graph, layer.Id)
+                .FirstOrDefault(node => node != null && node.HasRenderableTileOutput);
+
+            if (primaryTileSettings != null)
+                level += primaryTileSettings.LayerYOffset + primaryTileSettings.TileLayerHeightOffset;
+
+            return Mathf.Clamp(Mathf.RoundToInt(level), 0, 128);
+        }
+
+        private static int ResolveLayerVisualHeight(GraphAsset graph, GeneratorLayerDefinition layer)
+        {
+            var primaryTileSettings = TileSettingsNode.GetNodesForLayer(graph, layer?.Id)
+                .FirstOrDefault(node => node != null && node.HasRenderableTileOutput);
+
+            float height = primaryTileSettings != null
+                ? primaryTileSettings.PrimaryTileHeight
+                : 1f;
+
+            if (height <= 0.0001f)
+                height = 1f;
+
+            return Mathf.Clamp(Mathf.CeilToInt(height), 1, 128);
         }
 
         private static bool[,] ExtractLayerOccupancyMatrix(object[] outputs)

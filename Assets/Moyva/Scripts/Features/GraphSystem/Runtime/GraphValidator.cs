@@ -707,6 +707,8 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             bool hasObjectLayerNode = nodes.Any(node => node != null && node.GetType().Name == "ObjectLayerNode");
             bool hasObjectOutputNode = nodes.Any(node => node != null && node.GetType().Name == "ObjectOutputToTWCNode");
             bool hasTwcTileNode = nodes.Any(node => node != null && node.GetType().Name == "TwcModifierNode");
+            bool hasTileSettingsNode = nodes.Any(IsTileSettingsNode);
+            bool hasConfiguredTileSettingsNode = nodes.Any(HasConfiguredTileSettingsNode);
 
             if (outputNodes.Count == 0)
             {
@@ -729,7 +731,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             else
             {
                 ValidateSingleLayerOutputNode(graph, layer, outputNodes[0], report);
-                ValidateLayerOutputSemantics(layer, outputNodes[0], hasTwcTileNode, hasObjectLayerNode, hasObjectOutputNode, report);
+                ValidateLayerOutputSemantics(layer, outputNodes[0], hasTwcTileNode, hasTileSettingsNode, hasConfiguredTileSettingsNode, hasObjectLayerNode, hasObjectOutputNode, report);
             }
 
             if (hasObjectLayerNode && !hasObjectOutputNode)
@@ -747,17 +749,51 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             GeneratorLayerDefinition layer,
             NodeBase outputNode,
             bool hasTwcTileNode,
+            bool hasTileSettingsNode,
+            bool hasConfiguredTileSettingsNode,
             bool hasObjectLayerNode,
             bool hasObjectOutputNode,
             GraphValidationReport report)
         {
             string kindName = ResolveLayerOutputKindName(outputNode);
-            if (kindName == "Tiles" && !hasTwcTileNode)
+            if (kindName == "Tiles")
+            {
+                if (!hasTwcTileNode)
+                {
+                    report.Add(new GraphValidationIssue(
+                        "TILE_OUTPUT_WITHOUT_MASK_PIPELINE",
+                        ValidationSeverity.Error,
+                        $"Шар '{layer.Name}' позначений як Tiles, але не має жодної TWC/Mask ноди, яка формує маску тайлів. Додай TWC generator/modifier або зміни Output Kind на Masks/InternalData.",
+                        layerId: layer.Id,
+                        nodeId: outputNode.NodeId));
+                }
+
+                if (!hasTileSettingsNode)
+                {
+                    report.Add(new GraphValidationIssue(
+                        "TILE_OUTPUT_WITHOUT_TILE_SETTINGS_NODE",
+                        ValidationSeverity.Error,
+                        $"Шар '{layer.Name}' позначений як Tiles, але не має Tile Settings node. Додай у цей шар Tile Settings node і вибери TilePreset/tileset для runtime build layer.",
+                        layerId: layer.Id,
+                        nodeId: outputNode.NodeId,
+                        canAutoFix: true));
+                }
+                else if (!hasConfiguredTileSettingsNode)
+                {
+                    report.Add(new GraphValidationIssue(
+                        "TILE_SETTINGS_NODE_UNCONFIGURED",
+                        ValidationSeverity.Error,
+                        $"Шар '{layer.Name}' має Tile Settings node, але в ньому не задано TilePreset і не увімкнено Flat Surface. Додай хоча б один TilePreset variant у ноді або увімкни Flat Surface.",
+                        layerId: layer.Id,
+                        nodeId: outputNode.NodeId));
+                }
+            }
+            else if (hasTileSettingsNode)
             {
                 report.Add(new GraphValidationIssue(
-                    "TILE_OUTPUT_WITHOUT_TILE_SETTINGS",
-                    ValidationSeverity.Error,
-                    $"Шар '{layer.Name}' позначений як Tiles, але не має жодної TileWorldCreator/TWC node. Додай Tile Settings/TWC ноду або зміни Output Kind на Masks/InternalData.",
+                    "TILE_SETTINGS_IGNORED_BY_OUTPUT_KIND",
+                    ValidationSeverity.Warning,
+                    $"Шар '{layer.Name}' має Tile Settings node, але Output Kind = '{kindName}'. Tile Settings застосовується тільки для Tiles output.",
                     layerId: layer.Id,
                     nodeId: outputNode.NodeId));
             }
@@ -853,6 +889,23 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             return false;
         }
 
+        private static bool IsTileSettingsNode(NodeBase node) =>
+            node != null && node.GetType().Name == "TileSettingsNode";
+
+        private static bool HasConfiguredTileSettingsNode(NodeBase node)
+        {
+            if (!IsTileSettingsNode(node))
+                return false;
+
+            var property = node.GetType().GetProperty(
+                "HasRenderableTileOutput",
+                BindingFlags.Instance | BindingFlags.Public);
+            if (property != null && property.PropertyType == typeof(bool))
+                return (bool)property.GetValue(node);
+
+            return false;
+        }
+
         private static string ResolveLayerOutputKindName(NodeBase outputNode)
         {
             var property = outputNode?.GetType().GetProperty(
@@ -890,6 +943,9 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
 
             string nodeTypeName = node?.GetType().Name;
             if (nodeTypeName == "OutputNode")
+                return true;
+
+            if (nodeTypeName == "TileSettingsNode" && portName == "Mask")
                 return true;
 
             if (nodeTypeName == "PlacementMaskNode"

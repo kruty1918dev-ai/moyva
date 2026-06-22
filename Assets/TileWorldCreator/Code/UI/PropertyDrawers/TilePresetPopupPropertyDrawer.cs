@@ -14,6 +14,7 @@
 */
 
 #if UNITY_EDITOR
+using GiantGrey.TileWorldCreator;
 using GiantGrey.TileWorldCreator.Attributes;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -25,6 +26,55 @@ namespace GiantGrey.TileWorldCreator.UI
     [CustomPropertyDrawer(typeof(TilePresetPopupAttribute))]
     public class TilePresetPopupPropertyDrawer : PropertyDrawer
     {
+        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+        {
+            return EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+        }
+
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            if (property == null)
+                return;
+
+            if (property.propertyType != SerializedPropertyType.ObjectReference)
+            {
+                EditorGUI.PropertyField(position, property, label, true);
+                return;
+            }
+
+            EditorGUI.BeginProperty(position, label, property);
+
+            float buttonWidth = 64f;
+            float gap = 4f;
+            var fieldRect = new Rect(
+                position.x,
+                position.y,
+                Mathf.Max(0f, position.width - buttonWidth - gap),
+                EditorGUIUtility.singleLineHeight);
+            var buttonRect = new Rect(
+                fieldRect.xMax + gap,
+                position.y,
+                buttonWidth,
+                EditorGUIUtility.singleLineHeight);
+
+            EditorGUI.ObjectField(fieldRect, property, typeof(TilePreset), label);
+
+            using (new EditorGUI.DisabledScope(property.serializedObject == null))
+            {
+                if (GUI.Button(buttonRect, "Select"))
+                {
+                    var screenPosition = GUIUtility.GUIToScreenPoint(new Vector2(buttonRect.x, buttonRect.yMax));
+                    TilePresetPopupSelector.ShowPanel(
+                        screenPosition,
+                        property.Copy(),
+                        new TilePresetPopupSelector(),
+                        _ => property.serializedObject?.Update());
+                }
+            }
+
+            EditorGUI.EndProperty();
+        }
+
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             var _root = new VisualElement();
