@@ -25,6 +25,6 @@ MonoBehaviour:
   inspectorTabIndex: 1
   isInspectorVisible: 1
   selectedLayerId: bfb53e1a-f478-4afa-a385-d6439fbdea4e
-  selectedNodeId: 4aeeaf60-f481-4edd-917a-5fe618dd9755
-  cameraPosition: {x: 365, y: 76, z: 0}
-  cameraScale: {x: 0.65751624, y: 0.65751624, z: 1}
+  selectedNodeId: 8338f58f-9037-43e1-b1cd-aac0ade71878
+  cameraPosition: {x: -763, y: 594, z: 0}
+  cameraScale: {x: 1, y: 1, z: 1}
