@@ -28,6 +28,25 @@ MonoBehaviour:
   _phaseTintStrength: 0.85
   _nightMinBrightness: 0.14
   _colorizeStrength: 0.75
+--- !u!114 &-1149095496555172467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c448c2b51cb03db20d8dcb17aed9f8c2, type: 3}
+  m_Name: DecorSharedStylizedRendererFeature
+  m_EditorClassIdentifier: Kruty1918.Moyva.Visuals::Kruty1918.Moyva.Visuals.DecorSharedStylizedRendererFeature
+  m_Active: 1
+  _renderContactShadows: 1
+  _renderMeshOutlines: 1
+  _renderPassEvent: 300
+  _layerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -54,6 +73,7 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 7200000, guid: b9a23f869c4fd45f19c5ada54dd82176, type: 3}
   m_RendererFeatures:
   - {fileID: -778899001122334455}
+  - {fileID: -1149095496555172467}
   m_RendererFeatureMap: 
   m_UseNativeRenderPass: 1
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}

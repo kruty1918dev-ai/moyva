@@ -17,12 +17,32 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
     public sealed class GeneratorGraphView : GraphView
     {
         private const string NodeClipboardPrefix = "MOYVA_NODE_V1:";
+        private const string NodePropertiesClipboardPrefix = "MOYVA_NODE_PROPERTIES_V1:";
         private const int NodeTooltipDelayMs = 450;
 
         [Serializable]
         private sealed class ClipboardNodePayload
         {
             public string nodeType;
+            public string jsonData;
+        }
+
+        [Serializable]
+        private sealed class ClipboardNodePropertiesPayload
+        {
+            public string nodeType;
+            public string nodeTitle;
+            public string compatibilityKey;
+            public string jsonData;
+            public List<ClipboardOwnedScriptableObjectPayload> ownedScriptableObjects = new();
+        }
+
+        [Serializable]
+        private sealed class ClipboardOwnedScriptableObjectPayload
+        {
+            public string fieldName;
+            public string objectType;
+            public string objectName;
             public string jsonData;
         }
 
@@ -50,6 +70,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private Label _floatingTooltip;
         public event Action GraphChanged;
         public event Action CanvasBackgroundClicked;
+        public event Action<string> StatusMessage;
 
         private struct NodeBorderSnapshot
         {
@@ -809,7 +830,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             Undo.RecordObject(_graphAsset, "Paste Node From Text");
 
-            var node = _graphAsset.AddNode(nodeType);
+            var node = _graphAsset.AddNode(nodeType, false, ResolveActiveLayerId());
             if (node == null)
             {
                 error = "Не вдалося створити ноду цього типу.";
@@ -820,6 +841,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 EditorJsonUtility.FromJsonOverwrite(payload.jsonData, node);
 
             node.NodeId = Guid.NewGuid().ToString();
+            if (!GraphStaticNodeUtility.IsStaticGraphNode(node))
+                node.LayerId = ResolveActiveLayerId();
             node.EditorPosition = graphPosition;
 
             var view = new GeneratorNodeView(node);
@@ -829,7 +852,351 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             AddToSelection(view);
 
             EditorUtility.SetDirty(_graphAsset);
+            _graphAsset.EnsureLayerGraphStates();
+            GraphChanged?.Invoke();
             return true;
+        }
+
+        public bool CopyNodeProperties(GeneratorNodeView nodeView)
+        {
+            if (nodeView == null || nodeView.NodeData == null)
+                return false;
+
+            var payload = new ClipboardNodePropertiesPayload
+            {
+                nodeType = nodeView.NodeData.GetType().AssemblyQualifiedName,
+                nodeTitle = nodeView.NodeData.Title,
+                compatibilityKey = BuildNodePropertiesCompatibilityKey(nodeView.NodeData),
+                jsonData = EditorJsonUtility.ToJson(nodeView.NodeData),
+                ownedScriptableObjects = CollectOwnedScriptableObjectPayloads(nodeView.NodeData)
+            };
+
+            string json = JsonUtility.ToJson(payload);
+            EditorGUIUtility.systemCopyBuffer = NodePropertiesClipboardPrefix + json;
+            StatusMessage?.Invoke($"Скопійовано властивості ноди '{nodeView.NodeData.Title}'.");
+            return true;
+        }
+
+        public bool CanPasteNodeProperties(GeneratorNodeView targetView)
+        {
+            if (_isReadOnly || targetView == null || targetView.NodeData == null)
+                return false;
+
+            return TryReadNodePropertiesClipboard(out var payload, out _)
+                && AreNodePropertiesCompatible(payload, targetView.NodeData, out _);
+        }
+
+        public bool PasteNodeProperties(GeneratorNodeView targetView, out string error)
+        {
+            error = null;
+
+            if (_isReadOnly)
+            {
+                error = "Граф у режимі тільки для читання.";
+                return false;
+            }
+
+            if (_graphAsset == null)
+            {
+                error = "GraphAsset не призначено.";
+                return false;
+            }
+
+            if (targetView == null || targetView.NodeData == null)
+            {
+                error = "Цільову ноду не знайдено.";
+                return false;
+            }
+
+            if (!TryReadNodePropertiesClipboard(out var payload, out error))
+                return false;
+
+            var targetNode = targetView.NodeData;
+            if (!AreNodePropertiesCompatible(payload, targetNode, out error))
+                return false;
+
+            EnsureOwnedScriptableObjectFieldsReady(targetNode);
+            var preservedOwnedObjects = CaptureOwnedScriptableObjects(targetNode);
+
+            string keepNodeId = targetNode.NodeId;
+            string keepLayerId = targetNode.LayerId;
+            Vector2 keepPosition = targetNode.EditorPosition;
+            string keepName = targetNode.name;
+            HideFlags keepHideFlags = targetNode.hideFlags;
+
+            Undo.RecordObject(targetNode, "Paste Node Properties");
+            foreach (var ownedObject in preservedOwnedObjects.Values)
+            {
+                if (ownedObject != null)
+                    Undo.RecordObject(ownedObject, "Paste Node Properties");
+            }
+
+            EditorJsonUtility.FromJsonOverwrite(payload.jsonData, targetNode);
+            AssignSerializedSOReferencesFromJson(targetNode, payload.jsonData);
+
+            targetNode.NodeId = keepNodeId;
+            targetNode.LayerId = keepLayerId;
+            targetNode.EditorPosition = keepPosition;
+            targetNode.name = keepName;
+            targetNode.hideFlags = keepHideFlags;
+
+            RestoreOwnedScriptableObjects(targetNode, payload.ownedScriptableObjects, preservedOwnedObjects);
+
+            if (targetNode is TwcModifierNode twcNode)
+                twcNode.TryRestoreModifierInEditor();
+
+            targetView.MarkDirtyRepaint();
+            EditorUtility.SetDirty(targetNode);
+            EditorUtility.SetDirty(_graphAsset);
+            _graphAsset.EnsureLayerGraphStates();
+
+            StatusMessage?.Invoke($"Вставлено властивості в ноду '{targetNode.Title}'.");
+            GraphChanged?.Invoke();
+            return true;
+        }
+
+        private static bool TryReadNodePropertiesClipboard(out ClipboardNodePropertiesPayload payload, out string error)
+        {
+            payload = null;
+            error = null;
+
+            string raw = EditorGUIUtility.systemCopyBuffer;
+            if (string.IsNullOrWhiteSpace(raw) || !raw.StartsWith(NodePropertiesClipboardPrefix, StringComparison.Ordinal))
+            {
+                error = "У буфері немає властивостей ноди Moyva.";
+                return false;
+            }
+
+            string payloadJson = raw.Substring(NodePropertiesClipboardPrefix.Length);
+            try
+            {
+                payload = JsonUtility.FromJson<ClipboardNodePropertiesPayload>(payloadJson);
+            }
+            catch (Exception ex)
+            {
+                error = $"Помилка читання властивостей ноди: {ex.Message}";
+                return false;
+            }
+
+            if (payload == null || string.IsNullOrWhiteSpace(payload.nodeType) || string.IsNullOrWhiteSpace(payload.jsonData))
+            {
+                error = "Дані властивостей ноди пошкоджені або неповні.";
+                return false;
+            }
+
+            payload.ownedScriptableObjects ??= new List<ClipboardOwnedScriptableObjectPayload>();
+            return true;
+        }
+
+        private static bool AreNodePropertiesCompatible(
+            ClipboardNodePropertiesPayload payload,
+            NodeBase targetNode,
+            out string error)
+        {
+            error = null;
+
+            if (payload == null || targetNode == null)
+            {
+                error = "Немає даних для вставки властивостей.";
+                return false;
+            }
+
+            Type sourceType = Type.GetType(payload.nodeType);
+            if (sourceType == null)
+            {
+                error = $"Тип ноди не знайдено: {payload.nodeType}";
+                return false;
+            }
+
+            if (sourceType != targetNode.GetType())
+            {
+                error = $"Властивості скопійовано з '{FormatClipboardNodeTitle(payload)}', а цільова нода має тип '{targetNode.Title}'. Вставка дозволена лише між нодами одного типу.";
+                return false;
+            }
+
+            string sourceCompatibilityKey = string.IsNullOrWhiteSpace(payload.compatibilityKey)
+                ? payload.nodeType
+                : payload.compatibilityKey;
+            string targetCompatibilityKey = BuildNodePropertiesCompatibilityKey(targetNode);
+
+            if (!string.Equals(sourceCompatibilityKey, targetCompatibilityKey, StringComparison.Ordinal))
+            {
+                error = $"Властивості скопійовано з '{FormatClipboardNodeTitle(payload)}', а цільова нода має тип '{targetNode.Title}'. Вставка дозволена лише між однаковими нодами.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static string FormatClipboardNodeTitle(ClipboardNodePropertiesPayload payload)
+        {
+            if (!string.IsNullOrWhiteSpace(payload?.nodeTitle))
+                return payload.nodeTitle;
+
+            if (!string.IsNullOrWhiteSpace(payload?.nodeType))
+                return payload.nodeType;
+
+            return "невідомої ноди";
+        }
+
+        private static string BuildNodePropertiesCompatibilityKey(NodeBase node)
+        {
+            if (node == null)
+                return string.Empty;
+
+            string typeName = node.GetType().AssemblyQualifiedName;
+            if (node is TwcModifierNode twcNode)
+                return $"{typeName}|twc:{twcNode.ModifierTypeName}";
+
+            return typeName;
+        }
+
+        private static List<ClipboardOwnedScriptableObjectPayload> CollectOwnedScriptableObjectPayloads(NodeBase node)
+        {
+            var payloads = new List<ClipboardOwnedScriptableObjectPayload>();
+            if (node == null)
+                return payloads;
+
+            foreach (var field in node.GetType().GetFields(SOFieldFlags))
+            {
+                if (!IsSerializedSOField(field))
+                    continue;
+
+                var so = field.GetValue(node) as ScriptableObject;
+                if (!IsOwnedNodeSubAsset(node, so))
+                    continue;
+
+                payloads.Add(new ClipboardOwnedScriptableObjectPayload
+                {
+                    fieldName = field.Name,
+                    objectType = so.GetType().AssemblyQualifiedName,
+                    objectName = so.name,
+                    jsonData = EditorJsonUtility.ToJson(so)
+                });
+            }
+
+            return payloads;
+        }
+
+        private static void EnsureOwnedScriptableObjectFieldsReady(NodeBase node)
+        {
+            if (node is TwcModifierNode twcNode)
+                twcNode.TryRestoreModifierInEditor();
+        }
+
+        private static Dictionary<string, ScriptableObject> CaptureOwnedScriptableObjects(NodeBase node)
+        {
+            var result = new Dictionary<string, ScriptableObject>();
+            if (node == null)
+                return result;
+
+            foreach (var field in node.GetType().GetFields(SOFieldFlags))
+            {
+                if (!IsSerializedSOField(field))
+                    continue;
+
+                var so = field.GetValue(node) as ScriptableObject;
+                if (IsOwnedNodeSubAsset(node, so))
+                    result[field.Name] = so;
+            }
+
+            return result;
+        }
+
+        private static void RestoreOwnedScriptableObjects(
+            NodeBase targetNode,
+            List<ClipboardOwnedScriptableObjectPayload> payloads,
+            Dictionary<string, ScriptableObject> preservedOwnedObjects)
+        {
+            if (targetNode == null)
+                return;
+
+            payloads ??= new List<ClipboardOwnedScriptableObjectPayload>();
+            preservedOwnedObjects ??= new Dictionary<string, ScriptableObject>();
+
+            var appliedFields = new HashSet<string>();
+
+            foreach (var payload in payloads)
+            {
+                if (payload == null || string.IsNullOrWhiteSpace(payload.fieldName) || string.IsNullOrWhiteSpace(payload.objectType))
+                    continue;
+
+                var field = targetNode.GetType().GetField(payload.fieldName, SOFieldFlags);
+                if (field == null || !IsSerializedSOField(field))
+                    continue;
+
+                Type objectType = Type.GetType(payload.objectType);
+                if (objectType == null || !typeof(ScriptableObject).IsAssignableFrom(objectType))
+                    continue;
+                if (!field.FieldType.IsAssignableFrom(objectType))
+                    continue;
+
+                if (!preservedOwnedObjects.TryGetValue(field.Name, out var targetObject)
+                    || targetObject == null
+                    || !objectType.IsInstanceOfType(targetObject))
+                {
+                    targetObject = CreateOwnedScriptableObject(targetNode, objectType, payload.objectName);
+                    if (targetObject == null)
+                        continue;
+                }
+
+                string keepName = string.IsNullOrWhiteSpace(targetObject.name) ? payload.objectName : targetObject.name;
+                HideFlags keepHideFlags = targetObject.hideFlags;
+
+                Undo.RecordObject(targetObject, "Paste Node Properties");
+                EditorJsonUtility.FromJsonOverwrite(payload.jsonData, targetObject);
+                if (!string.IsNullOrWhiteSpace(keepName))
+                    targetObject.name = keepName;
+                targetObject.hideFlags = keepHideFlags;
+
+                field.SetValue(targetNode, targetObject);
+                EditorUtility.SetDirty(targetObject);
+                appliedFields.Add(field.Name);
+            }
+
+            foreach (var kvp in preservedOwnedObjects)
+            {
+                if (appliedFields.Contains(kvp.Key))
+                    continue;
+
+                var field = targetNode.GetType().GetField(kvp.Key, SOFieldFlags);
+                if (field != null && IsSerializedSOField(field))
+                    field.SetValue(targetNode, kvp.Value);
+            }
+        }
+
+        private static ScriptableObject CreateOwnedScriptableObject(NodeBase owner, Type objectType, string objectName)
+        {
+            if (owner == null || objectType == null || !typeof(ScriptableObject).IsAssignableFrom(objectType))
+                return null;
+
+            var so = ScriptableObject.CreateInstance(objectType);
+            if (so == null)
+                return null;
+
+            so.name = string.IsNullOrWhiteSpace(objectName) ? objectType.Name : objectName;
+            so.hideFlags = HideFlags.HideInHierarchy;
+
+            string ownerPath = AssetDatabase.GetAssetPath(owner);
+            if (!string.IsNullOrEmpty(ownerPath))
+            {
+                AssetDatabase.AddObjectToAsset(so, owner);
+                Undo.RegisterCreatedObjectUndo(so, "Paste Node Properties");
+            }
+
+            return so;
+        }
+
+        private static bool IsOwnedNodeSubAsset(NodeBase owner, ScriptableObject so)
+        {
+            if (owner == null || so == null)
+                return false;
+
+            string ownerPath = AssetDatabase.GetAssetPath(owner);
+            string objectPath = AssetDatabase.GetAssetPath(so);
+            return !string.IsNullOrEmpty(ownerPath)
+                && string.Equals(ownerPath, objectPath, StringComparison.Ordinal)
+                && AssetDatabase.IsSubAsset(so);
         }
 
         public override void BuildContextualMenu(ContextualMenuPopulateEvent evt)
@@ -931,13 +1298,20 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (asset == null) return;
 
             GraphStaticNodeUtility.EnsureStaticNodes(asset);
+            _graphAsset.EnsureLayerGraphStates();
             _graphAsset.RepairMissingNodeConnections();
             _graphAsset.RemoveNullNodes();
             FlattenLegacyRoutePoints();
 
+            if (string.IsNullOrEmpty(_activeLayerId)
+                || _graphAsset.GetLayerById(_activeLayerId) == null)
+                _activeLayerId = _graphAsset.EnsureDefaultLayer();
+
+            var scope = _graphAsset.CreateExecutionScope(_activeLayerId);
+
             // Create node views
             var nodeViews = new Dictionary<string, GeneratorNodeView>();
-            foreach (var node in asset.Nodes)
+            foreach (var node in scope.Nodes)
             {
                 if (node == null) continue;
                 var view = new GeneratorNodeView(node);
@@ -948,7 +1322,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             // Create edges
-            foreach (var conn in asset.Connections)
+            foreach (var conn in scope.Connections)
             {
                 if (!nodeViews.TryGetValue(conn.SourceNodeId, out var sourceView))
                     continue;
@@ -975,11 +1349,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_graphAsset == null || _isReadOnly) return;
 
             Undo.RecordObject(_graphAsset, "Add Node");
-            var node = _graphAsset.AddNode(nodeType);
+            var node = _graphAsset.AddNode(nodeType, false, ResolveActiveLayerId());
             if (node == null) return;
 
             node.EditorPosition = position;
-            AssignActiveLayer(node);
 
             var view = new GeneratorNodeView(node);
             AddElement(view);
@@ -990,21 +1363,66 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             GraphChanged?.Invoke();
         }
 
+        public bool FocusNode(string nodeId)
+        {
+            if (string.IsNullOrEmpty(nodeId))
+                return false;
+
+            var nodeView = nodes
+                .OfType<GeneratorNodeView>()
+                .FirstOrDefault(view => view.NodeData != null && view.NodeData.NodeId == nodeId);
+            if (nodeView == null)
+                return false;
+
+            ClearSelection();
+            AddToSelection(nodeView);
+            FrameSelection();
+            return true;
+        }
+
+        public bool SelectNodeById(string nodeId, bool frameSelection = false)
+        {
+            if (string.IsNullOrEmpty(nodeId))
+                return false;
+
+            var nodeView = nodes
+                .OfType<GeneratorNodeView>()
+                .FirstOrDefault(view => view.NodeData != null && view.NodeData.NodeId == nodeId);
+            if (nodeView == null)
+                return false;
+
+            ClearSelection();
+            AddToSelection(nodeView);
+            if (frameSelection)
+                FrameSelection();
+            return true;
+        }
+
         /// <summary>
         /// Активний шар графа. Нові вузли призначаються цьому шару.
         /// </summary>
         public string ActiveLayerId
         {
             get => _activeLayerId;
-            set => _activeLayerId = value;
+            set
+            {
+                if (_activeLayerId == value)
+                    return;
+
+                _activeLayerId = value;
+                if (_graphAsset != null)
+                {
+                    if (string.IsNullOrEmpty(_activeLayerId)
+                        || _graphAsset.GetLayerById(_activeLayerId) == null)
+                        _activeLayerId = _graphAsset.EnsureDefaultLayer();
+                    PopulateGraph(_graphAsset, _isReadOnly);
+                }
+            }
         }
 
-        private void AssignActiveLayer(NodeBase node)
+        public void SetActiveLayerWithoutRefresh(string layerId)
         {
-            if (node == null) return;
-            if (string.IsNullOrEmpty(_activeLayerId) && _graphAsset != null)
-                _activeLayerId = _graphAsset.EnsureDefaultLayer();
-            node.LayerId = _activeLayerId;
+            _activeLayerId = layerId;
         }
 
         /// <summary>
@@ -1013,32 +1431,60 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         /// </summary>
         public void SetVisibleLayer(string layerId)
         {
-            _activeLayerId = layerId;
-
-            foreach (var element in graphElements.ToList())
-            {
-                if (element is GeneratorNodeView nodeView)
-                {
-                    bool visible = IsNodeVisibleForLayer(nodeView.NodeData, layerId);
-                    nodeView.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
-                }
-                else if (element is Edge edge)
-                {
-                    bool inputVisible = edge.input?.node is not GeneratorNodeView inView
-                        || IsNodeVisibleForLayer(inView.NodeData, layerId);
-                    bool outputVisible = edge.output?.node is not GeneratorNodeView outView
-                        || IsNodeVisibleForLayer(outView.NodeData, layerId);
-                    edge.style.display = inputVisible && outputVisible ? DisplayStyle.Flex : DisplayStyle.None;
-                }
-            }
+            ActiveLayerId = layerId;
         }
 
-        private static bool IsNodeVisibleForLayer(NodeBase node, string layerId)
+        private string ResolveActiveLayerId()
         {
-            if (node == null) return true;
-            // Глобальні вузли (без шару) видимі завжди.
-            if (string.IsNullOrEmpty(node.LayerId)) return true;
-            return node.LayerId == layerId;
+            if (_graphAsset == null)
+                return _activeLayerId;
+
+            if (!string.IsNullOrEmpty(_activeLayerId)
+                && _graphAsset.GetLayerById(_activeLayerId) != null)
+                return _activeLayerId;
+
+            _activeLayerId = _graphAsset.EnsureDefaultLayer();
+            return _activeLayerId;
+        }
+
+        public IReadOnlyList<NodeBase> GetSelectedNodesForActiveLayer()
+        {
+            string layerId = ResolveActiveLayerId();
+            return selection
+                .OfType<GeneratorNodeView>()
+                .Select(view => view.NodeData)
+                .Where(node => IsNodeInLayerEditScope(node, layerId, false))
+                .ToList();
+        }
+
+        private bool IsNodeInActiveEditScope(NodeBase node, bool includeGlobal = false) =>
+            IsNodeInLayerEditScope(node, ResolveActiveLayerId(), includeGlobal);
+
+        private static bool IsNodeInLayerEditScope(NodeBase node, string layerId, bool includeGlobal)
+        {
+            if (node == null)
+                return false;
+
+            if (GraphStaticNodeUtility.IsStaticGraphNode(node))
+                return includeGlobal;
+
+            return !string.IsNullOrEmpty(layerId) && node.LayerId == layerId;
+        }
+
+        private int CountForeignVisibleNodes()
+        {
+            string layerId = ResolveActiveLayerId();
+            int count = 0;
+            foreach (var view in nodes.OfType<GeneratorNodeView>())
+            {
+                var node = view.NodeData;
+                if (node == null || GraphStaticNodeUtility.IsStaticGraphNode(node))
+                    continue;
+                if (node.LayerId != layerId)
+                    count++;
+            }
+
+            return count;
         }
 
         /// <summary>
@@ -1050,12 +1496,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_graphAsset == null || _isReadOnly || modifierType == null) return;
 
             Undo.RecordObject(_graphAsset, "Add TWC Node");
-            var node = _graphAsset.AddNode<TwcModifierNode>();
+            var node = _graphAsset.AddNode(typeof(TwcModifierNode), false, ResolveActiveLayerId()) as TwcModifierNode;
             if (node == null) return;
 
             node.ConfigureModifier(modifierType);
             node.EditorPosition = position;
-            AssignActiveLayer(node);
 
             var view = new GeneratorNodeView(node);
             AddElement(view);
@@ -1085,17 +1530,39 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (change.elementsToRemove != null)
             {
                 Undo.RecordObject(_graphAsset, "Remove Graph Elements");
-                foreach (var element in change.elementsToRemove)
+
+                var nodeViewsToRemove = change.elementsToRemove
+                    .OfType<GeneratorNodeView>()
+                    .Where(view => view?.NodeData != null && !GraphStaticNodeUtility.IsStaticGraphNode(view.NodeData))
+                    .ToList();
+                var nodeIdsToRemove = new HashSet<string>(
+                    nodeViewsToRemove
+                        .Select(view => view.NodeData.NodeId)
+                        .Where(id => !string.IsNullOrEmpty(id)));
+
+                if (nodeIdsToRemove.Count > 0)
                 {
-                    if (element is Edge edge)
+                    var connectedEdges = edges
+                        .Where(edge => IsEdgeConnectedToAny(edge, nodeIdsToRemove))
+                        .Cast<GraphElement>()
+                        .ToList();
+                    foreach (var edge in connectedEdges)
                     {
-                        RemoveEdgeFromAsset(edge);
-                    }
-                    else if (element is GeneratorNodeView nodeView)
-                    {
-                        _graphAsset.RemoveNode(nodeView.NodeData);
+                        if (!change.elementsToRemove.Contains(edge))
+                            change.elementsToRemove.Add(edge);
                     }
                 }
+
+                foreach (var edge in change.elementsToRemove.OfType<Edge>().ToList())
+                {
+                    if (!IsEdgeConnectedToAny(edge, nodeIdsToRemove))
+                        RemoveEdgeFromAsset(edge);
+                    _edgeTooltipTexts.Remove(GetEdgeKey(edge));
+                }
+
+                if (nodeViewsToRemove.Count > 0)
+                    _graphAsset.RemoveNodesCascade(nodeViewsToRemove.Select(view => view.NodeData), true);
+
                 EditorUtility.SetDirty(_graphAsset);
                 if (change.elementsToRemove.Count > 0)
                     GraphChanged?.Invoke();
@@ -1105,10 +1572,31 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (change.edgesToCreate != null)
             {
                 Undo.RecordObject(_graphAsset, "Connect Nodes");
+                int ignoredEdges = 0;
+                for (int i = change.edgesToCreate.Count - 1; i >= 0; i--)
+                {
+                    var edge = change.edgesToCreate[i];
+                    var sourceView = edge.output?.node as GeneratorNodeView;
+                    var targetView = edge.input?.node as GeneratorNodeView;
+                    if (sourceView == null || targetView == null
+                        || CanCreateEdgeInActiveScope(sourceView.NodeData, targetView.NodeData))
+                        continue;
+
+                    change.edgesToCreate.RemoveAt(i);
+                    ignoredEdges++;
+                }
+
+                if (ignoredEdges > 0)
+                {
+                    string message = $"Ignored {ignoredEdges} connection(s) outside the active layer graph scope.";
+                    Debug.LogWarning("[Moyva Graph] " + message);
+                    StatusMessage?.Invoke(message);
+                }
+
                 foreach (var edge in change.edgesToCreate)
                 {
-                    var sourceView = edge.output.node as GeneratorNodeView;
-                    var targetView = edge.input.node as GeneratorNodeView;
+                    var sourceView = edge.output?.node as GeneratorNodeView;
+                    var targetView = edge.input?.node as GeneratorNodeView;
                     if (sourceView == null || targetView == null) continue;
 
                     var sourcePort = edge.output as GeneratorPort;
@@ -1136,6 +1624,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 {
                     if (element is GeneratorNodeView nodeView)
                     {
+                        if (!IsNodeInActiveEditScope(nodeView.NodeData, false))
+                            continue;
+
                         var rect = nodeView.GetPosition();
                         nodeView.NodeData.EditorPosition =
                             new Vector2(rect.x, rect.y);
@@ -1152,10 +1643,37 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private static bool IsProtectedStaticElement(GraphElement element) =>
             element is GeneratorNodeView nodeView && GraphStaticNodeUtility.IsStaticGraphNode(nodeView.NodeData);
 
+        private bool CanCreateEdgeInActiveScope(NodeBase source, NodeBase target)
+        {
+            string layerId = ResolveActiveLayerId();
+            bool sourceOk = IsNodeInLayerEditScope(source, layerId, true);
+            bool targetOk = IsNodeInLayerEditScope(target, layerId, true);
+            if (!sourceOk || !targetOk)
+                return false;
+
+            if (GraphStaticNodeUtility.IsStaticGraphNode(source) || GraphStaticNodeUtility.IsStaticGraphNode(target))
+                return true;
+
+            return source.LayerId == target.LayerId;
+        }
+
+        private static bool IsEdgeConnectedToAny(Edge edge, HashSet<string> nodeIds)
+        {
+            if (edge == null || nodeIds == null || nodeIds.Count == 0)
+                return false;
+
+            var sourceView = edge.output?.node as GeneratorNodeView;
+            var targetView = edge.input?.node as GeneratorNodeView;
+            string sourceId = sourceView?.NodeData?.NodeId;
+            string targetId = targetView?.NodeData?.NodeId;
+            return !string.IsNullOrEmpty(sourceId) && nodeIds.Contains(sourceId)
+                || !string.IsNullOrEmpty(targetId) && nodeIds.Contains(targetId);
+        }
+
         private void RemoveEdgeFromAsset(Edge edge)
         {
-            var sourceView = edge.output.node as GeneratorNodeView;
-            var targetView = edge.input.node as GeneratorNodeView;
+            var sourceView = edge.output?.node as GeneratorNodeView;
+            var targetView = edge.input?.node as GeneratorNodeView;
             if (sourceView == null || targetView == null) return;
 
             var sourcePort = edge.output as GeneratorPort;
@@ -1186,7 +1704,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_graphAsset == null)
                 return;
 
-            foreach (var connection in _graphAsset.Connections)
+            foreach (var connection in _graphAsset.GetConnectionsForLayer(ResolveActiveLayerId()))
                 RefreshConnectionIndexControl(connection, result);
         }
 
@@ -1278,29 +1796,73 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private struct CopiedNodeData
         {
+            public string OriginalNodeId;
             public Type NodeType;
             public Vector2 Position;
             public string JsonData;
         }
 
+        private struct CopiedConnectionData
+        {
+            public string SourceNodeId;
+            public int SourcePortIndex;
+            public string TargetNodeId;
+            public int TargetPortIndex;
+            public int SourceElementIndex;
+        }
+
+        private static readonly List<CopiedConnectionData> _connectionCopyBuffer = new();
+
         private void CopySelection()
         {
             _copyBuffer.Clear();
+            _connectionCopyBuffer.Clear();
+            if (_graphAsset == null)
+                return;
+
+            string layerId = ResolveActiveLayerId();
             foreach (var element in selection)
             {
                 if (element is GeneratorNodeView nodeView)
                 {
                     if (GraphStaticNodeUtility.IsStaticGraphNode(nodeView.NodeData))
                         continue;
+                    if (!IsNodeInLayerEditScope(nodeView.NodeData, layerId, false))
+                        continue;
 
                     var rect = nodeView.GetPosition();
                     _copyBuffer.Add(new CopiedNodeData
                     {
+                        OriginalNodeId = nodeView.NodeData.NodeId,
                         NodeType = nodeView.NodeData.GetType(),
                         Position = new Vector2(rect.x, rect.y),
                         JsonData = EditorJsonUtility.ToJson(nodeView.NodeData)
                     });
                 }
+            }
+
+            var selectedIds = new HashSet<string>(_copyBuffer
+                .Select(data => data.OriginalNodeId)
+                .Where(id => !string.IsNullOrEmpty(id)));
+            if (selectedIds.Count == 0)
+                return;
+
+            foreach (var connection in _graphAsset.GetConnectionsForLayer(layerId, false))
+            {
+                if (connection == null)
+                    continue;
+                if (!selectedIds.Contains(connection.SourceNodeId)
+                    || !selectedIds.Contains(connection.TargetNodeId))
+                    continue;
+
+                _connectionCopyBuffer.Add(new CopiedConnectionData
+                {
+                    SourceNodeId = connection.SourceNodeId,
+                    SourcePortIndex = connection.SourcePortIndex,
+                    TargetNodeId = connection.TargetNodeId,
+                    TargetPortIndex = connection.TargetPortIndex,
+                    SourceElementIndex = connection.SourceElementIndex
+                });
             }
         }
 
@@ -1313,17 +1875,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             Vector2 offset = new Vector2(40, 40);
             var newViews = new List<GeneratorNodeView>();
+            var idMap = new Dictionary<string, string>();
+            string targetLayerId = ResolveActiveLayerId();
 
             foreach (var data in _copyBuffer)
             {
-                var node = _graphAsset.AddNode(data.NodeType);
+                var node = _graphAsset.AddNode(data.NodeType, false, targetLayerId);
                 if (node == null) continue;
 
                 // Apply serialized data (preserving field values)
                 EditorJsonUtility.FromJsonOverwrite(data.JsonData, node);
                 // Reset ID so it's unique
+                string oldId = data.OriginalNodeId;
                 node.NodeId = Guid.NewGuid().ToString();
+                node.LayerId = targetLayerId;
                 node.EditorPosition = data.Position + offset;
+                if (!string.IsNullOrEmpty(oldId))
+                    idMap[oldId] = node.NodeId;
 
                 var view = new GeneratorNodeView(node);
                 AddElement(view);
@@ -1333,7 +1901,34 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 newViews.Add(view);
             }
 
+            var copiedIds = new HashSet<string>(idMap.Keys);
+            foreach (var connection in _connectionCopyBuffer)
+            {
+                if (!copiedIds.Contains(connection.SourceNodeId) || !copiedIds.Contains(connection.TargetNodeId))
+                    continue;
+                if (!idMap.TryGetValue(connection.SourceNodeId, out string newSourceId))
+                    continue;
+                if (!idMap.TryGetValue(connection.TargetNodeId, out string newTargetId))
+                    continue;
+
+                var newConnection = _graphAsset.AddConnection(
+                    newSourceId,
+                    connection.SourcePortIndex,
+                    newTargetId,
+                    connection.TargetPortIndex,
+                    connection.SourceElementIndex);
+
+                var sourceView = newViews.FirstOrDefault(view => view.NodeData.NodeId == newSourceId);
+                var targetView = newViews.FirstOrDefault(view => view.NodeData.NodeId == newTargetId);
+                var outputPort = sourceView?.GetOutputPort(newConnection.SourcePortIndex);
+                var inputPort = targetView?.GetInputPort(newConnection.TargetPortIndex);
+                if (outputPort != null && inputPort != null)
+                    AddElement(CreateStyledEdge(outputPort, inputPort));
+            }
+
             EditorUtility.SetDirty(_graphAsset);
+            _graphAsset.EnsureLayerGraphStates();
+            GraphChanged?.Invoke();
         }
 
         private void DuplicateSelection()
@@ -1555,7 +2150,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     continue;
                 }
 
-                var node = _graphAsset.AddNode(nodeType);
+                var node = _graphAsset.AddNode(nodeType, false, ResolveActiveLayerId());
                 if (node == null) { skipped++; continue; }
 
                 string newId = string.IsNullOrWhiteSpace(entry.originalNodeId)
@@ -1571,6 +2166,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 // Restore serialized field values
                 RestoreNodeFromPresetEntry(node, entry, soMap);
                 node.NodeId = newId;
+                if (!GraphStaticNodeUtility.IsStaticGraphNode(node))
+                    node.LayerId = ResolveActiveLayerId();
                 node.EditorPosition = entry.position;
 
                 // Assign SO references: either from newly created or from existing project assets
@@ -1617,8 +2214,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 imported++;
             }
 
+            _graphAsset.EnsureLayerGraphStates();
+            RefreshConnectionIndexControls();
+            BringAllNodesToFront();
+
             AssetDatabase.SaveAssets();
             EditorUtility.SetDirty(_graphAsset);
+            GraphChanged?.Invoke();
 
             var msg = $"Імпортовано {created} вузл(ів), {imported} з'єднань";
             if (soCreated > 0) msg += $", створено {soCreated} SO-ассет(ів)";
@@ -1770,7 +2372,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 else
                 {
                     // Add new node
-                    var node = _graphAsset.AddNode(nodeType);
+                    var node = _graphAsset.AddNode(nodeType, false, ResolveActiveLayerId());
                     if (node == null) { skipped++; continue; }
 
                     string newId = string.IsNullOrWhiteSpace(entry.originalNodeId) || existingById.ContainsKey(entry.originalNodeId)
@@ -1781,6 +2383,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                     RestoreNodeFromPresetEntry(node, entry, soMap);
                     node.NodeId = newId;
+                    if (!GraphStaticNodeUtility.IsStaticGraphNode(node))
+                        node.LayerId = ResolveActiveLayerId();
                     node.EditorPosition = entry.position;
                     ResolveExistingSOReferences(node);
 
@@ -1860,8 +2464,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             graphViewChanged += OnGraphViewChanged;
 
+            _graphAsset.EnsureLayerGraphStates();
+            RefreshConnectionIndexControls();
+            BringAllNodesToFront();
+
             AssetDatabase.SaveAssets();
             EditorUtility.SetDirty(_graphAsset);
+            GraphChanged?.Invoke();
 
             var msg = $"Модифіковано: оновлено {updated}, додано {added} вузл(ів), {imported} з'єднань";
             if (removedStale > 0) msg += $", видалено {removedStale} зайвих вузл(ів)";
@@ -2174,40 +2783,32 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             if (_graphAsset == null) return;
 
-            Undo.RecordObject(_graphAsset, "Auto-Layout");
-
             FlattenLegacyRoutePoints();
 
-            // Refresh views from the current asset state before layout
-            graphViewChanged -= OnGraphViewChanged;
-            DeleteElements(graphElements.ToList());
-            graphViewChanged += OnGraphViewChanged;
+            string layerId = ResolveActiveLayerId();
+            int foreignVisibleCount = CountForeignVisibleNodes();
+            var selectedViews = selection
+                .OfType<GeneratorNodeView>()
+                .Where(view => IsNodeInLayerEditScope(view.NodeData, layerId, false))
+                .ToList();
+            bool selectedOnly = selectedViews.Count > 0;
 
-            // Rebuild views from asset
-            var nodeViews = new Dictionary<string, GeneratorNodeView>();
-            foreach (var node in _graphAsset.Nodes)
-            {
-                if (node == null) continue;
-                var view = new GeneratorNodeView(node);
-                AddElement(view);
-                SetupNodeVisuals(view);
-                view.SetPreviewVisible(_inlinePreviewsVisible);
-                nodeViews[node.NodeId] = view;
-            }
+            var layoutViews = selectedOnly
+                ? selectedViews
+                : nodes
+                    .OfType<GeneratorNodeView>()
+                    .Where(view => IsNodeInLayerEditScope(view.NodeData, layerId, false))
+                    .ToList();
 
-            // Recreate edges
-            foreach (var conn in _graphAsset.Connections)
-            {
-                if (!nodeViews.TryGetValue(conn.SourceNodeId, out var sv)) continue;
-                if (!nodeViews.TryGetValue(conn.TargetNodeId, out var tv)) continue;
-                var oPort = sv.GetOutputPort(conn.SourcePortIndex);
-                var iPort = tv.GetInputPort(conn.TargetPortIndex);
-                if (oPort == null || iPort == null) continue;
-                AddElement(CreateStyledEdge(oPort, iPort));
-            }
-
-            var nodeViewMap = nodeViews;
+            var nodeViewMap = layoutViews
+                .Where(view => view?.NodeData != null && !string.IsNullOrEmpty(view.NodeData.NodeId))
+                .GroupBy(view => view.NodeData.NodeId)
+                .ToDictionary(group => group.Key, group => group.First());
             if (nodeViewMap.Count == 0) return;
+
+            Undo.RecordObject(_graphAsset, "Auto-Layout");
+            foreach (var view in nodeViewMap.Values)
+                Undo.RecordObject(view.NodeData, "Auto-Layout");
 
             // --- Build adjacency ---
             var nodeIds = new HashSet<string>(nodeViewMap.Keys);
@@ -2220,8 +2821,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 incoming[id] = new List<string>();
             }
 
-            foreach (var conn in _graphAsset.Connections)
+            foreach (var conn in _graphAsset.GetConnectionsForLayer(layerId, false))
             {
+                if (conn == null)
+                    continue;
                 if (!nodeIds.Contains(conn.SourceNodeId) || !nodeIds.Contains(conn.TargetNodeId))
                     continue;
                 outgoing[conn.SourceNodeId].Add(conn.TargetNodeId);
@@ -2380,6 +2983,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             BringAllNodesToFront();
             EditorUtility.SetDirty(_graphAsset);
+            if (foreignVisibleCount > 0)
+            {
+                string warning = $"Graph view contains {foreignVisibleCount} foreign node(s); Auto Layout ignored them.";
+                Debug.LogWarning($"[Moyva Graph] {warning}");
+                StatusMessage?.Invoke($"{warning} Moved {nodeViewMap.Count} node(s).");
+            }
+            else
+            {
+                StatusMessage?.Invoke($"Auto Layout: moved {nodeViewMap.Count} node(s) in {(selectedOnly ? "selection" : "active layer")}.");
+            }
             GraphChanged?.Invoke();
         }
 

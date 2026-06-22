@@ -370,11 +370,11 @@ Material:
     - _ReflectionDepthFade: 0
     - _ReflectionDistortion: 0
     - _ReflectionEdgeFade: 0
-    - _ReflectionFresnelPower: 0.29
+    - _ReflectionFresnelPower: 0.1
     - _ReflectionScreenEdgeFade: 0.04
     - _ReflectionSkyboxRoughness: 0.55
     - _ReflectionSkyboxStrength: 0.06
-    - _ReflectionStrength: 1
+    - _ReflectionStrength: 0
     - _ReflectionVerticalFlip: 0
     - _Reflection_Distortion: 0
     - _Reflection_Fresnel: 1

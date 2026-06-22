@@ -45,6 +45,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             changed |= MigrateLegacySeedConnections(graphAsset);
+            changed |= graphAsset.EnsureLayerGraphStates();
 
             if (changed)
                 EditorUtility.SetDirty(graphAsset);

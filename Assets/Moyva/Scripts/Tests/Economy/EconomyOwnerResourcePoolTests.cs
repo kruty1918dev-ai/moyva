@@ -38,6 +38,28 @@ namespace Kruty1918.Moyva.Tests.Economy
         }
 
         [Test]
+        public void RuntimeApiCategoryTotals_CategorizesLegacyStarterResourceIds()
+        {
+            var manager = CreateManager();
+            var api = new EconomyRuntimeApi(manager, CreateDatabase(), null);
+
+            InvokePrivate(manager, "OnGrantStarterPackResources", new GrantStarterPackResourcesSignal
+            {
+                OwnerId = "player_0",
+                SettlementId = string.Empty,
+                Entries = new[]
+                {
+                    new StarterPackResourceEntrySignal { ResourceId = "food", Amount = 100f },
+                    new StarterPackResourceEntrySignal { ResourceId = "wood", Amount = 200f },
+                },
+            });
+
+            var totals = api.GetOwnerCategoryTotals("player_0");
+            Assert.AreEqual(100f, totals.FoodTotal, 0.01f);
+            Assert.AreEqual(200f, totals.MaterialsTotal, 0.01f);
+        }
+
+        [Test]
         public void RuntimeApiResourceTotals_IncludeOwnerPoolBeforeSettlementExists()
         {
             var manager = CreateManager();

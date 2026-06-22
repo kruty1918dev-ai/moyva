@@ -59,6 +59,56 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
     }
 
+    internal static class GeneratedWorldBoundsUtility
+    {
+        private const float MinCellSize = 0.0001f;
+
+        public static bool TryCreateTileWorldBounds(
+            Transform root,
+            int width,
+            int height,
+            float cellSize,
+            out Bounds bounds)
+        {
+            bounds = default;
+
+            if (root == null || width <= 0 || height <= 0 || cellSize <= MinCellSize)
+                return false;
+
+            float halfCell = cellSize * 0.5f;
+            Vector3 localMin = new Vector3(-halfCell, 0f, -halfCell);
+            Vector3 localMax = new Vector3(
+                (width - 1) * cellSize + halfCell,
+                1f,
+                (height - 1) * cellSize + halfCell);
+
+            Vector3 worldMin = root.TransformPoint(localMin);
+            Vector3 worldMax = worldMin;
+            Encapsulate(root.TransformPoint(new Vector3(localMax.x, localMin.y, localMin.z)), ref worldMin, ref worldMax);
+            Encapsulate(root.TransformPoint(new Vector3(localMin.x, localMax.y, localMin.z)), ref worldMin, ref worldMax);
+            Encapsulate(root.TransformPoint(new Vector3(localMin.x, localMin.y, localMax.z)), ref worldMin, ref worldMax);
+            Encapsulate(root.TransformPoint(new Vector3(localMax.x, localMax.y, localMin.z)), ref worldMin, ref worldMax);
+            Encapsulate(root.TransformPoint(new Vector3(localMax.x, localMin.y, localMax.z)), ref worldMin, ref worldMax);
+            Encapsulate(root.TransformPoint(new Vector3(localMin.x, localMax.y, localMax.z)), ref worldMin, ref worldMax);
+            Encapsulate(root.TransformPoint(localMax), ref worldMin, ref worldMax);
+
+            bounds = new Bounds((worldMin + worldMax) * 0.5f, worldMax - worldMin);
+            return IsFinite(bounds.center) && IsFinite(bounds.size);
+        }
+
+        private static void Encapsulate(Vector3 point, ref Vector3 min, ref Vector3 max)
+        {
+            min = Vector3.Min(min, point);
+            max = Vector3.Max(max, point);
+        }
+
+        private static bool IsFinite(Vector3 value)
+            => IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+
+        private static bool IsFinite(float value)
+            => !float.IsNaN(value) && !float.IsInfinity(value);
+    }
+
     internal struct WorldLayerData
     {
         /// <summary>

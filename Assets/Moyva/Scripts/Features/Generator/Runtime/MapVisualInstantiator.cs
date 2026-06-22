@@ -249,6 +249,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     RenderMode = (int)_currentWorldData.RenderMode,
                     NeighborhoodMode = (int)_currentWorldData.NeighborhoodMode,
                     CellSize = ResolveWorldCellSize(TileWorldCreatorWorldBuildResult.Disabled),
+                    HasMapWorldBounds = TryResolveGeneratedMapWorldBounds(
+                        _currentWorldData,
+                        TileWorldCreatorWorldBuildResult.Disabled,
+                        out Bounds graphWorldBounds),
+                    MapWorldBoundsCenter = graphWorldBounds.center,
+                    MapWorldBoundsSize = graphWorldBounds.size,
                     TileMap = MapArrayUtils.CloneStringMap(_currentWorldData.BiomeMap),
                     ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
                     HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
@@ -322,6 +328,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 RenderMode = (int)_currentWorldData.RenderMode,
                 NeighborhoodMode = (int)_currentWorldData.NeighborhoodMode,
                 CellSize = ResolveWorldCellSize(tileWorldCreatorResult),
+                HasMapWorldBounds = TryResolveGeneratedMapWorldBounds(
+                    _currentWorldData,
+                    tileWorldCreatorResult,
+                    out Bounds worldBounds),
+                MapWorldBoundsCenter = worldBounds.center,
+                MapWorldBoundsSize = worldBounds.size,
                 TileMap = MapArrayUtils.CloneStringMap(_currentWorldData.BiomeMap),
                 ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
@@ -338,6 +350,33 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return _graphTwcGenerator.LastCellSize;
 
             return 1f;
+        }
+
+        private bool TryResolveGeneratedMapWorldBounds(
+            GeneratedWorldData worldData,
+            TileWorldCreatorWorldBuildResult tileWorldCreatorResult,
+            out Bounds bounds)
+        {
+            if (tileWorldCreatorResult.HasBaseMapWorldBounds)
+            {
+                bounds = tileWorldCreatorResult.BaseMapWorldBounds;
+                return true;
+            }
+
+            if (_graphTwcGenerator != null
+                && _graphTwcGenerator.TryGetLastBaseMapWorldBounds(out bounds))
+            {
+                return true;
+            }
+
+            if (_gridProjection != null && worldData != null)
+            {
+                bounds = _gridProjection.GetWorldBounds(worldData.Width, worldData.Height);
+                return true;
+            }
+
+            bounds = default;
+            return false;
         }
 
         private void BuildGridFromLayerIds(GeneratedWorldData worldData)

@@ -4,6 +4,7 @@ using GiantGrey.TileWorldCreator;
 using GiantGrey.TileWorldCreator.Components;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.GraphSystem.API;
+using Kruty1918.Moyva.GraphSystem.Runtime;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 
@@ -31,6 +32,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// </summary>
         internal IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; private set; }
         internal float LastCellSize { get; private set; } = 1f;
+
+        private bool _hasLastBaseMapWorldBounds;
+        private Bounds _lastBaseMapWorldBounds;
 
         public GraphTwcMapDataGenerator(
             GraphAsset graphAsset,
@@ -70,8 +74,26 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             try
             {
+                var validator = new GraphValidator();
+                var report = validator.ValidateDetailed(_graphAsset);
+                var globalErrors = GetGlobalValidationErrors(report);
+                if (globalErrors.Count > 0)
+                {
+                    Debug.LogError(
+                        $"[GraphTwcGenerator] Graph validation failed with {globalErrors.Count} global error(s):\n{FormatValidationIssues(globalErrors)}");
+                    EmitEmpty(width, height, onComplete);
+                    return;
+                }
+
+                var skippedLayerIds = GetInvalidLayerIds(report);
+                if (skippedLayerIds.Count > 0)
+                {
+                    Debug.LogWarning(
+                        $"[GraphTwcGenerator] {skippedLayerIds.Count} layer(s) skipped because of validation errors:\n{FormatValidationReport(report)}");
+                }
+
                 // 1. Граф -> TWC Configuration.
-                var compiled = GraphToConfigurationCompiler.Compile(_graphAsset, _manager, seed);
+                var compiled = GraphToConfigurationCompiler.Compile(_graphAsset, _manager, seed, skippedLayerIds);
                 LastCompiledLayers = compiled;
 
                 // Gameplay-мапи лишаються розміром базової згенерованої мапи.
@@ -82,6 +104,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 LastCellSize = _manager.configuration.cellSize > 0.0001f
                     ? _manager.configuration.cellSize
                     : 1f;
+                _hasLastBaseMapWorldBounds = GeneratedWorldBoundsUtility.TryCreateTileWorldBounds(
+                    _manager.transform,
+                    width,
+                    height,
+                    LastCellSize,
+                    out _lastBaseMapWorldBounds);
 
                 // 2. TWC будує мапу (blueprint-стек + 3D build-стек).
                 TileWorldCreatorLayerOcclusionOptimizer.GenerateCompleteMap(_manager);
@@ -101,9 +129,62 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
             catch (Exception ex)
             {
+                _hasLastBaseMapWorldBounds = false;
                 Debug.LogError($"[GraphTwcGenerator] Помилка генерації: {ex}");
                 EmitEmpty(width, height, onComplete);
             }
+        }
+
+        private static string FormatValidationReport(GraphValidationReport report)
+        {
+            if (report == null || report.Issues.Count == 0)
+                return string.Empty;
+
+            return FormatValidationIssues(report.Issues);
+        }
+
+        private static string FormatValidationIssues(IEnumerable<GraphValidationIssue> issues)
+        {
+            var builder = new System.Text.StringBuilder();
+            foreach (var issue in issues)
+                builder.AppendLine($"  - {issue}");
+            return builder.ToString();
+        }
+
+        private static List<GraphValidationIssue> GetGlobalValidationErrors(GraphValidationReport report)
+        {
+            var result = new List<GraphValidationIssue>();
+            if (report == null)
+                return result;
+
+            foreach (var issue in report.Issues)
+            {
+                if (issue.Severity == ValidationSeverity.Error && string.IsNullOrEmpty(issue.LayerId))
+                    result.Add(issue);
+            }
+
+            return result;
+        }
+
+        private static HashSet<string> GetInvalidLayerIds(GraphValidationReport report)
+        {
+            var result = new HashSet<string>();
+            if (report == null)
+                return result;
+
+            foreach (var issue in report.Issues)
+            {
+                if (issue.Severity == ValidationSeverity.Error && !string.IsNullOrEmpty(issue.LayerId))
+                    result.Add(issue.LayerId);
+            }
+
+            return result;
+        }
+
+        internal bool TryGetLastBaseMapWorldBounds(out Bounds bounds)
+        {
+            bounds = _lastBaseMapWorldBounds;
+            return _hasLastBaseMapWorldBounds;
         }
 
         /// <summary>

@@ -30,6 +30,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private int _projectionMode = int.MinValue;
         private float _maxTerrainWorldY = float.MinValue;
         private float _worldCellSize = 1f;
+        private bool _hasWorldBoundsOverride;
+        private Bounds _worldBoundsOverride;
         private bool _subscribed;
 
         [Inject]
@@ -141,21 +143,34 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             float maxTerrainWorldY = ResolveMaxTerrainWorldY(signal);
             bool terrainHeightChanged = !Mathf.Approximately(maxTerrainWorldY, _maxTerrainWorldY);
             bool cellSizeChanged = !Mathf.Approximately(cellSize, _worldCellSize);
+            bool nextHasWorldBoundsOverride = FogWorldSignalUtility.TryResolveMapWorldBounds(signal, out Bounds nextWorldBoundsOverride);
+            bool worldBoundsChanged = nextHasWorldBoundsOverride != _hasWorldBoundsOverride
+                || nextHasWorldBoundsOverride && !ApproximatelyBounds(nextWorldBoundsOverride, _worldBoundsOverride);
             _maxTerrainWorldY = maxTerrainWorldY;
             _worldCellSize = cellSize;
+            _hasWorldBoundsOverride = nextHasWorldBoundsOverride;
+            _worldBoundsOverride = nextWorldBoundsOverride;
 
-            if (width == _mapWidth && height == _mapHeight && signal.ProjectionMode == _projectionMode && !terrainHeightChanged && !cellSizeChanged)
+            if (width == _mapWidth
+                && height == _mapHeight
+                && signal.ProjectionMode == _projectionMode
+                && !terrainHeightChanged
+                && !cellSizeChanged
+                && !worldBoundsChanged)
             {
-                Debug.Log($"{DebugTag} FogQuad.OnWorldGenerated no-reinit signal={signal.Width}x{signal.Height}, baseMap={width}x{height}, current={_mapWidth}x{_mapHeight}, projection={signal.ProjectionMode}, cellSize={cellSize}, terrainHeightChanged={terrainHeightChanged}.");
+                Debug.Log($"{DebugTag} FogQuad.OnWorldGenerated no-reinit signal={signal.Width}x{signal.Height}, baseMap={width}x{height}, current={_mapWidth}x{_mapHeight}, projection={signal.ProjectionMode}, cellSize={cellSize}, terrainHeightChanged={terrainHeightChanged}, worldBoundsChanged={worldBoundsChanged}.");
                 return;
             }
 
-            Debug.Log($"{DebugTag} FogQuad.OnWorldGenerated reinit signal={signal.Width}x{signal.Height}, baseMap={width}x{height}, previous={_mapWidth}x{_mapHeight}, projection={_projectionMode}->{signal.ProjectionMode}, cellSize={_worldCellSize}, terrainHeightChanged={terrainHeightChanged}, cellSizeChanged={cellSizeChanged}.");
+            Debug.Log($"{DebugTag} FogQuad.OnWorldGenerated reinit signal={signal.Width}x{signal.Height}, baseMap={width}x{height}, previous={_mapWidth}x{_mapHeight}, projection={_projectionMode}->{signal.ProjectionMode}, cellSize={_worldCellSize}, terrainHeightChanged={terrainHeightChanged}, cellSizeChanged={cellSizeChanged}, worldBoundsChanged={worldBoundsChanged}.");
             InitializeOverlay(width, height);
         }
 
         private Bounds ResolveWorldBounds(int width, int height)
         {
+            if (_hasWorldBoundsOverride)
+                return _worldBoundsOverride;
+
             if (_worldCellSize > 0.0001f && _gridProjection != null && _gridProjection.WorldPlane == GridWorldPlane.XZ)
             {
                 float safeWidth = Mathf.Max(1, width) * _worldCellSize;
@@ -172,6 +187,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 new Vector3((width - 1) * 0.5f, (height - 1) * 0.5f, 0f),
                 new Vector3(width, height, 1f));
         }
+
+        private static bool ApproximatelyBounds(Bounds a, Bounds b)
+            => ApproximatelyVector(a.center, b.center) && ApproximatelyVector(a.size, b.size);
+
+        private static bool ApproximatelyVector(Vector3 a, Vector3 b)
+            => Mathf.Approximately(a.x, b.x)
+                && Mathf.Approximately(a.y, b.y)
+                && Mathf.Approximately(a.z, b.z);
 
         private static float ResolveSignalCellSize(WorldGeneratedDataSignal signal)
             => signal.CellSize > 0.0001f ? signal.CellSize : 1f;

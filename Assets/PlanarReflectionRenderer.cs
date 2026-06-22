@@ -56,11 +56,6 @@ public class PlanarReflectionRenderer : MonoBehaviour
     {
         TextureSize = Mathf.Max(64, TextureSize);
         ClipPlaneOffset = Mathf.Max(0f, ClipPlaneOffset);
-
-        if (enabled)
-        {
-            CreateResources();
-        }
     }
 
     private void LateUpdate()
@@ -100,7 +95,7 @@ public class PlanarReflectionRenderer : MonoBehaviour
         {
             if (_reflectionTexture != null)
             {
-                DestroyObject(_reflectionTexture);
+                DestroyResource(_reflectionTexture);
             }
 
             _currentTextureSize = TextureSize;
@@ -129,18 +124,18 @@ public class PlanarReflectionRenderer : MonoBehaviour
     {
         if (_reflectionTexture != null)
         {
-            DestroyObject(_reflectionTexture);
+            DestroyResource(_reflectionTexture);
             _reflectionTexture = null;
         }
 
         if (_reflectionCamera != null)
         {
-            DestroyObject(_reflectionCamera.gameObject);
+            DestroyResource(_reflectionCamera.gameObject);
             _reflectionCamera = null;
         }
     }
 
-    private static void DestroyObject(Object obj)
+    private static void DestroyResource(Object obj)
     {
         if (obj == null)
         {

@@ -105,6 +105,9 @@ namespace Kruty1918.Moyva.Signals
         public int RenderMode;
         public int NeighborhoodMode;
         public float CellSize;
+        public bool HasMapWorldBounds;
+        public Vector3 MapWorldBoundsCenter;
+        public Vector3 MapWorldBoundsSize;
         public string[,] TileMap;
         public string[,] ObjectMap;
         public float[,] HeightMap;

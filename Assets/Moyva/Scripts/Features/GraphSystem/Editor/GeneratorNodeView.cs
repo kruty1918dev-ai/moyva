@@ -53,7 +53,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
             }
 
-            title = nodeData.Title;
+            var outputNode = nodeData as OutputNode;
+            bool isOutputNode = outputNode != null;
+            title = isOutputNode ? $"{nodeData.Title} • Final" : nodeData.Title;
 
             _isPreviewHidden = Attribute.IsDefined(nodeData.GetType(), typeof(HidePreviewAttribute));
 
@@ -63,6 +65,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             // Style
             AddToClassList("generator-node");
+            if (isOutputNode)
+            {
+                AddToClassList("final-layer-output-node");
+                style.borderTopWidth = 2;
+                style.borderBottomWidth = 2;
+                style.borderLeftWidth = 2;
+                style.borderRightWidth = 2;
+                style.borderTopColor = new Color(0.14f, 0.72f, 0.55f);
+                style.borderBottomColor = new Color(0.14f, 0.72f, 0.55f);
+                style.borderLeftColor = new Color(0.14f, 0.72f, 0.55f);
+                style.borderRightColor = new Color(0.14f, 0.72f, 0.55f);
+            }
+
             if (Attribute.IsDefined(nodeData.GetType(), typeof(StaticGraphNodeAttribute)))
             {
                 capabilities &= ~Capabilities.Deletable;
@@ -100,9 +115,46 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             };
             titleContainer.Add(badge);
 
+            if (isOutputNode)
+            {
+                var finalBadge = new Label($"FINAL LAYER OUTPUT • {FormatOutputKind(outputNode.OutputKind)}")
+                {
+                    style =
+                    {
+                        fontSize = 9,
+                        color = new Color(0.78f, 1f, 0.88f),
+                        unityTextAlign = TextAnchor.MiddleCenter,
+                        marginLeft = 6,
+                        marginBottom = 4
+                    }
+                };
+                titleContainer.Add(finalBadge);
+            }
+
             // Ports
             CreatePorts(nodeData.Inputs, PortDirection.Input, _inputPorts);
             CreatePorts(nodeData.Outputs, PortDirection.Output, _outputPorts);
+
+            if (isOutputNode)
+            {
+                var outputHint = new Label($"Final result for this layer: {FormatOutputKind(outputNode.OutputKind)}")
+                {
+                    style =
+                    {
+                        marginTop = 4,
+                        marginBottom = 4,
+                        paddingLeft = 6,
+                        paddingRight = 6,
+                        paddingTop = 3,
+                        paddingBottom = 3,
+                        color = new Color(0.78f, 1f, 0.88f),
+                        backgroundColor = new Color(0.05f, 0.22f, 0.17f),
+                        unityFontStyleAndWeight = FontStyle.Bold,
+                        whiteSpace = WhiteSpace.Normal
+                    }
+                };
+                extensionContainer.Add(outputHint);
+            }
 
             // Custom editor button
             if (nodeData is ICustomEditorNode)
@@ -141,7 +193,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 }
             };
 
-            bool isOutputNode = nodeData is OutputNode;
             int previewHeight = isOutputNode ? 256 : 108;
 
             _previewImage = new Image
@@ -477,6 +528,31 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             evt.menu.AppendSeparator();
 
+            evt.menu.AppendAction("Копіювати властивості ноди", _ =>
+            {
+                var graphView = GetFirstAncestorOfType<GeneratorGraphView>();
+                graphView?.CopyNodeProperties(this);
+            });
+
+            evt.menu.AppendAction("Вставити властивості в цю ноду", _ =>
+            {
+                var graphView = GetFirstAncestorOfType<GeneratorGraphView>();
+                if (graphView == null) return;
+
+                if (!graphView.PasteNodeProperties(this, out var error) && !string.IsNullOrEmpty(error))
+                {
+                    EditorUtility.DisplayDialog("Вставка властивостей ноди", error, "OK");
+                }
+            }, _ =>
+            {
+                var graphView = GetFirstAncestorOfType<GeneratorGraphView>();
+                return graphView != null && graphView.CanPasteNodeProperties(this)
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled;
+            });
+
+            evt.menu.AppendSeparator();
+
             evt.menu.AppendAction("Копіювати ноду як текст", _ =>
             {
                 var graphView = GetFirstAncestorOfType<GeneratorGraphView>();
@@ -549,6 +625,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             return type?.Name ?? "unknown";
         }
+
+        private static string FormatOutputKind(LayerOutputKind kind) =>
+            kind switch
+            {
+                LayerOutputKind.Tiles => "Tiles",
+                LayerOutputKind.Objects => "Objects",
+                LayerOutputKind.Masks => "Masks",
+                LayerOutputKind.InternalData => "Internal Data",
+                _ => "Other"
+            };
 
         private static float CalculatePreferredWidth(NodeBase nodeData)
         {

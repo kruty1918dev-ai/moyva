@@ -62,7 +62,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     if (consumed.Contains(node.NodeId))
                         continue;
 
-                    var mask = ExtractBoolMatrix(result.GetOutputs(node.NodeId));
+                    var mask = ExtractLayerOccupancyMatrix(result.GetOutputs(node.NodeId));
                     if (mask == null)
                         continue;
 
@@ -305,7 +305,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return inside;
         }
 
-        private static bool[,] ExtractBoolMatrix(object[] outputs)
+        private static bool[,] ExtractLayerOccupancyMatrix(object[] outputs)
         {
             if (outputs == null)
                 return null;
@@ -314,7 +314,50 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (o is bool[,] b)
                     return b;
 
+            foreach (var o in outputs)
+            {
+                if (o is string[,] stringMap)
+                    return BuildOccupancyFromStringMap(stringMap);
+
+                if (o is float[,] floatMap)
+                    return BuildOccupancyFromFloatMap(floatMap);
+            }
+
             return null;
+        }
+
+        private static bool[,] BuildOccupancyFromStringMap(string[,] source)
+        {
+            if (source == null)
+                return null;
+
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            var occupancy = new bool[width, height];
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                    occupancy[x, y] = !string.IsNullOrEmpty(source[x, y]);
+            }
+
+            return occupancy;
+        }
+
+        private static bool[,] BuildOccupancyFromFloatMap(float[,] source)
+        {
+            if (source == null)
+                return null;
+
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            var occupancy = new bool[width, height];
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                    occupancy[x, y] = !float.IsNaN(source[x, y]) && !float.IsInfinity(source[x, y]);
+            }
+
+            return occupancy;
         }
 
         private static Texture2D NewTexture(int w, int h)

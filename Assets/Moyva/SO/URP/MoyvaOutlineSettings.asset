@@ -13,24 +13,24 @@ MonoBehaviour:
   m_Name: MoyvaOutlineSettings
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::FlatKit.OutlineSettings
   edgeColor: {r: 0, g: 0, b: 0, a: 1}
-  thickness: 0
+  thickness: 3
   resolutionInvariant: 1
-  fadeWithDistance: 1
-  fadeRangeStart: 0
+  fadeWithDistance: 0
+  fadeRangeStart: 5.35
   fadeRangeEnd: 100
   useDepth: 0
   minDepthThreshold: 0.03
   maxDepthThreshold: 3.54
-  useNormals: 0
-  minNormalsThreshold: 0
-  maxNormalsThreshold: 3.36
+  useNormals: 1
+  minNormalsThreshold: 1.43
+  maxNormalsThreshold: 6.48
   useColor: 1
   minColorThreshold: 0
   maxColorThreshold: 2
   renderEvent: 550
   outlineOnly: 0
   applyInSceneView: 1
-  effectMaterial: {fileID: 3339482862224600914}
+  effectMaterial: {fileID: 0}
 --- !u!21 &3339482862224600914
 Material:
   serializedVersion: 8
@@ -43,8 +43,8 @@ Material:
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
-  - OUTLINE_FADE_OUT
   - OUTLINE_USE_COLOR
+  - OUTLINE_USE_NORMALS
   - RESOLUTION_INVARIANT_THICKNESS
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -76,10 +76,10 @@ Material:
     - _DepthThresholdMax: 3.54
     - _DepthThresholdMin: 0.03
     - _FadeRangeEnd: 100
-    - _FadeRangeStart: 0
-    - _NormalThresholdMax: 3.36
-    - _NormalThresholdMin: 0
-    - _Thickness: 0
+    - _FadeRangeStart: 5.35
+    - _NormalThresholdMax: 6.48
+    - _NormalThresholdMin: 1.43
+    - _Thickness: 3
     m_Colors:
     - _EdgeColor: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []

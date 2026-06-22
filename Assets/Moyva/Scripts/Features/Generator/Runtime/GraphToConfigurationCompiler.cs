@@ -37,13 +37,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
     /// </summary>
     public static class GraphToConfigurationCompiler
     {
-        public static List<CompiledLayerMap> Compile(GraphAsset graph, TileWorldCreatorManager manager, int seed)
+        public static List<CompiledLayerMap> Compile(
+            GraphAsset graph,
+            TileWorldCreatorManager manager,
+            int seed,
+            ISet<string> skippedLayerIds = null)
         {
             var result = new List<CompiledLayerMap>();
             if (graph == null || manager == null || manager.configuration == null)
                 return result;
 
             var config = manager.configuration;
+            graph.EnsureLayerGraphStates();
 
             // --- Розмір мапи ---
             var size = graph.SharedSettings != null ? graph.SharedSettings.MapSize : new Vector2Int(50, 50);
@@ -61,6 +66,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             var orderedLayers = graph.Layers
                 .Where(l => l != null)
+                .Where(l => skippedLayerIds == null || !skippedLayerIds.Contains(l.Id))
                 .OrderBy(l => l.SortingOrder)
                 .ToList();
 
@@ -69,16 +75,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var blueprintGuidByGraphLayerId = new Dictionary<string, string>();
             var blueprintByGraphLayerId = new Dictionary<string, BlueprintLayer>();
 
-            var sortedNodes = TopologicalSorter.Sort(graph) ?? new List<NodeBase>(graph.Nodes);
-
             for (int layerIndex = 0; layerIndex < orderedLayers.Count; layerIndex++)
             {
                 var layerDef = orderedLayers[layerIndex];
-                var blueprint = FindLayerByName(existingLayers, layerDef.Name)
+                var blueprint = FindLayerByGuid(existingLayers, layerDef.BlueprintLayerGuid)
+                                ?? FindLayerByName(existingLayers, layerDef.Name)
                                 ?? manager.AddNewBlueprintLayer(layerDef.Name);
                 if (blueprint == null)
                     continue;
 
+                layerDef.BlueprintLayerGuid = blueprint.guid;
                 blueprint.layerName = layerDef.Name;
                 blueprint.isEnabled = layerDef.Enabled;
                 blueprint.layerColor = layerDef.Color;
@@ -115,12 +121,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 if (!blueprintByGraphLayerId.TryGetValue(layerDef.Id, out var blueprint) || blueprint == null)
                     continue;
 
-                bool includeUnassignedNodes = layerIndex == 0;
-                AppendLayerModifiers(blueprint, layerDef.Id, sortedNodes, config, includeUnassignedNodes, blueprintGuidByGraphLayerId, graph);
+                var scope = graph.CreateExecutionScope(layerDef.Id);
+                var executionPlan = TopologicalSorter.BuildPlan(scope);
+                if (!executionPlan.Success)
+                {
+                    Debug.LogWarning(
+                        $"[GraphToConfigurationCompiler] Layer '{layerDef.Name}' skipped while compiling TWC modifiers: {executionPlan.ErrorMessage}");
+                    continue;
+                }
+
+                AppendLayerModifiers(blueprint, layerDef.Id, executionPlan.NodesInExecutionOrder, config, blueprintGuidByGraphLayerId, graph);
             }
 
             DisableUnusedLayers(existingLayers, usedLayerGuids);
-            var objectLayers = CollectObjectPlacementLayers(graph, seed, new Vector2Int(config.width, config.height));
+            var objectLayers = CollectObjectPlacementLayers(graph, seed, new Vector2Int(config.width, config.height), skippedLayerIds);
             TWCObjectPlacementAdapter.Apply(config, manager, objectLayers, result);
 
             return result;
@@ -129,35 +143,79 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private static IReadOnlyList<ObjectPlacementLayer> CollectObjectPlacementLayers(
             GraphAsset graph,
             int seed,
-            Vector2Int mapSize)
+            Vector2Int mapSize,
+            ISet<string> skippedLayerIds = null)
         {
             if (graph == null || graph.Nodes == null)
                 return Array.Empty<ObjectPlacementLayer>();
 
+            graph.EnsureLayerGraphStates();
             bool hasObjectOutput = graph.Nodes.Any(node => node is ObjectOutputToTWCNode);
             if (!hasObjectOutput)
                 return Array.Empty<ObjectPlacementLayer>();
 
-            var context = new NodeContext(seed == 0 ? 1 : seed)
-            {
-                MapSize = new Vector2Int(Mathf.Max(1, mapSize.x), Mathf.Max(1, mapSize.y))
-            };
-            context.ApplySharedSettings(graph.SharedSettings);
-            context.RegisterService(graph.SharedSettings);
-
-            var registry = new ObjectPlacementRegistry();
-            context.RegisterService(registry);
+            var clampedMapSize = new Vector2Int(Mathf.Max(1, mapSize.x), Mathf.Max(1, mapSize.y));
+            var orderedLayers = graph.Layers
+                .Where(layer => layer != null && layer.Enabled)
+                .Where(layer => skippedLayerIds == null || !skippedLayerIds.Contains(layer.Id))
+                .OrderBy(layer => layer.SortingOrder)
+                .ToList();
 
             var runner = new GraphRunner();
-            var execution = runner.Execute(graph, context);
-            if (execution == null || !execution.Success)
+            var result = new List<ObjectPlacementLayer>();
+            var layerMaskRegistry = new LayerMaskRegistry();
+            LayerMaskPrewarmUtility.PrewarmAllLayerMasks(
+                graph,
+                seed,
+                clampedMapSize,
+                layerMaskRegistry,
+                null,
+                skippedLayerIds);
+
+            foreach (var layerDef in orderedLayers)
             {
-                Debug.LogWarning(
-                    $"[MoyvaObjectPlacement] Graph object placement output was not compiled: {execution?.ErrorMessage ?? "unknown graph execution error"}");
-                return Array.Empty<ObjectPlacementLayer>();
+                var scope = graph.CreateExecutionScope(layerDef.Id);
+                bool collectsObjects = scope.Nodes.Any(node => node is ObjectOutputToTWCNode);
+
+                var layerContext = new NodeContext(seed == 0 ? 1 : seed)
+                {
+                    MapSize = clampedMapSize
+                };
+                layerContext.ApplySharedSettings(graph.SharedSettings);
+                if (graph.SharedSettings != null)
+                    layerContext.RegisterService(graph.SharedSettings);
+                layerContext.RegisterService(layerMaskRegistry);
+
+                var registry = new ObjectPlacementRegistry();
+                layerContext.RegisterService(registry);
+
+                var execution = runner.Execute(scope, layerContext);
+                if (execution == null || !execution.Success)
+                {
+                    Debug.LogWarning(
+                        $"[MoyvaObjectPlacement] Layer '{layerDef.Name ?? scope.LayerId}' was not executed for object placement masks: {execution?.ErrorMessage ?? "unknown graph execution error"}");
+                    continue;
+                }
+
+                if (!collectsObjects)
+                    continue;
+
+                if (registry.Layers.Count == 0)
+                {
+                    Debug.LogWarning(
+                        $"[MoyvaObjectPlacement] Layer '{layerDef.Name ?? scope.LayerId}' has Object Output nodes, but no ObjectPlacementLayer was registered.");
+                }
+
+                foreach (var layer in registry.Layers)
+                {
+                    if (layer != null && string.IsNullOrWhiteSpace(layer.TargetGraphLayerId))
+                        layer.TargetGraphLayerId = scope.LayerId;
+                    if (layer != null)
+                        result.Add(layer);
+                }
             }
 
-            return registry.Layers;
+            return result;
         }
 
         private static void EnsureRootFolder(Configuration config)
@@ -202,6 +260,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 string.Equals(layer.layerName, layerName, StringComparison.Ordinal));
         }
 
+        private static BlueprintLayer FindLayerByGuid(List<BlueprintLayer> layers, string layerGuid)
+        {
+            if (layers == null || string.IsNullOrWhiteSpace(layerGuid))
+                return null;
+
+            return layers.FirstOrDefault(layer =>
+                layer != null &&
+                string.Equals(layer.guid, layerGuid, StringComparison.Ordinal));
+        }
+
         private static void DisableUnusedLayers(List<BlueprintLayer> layers, HashSet<string> usedLayerGuids)
         {
             if (layers == null || usedLayerGuids == null)
@@ -225,9 +293,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private static void AppendLayerModifiers(
             BlueprintLayer blueprint,
             string layerId,
-            List<NodeBase> sortedNodes,
+            IReadOnlyList<NodeBase> sortedNodes,
             Configuration config,
-            bool includeUnassignedNodes,
             Dictionary<string, string> blueprintGuidByGraphLayerId,
             GraphAsset graph)
         {
@@ -235,7 +302,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             for (int i = 0; i < sortedNodes.Count; i++)
             {
                 var node = sortedNodes[i];
-                if (!BelongsToLayer(node, layerId, includeUnassignedNodes))
+                if (!BelongsToLayer(node, layerId))
                     continue;
 
                 layerNodes.Add(node);
@@ -274,7 +341,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
         }
 
-        private static bool BelongsToLayer(NodeBase node, string layerId, bool includeUnassignedNodes)
+        private static bool BelongsToLayer(NodeBase node, string layerId)
         {
             if (node == null)
                 return false;
@@ -282,7 +349,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (!string.IsNullOrEmpty(node.LayerId))
                 return node.LayerId == layerId;
 
-            return includeUnassignedNodes;
+            return GraphAsset.IsGlobalNode(node);
         }
 
         private static MoyvaLayerReferenceBlueprintModifier CreateLayerReferenceModifier(

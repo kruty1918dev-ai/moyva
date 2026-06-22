@@ -222,6 +222,21 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         }
 
         [Test]
+        public void WorldGeneratedDataSignal_ResolvesMapWorldBounds_WhenProvided()
+        {
+            var signal = new WorldGeneratedDataSignal
+            {
+                HasMapWorldBounds = true,
+                MapWorldBoundsCenter = new Vector3(24f, 1f, -8f),
+                MapWorldBoundsSize = new Vector3(48f, 2f, 32f),
+            };
+
+            Assert.IsTrue(FogWorldSignalUtility.TryResolveMapWorldBounds(signal, out Bounds bounds));
+            Assert.AreEqual(new Vector3(24f, 1f, -8f), bounds.center);
+            Assert.AreEqual(new Vector3(48f, 2f, 32f), bounds.size);
+        }
+
+        [Test]
         public void FixedVisionAreasSnapshot_RestoresStarterAnchorVisibility()
         {
             InitMap();

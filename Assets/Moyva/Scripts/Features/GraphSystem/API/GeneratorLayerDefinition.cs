@@ -30,6 +30,12 @@ namespace Kruty1918.Moyva.GraphSystem.API
         /// </summary>
         [SerializeField] private string _buildLayerKey;
 
+        /// <summary>
+        /// Стабільний зв'язок із BlueprintLayer у companion TileWorldCreator Configuration.
+        /// GraphAsset.Layers залишаються джерелом правди, а BlueprintLayer є їхньою проєкцією.
+        /// </summary>
+        [SerializeField] private string _blueprintLayerGuid;
+
         public GeneratorLayerDefinition()
         {
             _id = Guid.NewGuid().ToString();
@@ -115,6 +121,12 @@ namespace Kruty1918.Moyva.GraphSystem.API
         {
             get => _buildLayerKey;
             set => _buildLayerKey = value;
+        }
+
+        public string BlueprintLayerGuid
+        {
+            get => _blueprintLayerGuid;
+            set => _blueprintLayerGuid = value;
         }
     }
 }

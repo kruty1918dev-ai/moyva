@@ -9,6 +9,7 @@ using System.Threading;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
+using Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement;
 using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
@@ -37,13 +38,104 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             public string Source;
         }
 
+        private enum LayerRunStatus
+        {
+            Pending,
+            SkippedValidation,
+            Prepared,
+            Generated,
+            Failed
+        }
+
+        private enum LayerRunFailurePolicy
+        {
+            SkipInvalidLayersAndContinueFailures
+        }
+
+        private sealed class LayerRunRecord
+        {
+            public string LayerId;
+            public string LayerName;
+            public int SortingOrder;
+            public LayerRunStatus Status;
+            public string Message;
+            public int NodeCount;
+            public float NodeTimeMs;
+            public string ErrorNodeId;
+            public string GraphId;
+        }
+
+        private sealed class GraphRunReport
+        {
+            public readonly List<LayerRunRecord> Layers = new List<LayerRunRecord>();
+            public readonly LayerRunFailurePolicy FailurePolicy;
+            public readonly int Seed;
+            public readonly int MapWidth;
+            public readonly int MapHeight;
+
+            public GraphRunReport(int seed, int mapWidth, int mapHeight, LayerRunFailurePolicy failurePolicy)
+            {
+                Seed = seed;
+                MapWidth = mapWidth;
+                MapHeight = mapHeight;
+                FailurePolicy = failurePolicy;
+            }
+
+            public int GeneratedCount => Layers.Count(layer => layer.Status == LayerRunStatus.Generated);
+            public int FailedCount => Layers.Count(layer => layer.Status == LayerRunStatus.Failed);
+            public int SkippedCount => Layers.Count(layer => layer.Status == LayerRunStatus.SkippedValidation);
+            public int ExecutedNodeCount => Layers.Sum(layer => layer.NodeCount);
+            public float NodeTimeMs => Layers.Sum(layer => layer.NodeTimeMs);
+
+            public string BuildStatusText(long elapsedMs, int layerDataCount)
+            {
+                var sb = new StringBuilder();
+                sb.Append(FailedCount == 0 ? "✓" : "✗");
+                sb.Append($" Run layers in {elapsedMs}ms ({MapWidth}×{MapHeight}, seed {Seed})");
+                sb.Append($" | generated {GeneratedCount}, failed {FailedCount}, skipped {SkippedCount}");
+                sb.Append($" | {ExecutedNodeCount} nodes | node time {NodeTimeMs:F1}ms");
+                sb.Append($" | policy {FailurePolicy}");
+                if (layerDataCount > 0)
+                    sb.Append($" | {layerDataCount} layer data");
+                return sb.ToString();
+            }
+
+            public string BuildConsoleSummary()
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine($"Policy: {FailurePolicy}");
+                sb.AppendLine($"Seed: {Seed} | Map: {MapWidth}×{MapHeight}");
+
+                foreach (var layer in Layers.OrderBy(layer => layer.SortingOrder).ThenBy(layer => layer.LayerName, StringComparer.Ordinal))
+                {
+                    sb.Append("  - ");
+                    sb.Append(layer.Status.ToString().ToUpperInvariant());
+                    sb.Append(' ');
+                    sb.Append(layer.LayerName);
+                    sb.Append($" [order {layer.SortingOrder}]");
+
+                    if (layer.NodeCount > 0)
+                        sb.Append($": {layer.NodeCount} node(s), {layer.NodeTimeMs:F1}ms");
+                    if (!string.IsNullOrEmpty(layer.Message))
+                        sb.Append($": {layer.Message}");
+                    if (!string.IsNullOrEmpty(layer.ErrorNodeId))
+                        sb.Append($" (node {layer.ErrorNodeId})");
+
+                    sb.AppendLine();
+                }
+
+                return sb.ToString();
+            }
+        }
+
         private GeneratorGraphView _graphView;
         private VisualElement _contentContainer;
         private ScrollView _rightPanel;
         private VisualElement _leftPanel;
         private VisualElement _layerListContainer;
         private Image _compositePreviewImage;
-        private string _selectedLayerId;
+        [SerializeField] private string _selectedLayerId;
+        private bool _focusSelectedLayerRowAfterRebuild;
         private GraphExecutionResult _lastResult;
         private Texture2D _layerCompositeTexture;
         private readonly List<Texture2D> _layerThumbnails = new List<Texture2D>();
@@ -58,8 +150,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private Label _statusLabel;
         private ProgressBar _progressBar;
+        private VisualElement _validationPanel;
+        private VisualElement _validationIssuesContainer;
+        private GraphValidationReport _lastValidationReport;
+        private GraphValidationReport _lastBlueprintLayerSyncReport;
 
         private NodeBase _selectedNode;
+        [SerializeField] private string _selectedNodeId;
         private UnityEditor.Editor _selectedNodeEditor;
 
         private enum InspectorTab { Settings = 0, Preview = 1, BuildLayers = 2 }
@@ -86,8 +183,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private GraphEditorWindowSettings _windowSettings;
 
         // Saved camera state (pan + zoom), restored after PopulateGraph
-        private Vector3 _savedCameraPosition = Vector3.zero;
-        private Vector3 _savedCameraScale = Vector3.one;
+        [SerializeField] private Vector3 _savedCameraPosition = Vector3.zero;
+        [SerializeField] private Vector3 _savedCameraScale = Vector3.one;
 
         // Inline map size override (used when no EditorPreviewSettings assigned)
         [SerializeField] private int _previewWidth = 64;
@@ -102,6 +199,60 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private readonly Dictionary<string, bool> _inlineObjectFoldouts = new();
         private readonly Dictionary<string, UnityEditor.Editor> _inlineObjectEditors = new();
+
+        private sealed class CopiedLayerData
+        {
+            public string SourceLayerId;
+            public string Name;
+            public Color Color;
+            public int SortingOrder;
+            public bool Enabled;
+            public float DefaultHeight;
+            public bool UseZeroLayerPadding;
+            public int ExtraWidthCells;
+            public int ExtraLengthCells;
+            public bool GenerateFlatSurface;
+            public Material FlatSurfaceMaterial;
+            public string BuildLayerKey;
+            public readonly List<CopiedLayerNodeData> Nodes = new();
+            public readonly List<CopiedLayerConnectionData> Connections = new();
+        }
+
+        private readonly struct CopiedLayerNodeData
+        {
+            public readonly string OriginalNodeId;
+            public readonly Type NodeType;
+            public readonly Vector2 Position;
+            public readonly string JsonData;
+
+            public CopiedLayerNodeData(string originalNodeId, Type nodeType, Vector2 position, string jsonData)
+            {
+                OriginalNodeId = originalNodeId;
+                NodeType = nodeType;
+                Position = position;
+                JsonData = jsonData;
+            }
+        }
+
+        private readonly struct CopiedLayerConnectionData
+        {
+            public readonly string SourceNodeId;
+            public readonly int SourcePortIndex;
+            public readonly string TargetNodeId;
+            public readonly int TargetPortIndex;
+            public readonly int SourceElementIndex;
+
+            public CopiedLayerConnectionData(Connection connection)
+            {
+                SourceNodeId = connection.SourceNodeId;
+                SourcePortIndex = connection.SourcePortIndex;
+                TargetNodeId = connection.TargetNodeId;
+                TargetPortIndex = connection.TargetPortIndex;
+                SourceElementIndex = connection.SourceElementIndex;
+            }
+        }
+
+        private CopiedLayerData _copiedLayer;
 
         [MenuItem("Moyva/Graph Editor")]
         public static void Open()
@@ -119,6 +270,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void OnEnable()
         {
+            GraphEditorWindowLayoutRepair.ScheduleCloseFailedFallbackWindows();
             LoadWindowSettings();
             ConstructGraphView();
             ConstructToolbar();
@@ -153,6 +305,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 _graphView.GraphChanged -= OnGraphChanged;
                 _graphView.CanvasBackgroundClicked -= OnGraphCanvasBackgroundClicked;
+                _graphView.StatusMessage -= OnGraphStatusMessage;
+                _graphView.viewTransformChanged -= OnGraphViewTransformChanged;
             }
 
             DisposeLayerPreviewTextures();
@@ -165,7 +319,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             if (_graphView != null && _graphAsset != null)
             {
-                _graphView.RefreshFromAsset();
+                CaptureCameraTransform();
+                _graphAsset.EnsureLayerGraphStates();
+                EnsureSelectedLayer();
+                TrySyncCompanionBlueprintLayers(false);
+                _graphView.SetActiveLayerWithoutRefresh(_selectedLayerId);
+                RefreshGraphViewFromAsset();
+                RebuildLayerList();
+                RefreshInspectorPanel();
                 UpdateStatusBar();
             }
         }
@@ -175,8 +336,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_graphAsset != null)
             {
                 MigrateLegacySharedSettingsNode(_graphAsset);
+                EnsureSelectedLayer();
+                EnsureSelectedLayerMatchesSelectedNode();
+                _graphView.SetActiveLayerWithoutRefresh(_selectedLayerId);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
-                RestoreCameraTransform();
+                RestoreGraphViewState();
                 RebuildLayerList();
                 UpdateStatusBar();
                 return;
@@ -192,11 +356,85 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 _graphAsset = asset;
                 MigrateLegacySharedSettingsNode(_graphAsset);
+                EnsureSelectedLayer();
+                EnsureSelectedLayerMatchesSelectedNode();
+                _graphView.SetActiveLayerWithoutRefresh(_selectedLayerId);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
-                RestoreCameraTransform();
+                RestoreGraphViewState();
                 RebuildLayerList();
                 UpdateStatusBar();
             }
+        }
+
+        private void RestoreGraphViewState()
+        {
+            RestoreSelectedNodeFromId();
+            RestoreCameraTransform();
+        }
+
+        private void RefreshGraphViewFromAsset(bool restoreSelection = true)
+        {
+            if (_graphView == null)
+                return;
+
+            CaptureCameraTransform();
+            _graphView.RefreshFromAsset();
+            if (restoreSelection)
+                RestoreGraphViewState();
+            else
+                RestoreCameraTransform();
+        }
+
+        private void RestoreSelectedNodeFromId()
+        {
+            if (_graphAsset == null || _graphView == null || string.IsNullOrEmpty(_selectedNodeId))
+                return;
+
+            var node = _graphAsset.GetNodeById(_selectedNodeId);
+            if (node == null)
+            {
+                SetSelectedNode(null);
+                return;
+            }
+
+            if (!GraphAsset.IsGlobalNode(node)
+                && !string.Equals(node.LayerId, _selectedLayerId, StringComparison.Ordinal))
+            {
+                if (_graphAsset.GetLayerById(node.LayerId) != null)
+                {
+                    _selectedLayerId = node.LayerId;
+                    _graphView.SetActiveLayerWithoutRefresh(_selectedLayerId);
+                    _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
+                }
+                else
+                {
+                    SetSelectedNode(null);
+                    return;
+                }
+            }
+
+            if (!_graphView.SelectNodeById(_selectedNodeId))
+            {
+                SetSelectedNode(null);
+                return;
+            }
+
+            _isMultiSelection = false;
+            SetSelectedNode(node);
+            RefreshInspectorPanel();
+        }
+
+        private void EnsureSelectedLayerMatchesSelectedNode()
+        {
+            if (_graphAsset == null || string.IsNullOrEmpty(_selectedNodeId))
+                return;
+
+            var node = _graphAsset.GetNodeById(_selectedNodeId);
+            if (node == null || GraphAsset.IsGlobalNode(node))
+                return;
+
+            if (_graphAsset.GetLayerById(node.LayerId) != null)
+                _selectedLayerId = node.LayerId;
         }
 
         private void RestoreCameraTransform()
@@ -210,6 +448,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 _graphView?.UpdateViewTransform(pos, scale);
             });
         }
+
+        private void CaptureCameraTransform()
+        {
+            if (_graphView?.contentViewContainer == null)
+                return;
+
+            var translation = _graphView.contentViewContainer.resolvedStyle.translate;
+            var scale = _graphView.contentViewContainer.resolvedStyle.scale.value;
+
+            if (!IsFinite(translation.x) || !IsFinite(translation.y) || !IsFinite(scale.x) || !IsFinite(scale.y))
+                return;
+
+            _savedCameraPosition = new Vector3(translation.x, translation.y, 0f);
+            _savedCameraScale = scale == Vector3.zero ? Vector3.one : scale;
+        }
+
+        private static bool IsFinite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
 
         private void OnPlayModeChanged(PlayModeStateChange state)
         {
@@ -245,6 +500,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _graphView = new GeneratorGraphView(this);
             _graphView.GraphChanged += OnGraphChanged;
             _graphView.CanvasBackgroundClicked += OnGraphCanvasBackgroundClicked;
+            _graphView.StatusMessage += OnGraphStatusMessage;
+            _graphView.viewTransformChanged += OnGraphViewTransformChanged;
             _graphView.style.flexGrow = 1;
             _contentContainer.Add(_graphView);
 
@@ -280,7 +537,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             };
             _leftPanel.Add(header);
 
-            _layerListContainer = new VisualElement();
+            _layerListContainer = new VisualElement { focusable = true };
+            _layerListContainer.RegisterCallback<ContextualMenuPopulateEvent>(evt =>
+            {
+                evt.menu.AppendAction(
+                    "Вставити скопійований шар",
+                    _ => PasteCopiedLayerAfter(null),
+                    _ => CanPasteCopiedLayer()
+                        ? DropdownMenuAction.Status.Normal
+                        : DropdownMenuAction.Status.Disabled);
+            });
             _leftPanel.Add(_layerListContainer);
 
             var buttonsRow = new VisualElement
@@ -347,10 +613,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
 
             _graphAsset.EnsureDefaultLayer();
+            var syncIssueByLayer = BuildLayerSyncIssueLookup();
 
             if (!string.IsNullOrEmpty(_selectedLayerId)
                 && _graphAsset.GetLayerById(_selectedLayerId) == null)
                 _selectedLayerId = null;
+            if (string.IsNullOrEmpty(_selectedLayerId))
+                _selectedLayerId = _graphAsset.EnsureDefaultLayer();
 
             var orderedLayers = _graphAsset.Layers
                 .Where(l => l != null)
@@ -361,9 +630,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 string layerId = layer.Id;
                 bool isSelected = layerId == _selectedLayerId;
+                bool hasSyncIssue = syncIssueByLayer.TryGetValue(layerId, out var syncIssue);
 
                 var row = new VisualElement
                 {
+                    focusable = true,
                     style =
                     {
                         flexDirection = FlexDirection.Row,
@@ -375,6 +646,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         paddingBottom = 3,
                         backgroundColor = isSelected
                             ? new Color(0.24f, 0.36f, 0.5f)
+                            : hasSyncIssue
+                                ? new Color(0.34f, 0.16f, 0.12f)
                             : new Color(0.16f, 0.16f, 0.16f)
                     }
                 };
@@ -397,8 +670,56 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 };
                 row.Add(nameLabel);
 
-                row.RegisterCallback<MouseDownEvent>(_ => SelectLayer(layerId));
+                if (hasSyncIssue)
+                {
+                    var warning = new Label("ERR")
+                    {
+                        tooltip = syncIssue.Message,
+                        style =
+                        {
+                            unityFontStyleAndWeight = FontStyle.Bold,
+                            color = new Color(1f, 0.62f, 0.48f),
+                            marginLeft = 4
+                        }
+                    };
+                    row.tooltip = syncIssue.Message;
+                    row.Add(warning);
+                }
+
+                row.RegisterCallback<MouseDownEvent>(evt =>
+                {
+                    if (evt.button == 0 || evt.button == 1)
+                    {
+                        _focusSelectedLayerRowAfterRebuild = true;
+                        SelectLayer(layerId);
+                    }
+                });
+                row.RegisterCallback<KeyDownEvent>(evt =>
+                {
+                    if (layerId != _selectedLayerId)
+                        return;
+
+                    if (evt.keyCode == KeyCode.Delete || evt.keyCode == KeyCode.Backspace)
+                    {
+                        RemoveSelectedLayer();
+                        evt.StopPropagation();
+                    }
+                });
+                row.RegisterCallback<ContextualMenuPopulateEvent>(evt =>
+                {
+                    _focusSelectedLayerRowAfterRebuild = true;
+                    SelectLayer(layerId);
+                    PopulateLayerContextMenu(evt, layerId);
+                    evt.StopPropagation();
+                });
                 _layerListContainer.Add(row);
+
+                if (isSelected && _focusSelectedLayerRowAfterRebuild)
+                {
+                    var rowToFocus = row;
+                    rowToFocus.schedule.Execute(() => rowToFocus.Focus());
+                    _focusSelectedLayerRowAfterRebuild = false;
+                }
 
                 // Мініатюра матриці шару (якщо граф уже виконано).
                 if (_layerMatrices != null && _layerMatrices.TryGetValue(layerId, out var matrix))
@@ -424,7 +745,34 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 }
             }
 
-            _graphView?.SetVisibleLayer(_selectedLayerId);
+            if (_graphView != null)
+            {
+                bool activeLayerChanged = !string.Equals(_graphView.ActiveLayerId, _selectedLayerId, StringComparison.Ordinal);
+                if (activeLayerChanged)
+                    CaptureCameraTransform();
+
+                _graphView.SetVisibleLayer(_selectedLayerId);
+
+                if (activeLayerChanged)
+                    RestoreGraphViewState();
+            }
+        }
+
+        private string EnsureSelectedLayer()
+        {
+            if (_graphAsset == null)
+            {
+                _selectedLayerId = null;
+                return null;
+            }
+
+            _graphAsset.EnsureLayerGraphStates();
+            if (!string.IsNullOrEmpty(_selectedLayerId)
+                && _graphAsset.GetLayerById(_selectedLayerId) != null)
+                return _selectedLayerId;
+
+            _selectedLayerId = _graphAsset.EnsureDefaultLayer();
+            return _selectedLayerId;
         }
 
         /// <summary>
@@ -475,10 +823,24 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void SelectLayer(string layerId)
         {
-            _selectedLayerId = _selectedLayerId == layerId ? null : layerId;
+            if (_graphAsset == null || string.IsNullOrEmpty(layerId))
+                return;
+            if (_graphAsset.GetLayerById(layerId) == null)
+                return;
+
+            GUI.FocusControl(null);
+            EditorGUIUtility.editingTextField = false;
+            CaptureCameraTransform();
+            _graphView?.ClearSelection();
+            _isMultiSelection = false;
+            SetSelectedNode(null);
+
+            _selectedLayerId = layerId;
             if (_graphView != null)
                 _graphView.ActiveLayerId = _selectedLayerId;
             RebuildLayerList();
+            RestoreCameraTransform();
+            SetInspectorTab(InspectorTab.Settings);
             RefreshInspectorPanel();
         }
 
@@ -489,8 +851,339 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             Undo.RecordObject(_graphAsset, "Add Layer");
             var layer = _graphAsset.AddLayer($"Layer {_graphAsset.Layers.Count + 1}");
+            layer.SortingOrder = _graphAsset.Layers
+                .Where(existing => existing != null && existing != layer)
+                .Select(existing => existing.SortingOrder)
+                .DefaultIfEmpty(-1)
+                .Max() + 1;
+            layer.DefaultHeight = _graphAsset.Layers
+                .Where(existing => existing != null && existing != layer)
+                .Select(existing => existing.DefaultHeight)
+                .DefaultIfEmpty(0f)
+                .Max() + 0.1f;
             EditorUtility.SetDirty(_graphAsset);
+            TrySyncCompanionBlueprintLayers(false);
             SelectLayer(layer.Id);
+        }
+
+        private void PopulateLayerContextMenu(ContextualMenuPopulateEvent evt, string layerId)
+        {
+            if (evt == null)
+                return;
+
+            bool hasLayer = _graphAsset != null && _graphAsset.GetLayerById(layerId) != null;
+            evt.menu.AppendAction(
+                "Скопіювати шар",
+                _ => CopyLayerToBuffer(layerId),
+                _ => hasLayer ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+
+            evt.menu.AppendAction(
+                "Вставити скопійований шар після цього",
+                _ => PasteCopiedLayerAfter(layerId),
+                _ => CanPasteCopiedLayer()
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled);
+
+            evt.menu.AppendAction(
+                "Дублювати шар",
+                _ =>
+                {
+                    CopyLayerToBuffer(layerId);
+                    PasteCopiedLayerAfter(layerId);
+                },
+                _ => hasLayer ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+
+            evt.menu.AppendSeparator();
+            evt.menu.AppendAction(
+                "Видалити шар",
+                _ => RemoveSelectedLayer(),
+                _ => hasLayer && _graphAsset.Layers.Count > 1
+                    ? DropdownMenuAction.Status.Normal
+                    : DropdownMenuAction.Status.Disabled);
+        }
+
+        private bool CanPasteCopiedLayer()
+        {
+            return _graphAsset != null && _copiedLayer != null;
+        }
+
+        private void CopyLayerToBuffer(string layerId)
+        {
+            if (_graphAsset == null || string.IsNullOrEmpty(layerId))
+                return;
+
+            var layer = _graphAsset.GetLayerById(layerId);
+            if (layer == null)
+                return;
+
+            _graphAsset.EnsureLayerGraphStates();
+            var copied = new CopiedLayerData
+            {
+                SourceLayerId = layer.Id,
+                Name = layer.Name,
+                Color = layer.Color,
+                SortingOrder = layer.SortingOrder,
+                Enabled = layer.Enabled,
+                DefaultHeight = layer.DefaultHeight,
+                UseZeroLayerPadding = layer.UseZeroLayerPadding,
+                ExtraWidthCells = layer.ExtraWidthCells,
+                ExtraLengthCells = layer.ExtraLengthCells,
+                GenerateFlatSurface = layer.GenerateFlatSurface,
+                FlatSurfaceMaterial = layer.FlatSurfaceMaterial,
+                BuildLayerKey = layer.BuildLayerKey
+            };
+
+            var nodes = _graphAsset.GetNodesForLayer(layerId)
+                .Where(node => node != null && !GraphStaticNodeUtility.IsStaticGraphNode(node))
+                .ToList();
+            var nodeIds = new HashSet<string>(nodes.Select(node => node.NodeId));
+
+            foreach (var node in nodes)
+            {
+                copied.Nodes.Add(new CopiedLayerNodeData(
+                    node.NodeId,
+                    node.GetType(),
+                    node.EditorPosition,
+                    EditorJsonUtility.ToJson(node)));
+            }
+
+            foreach (var connection in _graphAsset.GetConnectionsForLayer(layerId, false))
+            {
+                if (connection == null)
+                    continue;
+
+                bool sourceCopied = nodeIds.Contains(connection.SourceNodeId);
+                bool targetCopied = nodeIds.Contains(connection.TargetNodeId);
+                if (!sourceCopied && !targetCopied)
+                    continue;
+                if (!sourceCopied && !IsReusableGlobalEndpoint(connection.SourceNodeId))
+                    continue;
+                if (!targetCopied && !IsReusableGlobalEndpoint(connection.TargetNodeId))
+                    continue;
+
+                copied.Connections.Add(new CopiedLayerConnectionData(connection));
+            }
+
+            _copiedLayer = copied;
+            if (_statusLabel != null)
+                _statusLabel.text = $"Скопійовано шар '{layer.Name}' ({copied.Nodes.Count} нод, {copied.Connections.Count} зв'язків).";
+        }
+
+        private void PasteCopiedLayerAfter(string afterLayerId)
+        {
+            if (!CanPasteCopiedLayer())
+                return;
+
+            Undo.IncrementCurrentGroup();
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName("Paste Layer");
+            Undo.RecordObject(_graphAsset, "Paste Layer");
+
+            int sortingOrder = ResolveInsertedLayerSortingOrder(afterLayerId);
+            var layer = _graphAsset.AddLayer(GenerateUniqueLayerCopyName(_copiedLayer.Name));
+            layer.Color = _copiedLayer.Color;
+            layer.SortingOrder = sortingOrder;
+            layer.Enabled = _copiedLayer.Enabled;
+            layer.DefaultHeight = _copiedLayer.DefaultHeight;
+            layer.UseZeroLayerPadding = _copiedLayer.UseZeroLayerPadding;
+            layer.ExtraWidthCells = _copiedLayer.ExtraWidthCells;
+            layer.ExtraLengthCells = _copiedLayer.ExtraLengthCells;
+            layer.GenerateFlatSurface = _copiedLayer.GenerateFlatSurface;
+            layer.FlatSurfaceMaterial = _copiedLayer.FlatSurfaceMaterial;
+            layer.BuildLayerKey = _copiedLayer.BuildLayerKey;
+
+            var idMap = new Dictionary<string, string>();
+            foreach (var data in _copiedLayer.Nodes)
+            {
+                var node = _graphAsset.AddNode(data.NodeType, false, layer.Id);
+                if (node == null)
+                    continue;
+
+                Undo.RegisterCreatedObjectUndo(node, "Paste Layer Node");
+                if (!string.IsNullOrWhiteSpace(data.JsonData))
+                    EditorJsonUtility.FromJsonOverwrite(data.JsonData, node);
+
+                node.NodeId = Guid.NewGuid().ToString();
+                node.LayerId = layer.Id;
+                node.EditorPosition = data.Position;
+                RemapSerializedLayerReferences(node, _copiedLayer.SourceLayerId, layer.Id);
+                EditorUtility.SetDirty(node);
+
+                if (!string.IsNullOrEmpty(data.OriginalNodeId))
+                    idMap[data.OriginalNodeId] = node.NodeId;
+            }
+
+            foreach (var connection in _copiedLayer.Connections)
+            {
+                string sourceId = ResolvePastedEndpoint(connection.SourceNodeId, idMap);
+                string targetId = ResolvePastedEndpoint(connection.TargetNodeId, idMap);
+                if (string.IsNullOrEmpty(sourceId) || string.IsNullOrEmpty(targetId))
+                    continue;
+
+                _graphAsset.AddConnection(
+                    sourceId,
+                    connection.SourcePortIndex,
+                    targetId,
+                    connection.TargetPortIndex,
+                    connection.SourceElementIndex);
+            }
+
+            _graphAsset.EnsureLayerGraphStates();
+            EditorUtility.SetDirty(_graphAsset);
+            TrySyncCompanionBlueprintLayers(false);
+            Undo.CollapseUndoOperations(undoGroup);
+
+            SelectLayer(layer.Id);
+            RefreshGraphViewFromAsset(false);
+            RebuildLayerList();
+            RefreshInspectorPanel();
+            RequestAutoRun();
+
+            if (_statusLabel != null)
+                _statusLabel.text = $"Вставлено шар '{layer.Name}' ({idMap.Count} нод, {_copiedLayer.Connections.Count} зв'язків).";
+        }
+
+        private int ResolveInsertedLayerSortingOrder(string afterLayerId)
+        {
+            var afterLayer = !string.IsNullOrEmpty(afterLayerId)
+                ? _graphAsset.GetLayerById(afterLayerId)
+                : null;
+            int order = afterLayer != null
+                ? afterLayer.SortingOrder + 1
+                : _graphAsset.Layers.Where(layer => layer != null).Select(layer => layer.SortingOrder).DefaultIfEmpty(-1).Max() + 1;
+
+            foreach (var layer in _graphAsset.Layers)
+            {
+                if (layer != null && layer.SortingOrder >= order)
+                    layer.SortingOrder++;
+            }
+
+            return order;
+        }
+
+        private string GenerateUniqueLayerCopyName(string sourceName)
+        {
+            string baseName = string.IsNullOrWhiteSpace(sourceName) ? "Layer" : sourceName.Trim();
+            string candidate = $"{baseName} Copy";
+            int index = 2;
+            while (_graphAsset.Layers.Any(layer =>
+                       layer != null && string.Equals(layer.Name, candidate, StringComparison.Ordinal)))
+            {
+                candidate = $"{baseName} Copy {index++}";
+            }
+
+            return candidate;
+        }
+
+        private bool IsReusableGlobalEndpoint(string nodeId)
+        {
+            var node = _graphAsset?.GetNodeById(nodeId);
+            return node != null && GraphStaticNodeUtility.IsStaticGraphNode(node);
+        }
+
+        private string ResolvePastedEndpoint(string originalNodeId, IReadOnlyDictionary<string, string> idMap)
+        {
+            if (string.IsNullOrEmpty(originalNodeId))
+                return null;
+            if (idMap != null && idMap.TryGetValue(originalNodeId, out string mappedId))
+                return mappedId;
+            return IsReusableGlobalEndpoint(originalNodeId) ? originalNodeId : null;
+        }
+
+        private static void RemapSerializedLayerReferences(NodeBase node, string oldLayerId, string newLayerId)
+        {
+            if (node == null || string.IsNullOrEmpty(oldLayerId) || string.IsNullOrEmpty(newLayerId))
+                return;
+
+            var serialized = new SerializedObject(node);
+            var property = serialized.GetIterator();
+            bool enterChildren = true;
+            bool changed = false;
+            while (property.Next(enterChildren))
+            {
+                enterChildren = false;
+                if (property.propertyType != SerializedPropertyType.String)
+                    continue;
+                if (!string.Equals(property.stringValue, oldLayerId, StringComparison.Ordinal))
+                    continue;
+
+                property.stringValue = newLayerId;
+                changed = true;
+            }
+
+            if (changed)
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private void ApplyLayerPreset(string layerName, Color color)
+        {
+            if (_graphAsset == null)
+                return;
+
+            Undo.IncrementCurrentGroup();
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName($"Add {layerName} Preset");
+            Undo.RecordObject(_graphAsset, $"Add {layerName} Preset");
+
+            var result = GraphBuiltInPresetUtility.AddLayerPreset(_graphAsset, layerName, color);
+            RegisterPresetCreatedObjectsForUndo(result);
+            Undo.CollapseUndoOperations(undoGroup);
+
+            if (result == null || result.Layer == null)
+            {
+                if (result != null)
+                    RenderPresetResult(result);
+                return;
+            }
+
+            EditorUtility.SetDirty(_graphAsset);
+            SelectLayer(result.Layer.Id);
+            RefreshGraphViewFromAsset(false);
+            RenderPresetResult(result);
+        }
+
+        private delegate GraphPresetApplyResult BranchPresetAction(
+            GraphAsset graph,
+            string layerId,
+            IReadOnlyList<NodeBase> selectedNodes);
+
+        private void ApplyBranchPreset(BranchPresetAction action)
+        {
+            if (_graphAsset == null || action == null)
+                return;
+
+            string layerId = EnsureSelectedLayer();
+            var selectedNodes = _graphView?.GetSelectedNodesForActiveLayer() ?? Array.Empty<NodeBase>();
+
+            Undo.IncrementCurrentGroup();
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName("Add Graph Branch Preset");
+            Undo.RecordObject(_graphAsset, "Add Graph Branch Preset");
+
+            var result = action(_graphAsset, layerId, selectedNodes);
+            RegisterPresetCreatedObjectsForUndo(result);
+            Undo.CollapseUndoOperations(undoGroup);
+
+            EditorUtility.SetDirty(_graphAsset);
+
+            if (result?.Changed == true)
+            {
+                RefreshGraphViewFromAsset();
+            }
+
+            RenderPresetResult(result);
+        }
+
+        private static void RegisterPresetCreatedObjectsForUndo(GraphPresetApplyResult result)
+        {
+            if (result == null)
+                return;
+
+            foreach (var node in result.CreatedNodes)
+            {
+                if (node != null)
+                    Undo.RegisterCreatedObjectUndo(node, $"Create {result.PresetName} Node");
+            }
         }
 
         private void RemoveSelectedLayer()
@@ -513,14 +1206,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
 
             Undo.RecordObject(_graphAsset, "Remove Layer");
-            _graphAsset.RemoveLayer(_selectedLayerId);
+            _graphAsset.RemoveLayer(_selectedLayerId, true);
             EditorUtility.SetDirty(_graphAsset);
 
             _selectedLayerId = _graphAsset.Layers.Count > 0 ? _graphAsset.Layers[0].Id : null;
+            TrySyncCompanionBlueprintLayers(false);
             if (_graphView != null)
             {
-                _graphView.ActiveLayerId = _selectedLayerId;
+                CaptureCameraTransform();
+                _graphView.SetActiveLayerWithoutRefresh(_selectedLayerId);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
+                RestoreCameraTransform();
             }
             RebuildLayerList();
         }
@@ -629,12 +1325,51 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _nodeInspectorSection.Add(_tabBuildLayersContent);
 
             _rightPanel.Add(_nodeInspectorSection);
+            ConstructValidationPanel();
 
             _contentContainer.Add(_rightPanel);
             SetInspectorVisible(_isInspectorVisible);
             UpdateInspectorTabVisibility();
             if (_activeInspectorTab == InspectorTab.BuildLayers)
                 RebuildBuildLayersPanel();
+        }
+
+        private void ConstructValidationPanel()
+        {
+            _validationPanel = new VisualElement
+            {
+                style =
+                {
+                    marginTop = 10,
+                    paddingTop = 6,
+                    borderTopWidth = 1,
+                    borderTopColor = new Color(0.24f, 0.24f, 0.24f)
+                }
+            };
+
+            var headerRow = new VisualElement
+            {
+                style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 4 }
+            };
+
+            var title = new Label("Validation")
+            {
+                style = { unityFontStyleAndWeight = FontStyle.Bold, flexGrow = 1 }
+            };
+            headerRow.Add(title);
+
+            var autoFixButton = new Button(ApplyValidationAutoFix)
+            {
+                text = "Auto Fix",
+                tooltip = "Автоматично виправити прості проблеми: null-ноди, missing ids, invalid connections та orphan-ноди."
+            };
+            headerRow.Add(autoFixButton);
+            _validationPanel.Add(headerRow);
+
+            _validationIssuesContainer = new VisualElement();
+            _validationPanel.Add(_validationIssuesContainer);
+            _rightPanel.Add(_validationPanel);
+            RenderValidationReport(null);
         }
 
         private void ConstructToolbar()
@@ -732,6 +1467,27 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     text = "▶ Run",
                     tooltip = "Запустити граф з поточними preview-настройками."
                 });
+
+            var presetsMenu = new ToolbarMenu
+            {
+                text = "Presets",
+                tooltip = "Швидко створити типовий шар або object-placement гілку для активного шару."
+            };
+            presetsMenu.menu.AppendAction("New Layer/Base Tile Layer", _ => ApplyLayerPreset("Base Tile Layer", new Color(0.48f, 0.62f, 0.36f)));
+            presetsMenu.menu.AppendAction("New Layer/Shoreline", _ => ApplyLayerPreset("Shoreline", new Color(0.56f, 0.72f, 0.74f)));
+            presetsMenu.menu.AppendAction("New Layer/Grass Small", _ => ApplyLayerPreset("Grass Small", new Color(0.42f, 0.58f, 0.28f)));
+            presetsMenu.menu.AppendAction("New Layer/Bush", _ => ApplyLayerPreset("Bush", new Color(0.28f, 0.47f, 0.24f)));
+            presetsMenu.menu.AppendAction("New Layer/Dry Grass", _ => ApplyLayerPreset("Dry Grass", new Color(0.62f, 0.58f, 0.34f)));
+            presetsMenu.menu.AppendAction("New Layer/Rock", _ => ApplyLayerPreset("Rock", new Color(0.48f, 0.48f, 0.44f)));
+            presetsMenu.menu.AppendAction("New Layer/Resource Item", _ => ApplyLayerPreset("Resource Item", new Color(0.68f, 0.50f, 0.32f)));
+            presetsMenu.menu.AppendAction("New Layer/Tree Leaves", _ => ApplyLayerPreset("Tree Leaves", new Color(0.32f, 0.50f, 0.28f)));
+            presetsMenu.menu.AppendSeparator();
+            presetsMenu.menu.AppendAction("Active Layer/Add Grass Objects From Mask", _ => ApplyBranchPreset(GraphBuiltInPresetUtility.AddGrassObjectsBranch));
+            presetsMenu.menu.AppendAction("Active Layer/Add Edge Objects", _ => ApplyBranchPreset(GraphBuiltInPresetUtility.AddEdgeObjectsBranch));
+            presetsMenu.menu.AppendAction("Active Layer/Add Cluster Objects", _ => ApplyBranchPreset(GraphBuiltInPresetUtility.AddClusterObjectsBranch));
+            presetsMenu.menu.AppendAction("Active Layer/Add Shoreline Decor", _ => ApplyBranchPreset(GraphBuiltInPresetUtility.AddShorelineDecorBranch));
+            presetsMenu.menu.AppendAction("Active Layer/Add Resource Scatter", _ => ApplyBranchPreset(GraphBuiltInPresetUtility.AddResourceScatterBranch));
+            toolbar.Add(presetsMenu);
 
             toolbar.Add(new ToolbarSpacer());
 
@@ -921,7 +1677,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             MigrateLegacySharedSettingsNode(_graphAsset);
             GraphStaticNodeUtility.EnsureStaticNodes(_graphAsset);
+            EnsureSelectedLayer();
+            if (_graphView != null)
+                _graphView.SetActiveLayerWithoutRefresh(_selectedLayerId);
             SanitizeGraphAsset(false);
+            TrySyncCompanionBlueprintLayers(false);
             _graphView.PopulateGraph(asset, EditorApplication.isPlaying);
             _graphView.SetInlinePreviewsVisible(_showInlinePreviews);
             SetSelectedNode(null);
@@ -965,7 +1725,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             AssetDatabase.SaveAssets();
-            _graphView?.RefreshFromAsset();
+            RefreshGraphViewFromAsset();
             _statusLabel.text = $"✓ Repaired {repaired} broken chain(s), removed {removed} null node(s).";
             Debug.Log($"[GraphCleaner] Repaired {repaired} broken chain(s) and removed {removed} null node(s) from '{_graphAsset.name}'.");
         }
@@ -980,24 +1740,751 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             SanitizeGraphAsset(true);
+            TrySyncCompanionBlueprintLayers(false);
 
             var validator = new GraphValidator();
-            var errors = validator.Validate(_graphAsset);
-            int errorCount = errors.Count(e => e.Severity == ValidationSeverity.Error);
-            int warningCount = errors.Count(e => e.Severity == ValidationSeverity.Warning);
+            var report = MergeValidationReports(
+                validator.ValidateDetailed(_graphAsset),
+                _lastBlueprintLayerSyncReport);
+            RenderValidationReport(report);
+            int errorCount = report.ErrorCount;
+            int warningCount = report.WarningCount;
 
-            if (errors.Count == 0)
+            if (report.Issues.Count == 0)
             {
                 _statusLabel.text = "✓ Validation passed — no errors.";
                 return;
             }
 
             var sb = new System.Text.StringBuilder();
-            foreach (var error in errors)
-                sb.AppendLine(error.ToString());
+            foreach (var issue in report.Issues)
+                sb.AppendLine(issue.ToString());
 
             _statusLabel.text = $"Validation: {errorCount} error(s), {warningCount} warning(s).";
-            Debug.LogWarning($"[GraphValidator] {errors.Count} issue(s):\n{sb}");
+            Debug.LogWarning($"[GraphValidator] {report.Issues.Count} issue(s):\n{sb}");
+        }
+
+        private void RenderValidationReport(GraphValidationReport report)
+        {
+            _lastValidationReport = report;
+            RebuildLayerList();
+
+            if (_validationIssuesContainer == null)
+                return;
+
+            _validationIssuesContainer.Clear();
+            if (report == null || report.Issues.Count == 0)
+            {
+                var empty = new Label("Немає актуальних помилок. Натисніть Validate.")
+                {
+                    style =
+                    {
+                        color = new Color(0.72f, 0.72f, 0.72f),
+                        whiteSpace = WhiteSpace.Normal
+                    }
+                };
+                _validationIssuesContainer.Add(empty);
+                return;
+            }
+
+            var summary = new Label($"{report.ErrorCount} error(s), {report.WarningCount} warning(s)")
+            {
+                style =
+                {
+                    unityFontStyleAndWeight = FontStyle.Bold,
+                    marginBottom = 4,
+                    color = report.HasErrors
+                        ? new Color(1f, 0.48f, 0.42f)
+                        : new Color(1f, 0.78f, 0.32f)
+                }
+            };
+            _validationIssuesContainer.Add(summary);
+
+            foreach (var issue in report.Issues.Take(12))
+            {
+                var issueButton = new Button(() => FocusValidationIssue(issue))
+                {
+                    text = FormatValidationIssue(issue),
+                    tooltip = issue.ToString()
+                };
+                issueButton.style.unityTextAlign = TextAnchor.MiddleLeft;
+                issueButton.style.whiteSpace = WhiteSpace.Normal;
+                issueButton.style.marginBottom = 2;
+                issueButton.style.backgroundColor = issue.Severity == ValidationSeverity.Error
+                    ? new Color(0.34f, 0.14f, 0.12f)
+                    : new Color(0.30f, 0.23f, 0.10f);
+                _validationIssuesContainer.Add(issueButton);
+            }
+
+            if (report.Issues.Count > 12)
+            {
+                _validationIssuesContainer.Add(new Label($"+ {report.Issues.Count - 12} more in Console")
+                {
+                    style = { color = new Color(0.72f, 0.72f, 0.72f) }
+                });
+            }
+        }
+
+        private void RenderPresetResult(GraphPresetApplyResult result)
+        {
+            if (result == null)
+                return;
+
+            RenderValidationReport(result.ValidationReport);
+
+            if (_validationIssuesContainer != null)
+            {
+                var presetBox = new VisualElement
+                {
+                    style =
+                    {
+                        paddingLeft = 6,
+                        paddingRight = 6,
+                        paddingTop = 5,
+                        paddingBottom = 5,
+                        marginBottom = 6,
+                        backgroundColor = result.Success
+                            ? new Color(0.12f, 0.26f, 0.16f)
+                            : new Color(0.32f, 0.16f, 0.12f)
+                    }
+                };
+
+                presetBox.Add(new Label(result.Message ?? "Preset applied.")
+                {
+                    style =
+                    {
+                        unityFontStyleAndWeight = FontStyle.Bold,
+                        whiteSpace = WhiteSpace.Normal,
+                        color = result.Success
+                            ? new Color(0.70f, 1f, 0.72f)
+                            : new Color(1f, 0.62f, 0.48f)
+                    }
+                });
+
+                string connectionText = $"Connections created: {result.CreatedConnections.Count}";
+                presetBox.Add(new Label(connectionText)
+                {
+                    style = { color = new Color(0.78f, 0.78f, 0.78f) }
+                });
+
+                foreach (var warning in result.Warnings.Take(4))
+                {
+                    presetBox.Add(new Label("WARN " + warning)
+                    {
+                        style =
+                        {
+                            color = new Color(1f, 0.78f, 0.36f),
+                            whiteSpace = WhiteSpace.Normal
+                        }
+                    });
+                }
+
+                foreach (var node in result.CreatedNodes.Take(8))
+                {
+                    if (node == null)
+                        continue;
+
+                    var nodeId = node.NodeId;
+                    var button = new Button(() => _graphView?.FocusNode(nodeId))
+                    {
+                        text = "+ " + node.Title,
+                        tooltip = nodeId
+                    };
+                    button.style.unityTextAlign = TextAnchor.MiddleLeft;
+                    presetBox.Add(button);
+                }
+
+                _validationIssuesContainer.Insert(0, presetBox);
+            }
+
+            _statusLabel.text = result.Message ?? "Preset applied.";
+
+            if (result.ValidationReport?.Issues.Count > 0)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine(result.Message);
+                foreach (var issue in result.ValidationReport.Issues)
+                    sb.AppendLine("  - " + issue);
+                Debug.LogWarning($"[GraphPreset] {sb}");
+            }
+            else
+            {
+                Debug.Log($"[GraphPreset] {result.Message}");
+            }
+        }
+
+        private static string FormatValidationIssue(GraphValidationIssue issue)
+        {
+            if (issue == null)
+                return string.Empty;
+
+            string icon = issue.Severity == ValidationSeverity.Error ? "ERR" : "WARN";
+            string layer = string.IsNullOrEmpty(issue.LayerId)
+                ? ""
+                : $" [{issue.LayerId.Substring(0, Mathf.Min(8, issue.LayerId.Length))}]";
+            return $"{icon} {issue.Code}{layer}: {issue.Message}";
+        }
+
+        private Dictionary<string, GraphValidationIssue> BuildLayerSyncIssueLookup()
+        {
+            var result = new Dictionary<string, GraphValidationIssue>();
+            AddLayerSyncIssues(result, _lastBlueprintLayerSyncReport);
+            AddLayerSyncIssues(result, _lastValidationReport);
+            return result;
+        }
+
+        private static void AddLayerSyncIssues(
+            Dictionary<string, GraphValidationIssue> target,
+            GraphValidationReport report)
+        {
+            if (target == null || report?.Issues == null)
+                return;
+
+            foreach (var issue in report.Issues)
+            {
+                if (issue == null
+                    || issue.Severity != ValidationSeverity.Error
+                    || string.IsNullOrEmpty(issue.LayerId)
+                    || string.IsNullOrEmpty(issue.Code))
+                    continue;
+
+                if (!target.ContainsKey(issue.LayerId))
+                    target.Add(issue.LayerId, issue);
+            }
+        }
+
+        private void TrySyncCompanionBlueprintLayers(bool logWarnings)
+        {
+            _lastBlueprintLayerSyncReport = null;
+            if (_graphAsset == null)
+                return;
+
+            var type = ResolveGraphBuildLayerStoreType();
+            if (type == null)
+            {
+                _lastBlueprintLayerSyncReport = CreateBlueprintSyncFailureReport(
+                    "BLUEPRINT_SYNC_MODULE_MISSING",
+                    "Модуль Generator.Editor недоступний, тому companion Blueprint Layers не можуть бути синхронізовані.");
+                return;
+            }
+
+            var syncMethod = type.GetMethod(
+                "Sync",
+                BindingFlags.Public | BindingFlags.Static);
+            if (syncMethod == null)
+            {
+                _lastBlueprintLayerSyncReport = CreateBlueprintSyncFailureReport(
+                    "BLUEPRINT_SYNC_METHOD_MISSING",
+                    "GraphBuildLayerStore.Sync не знайдено.");
+                return;
+            }
+
+            object config = null;
+            try
+            {
+                config = syncMethod.Invoke(null, new object[] { _graphAsset });
+            }
+            catch (Exception e)
+            {
+                var error = UnwrapReflectionException(e);
+                _lastBlueprintLayerSyncReport = CreateBlueprintSyncFailureReport(
+                    "BLUEPRINT_SYNC_FAILED",
+                    "Не вдалося синхронізувати companion Blueprint Layers: " + error.Message);
+                if (logWarnings)
+                    Debug.LogWarning("[GraphEditorWindow] " + error);
+                return;
+            }
+
+            _lastBlueprintLayerSyncReport = ValidateCompanionBlueprintLayerSync(type, config);
+        }
+
+        private GraphValidationReport ValidateCompanionBlueprintLayerSync(Type storeType, object config)
+        {
+            if (storeType == null)
+                return null;
+
+            var validateMethod = storeType.GetMethod(
+                "ValidateBlueprintLayerSync",
+                BindingFlags.Public | BindingFlags.Static);
+            if (validateMethod == null)
+            {
+                return CreateBlueprintSyncFailureReport(
+                    "BLUEPRINT_SYNC_VALIDATE_MISSING",
+                    "GraphBuildLayerStore.ValidateBlueprintLayerSync не знайдено.");
+            }
+
+            try
+            {
+                return validateMethod.Invoke(null, new[] { _graphAsset, config }) as GraphValidationReport
+                       ?? CreateBlueprintSyncFailureReport(
+                           "BLUEPRINT_SYNC_VALIDATE_EMPTY",
+                           "ValidateBlueprintLayerSync не повернув GraphValidationReport.");
+            }
+            catch (Exception e)
+            {
+                var error = UnwrapReflectionException(e);
+                return CreateBlueprintSyncFailureReport(
+                    "BLUEPRINT_SYNC_VALIDATE_FAILED",
+                    "Не вдалося перевірити companion Blueprint Layers: " + error.Message);
+            }
+        }
+
+        private static GraphValidationReport CreateBlueprintSyncFailureReport(string code, string message)
+        {
+            var report = new GraphValidationReport();
+            report.Add(new GraphValidationIssue(
+                code,
+                ValidationSeverity.Error,
+                message));
+            return report;
+        }
+
+        private static Exception UnwrapReflectionException(Exception exception)
+        {
+            return exception is TargetInvocationException { InnerException: not null }
+                ? exception.InnerException
+                : exception;
+        }
+
+        private static GraphValidationReport MergeValidationReports(params GraphValidationReport[] reports)
+        {
+            var merged = new GraphValidationReport();
+            if (reports == null)
+                return merged;
+
+            foreach (var report in reports)
+            {
+                if (report?.Issues == null)
+                    continue;
+
+                merged.AddRange(report.Issues);
+            }
+
+            return merged;
+        }
+
+        private void FocusValidationIssue(GraphValidationIssue issue)
+        {
+            if (_graphAsset == null || issue == null)
+                return;
+
+            if (!string.IsNullOrEmpty(issue.NodeId))
+            {
+                var node = _graphAsset.GetNodeById(issue.NodeId);
+                if (node != null && !GraphAsset.IsGlobalNode(node))
+                {
+                    SelectLayer(node.LayerId);
+                }
+
+                _graphView?.FocusNode(issue.NodeId);
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(issue.LayerId)
+                && _graphAsset.GetLayerById(issue.LayerId) != null)
+                SelectLayer(issue.LayerId);
+        }
+
+        private void ApplyValidationAutoFix()
+        {
+            if (_graphAsset == null)
+                return;
+
+            Undo.RecordObject(_graphAsset, "Auto Fix Graph Validation");
+
+            int fixedCount = 0;
+            fixedCount += _graphAsset.RepairMissingNodeConnections();
+            fixedCount += _graphAsset.RemoveNullNodes();
+            fixedCount += NormalizeDuplicateNodeIds();
+            fixedCount += NormalizeDuplicateConnectionIds();
+            fixedCount += AssignInvalidLayerNodesToActiveLayer();
+            fixedCount += CreateMissingLayerOutputs();
+            fixedCount += RemoveInvalidConnections();
+
+            _graphAsset.EnsureLayerGraphStates();
+            EditorUtility.SetDirty(_graphAsset);
+            RefreshGraphViewFromAsset();
+            RebuildLayerList();
+            RefreshInspectorPanel();
+
+            var validator = new GraphValidator();
+            var report = validator.ValidateDetailed(_graphAsset);
+            RenderValidationReport(report);
+
+            _statusLabel.text = fixedCount > 0
+                ? $"✓ Auto Fix applied {fixedCount} change(s)."
+                : "Auto Fix: no simple fixes were needed.";
+        }
+
+        private int NormalizeDuplicateNodeIds()
+        {
+            var seen = new HashSet<string>();
+            int changed = 0;
+            foreach (var node in _graphAsset.Nodes)
+            {
+                if (node == null)
+                    continue;
+
+                string id = node.NodeId;
+                if (!string.IsNullOrEmpty(id) && seen.Add(id))
+                    continue;
+
+                node.NodeId = Guid.NewGuid().ToString();
+                seen.Add(node.NodeId);
+                changed++;
+            }
+
+            return changed;
+        }
+
+        private int NormalizeDuplicateConnectionIds()
+        {
+            var seen = new HashSet<string>();
+            int changed = 0;
+            foreach (var connection in _graphAsset.Connections)
+            {
+                if (connection == null)
+                    continue;
+
+                string id = connection.ConnectionId;
+                if (!string.IsNullOrEmpty(id) && seen.Add(id))
+                    continue;
+
+                connection.ResetConnectionId();
+                seen.Add(connection.ConnectionId);
+                changed++;
+            }
+
+            return changed;
+        }
+
+        private int AssignInvalidLayerNodesToActiveLayer()
+        {
+            string targetLayerId = !string.IsNullOrEmpty(_selectedLayerId)
+                && _graphAsset.GetLayerById(_selectedLayerId) != null
+                    ? _selectedLayerId
+                    : _graphAsset.EnsureDefaultLayer();
+            var validLayers = new HashSet<string>(_graphAsset.Layers.Where(layer => layer != null).Select(layer => layer.Id));
+            int changed = 0;
+
+            foreach (var node in _graphAsset.Nodes)
+            {
+                if (node == null || GraphAsset.IsGlobalNode(node))
+                    continue;
+
+                if (!string.IsNullOrEmpty(node.LayerId) && validLayers.Contains(node.LayerId))
+                    continue;
+
+                node.LayerId = targetLayerId;
+                changed++;
+            }
+
+            return changed;
+        }
+
+        private int CreateMissingLayerOutputs()
+        {
+            int changed = 0;
+            foreach (var layer in _graphAsset.Layers)
+            {
+                if (layer == null || !layer.Enabled)
+                    continue;
+
+                var nodes = _graphAsset.GetNodesForLayer(layer.Id);
+                bool hasObjectLayerNode = nodes.Any(node => node is ObjectLayerNode);
+                bool hasObjectOutputNode = nodes.Any(node => node is ObjectOutputToTWCNode);
+
+                if (hasObjectLayerNode && !hasObjectOutputNode)
+                {
+                    var objectLayer = nodes.OfType<ObjectLayerNode>().FirstOrDefault();
+                    var output = _graphAsset.AddNode(typeof(ObjectOutputToTWCNode), false, layer.Id);
+                    if (output != null)
+                    {
+                        output.EditorPosition = (objectLayer?.EditorPosition ?? Vector2.zero) + new Vector2(280f, 0f);
+                        if (objectLayer != null)
+                            _graphAsset.AddConnection(objectLayer.NodeId, 0, output.NodeId, 0);
+                        changed++;
+                    }
+                }
+
+                nodes = _graphAsset.GetNodesForLayer(layer.Id);
+                var outputNodes = nodes.OfType<OutputNode>().ToList();
+                if (outputNodes.Count > 1)
+                    continue;
+
+                var layerOutput = outputNodes.FirstOrDefault();
+                if (layerOutput == null)
+                {
+                    layerOutput = _graphAsset.AddNode(typeof(OutputNode), false, layer.Id) as OutputNode;
+                    if (layerOutput != null)
+                    {
+                        layerOutput.EditorPosition = ResolveNewLayerOutputPosition(nodes);
+                        changed++;
+                    }
+                }
+
+                if (layerOutput == null)
+                    continue;
+
+                var layerConnections = _graphAsset.GetConnectionsForLayer(layer.Id, includeGlobal: false);
+                bool hasIncomingOutput = layerConnections.Any(connection =>
+                    connection != null && connection.TargetNodeId == layerOutput.NodeId);
+                if (hasIncomingOutput)
+                    continue;
+
+                if (TryFindLayerOutputSource(
+                    nodes,
+                    layerConnections,
+                    layerOutput,
+                    out var source,
+                    out int sourcePort,
+                    out int targetPort,
+                    out var outputKind))
+                {
+                    layerOutput.OutputKind = outputKind;
+                    _graphAsset.AddConnection(source.NodeId, sourcePort, layerOutput.NodeId, targetPort);
+                    if (layerOutput.EditorPosition == Vector2.zero)
+                        layerOutput.EditorPosition = source.EditorPosition + new Vector2(320f, 0f);
+                    changed++;
+                }
+            }
+
+            return changed;
+        }
+
+        private static Vector2 ResolveNewLayerOutputPosition(IReadOnlyList<NodeBase> nodes)
+        {
+            if (nodes == null || nodes.Count == 0)
+                return new Vector2(260f, 120f);
+
+            var rightMost = nodes
+                .Where(node => node != null)
+                .OrderByDescending(node => node.EditorPosition.x)
+                .FirstOrDefault();
+
+            return rightMost != null
+                ? rightMost.EditorPosition + new Vector2(320f, 0f)
+                : new Vector2(260f, 120f);
+        }
+
+        private static bool TryFindLayerOutputSource(
+            IReadOnlyList<NodeBase> nodes,
+            IReadOnlyList<Connection> connections,
+            OutputNode output,
+            out NodeBase source,
+            out int sourcePort,
+            out int targetPort,
+            out LayerOutputKind outputKind)
+        {
+            source = null;
+            sourcePort = -1;
+            targetPort = -1;
+            outputKind = LayerOutputKind.Other;
+
+            if (nodes == null || output == null)
+                return false;
+
+            var candidates = nodes
+                .Where(node => node != null && node != output)
+                .OrderByDescending(node => node.EditorPosition.x)
+                .ToList();
+
+            if (TrySelectLayerOutputSource(
+                candidates,
+                connections,
+                output,
+                node => node is ObjectOutputToTWCNode,
+                port => true,
+                OutputNode.DataInputIndex,
+                LayerOutputKind.Objects,
+                out source,
+                out sourcePort,
+                out targetPort,
+                out outputKind))
+                return true;
+
+            if (TrySelectLayerOutputSource(
+                candidates,
+                connections,
+                output,
+                node => node is TwcModifierNode,
+                port => port.ValueType == typeof(bool[,]),
+                OutputNode.MaskInputIndex,
+                LayerOutputKind.Tiles,
+                out source,
+                out sourcePort,
+                out targetPort,
+                out outputKind))
+                return true;
+
+            if (TrySelectLayerOutputSource(
+                candidates,
+                connections,
+                output,
+                node => true,
+                port => port.ValueType == typeof(bool[,]),
+                OutputNode.MaskInputIndex,
+                LayerOutputKind.Masks,
+                out source,
+                out sourcePort,
+                out targetPort,
+                out outputKind))
+                return true;
+
+            foreach (var candidate in candidates)
+            {
+                var outputs = candidate.Outputs;
+                if (outputs == null)
+                    continue;
+
+                for (int i = 0; i < outputs.Length; i++)
+                {
+                    if (!IsTerminalOutput(candidate, i, connections, output))
+                        continue;
+
+                    if (!TryResolveOutputTarget(output, outputs[i], out targetPort, out outputKind))
+                        continue;
+
+                    source = candidate;
+                    sourcePort = i;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TrySelectLayerOutputSource(
+            IReadOnlyList<NodeBase> candidates,
+            IReadOnlyList<Connection> connections,
+            OutputNode output,
+            Func<NodeBase, bool> nodePredicate,
+            Func<PortDefinition, bool> portPredicate,
+            int preferredTargetPort,
+            LayerOutputKind preferredOutputKind,
+            out NodeBase source,
+            out int sourcePort,
+            out int targetPort,
+            out LayerOutputKind outputKind)
+        {
+            source = null;
+            sourcePort = -1;
+            targetPort = -1;
+            outputKind = preferredOutputKind;
+
+            foreach (var candidate in candidates)
+            {
+                if (candidate == null || !nodePredicate(candidate))
+                    continue;
+
+                var outputs = candidate.Outputs;
+                if (outputs == null)
+                    continue;
+
+                for (int i = 0; i < outputs.Length; i++)
+                {
+                    if (!portPredicate(outputs[i]))
+                        continue;
+                    if (!IsOutputConnectionCompatible(output, outputs[i], preferredTargetPort))
+                        continue;
+                    if (!IsTerminalOutput(candidate, i, connections, output))
+                        continue;
+
+                    source = candidate;
+                    sourcePort = i;
+                    targetPort = preferredTargetPort;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool TryResolveOutputTarget(
+            OutputNode output,
+            PortDefinition sourcePort,
+            out int targetPort,
+            out LayerOutputKind outputKind)
+        {
+            if (sourcePort?.ValueType == typeof(string[,]))
+            {
+                targetPort = OutputNode.BiomeMapInputIndex;
+                outputKind = LayerOutputKind.Tiles;
+                return IsOutputConnectionCompatible(output, sourcePort, targetPort);
+            }
+
+            if (sourcePort?.ValueType == typeof(float[,]))
+            {
+                targetPort = OutputNode.HeightMapInputIndex;
+                outputKind = LayerOutputKind.Tiles;
+                return IsOutputConnectionCompatible(output, sourcePort, targetPort);
+            }
+
+            if (sourcePort?.ValueType == typeof(bool[,]))
+            {
+                targetPort = OutputNode.MaskInputIndex;
+                outputKind = LayerOutputKind.Masks;
+                return IsOutputConnectionCompatible(output, sourcePort, targetPort);
+            }
+
+            targetPort = OutputNode.DataInputIndex;
+            outputKind = LayerOutputKind.Other;
+            return IsOutputConnectionCompatible(output, sourcePort, targetPort);
+        }
+
+        private static bool IsOutputConnectionCompatible(
+            OutputNode output,
+            PortDefinition sourcePort,
+            int targetPort)
+        {
+            var inputs = output?.Inputs;
+            if (sourcePort == null || inputs == null || targetPort < 0 || targetPort >= inputs.Length)
+                return false;
+
+            return PortDefinition.AreValueTypesCompatible(sourcePort.ValueType, inputs[targetPort].ValueType);
+        }
+
+        private static bool IsTerminalOutput(
+            NodeBase node,
+            int outputPort,
+            IReadOnlyList<Connection> connections,
+            OutputNode layerOutput)
+        {
+            if (node == null || connections == null)
+                return true;
+
+            return !connections.Any(connection =>
+                connection != null
+                && connection.SourceNodeId == node.NodeId
+                && connection.SourcePortIndex == outputPort
+                && connection.TargetNodeId != layerOutput?.NodeId);
+        }
+
+        private int RemoveInvalidConnections()
+        {
+            var validator = new GraphValidator();
+            var report = validator.ValidateDetailed(_graphAsset);
+            var removableConnectionIds = new HashSet<string>(
+                report.Issues
+                    .Where(issue => issue.CanAutoFix
+                        && !string.IsNullOrEmpty(issue.ConnectionId)
+                        && issue.Severity == ValidationSeverity.Error)
+                    .Select(issue => issue.ConnectionId));
+
+            if (removableConnectionIds.Count == 0)
+                return 0;
+
+            int removed = 0;
+            foreach (var connection in _graphAsset.Connections.ToList())
+            {
+                if (connection != null && removableConnectionIds.Contains(connection.ConnectionId))
+                {
+                    _graphAsset.RemoveConnection(connection);
+                    removed++;
+                }
+            }
+
+            return removed;
         }
 
         private void SaveGraph()
@@ -1022,152 +2509,203 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
             }
 
-            SanitizeGraphAsset(true);
-
-            // Validate first
-            var validator = new GraphValidator();
-            var errors = validator.Validate(_graphAsset);
-            int errorCount = errors.Count(e => e.Severity == ValidationSeverity.Error);
-            int warningCount = errors.Count(e => e.Severity == ValidationSeverity.Warning);
-
-            if (errorCount > 0)
-            {
-                _statusLabel.text = $"✗ Cannot run: {errorCount} validation error(s).";
-
-                if (!isAutoRun)
-                {
-                    var details = new System.Text.StringBuilder();
-                    foreach (var err in errors)
-                        details.AppendLine($"  - {err}");
-
-                    Debug.LogWarning($"[GraphRunner] Validation failed with {errorCount} error(s) and {warningCount} warning(s).\n{details}");
-                }
-                _isRunningGraph = false;
-                return;
-            }
-
-            if (warningCount > 0 && !isAutoRun)
-            {
-                Debug.LogWarning($"[GraphRunner] Running with {warningCount} validation warning(s).");
-
-                var warningDetails = new System.Text.StringBuilder();
-                foreach (var warning in errors.Where(e => e.Severity == ValidationSeverity.Warning))
-                    warningDetails.AppendLine($"  - {warning}");
-
-                Debug.LogWarning($"[GraphRunner] Validation warnings:\n{warningDetails}");
-            }
-
             _progressBar.visible = true;
             _progressBar.value = 0;
             _statusLabel.text = "Running graph...";
 
-            var runtimeSettings = ResolveRuntimeExecutionSettings();
-
-            // Determine map size: Runtime(GridInstaller) > PreviewSettings > SharedSettings > inline fields
-            int mapW = _previewWidth;
-            int mapH = _previewHeight;
-            if (_previewSettings != null)
-            {
-                mapW = _previewSettings.PreviewWidth;
-                mapH = _previewSettings.PreviewHeight;
-            }
-
-            if (runtimeSettings.HasGridSize)
-            {
-                mapW = runtimeSettings.GridWidth;
-                mapH = runtimeSettings.GridHeight;
-            }
-
-            var sharedSettings = _graphAsset.SharedSettings;
-            if (sharedSettings != null && sharedSettings.HasMapSize)
-            {
-                mapW = sharedSettings.MapWidth;
-                mapH = sharedSettings.MapHeight;
-            }
-
             var sw = System.Diagnostics.Stopwatch.StartNew();
-
-            int seed = GetSeedFromGraph();
-            GlobalSeed.Set(seed);
-            _statusLabel.text = $"Running graph... (seed {seed})";
-
-            // Save previous Unity random state and set deterministic seed for UnityEngine.Random
             var prevRandomState = UnityEngine.Random.state;
-            UnityEngine.Random.InitState(seed);
 
             try
             {
-                var context = new NodeContext(seed, CancellationToken.None);
-                context.MapSize = new Vector2Int(mapW, mapH);
+                SanitizeGraphAsset(true);
+                TrySyncCompanionBlueprintLayers(false);
 
-                // Register shared settings
-                if (sharedSettings != null)
+                // Validate first. Global errors stop the run; layer errors are skipped by the run policy.
+                var validator = new GraphValidator();
+                var validationReport = MergeValidationReports(
+                    validator.ValidateDetailed(_graphAsset),
+                    _lastBlueprintLayerSyncReport);
+                RenderValidationReport(validationReport);
+                int errorCount = validationReport.ErrorCount;
+                int warningCount = validationReport.WarningCount;
+                int globalErrorCount = validationReport.Issues.Count(issue =>
+                    issue.Severity == ValidationSeverity.Error && string.IsNullOrEmpty(issue.LayerId));
+                var invalidLayerIds = new HashSet<string>(
+                    validationReport.Issues
+                        .Where(issue => issue.Severity == ValidationSeverity.Error && !string.IsNullOrEmpty(issue.LayerId))
+                        .Select(issue => issue.LayerId));
+
+                if (globalErrorCount > 0)
                 {
-                    context.ApplySharedSettings(sharedSettings);
-                    context.RegisterService(sharedSettings);
+                    _statusLabel.text = $"✗ Cannot run: {globalErrorCount} global validation error(s).";
+
+                    if (!isAutoRun)
+                    {
+                        var details = new StringBuilder();
+                        foreach (var issue in validationReport.Issues.Where(issue => issue.Severity == ValidationSeverity.Error))
+                            details.AppendLine($"  - {issue}");
+
+                        Debug.LogWarning($"[GraphRunner] Validation failed with {errorCount} error(s) and {warningCount} warning(s).\n{details}");
+                    }
+
+                    return;
                 }
 
-                // Register generator services with fallbacks
-                RegisterEditorServices(context, runtimeSettings);
+                if (warningCount > 0 && !isAutoRun)
+                {
+                    Debug.LogWarning($"[GraphRunner] Running with {warningCount} validation warning(s).");
 
-                // Register layer data list so SingleTileLayerNode can populate it
+                    var warningDetails = new StringBuilder();
+                    foreach (var warning in validationReport.Issues.Where(e => e.Severity == ValidationSeverity.Warning))
+                        warningDetails.AppendLine($"  - {warning}");
+
+                    Debug.LogWarning($"[GraphRunner] Validation warnings:\n{warningDetails}");
+                }
+
+                var runtimeSettings = ResolveRuntimeExecutionSettings();
+
+                // Determine map size: Runtime(GridInstaller) > PreviewSettings > SharedSettings > inline fields
+                int mapW = _previewWidth;
+                int mapH = _previewHeight;
+                if (_previewSettings != null)
+                {
+                    mapW = _previewSettings.PreviewWidth;
+                    mapH = _previewSettings.PreviewHeight;
+                }
+
+                if (runtimeSettings.HasGridSize)
+                {
+                    mapW = runtimeSettings.GridWidth;
+                    mapH = runtimeSettings.GridHeight;
+                }
+
+                var sharedSettings = _graphAsset.SharedSettings;
+                if (sharedSettings != null && sharedSettings.HasMapSize)
+                {
+                    mapW = sharedSettings.MapWidth;
+                    mapH = sharedSettings.MapHeight;
+                }
+
+                int seed = GetSeedFromGraph();
+                GlobalSeed.Set(seed);
+                _statusLabel.text = $"Running graph... (seed {seed})";
+
+                // Save previous Unity random state and set deterministic seed for UnityEngine.Random
+                UnityEngine.Random.InitState(seed);
+
                 var layerDataList = new List<WorldLayerData>();
-                context.RegisterService(layerDataList);
+                var layerMaskRegistry = new LayerMaskRegistry();
+                LayerMaskPrewarmUtility.PrewarmAllLayerMasks(
+                    _graphAsset,
+                    seed,
+                    new Vector2Int(mapW, mapH),
+                    layerMaskRegistry,
+                    context => RegisterEditorServices(context, runtimeSettings, false),
+                    invalidLayerIds);
 
                 var runner = new GraphRunner();
-                var result = runner.Execute(_graphAsset, context);
-            int previewSize = ResolvePreviewSize(mapW, mapH);
-            _graphView?.UpdateNodePreviews(result, _previewSettings, layerDataList, previewSize, _previewHeatmap);
-            _lastResult = result;
-            RebuildLayerPreviews();
-            GraphPreviewWindow.RequestRepaint();
+                var scopes = _graphAsset.CreateEnabledLayerExecutionScopes();
+                var runReport = new GraphRunReport(
+                    seed,
+                    mapW,
+                    mapH,
+                    LayerRunFailurePolicy.SkipInvalidLayersAndContinueFailures);
+                var layerResults = new List<GraphExecutionResult>();
+                GraphExecutionResult previewResult = null;
 
-            sw.Stop();
-            _progressBar.visible = false;
-
-            if (result.Success)
-            {
-                var sb = new System.Text.StringBuilder();
-                sb.Append($"✓ Run completed in {sw.ElapsedMilliseconds}ms ({mapW}×{mapH})");
-                sb.Append($" | {result.Logs.Count} nodes executed");
-
-                float totalMs = 0;
-                foreach (var log in result.Logs)
-                    totalMs += log.DurationMs;
-
-                sb.Append($" | Total node time: {totalMs:F1}ms");
-
-                if (layerDataList.Count > 0)
-                    sb.Append($" | {layerDataList.Count} layer(s)");
-
-                _statusLabel.text = sb.ToString();
-
-                // Log per-node timing
-                Debug.Log($"[GraphRunner] Execution completed in {sw.ElapsedMilliseconds}ms:");
-                foreach (var log in result.Logs)
+                for (int i = 0; i < scopes.Count; i++)
                 {
-                    string icon = log.Status == NodeStatus.Warning ? "⚠" : "✓";
-                    string msg = string.IsNullOrEmpty(log.Message) ? "" : $" — {log.Message}";
-                    Debug.Log($"  {icon} [{log.DurationMs:F1}ms | alloc {log.AllocationBytes} B | iter {log.IterationCount}] {log.NodeTitle}{msg}");
+                    var scope = scopes[i];
+                    var layer = _graphAsset.GetLayerById(scope.LayerId);
+                    string layerName = layer?.Name ?? scope.LayerId ?? "Global";
+                    var record = new LayerRunRecord
+                    {
+                        LayerId = scope.LayerId,
+                        LayerName = layerName,
+                        SortingOrder = layer?.SortingOrder ?? i,
+                        Status = LayerRunStatus.Pending,
+                        GraphId = scope.GraphId
+                    };
+                    runReport.Layers.Add(record);
+
+                    if (invalidLayerIds.Contains(scope.LayerId))
+                    {
+                        record.Status = LayerRunStatus.SkippedValidation;
+                        record.Message = "Validation errors in this layer.";
+                        _progressBar.value = scopes.Count == 0 ? 1f : (float)(i + 1) / scopes.Count;
+                        continue;
+                    }
+
+                    try
+                    {
+                        record.Status = LayerRunStatus.Prepared;
+                        var context = CreateEditorNodeContext(seed, mapW, mapH, sharedSettings, runtimeSettings, layerDataList, layerMaskRegistry);
+                        var result = runner.Execute(scope, context);
+                        layerResults.Add(result);
+                        record.GraphId = result.GraphId;
+                        record.NodeCount = result.Logs.Count;
+                        record.NodeTimeMs = 0f;
+                        foreach (var log in result.Logs)
+                            record.NodeTimeMs += log.DurationMs;
+
+                        if (previewResult == null || scope.LayerId == _selectedLayerId)
+                            previewResult = result;
+
+                        if (result.Success)
+                        {
+                            record.Status = LayerRunStatus.Generated;
+                            record.Message = "Generated.";
+                        }
+                        else
+                        {
+                            record.Status = LayerRunStatus.Failed;
+                            record.Message = result.ErrorMessage;
+                            record.ErrorNodeId = result.ErrorNodeId;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        record.Status = LayerRunStatus.Failed;
+                        record.Message = ex.Message;
+                        Debug.LogException(ex);
+                    }
+
+                    _progressBar.value = scopes.Count == 0 ? 1f : (float)(i + 1) / scopes.Count;
                 }
 
-                // Highlight node execution times in the graph view
-                HighlightExecutionResults(result);
-            }
-            else
-            {
-                _statusLabel.text = $"✗ Run failed at node {result.ErrorNodeId}: {result.ErrorMessage}";
-                if (!isAutoRun)
-                    Debug.LogError($"[GraphRunner] Execution failed: {result.ErrorMessage}");
-            }
+                var aggregateResult = layerResults.Count > 0
+                    ? GraphExecutionResult.Combine(layerResults)
+                    : previewResult;
 
+                int previewSize = ResolvePreviewSize(mapW, mapH);
+                _graphView?.UpdateNodePreviews(aggregateResult, _previewSettings, layerDataList, previewSize, _previewHeatmap);
+                _lastResult = aggregateResult;
+                RebuildLayerPreviews();
+                GraphPreviewWindow.RequestRepaint();
+
+                sw.Stop();
+                _statusLabel.text = runReport.BuildStatusText(sw.ElapsedMilliseconds, layerDataList.Count);
+
+                if (!isAutoRun || runReport.FailedCount > 0 || runReport.SkippedCount > 0)
+                    Debug.Log($"[GraphRunner] Layer execution summary:\n{runReport.BuildConsoleSummary()}");
+
+                if (aggregateResult != null)
+                    HighlightExecutionResults(aggregateResult);
+
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                _statusLabel.text = $"✗ Run failed: {ex.Message}";
+                Debug.LogException(ex);
             }
             finally
             {
+                _progressBar.visible = false;
                 UnityEngine.Random.state = prevRandomState;
+                _isRunningGraph = false;
             }
-
-            _isRunningGraph = false;
         }
 
         internal bool TryGetBestPreview(out Texture2D previewTexture, out string status)
@@ -1203,24 +2741,59 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         /// Кожен сервіс реєструється опціонально — якщо ScriptableObject не задано,
         /// лог попереджує, але Run не зупиняється (вузли самі отримають помилку при GetService).
         /// </summary>
-        private void RegisterEditorServices(NodeContext context, RuntimeExecutionSettings runtimeSettings)
+        private NodeContext CreateEditorNodeContext(
+            int seed,
+            int mapW,
+            int mapH,
+            GraphSharedSettings sharedSettings,
+            RuntimeExecutionSettings runtimeSettings,
+            List<WorldLayerData> layerDataList,
+            LayerMaskRegistry layerMaskRegistry)
+        {
+            var context = new NodeContext(seed, CancellationToken.None)
+            {
+                MapSize = new Vector2Int(mapW, mapH)
+            };
+
+            if (sharedSettings != null)
+            {
+                context.ApplySharedSettings(sharedSettings);
+                context.RegisterService(sharedSettings);
+            }
+
+            RegisterEditorServices(context, runtimeSettings);
+
+            if (layerDataList != null)
+                context.RegisterService(layerDataList);
+            if (layerMaskRegistry != null)
+                context.RegisterService(layerMaskRegistry);
+
+            return context;
+        }
+
+        private void RegisterEditorServices(
+            NodeContext context,
+            RuntimeExecutionSettings runtimeSettings,
+            bool log = true)
         {
             context.RegisterService<IGeneratorDataRegistry>(new GeneratorDataRegistry());
-            Debug.Log("[EditorPreview] ✓ IGeneratorDataRegistry registered.");
+            if (log)
+                Debug.Log("[EditorPreview] ✓ IGeneratorDataRegistry registered.");
 
             var tileRegistry = runtimeSettings.TileRegistry ?? _previewSettings?.TileRegistry;
             if (tileRegistry != null)
             {
                 context.RegisterService(tileRegistry);
-                Debug.Log("[EditorPreview] ✓ TileRegistrySO registered.");
+                if (log)
+                    Debug.Log("[EditorPreview] ✓ TileRegistrySO registered.");
             }
-            else
+            else if (log)
             {
                 Debug.LogWarning("[EditorPreview] ⚠ TileRegistrySO not assigned in EditorPreviewSettings. " +
                     "SingleTileLayerNode sprite fallback will not be available.");
             }
 
-            if (!string.IsNullOrEmpty(runtimeSettings.Source))
+            if (log && !string.IsNullOrEmpty(runtimeSettings.Source))
             {
                 Debug.Log($"[EditorPreview] Runtime-equivalent settings source: {runtimeSettings.Source}");
             }
@@ -1410,6 +2983,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _previewHeatmap = settings.previewHeatmap;
             _isInspectorVisible = settings.isInspectorVisible;
             _activeInspectorTab = (InspectorTab)Mathf.Clamp(settings.inspectorTabIndex, 0, 2);
+            _selectedLayerId = settings.selectedLayerId;
+            _selectedNodeId = settings.selectedNodeId;
             _savedCameraPosition = settings.cameraPosition;
             _savedCameraScale = settings.cameraScale;
         }
@@ -1436,13 +3011,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             settings.previewHeatmap = _previewHeatmap;
             settings.isInspectorVisible = _isInspectorVisible;
             settings.inspectorTabIndex = (int)_activeInspectorTab;
-            if (_graphView != null)
-            {
-                var tr = _graphView.contentViewContainer.resolvedStyle.translate;
-                var sc = _graphView.contentViewContainer.resolvedStyle.scale;
-                settings.cameraPosition = new Vector3(tr.x, tr.y, 0f);
-                settings.cameraScale = sc.value;
-            }
+            settings.selectedLayerId = _selectedLayerId ?? "";
+            settings.selectedNodeId = _selectedNodeId ?? "";
+
+            CaptureCameraTransform();
+            settings.cameraPosition = _savedCameraPosition;
+            settings.cameraScale = _savedCameraScale == Vector3.zero ? Vector3.one : _savedCameraScale;
 
             EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssets();
@@ -1647,13 +3221,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private void SetSelectedNode(NodeBase node)
         {
             if (ReferenceEquals(_selectedNode, node))
+            {
+                _selectedNodeId = node?.NodeId;
                 return;
+            }
 
             if (_selectedNodeEditor != null)
                 DestroyImmediate(_selectedNodeEditor);
 
             _selectedNodeEditor = null;
             _selectedNode = node;
+            _selectedNodeId = node?.NodeId;
         }
 
         private void RefreshInspectorPanel()
@@ -1853,6 +3431,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var options = new List<string>(layers.Count);
             int selectedIndex = 0;
             string currentId = node.SourceLayerId;
+            string currentLayerId = node.LayerId;
+            var currentLayer = _graphAsset.GetLayerById(currentLayerId);
 
             for (int i = 0; i < layers.Count; i++)
             {
@@ -1862,14 +3442,78 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     selectedIndex = i;
             }
 
+            DrawCurrentLayerReferenceWarning(node);
+
             EditorGUI.BeginChangeCheck();
             int newIndex = EditorGUILayout.Popup("Шар-джерело", selectedIndex, options.ToArray());
             if (!EditorGUI.EndChangeCheck())
                 return false;
 
             newIndex = Mathf.Clamp(newIndex, 0, layers.Count - 1);
+            var selectedLayer = layers[newIndex];
+            if (!CanAssignLayerReference(currentLayer, selectedLayer, out string error))
+            {
+                EditorUtility.DisplayDialog("Invalid Layer Ref", error, "OK");
+                return false;
+            }
+
             Undo.RecordObject(node, "Change Layer Ref Source");
-            node.SetSourceLayerId(layers[newIndex].Id);
+            node.SetSourceLayerId(selectedLayer.Id);
+            return true;
+        }
+
+        private void DrawCurrentLayerReferenceWarning(LayerMaskReferenceNode node)
+        {
+            if (node == null)
+                return;
+
+            var report = new GraphValidator().ValidateDetailed(_graphAsset);
+            var issue = report.Issues.FirstOrDefault(issue =>
+                issue.Severity == ValidationSeverity.Error
+                && issue.NodeId == node.NodeId
+                && issue.Code.StartsWith("LAYER_REF_", StringComparison.Ordinal));
+
+            if (issue != null)
+                EditorGUILayout.HelpBox(issue.Message, MessageType.Error);
+        }
+
+        private bool CanAssignLayerReference(
+            GeneratorLayerDefinition currentLayer,
+            GeneratorLayerDefinition sourceLayer,
+            out string error)
+        {
+            error = null;
+
+            if (currentLayer == null)
+            {
+                error = "Layer Ref node does not belong to a valid graph layer.";
+                return false;
+            }
+
+            if (sourceLayer == null)
+            {
+                error = "Source layer is missing.";
+                return false;
+            }
+
+            if (!sourceLayer.Enabled)
+            {
+                error = $"Шар '{sourceLayer.Name}' вимкнений і не буде оброблений перед '{currentLayer.Name}'. Увімкни source layer або обери інший.";
+                return false;
+            }
+
+            if (sourceLayer.Id == currentLayer.Id)
+            {
+                error = $"Шар '{currentLayer.Name}' не може посилатися сам на себе.";
+                return false;
+            }
+
+            if (sourceLayer.SortingOrder >= currentLayer.SortingOrder)
+            {
+                error = $"Шар '{currentLayer.Name}' може посилатися тільки на шари, які виконуються раніше. '{sourceLayer.Name}' має order {sourceLayer.SortingOrder}, а поточний шар має order {currentLayer.SortingOrder}.";
+                return false;
+            }
+
             return true;
         }
 
@@ -1959,8 +3603,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 layer.Color = newColor;
 
                 EditorUtility.SetDirty(_graphAsset);
+                TrySyncCompanionBlueprintLayers(false);
                 RebuildLayerList();
-                _graphView?.RefreshFromAsset();
+                RefreshGraphViewFromAsset();
                 RequestAutoRun();
             }
 
@@ -2029,7 +3674,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void OnGraphCanvasBackgroundClicked()
         {
-            _selectedLayerId = null;
             _isMultiSelection = false;
             SetSelectedNode(null);
             RebuildLayerList();
@@ -2040,6 +3684,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private void OnGraphChanged()
         {
             RequestAutoRun();
+        }
+
+        private void OnGraphStatusMessage(string message)
+        {
+            if (_statusLabel != null && !string.IsNullOrWhiteSpace(message))
+                _statusLabel.text = message;
+        }
+
+        private void OnGraphViewTransformChanged(UnityEditor.Experimental.GraphView.GraphView graphView)
+        {
+            CaptureCameraTransform();
         }
 
         private void RequestAutoRun()
@@ -2155,18 +3810,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             try
             {
-                var type = System.Type.GetType(
-                    "Kruty1918.Moyva.Generator.Editor.GraphBuildLayersPanel, Kruty1918.Moyva.Generator.Editor");
+                TrySyncCompanionBlueprintLayers(true);
 
-                if (type == null)
-                {
-                    foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
-                    {
-                        type = assembly.GetType("Kruty1918.Moyva.Generator.Editor.GraphBuildLayersPanel");
-                        if (type != null)
-                            break;
-                    }
-                }
+                var type = ResolveType(
+                    "Kruty1918.Moyva.Generator.Editor.GraphBuildLayersPanel, Kruty1918.Moyva.Generator.Editor",
+                    "Kruty1918.Moyva.Generator.Editor.GraphBuildLayersPanel");
 
                 var method = type?.GetMethod(
                     "Build",
@@ -2186,9 +3834,32 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             catch (System.Exception e)
             {
                 _buildLayersHost.Add(new HelpBox(
-                    "Помилка побудови панелі build-шарів: " + e.Message,
+                "Помилка побудови панелі build-шарів: " + e.Message,
                     HelpBoxMessageType.Error));
             }
+        }
+
+        private static Type ResolveGraphBuildLayerStoreType()
+        {
+            return ResolveType(
+                "Kruty1918.Moyva.Generator.Editor.GraphBuildLayerStore, Kruty1918.Moyva.Generator.Editor",
+                "Kruty1918.Moyva.Generator.Editor.GraphBuildLayerStore");
+        }
+
+        private static Type ResolveType(string assemblyQualifiedName, string fullName)
+        {
+            var type = Type.GetType(assemblyQualifiedName);
+            if (type != null)
+                return type;
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                type = assembly.GetType(fullName);
+                if (type != null)
+                    return type;
+            }
+
+            return null;
         }
 
         private void DrawSerializedObjectWithoutScript(SerializedObject serializedObject)
@@ -2331,7 +4002,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             EditorUtility.SetDirty(_graphAsset);
             if (refreshView)
-                _graphView?.RefreshFromAsset();
+                RefreshGraphViewFromAsset();
 
             return true;
         }
@@ -2459,6 +4130,73 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 asset.RemoveNode(legacyNodes[i]);
 
             EditorUtility.SetDirty(asset);
+        }
+    }
+
+    [InitializeOnLoad]
+    internal static class GraphEditorWindowLayoutRepair
+    {
+        static GraphEditorWindowLayoutRepair()
+        {
+            ScheduleCloseFailedFallbackWindows();
+        }
+
+        internal static void ScheduleCloseFailedFallbackWindows()
+        {
+            EditorApplication.delayCall -= CloseFailedFallbackWindows;
+            EditorApplication.delayCall += CloseFailedFallbackWindows;
+        }
+
+        [MenuItem("Moyva/Graph Editor/Repair Failed Editor Windows")]
+        internal static void CloseFailedFallbackWindows()
+        {
+            var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+            for (int i = 0; i < windows.Length; i++)
+            {
+                var window = windows[i];
+                if (window == null)
+                    continue;
+
+                if (window.GetType().FullName != "UnityEditor.FallbackEditorWindow")
+                    continue;
+
+                string title = window.titleContent?.text;
+                if (!string.Equals(title, "Failed to load", StringComparison.Ordinal))
+                    continue;
+
+                CloseFailedFallbackWindow(window);
+            }
+        }
+
+        private static void CloseFailedFallbackWindow(EditorWindow window)
+        {
+            try
+            {
+                window.Close();
+            }
+            catch (NullReferenceException)
+            {
+                DestroyFailedFallbackWindow(window);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"Failed to close fallback editor window: {exception.Message}");
+            }
+        }
+
+        private static void DestroyFailedFallbackWindow(EditorWindow window)
+        {
+            if (window == null)
+                return;
+
+            try
+            {
+                UnityEngine.Object.DestroyImmediate(window);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning($"Failed to destroy fallback editor window: {exception.Message}");
+            }
         }
     }
 }

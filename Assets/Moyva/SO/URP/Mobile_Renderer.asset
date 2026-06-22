@@ -1,5 +1,64 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7353802473347338803
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 770acbaed70db4ad696458511aa3f084, type: 3}
+  m_Name: FlatKitFog
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::FlatKit.FlatKitFog
+  m_Active: 0
+  settings: {fileID: 11400000, guid: a31e17a53a60e7eca91c0bac9a718b90, type: 2}
+--- !u!114 &-6911283437992747537
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c448c2b51cb03db20d8dcb17aed9f8c2, type: 3}
+  m_Name: DecorSharedStylizedRendererFeature
+  m_EditorClassIdentifier: Kruty1918.Moyva.Visuals::Kruty1918.Moyva.Visuals.DecorSharedStylizedRendererFeature
+  m_Active: 1
+  _renderContactShadows: 1
+  _renderMeshOutlines: 1
+  _renderPassEvent: 300
+  _layerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &-4669532212205383062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c6e585d9d2317e438a403bbb1965d5e, type: 3}
+  m_Name: StylizedWater3.StylizedWaterRenderFeature
+  m_EditorClassIdentifier: sc.stylizedwater3.runtime::StylizedWater3.StylizedWaterRenderFeature
+  m_Active: 1
+  transparencyRefraction: 0
+  screenSpaceReflectionSettings:
+    allow: 1
+    reflectEverything: 0
+  allowDirectionalCaustics: 0
+  heightPrePassSettings:
+    enable: 1
+    range: 500
+    cellsPerUnit: 4
+    maxResolution: 4096
+    disableInSceneView: 1
+  heightReadbackCS: {fileID: 7200000, guid: 768e0c28dfdbc6b429fd59518fa03f2d, type: 3}
+  heightProcessingShader: {fileID: 4800000, guid: a1cfcf2c2c8140c084fb10845093540e, type: 3}
 --- !u!114 &-3650923340913689866
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14,14 +73,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.ScreenSpaceAmbientOcclusion
   m_Active: 1
   m_Settings:
-    AOMethod: 0
+    AOMethod: 1
     Downsample: 0
     AfterOpaque: 0
     Source: 1
     NormalSamples: 1
-    Intensity: 3.53
+    Intensity: 1
     DirectLightingStrength: 0.25
-    Radius: 2.2
+    Radius: 1
     Samples: 1
     BlurQuality: 0
     Falloff: 100
@@ -59,21 +118,21 @@ MonoBehaviour:
     AffectTransparent: 0
   _contact:
     Enabled: 0
-    ContactStrength: 0.28
-    ContactRadius: 0.28
-    ContactFalloff: 0.22
+    ContactStrength: 0.185
+    ContactRadius: 1.116
+    ContactFalloff: 0.293
     ContactColor: {r: 0.32, g: 0.36, b: 0.3, a: 1}
-    SmallObjectBoost: 0.55
+    SmallObjectBoost: 0.51
     GrassCardBoost: 0.35
   _crease:
     Enabled: 0
-    CreaseStrength: 0.18
+    CreaseStrength: 0
     CreaseRadius: 1.1
     CreaseThreshold: 0.18
     CreaseSoftness: 0.45
     CreaseColor: {r: 0.34, g: 0.38, b: 0.32, a: 1}
   _palette:
-    Enabled: 0
+    Enabled: 1
     Saturation: -8
     Contrast: -8
     ShadowTint: {r: 0.25, g: 0.31, b: 0.41, a: 1}
@@ -85,17 +144,17 @@ MonoBehaviour:
   _fog:
     Enabled: 0
     FogColor: {r: 0.75, g: 0.82, b: 0.9, a: 1}
-    FogStrength: 0.1
+    FogStrength: 0.397
     FogStart: 35
     FogEnd: 180
     HeightInfluence: 0.2
     Blend: 0.75
   _vignette:
     Enabled: 1
-    VignetteStrength: 0.045
-    VignetteRadius: 1.05
-    VignetteSoftness: 0.55
-    VignetteColor: {r: 0.13, g: 0.19, b: 0.25, a: 1}
+    VignetteStrength: 0.35
+    VignetteRadius: 1.58
+    VignetteSoftness: 0.8
+    VignetteColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!114 &-1277754162075699806
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -110,34 +169,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::FlatKit.FlatKitPixelation
   m_Active: 0
   settings: {fileID: 11400000, guid: 82baab71887a9b51eb954e0c3e0cfeca, type: 2}
---- !u!114 &-889900112233445566
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9a1c5d7e4f2a4c5d9e0b1a2c3d4e5f60, type: 3}
-  m_Name: DayNightScreenFilter
-  m_EditorClassIdentifier: 
-  m_Active: 0
-  _renderPassEvent: 600
-  _dayTint: {r: 1, g: 1, b: 1, a: 1}
-  _nightTint: {r: 0.7, g: 0.78, b: 0.95, a: 1}
-  _dawnTint: {r: 1.05, g: 0.92, b: 0.82, a: 1}
-  _duskTint: {r: 0.92, g: 0.82, b: 1, a: 1}
-  _filterStrength: 0.5
-  _daySaturation: 1
-  _nightSaturation: 0.82
-  _dayContrast: 1
-  _nightContrast: 1.06
-  _dayExposure: 1.02
-  _nightExposure: 0.46
-  _phaseTintStrength: 0.85
-  _nightMinBrightness: 0.14
-  _colorizeStrength: 0.75
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -164,12 +195,14 @@ MonoBehaviour:
     probeVolumeBlendStatesCS: {fileID: 0}
   m_RendererFeatures:
   - {fileID: 6797719819524517637}
-  - {fileID: -889900112233445566}
   - {fileID: -1277754162075699806}
   - {fileID: 2715838963536112315}
   - {fileID: -3635418284479857414}
   - {fileID: -3650923340913689866}
-  m_RendererFeatureMap: 052f64f5285a565ea27533035c8144eebb2abcf02599b025fa3c9edf54668ccdf63aa89a905055cd
+  - {fileID: -6911283437992747537}
+  - {fileID: -7353802473347338803}
+  - {fileID: -4669532212205383062}
+  m_RendererFeatureMap: 052f64f5285a565ebb2abcf02599b025fa3c9edf54668ccdf63aa89a905055cdcd2dbed39c0bf299
   m_UseNativeRenderPass: 1
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3
@@ -215,16 +248,16 @@ MonoBehaviour:
   _nightTint: {r: 0.43194702, g: 0.49860844, b: 0.69224405, a: 1}
   _dawnTint: {r: 1.12, g: 0.84, b: 0.62, a: 1}
   _duskTint: {r: 0.7, g: 0.52, b: 0.95, a: 1}
-  _filterStrength: 0.86
-  _daySaturation: 0.98
-  _nightSaturation: 0.58
-  _dayContrast: 1
-  _nightContrast: 1.35
-  _dayExposure: 1.02
-  _nightExposure: 0.46
-  _phaseTintStrength: 0.85
-  _nightMinBrightness: 0.14
-  _colorizeStrength: 0.75
+  _filterStrength: 0.249
+  _daySaturation: 1.06
+  _nightSaturation: 0.61
+  _dayContrast: 1.101
+  _nightContrast: 1.335
+  _dayExposure: 1.07
+  _nightExposure: 0.49
+  _phaseTintStrength: 0.828
+  _nightMinBrightness: 0.194
+  _colorizeStrength: 0.785
 --- !u!114 &6797719819524517637
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -238,4 +271,4 @@ MonoBehaviour:
   m_Name: FlatKitOutline
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::FlatKit.FlatKitOutline
   m_Active: 0
-  settings: {fileID: 11400000, guid: 31a235b00b86ae0e2b34bf197818dd19, type: 2}
+  settings: {fileID: 11400000, guid: 6a9ce4523839c4a44a17d8d1334b16d2, type: 2}

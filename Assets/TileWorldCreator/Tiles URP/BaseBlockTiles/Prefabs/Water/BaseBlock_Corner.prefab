@@ -61,12 +61,28 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 08609a26900fccc43aa937bb43b577b9, type: 3}
+      propertyPath: m_CastShadows
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 08609a26900fccc43aa937bb43b577b9, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 08609a26900fccc43aa937bb43b577b9, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: e2a45f4ecb9ba9d4783b899920b9a25c, type: 2}
+      objectReference: {fileID: 2100000, guid: 0c2ba448baed8026fa73dc8bd4325d06, type: 2}
+    - target: {fileID: -7511558181221131132, guid: 08609a26900fccc43aa937bb43b577b9, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 906e741d897f0604693cee6a7f4d87cb, type: 2}
     - target: {fileID: 919132149155446097, guid: 08609a26900fccc43aa937bb43b577b9, type: 3}
       propertyPath: m_Name
       value: BaseBlock_Corner
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 08609a26900fccc43aa937bb43b577b9, type: 3}
+      propertyPath: m_Layer
+      value: 4
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

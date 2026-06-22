@@ -162,8 +162,10 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         private EconomyResourceCategory ResolveCategory(string resourceId)
         {
+            string normalizedResourceId = NormalizeResourceId(resourceId);
+
             if (_database == null || _database.Resources == null)
-                return EconomyResourceCategory.None;
+                return ResolveCategoryByIdConvention(normalizedResourceId);
 
             for (int i = 0; i < _database.Resources.Count; i++)
             {
@@ -171,8 +173,41 @@ namespace Kruty1918.Moyva.Economy.Runtime
                 if (definition == null)
                     continue;
 
-                if (string.Equals(definition.Id, resourceId, StringComparison.Ordinal))
+                if (string.Equals(definition.Id, normalizedResourceId, StringComparison.Ordinal))
                     return definition.Category;
+            }
+
+            return ResolveCategoryByIdConvention(normalizedResourceId);
+        }
+
+        private static string NormalizeResourceId(string resourceId)
+            => string.IsNullOrWhiteSpace(resourceId) ? string.Empty : resourceId.Trim();
+
+        private static EconomyResourceCategory ResolveCategoryByIdConvention(string resourceId)
+        {
+            if (string.IsNullOrWhiteSpace(resourceId))
+                return EconomyResourceCategory.None;
+
+            string lower = resourceId.ToLowerInvariant();
+            if (lower == "food" || lower.Contains("-food-") || lower.EndsWith("-food"))
+                return EconomyResourceCategory.Food;
+
+            if (lower == "wood"
+                || lower == "materials"
+                || lower == "material"
+                || lower.Contains("-materials-")
+                || lower.EndsWith("-materials")
+                || lower.Contains("wood"))
+            {
+                return EconomyResourceCategory.Materials;
+            }
+
+            if (lower == "gold"
+                || lower == "money"
+                || lower.Contains("-money-")
+                || lower.EndsWith("-money"))
+            {
+                return EconomyResourceCategory.Money;
             }
 
             return EconomyResourceCategory.None;

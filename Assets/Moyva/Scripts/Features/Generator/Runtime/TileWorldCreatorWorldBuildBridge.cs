@@ -144,6 +144,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     ApplyIntegerTerrainHeights(worldData, configuration);
 
                 PublishTerrainHeights(worldData, configuration);
+                bool hasBaseMapWorldBounds = GeneratedWorldBoundsUtility.TryCreateTileWorldBounds(
+                    _manager.transform,
+                    worldData.Width,
+                    worldData.Height,
+                    configuration.cellSize,
+                    out Bounds baseMapWorldBounds);
 
                 return new TileWorldCreatorWorldBuildResult(
                     mappedTerrainIds,
@@ -153,7 +159,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     _options.ReplaceMappedObjectVisuals,
                     _options.ReplaceMappedBuildingVisuals,
                     _options.SuppressMoyvaLayerDataWhenTerrainMapped && mappedTerrainIds.Count > 0,
-                    configuration.cellSize);
+                    configuration.cellSize,
+                    hasBaseMapWorldBounds,
+                    baseMapWorldBounds);
             }
             catch (System.Exception ex)
             {
@@ -1321,7 +1329,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             false,
             false,
             false,
-            1f);
+            1f,
+            false,
+            default);
 
         public TileWorldCreatorWorldBuildResult(
             HashSet<string> terrainIds,
@@ -1331,7 +1341,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             bool replaceObjectVisuals,
             bool replaceBuildingVisuals,
             bool suppressMoyvaLayerData,
-            float cellSize)
+            float cellSize,
+            bool hasBaseMapWorldBounds,
+            Bounds baseMapWorldBounds)
         {
             _terrainIds = terrainIds;
             _objectIds = objectIds;
@@ -1341,6 +1353,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ReplaceMappedBuildingVisuals = replaceBuildingVisuals;
             SuppressMoyvaLayerData = suppressMoyvaLayerData;
             CellSize = cellSize > 0.0001f ? cellSize : 1f;
+            HasBaseMapWorldBounds = hasBaseMapWorldBounds;
+            BaseMapWorldBounds = baseMapWorldBounds;
         }
 
         public bool ReplaceMappedTerrainVisuals { get; }
@@ -1348,6 +1362,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public bool ReplaceMappedBuildingVisuals { get; }
         public bool SuppressMoyvaLayerData { get; }
         public float CellSize { get; }
+        public bool HasBaseMapWorldBounds { get; }
+        public Bounds BaseMapWorldBounds { get; }
 
         public bool ShouldReplaceTerrainVisual(string id)
             => ReplaceMappedTerrainVisuals && Contains(_terrainIds, id);

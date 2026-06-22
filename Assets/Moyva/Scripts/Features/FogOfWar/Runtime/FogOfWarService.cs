@@ -1726,6 +1726,27 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
     internal static class FogWorldSignalUtility
     {
+        public static bool TryResolveMapWorldBounds(WorldGeneratedDataSignal signal, out Bounds bounds)
+        {
+            bounds = default;
+            if (!signal.HasMapWorldBounds
+                || !IsFinite(signal.MapWorldBoundsCenter)
+                || !IsFinite(signal.MapWorldBoundsSize))
+            {
+                return false;
+            }
+
+            Vector3 size = new Vector3(
+                Mathf.Abs(signal.MapWorldBoundsSize.x),
+                Mathf.Abs(signal.MapWorldBoundsSize.y),
+                Mathf.Abs(signal.MapWorldBoundsSize.z));
+            if (size.x <= 0.0001f || size.z <= 0.0001f)
+                return false;
+
+            bounds = new Bounds(signal.MapWorldBoundsCenter, size);
+            return true;
+        }
+
         public static Vector2Int ResolveBaseMapSize(WorldGeneratedDataSignal signal)
         {
             int width = Mathf.Max(0, signal.Width);
@@ -1752,5 +1773,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             width = width > 0 ? Mathf.Min(width, mapWidth) : mapWidth;
             height = height > 0 ? Mathf.Min(height, mapHeight) : mapHeight;
         }
+
+        private static bool IsFinite(Vector3 value)
+            => IsFinite(value.x) && IsFinite(value.y) && IsFinite(value.z);
+
+        private static bool IsFinite(float value)
+            => !float.IsNaN(value) && !float.IsInfinity(value);
     }
 }

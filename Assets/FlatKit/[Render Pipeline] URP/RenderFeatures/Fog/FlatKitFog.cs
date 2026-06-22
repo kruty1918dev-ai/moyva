@@ -43,40 +43,16 @@ public class FlatKitFog : ScriptableRendererFeature {
             settings.onReset += SetMaterialProperties;
         }
 
-        // Material.
-        {
-#if UNITY_EDITOR
-            settings.effectMaterial = SubAssetMaterial.GetOrCreate(settings, ShaderName);
-            if (settings.effectMaterial == null) return;
-#endif
-            _effectMaterial = settings.effectMaterial;
-            SetMaterialProperties();
-        }
-
-        {
-            _fullScreenPass = new ScreenRenderPass {
-                renderPassEvent = settings.renderEvent,
-            };
-
-            _requirements = ScriptableRenderPassInput.Depth | ScriptableRenderPassInput.Color;
-            ScriptableRenderPassInput modifiedRequirements = _requirements;
-
-            _requiresColor = (_requirements & ScriptableRenderPassInput.Color) != 0;
-            _injectedBeforeTransparents = settings.renderEvent <= RenderPassEvent.BeforeRenderingTransparents;
-
-            if (_requiresColor && !_injectedBeforeTransparents) {
-                modifiedRequirements ^= ScriptableRenderPassInput.Color;
-            }
-
-            _fullScreenPass.ConfigureInput(modifiedRequirements);
-        }
-    }
+        if (!EnsureEffectMaterial()) return;
+        EnsureFullScreenPass();
+	    }
 
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData) {
         if (settings == null || !settings.applyInSceneView && renderingData.cameraData.isSceneViewCamera) return;
         if (renderingData.cameraData.isPreviewCamera) return;
         if (renderingData.cameraData.renderType == CameraRenderType.Overlay) return;
-        if (_effectMaterial == null) return;
+        if (!EnsureEffectMaterial()) return;
+        if (!EnsureFullScreenPass()) return;
 
         _fullScreenPass.Setup(_effectMaterial, _requiresColor, _injectedBeforeTransparents, "Flat Kit Fog",
             renderingData);
@@ -88,6 +64,7 @@ public class FlatKitFog : ScriptableRendererFeature {
     public override void OnCameraPreCull(ScriptableRenderer renderer, in CameraData cameraData) {
         base.OnCameraPreCull(renderer, in cameraData);
         if (settings == null) return;
+        if (!EnsureEffectMaterial()) return;
         if (settings.useDistance && !_effectMaterial.GetTexture(distanceLut)) UpdateDistanceLut();
         if (settings.useHeight && !_effectMaterial.GetTexture(heightLut)) UpdateHeightLut();
     }
@@ -97,7 +74,7 @@ public class FlatKitFog : ScriptableRendererFeature {
         _fullScreenPass?.Dispose();
     }
 
-    private void SetMaterialProperties() {
+	    private void SetMaterialProperties() {
         if (_effectMaterial == null) return;
 
         RendererFeatureUtils.SetKeyword(_effectMaterial, UseDistanceFog, settings.useDistance);
@@ -118,6 +95,45 @@ public class FlatKitFog : ScriptableRendererFeature {
         }
 
         RendererFeatureUtils.SetKeyword(_effectMaterial, CameraRelativePosition, settings.cameraRelativePosition);
+    }
+
+    private bool EnsureEffectMaterial() {
+        if (settings == null) return false;
+        if (_effectMaterial != null) return true;
+
+#if UNITY_EDITOR
+        if (settings.effectMaterial == null) {
+            settings.effectMaterial = SubAssetMaterial.GetOrCreate(settings, ShaderName);
+        }
+#endif
+        _effectMaterial = settings.effectMaterial;
+        if (_effectMaterial == null) return false;
+
+        SetMaterialProperties();
+        return true;
+    }
+
+    private bool EnsureFullScreenPass() {
+        if (settings == null) return false;
+
+        if (_fullScreenPass == null) {
+            _fullScreenPass = new ScreenRenderPass();
+        }
+
+        _fullScreenPass.renderPassEvent = settings.renderEvent;
+
+        _requirements = ScriptableRenderPassInput.Depth | ScriptableRenderPassInput.Color;
+        ScriptableRenderPassInput modifiedRequirements = _requirements;
+
+        _requiresColor = (_requirements & ScriptableRenderPassInput.Color) != 0;
+        _injectedBeforeTransparents = settings.renderEvent <= RenderPassEvent.BeforeRenderingTransparents;
+
+        if (_requiresColor && !_injectedBeforeTransparents) {
+            modifiedRequirements ^= ScriptableRenderPassInput.Color;
+        }
+
+        _fullScreenPass.ConfigureInput(modifiedRequirements);
+        return true;
     }
 
     private void UpdateDistanceLut() {

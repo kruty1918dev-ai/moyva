@@ -15,11 +15,11 @@ MonoBehaviour:
   previewThumbnail: {fileID: 2800000, guid: 96d6a84947bb1e24a8c0025ec5bf0c13, type: 3}
   tileId: 
   gridtype: 1
-  DUALGRD_cornerTile: {fileID: 5876256336026776631, guid: 67a9af7fc412d32cc8a170a4e1bf54d5, type: 3}
-  DUALGRD_invertedCornerTile: {fileID: 7641101505880693427, guid: 62fed89f57d60d70b8b12357b4403d89, type: 3}
-  DUALGRD_edgeTile: {fileID: 5653276920940477166, guid: 8d4de747affb922c2aa26325ea41ae6c, type: 3}
-  DUALGRD_fillTile: {fileID: 7707995012180551104, guid: 8f22f40f8b0f2f14dbba1a9da15cadcc, type: 3}
-  DUALGRD_doubleInteriorCornerTile: {fileID: 1480314273542977089, guid: a05b241467977a2db8725640b9e7a6dc, type: 3}
+  DUALGRD_cornerTile: {fileID: 8871232008269866547, guid: da728efe7dd96fca5a6551bafe22db99, type: 3}
+  DUALGRD_invertedCornerTile: {fileID: 4560117896786790838, guid: 5f249df7f64e22ef28048c2fe3dbd5f6, type: 3}
+  DUALGRD_edgeTile: {fileID: 4874986677751337255, guid: fc97b71f2324d25da970863dce86181a, type: 3}
+  DUALGRD_fillTile: {fileID: 8375766409658227557, guid: e56ed23339106ee6abbf5494da52eed6, type: 3}
+  DUALGRD_doubleInteriorCornerTile: {fileID: 7371518552262489482, guid: b622974da9a87e9b28dbd1e03b6b4398, type: 3}
   NRMGRD_deadEndTile: {fileID: 0}
   NRMGRD_singleTile: {fileID: 0}
   NRMGRD_fillTile: {fileID: 0}
@@ -35,16 +35,16 @@ MonoBehaviour:
   NRMGRD_threeCornerTile: {fileID: 0}
   NRMGRD_fourWayTile: {fileID: 0}
   materialOverride: {fileID: 0}
-  cornerTileYRotationOffset: 180
-  invertedCornerTileYRotationOffset: 90
+  cornerTileYRotationOffset: 0
+  invertedCornerTileYRotationOffset: 180
   edgeTileYRotationOffset: -90
   fillTileYRotationOffset: 180
   doubleInteriorCornerTileYRotationOffset: -90
-  cornerTileXRotationOffset: -90
-  invertedCornerTileXRotationOffset: -90
-  edgeTileXRotationOffset: -90
-  fillTileXRotationOffset: -90
-  doubleInteriorCornerTileXRotationOffset: -90
+  cornerTileXRotationOffset: 0
+  invertedCornerTileXRotationOffset: 0
+  edgeTileXRotationOffset: 0
+  fillTileXRotationOffset: 0
+  doubleInteriorCornerTileXRotationOffset: 0
   NRMGRD_deadEndTileYRotationOffset: 0
   NRMGRD_singleTileYRotationOffset: 0
   NRMGRD_fillTileYRotationOffset: 0

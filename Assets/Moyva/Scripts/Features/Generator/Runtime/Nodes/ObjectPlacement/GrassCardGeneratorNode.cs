@@ -25,8 +25,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
         [SerializeField, Range(0f, 1f)]
         private float _alphaClip = 0.35f;
 
-        [SerializeField, Range(2, 4)]
+        [SerializeField, Range(1, 8)]
         private int _crossedPlanes = 3;
+
+        [SerializeField]
+        private GrassCardGeometryMode _geometryMode = GrassCardGeometryMode.CrossedPlanes;
 
         [SerializeField, Min(0.01f)]
         private float _width = 0.7f;
@@ -63,6 +66,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
                 Tint = _tint,
                 AlphaClip = _alphaClip,
                 CrossedPlanes = _crossedPlanes,
+                GeometryMode = _geometryMode,
                 Width = _width,
                 Height = _height,
                 DoubleSided = _doubleSided,
@@ -74,30 +78,34 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 #if UNITY_EDITOR
         public void OpenEditorWindow()
         {
-            if (_texture == null && _material == null)
-            {
-                UnityEditor.EditorUtility.DisplayDialog(
-                    "Grass Card Settings",
-                    "Assign a grass texture or material first.",
-                    "OK");
-                return;
-            }
-
             var factoryType = System.Type.GetType(
                 "Kruty1918.Moyva.Generator.Editor.ObjectPlacement.GrassCardPrefabFactory, Kruty1918.Moyva.Generator.Editor");
-            var createMethod = factoryType?.GetMethod(
-                "CreateGrassCardPrefab",
-                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (createMethod == null)
+            var openMethod = factoryType?.GetMethod(
+                "OpenGrassCardPrefabWizard",
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
+                null,
+                new[]
+                {
+                    typeof(string),
+                    typeof(GrassCardSettings),
+                    typeof(string),
+                    typeof(System.Action<string>)
+                },
+                null);
+            if (openMethod == null)
             {
                 UnityEditor.EditorUtility.DisplayDialog(
                     "Grass Card Settings",
-                    "Grass card prefab factory is not available in the editor assembly.",
+                    "Grass card prefab wizard is not available in the editor assembly.",
                     "OK");
                 return;
             }
 
-            string sourceName = _texture != null ? _texture.name : _material.name;
+            string sourceName = _texture != null
+                ? _texture.name
+                : _material != null
+                    ? _material.name
+                    : "GrassCard";
             var settings = new GrassCardSettings
             {
                 Texture = _texture,
@@ -106,6 +114,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
                 Tint = _tint,
                 AlphaClip = _alphaClip,
                 CrossedPlanes = _crossedPlanes,
+                GeometryMode = _geometryMode,
                 Width = _width,
                 Height = _height,
                 DoubleSided = _doubleSided,
@@ -113,23 +122,27 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
                 ColorVariation = _colorVariation
             };
 
-            var path = createMethod.Invoke(null, new object[]
+            System.Action<string> onGenerated = path =>
+            {
+                if (string.IsNullOrEmpty(path))
+                    return;
+
+                _prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                UnityEditor.EditorUtility.SetDirty(this);
+                if (_prefab != null)
+                {
+                    UnityEditor.Selection.activeObject = _prefab;
+                    UnityEditor.EditorGUIUtility.PingObject(_prefab);
+                }
+            };
+
+            openMethod.Invoke(null, new object[]
             {
                 sourceName,
                 settings,
-                "Assets/Moyva/Generated/Grass"
-            }) as string;
-
-            if (string.IsNullOrEmpty(path))
-                return;
-
-            _prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            UnityEditor.EditorUtility.SetDirty(this);
-            if (_prefab != null)
-            {
-                UnityEditor.Selection.activeObject = _prefab;
-                UnityEditor.EditorGUIUtility.PingObject(_prefab);
-            }
+                "Assets/Moyva/Generated/Grass",
+                onGenerated
+            });
         }
 #endif
     }

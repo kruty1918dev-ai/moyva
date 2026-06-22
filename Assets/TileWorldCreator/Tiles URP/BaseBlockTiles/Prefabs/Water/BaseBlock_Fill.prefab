@@ -61,9 +61,17 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: 4dc0a4bd6603b0b47afc35136eead656, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: 4dc0a4bd6603b0b47afc35136eead656, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: e2a45f4ecb9ba9d4783b899920b9a25c, type: 2}
+      objectReference: {fileID: 2100000, guid: 0c2ba448baed8026fa73dc8bd4325d06, type: 2}
+    - target: {fileID: -7511558181221131132, guid: 4dc0a4bd6603b0b47afc35136eead656, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: ac035e850020fe84dae1e5dd49abb816, type: 2}
     - target: {fileID: 919132149155446097, guid: 4dc0a4bd6603b0b47afc35136eead656, type: 3}
       propertyPath: m_Name
       value: BaseBlock_Fill

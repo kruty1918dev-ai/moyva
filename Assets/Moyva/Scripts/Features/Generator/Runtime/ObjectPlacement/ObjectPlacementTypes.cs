@@ -117,6 +117,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
         public float AvoidCliffEdgeDistance = 1f;
     }
 
+    public enum GrassCardGeometryMode
+    {
+        CrossedPlanes = 0,
+        CameraBillboard = 1
+    }
+
     [Serializable]
     public sealed class GrassCardSettings
     {
@@ -128,8 +134,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
         [Range(0f, 1f)]
         public float AlphaClip = 0.35f;
 
-        [Range(2, 4)]
+        [Range(1, 8)]
         public int CrossedPlanes = 3;
+
+        public GrassCardGeometryMode GeometryMode = GrassCardGeometryMode.CrossedPlanes;
 
         [Min(0.01f)]
         public float Width = 0.7f;

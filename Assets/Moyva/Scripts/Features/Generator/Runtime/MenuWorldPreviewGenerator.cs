@@ -50,6 +50,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 context.RegisterService(layerDataList);
 
                 RegisterContextData(context, graphAsset);
+                var layerMaskRegistry = new LayerMaskRegistry();
+                context.RegisterService(layerMaskRegistry);
+                LayerMaskPrewarmUtility.PrewarmAllLayerMasks(
+                    graphAsset,
+                    seed,
+                    mapSize,
+                    layerMaskRegistry,
+                    prewarmContext => RegisterContextData(prewarmContext, graphAsset));
 
                 var result = new GraphRunner().Execute(graphAsset, context);
                 if (!result.Success)

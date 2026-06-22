@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using GiantGrey.TileWorldCreator;
 using GiantGrey.TileWorldCreator.Components;
+using Kruty1918.Moyva.Generator.Runtime.Noise;
 using UnityEngine;
 using UnityEngine.Rendering;
 #if UNITY_EDITOR
 using UnityEditor;
+using UnityEditor.SceneManagement;
 #endif
 
 namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
@@ -14,6 +16,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
     public static class TWCObjectPlacementAdapter
     {
         public const string GeneratedLayerNamePrefix = "[Moyva Objects] ";
+        public const string DirectObjectsRootName = "[Moyva Graph Objects]";
 
         public static void Apply(
             Configuration config,
@@ -27,21 +30,50 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             EnsureFolders(config);
 
             var activeGeneratedNames = new HashSet<string>(StringComparer.Ordinal);
+            var activeDirectNames = new HashSet<string>(StringComparer.Ordinal);
+            var validLayers = new List<(ObjectPlacementLayer Layer, string BaseName)>();
             if (objectLayers != null)
             {
                 for (int i = 0; i < objectLayers.Count; i++)
                 {
                     var layer = objectLayers[i];
-                    if (!CanApply(layer))
+                    if (!CanApply(layer, out string reason))
+                    {
+                        Debug.LogWarning($"[MoyvaObjectPlacement] Skipped object layer '{layer?.LayerName ?? "<null>"}': {reason}");
                         continue;
+                    }
 
-                    string generatedName = BuildGeneratedLayerName(layer.LayerName);
+                    validLayers.Add((layer, BuildGeneratedLayerName(layer.LayerName)));
+                }
+            }
+
+            var duplicateBaseNames = validLayers
+                .GroupBy(item => item.BaseName, StringComparer.Ordinal)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.Key)
+                .ToHashSet(StringComparer.Ordinal);
+
+            for (int i = 0; i < validLayers.Count; i++)
+            {
+                var layer = validLayers[i].Layer;
+                string generatedName = duplicateBaseNames.Contains(validLayers[i].BaseName)
+                    ? BuildGeneratedLayerName(layer, terrainLayers, includeLayerSuffix: true)
+                    : validLayers[i].BaseName;
+
+                if (ShouldSpawnDirectly(layer))
+                {
+                    activeDirectNames.Add(generatedName);
+                    ApplyDirectLayer(config, manager, layer, generatedName, terrainLayers);
+                }
+                else
+                {
                     activeGeneratedNames.Add(generatedName);
                     ApplyLayer(config, manager, layer, generatedName, terrainLayers);
                 }
             }
 
             RemoveStaleGeneratedLayers(config, activeGeneratedNames);
+            RemoveStaleDirectLayers(manager, activeDirectNames);
         }
 
         public static bool IsGeneratedObjectLayer(BuildLayer layer)
@@ -66,15 +98,230 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
                 : GeneratedLayerNamePrefix + clean;
         }
 
-        private static bool CanApply(ObjectPlacementLayer layer)
+        private static string BuildGeneratedLayerName(
+            ObjectPlacementLayer layer,
+            IReadOnlyList<CompiledLayerMap> terrainLayers,
+            bool includeLayerSuffix)
         {
-            return layer != null
-                && layer.Rule != null
-                && layer.Rule.UseTWCObjectLayer
-                && layer.Prefabs != null
-                && layer.Prefabs.Any(p => p?.Prefab != null)
-                && layer.Candidates != null
-                && layer.Candidates.Count > 0;
+            string baseName = BuildGeneratedLayerName(layer?.LayerName);
+            if (!includeLayerSuffix)
+                return baseName;
+
+            string suffix = ResolveGraphLayerLabel(layer?.TargetGraphLayerId, terrainLayers);
+            return string.IsNullOrWhiteSpace(suffix)
+                ? baseName
+                : $"{baseName} @ {suffix}";
+        }
+
+        private static string ResolveGraphLayerLabel(
+            string graphLayerId,
+            IReadOnlyList<CompiledLayerMap> terrainLayers)
+        {
+            if (string.IsNullOrWhiteSpace(graphLayerId))
+                return null;
+
+            if (terrainLayers != null)
+            {
+                for (int i = 0; i < terrainLayers.Count; i++)
+                {
+                    var map = terrainLayers[i];
+                    if (map == null || map.GraphLayerId != graphLayerId)
+                        continue;
+
+                    if (!string.IsNullOrWhiteSpace(map.LayerName))
+                        return SanitizeNameSuffix(map.LayerName);
+                }
+            }
+
+            string compactId = graphLayerId.Replace("-", string.Empty);
+            return compactId.Length <= 8
+                ? compactId
+                : compactId.Substring(0, 8);
+        }
+
+        private static string SanitizeNameSuffix(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            var invalid = System.IO.Path.GetInvalidFileNameChars();
+            var chars = value.Trim().ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                if (Array.IndexOf(invalid, chars[i]) >= 0)
+                    chars[i] = '_';
+            }
+
+            return new string(chars);
+        }
+
+        private static bool CanApply(ObjectPlacementLayer layer, out string reason)
+        {
+            if (layer == null)
+            {
+                reason = "layer is null";
+                return false;
+            }
+
+            if (layer.Rule == null)
+            {
+                reason = "placement rule is null";
+                return false;
+            }
+
+            if (!layer.Rule.UseTWCObjectLayer)
+            {
+                reason = "UseTWCObjectLayer is disabled";
+                return false;
+            }
+
+            if (layer.Prefabs == null || !layer.Prefabs.Any(p => p?.Prefab != null))
+            {
+                reason = "no prefab variants are assigned";
+                return false;
+            }
+
+            if (layer.Candidates == null || layer.Candidates.Count == 0)
+            {
+                reason = "scatter produced 0 candidates";
+                return false;
+            }
+
+            reason = null;
+            return true;
+        }
+
+        private static bool ShouldSpawnDirectly(ObjectPlacementLayer layer)
+        {
+            // TWC ObjectBuildLayer only receives a cell mask plus layer-level ranges.
+            // Direct spawning preserves graph-authored per-candidate prefab, offset, scale and rotation.
+            if (layer?.Rule == null || !layer.Rule.MergeInTWC)
+                return true;
+
+            return RequiresExactGraphSpawn(layer);
+        }
+
+        private static bool RequiresExactGraphSpawn(ObjectPlacementLayer layer)
+        {
+            var rule = layer.Rule;
+            if (rule.Jitter > 0.0001f
+                || rule.RotationRandomization > 0.0001f
+                || HasCustomScaleRange(rule.ScaleRandomization.x, rule.ScaleRandomization.y))
+            {
+                return true;
+            }
+
+            if (layer.Prefabs != null)
+            {
+                int validPrefabCount = 0;
+                for (int i = 0; i < layer.Prefabs.Count; i++)
+                {
+                    var entry = layer.Prefabs[i];
+                    if (entry?.Prefab == null)
+                        continue;
+
+                    validPrefabCount++;
+                    if (entry.MaterialOverride != null
+                        || entry.RandomYaw
+                        || Mathf.Abs(entry.YOffset) > 0.0001f
+                        || HasCustomScaleRange(entry.MinScale, entry.MaxScale))
+                    {
+                        return true;
+                    }
+                }
+
+                if (validPrefabCount > 1)
+                    return true;
+            }
+
+            if (layer.Candidates == null)
+                return false;
+
+            for (int i = 0; i < layer.Candidates.Count; i++)
+            {
+                var candidate = layer.Candidates[i];
+                if (candidate.PrefabIndex > 0
+                    || Mathf.Abs(candidate.LocalOffset.x) > 0.0001f
+                    || Mathf.Abs(candidate.LocalOffset.y) > 0.0001f
+                    || Mathf.Abs(candidate.RotationY) > 0.0001f
+                    || Mathf.Abs(candidate.Scale - 1f) > 0.0001f)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void ApplyDirectLayer(
+            Configuration config,
+            TileWorldCreatorManager manager,
+            ObjectPlacementLayer source,
+            string generatedName,
+            IReadOnlyList<CompiledLayerMap> terrainLayers)
+        {
+            var rule = source.Rule ?? new ObjectPlacementRule();
+            var root = EnsureDirectRoot(manager, rule);
+            var existing = root.Find(generatedName);
+            if (existing != null)
+                DestroyObject(existing.gameObject);
+
+            var layerObject = new GameObject(generatedName);
+            var layerRoot = layerObject.transform;
+            layerRoot.SetParent(root, false);
+            layerRoot.localPosition = Vector3.zero;
+            layerRoot.localRotation = Quaternion.identity;
+            layerRoot.localScale = Vector3.one;
+
+            float cellSize = Mathf.Max(0.0001f, config.cellSize);
+            float baseHeight = ResolveTargetHeight(config, source.TargetGraphLayerId, terrainLayers);
+            int mapWidth = Mathf.Max(1, config.width);
+            int mapHeight = Mathf.Max(1, config.height);
+            int spawned = 0;
+
+            for (int i = 0; i < source.Candidates.Count; i++)
+            {
+                var candidate = source.Candidates[i];
+                if (candidate.Cell.x < 0
+                    || candidate.Cell.y < 0
+                    || candidate.Cell.x >= mapWidth
+                    || candidate.Cell.y >= mapHeight)
+                {
+                    continue;
+                }
+
+                var entry = ResolvePrefabEntry(source, candidate);
+                if (entry?.Prefab == null)
+                    continue;
+
+                var instance = InstantiateDirectPrefab(entry.Prefab, layerRoot);
+                if (instance == null)
+                    continue;
+
+                instance.name = $"{entry.Prefab.name}_{spawned:0000}";
+
+                var localPosition = new Vector3(
+                    (candidate.Cell.x + candidate.LocalOffset.x) * cellSize,
+                    baseHeight + entry.YOffset - rule.EmbedIntoGround,
+                    (candidate.Cell.y + candidate.LocalOffset.y) * cellSize);
+
+                instance.transform.localPosition = localPosition;
+                instance.transform.localRotation = Quaternion.Euler(0f, ResolveDirectYaw(candidate, entry, rule), 0f);
+
+                float scale = ResolveDirectScale(candidate, entry, rule);
+                var prefabScale = instance.transform.localScale;
+                instance.transform.localScale = new Vector3(
+                    prefabScale.x * scale,
+                    prefabScale.y * scale,
+                    prefabScale.z * scale);
+
+                ApplyMaterialOverride(instance, entry.MaterialOverride);
+                spawned++;
+            }
+
+            MarkSceneDirty(manager);
+            if (spawned == 0)
+                Debug.LogWarning($"[MoyvaObjectPlacement] Direct object layer '{source.LayerName}' created no instances after bounds/prefab filtering.");
         }
 
         private static void ApplyLayer(
@@ -234,6 +481,87 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             return count > 0 ? sum / count : 0f;
         }
 
+        private static ObjectPrefabEntry ResolvePrefabEntry(ObjectPlacementLayer source, ScatterCandidate candidate)
+        {
+            if (source?.Prefabs == null || source.Prefabs.Count == 0)
+                return null;
+
+            int index = candidate.PrefabIndex;
+            if (index < 0 || index >= source.Prefabs.Count)
+                index = 0;
+
+            var entry = source.Prefabs[index];
+            if (entry?.Prefab != null)
+                return entry;
+
+            for (int i = 0; i < source.Prefabs.Count; i++)
+            {
+                if (source.Prefabs[i]?.Prefab != null)
+                    return source.Prefabs[i];
+            }
+
+            return null;
+        }
+
+        private static float ResolveDirectYaw(
+            ScatterCandidate candidate,
+            ObjectPrefabEntry entry,
+            ObjectPlacementRule rule)
+        {
+            if (entry != null && !entry.RandomYaw && Mathf.Approximately(rule.RotationRandomization, 0f))
+                return 0f;
+
+            return candidate.RotationY;
+        }
+
+        private static float ResolveDirectScale(
+            ScatterCandidate candidate,
+            ObjectPrefabEntry entry,
+            ObjectPlacementRule rule)
+        {
+            if (entry != null && HasCustomScaleRange(entry.MinScale, entry.MaxScale))
+            {
+                float t = ProceduralNoiseUtility.Hash01(
+                    candidate.Cell.x,
+                    candidate.Cell.y,
+                    unchecked((rule.RandomSeed * 397) ^ 0x6d2b79f5));
+                return Mathf.Lerp(
+                    Mathf.Max(0.01f, Mathf.Min(entry.MinScale, entry.MaxScale)),
+                    Mathf.Max(0.01f, Mathf.Max(entry.MinScale, entry.MaxScale)),
+                    t);
+            }
+
+            if (rule != null && HasCustomScaleRange(rule.ScaleRandomization.x, rule.ScaleRandomization.y))
+            {
+                float t = ProceduralNoiseUtility.Hash01(
+                    candidate.Cell.x,
+                    candidate.Cell.y,
+                    unchecked((rule.RandomSeed * 733) ^ 0x51e4a1cd));
+                return Mathf.Lerp(
+                    Mathf.Max(0.01f, Mathf.Min(rule.ScaleRandomization.x, rule.ScaleRandomization.y)),
+                    Mathf.Max(0.01f, Mathf.Max(rule.ScaleRandomization.x, rule.ScaleRandomization.y)),
+                    t);
+            }
+
+            return Mathf.Max(0.01f, candidate.Scale);
+        }
+
+        private static bool HasCustomScaleRange(float min, float max)
+        {
+            return Mathf.Abs(min - 0.9f) > 0.0001f
+                || Mathf.Abs(max - 1.1f) > 0.0001f;
+        }
+
+        private static void ApplyMaterialOverride(GameObject instance, Material material)
+        {
+            if (instance == null || material == null)
+                return;
+
+            var renderers = instance.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+                renderers[i].sharedMaterial = material;
+        }
+
         private static float ResolveTargetHeight(
             Configuration config,
             string targetGraphLayerId,
@@ -256,6 +584,77 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             }
 
             return 0f;
+        }
+
+        private static Transform EnsureDirectRoot(TileWorldCreatorManager manager, ObjectPlacementRule rule)
+        {
+            var parent = manager.transform;
+            string rootName = ResolveDirectRootName(rule);
+            var root = parent.Find(rootName);
+            if (root != null)
+                return root;
+
+            var rootObject = new GameObject(rootName);
+            root = rootObject.transform;
+            root.SetParent(parent, false);
+            root.localPosition = Vector3.zero;
+            root.localRotation = Quaternion.identity;
+            root.localScale = Vector3.one;
+            return root;
+        }
+
+        private static string ResolveDirectRootName(ObjectPlacementRule rule)
+        {
+            string configured = rule?.ParentContainer;
+            return string.IsNullOrWhiteSpace(configured)
+                ? DirectObjectsRootName
+                : configured.Trim();
+        }
+
+        private static GameObject InstantiateDirectPrefab(GameObject prefab, Transform parent)
+        {
+            if (prefab == null)
+                return null;
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+            {
+                if (PrefabUtility.InstantiatePrefab(prefab, parent) is GameObject prefabInstance)
+                    return prefabInstance;
+            }
+#endif
+
+            return UnityEngine.Object.Instantiate(prefab, parent);
+        }
+
+        private static void RemoveStaleDirectLayers(
+            TileWorldCreatorManager manager,
+            HashSet<string> activeGeneratedNames)
+        {
+            if (manager == null)
+                return;
+
+            for (int rootIndex = manager.transform.childCount - 1; rootIndex >= 0; rootIndex--)
+            {
+                var root = manager.transform.GetChild(rootIndex);
+                if (root == null)
+                    continue;
+
+                bool containsGeneratedChildren = false;
+                for (int i = root.childCount - 1; i >= 0; i--)
+                {
+                    var child = root.GetChild(i);
+                    if (child == null || !child.name.StartsWith(GeneratedLayerNamePrefix, StringComparison.Ordinal))
+                        continue;
+
+                    containsGeneratedChildren = true;
+                    if (!activeGeneratedNames.Contains(child.name))
+                        DestroyObject(child.gameObject);
+                }
+
+                if (containsGeneratedChildren && root.childCount == 0)
+                    DestroyObject(root.gameObject);
+            }
         }
 
         private static void RemoveStaleGeneratedLayers(
@@ -371,12 +770,31 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
 #endif
         }
 
+        private static void MarkSceneDirty(TileWorldCreatorManager manager)
+        {
+#if UNITY_EDITOR
+            if (manager != null && !Application.isPlaying)
+                EditorSceneManager.MarkSceneDirty(manager.gameObject.scene);
+#endif
+        }
+
         private static void RemoveSubAsset(UnityEngine.Object obj)
         {
 #if UNITY_EDITOR
             if (obj != null && !Application.isPlaying)
                 AssetDatabase.RemoveObjectFromAsset(obj);
 #endif
+        }
+
+        private static void DestroyObject(UnityEngine.Object obj)
+        {
+            if (obj == null)
+                return;
+
+            if (Application.isPlaying)
+                UnityEngine.Object.Destroy(obj);
+            else
+                UnityEngine.Object.DestroyImmediate(obj);
         }
     }
 }
