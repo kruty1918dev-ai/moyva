@@ -24,7 +24,7 @@ MonoBehaviour:
   previewHeatmap: 0
   inspectorTabIndex: 1
   isInspectorVisible: 1
-  selectedLayerId: bfb53e1a-f478-4afa-a385-d6439fbdea4e
-  selectedNodeId: 8338f58f-9037-43e1-b1cd-aac0ade71878
-  cameraPosition: {x: -763, y: 594, z: 0}
+  selectedLayerId: b47a1390-a46d-4999-9780-f5e2769e8668
+  selectedNodeId: df012f40-76a2-4e3c-b249-164d5997c37d
+  cameraPosition: {x: 95, y: 288, z: 0}
   cameraScale: {x: 1, y: 1, z: 1}

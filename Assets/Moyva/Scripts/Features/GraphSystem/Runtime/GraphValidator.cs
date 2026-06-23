@@ -758,25 +758,17 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             string kindName = ResolveLayerOutputKindName(outputNode);
             if (kindName == "Tiles")
             {
-                if (!hasTwcTileNode)
-                {
-                    report.Add(new GraphValidationIssue(
-                        "TILE_OUTPUT_WITHOUT_MASK_PIPELINE",
-                        ValidationSeverity.Error,
-                        $"Шар '{layer.Name}' позначений як Tiles, але не має жодної TWC/Mask ноди, яка формує маску тайлів. Додай TWC generator/modifier або зміни Output Kind на Masks/InternalData.",
-                        layerId: layer.Id,
-                        nodeId: outputNode.NodeId));
-                }
-
+                // TileSettingsNode is the explicit boundary between a data/mask helper layer and a renderable TWC tile layer.
+                // A layer without TileSettingsNode is valid: it may execute its graph, publish Output/LayerRef masks/data,
+                // and intentionally skip runtime TilesBuildLayer/GameObject generation.
                 if (!hasTileSettingsNode)
                 {
                     report.Add(new GraphValidationIssue(
                         "TILE_OUTPUT_WITHOUT_TILE_SETTINGS_NODE",
-                        ValidationSeverity.Error,
-                        $"Шар '{layer.Name}' позначений як Tiles, але не має Tile Settings node. Додай у цей шар Tile Settings node і вибери TilePreset/tileset для runtime build layer.",
+                        ValidationSeverity.Warning,
+                        $"Шар '{layer.Name}' має Output Kind = Tiles, але не має Tile Settings node. Це не помилка: шар буде виконаний як helper mask/data layer, його Output/Layer Ref можна використовувати в інших шарах, але TWC TilesBuildLayer/runtime tile GameObject для нього не створюватиметься.",
                         layerId: layer.Id,
-                        nodeId: outputNode.NodeId,
-                        canAutoFix: true));
+                        nodeId: outputNode.NodeId));
                 }
                 else if (!hasConfiguredTileSettingsNode)
                 {

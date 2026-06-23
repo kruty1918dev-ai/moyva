@@ -90,9 +90,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                 foreach (var item in kvp.Value.OrderBy(i => i.DisplayName, StringComparer.Ordinal))
                 {
-                    string tooltip = item.IsGenerator
-                        ? $"{item.DisplayName}\n\nTileWorldCreator генератор. Створює матрицю з нуля."
-                        : $"{item.DisplayName}\n\nTileWorldCreator модифікатор. Трансформує вхідну маску.";
+                    string tooltip = GraphNodeDocumentation.BuildTwcSearchTooltip(
+                        item.DisplayName,
+                        item.ModifierType,
+                        item.IsGenerator);
 
                     entries.Add(new SearchTreeEntry(new GUIContent(item.DisplayName, tooltip))
                     {
@@ -136,22 +137,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             try
             {
                 instance = ScriptableObject.CreateInstance(nodeType) as NodeBase;
-
-                var inputs = instance?.Inputs ?? Array.Empty<PortDefinition>();
-                var outputs = instance?.Outputs ?? Array.Empty<PortDefinition>();
-
-                string purpose = string.IsNullOrWhiteSpace(description)
-                    ? "Опис відсутній."
-                    : description;
-
-                string example = BuildExampleLine(inputs, outputs);
-
-                return
-                    $"{title}\n\n" +
-                    $"Призначення:\n{purpose}\n\n" +
-                    $"Приклад використання:\n{example}\n\n" +
-                    $"Входи:\n{FormatPorts(inputs)}\n\n" +
-                    $"Виходи:\n{FormatPorts(outputs)}";
+                return GraphNodeDocumentation.BuildSearchTooltip(instance, title, description);
             }
             catch
             {

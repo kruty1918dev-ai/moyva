@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
@@ -772,7 +773,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var payload = new ClipboardNodePayload
             {
                 nodeType = nodeView.NodeData.GetType().AssemblyQualifiedName,
-                jsonData = EditorJsonUtility.ToJson(nodeView.NodeData)
+                jsonData = SanitizeSerializedNodeJsonForClipboard(EditorJsonUtility.ToJson(nodeView.NodeData))
             };
 
             string json = JsonUtility.ToJson(payload);
@@ -852,9 +853,21 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             AddToSelection(view);
 
             EditorUtility.SetDirty(_graphAsset);
+            _graphAsset.NormalizeGraphIds();
             _graphAsset.EnsureLayerGraphStates();
             GraphChanged?.Invoke();
             return true;
+        }
+
+        private static string SanitizeSerializedNodeJsonForClipboard(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return json;
+
+            // NodeId/LayerId are internal graph bookkeeping. They must never be trusted from text clipboard data.
+            json = Regex.Replace(json, "\\\"_nodeId\\\"\\s*:\\s*\\\"[^\\\"]*\\\"", "\\\"_nodeId\\\":\\\"\\\"");
+            json = Regex.Replace(json, "\\\"_layerId\\\"\\s*:\\s*\\\"[^\\\"]*\\\"", "\\\"_layerId\\\":\\\"\\\"");
+            return json;
         }
 
         public bool CopyNodeProperties(GeneratorNodeView nodeView)
@@ -1246,7 +1259,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
             }
 
-            var group = new Group { title = "Node Group" };
+            var group = new UnityEditor.Experimental.GraphView.Group { title = "Node Group" };
             group.SetPosition(new Rect(graphPosition.x, graphPosition.y, 260f, 140f));
             AddElement(group);
         }
@@ -1837,7 +1850,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         OriginalNodeId = nodeView.NodeData.NodeId,
                         NodeType = nodeView.NodeData.GetType(),
                         Position = new Vector2(rect.x, rect.y),
-                        JsonData = EditorJsonUtility.ToJson(nodeView.NodeData)
+                        JsonData = SanitizeSerializedNodeJsonForClipboard(EditorJsonUtility.ToJson(nodeView.NodeData))
                     });
                 }
             }
@@ -1848,7 +1861,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (selectedIds.Count == 0)
                 return;
 
-            foreach (var connection in _graphAsset.GetConnectionsForLayer(layerId, false))
+            foreach (var connection in _graphAsset.Connections)
             {
                 if (connection == null)
                     continue;
@@ -1928,6 +1941,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             EditorUtility.SetDirty(_graphAsset);
+            _graphAsset.NormalizeGraphIds();
             _graphAsset.EnsureLayerGraphStates();
             GraphChanged?.Invoke();
         }
@@ -1949,7 +1963,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var selectedNodes = selection.OfType<GeneratorNodeView>().ToList();
             if (selectedNodes.Count == 0) return;
 
-            var group = new Group { title = "Node Group" };
+            var group = new UnityEditor.Experimental.GraphView.Group { title = "Node Group" };
 
             // Calculate group bounds
             foreach (var node in selectedNodes)
@@ -2136,6 +2150,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             var idMap = new Dictionary<string, string>();
+            var reservedImportedNodeIds = new HashSet<string>();
             var newViews = new Dictionary<string, GeneratorNodeView>();
 
             int created = 0;
@@ -2154,9 +2169,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var node = _graphAsset.AddNode(nodeType, false, ResolveActiveLayerId());
                 if (node == null) { skipped++; continue; }
 
-                string newId = string.IsNullOrWhiteSpace(entry.originalNodeId)
-                    ? Guid.NewGuid().ToString()
-                    : entry.originalNodeId;
+                string newId = ReserveUniqueImportedNodeId(entry.originalNodeId, reservedImportedNodeIds);
                 string presetNodeId = string.IsNullOrWhiteSpace(entry.originalNodeId)
                     ? newId
                     : entry.originalNodeId;
@@ -2215,6 +2228,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 imported++;
             }
 
+            _graphAsset.NormalizeGraphIds();
             _graphAsset.EnsureLayerGraphStates();
             RefreshConnectionIndexControls();
             BringAllNodesToFront();
@@ -2230,6 +2244,20 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             if (skipped > 0)
                 EditorUtility.DisplayDialog("Попередження імпорту", msg, "OK");
+        }
+
+        private static string ReserveUniqueImportedNodeId(string preferredId, HashSet<string> reservedIds)
+        {
+            reservedIds ??= new HashSet<string>();
+
+            string id = string.IsNullOrWhiteSpace(preferredId)
+                ? Guid.NewGuid().ToString()
+                : preferredId;
+
+            while (string.IsNullOrWhiteSpace(id) || !reservedIds.Add(id))
+                id = Guid.NewGuid().ToString();
+
+            return id;
         }
 
         private static string GetPresetNodeObjectName(NodePresetEntry entry)
@@ -2465,6 +2493,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             graphViewChanged += OnGraphViewChanged;
 
+            _graphAsset.NormalizeGraphIds();
             _graphAsset.EnsureLayerGraphStates();
             RefreshConnectionIndexControls();
             BringAllNodesToFront();

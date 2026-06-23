@@ -483,9 +483,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 var tileNodes = TileSettingsNode.GetNodesForLayer(graph, layerDef.Id);
                 bool hasNodeTiles = tileNodes.Any(node => node != null && node.HasRenderableTileOutput);
-                bool hasLegacyFlatSurface = layerDef.GenerateFlatSurface;
-                if (!hasNodeTiles && !hasLegacyFlatSurface)
+
+                // TileSettingsNode is the only source of truth for renderable TWC tile output.
+                // Layers without TileSettingsNode are helper mask/data layers: keep their blueprint mask pipeline
+                // available for Layer Ref/TWC modifiers, but do not create a TilesBuildLayer/runtime tile GameObject.
+                if (!hasNodeTiles)
+                {
+                    layerDef.BuildLayerKey = string.Empty;
                     continue;
+                }
 
                 blueprintByGraphLayerId.TryGetValue(layerDef.Id, out var blueprint);
                 string blueprintGuid = blueprint?.guid ?? layerDef.BlueprintLayerGuid;

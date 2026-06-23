@@ -416,12 +416,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (prop == null) continue;
 
                 var label = string.IsNullOrEmpty(attr.Label) ? ObjectNames.NicifyVariableName(field.Name) : attr.Label;
+                string parameterHelp = GraphNodeDocumentation.GetParameterDescription(type, field.Name, label);
                 
                 var container = new IMGUIContainer(() =>
                 {
                     so.Update();
                     EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(prop, new GUIContent(label), true);
+                    EditorGUILayout.PropertyField(prop, new GUIContent(label, parameterHelp), true);
                     if (EditorGUI.EndChangeCheck())
                     {
                         so.ApplyModifiedProperties();
@@ -576,24 +577,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private static string BuildDetailedTooltip(NodeBase nodeData, NodeInfoAttribute nodeInfo)
         {
-            var sb = new StringBuilder(256);
-
-            string title = !string.IsNullOrWhiteSpace(nodeInfo?.Title) ? nodeInfo.Title : nodeData.Title;
-            string category = !string.IsNullOrWhiteSpace(nodeInfo?.Category) ? nodeInfo.Category : nodeData.Category;
-            string description = !string.IsNullOrWhiteSpace(nodeInfo?.Description)
-                ? nodeInfo.Description
-                : "Опис для цієї ноди відсутній.";
-
-            sb.AppendLine($"{title} [{category}]");
-            sb.AppendLine();
-            sb.AppendLine(description);
-            sb.AppendLine();
-
-            AppendPorts(sb, "Входи", nodeData.Inputs);
-            sb.AppendLine();
-            AppendPorts(sb, "Виходи", nodeData.Outputs);
-
-            return sb.ToString().TrimEnd();
+            return GraphNodeDocumentation.BuildNodeTooltip(nodeData, nodeInfo);
         }
 
         private static void AppendPorts(StringBuilder sb, string header, PortDefinition[] ports)

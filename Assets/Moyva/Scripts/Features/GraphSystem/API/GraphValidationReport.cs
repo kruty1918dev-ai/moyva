@@ -62,11 +62,11 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public override string ToString()
         {
             string target = !string.IsNullOrEmpty(NodeId)
-                ? $"Node {NodeId}"
+                ? "Node"
                 : !string.IsNullOrEmpty(ConnectionId)
-                    ? $"Connection {ConnectionId}"
+                    ? "Connection"
                     : !string.IsNullOrEmpty(LayerId)
-                        ? $"Layer {LayerId}"
+                        ? "Layer"
                         : "Graph";
 
             return $"[{Severity}] {Code}: {target}: {Message}";

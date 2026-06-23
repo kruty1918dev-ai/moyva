@@ -1867,7 +1867,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var issueButton = new Button(() => FocusValidationIssue(issue))
                 {
                     text = FormatValidationIssue(issue),
-                    tooltip = issue.ToString()
+                    tooltip = issue.Message
                 };
                 issueButton.style.unityTextAlign = TextAnchor.MiddleLeft;
                 issueButton.style.whiteSpace = WhiteSpace.Normal;
@@ -1981,10 +1981,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return string.Empty;
 
             string icon = issue.Severity == ValidationSeverity.Error ? "ERR" : "WARN";
-            string layer = string.IsNullOrEmpty(issue.LayerId)
-                ? ""
-                : $" [{issue.LayerId.Substring(0, Mathf.Min(8, issue.LayerId.Length))}]";
-            return $"{icon} {issue.Code}{layer}: {issue.Message}";
+            return $"{icon} {issue.Code}: {issue.Message}";
         }
 
         private Dictionary<string, GraphValidationIssue> BuildLayerSyncIssueLookup()
@@ -2152,19 +2149,38 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_graphAsset == null)
                 return;
 
-            Undo.RecordObject(_graphAsset, "Auto Fix Graph Validation");
+            Undo.RegisterCompleteObjectUndo(_graphAsset, "Auto Fix Graph Validation");
+            foreach (var node in _graphAsset.Nodes)
+            {
+                if (node != null)
+                    Undo.RecordObject(node, "Auto Fix Graph Validation");
+            }
 
             int fixedCount = 0;
+
+            // IDs are internal implementation details. They must be repaired before any other fix,
+            // because duplicate NodeId values make connections, validation focus and layer-state sync ambiguous.
+            fixedCount += _graphAsset.NormalizeGraphIds();
             fixedCount += _graphAsset.RepairMissingNodeConnections();
             fixedCount += _graphAsset.RemoveNullNodes();
             fixedCount += NormalizeDuplicateNodeIds();
             fixedCount += NormalizeDuplicateConnectionIds();
             fixedCount += AssignInvalidLayerNodesToActiveLayer();
+            fixedCount += AutoFixTileSettingsOutputKinds();
             fixedCount += CreateMissingLayerOutputs();
             fixedCount += RemoveInvalidConnections();
 
             _graphAsset.EnsureLayerGraphStates();
+
+            // Blueprint/order mismatch is not a user-editable error. Auto Fix should run the same sync
+            // that the validation text asks the user to run manually.
+            TrySyncCompanionBlueprintLayers(true);
+
+            fixedCount += _graphAsset.NormalizeGraphIds();
+            _graphAsset.EnsureLayerGraphStates();
             EditorUtility.SetDirty(_graphAsset);
+            AssetDatabase.SaveAssets();
+
             RefreshGraphViewFromAsset();
             RebuildLayerList();
             RefreshInspectorPanel();
@@ -2175,7 +2191,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             _statusLabel.text = fixedCount > 0
                 ? $"✓ Auto Fix applied {fixedCount} change(s)."
-                : "Auto Fix: no simple fixes were needed.";
+                : "Auto Fix: graph ids/output/sync checked.";
         }
 
         private int NormalizeDuplicateNodeIds()
@@ -2191,10 +2207,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (!string.IsNullOrEmpty(id) && seen.Add(id))
                     continue;
 
-                node.NodeId = Guid.NewGuid().ToString();
-                seen.Add(node.NodeId);
+                do
+                {
+                    node.NodeId = Guid.NewGuid().ToString();
+                    id = node.NodeId;
+                }
+                while (string.IsNullOrEmpty(id) || !seen.Add(id));
+
+                EditorUtility.SetDirty(node);
                 changed++;
             }
+
+            if (changed > 0)
+                EditorUtility.SetDirty(_graphAsset);
 
             return changed;
         }
@@ -2212,10 +2237,18 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (!string.IsNullOrEmpty(id) && seen.Add(id))
                     continue;
 
-                connection.ResetConnectionId();
-                seen.Add(connection.ConnectionId);
+                do
+                {
+                    connection.ResetConnectionId();
+                    id = connection.ConnectionId;
+                }
+                while (string.IsNullOrEmpty(id) || !seen.Add(id));
+
                 changed++;
             }
+
+            if (changed > 0)
+                EditorUtility.SetDirty(_graphAsset);
 
             return changed;
         }
@@ -2239,6 +2272,54 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                 node.LayerId = targetLayerId;
                 changed++;
+            }
+
+            return changed;
+        }
+
+        private int AutoFixTileSettingsOutputKinds()
+        {
+            int changed = 0;
+            foreach (var layer in _graphAsset.Layers)
+            {
+                if (layer == null || !layer.Enabled)
+                    continue;
+
+                var nodes = _graphAsset.GetNodesForLayer(layer.Id);
+                var output = nodes.OfType<OutputNode>().FirstOrDefault();
+                if (output == null)
+                    continue;
+
+                bool hasRenderableTiles = TileSettingsNode.HasRenderableTiles(_graphAsset, layer.Id);
+                bool hasAnyTileSettings = nodes.Any(node => node is TileSettingsNode);
+
+                // If the user placed a configured TileSettingsNode, the layer is explicitly renderable.
+                // Output Kind must follow that so TileSettings is not silently ignored.
+                if (hasRenderableTiles && output.OutputKind != LayerOutputKind.Tiles)
+                {
+                    output.OutputKind = LayerOutputKind.Tiles;
+                    EditorUtility.SetDirty(output);
+                    changed++;
+                    continue;
+                }
+
+                // A layer without renderable TileSettings is a helper/data layer. Do not force Tiles.
+                // If it currently exposes a bool mask, keep it as Masks so Layer Ref can consume it.
+                if (!hasAnyTileSettings && output.OutputKind == LayerOutputKind.Tiles)
+                {
+                    var layerConnections = _graphAsset.GetConnectionsForLayer(layer.Id, includeGlobal: false);
+                    bool hasMaskInput = layerConnections.Any(connection =>
+                        connection != null
+                        && connection.TargetNodeId == output.NodeId
+                        && connection.TargetPortIndex == OutputNode.MaskInputIndex);
+
+                    if (hasMaskInput)
+                    {
+                        output.OutputKind = LayerOutputKind.Masks;
+                        EditorUtility.SetDirty(output);
+                        changed++;
+                    }
+                }
             }
 
             return changed;
@@ -2303,6 +2384,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     out int targetPort,
                     out var outputKind))
                 {
+                    if (outputKind == LayerOutputKind.Tiles && !TileSettingsNode.HasRenderableTiles(_graphAsset, layer.Id))
+                        outputKind = LayerOutputKind.Masks;
+
                     layerOutput.OutputKind = outputKind;
                     _graphAsset.AddConnection(source.NodeId, sourcePort, layerOutput.NodeId, targetPort);
                     if (layerOutput.EditorPosition == Vector2.zero)
@@ -2372,7 +2456,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 node => node is TwcModifierNode,
                 port => port.ValueType == typeof(bool[,]),
                 OutputNode.MaskInputIndex,
-                LayerOutputKind.Tiles,
+                LayerOutputKind.Masks,
                 out source,
                 out sourcePort,
                 out targetPort,

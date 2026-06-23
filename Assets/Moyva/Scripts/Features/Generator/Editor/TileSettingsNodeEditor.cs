@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
+using Kruty1918.Moyva.GraphSystem.API;
 using UnityEditor;
 using UnityEngine;
 
@@ -25,6 +26,8 @@ namespace Kruty1918.Moyva.Generator.Editor
         private SerializedProperty _tileColliderHeight;
         private SerializedProperty _tileColliderExtrusionHeight;
         private SerializedProperty _invertCollisionWalls;
+
+        private bool _showPorts = true;
 
         private void OnEnable()
         {
@@ -66,16 +69,19 @@ namespace Kruty1918.Moyva.Generator.Editor
             }
         }
 
-        private void DrawHeader()
+        private new void DrawHeader()
         {
             var node = target as TileSettingsNode;
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Tile Settings Node", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField("Один node описує build-параметри шару та weighted random список TilePreset variants.", EditorStyles.wordWrappedMiniLabel);
-
+                EditorGUILayout.LabelField("Документація ноди", EditorStyles.boldLabel);
                 if (node != null)
                 {
+                    EditorGUILayout.HelpBox(GraphNodeDocumentation.BuildInspectorHeader(node), MessageType.Info);
+                    _showPorts = EditorGUILayout.Foldout(_showPorts, "Порти / типи даних", true);
+                    if (_showPorts)
+                        EditorGUILayout.HelpBox(GraphNodeDocumentation.BuildPortsInspectorText(node), MessageType.None);
+
                     EditorGUILayout.Space(2);
                     EditorGUILayout.LabelField("Configured variants", node.ConfiguredVariantCount.ToString(), EditorStyles.miniLabel);
                     EditorGUILayout.LabelField("Runtime output", node.HasRenderableTileOutput ? "Tile layer" : "Internal/no tiles", EditorStyles.miniLabel);
@@ -87,6 +93,7 @@ namespace Kruty1918.Moyva.Generator.Editor
         {
             EditorGUILayout.Space(4);
             EditorGUILayout.LabelField("Tile Preset Variants", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(GraphNodeDocumentation.GetParameterDescription(typeof(TileSettingsNode), "_tileVariants", "Tile Preset Variants"), MessageType.None);
 
             if (_tileVariants == null)
             {
@@ -95,9 +102,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             }
 
             if (_tileVariants.arraySize == 0)
-            {
                 EditorGUILayout.HelpBox("Додай хоча б один TilePreset variant або увімкни Flat Surface.", MessageType.Warning);
-            }
 
             for (int i = 0; i < _tileVariants.arraySize; i++)
             {
@@ -114,7 +119,7 @@ namespace Kruty1918.Moyva.Generator.Editor
                 {
                     using (new EditorGUILayout.HorizontalScope())
                     {
-                        EditorGUILayout.LabelField($"Variant {i + 1}", EditorStyles.miniBoldLabel);
+                        EditorGUILayout.LabelField("Variant " + (i + 1), EditorStyles.miniBoldLabel);
                         GUILayout.FlexibleSpace();
                         using (new EditorGUI.DisabledScope(_tileVariants.arraySize <= 1))
                         {
@@ -126,15 +131,19 @@ namespace Kruty1918.Moyva.Generator.Editor
                         }
                     }
 
-                    EditorGUILayout.PropertyField(preset, new GUIContent("Tile Preset"));
-                    EditorGUILayout.PropertyField(slot, new GUIContent("Slot"));
+                    DrawDocumentedVariantProperty(preset, "Preset");
+                    DrawDocumentedVariantProperty(slot, "Slot");
                     if (weight != null)
                     {
-                        weight.floatValue = EditorGUILayout.Slider(new GUIContent("Weight"), Mathf.Clamp01(weight.floatValue), 0f, 1f);
+                        string help = GraphNodeDocumentation.GetParameterDescription(typeof(TileSettingsNode), "Weight", "Weight");
+                        weight.floatValue = EditorGUILayout.Slider(new GUIContent("Weight", help), Mathf.Clamp01(weight.floatValue), 0f, 1f);
+                        EditorGUILayout.HelpBox(help, MessageType.None);
                     }
                     if (tileHeight != null)
                     {
-                        tileHeight.floatValue = Mathf.Max(0f, EditorGUILayout.FloatField(new GUIContent("Tile Height"), tileHeight.floatValue));
+                        string help = GraphNodeDocumentation.GetParameterDescription(typeof(TileSettingsNode), "TileHeight", "Tile Height");
+                        tileHeight.floatValue = Mathf.Max(0f, EditorGUILayout.FloatField(new GUIContent("Tile Height", help), tileHeight.floatValue));
+                        EditorGUILayout.HelpBox(help, MessageType.None);
                     }
                 }
             }
@@ -170,9 +179,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             EditorGUILayout.LabelField("Flat Surface", EditorStyles.boldLabel);
             DrawProperty(_generateFlatSurface, "Generate Flat Surface");
             using (new EditorGUI.DisabledScope(_generateFlatSurface != null && !_generateFlatSurface.boolValue))
-            {
                 DrawProperty(_flatSurfaceMaterial, "Flat Surface Material");
-            }
         }
 
         private void DrawTileLayerSettings()
@@ -198,12 +205,24 @@ namespace Kruty1918.Moyva.Generator.Editor
             DrawProperty(_invertCollisionWalls, "Invert Collision Walls");
         }
 
+        private static void DrawDocumentedVariantProperty(SerializedProperty property, string label)
+        {
+            if (property == null)
+                return;
+
+            string help = GraphNodeDocumentation.GetParameterDescription(typeof(TileSettingsNode), label, label);
+            EditorGUILayout.PropertyField(property, new GUIContent(label, help), true);
+            EditorGUILayout.HelpBox(help, MessageType.None);
+        }
+
         private static void DrawProperty(SerializedProperty property, string label)
         {
             if (property == null)
                 return;
 
-            EditorGUILayout.PropertyField(property, new GUIContent(label), true);
+            string help = GraphNodeDocumentation.GetParameterDescription(typeof(TileSettingsNode), property.propertyPath, label);
+            EditorGUILayout.PropertyField(property, new GUIContent(label, help), true);
+            EditorGUILayout.HelpBox(help, MessageType.None);
         }
     }
 }

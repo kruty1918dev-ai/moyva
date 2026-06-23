@@ -220,6 +220,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 }
             }
 
+            changed |= NormalizeGraphIds() > 0;
+
             GlobalGraphState.Clear();
             for (int i = 0; i < _layerGraphStates.Count; i++)
                 _layerGraphStates[i]?.Clear();
@@ -275,6 +277,87 @@ namespace Kruty1918.Moyva.GraphSystem.API
 #if UNITY_EDITOR
                 UnityEditor.EditorUtility.SetDirty(this);
 #endif
+            }
+
+            return changed;
+        }
+
+        /// <summary>
+        /// Автоматично нормалізує службові ідентифікатори графа.
+        /// Користувач не повинен вручну керувати NodeId/ConnectionId: під час copy/paste,
+        /// import або ручного дублювання Unity sub-assets ці значення мають бути виправлені тут.
+        /// </summary>
+        public int NormalizeGraphIds()
+        {
+            _nodes ??= new List<NodeBase>();
+            _connections ??= new List<Connection>();
+
+            int changed = 0;
+            changed += NormalizeNodeIdsInternal();
+            changed += NormalizeConnectionIdsInternal();
+
+#if UNITY_EDITOR
+            if (changed > 0)
+                UnityEditor.EditorUtility.SetDirty(this);
+#endif
+
+            return changed;
+        }
+
+        private int NormalizeNodeIdsInternal()
+        {
+            var seen = new HashSet<string>();
+            int changed = 0;
+
+            for (int i = 0; i < _nodes.Count; i++)
+            {
+                var node = _nodes[i];
+                if (node == null)
+                    continue;
+
+                string id = node.NodeId;
+                if (!string.IsNullOrEmpty(id) && seen.Add(id))
+                    continue;
+
+                do
+                {
+                    node.NodeId = Guid.NewGuid().ToString();
+                    id = node.NodeId;
+                }
+                while (string.IsNullOrEmpty(id) || !seen.Add(id));
+
+                changed++;
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.SetDirty(node);
+#endif
+            }
+
+            return changed;
+        }
+
+        private int NormalizeConnectionIdsInternal()
+        {
+            var seen = new HashSet<string>();
+            int changed = 0;
+
+            for (int i = 0; i < _connections.Count; i++)
+            {
+                var connection = _connections[i];
+                if (connection == null)
+                    continue;
+
+                string id = connection.ConnectionId;
+                if (!string.IsNullOrEmpty(id) && seen.Add(id))
+                    continue;
+
+                do
+                {
+                    connection.ResetConnectionId();
+                    id = connection.ConnectionId;
+                }
+                while (string.IsNullOrEmpty(id) || !seen.Add(id));
+
+                changed++;
             }
 
             return changed;

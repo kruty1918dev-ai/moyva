@@ -1,4 +1,6 @@
+using System;
 using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
+using Kruty1918.Moyva.GraphSystem.API;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -8,14 +10,13 @@ namespace Kruty1918.Moyva.Generator.Editor
 {
     /// <summary>
     /// Інспектор вузла-обгортки TileWorldCreator-модифікатора. Малює параметри
-    /// вкладеного <see cref="GiantGrey.TileWorldCreator.BlueprintModifier"/>,
-    /// щоб їх можна було редагувати прямо з графа.
+    /// вкладеного BlueprintModifier і додає українську документацію для ноди та її параметрів.
     /// </summary>
     [CustomEditor(typeof(TwcModifierNode))]
     public sealed class TwcModifierNodeEditor : UnityEditor.Editor
     {
         private UnityEditor.Editor _modifierEditor;
-        private Object _cachedModifier;
+        private UnityEngine.Object _cachedModifier;
 
         public override VisualElement CreateInspectorGUI()
         {
@@ -25,24 +26,31 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (node == null)
                 return root;
 
+            Type modifierType = TwcModifierCatalog.ResolveType(node.ModifierTypeName);
+            root.Add(new HelpBox(
+                GraphNodeDocumentation.BuildTwcInspectorHeader(node.Title, modifierType, node.IsGenerator),
+                HelpBoxMessageType.Info));
+            root.Add(BuildPortHelpElement(node));
             root.Add(new Label(node.IsGenerator ? "Тип: Генератор" : "Тип: Модифікатор"));
 
             if (!node.TryRestoreModifierInEditor())
             {
                 root.Add(new HelpBox(
-                    $"TWC-модифікатор '{node.ModifierTypeName}' не ініціалізовано.",
+                    "TWC-модифікатор '" + node.ModifierTypeName + "' не ініціалізовано.",
                     HelpBoxMessageType.Warning));
                 return root;
             }
+
+            root.Add(BuildModifierDocumentationElement(node));
 
             VisualElement nativeInspector = null;
             try
             {
                 nativeInspector = node.CreateModifierInspectorElement(new Vector2Int(64, 64));
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                Debug.LogWarning($"[TwcModifierNodeEditor] Failed to build native TWC inspector for {node.Title}: {ex.Message}");
+                Debug.LogWarning("[TwcModifierNodeEditor] Failed to build native TWC inspector for " + node.Title + ": " + ex.Message);
             }
 
             if (nativeInspector != null && nativeInspector.childCount > 0)
@@ -65,14 +73,25 @@ namespace Kruty1918.Moyva.Generator.Editor
                 node.TryRestoreModifierInEditor();
 
             var modifier = node != null ? node.ModifierAsset : null;
+            Type modifierType = node != null ? TwcModifierCatalog.ResolveType(node.ModifierTypeName) : null;
+
+            if (node != null)
+            {
+                EditorGUILayout.HelpBox(
+                    GraphNodeDocumentation.BuildTwcInspectorHeader(node.Title, modifierType, node.IsGenerator),
+                    MessageType.Info);
+                EditorGUILayout.HelpBox(GraphNodeDocumentation.BuildPortsInspectorText(node), MessageType.None);
+            }
 
             if (modifier == null)
             {
                 EditorGUILayout.HelpBox(
-                    $"TWC-модифікатор '{node.ModifierTypeName}' не ініціалізовано.",
+                    node == null
+                        ? "TWC-модифікатор не ініціалізовано."
+                        : "TWC-модифікатор '" + node.ModifierTypeName + "' не ініціалізовано.",
                     MessageType.Warning);
 
-                if (GUILayout.Button("Відновити модифікатор"))
+                if (node != null && GUILayout.Button("Відновити модифікатор"))
                 {
                     Undo.RecordObject(node, "Restore TWC modifier");
                     if (node.TryRestoreModifierInEditor())
@@ -93,6 +112,8 @@ namespace Kruty1918.Moyva.Generator.Editor
                 EditorStyles.miniLabel);
             EditorGUILayout.Space(2);
 
+            DrawTwcParameterDocumentation(node);
+
             if (_modifierEditor == null || _cachedModifier != modifier)
             {
                 if (_modifierEditor != null)
@@ -104,8 +125,89 @@ namespace Kruty1918.Moyva.Generator.Editor
             EditorGUI.BeginChangeCheck();
             _modifierEditor.OnInspectorGUI();
             if (EditorGUI.EndChangeCheck())
-            {
                 MarkDirty(node);
+        }
+
+        private static VisualElement BuildPortHelpElement(TwcModifierNode node)
+        {
+            return new HelpBox(GraphNodeDocumentation.BuildPortsInspectorText(node), HelpBoxMessageType.None);
+        }
+
+        private static VisualElement BuildModifierDocumentationElement(TwcModifierNode node)
+        {
+            var foldout = new Foldout { text = "Документація параметрів TWC", value = true };
+            if (node == null || node.ModifierAsset == null)
+            {
+                foldout.Add(new HelpBox("Параметри недоступні, бо TWC-модифікатор ще не ініціалізований.", HelpBoxMessageType.Warning));
+                return foldout;
+            }
+
+            var serializedModifier = new SerializedObject(node.ModifierAsset);
+            serializedModifier.Update();
+            var property = serializedModifier.GetIterator();
+            bool enterChildren = true;
+            bool any = false;
+            Type modifierType = TwcModifierCatalog.ResolveType(node.ModifierTypeName);
+
+            while (property.NextVisible(enterChildren))
+            {
+                enterChildren = false;
+                if (property.propertyPath.StartsWith("m_", StringComparison.Ordinal)
+                    || property.propertyPath == "asset"
+                    || property.propertyPath == "isEnabled")
+                    continue;
+
+                any = true;
+                string help = GraphNodeDocumentation.GetTwcParameterDescription(
+                    node.Title,
+                    modifierType,
+                    property.propertyPath,
+                    property.displayName);
+                foldout.Add(new Label(property.displayName) { style = { unityFontStyleAndWeight = FontStyle.Bold } });
+                foldout.Add(new HelpBox(help, HelpBoxMessageType.None));
+            }
+
+            if (!any)
+                foldout.Add(new HelpBox("У цього TWC-модифікатора немає відкритих serialized параметрів або вони малюються native інспектором.", HelpBoxMessageType.None));
+
+            return foldout;
+        }
+
+        private static void DrawTwcParameterDocumentation(TwcModifierNode node)
+        {
+            if (node == null || node.ModifierAsset == null)
+                return;
+
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Документація параметрів TWC", EditorStyles.boldLabel);
+                var serializedModifier = new SerializedObject(node.ModifierAsset);
+                serializedModifier.Update();
+                var property = serializedModifier.GetIterator();
+                bool enterChildren = true;
+                bool any = false;
+                Type modifierType = TwcModifierCatalog.ResolveType(node.ModifierTypeName);
+
+                while (property.NextVisible(enterChildren))
+                {
+                    enterChildren = false;
+                    if (property.propertyPath.StartsWith("m_", StringComparison.Ordinal)
+                        || property.propertyPath == "asset"
+                        || property.propertyPath == "isEnabled")
+                        continue;
+
+                    any = true;
+                    string help = GraphNodeDocumentation.GetTwcParameterDescription(
+                        node.Title,
+                        modifierType,
+                        property.propertyPath,
+                        property.displayName);
+                    EditorGUILayout.LabelField(property.displayName, EditorStyles.miniBoldLabel);
+                    EditorGUILayout.HelpBox(help, MessageType.None);
+                }
+
+                if (!any)
+                    EditorGUILayout.HelpBox("У цього TWC-модифікатора немає відкритих serialized параметрів або вони малюються native інспектором.", MessageType.None);
             }
         }
 
@@ -120,14 +222,22 @@ namespace Kruty1918.Moyva.Generator.Editor
             EditorGUI.BeginChangeCheck();
             var property = serializedModifier.GetIterator();
             bool enterChildren = true;
+            Type modifierType = TwcModifierCatalog.ResolveType(node.ModifierTypeName);
             while (property.Next(enterChildren))
             {
                 enterChildren = false;
-                if (property.propertyPath.StartsWith("m_", System.StringComparison.Ordinal)
-                    || property.propertyPath is "asset" or "isEnabled")
+                if (property.propertyPath.StartsWith("m_", StringComparison.Ordinal)
+                    || property.propertyPath == "asset"
+                    || property.propertyPath == "isEnabled")
                     continue;
 
-                EditorGUILayout.PropertyField(property, true);
+                string help = GraphNodeDocumentation.GetTwcParameterDescription(
+                    node.Title,
+                    modifierType,
+                    property.propertyPath,
+                    property.displayName);
+                EditorGUILayout.PropertyField(property, new GUIContent(property.displayName, help), true);
+                EditorGUILayout.HelpBox(help, MessageType.None);
             }
 
             if (EditorGUI.EndChangeCheck())
