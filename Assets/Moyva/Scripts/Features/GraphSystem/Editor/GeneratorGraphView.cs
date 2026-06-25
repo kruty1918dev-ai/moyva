@@ -640,35 +640,35 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                     if (buildTextures && !hidePreviewForNode)
                     {
-                        Texture2D preview = null;
-                        bool ownsPreview = false;
+                        Texture2D outputPreview = null;
+                        bool ownsOutputPreview = false;
                         string previewStatus = null;
                         if (ShouldPreferOutputMaskPreview(outputNode, maskMap, biomeMap, objectMap, buildingMap))
                         {
-                            preview = NodePreviewTextureFactory.TryBuild(
+                            outputPreview = NodePreviewTextureFactory.TryBuild(
                                 new object[] { maskMap },
                                 previewSize,
                                 previewSize,
-                                out ownsPreview,
+                                out ownsOutputPreview,
                                 out previewStatus,
                                 tileRegistry,
                                 heatmap,
                                 _graphAsset.SharedSettings);
                         }
 
-                        if (preview == null)
+                        if (outputPreview == null)
                         {
-                            preview = CompositePreviewBuilder.Build(
+                            outputPreview = CompositePreviewBuilder.Build(
                                 layerData, biomeMap, objectMap, heightMap, buildingMap,
                                 tileRegistry,
                                 settings?.MapObjectRegistry,
                                 settings?.BuildingRegistry,
                                 sharedSettings: _graphAsset.SharedSettings);
-                            ownsPreview = true;
+                            ownsOutputPreview = true;
                             previewStatus = "Composite preview";
                         }
 
-                        nodeView.SetPreview(preview, previewStatus, ownsPreview);
+                        nodeView.SetPreview(outputPreview, previewStatus, ownsOutputPreview);
                         nodeView.SetPreviewVisible(_inlinePreviewsVisible);
                     }
                     else
