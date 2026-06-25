@@ -24,6 +24,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private string[,] _lastTileMap;
         private Vector2   _mouseInWindow;
         private Rect      _lastDrawRect;    // де намальована текстура у window-space
+        private double _nextAutoRepaintAt;
+        private const double AutoRepaintIntervalSeconds = 0.25d;
 
         public static void Open(GraphEditorWindow owner)
         {
@@ -45,9 +47,15 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void Update()
         {
-            // Lightweight polling to keep preview in sync with graph selection.
-            if (_owner != null)
-                Repaint();
+            // Keep selection-driven preview changes responsive without repainting every editor frame.
+            if (_owner == null)
+                return;
+
+            if (EditorApplication.timeSinceStartup < _nextAutoRepaintAt)
+                return;
+
+            _nextAutoRepaintAt = EditorApplication.timeSinceStartup + AutoRepaintIntervalSeconds;
+            Repaint();
         }
 
         private void OnGUI()

@@ -158,7 +158,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             SetOutputNodeKindToMasks(outputNode);
             result.NewOutputNode = outputNode;
 
-            var outputConnection = graph.AddConnection(terminal.Node.NodeId, terminal.OutputIndex, outputNode.NodeId, 0);
+            var outputConnection = graph.AddConnection(
+                terminal.Node.NodeId,
+                terminal.OutputIndex,
+                outputNode.NodeId,
+                OutputNode.MaskInputIndex);
             if (outputConnection != null)
                 result.CreatedConnections.Add(outputConnection);
 

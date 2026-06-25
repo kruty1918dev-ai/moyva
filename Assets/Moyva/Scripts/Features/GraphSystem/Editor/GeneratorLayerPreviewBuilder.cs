@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using UnityEngine;
@@ -35,6 +36,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             foreach (var layer in graph.Layers)
             {
                 if (layer == null)
+                    continue;
+                if (!layer.Enabled || !GraphLayerRuntimeSemantics.HasRenderableTileOutput(graph, layer.Id))
                     continue;
 
                 var layerNodes = graph.Nodes

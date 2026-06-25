@@ -16,8 +16,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         public int previewWidth = 64;
         public int previewHeight = 64;
-        public bool showInlinePreviews = true;
-        public bool autoRunOnChange = true;
+        public bool showInlinePreviews = false;
+        public bool autoRunOnChange = false;
         public int previewResolution = 1; // 0=64,1=128,2=full
         public bool previewHeatmap = false;
         public int inspectorTabIndex = 0;

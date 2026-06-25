@@ -240,8 +240,8 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     {
                         report.Add(new GraphValidationIssue(
                             "LAYER_REF_FORWARD",
-                            ValidationSeverity.Error,
-                            $"Шар '{layer.Name}' посилається на '{sourceLayer.Name}', але Ref Layer може посилатися тільки на шари, які виконуються раніше. Перемісти '{sourceLayer.Name}' вище або обери інший source layer.",
+                            ValidationSeverity.Warning,
+                            $"Шар '{layer.Name}' посилається на '{sourceLayer.Name}', який стоїть не раніше в порядку шарів. Це дозволено: Layer Ref буде prewarm-нуто як залежність, але для зрозумілості графа краще тримати source layer вище.",
                             layerId: layer.Id,
                             nodeId: node.NodeId));
                     }
@@ -458,7 +458,8 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 var sourcePort = sourceOutputs[conn.SourcePortIndex];
                 var targetPort = targetInputs[conn.TargetPortIndex];
 
-                if (!PortDefinition.AreValueTypesCompatible(sourcePort.ValueType, targetPort.ValueType))
+                if (!PortDefinition.AreValueTypesCompatible(sourcePort.ValueType, targetPort.ValueType)
+                    && !IsLegacyMaskOutputConnection(sourcePort, target, conn))
                 {
                     report.Add(new GraphValidationIssue(
                         "CONNECTION_TYPE_MISMATCH",
@@ -471,6 +472,39 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         canAutoFix: true));
                 }
             }
+        }
+
+        private static bool IsLegacyMaskOutputConnection(
+            PortDefinition sourcePort,
+            NodeBase target,
+            Connection connection)
+        {
+            return sourcePort != null
+                && sourcePort.ValueType == typeof(bool[,])
+                && target?.GetType().Name == "OutputNode"
+                && ResolveLayerOutputKindName(target) == "Masks"
+                && connection != null
+                && connection.TargetPortIndex == 0;
+        }
+
+        private static bool IsLegacyMaskOutputConnection(
+            GraphAsset graph,
+            Connection connection,
+            NodeBase target)
+        {
+            if (graph == null || connection == null)
+                return false;
+
+            var source = graph.GetNodeById(connection.SourceNodeId);
+            var outputs = source?.Outputs;
+            if (outputs == null
+                || connection.SourcePortIndex < 0
+                || connection.SourcePortIndex >= outputs.Length)
+            {
+                return false;
+            }
+
+            return IsLegacyMaskOutputConnection(outputs[connection.SourcePortIndex], target, connection);
         }
 
         private void ValidateCrossLayerConnection(
@@ -837,7 +871,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 return;
             }
 
-            if (!HasExpectedLayerOutputInput(outputNode, incoming, out string kindName, out string expectedPorts))
+            if (!HasExpectedLayerOutputInput(graph, outputNode, incoming, out string kindName, out string expectedPorts))
             {
                 report.Add(new GraphValidationIssue(
                     "LAYER_OUTPUT_KIND_UNCONNECTED",
@@ -849,6 +883,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
         }
 
         private static bool HasExpectedLayerOutputInput(
+            GraphAsset graph,
             NodeBase outputNode,
             IReadOnlyList<Connection> incoming,
             out string kindName,
@@ -875,6 +910,9 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
 
                 string inputName = inputs[inputIndex].Name;
                 if (expected.Any(portName => PortNameMatches(inputName, portName)))
+                    return true;
+
+                if (kindName == "Masks" && IsLegacyMaskOutputConnection(graph, connection, outputNode))
                     return true;
             }
 

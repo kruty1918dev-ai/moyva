@@ -93,7 +93,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 }
 
                 // 1. Граф -> TWC Configuration.
-                var compiled = GraphToConfigurationCompiler.Compile(_graphAsset, _manager, seed, skippedLayerIds);
+                var compiled = GraphToConfigurationCompiler.Compile(
+                    _graphAsset,
+                    _manager,
+                    seed,
+                    skippedLayerIds,
+                    new Vector2Int(baseMapWidth, baseMapHeight));
                 LastCompiledLayers = compiled;
 
                 // Gameplay-мапи лишаються розміром базової згенерованої мапи.
@@ -209,7 +214,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             foreach (var layerMap in ordered)
             {
-                if (layerMap == null || string.IsNullOrEmpty(layerMap.BlueprintLayerGuid))
+                if (layerMap == null
+                    || !layerMap.HasRenderableTileOutput
+                    || string.IsNullOrEmpty(layerMap.BlueprintLayerGuid))
                     continue;
 
                 var blueprint = _manager.GetBlueprintLayerByGuid(layerMap.BlueprintLayerGuid);

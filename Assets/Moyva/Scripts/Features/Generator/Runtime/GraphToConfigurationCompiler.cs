@@ -3,6 +3,7 @@ using System.Linq;
 using System;
 using GiantGrey.TileWorldCreator;
 using GiantGrey.TileWorldCreator.Components;
+using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement;
@@ -25,6 +26,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public string BlueprintLayerGuid;
         public string LayerName;
         public int SortingOrder;
+        public bool HasRenderableTileOutput;
     }
 
     /// <summary>
@@ -43,6 +45,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int seed,
             ISet<string> skippedLayerIds = null)
         {
+            return Compile(graph, manager, seed, skippedLayerIds, null);
+        }
+
+        public static List<CompiledLayerMap> Compile(
+            GraphAsset graph,
+            TileWorldCreatorManager manager,
+            int seed,
+            ISet<string> skippedLayerIds,
+            Vector2Int? mapSizeOverride)
+        {
             var result = new List<CompiledLayerMap>();
             if (graph == null || manager == null || manager.configuration == null)
                 return result;
@@ -51,7 +63,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
             graph.EnsureLayerGraphStates();
 
             // --- Розмір мапи ---
-            var size = graph.SharedSettings != null ? graph.SharedSettings.MapSize : new Vector2Int(50, 50);
+            var size = mapSizeOverride.HasValue && mapSizeOverride.Value.x > 0 && mapSizeOverride.Value.y > 0
+                ? mapSizeOverride.Value
+                : graph.SharedSettings != null
+                    ? graph.SharedSettings.MapSize
+                    : new Vector2Int(50, 50);
             config.width = size.x > 0 ? size.x : 50;
             config.height = size.y > 0 ? size.y : 50;
 
@@ -109,12 +125,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     GridTileId = ResolveGridTileIdForLayer(graph, config, layerDef, blueprint.guid),
                     BlueprintLayerGuid = blueprint.guid,
                     LayerName = blueprint.layerName,
-                    SortingOrder = layerDef.SortingOrder
+                    SortingOrder = layerDef.SortingOrder,
+                    HasRenderableTileOutput = GraphLayerRuntimeSemantics.HasRenderableTileOutput(graph, layerDef.Id)
                 });
             }
 
             ReorderBlueprintLayers(config, orderedLayers, blueprintByGraphLayerId);
             SyncTileBuildLayersFromGraph(graph, config, manager, orderedLayers, blueprintByGraphLayerId, skippedLayerIds);
+
+            var precomputedLayerMasks = BuildPrecomputedLayerMasks(
+                graph,
+                seed,
+                new Vector2Int(config.width, config.height),
+                skippedLayerIds);
 
             for (int layerIndex = 0; layerIndex < orderedLayers.Count; layerIndex++)
             {
@@ -131,7 +154,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     continue;
                 }
 
-                AppendLayerModifiers(blueprint, layerDef.Id, executionPlan.NodesInExecutionOrder, config, blueprintGuidByGraphLayerId, graph);
+                AppendLayerModifiers(
+                    blueprint,
+                    layerDef.Id,
+                    executionPlan.NodesInExecutionOrder,
+                    config,
+                    blueprintGuidByGraphLayerId,
+                    graph,
+                    precomputedLayerMasks);
             }
 
             DisableUnusedLayers(existingLayers, usedLayerGuids);
@@ -170,7 +200,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 seed,
                 clampedMapSize,
                 layerMaskRegistry,
-                null,
+                context => RegisterRuntimeGraphServices(context, graph),
                 skippedLayerIds);
 
             foreach (var layerDef in orderedLayers)
@@ -178,15 +208,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 var scope = graph.CreateExecutionScope(layerDef.Id);
                 bool collectsObjects = scope.Nodes.Any(node => node is ObjectOutputToTWCNode);
 
-                var layerContext = new NodeContext(seed == 0 ? 1 : seed)
-                {
-                    MapSize = clampedMapSize
-                };
-                layerContext.ApplySharedSettings(graph.SharedSettings);
-                if (graph.SharedSettings != null)
-                    layerContext.RegisterService(graph.SharedSettings);
-                layerContext.RegisterService(layerMaskRegistry);
-
+                var layerContext = CreateRuntimeGraphContext(graph, seed == 0 ? 1 : seed, clampedMapSize, layerMaskRegistry);
                 var registry = new ObjectPlacementRegistry();
                 layerContext.RegisterService(registry);
 
@@ -297,7 +319,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             IReadOnlyList<NodeBase> sortedNodes,
             Configuration config,
             Dictionary<string, string> blueprintGuidByGraphLayerId,
-            GraphAsset graph)
+            GraphAsset graph,
+            IReadOnlyDictionary<string, bool[,]> precomputedLayerMasks)
         {
             var layerNodes = new List<NodeBase>();
             for (int i = 0; i < sortedNodes.Count; i++)
@@ -308,6 +331,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 layerNodes.Add(node);
             }
+
+            if (TryAddPrecomputedMaskModifier(blueprint, layerId, graph, config, precomputedLayerMasks))
+                return;
 
             for (int i = 0; i < layerNodes.Count; i++)
             {
@@ -339,6 +365,341 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 clone.isEnabled = true;
                 clone.asset = config;
                 blueprint.tileMapModifiers.Add(clone);
+            }
+        }
+
+        private static bool TryAddPrecomputedMaskModifier(
+            BlueprintLayer blueprint,
+            string layerId,
+            GraphAsset graph,
+            Configuration config,
+            IReadOnlyDictionary<string, bool[,]> precomputedLayerMasks)
+        {
+            if (blueprint == null
+                || string.IsNullOrEmpty(layerId)
+                || precomputedLayerMasks == null
+                || !precomputedLayerMasks.TryGetValue(layerId, out var mask)
+                || mask == null)
+            {
+                return false;
+            }
+
+            var modifier = ScriptableObject.CreateInstance<MoyvaPrecomputedMaskBlueprintModifier>();
+            modifier.name = "Moyva Graph Output Mask";
+            modifier.hideFlags = HideFlags.HideInHierarchy;
+            modifier.isEnabled = true;
+            modifier.asset = config;
+            modifier.sourceGraphLayerId = layerId;
+            modifier.sourceLayerName = graph?.GetLayerById(layerId)?.Name;
+            modifier.SetPositions(EnumerateMaskPositions(mask));
+            blueprint.tileMapModifiers.Add(modifier);
+            return true;
+        }
+
+        private static Dictionary<string, bool[,]> BuildPrecomputedLayerMasks(
+            GraphAsset graph,
+            int seed,
+            Vector2Int mapSize,
+            ISet<string> skippedLayerIds)
+        {
+            var masksByLayerId = new Dictionary<string, bool[,]>(StringComparer.Ordinal);
+            if (graph == null || graph.Nodes == null)
+                return masksByLayerId;
+
+            graph.EnsureLayerGraphStates();
+            var orderedLayers = graph.Layers?
+                .Where(layer => layer != null && layer.Enabled)
+                .Where(layer => skippedLayerIds == null || !skippedLayerIds.Contains(layer.Id))
+                .OrderBy(layer => layer.SortingOrder)
+                .ToList();
+
+            if (orderedLayers == null || orderedLayers.Count == 0)
+                return masksByLayerId;
+
+            int safeSeed = seed == 0 ? 1 : seed;
+            var safeMapSize = new Vector2Int(Mathf.Max(1, mapSize.x), Mathf.Max(1, mapSize.y));
+            var layerMaskRegistry = new LayerMaskRegistry();
+            LayerMaskPrewarmUtility.PrewarmAllLayerMasks(
+                graph,
+                safeSeed,
+                safeMapSize,
+                layerMaskRegistry,
+                context => RegisterRuntimeGraphServices(context, graph),
+                skippedLayerIds);
+
+            var runner = new GraphRunner();
+            for (int i = 0; i < orderedLayers.Count; i++)
+            {
+                var layer = orderedLayers[i];
+                var outputNode = GraphLayerRuntimeSemantics.GetLayerOutputNode(graph, layer.Id);
+                if (outputNode == null || !ShouldPrecomputeLayerOutput(outputNode.OutputKind))
+                    continue;
+
+                var context = CreateRuntimeGraphContext(graph, safeSeed, safeMapSize, layerMaskRegistry);
+                var result = runner.Execute(graph.CreateExecutionScope(layer.Id), context);
+                if (result == null || !result.Success)
+                {
+                    Debug.LogWarning(
+                        $"[GraphToConfigurationCompiler] Layer '{layer.Name}' graph-output mask was not precomputed: {result?.ErrorMessage ?? "unknown graph execution error"}");
+                    continue;
+                }
+
+                var outputs = result.GetOutputs(outputNode.NodeId);
+                var mask = ExtractOutputOccupancyMask(outputs, outputNode.OutputKind, safeMapSize.x, safeMapSize.y);
+                if (mask == null)
+                    mask = ExtractConnectedOutputMask(graph, outputNode, result, safeMapSize.x, safeMapSize.y);
+                if (mask == null && outputNode.OutputKind == LayerOutputKind.Tiles)
+                    mask = ExtractTileSettingsOccupancyMask(graph, layer.Id, result, safeMapSize.x, safeMapSize.y);
+                if (mask == null && layerMaskRegistry.TryGetLatestMask(layer.Id, out var registeredMask))
+                    mask = NormalizeMask(registeredMask, safeMapSize.x, safeMapSize.y);
+
+                if (mask != null)
+                    masksByLayerId[layer.Id] = mask;
+            }
+
+            return masksByLayerId;
+        }
+
+        private static bool ShouldPrecomputeLayerOutput(LayerOutputKind outputKind)
+        {
+            return outputKind == LayerOutputKind.Tiles || outputKind == LayerOutputKind.Masks;
+        }
+
+        private static NodeContext CreateRuntimeGraphContext(
+            GraphAsset graph,
+            int seed,
+            Vector2Int mapSize,
+            LayerMaskRegistry layerMaskRegistry)
+        {
+            var context = new NodeContext(seed)
+            {
+                MapSize = mapSize
+            };
+
+            RegisterRuntimeGraphServices(context, graph);
+            if (layerMaskRegistry != null)
+                context.RegisterService(layerMaskRegistry);
+            return context;
+        }
+
+        private static void RegisterRuntimeGraphServices(NodeContext context, GraphAsset graph)
+        {
+            if (context == null || graph == null)
+                return;
+
+            var sharedSettings = graph.SharedSettings;
+            if (sharedSettings != null)
+            {
+                context.ApplySharedSettings(sharedSettings);
+                context.RegisterService(sharedSettings);
+            }
+
+            if (graph.TileRegistry != null)
+                context.RegisterService(graph.TileRegistry);
+
+            context.RegisterService<IGeneratorDataRegistry>(new GeneratorDataRegistry());
+        }
+
+        private static bool[,] ExtractOutputOccupancyMask(
+            object[] outputs,
+            LayerOutputKind outputKind,
+            int width,
+            int height)
+        {
+            if (outputs == null)
+                return null;
+
+            if (outputs.Length > OutputNode.MaskInputIndex && outputs[OutputNode.MaskInputIndex] is bool[,] directMask)
+                return NormalizeMask(directMask, width, height);
+
+            if (outputKind == LayerOutputKind.Masks)
+                return null;
+
+            if (outputs.Length > OutputNode.BiomeMapInputIndex && outputs[OutputNode.BiomeMapInputIndex] is string[,] biomeMap)
+                return BuildMaskFromStringMap(biomeMap, width, height);
+
+            if (outputs.Length > OutputNode.ObjectMapInputIndex && outputs[OutputNode.ObjectMapInputIndex] is string[,] objectMap)
+                return BuildMaskFromStringMap(objectMap, width, height);
+
+            if (outputs.Length > OutputNode.BuildingMapInputIndex && outputs[OutputNode.BuildingMapInputIndex] is string[,] buildingMap)
+                return BuildMaskFromStringMap(buildingMap, width, height);
+
+            return null;
+        }
+
+        private static bool[,] ExtractConnectedOutputMask(
+            GraphAsset graph,
+            OutputNode outputNode,
+            GraphExecutionResult result,
+            int width,
+            int height)
+        {
+            if (graph?.Connections == null || outputNode == null || result == null)
+                return null;
+
+            bool[,] mask = ExtractConnectedMaskForTargetPort(
+                graph,
+                outputNode.NodeId,
+                OutputNode.MaskInputIndex,
+                result,
+                width,
+                height);
+            if (mask != null)
+                return mask;
+
+            if (outputNode.OutputKind != LayerOutputKind.Masks)
+                return null;
+
+            // Legacy safety: older helper-mask tooling connected bool masks to input 0.
+            // If this Output is explicitly a mask output, recover any connected bool[,] input.
+            for (int i = 0; i < graph.Connections.Count; i++)
+            {
+                var connection = graph.Connections[i];
+                if (connection == null || connection.TargetNodeId != outputNode.NodeId)
+                    continue;
+
+                var outputs = result.GetOutputs(connection.SourceNodeId);
+                if (outputs == null
+                    || connection.SourcePortIndex < 0
+                    || connection.SourcePortIndex >= outputs.Length
+                    || outputs[connection.SourcePortIndex] is not bool[,] sourceMask)
+                {
+                    continue;
+                }
+
+                return NormalizeMask(sourceMask, width, height);
+            }
+
+            return null;
+        }
+
+        private static bool[,] ExtractConnectedMaskForTargetPort(
+            GraphAsset graph,
+            string targetNodeId,
+            int targetPortIndex,
+            GraphExecutionResult result,
+            int width,
+            int height)
+        {
+            if (graph?.Connections == null || string.IsNullOrEmpty(targetNodeId) || result == null)
+                return null;
+
+            for (int i = 0; i < graph.Connections.Count; i++)
+            {
+                var connection = graph.Connections[i];
+                if (connection == null
+                    || connection.TargetNodeId != targetNodeId
+                    || connection.TargetPortIndex != targetPortIndex)
+                {
+                    continue;
+                }
+
+                var outputs = result.GetOutputs(connection.SourceNodeId);
+                if (outputs == null
+                    || connection.SourcePortIndex < 0
+                    || connection.SourcePortIndex >= outputs.Length
+                    || outputs[connection.SourcePortIndex] is not bool[,] sourceMask)
+                {
+                    continue;
+                }
+
+                return NormalizeMask(sourceMask, width, height);
+            }
+
+            return null;
+        }
+
+        private static bool[,] ExtractTileSettingsOccupancyMask(
+            GraphAsset graph,
+            string layerId,
+            GraphExecutionResult result,
+            int width,
+            int height)
+        {
+            if (graph == null || result == null || string.IsNullOrEmpty(layerId))
+                return null;
+
+            var tileSettingsNodes = TileSettingsNode.GetNodesForLayer(graph, layerId);
+            bool[,] merged = null;
+            for (int i = 0; i < tileSettingsNodes.Count; i++)
+            {
+                var node = tileSettingsNodes[i];
+                if (node == null || !node.HasRenderableTileOutput)
+                    continue;
+
+                var outputs = result.GetOutputs(node.NodeId);
+                if (outputs == null || outputs.Length == 0 || outputs[0] is not bool[,] nodeMask)
+                    continue;
+
+                merged = MergeMasks(merged, NormalizeMask(nodeMask, width, height));
+            }
+
+            return merged;
+        }
+
+        private static bool[,] MergeMasks(bool[,] target, bool[,] source)
+        {
+            if (source == null)
+                return target;
+
+            if (target == null)
+                return source;
+
+            int width = Mathf.Min(target.GetLength(0), source.GetLength(0));
+            int height = Mathf.Min(target.GetLength(1), source.GetLength(1));
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                target[x, y] |= source[x, y];
+
+            return target;
+        }
+
+        private static bool[,] NormalizeMask(bool[,] source, int width, int height)
+        {
+            if (source == null)
+                return null;
+
+            int safeWidth = Mathf.Max(1, width);
+            int safeHeight = Mathf.Max(1, height);
+            var result = new bool[safeWidth, safeHeight];
+            int copyWidth = Mathf.Min(safeWidth, source.GetLength(0));
+            int copyHeight = Mathf.Min(safeHeight, source.GetLength(1));
+            for (int x = 0; x < copyWidth; x++)
+            for (int y = 0; y < copyHeight; y++)
+                result[x, y] = source[x, y];
+
+            return result;
+        }
+
+        private static bool[,] BuildMaskFromStringMap(string[,] source, int width, int height)
+        {
+            if (source == null)
+                return null;
+
+            int safeWidth = Mathf.Max(1, width);
+            int safeHeight = Mathf.Max(1, height);
+            var result = new bool[safeWidth, safeHeight];
+            int copyWidth = Mathf.Min(safeWidth, source.GetLength(0));
+            int copyHeight = Mathf.Min(safeHeight, source.GetLength(1));
+            for (int x = 0; x < copyWidth; x++)
+            for (int y = 0; y < copyHeight; y++)
+                result[x, y] = !string.IsNullOrEmpty(source[x, y]);
+
+            return result;
+        }
+
+        private static IEnumerable<Vector2> EnumerateMaskPositions(bool[,] mask)
+        {
+            if (mask == null)
+                yield break;
+
+            int width = mask.GetLength(0);
+            int height = mask.GetLength(1);
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+            {
+                if (mask[x, y])
+                    yield return new Vector2(x, y);
             }
         }
 
@@ -438,6 +799,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (layerDef == null || config == null)
                 return null;
 
+            if (!GraphLayerRuntimeSemantics.HasRenderableTileOutput(graph, layerDef.Id))
+                return null;
+
             string nodeTileId = TileSettingsNode.ResolveFirstTileId(graph, layerDef);
             if (!string.IsNullOrWhiteSpace(nodeTileId))
                 return nodeTileId.Trim();
@@ -482,11 +846,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     continue;
 
                 var tileNodes = TileSettingsNode.GetNodesForLayer(graph, layerDef.Id);
-                bool hasNodeTiles = tileNodes.Any(node => node != null && node.HasRenderableTileOutput);
+                bool hasNodeTiles = GraphLayerRuntimeSemantics.HasRenderableTileOutput(graph, layerDef.Id);
 
-                // TileSettingsNode is the only source of truth for renderable TWC tile output.
-                // Layers without TileSettingsNode are helper mask/data layers: keep their blueprint mask pipeline
-                // available for Layer Ref/TWC modifiers, but do not create a TilesBuildLayer/runtime tile GameObject.
+                // OutputKind + TileSettingsNode are the source of truth for renderable TWC tile output.
+                // Helper/mask/data layers keep their blueprint mask pipeline available for Layer Ref/TWC
+                // modifiers, but do not create a TilesBuildLayer/runtime tile GameObject.
                 if (!hasNodeTiles)
                 {
                     layerDef.BuildLayerKey = string.Empty;

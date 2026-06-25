@@ -56,12 +56,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
             var grass = inputs.Length > 2 ? inputs[2] as GrassCardSettings : null;
             var layer = new ObjectPlacementLayer(_layerName)
             {
-                TargetGraphLayerId = _targetGraphLayerId,
+                TargetGraphLayerId = ResolveTargetGraphLayerId(),
                 Rule = _rule ?? new ObjectPlacementRule(),
                 Cluster = _cluster ?? new ClusterSettings()
             };
 
             AddConfiguredPrefabs(layer.Prefabs);
+            bool grassConnectedWithoutPrefab = grass != null && grass.Prefab == null;
             AddGrassPrefab(layer.Prefabs, grass);
 
             var filtered = FilterCandidates(candidates, exclude);
@@ -72,10 +73,17 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
             _lastMask = BuildPreviewMask(context, filtered);
 
             if (layer.Prefabs.Count == 0)
-                return NodeOutput.Warning("Object layer has no prefabs. TWC layer will be skipped.", layer);
+            {
+                string grassHint = grassConnectedWithoutPrefab
+                    ? " Grass settings are connected, but no generated/assigned grass prefab is set."
+                    : string.Empty;
+                return NodeOutput.Warning($"Object layer has no prefabs.{grassHint} TWC layer will be skipped.", layer);
+            }
 
             if (layer.Candidates.Count == 0)
-                return NodeOutput.Warning("Object layer has no candidates after filtering.", layer);
+                return NodeOutput.Warning(
+                    $"Object layer has no candidates after filtering ({candidates.Count} input, {candidates.Count - filtered.Count} excluded).",
+                    layer);
 
             return NodeOutput.Success(layer);
         }
@@ -85,6 +93,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
             return _lastMask == null
                 ? null
                 : ObjectPlacementPreviewUtility.BuildScatterTexture(_lastMask, _lastCandidates);
+        }
+
+        private string ResolveTargetGraphLayerId()
+        {
+            if (!string.IsNullOrWhiteSpace(_targetGraphLayerId))
+                return _targetGraphLayerId.Trim();
+
+            return string.IsNullOrWhiteSpace(LayerId)
+                ? null
+                : LayerId;
         }
 
         private void AddConfiguredPrefabs(List<ObjectPrefabEntry> target)

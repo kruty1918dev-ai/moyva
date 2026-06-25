@@ -92,7 +92,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [Header("Build Layer")]
         [SerializeField]
         [Tooltip("Якщо увімкнено, TWC використовує Dual Grid. Для dual TilePreset це увімкнеться автоматично під час застосування.")]
-        private bool _useDualGrid = true;
+        private bool _useDualGrid;
 
         [SerializeField]
         [Tooltip("Масштабувати prefab-тайли до розміру клітинки TWC.")]
@@ -163,7 +163,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         public float PrimaryTileHeight => Mathf.Max(0f, ResolvePrimaryVariant()?.TileHeight ?? _tileHeight);
         public float LayerYOffset => _layerYOffset;
         public float TileLayerHeightOffset => _tileLayerHeightOffset;
-        public bool UseDualGrid => _useDualGrid || GetConfiguredPresetVariants().Any(variant => ShouldUseDualGrid(variant.Preset, false));
+        public bool UseDualGrid => ResolveUseDualGrid();
         public bool ScaleTileToCellSize => _scaleTileToCellSize || UseDualGrid;
         public bool GenerateFlatSurface => _generateFlatSurface;
         public bool HasRenderableTileOutput => _generateFlatSurface || GetConfiguredPresetVariants().Any(variant => variant.Preset != null);
@@ -427,6 +427,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             return variants.Count > 0 ? variants[0] : null;
         }
 
+        private bool ResolveUseDualGrid()
+        {
+            var variants = GetConfiguredPresetVariants();
+            if (variants.Any(variant => variant.Preset != null && variant.Preset.gridtype == TilePreset.GridType.dual))
+                return true;
+
+            if (!_useDualGrid)
+                return false;
+
+            // Old nodes serialized _useDualGrid=true by default. Do not force Dual Grid when the selected
+            // preset only contains normal-grid prefabs, otherwise TWC creates empty cluster parents.
+            return variants.Count == 0 || variants.Any(variant => HasAnyDualGridPrefab(variant.Preset));
+        }
+
         private List<TilePresetVariant> GetConfiguredPresetVariants()
         {
             var variants = new List<TilePresetVariant>();
@@ -455,9 +469,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             return variants;
         }
 
-        private static bool ShouldUseDualGrid(TilePreset preset, bool requested)
+        private static bool HasAnyDualGridPrefab(TilePreset preset)
         {
-            return requested || preset != null && preset.gridtype == TilePreset.GridType.dual;
+            return preset != null
+                && (preset.DUALGRD_cornerTile != null
+                    || preset.DUALGRD_invertedCornerTile != null
+                    || preset.DUALGRD_edgeTile != null
+                    || preset.DUALGRD_fillTile != null
+                    || preset.DUALGRD_doubleInteriorCornerTile != null);
         }
     }
 }

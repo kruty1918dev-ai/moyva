@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
@@ -158,6 +159,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private NodeBase _selectedNode;
         [SerializeField] private string _selectedNodeId;
         private UnityEditor.Editor _selectedNodeEditor;
+        private List<WorldLayerData> _lastLayerData;
 
         private enum InspectorTab { Settings = 0, Preview = 1 }
         [SerializeField] private InspectorTab _activeInspectorTab = InspectorTab.Settings;
@@ -189,8 +191,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         // Inline map size override (used when no EditorPreviewSettings assigned)
         [SerializeField] private int _previewWidth = 64;
         [SerializeField] private int _previewHeight = 64;
-        [SerializeField] private bool _showInlinePreviews = true;
-        [SerializeField] private bool _autoRunOnChange = true;
+        [SerializeField] private bool _showInlinePreviews;
+        [SerializeField] private bool _autoRunOnChange;
         [SerializeField] private int _previewResolution = 1; // 0=64,1=128,2=full
         [SerializeField] private bool _previewHeatmap;
 
@@ -338,6 +340,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 MigrateLegacySharedSettingsNode(_graphAsset);
                 EnsureSelectedLayer();
                 EnsureSelectedLayerMatchesSelectedNode();
+                SanitizeGraphAsset(false);
+                TrySyncCompanionBlueprintLayers(false);
                 _graphView.SetActiveLayerWithoutRefresh(_selectedLayerId);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
                 RestoreGraphViewState();
@@ -358,6 +362,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 MigrateLegacySharedSettingsNode(_graphAsset);
                 EnsureSelectedLayer();
                 EnsureSelectedLayerMatchesSelectedNode();
+                SanitizeGraphAsset(false);
+                TrySyncCompanionBlueprintLayers(false);
                 _graphView.SetActiveLayerWithoutRefresh(_selectedLayerId);
                 _graphView.PopulateGraph(_graphAsset, EditorApplication.isPlaying);
                 RestoreGraphViewState();
@@ -870,21 +876,44 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         /// <summary>
         /// Перераховує матриці шарів, мініатюри та складене ізометричне превʼю
-        /// з останнього результату виконання графа.
+        /// через той самий TWC compile/generate шлях, що й scene generation.
         /// </summary>
-        private void RebuildLayerPreviews()
+        private void RebuildLayerPreviews(int seed, int mapW, int mapH, ISet<string> skippedLayerIds)
         {
             DisposeLayerPreviewTextures();
 
-            if (_graphAsset == null || _lastResult == null)
+            if (_graphAsset == null)
             {
                 _layerMatrices = null;
                 RebuildLayerList();
                 return;
             }
 
-            _layerMatrices = GeneratorLayerPreviewBuilder.ComputeLayerMatrices(
-                _graphAsset, _lastResult, out int w, out int h);
+            int w;
+            int h;
+            if (!SceneParityLayerPreviewBuilder.TryBuildLayerMatrices(
+                    _graphAsset,
+                    seed,
+                    new Vector2Int(mapW, mapH),
+                    skippedLayerIds,
+                    out _layerMatrices,
+                    out w,
+                    out h,
+                    out string sceneParityStatus))
+            {
+                Debug.LogWarning(
+                    $"[GraphEditorWindow] Scene-parity layer preview failed; falling back to graph execution preview. Reason: {sceneParityStatus}");
+
+                if (_lastResult == null)
+                {
+                    _layerMatrices = null;
+                    RebuildLayerList();
+                    return;
+                }
+
+                _layerMatrices = GeneratorLayerPreviewBuilder.ComputeLayerMatrices(
+                    _graphAsset, _lastResult, out w, out h);
+            }
 
             _layerCompositeTexture = GeneratorLayerPreviewBuilder.BuildIsometricComposite(
                 _graphAsset, _layerMatrices, w, h);
@@ -1037,7 +1066,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     node.NodeId,
                     node.GetType(),
                     node.EditorPosition,
-                    EditorJsonUtility.ToJson(node)));
+                    SanitizeSerializedNodeJsonForPaste(EditorJsonUtility.ToJson(node))));
             }
 
             foreach (var connection in _graphAsset.GetConnectionsForLayer(layerId, false))
@@ -1094,7 +1123,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                 Undo.RegisterCreatedObjectUndo(node, "Paste Layer Node");
                 if (!string.IsNullOrWhiteSpace(data.JsonData))
-                    EditorJsonUtility.FromJsonOverwrite(data.JsonData, node);
+                    EditorJsonUtility.FromJsonOverwrite(SanitizeSerializedNodeJsonForPaste(data.JsonData), node);
 
                 node.NodeId = Guid.NewGuid().ToString();
                 node.LayerId = layer.Id;
@@ -1123,7 +1152,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             _graphAsset.EnsureLayerGraphStates();
             EditorUtility.SetDirty(_graphAsset);
-            TrySyncCompanionBlueprintLayers(false);
+            SanitizeGraphAsset(false);
+            TrySyncCompanionBlueprintLayers(true);
             Undo.CollapseUndoOperations(undoGroup);
 
             SelectLayer(layer.Id);
@@ -1206,6 +1236,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             if (changed)
                 serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static string SanitizeSerializedNodeJsonForPaste(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return json;
+
+            json = Regex.Replace(json, "\\\"_nodeId\\\"\\s*:\\s*\\\"[^\\\"]*\\\"", "\\\"_nodeId\\\":\\\"\\\"");
+            json = Regex.Replace(json, "\\\"_layerId\\\"\\s*:\\s*\\\"[^\\\"]*\\\"", "\\\"_layerId\\\":\\\"\\\"");
+            json = Regex.Replace(json, "\\\"_targetGraphLayerId\\\"\\s*:\\s*\\\"[^\\\"]*\\\"", "\\\"_targetGraphLayerId\\\":\\\"\\\"");
+            return json;
         }
 
         private void ApplyLayerPreset(string layerName, Color color)
@@ -1593,7 +1634,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var minimapToggle = new ToolbarToggle
             {
                 text = "Minimap",
-                value = true,
+                value = false,
                 tooltip = "Показати або сховати мінікарту графа."
             };
             minimapToggle.RegisterValueChangedCallback(evt =>
@@ -1610,6 +1651,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 _showInlinePreviews = evt.newValue;
                 _graphView?.SetInlinePreviewsVisible(_showInlinePreviews);
+                RefreshNodePreviewsFromLastResult();
             });
             toolbar.Add(inlinePreviewToggle);
 
@@ -2161,8 +2203,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             // IDs are internal implementation details. They must be repaired before any other fix,
             // because duplicate NodeId values make connections, validation focus and layer-state sync ambiguous.
             fixedCount += _graphAsset.NormalizeGraphIds();
-            fixedCount += _graphAsset.RepairMissingNodeConnections();
             fixedCount += _graphAsset.RemoveNullNodes();
+            fixedCount += _graphAsset.RepairMissingNodeConnections();
+            fixedCount += _graphAsset.RemoveInvalidConnections();
             fixedCount += NormalizeDuplicateNodeIds();
             fixedCount += NormalizeDuplicateConnectionIds();
             fixedCount += AssignInvalidLayerNodesToActiveLayer();
@@ -2177,6 +2220,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             TrySyncCompanionBlueprintLayers(true);
 
             fixedCount += _graphAsset.NormalizeGraphIds();
+            fixedCount += _graphAsset.RemoveInvalidConnections();
             _graphAsset.EnsureLayerGraphStates();
             EditorUtility.SetDirty(_graphAsset);
             AssetDatabase.SaveAssets();
@@ -2825,9 +2869,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     : previewResult;
 
                 int previewSize = ResolvePreviewSize(mapW, mapH);
-                _graphView?.UpdateNodePreviews(aggregateResult, _previewSettings, layerDataList, previewSize, _previewHeatmap);
+                _graphView?.UpdateNodePreviews(
+                    aggregateResult,
+                    _previewSettings,
+                    layerDataList,
+                    previewSize,
+                    _previewHeatmap,
+                    buildTextures: _showInlinePreviews);
                 _lastResult = aggregateResult;
-                RebuildLayerPreviews();
+                _lastLayerData = layerDataList;
+                RebuildLayerPreviews(seed, mapW, mapH, invalidLayerIds);
                 GraphPreviewWindow.RequestRepaint();
 
                 sw.Stop();
@@ -2856,16 +2907,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         internal bool TryGetBestPreview(out Texture2D previewTexture, out string status)
         {
-            if (_graphView != null && _graphView.TryGetBestPreview(out previewTexture, out status))
-                return true;
-
-            // Фолбек: складене ізометричне 3D-превʼю шарів (TWC-конвеєр).
+            // Фінальне превʼю має відповідати scene generation, тому scene-parity
+            // TWC composite має пріоритет над diagnostic preview окремої ноди.
             if (_layerCompositeTexture != null)
             {
                 previewTexture = _layerCompositeTexture;
-                status = "Ізометричне превʼю шарів";
+                status = "Scene parity TWC preview";
                 return true;
             }
+
+            if (_graphView != null && _graphView.TryGetBestPreview(out previewTexture, out status))
+                return true;
 
             previewTexture = null;
             status = "Graph view is not ready";
@@ -3813,11 +3865,33 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 SaveWindowSettings();
             }
 
-            _previewWidth = Mathf.Max(4, EditorGUILayout.IntField("Preview Width", _previewWidth));
-            _previewHeight = Mathf.Max(4, EditorGUILayout.IntField("Preview Height", _previewHeight));
-            _showInlinePreviews = EditorGUILayout.Toggle("Inline Previews", _showInlinePreviews);
-            _graphView?.SetInlinePreviewsVisible(_showInlinePreviews);
-            _previewHeatmap = EditorGUILayout.Toggle("Heatmap", _previewHeatmap);
+            EditorGUI.BeginChangeCheck();
+            int newPreviewWidth = Mathf.Max(4, EditorGUILayout.IntField("Preview Width", _previewWidth));
+            int newPreviewHeight = Mathf.Max(4, EditorGUILayout.IntField("Preview Height", _previewHeight));
+            bool newShowInlinePreviews = EditorGUILayout.Toggle("Inline Previews", _showInlinePreviews);
+            bool newPreviewHeatmap = EditorGUILayout.Toggle("Heatmap", _previewHeatmap);
+            if (EditorGUI.EndChangeCheck())
+            {
+                bool previewTextureSettingsChanged =
+                    newPreviewWidth != _previewWidth
+                    || newPreviewHeight != _previewHeight
+                    || newPreviewHeatmap != _previewHeatmap;
+                bool inlineVisibilityChanged = newShowInlinePreviews != _showInlinePreviews;
+
+                _previewWidth = newPreviewWidth;
+                _previewHeight = newPreviewHeight;
+                _showInlinePreviews = newShowInlinePreviews;
+                _previewHeatmap = newPreviewHeatmap;
+
+                if (inlineVisibilityChanged)
+                {
+                    _graphView?.SetInlinePreviewsVisible(_showInlinePreviews);
+                    RefreshNodePreviewsFromLastResult();
+                }
+
+                if (previewTextureSettingsChanged)
+                    RequestAutoRun();
+            }
 
             if (_previewSettings != null)
             {
@@ -3830,8 +3904,29 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 EditorGUILayout.HelpBox("Призначте EditorPreviewSettings для реалістичного preview сервісів.", MessageType.Info);
             }
 
-            if (GUI.changed)
-                RequestAutoRun();
+        }
+
+        private void RefreshNodePreviewsFromLastResult()
+        {
+            if (_graphView == null)
+                return;
+
+            int mapW = _previewWidth;
+            int mapH = _previewHeight;
+            if (_previewSettings != null)
+            {
+                mapW = _previewSettings.PreviewWidth;
+                mapH = _previewSettings.PreviewHeight;
+            }
+
+            int previewSize = ResolvePreviewSize(mapW, mapH);
+            _graphView.UpdateNodePreviews(
+                _lastResult,
+                _previewSettings,
+                _lastLayerData,
+                previewSize,
+                _previewHeatmap,
+                buildTextures: _showInlinePreviews);
         }
 
         private void OnGraphCanvasBackgroundClicked()
@@ -4232,9 +4327,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_graphAsset == null)
                 return false;
 
-            int repaired = _graphAsset.RepairMissingNodeConnections();
             int removed = _graphAsset.RemoveNullNodes();
-            bool changed = repaired > 0 || removed > 0;
+            int normalized = _graphAsset.NormalizeGraphIds();
+            int repaired = _graphAsset.RepairMissingNodeConnections();
+            int invalidConnections = _graphAsset.RemoveInvalidConnections();
+            bool changed = repaired > 0 || removed > 0 || normalized > 0 || invalidConnections > 0;
 
             if (!changed)
                 return false;

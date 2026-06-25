@@ -120,6 +120,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             // Minimap
             _miniMap = new MiniMap { anchored = true };
             _miniMap.SetPosition(new Rect(10, 30, 200, 140));
+            _miniMap.visible = false;
             Add(_miniMap);
 
             _floatingTooltip = new Label
@@ -495,7 +496,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             _inlinePreviewsVisible = visible;
             foreach (var view in nodes.OfType<GeneratorNodeView>())
+            {
+                if (!visible)
+                    view.ClearPreview("Inline preview disabled");
                 view.SetPreviewVisible(visible);
+            }
         }
 
         internal bool TryGetBestRawMaps(out float[,] floatMap, out string[,] tileMap)
@@ -504,9 +509,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             tileMap  = null;
 
             GeneratorNodeView source =
-                selection.OfType<GeneratorNodeView>().FirstOrDefault(v => v.PreviewTexture != null)
-                ?? nodes.OfType<GeneratorNodeView>().FirstOrDefault(v => v.NodeData is OutputNode && v.PreviewTexture != null)
-                ?? nodes.OfType<GeneratorNodeView>().FirstOrDefault(v => v.PreviewTexture != null);
+                selection.OfType<GeneratorNodeView>().FirstOrDefault(HasRawPreviewMaps)
+                ?? nodes.OfType<GeneratorNodeView>().FirstOrDefault(v => v.NodeData is OutputNode && HasRawPreviewMaps(v))
+                ?? nodes.OfType<GeneratorNodeView>().FirstOrDefault(HasRawPreviewMaps);
 
             if (source == null) return false;
 
@@ -514,6 +519,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             tileMap  = source.PreviewTileMap;
             return floatMap != null || tileMap != null;
         }
+
+        private static bool HasRawPreviewMaps(GeneratorNodeView view) =>
+            view != null && (view.PreviewFloatMap != null || view.PreviewTileMap != null);
 
         internal bool TryGetBestPreview(out Texture2D previewTexture, out string status)
         {
@@ -579,7 +587,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             EditorPreviewSettings settings = null,
             List<WorldLayerData> layerData = null,
             int previewSize = 128,
-            bool heatmap = false)
+            bool heatmap = false,
+            bool buildTextures = true)
         {
             var tileRegistry = settings?.TileRegistry;
             var views = nodes.OfType<GeneratorNodeView>().ToList();
@@ -587,7 +596,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
 
             foreach (var view in views)
-                view.ClearPreview();
+                view.ClearPreview(buildTextures ? "No preview" : "Inline preview disabled");
 
             RefreshConnectionIndexControls(result);
 
@@ -610,13 +619,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 bool hidePreviewForNode = Attribute.IsDefined(node.GetType(), typeof(Kruty1918.Moyva.GraphSystem.API.HidePreviewAttribute));
 
                 // ── OutputNode: composite preview ──
-                if (node is OutputNode)
+                if (node is OutputNode outputNode)
                 {
                     var outputs = outputsAll;
                     string[,] biomeMap = null;
                     string[,] objectMap = null;
                     float[,] heightMap = null;
                     string[,] buildingMap = null;
+                    bool[,] maskMap = null;
 
                     if (outputs != null)
                     {
@@ -624,23 +634,46 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         if (outputs.Length > 1) objectMap = outputs[1] as string[,];
                         if (outputs.Length > 2) heightMap = outputs[2] as float[,];
                         if (outputs.Length > 3) buildingMap = outputs[3] as string[,];
+                        if (outputs.Length > OutputNode.MaskInputIndex) maskMap = outputs[OutputNode.MaskInputIndex] as bool[,];
                     }
+                    maskMap ??= ResolveOutputMaskPreviewFallback(outputNode, result);
 
-                    if (!hidePreviewForNode)
+                    if (buildTextures && !hidePreviewForNode)
                     {
-                        var composite = CompositePreviewBuilder.Build(
-                            layerData, biomeMap, objectMap, heightMap, buildingMap,
-                            tileRegistry,
-                            settings?.MapObjectRegistry,
-                            settings?.BuildingRegistry,
-                            sharedSettings: _graphAsset.SharedSettings);
+                        Texture2D preview = null;
+                        bool ownsPreview = false;
+                        string previewStatus = null;
+                        if (ShouldPreferOutputMaskPreview(outputNode, maskMap, biomeMap, objectMap, buildingMap))
+                        {
+                            preview = NodePreviewTextureFactory.TryBuild(
+                                new object[] { maskMap },
+                                previewSize,
+                                previewSize,
+                                out ownsPreview,
+                                out previewStatus,
+                                tileRegistry,
+                                heatmap,
+                                _graphAsset.SharedSettings);
+                        }
 
-                        nodeView.SetPreview(composite, "Composite preview", ownsTexture: true);
+                        if (preview == null)
+                        {
+                            preview = CompositePreviewBuilder.Build(
+                                layerData, biomeMap, objectMap, heightMap, buildingMap,
+                                tileRegistry,
+                                settings?.MapObjectRegistry,
+                                settings?.BuildingRegistry,
+                                sharedSettings: _graphAsset.SharedSettings);
+                            ownsPreview = true;
+                            previewStatus = "Composite preview";
+                        }
+
+                        nodeView.SetPreview(preview, previewStatus, ownsPreview);
                         nodeView.SetPreviewVisible(_inlinePreviewsVisible);
                     }
                     else
                     {
-                        nodeView.ClearPreview();
+                        nodeView.ClearPreview(buildTextures ? "No preview" : "Inline preview disabled");
                         nodeView.SetPreviewVisible(false);
                     }
 
@@ -662,6 +695,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                     // update compact values under node
                     nodeView.SetOutputValues(outputs);
+                    nodeView.SetPreviewRawMaps(heightMap, biomeMap ?? objectMap ?? buildingMap);
 
                     continue;
                 }
@@ -671,7 +705,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 bool ownsPreview = false;
                 string status = null;
 
-                if (!hidePreviewForNode)
+                if (buildTextures && !hidePreviewForNode)
                 {
                     if (node is IPreviewableNode previewable)
                     {
@@ -701,26 +735,25 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     nodeView.SetPreview(preview, status, ownsPreview);
                     nodeView.SetPreviewVisible(_inlinePreviewsVisible);
 
-                    // Зберігаємо raw-дані для hover-підказки у Preview Window
-                    {
-                        float[,]  rawFloat = null;
-                        string[,] rawTile  = null;
-                        if (outputsAll != null)
-                        {
-                            foreach (var o in outputsAll)
-                            {
-                                if (rawFloat == null && o is float[,] fm)  rawFloat = fm;
-                                if (rawTile  == null && o is string[,] tm) rawTile  = tm;
-                            }
-                        }
-                        nodeView.SetPreviewRawMaps(rawFloat, rawTile);
-                    }
                 }
                 else
                 {
-                    nodeView.ClearPreview();
+                    nodeView.ClearPreview(buildTextures ? "No preview" : "Inline preview disabled");
                     nodeView.SetPreviewVisible(false);
                 }
+
+                // Зберігаємо raw-дані без побудови Texture2D: Preview Window може показати значення при hover.
+                float[,] rawFloat = null;
+                string[,] rawTile = null;
+                if (outputsAll != null)
+                {
+                    foreach (var o in outputsAll)
+                    {
+                        if (rawFloat == null && o is float[,] fm) rawFloat = fm;
+                        if (rawTile == null && o is string[,] tm) rawTile = tm;
+                    }
+                }
+                nodeView.SetPreviewRawMaps(rawFloat, rawTile);
 
                 // update output labels
                 for (int i = 0; i < nodeView.OutputCount; i++)
@@ -763,6 +796,89 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             return outputs;
+        }
+
+        private bool[,] ResolveOutputMaskPreviewFallback(OutputNode outputNode, GraphExecutionResult result)
+        {
+            if (_graphAsset?.Connections == null || outputNode == null || result == null)
+                return null;
+
+            var mask = ResolveConnectedMask(outputNode.NodeId, OutputNode.MaskInputIndex, result, allowAnyTargetPort: false);
+            if (mask != null)
+                return mask;
+
+            if (outputNode.OutputKind != LayerOutputKind.Masks)
+                return null;
+
+            // Legacy safety: older "move to mask layer" connected bool masks to Output input 0.
+            return ResolveConnectedMask(outputNode.NodeId, -1, result, allowAnyTargetPort: true);
+        }
+
+        private bool[,] ResolveConnectedMask(
+            string targetNodeId,
+            int targetPortIndex,
+            GraphExecutionResult result,
+            bool allowAnyTargetPort)
+        {
+            if (string.IsNullOrEmpty(targetNodeId) || result == null)
+                return null;
+
+            for (int i = 0; i < _graphAsset.Connections.Count; i++)
+            {
+                var connection = _graphAsset.Connections[i];
+                if (connection == null || connection.TargetNodeId != targetNodeId)
+                    continue;
+                if (!allowAnyTargetPort && connection.TargetPortIndex != targetPortIndex)
+                    continue;
+
+                var outputs = result.GetOutputs(connection.SourceNodeId);
+                if (outputs == null
+                    || connection.SourcePortIndex < 0
+                    || connection.SourcePortIndex >= outputs.Length
+                    || outputs[connection.SourcePortIndex] is not bool[,] mask)
+                {
+                    continue;
+                }
+
+                return mask;
+            }
+
+            return null;
+        }
+
+        private static bool ShouldPreferOutputMaskPreview(
+            OutputNode outputNode,
+            bool[,] maskMap,
+            string[,] biomeMap,
+            string[,] objectMap,
+            string[,] buildingMap)
+        {
+            if (outputNode == null || maskMap == null)
+                return false;
+
+            if (outputNode.OutputKind == LayerOutputKind.Masks)
+                return true;
+
+            return !HasAnyStringValue(biomeMap)
+                && !HasAnyStringValue(objectMap)
+                && !HasAnyStringValue(buildingMap);
+        }
+
+        private static bool HasAnyStringValue(string[,] map)
+        {
+            if (map == null)
+                return false;
+
+            int width = map.GetLength(0);
+            int height = map.GetLength(1);
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+            {
+                if (!string.IsNullOrEmpty(map[x, y]))
+                    return true;
+            }
+
+            return false;
         }
 
         public bool CopyNodeAsText(GeneratorNodeView nodeView)
@@ -867,6 +983,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             // NodeId/LayerId are internal graph bookkeeping. They must never be trusted from text clipboard data.
             json = Regex.Replace(json, "\\\"_nodeId\\\"\\s*:\\s*\\\"[^\\\"]*\\\"", "\\\"_nodeId\\\":\\\"\\\"");
             json = Regex.Replace(json, "\\\"_layerId\\\"\\s*:\\s*\\\"[^\\\"]*\\\"", "\\\"_layerId\\\":\\\"\\\"");
+            json = Regex.Replace(json, "\\\"_targetGraphLayerId\\\"\\s*:\\s*\\\"[^\\\"]*\\\"", "\\\"_targetGraphLayerId\\\":\\\"\\\"");
             return json;
         }
 
@@ -1648,7 +1765,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 }
                 EditorUtility.SetDirty(_graphAsset);
                 if (change.movedElements.Count > 0)
-                    GraphChanged?.Invoke();
+                    StatusMessage?.Invoke("Graph layout updated.");
             }
 
             return change;
@@ -1891,16 +2008,26 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var newViews = new List<GeneratorNodeView>();
             var idMap = new Dictionary<string, string>();
             string targetLayerId = ResolveActiveLayerId();
+            var existingOutput = _graphAsset.GetNodesForLayer(targetLayerId)
+                .OfType<OutputNode>()
+                .FirstOrDefault();
 
             foreach (var data in _copyBuffer)
             {
+                string oldId = data.OriginalNodeId;
+                if (data.NodeType == typeof(OutputNode) && existingOutput != null)
+                {
+                    if (!string.IsNullOrEmpty(oldId))
+                        idMap[oldId] = existingOutput.NodeId;
+                    continue;
+                }
+
                 var node = _graphAsset.AddNode(data.NodeType, false, targetLayerId);
                 if (node == null) continue;
 
                 // Apply serialized data (preserving field values)
                 EditorJsonUtility.FromJsonOverwrite(data.JsonData, node);
                 // Reset ID so it's unique
-                string oldId = data.OriginalNodeId;
                 node.NodeId = Guid.NewGuid().ToString();
                 node.LayerId = targetLayerId;
                 node.EditorPosition = data.Position + offset;
@@ -1932,8 +2059,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     connection.TargetPortIndex,
                     connection.SourceElementIndex);
 
-                var sourceView = newViews.FirstOrDefault(view => view.NodeData.NodeId == newSourceId);
-                var targetView = newViews.FirstOrDefault(view => view.NodeData.NodeId == newTargetId);
+                var sourceView = FindNodeViewById(newSourceId);
+                var targetView = FindNodeViewById(newTargetId);
                 var outputPort = sourceView?.GetOutputPort(newConnection.SourcePortIndex);
                 var inputPort = targetView?.GetInputPort(newConnection.TargetPortIndex);
                 if (outputPort != null && inputPort != null)
@@ -1942,8 +2069,130 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             EditorUtility.SetDirty(_graphAsset);
             _graphAsset.NormalizeGraphIds();
+            _graphAsset.RemoveInvalidConnections();
             _graphAsset.EnsureLayerGraphStates();
+            TryConnectPastedTerminalToLayerOutput(targetLayerId, newViews);
             GraphChanged?.Invoke();
+        }
+
+        private void TryConnectPastedTerminalToLayerOutput(string targetLayerId, IReadOnlyList<GeneratorNodeView> newViews)
+        {
+            if (_graphAsset == null || string.IsNullOrEmpty(targetLayerId) || newViews == null || newViews.Count == 0)
+                return;
+
+            var output = _graphAsset.GetNodesForLayer(targetLayerId).OfType<OutputNode>().FirstOrDefault();
+            var layerConnections = _graphAsset.GetConnectionsForLayer(targetLayerId, false);
+            if (output != null && layerConnections.Any(connection => connection != null && connection.TargetNodeId == output.NodeId))
+                return;
+
+            var pastedNodes = newViews
+                .Select(view => view?.NodeData)
+                .Where(node => node != null && node is not OutputNode)
+                .ToList();
+            var pastedIds = new HashSet<string>(pastedNodes.Select(node => node.NodeId));
+
+            NodeBase bestSource = null;
+            int bestSourcePort = -1;
+            int bestTargetPort = -1;
+            LayerOutputKind bestOutputKind = LayerOutputKind.Other;
+            foreach (var node in pastedNodes)
+            {
+                var outputs = node.Outputs;
+                if (outputs == null)
+                    continue;
+
+                for (int sourcePort = 0; sourcePort < outputs.Length; sourcePort++)
+                {
+                    if (layerConnections.Any(connection =>
+                            connection != null
+                            && connection.SourceNodeId == node.NodeId
+                            && connection.SourcePortIndex == sourcePort
+                            && pastedIds.Contains(connection.TargetNodeId)))
+                        continue;
+
+                    if (!TryResolveOutputTarget(outputs[sourcePort], out int targetPort, out var outputKind))
+                        continue;
+
+                    if (bestSource != null)
+                        return;
+
+                    bestSource = node;
+                    bestSourcePort = sourcePort;
+                    bestTargetPort = targetPort;
+                    bestOutputKind = outputKind;
+                }
+            }
+
+            if (bestSource == null)
+                return;
+
+            if (output == null)
+            {
+                output = _graphAsset.AddNode(typeof(OutputNode), false, targetLayerId) as OutputNode;
+                if (output == null)
+                    return;
+
+                output.EditorPosition = bestSource.EditorPosition + new Vector2(320f, 0f);
+                var outputView = new GeneratorNodeView(output);
+                AddElement(outputView);
+                SetupNodeVisuals(outputView);
+                outputView.SetPreviewVisible(_inlinePreviewsVisible);
+            }
+            output.OutputKind = bestOutputKind;
+            EditorUtility.SetDirty(output);
+
+            var connection = _graphAsset.AddConnection(bestSource.NodeId, bestSourcePort, output.NodeId, bestTargetPort);
+            _graphAsset.EnsureLayerGraphStates();
+
+            var sourceView = FindNodeViewById(bestSource.NodeId);
+            var targetView = FindNodeViewById(output.NodeId);
+            var outputPort = sourceView?.GetOutputPort(bestSourcePort);
+            var inputPort = targetView?.GetInputPort(bestTargetPort);
+            if (connection != null && outputPort != null && inputPort != null)
+                AddElement(CreateStyledEdge(outputPort, inputPort));
+        }
+
+        private GeneratorNodeView FindNodeViewById(string nodeId)
+        {
+            if (string.IsNullOrEmpty(nodeId))
+                return null;
+
+            return nodes
+                .OfType<GeneratorNodeView>()
+                .FirstOrDefault(view => view.NodeData != null && view.NodeData.NodeId == nodeId);
+        }
+
+        private static bool TryResolveOutputTarget(
+            PortDefinition sourcePort,
+            out int targetPort,
+            out LayerOutputKind outputKind)
+        {
+            targetPort = -1;
+            outputKind = LayerOutputKind.Other;
+            if (sourcePort?.ValueType == typeof(string[,]))
+            {
+                targetPort = OutputNode.BiomeMapInputIndex;
+                outputKind = LayerOutputKind.Tiles;
+                return true;
+            }
+
+            if (sourcePort?.ValueType == typeof(float[,]))
+            {
+                targetPort = OutputNode.HeightMapInputIndex;
+                outputKind = LayerOutputKind.Tiles;
+                return true;
+            }
+
+            if (sourcePort?.ValueType == typeof(bool[,]))
+            {
+                targetPort = OutputNode.MaskInputIndex;
+                outputKind = LayerOutputKind.Masks;
+                return true;
+            }
+
+            targetPort = OutputNode.DataInputIndex;
+            outputKind = LayerOutputKind.InternalData;
+            return sourcePort != null;
         }
 
         private void DuplicateSelection()
@@ -3023,7 +3272,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 StatusMessage?.Invoke($"Auto Layout: moved {nodeViewMap.Count} node(s) in {(selectedOnly ? "selection" : "active layer")}.");
             }
-            GraphChanged?.Invoke();
         }
 
         /// <summary>

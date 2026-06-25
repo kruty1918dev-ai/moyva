@@ -278,6 +278,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             int mapWidth = Mathf.Max(1, config.width);
             int mapHeight = Mathf.Max(1, config.height);
             int spawned = 0;
+            int outOfBounds = 0;
+            int missingPrefab = 0;
+            int instantiateFailed = 0;
 
             for (int i = 0; i < source.Candidates.Count; i++)
             {
@@ -287,16 +290,23 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
                     || candidate.Cell.x >= mapWidth
                     || candidate.Cell.y >= mapHeight)
                 {
+                    outOfBounds++;
                     continue;
                 }
 
                 var entry = ResolvePrefabEntry(source, candidate);
                 if (entry?.Prefab == null)
+                {
+                    missingPrefab++;
                     continue;
+                }
 
                 var instance = InstantiateDirectPrefab(entry.Prefab, layerRoot);
                 if (instance == null)
+                {
+                    instantiateFailed++;
                     continue;
+                }
 
                 instance.name = $"{entry.Prefab.name}_{spawned:0000}";
 
@@ -321,7 +331,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
 
             MarkSceneDirty(manager);
             if (spawned == 0)
-                Debug.LogWarning($"[MoyvaObjectPlacement] Direct object layer '{source.LayerName}' created no instances after bounds/prefab filtering.");
+            {
+                DestroyObject(layerObject);
+                Debug.LogWarning(
+                    $"[MoyvaObjectPlacement] Direct object layer '{source.LayerName}' created no instances. " +
+                    $"Candidates={source.Candidates.Count}, outOfBounds={outOfBounds}, missingPrefab={missingPrefab}, " +
+                    $"instantiateFailed={instantiateFailed}, map={mapWidth}x{mapHeight}, targetLayer='{source.TargetGraphLayerId ?? "<none>"}'.");
+            }
         }
 
         private static void ApplyLayer(
@@ -331,6 +347,18 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             string generatedName,
             IReadOnlyList<CompiledLayerMap> terrainLayers)
         {
+            var positions = BuildCellPositions(source.Candidates, config.width, config.height, out int outOfBounds);
+            if (positions.Count == 0)
+            {
+                RemoveGeneratedLayerByName(config, generatedName);
+                MarkSceneDirty(manager);
+                Debug.LogWarning(
+                    $"[MoyvaObjectPlacement] TWC object layer '{source.LayerName}' has no in-bounds cells after filtering. " +
+                    $"Candidates={source.Candidates.Count}, outOfBounds={outOfBounds}, map={Mathf.Max(1, config.width)}x{Mathf.Max(1, config.height)}, " +
+                    $"targetLayer='{source.TargetGraphLayerId ?? "<none>"}'.");
+                return;
+            }
+
             var blueprint = FindBlueprintLayer(config, generatedName)
                             ?? manager.AddNewBlueprintLayer(generatedName);
             if (blueprint == null)
@@ -347,7 +375,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             blueprint.tileMapModifiers ??= new List<BlueprintModifier>();
             blueprint.tileMapModifiers.Clear();
             blueprint.ClearLayer(false);
-            blueprint.AddCells(BuildCellPositions(source.Candidates, config.width, config.height));
+            blueprint.AddCells(positions);
 
             var buildLayer = FindObjectBuildLayer(config, generatedName)
                              ?? manager.AddNewBuildLayer<ObjectBuildLayer>(generatedName);
@@ -362,9 +390,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
         private static HashSet<Vector2> BuildCellPositions(
             IReadOnlyList<ScatterCandidate> candidates,
             int mapWidth,
-            int mapHeight)
+            int mapHeight,
+            out int outOfBounds)
         {
             var positions = new HashSet<Vector2>();
+            outOfBounds = 0;
             if (candidates == null)
                 return positions;
 
@@ -374,7 +404,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             {
                 var cell = candidates[i].Cell;
                 if (cell.x < 0 || cell.y < 0 || cell.x >= w || cell.y >= h)
+                {
+                    outOfBounds++;
                     continue;
+                }
 
                 positions.Add(new Vector2(cell.x, cell.y));
             }
@@ -698,6 +731,52 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
                         var layer = folder.buildLayers[l];
                         if (!IsGeneratedObjectLayer(layer)
                             || activeGeneratedNames.Contains(layer.layerName))
+                            continue;
+
+                        folder.buildLayers.RemoveAt(l);
+                        RemoveSubAsset(layer);
+                    }
+                }
+            }
+        }
+
+        private static void RemoveGeneratedLayerByName(Configuration config, string generatedName)
+        {
+            if (config == null || string.IsNullOrEmpty(generatedName))
+                return;
+
+            if (config.blueprintLayerFolders != null)
+            {
+                for (int i = 0; i < config.blueprintLayerFolders.Count; i++)
+                {
+                    var folder = config.blueprintLayerFolders[i];
+                    if (folder?.blueprintLayers == null)
+                        continue;
+
+                    for (int l = folder.blueprintLayers.Count - 1; l >= 0; l--)
+                    {
+                        var layer = folder.blueprintLayers[l];
+                        if (!IsGeneratedBlueprintLayer(layer) || layer.layerName != generatedName)
+                            continue;
+
+                        folder.blueprintLayers.RemoveAt(l);
+                        RemoveSubAsset(layer);
+                    }
+                }
+            }
+
+            if (config.buildLayerFolders != null)
+            {
+                for (int i = 0; i < config.buildLayerFolders.Count; i++)
+                {
+                    var folder = config.buildLayerFolders[i];
+                    if (folder?.buildLayers == null)
+                        continue;
+
+                    for (int l = folder.buildLayers.Count - 1; l >= 0; l--)
+                    {
+                        var layer = folder.buildLayers[l];
+                        if (!IsGeneratedObjectLayer(layer) || layer.layerName != generatedName)
                             continue;
 
                         folder.buildLayers.RemoveAt(l);

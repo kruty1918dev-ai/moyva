@@ -728,6 +728,80 @@ namespace Kruty1918.Moyva.GraphSystem.API
             return removed;
         }
 
+        public int RemoveInvalidConnections()
+        {
+            _nodes ??= new List<NodeBase>();
+            _connections ??= new List<Connection>();
+
+            var nodesById = new Dictionary<string, NodeBase>();
+            foreach (var node in _nodes)
+            {
+                if (node == null || string.IsNullOrEmpty(node.NodeId))
+                    continue;
+                if (!nodesById.ContainsKey(node.NodeId))
+                    nodesById.Add(node.NodeId, node);
+            }
+
+            int removed = 0;
+            for (int i = _connections.Count - 1; i >= 0; i--)
+            {
+                var connection = _connections[i];
+                if (!IsConnectionValid(connection, nodesById))
+                {
+                    _connections.RemoveAt(i);
+                    removed++;
+                }
+            }
+
+            if (removed > 0)
+            {
+                EnsureLayerGraphStates();
+                UnityEditor.EditorUtility.SetDirty(this);
+            }
+
+            return removed;
+        }
+
+        private static bool IsConnectionValid(Connection connection, IReadOnlyDictionary<string, NodeBase> nodesById)
+        {
+            if (connection == null || nodesById == null)
+                return false;
+            if (!nodesById.TryGetValue(connection.SourceNodeId, out var source))
+                return false;
+            if (!nodesById.TryGetValue(connection.TargetNodeId, out var target))
+                return false;
+
+            var outputs = source.Outputs;
+            var inputs = target.Inputs;
+            if (outputs == null || inputs == null)
+                return false;
+            if (connection.SourcePortIndex < 0 || connection.SourcePortIndex >= outputs.Length)
+                return false;
+            if (connection.TargetPortIndex < 0 || connection.TargetPortIndex >= inputs.Length)
+                return false;
+
+            var sourceType = outputs[connection.SourcePortIndex].ValueType;
+            var targetType = inputs[connection.TargetPortIndex].ValueType;
+            return PortDefinition.AreValueTypesCompatible(sourceType, targetType)
+                || IsLegacyMaskOutputConnection(connection, sourceType, target);
+        }
+
+        private static bool IsLegacyMaskOutputConnection(Connection connection, Type sourceType, NodeBase target)
+        {
+            return connection != null
+                && sourceType == typeof(bool[,])
+                && target?.GetType().Name == "OutputNode"
+                && ResolveLayerOutputKindName(target) == "Masks"
+                && connection.TargetPortIndex == 0;
+        }
+
+        private static string ResolveLayerOutputKindName(NodeBase outputNode)
+        {
+            var property = outputNode?.GetType().GetProperty("OutputKind");
+            var value = property?.GetValue(outputNode);
+            return value?.ToString() ?? "Other";
+        }
+
         public void ReorderNodes(IReadOnlyList<NodeBase> orderedNodes)
         {
             if (orderedNodes == null || orderedNodes.Count == 0)
@@ -773,6 +847,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
             for (int i = 0; i < _connections.Count; i++)
             {
                 var connection = _connections[i];
+                if (connection == null)
+                    continue;
                 if (!validIds.Contains(connection.SourceNodeId))
                     missingIds.Add(connection.SourceNodeId);
                 if (!validIds.Contains(connection.TargetNodeId))
@@ -791,6 +867,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 for (int i = 0; i < _connections.Count; i++)
                 {
                     var connection = _connections[i];
+                    if (connection == null)
+                        continue;
                     if (connection.TargetNodeId == missingId && connection.SourceNodeId != missingId)
                         incoming.Add(connection);
                     if (connection.SourceNodeId == missingId && connection.TargetNodeId != missingId)

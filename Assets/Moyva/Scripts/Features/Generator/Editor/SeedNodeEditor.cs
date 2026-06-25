@@ -9,10 +9,17 @@ namespace Kruty1918.Moyva.Generator.Editor
     public sealed class SeedNodeEditor : UnityEditor.Editor
     {
         private SerializedProperty _seedProperty;
+        private string _headerText;
+        private string _portsText;
+        private string _seedHelp;
 
         private void OnEnable()
         {
             _seedProperty = serializedObject.FindProperty("seed");
+            var node = target as SeedNode;
+            _headerText = node != null ? GraphNodeDocumentation.BuildInspectorHeader(node) : null;
+            _portsText = node != null ? GraphNodeDocumentation.BuildPortsInspectorText(node) : null;
+            _seedHelp = GraphNodeDocumentation.GetParameterDescription(typeof(SeedNode), "seed", "Seed");
         }
 
         public override void OnInspectorGUI()
@@ -22,13 +29,12 @@ namespace Kruty1918.Moyva.Generator.Editor
             var node = target as SeedNode;
             if (node != null)
             {
-                EditorGUILayout.HelpBox(GraphNodeDocumentation.BuildInspectorHeader(node), MessageType.Info);
-                EditorGUILayout.HelpBox(GraphNodeDocumentation.BuildPortsInspectorText(node), MessageType.None);
+                EditorGUILayout.HelpBox(_headerText, MessageType.Info);
+                EditorGUILayout.HelpBox(_portsText, MessageType.None);
             }
 
-            string help = GraphNodeDocumentation.GetParameterDescription(typeof(SeedNode), "seed", "Seed");
-            EditorGUILayout.PropertyField(_seedProperty, new GUIContent("Seed", help));
-            EditorGUILayout.HelpBox(help, MessageType.None);
+            EditorGUILayout.PropertyField(_seedProperty, new GUIContent("Seed", _seedHelp));
+            EditorGUILayout.HelpBox(_seedHelp, MessageType.None);
 
             serializedObject.ApplyModifiedProperties();
         }
