@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de88d28066ea40438f4bb5e0d3fefffc, type: 3}
+  m_Name: WallTemplate
+  m_EditorClassIdentifier: Kruty1918.Moyva.Construction.Editor::Kruty1918.Moyva.Construction.Editor.BuildingArchetypeSO
+  DisplayName: Wall Template
+  Role: 6
+  Category: 3
+  Footprint: {Size: {x: 1, y: 1}, Anchor: 0, CustomAnchor: {x: 0, y: 0}, BlocksMovement: 1, BlocksConstruction: 1, RequiresFlatGround: 1, OccupiedCells: [], EntranceCells: [], RoadConnectionCells: []}
+  Placement: {CanPlaceInFog: 0, RequiresSettlementInfluence: 1, CreatesSettlementInfluence: 0, BlockIfSettlementCenterInRange: 0, InfluenceRadius: 0, MinDistanceFromSettlementCenters: 0, RequiredTerrainIds: [], RequiredNeighborOffsets: [], RequiresWaterNearby: 0, RequiresForestNearby: 0, RequiresMountainNearby: 0, RequiresRoadNearby: 0, NearbyTileRequirements: []}
+  Construction: {Cost: [], BuildTurns: 1, RequiresBuilder: 1, WorkRequired: 0}
+  RuntimeStats: {MaxHp: 100, Armor: 1, Flags: 7, RuntimeTags: []}
+  Modules:
+  - rid: 2601
+  references:
+    version: 2
+    RefIds:
+    - rid: 2601
+      type: {class: WallBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data: {IsEnabled: 1, SingletonScope: 1, HitPoints: 100, IsPassable: 0}

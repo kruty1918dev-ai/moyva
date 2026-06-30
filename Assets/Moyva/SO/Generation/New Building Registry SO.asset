@@ -12,6 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d33d42cb1af10d56bade04a61d284d66, type: 3}
   m_Name: New Building Registry SO
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.Runtime.BuildingRegistrySO
+  _buildingAssets:
+  - {fileID: 11400000, guid: c8422d0cbb95460790a5398833c25c95, type: 2}
+  - {fileID: 11400000, guid: d70edd3a02f349be841e71e5065da390, type: 2}
+  - {fileID: 11400000, guid: 229418570327446a8e81031091c506a0, type: 2}
+  - {fileID: 11400000, guid: 3c49c2b4920e42c1abe92caab7210221, type: 2}
+  - {fileID: 11400000, guid: 0b20337f749c4a7c8e4d575d49f0db4b, type: 2}
+  - {fileID: 11400000, guid: 879cfc3665ce4e118302bee8294dc708, type: 2}
   Buildings:
   - Id: castle-01
     DisplayName: Castle

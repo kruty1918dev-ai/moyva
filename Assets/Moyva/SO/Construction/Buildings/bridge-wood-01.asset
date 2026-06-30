@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56a0a73b43b94045b28dec05ad231549, type: 3}
+  m_Name: bridge-wood-01
+  m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.BuildingDefinitionAsset
+  Identity: {Id: bridge-wood-01, DisplayName: Wood Bridge, Category: 1, Role: 9, Description: "", Tags: []}
+  Presentation:
+    Prefab: {fileID: 8030073889366943068, guid: f9fff611f2465687b966cf0e0cfdda74, type: 3}
+    Icon: {fileID: 0}
+    RuntimePreview: {fileID: 0}
+    UiTint: {r: 1, g: 1, b: 1, a: 1}
+    PreviewSettings: {CameraOffset: {x: 4, y: 5, z: -6}, CameraEulerAngles: {x: 45, y: -35, z: 0}, OrthographicSize: 4, BackgroundColor: {r: 0, g: 0, b: 0, a: 0}}
+  Footprint: {Size: {x: 1, y: 1}, Anchor: 0, CustomAnchor: {x: 0, y: 0}, BlocksMovement: 0, BlocksConstruction: 1, RequiresFlatGround: 0, OccupiedCells: [], EntranceCells: [], RoadConnectionCells: []}
+  Placement: {CanPlaceInFog: 0, RequiresSettlementInfluence: 1, CreatesSettlementInfluence: 0, BlockIfSettlementCenterInRange: 0, InfluenceRadius: 0, MinDistanceFromSettlementCenters: 0, RequiredTerrainIds: [], RequiredNeighborOffsets: [], RequiresWaterNearby: 1, RequiresForestNearby: 0, RequiresMountainNearby: 0, RequiresRoadNearby: 0, NearbyTileRequirements: []}
+  Construction:
+    Cost:
+    - {ResourceId: walnut-wood-materials-resources, Amount: 1}
+    - {ResourceId: hardwood-materials-resources, Amount: 1}
+    BuildTurns: 1
+    RequiresBuilder: 1
+    WorkRequired: 0
+  RuntimeStats: {MaxHp: 100, Armor: 0, Flags: 6, RuntimeTags: []}
+  Modules:
+  - rid: 1101
+  - rid: 1102
+  references:
+    version: 2
+    RefIds:
+    - rid: 1101
+      type: {class: WorkerlessBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data: {IsEnabled: 1, SingletonScope: 1}
+    - rid: 1102
+      type: {class: FogRevealBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data: {IsEnabled: 1, SingletonScope: 1, RevealRadius: 1, Shape: 0, RevealOnBuilt: 1, RevealWhileActive: 1, OnlyAfterConstructionComplete: 1}

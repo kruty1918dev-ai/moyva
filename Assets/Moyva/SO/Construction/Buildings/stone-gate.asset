@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56a0a73b43b94045b28dec05ad231549, type: 3}
+  m_Name: stone-gate
+  m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.BuildingDefinitionAsset
+  Identity: {Id: stone-gate, DisplayName: "\u0412\u043E\u0440\u043E\u0442\u0430", Category: 3, Role: 7, Description: "", Tags: []}
+  Presentation:
+    Prefab: {fileID: 4054757616884961693, guid: 2fc84416ec42ca98796010998d7561ef, type: 3}
+    Icon: {fileID: 1129816292, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
+    RuntimePreview: {fileID: 0}
+    UiTint: {r: 1, g: 1, b: 1, a: 1}
+    PreviewSettings: {CameraOffset: {x: 4, y: 5, z: -6}, CameraEulerAngles: {x: 45, y: -35, z: 0}, OrthographicSize: 4, BackgroundColor: {r: 0, g: 0, b: 0, a: 0}}
+  Footprint: {Size: {x: 1, y: 1}, Anchor: 0, CustomAnchor: {x: 0, y: 0}, BlocksMovement: 0, BlocksConstruction: 1, RequiresFlatGround: 1, OccupiedCells: [], EntranceCells: [], RoadConnectionCells: []}
+  Placement: {CanPlaceInFog: 0, RequiresSettlementInfluence: 1, CreatesSettlementInfluence: 0, BlockIfSettlementCenterInRange: 0, InfluenceRadius: 0, MinDistanceFromSettlementCenters: 0, RequiredTerrainIds: [], RequiredNeighborOffsets: [], RequiresWaterNearby: 0, RequiresForestNearby: 0, RequiresMountainNearby: 0, RequiresRoadNearby: 0, NearbyTileRequirements: []}
+  Construction:
+    Cost:
+    - {ResourceId: walnut-wood-materials-resources, Amount: 1}
+    - {ResourceId: stone-materials-resources, Amount: 1}
+    - {ResourceId: hardwood-materials-resources, Amount: 1}
+    BuildTurns: 1
+    RequiresBuilder: 1
+    WorkRequired: 0
+  RuntimeStats: {MaxHp: 100, Armor: 1, Flags: 7, RuntimeTags: []}
+  Modules:
+  - rid: 1501
+  - rid: 1502
+  references:
+    version: 2
+    RefIds:
+    - rid: 1501
+      type: {class: GateBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data: {IsEnabled: 1, SingletonScope: 1, HitPoints: 100, OpenSpeed: 1}
+    - rid: 1502
+      type: {class: FogRevealBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data: {IsEnabled: 1, SingletonScope: 1, RevealRadius: 1, Shape: 0, RevealOnBuilt: 1, RevealWhileActive: 1, OnlyAfterConstructionComplete: 1}
