@@ -53,9 +53,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             GlobalSeed.Set(seed);
             _terrainLevelService?.Clear();
 
-            // Розмір з SharedSettings має пріоритет, щоб play-mode збігався з превʼю.
+            // Launch context has priority for real gameplay starts; SharedSettings keeps direct play-mode aligned with preview.
             var shared = _graphAsset?.SharedSettings;
-            if (!GameLaunchContext.HasWorldSettings && shared != null && shared.HasMapSize)
+            if (GameLaunchContext.TryGetWorldDimensions(out int launchWidth, out int launchHeight))
+            {
+                width = launchWidth;
+                height = launchHeight;
+            }
+            else if (shared != null && shared.HasMapSize)
             {
                 width = shared.MapWidth;
                 height = shared.MapHeight;
@@ -68,6 +73,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 Debug.LogError("[GraphTwcGenerator] TileWorldCreatorManager/Configuration відсутній. " +
                                "Перевірте MoyvaTileWorldCreatorGraphBinding на TileWorldCreatorManager.");
+                GraphGenerationLayerLog.Emit(
+                    "Runtime GraphTwcMapDataGenerator",
+                    _graphAsset,
+                    _manager,
+                    LastCompiledLayers,
+                    null,
+                    null,
+                    seed,
+                    new Vector2Int(baseMapWidth, baseMapHeight),
+                    false);
                 EmitEmpty(width, height, onComplete);
                 return;
             }
@@ -81,6 +96,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 {
                     Debug.LogError(
                         $"[GraphTwcGenerator] Graph validation failed with {globalErrors.Count} global error(s):\n{FormatValidationIssues(globalErrors)}");
+                    GraphGenerationLayerLog.Emit(
+                        "Runtime GraphTwcMapDataGenerator",
+                        _graphAsset,
+                        _manager,
+                        Array.Empty<CompiledLayerMap>(),
+                        report,
+                        null,
+                        seed,
+                        new Vector2Int(baseMapWidth, baseMapHeight),
+                        false);
                     EmitEmpty(width, height, onComplete);
                     return;
                 }
@@ -118,12 +143,33 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 // 2. TWC будує мапу (blueprint-стек + 3D build-стек).
                 TileWorldCreatorLayerOcclusionOptimizer.GenerateCompleteMap(_manager);
+                GraphGenerationLayerLog.Emit(
+                    "Runtime GraphTwcMapDataGenerator",
+                    _graphAsset,
+                    _manager,
+                    compiled,
+                    report,
+                    skippedLayerIds,
+                    seed,
+                    new Vector2Int(width, height),
+                    true);
 
-                // 3. Експортуємо layer-id сітку та висоти.
-                var biomeMap = new string[width, height];
-                var heightMap = new float[width, height];
-                var surfaceHeightMap = new float[width, height];
-                BuildLayerIdGrid(compiled, width, height, biomeMap, heightMap, surfaceHeightMap);
+                // 3. Експортуємо фінальну logical tile map з того самого helper-а,
+                // який використовує Graph Editor preview.
+                var logicalMap = GraphLogicalTileMapBuilder.Build(
+                    _graphAsset,
+                    _manager,
+                    compiled,
+                    width,
+                    height);
+                GraphLogicalTileMapDiagnostics.EmitAndCompare(
+                    "Scene build mask",
+                    _graphAsset,
+                    seed,
+                    logicalMap);
+                var biomeMap = logicalMap.TileIds;
+                var heightMap = logicalMap.LayerHeights;
+                var surfaceHeightMap = logicalMap.SurfaceHeights;
                 PublishTerrainHeights(surfaceHeightMap);
 
                 // Об'єкти/будівлі у новому конвеєрі генерує не граф, а ігролад/TWC build-шари.
@@ -192,56 +238,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return _hasLastBaseMapWorldBounds;
         }
 
-        /// <summary>
-        /// Для кожної клітинки записує gameplay tile id з верхнього (найбільший
-        /// SortingOrder) blueprint-шару, що містить цю позицію.
-        /// Висота береться з defaultLayerHeight цього ж шару.
-        /// </summary>
-        private void BuildLayerIdGrid(
-            IReadOnlyList<CompiledLayerMap> compiled,
-            int width,
-            int height,
-            string[,] biomeMap,
-            float[,] heightMap,
-            float[,] surfaceHeightMap)
-        {
-            if (compiled == null)
-                return;
-
-            // Шари у порядку зростання SortingOrder: пізніший перекриває раніший.
-            var ordered = new List<CompiledLayerMap>(compiled);
-            ordered.Sort((a, b) => a.SortingOrder.CompareTo(b.SortingOrder));
-
-            foreach (var layerMap in ordered)
-            {
-                if (layerMap == null
-                    || !layerMap.HasRenderableTileOutput
-                    || string.IsNullOrEmpty(layerMap.BlueprintLayerGuid))
-                    continue;
-
-                var blueprint = _manager.GetBlueprintLayerByGuid(layerMap.BlueprintLayerGuid);
-                if (blueprint == null || blueprint.allPositions == null)
-                    continue;
-
-                float layerHeight = blueprint.defaultLayerHeight;
-                float surfaceHeight = ResolveTwcLayerSurfaceHeight(blueprint, layerMap.BlueprintLayerGuid);
-
-                foreach (var position in blueprint.allPositions)
-                {
-                    int x = Mathf.RoundToInt(position.x);
-                    int y = Mathf.RoundToInt(position.y);
-                    if (x < 0 || x >= width || y < 0 || y >= height)
-                        continue;
-
-                    biomeMap[x, y] = !string.IsNullOrWhiteSpace(layerMap.GridTileId)
-                        ? layerMap.GridTileId
-                        : layerMap.GraphLayerId;
-                    heightMap[x, y] = layerHeight;
-                    surfaceHeightMap[x, y] = surfaceHeight;
-                }
-            }
-        }
-
         private void PublishTerrainHeights(float[,] surfaceHeightMap)
         {
             if (_terrainLevelService == null)
@@ -249,60 +245,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             _terrainLevelService.SetLevelMap(BuildLevelMapFromSurfaceHeights(surfaceHeightMap));
             _terrainLevelService.SetSurfaceHeightMap(surfaceHeightMap);
-        }
-
-        private float ResolveTwcLayerSurfaceHeight(BlueprintLayer blueprint, string blueprintLayerGuid)
-        {
-            float baseHeight = blueprint != null ? blueprint.defaultLayerHeight : 0f;
-            TilesBuildLayer buildLayer = FindTilesBuildLayer(_manager?.configuration, blueprintLayerGuid);
-            if (buildLayer == null)
-                return baseHeight;
-
-            float layerBaseHeight = baseHeight + buildLayer.layerYOffset;
-            if (buildLayer.tileLayers == null || buildLayer.tileLayers.Count == 0)
-                return layerBaseHeight;
-
-            bool hasTileLayer = false;
-            float topHeight = layerBaseHeight;
-            for (int i = 0; i < buildLayer.tileLayers.Count; i++)
-            {
-                var tileLayer = buildLayer.tileLayers[i];
-                if (tileLayer == null)
-                    continue;
-
-                float candidate = layerBaseHeight + tileLayer.heightOffset;
-                topHeight = hasTileLayer ? Mathf.Max(topHeight, candidate) : candidate;
-                hasTileLayer = true;
-            }
-
-            return hasTileLayer ? topHeight : layerBaseHeight;
-        }
-
-        private static TilesBuildLayer FindTilesBuildLayer(Configuration configuration, string blueprintLayerGuid)
-        {
-            if (configuration?.buildLayerFolders == null || string.IsNullOrWhiteSpace(blueprintLayerGuid))
-                return null;
-
-            for (int folderIndex = 0; folderIndex < configuration.buildLayerFolders.Count; folderIndex++)
-            {
-                var folder = configuration.buildLayerFolders[folderIndex];
-                if (folder?.buildLayers == null)
-                    continue;
-
-                for (int layerIndex = 0; layerIndex < folder.buildLayers.Count; layerIndex++)
-                {
-                    if (folder.buildLayers[layerIndex] is not TilesBuildLayer buildLayer)
-                        continue;
-
-                    if (string.Equals(buildLayer.assignedBlueprintLayerGuid, blueprintLayerGuid, StringComparison.Ordinal)
-                        || string.Equals(buildLayer.currentBlueprintLayer?.guid, blueprintLayerGuid, StringComparison.Ordinal))
-                    {
-                        return buildLayer;
-                    }
-                }
-            }
-
-            return null;
         }
 
         private static int[,] BuildLevelMapFromSurfaceHeights(float[,] surfaceHeightMap)
