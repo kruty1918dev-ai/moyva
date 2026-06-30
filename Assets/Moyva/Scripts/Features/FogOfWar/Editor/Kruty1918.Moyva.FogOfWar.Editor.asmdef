@@ -4,7 +4,11 @@
     "references": [
         "Kruty1918.Moyva.FogOfWar",
         "Kruty1918.Moyva.Units",
-        "Kruty1918.Moyva.EditorShared"
+        "Kruty1918.Moyva.EditorShared",
+        "Sirenix.OdinInspector.Attributes",
+        "Sirenix.OdinInspector.Editor",
+        "Sirenix.Utilities",
+        "Sirenix.Utilities.Editor"
     ],
     "includePlatforms": [
         "Editor"

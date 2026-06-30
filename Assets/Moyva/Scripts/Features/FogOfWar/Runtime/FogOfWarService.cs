@@ -47,7 +47,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// <summary>
     /// Ядро служби "туману війни" (Fog of War).
     /// Підтримує матрицю лічильників видимості (int[,]) та масив позначок досліджених клітин (bool[,]).
-    /// Обробляє реєстрацію одиниць і будівель, обчислює видимі клітини та оновлює текстуру туману.
+    /// Обробляє реєстрацію одиниць і будівель, обчислює видимі клітини та оновлює візуал туману.
     /// Підписується на сигнали гри через SignalBus.
     /// </summary>
     internal sealed class FogOfWarService : IFogOfWarService, IInitializable, IDisposable
@@ -56,14 +56,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// Зведена документація полів FogOfWarService.
         /// Коротко:
         /// - Залежності: _resolver (обчислення видимих клітин), _heightVisionService (height-aware visibility),
-        ///   _textureUpdater (оновлення текстури), _saveProvider (load/save explored), _signalBus (події), _settings (конфіг).
+        ///   _visualUpdater (оновлення візуалу), _saveProvider (load/save explored), _signalBus (події), _settings (конфіг).
         /// - Конфіг і стан: _defaultVisionRange, _width, _height, _initialized (чи викликано Initialize).
         /// - Основні масиви: _visibilityCounters (int[,]) — лічильники видимості; _exploredTiles (bool[,]) — досліджені клітини;
         ///   _pendingExploredSnapshot — сніпшот, завантажений до ініціалізації.
         /// - Дані одиниць: _unitVisibleTiles, _unitVisionRange, _unitPositions, _unitVisionModifiers.
         /// - Фіксовані зони: _fixedVisionShapes (наприклад для будівель).
         /// - Відкладені записі: _pendingUnits (реєстрації до Initialize).
-        /// - Оновлення текстури: _lastDirtyTiles; Version — внутрішня версія; IsReady — готовність.
+        /// - Оновлення візуалу: _lastDirtyTiles; Version — внутрішня версія; IsReady — готовність.
         /// </summary>
         private const string BuildingVisionAreaPrefix = "building:";
         private const string StartupFallbackRevealAreaId = "fog-service-startup-fallback-reveal";
@@ -82,10 +82,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly IHeightAwareVisionService _heightVisionService;
 
         /// <summary>
-        /// Оновлювач текстури туману. Відповідає за застосування змінених клітин до візуального шару
-        /// через `UpdateDirtyTiles` і за перебудову повної текстури `RebuildFullTexture`.
+        /// Оновлювач візуалу туману. Відповідає за застосування змінених клітин до візуального шару
+        /// через `UpdateDirtyTiles` і за перебудову повного візуалу `RebuildFullVisual`.
         /// </summary>
-        private readonly IFogTextureUpdater     _textureUpdater;
+        private readonly IFogVisualUpdater     _visualUpdater;
 
         /// <summary>
         /// Провайдер даних збереження/завантаження для блоку досліджених клітин (explored).
@@ -137,6 +137,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly List<FogPendingRevealArea> _pendingRevealAreas = new List<FogPendingRevealArea>();
 
         private HashSet<Vector2Int> _lastDirtyTiles = new HashSet<Vector2Int>();
+        private FogWorldVisualContext _visualContext;
 
         internal int Version { get; private set; }
         internal bool IsReady => _initialized;
@@ -144,14 +145,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         public FogOfWarService(
             IFogVisibilityResolver resolver,
             IHeightAwareVisionService heightVisionService,
-            IFogTextureUpdater     textureUpdater,
+            IFogVisualUpdater     visualUpdater,
             IFogSaveDataProvider   saveProvider,
             SignalBus              signalBus,
             [InjectOptional] FogOfWarSettings settings)
         {
             _resolver       = resolver;
             _heightVisionService = heightVisionService;
-            _textureUpdater = textureUpdater;
+            _visualUpdater = visualUpdater;
             _saveProvider   = saveProvider;
             _signalBus      = signalBus;
             _settings       = settings;
@@ -216,6 +217,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _unitVisibleTiles.Clear();
 
             _initialized = true;
+            if (!_visualContext.IsValid)
+                _visualContext = CreateFallbackVisualContext(width, height);
+            else
+                _visualContext = _visualContext.WithSize(width, height);
+            _visualUpdater?.Initialize(width, height, _visualContext);
 
             // Відновити стан досліджених клітин із відкладеного сніпшоту (якщо завантаження відбулося до ініціалізації карти).
             var snapshot = _pendingExploredSnapshot ?? _saveProvider?.LoadExploredData();
@@ -241,8 +247,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 RecalculateAllVisibility();
             }
 
-            // Переконатися, що текстура відображає поточний стан після обробки відкладених одиниць
-            _textureUpdater?.RebuildFullTexture(this);
+            // Переконатися, що візуал відображає поточний стан після обробки відкладених одиниць
+            _visualUpdater?.RebuildFullVisual(this);
             BumpVersion();
             Debug.Log($"{DebugTag} FogService.Initialize end map={_width}x{_height}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, pendingReveals={_pendingRevealAreas.Count}, version={Version}.");
         }
@@ -300,7 +306,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _lastDirtyTiles.Add(tile);
             }
 
-            FlushTexture();
+            FlushVisual();
         }
 
         /// <summary>
@@ -355,7 +361,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             {
                 Debug.LogWarning($"{DebugTag} FogService.ApplyRevealArea zero-tiles center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={areaId ?? visibleAreaId ?? "<explored-only>"}, map={_width}x{_height}.");
                 if (removedOldVisibility)
-                    FlushTexture();
+                    FlushVisual();
                 return;
             }
 
@@ -374,7 +380,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     _lastDirtyTiles.Add(tile);
                 }
 
-                FlushTexture();
+                FlushVisual();
                 Debug.Log($"{DebugTag} FogService.ApplyRevealArea visible center={center}, radius={radius}, shape={shape}, id={areaId}, tiles={tiles.Count}, map={_width}x{_height}, centerState={GetFogState(center)}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}.");
                 return;
             }
@@ -391,7 +397,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             if (changed)
-                FlushTexture();
+                FlushVisual();
 
             Debug.Log($"{DebugTag} FogService.ApplyRevealArea explored center={center}, radius={radius}, shape={shape}, tiles={tiles.Count}, changed={changed}, map={_width}x{_height}, centerState={GetFogState(center)}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}.");
         }
@@ -479,7 +485,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// 4) зберігає дальність огляду, позицію та модифікатори;
         /// 5) обчислює початковий набір видимих клітин і збільшує лічильники;
         /// 6) позначає клітини як досліджені, додає їх до `_lastDirtyTiles`;
-        /// 7) викликає `FlushTexture()` для оновлення текстури туману.
+        /// 7) викликає `FlushVisual()` для оновлення візуалу туману.
         /// </summary>
         /// <param name="unitId">Ідентифікатор одиниці або зони.</param>
         /// <param name="position">Центральна позиція зони.</param>
@@ -519,7 +525,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _lastDirtyTiles.Add(t);
             }
 
-            FlushTexture();
+            FlushVisual();
         }
 
         /// <summary>
@@ -574,7 +580,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _lastDirtyTiles.Add(t);
             }
 
-            FlushTexture();
+            FlushVisual();
         }
 
         /// <summary>
@@ -604,7 +610,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _fixedVisionShapes.Remove(unitId);
             _unitVisionModifiers.Remove(unitId);
 
-            FlushTexture();
+            FlushVisual();
         }
 
         /// <summary>
@@ -691,7 +697,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 for (int y = 0; y < copyH; y++)
                     _exploredTiles[x, y] = explored[x, y];
 
-            _textureUpdater?.RebuildFullTexture(this);
+            _visualUpdater?.RebuildFullVisual(this);
             BumpVersion();
         }
 
@@ -732,7 +738,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         }
 
         /// <summary>
-        /// Повертає колекцію тайлів, які були змінені останніми і потребують оновлення текстури.
+        /// Повертає колекцію тайлів, які були змінені останніми і потребують оновлення візуалу.
         /// </summary>
         /// <returns>Колекція координат змінених клітин.</returns>
         public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles()
@@ -771,6 +777,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Vector2Int baseMapSize = FogWorldSignalUtility.ResolveBaseMapSize(signal);
             int signalWidth = baseMapSize.x;
             int signalHeight = baseMapSize.y;
+            _visualContext = CreateVisualContext(signal, signalWidth, signalHeight);
+            _visualUpdater?.SetWorldContext(_visualContext);
             Debug.Log($"{DebugTag} FogService.OnWorldGeneratedData signal={signal.Width}x{signal.Height}, baseMap={signalWidth}x{signalHeight}, initialized={_initialized}, current={_width}x{_height}, pendingReveals={_pendingRevealAreas.Count}.");
 
             if (!_initialized)
@@ -803,6 +811,39 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             return heightMap;
         }
 
+        private static FogWorldVisualContext CreateVisualContext(WorldGeneratedDataSignal signal, int width, int height)
+        {
+            bool hasBounds = FogWorldSignalUtility.TryResolveMapWorldBounds(signal, out Bounds bounds);
+            return new FogWorldVisualContext(
+                width,
+                height,
+                (GridTopology)signal.GridTopology,
+                (GridProjectionMode)signal.ProjectionMode,
+                (GridRenderMode)signal.RenderMode,
+                (GridNeighborhoodMode)signal.NeighborhoodMode,
+                signal.CellSize,
+                hasBounds,
+                bounds,
+                signal.HeightMap,
+                signal.TerrainLevelMap);
+        }
+
+        private static FogWorldVisualContext CreateFallbackVisualContext(int width, int height)
+        {
+            return new FogWorldVisualContext(
+                width,
+                height,
+                GridTopology.Orthogonal,
+                GridProjectionMode.Orthographic3D,
+                GridRenderMode.Mesh3D,
+                GridNeighborhoodMode.Moore8,
+                1f,
+                false,
+                default,
+                null,
+                null);
+        }
+
         // ─── Допоміжні методи ─────────────────────────────────────────────────
 
         /// <summary>
@@ -823,7 +864,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         /// <summary>
         /// Видаляє запис про видимі клітини для `unitId` і зменшує відповідні лічильники видимості.
-        /// Після зменшення лічильників додає клітини до `_lastDirtyTiles` для подальшого оновлення текстури.
+        /// Після зменшення лічильників додає клітини до `_lastDirtyTiles` для подальшого оновлення візуалу.
         /// Повертає true якщо були знайдені та видалені клітини для цього `unitId`.
         /// </summary>
         /// <param name="unitId">Ідентифікатор одиниці або зони.</param>
@@ -1023,20 +1064,20 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         }
 
         /// <summary>
-        /// Оновлює текстуру туману для накопичених змінених клітин.
-        /// Викликає <see cref="IFogTextureUpdater.UpdateDirtyTiles"/>, інкрементує версію якщо були зміни
+        /// Оновлює візуал туману для накопичених змінених клітин.
+        /// Викликає <see cref="IFogVisualUpdater.UpdateDirtyTiles"/>, інкрементує версію якщо були зміни
         /// та очищає буфер `_lastDirtyTiles`.
         /// </summary>
         /// <summary>
-        /// Оновлює текстуру туману для накопичених змінених клітин.
-        /// Викликає <see cref="IFogTextureUpdater.UpdateDirtyTiles"/>, інкрементує версію якщо були зміни
+        /// Оновлює візуал туману для накопичених змінених клітин.
+        /// Викликає <see cref="IFogVisualUpdater.UpdateDirtyTiles"/>, інкрементує версію якщо були зміни
         /// та очищає буфер `_lastDirtyTiles`.
         /// </summary>
-        private void FlushTexture()
+        private void FlushVisual()
         {
             int dirtyCount = _lastDirtyTiles.Count;
-            if (_textureUpdater != null)
-                _textureUpdater.UpdateDirtyTiles(this, _lastDirtyTiles);
+            if (_visualUpdater != null)
+                _visualUpdater.UpdateDirtyTiles(this, _lastDirtyTiles);
 
             if (dirtyCount > 0)
                 BumpVersion();
@@ -1051,7 +1092,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// - Очищає лічильники видимості;
         /// - Для кожної зареєстрованої одиниці обчислює видимі клітини і інкрементує лічильники;
         /// - Позначає ці клітини як досліджені;
-        /// - Перебудовує повну текстуру та інкрементує версію.
+        /// - Перебудовує повну візуал та інкрементує версію.
         /// </summary>
         /// <summary>
         /// Повністю перераховує матрицю видимості на основі поточної інформації про позиції одиниць.
@@ -1060,7 +1101,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// - Очищає лічильники видимості;
         /// - Для кожної зареєстрованої одиниці обчислює видимі клітини і інкрементує лічильники;
         /// - Позначає ці клітини як досліджені;
-        /// - Перебудовує повну текстуру та інкрементує версію.
+        /// - Перебудовує повну візуал та інкрементує версію.
         /// </summary>
         private void RecalculateAllVisibility()
         {
@@ -1085,7 +1126,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 }
             }
 
-            _textureUpdater?.RebuildFullTexture(this);
+            _visualUpdater?.RebuildFullVisual(this);
             BumpVersion();
             _lastDirtyTiles.Clear();
             Debug.Log($"{DebugTag} FogService.RecalculateAllVisibility map={_width}x{_height}, units={_unitPositions.Count}, fixedAreas={_fixedVisionShapes.Count}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, version={Version}.");
@@ -1130,6 +1171,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _exploredTiles = new bool[_width, _height];
             _unitVisibleTiles.Clear();
             _lastDirtyTiles.Clear();
+            _visualContext = _visualContext.IsValid
+                ? _visualContext.WithSize(_width, _height)
+                : CreateFallbackVisualContext(_width, _height);
+            _visualUpdater?.Initialize(_width, _height, _visualContext);
 
             if (exploredSnapshot != null)
                 LoadFromSnapshot(exploredSnapshot);
@@ -1648,7 +1693,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// Перевіряє, чи підтримується даний рендерер для цілей відсіювання.
         /// Підтримуються `SpriteRenderer`, `MeshRenderer` і `TilemapRenderer`,
         /// рендерер має бути активним та належати дозволеному шару. Ігнорує рендерери
-        /// які знаходяться в батьківському `FogQuadController`.
+        /// які знаходяться в батьківському `FogOfWarVolumeController`.
         /// </summary>
         private bool IsSupportedRenderer(Renderer renderer)
         {
@@ -1665,7 +1710,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     return false;
             }
 
-            return renderer.GetComponentInParent<FogQuadController>() == null;
+            return renderer.GetComponentInParent<FogOfWarVolumeController>() == null;
         }
 
         private sealed class CullableRenderer

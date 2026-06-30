@@ -38,6 +38,75 @@ MonoBehaviour:
   TerrainEdgeBlindZoneDistanceScale: 0.35
   TerrainEdgeMaxBlindZoneTiles: 4
   TerrainEdgeUphillPeekStrength: 0.65
+  Volume:
+    UpdateMode: 0
+    RebuildIntervalSeconds: 0.1
+    TopClearance: 0.08
+    UseWorldCellSize: 1
+    CellSizeOverride: 1
+    HeightSource: 0
+    TerrainLevelHeightStep: 1
+    HeightLayerSnap: 0.01
+    ClearPreviewOnRuntimeStart: 1
+    PreviewFallbackWidth: 16
+    PreviewFallbackHeight: 16
+    Unexplored:
+      Enabled: 1
+      LayerName: Fog_Unexplored
+      TileVariants:
+      - Preset: {fileID: 11400000, guid: 74d92dbbf6842b44cbaeb45c41d71898, type: 2}
+        Slot: 0
+        Weight: 1
+        TileHeight: 0
+      LayerYOffset: 0
+      ScaleOffset: {x: 1, y: 1, z: 1}
+      ShadowCastingMode: 0
+      ObjectLayer:
+        serializedVersion: 2
+        m_Bits: 0
+      RenderingLayer:
+        serializedVersion: 0
+        m_Bits: 1
+      ColliderType: 0
+      TileColliderHeight: 0
+      TileColliderExtrusionHeight: 0
+      InvertCollisionWalls: 0
+    Explored:
+      Enabled: 1
+      LayerName: Fog_Explored
+      TileVariants:
+      - Preset: {fileID: 11400000, guid: 74d92dbbf6842b44cbaeb45c41d71898, type: 2}
+        Slot: 0
+        Weight: 1
+        TileHeight: 0
+      LayerYOffset: 0.02
+      ScaleOffset: {x: 1, y: 1, z: 1}
+      ShadowCastingMode: 0
+      ObjectLayer:
+        serializedVersion: 2
+        m_Bits: 0
+      RenderingLayer:
+        serializedVersion: 0
+        m_Bits: 1
+      ColliderType: 0
+      TileColliderHeight: 0
+      TileColliderExtrusionHeight: 0
+      InvertCollisionWalls: 0
+  EnableRendererCulling: 1
+  RequireOpaqueUnexploredForCulling: 1
+  RendererCullingLayerMask:
+    serializedVersion: 2
+    m_Bits: 503
+  RendererCullingMaxRenderersPerFrame: 384
+  RendererCullingDiscoveryInterval: 0.75
+  RendererCullingBoundsPaddingCells: 0
+  UnexploredAlpha: 1
+  ExploredAlpha: 0.8
+  EnableStartupFallbackReveal: 1
+  StartupFallbackRevealRadius: 15
+  StartupFallbackMinMarginFromBorder: 5
+  StartupFallbackRelativeMarginFactor: 0.1667
+  StartupFallbackRevealShape: 0
   UnexploredColor: {r: 1, g: 1, b: 1, a: 1}
   ExploredColor: {r: 1, g: 1, b: 1, a: 0.4627451}
   FogTileSprite: {fileID: 21300000, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
@@ -52,17 +121,7 @@ MonoBehaviour:
   FogIconGridSize: {x: 30, y: 30}
   FogIconScale: 1
   CenterIcon: 1
-  UnexploredAlpha: 1
-  ExploredAlpha: 0.8
   FullyTransparentWhenVisible: 1
   Fog3DTopClearance: 0.08
-  EnableRendererCulling: 1
-  RequireOpaqueUnexploredForCulling: 1
-  RendererCullingLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
   EnableShaderFogCulling: 1
-  RendererCullingMaxRenderersPerFrame: 384
-  RendererCullingDiscoveryInterval: 0.75
-  RendererCullingBoundsPaddingCells: 0
   ShaderFogCullThreshold: 0.01

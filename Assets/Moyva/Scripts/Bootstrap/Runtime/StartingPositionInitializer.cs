@@ -27,6 +27,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private const string DebugTag = "[MoyvaFogTrace]";
 
         private readonly IFogOfWarService _fogOfWarService;
+        private readonly IFogVisualUpdater _fogVisualUpdater;
         private readonly ISaveService _saveService;
         private readonly SignalBus _signalBus;
         private readonly StartingPositionInitializerSettings _settings;
@@ -57,6 +58,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public StartingPositionInitializer(
             IFogOfWarService fogOfWarService,
+            [InjectOptional] IFogVisualUpdater fogVisualUpdater,
             ISaveService saveService,
             SignalBus signalBus,
             StartingPositionInitializerSettings settings,
@@ -64,6 +66,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             ICameraMovement cameraMovement)
         {
             _fogOfWarService = fogOfWarService;
+            _fogVisualUpdater = fogVisualUpdater;
             _saveService = saveService;
             _signalBus = signalBus;
             _settings = settings;
@@ -959,6 +962,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             Debug.Log($"{DebugTag} Bootstrap.RevealStartingAreas center={center}, radius={radius}, shape={shape}, map={width}x{height}, scaled={_settings.useMapSizeScaledFog}, keepCore={_settings.keepCoreFullyVisible}.");
             _fogOfWarService.RevealArea(center, radius, shape, keepVisible: true, visibleAreaId: StartRevealAnchorId);
+            _fogVisualUpdater?.PreviewRevealArea(center, radius, shape, keepVisible: true);
         }
 
         /// <summary>

@@ -4,6 +4,8 @@
     "references": [
         "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.Grid",
+        "GiantGrey.TileWorldCreator",
+        "Sirenix.OdinInspector.Attributes",
         "Zenject",
         "GUID:aa310a9f8edd56c1af65521810fee4f8"
     ],

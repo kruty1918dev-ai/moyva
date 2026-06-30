@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
@@ -8,6 +9,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// Lightweight fog texture: 1 pixel = 1 tile, R8 format.
     /// No blur, no noise — raw grid values go straight to the GPU.
     /// </summary>
+    [Obsolete("Use FogOfWarVolumeUpdater for TWC dual-grid fog volume visuals.")]
     internal sealed class FogTextureUpdater : IFogTextureUpdater
     {
         private const string DebugTag = "[MoyvaFogTrace]";
@@ -41,7 +43,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             if (_fogTexture != null)
-                Object.Destroy(_fogTexture);
+                UnityEngine.Object.Destroy(_fogTexture);
 
             _buffer = new byte[_mapWidth * _mapHeight];
             _mapParams = new Vector4(

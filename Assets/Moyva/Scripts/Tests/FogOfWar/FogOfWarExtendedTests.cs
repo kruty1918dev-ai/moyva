@@ -25,16 +25,18 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             public void SetTileData(Vector2Int p, string id) { }
         }
 
-        private sealed class StubTexUpdater : IFogTextureUpdater
+        private sealed class StubVisualUpdater : IFogVisualUpdater
         {
-            public void Initialize(int w, int h, Material mat) { }
+            public void Initialize(int w, int h, FogWorldVisualContext context) { }
+            public void SetWorldContext(FogWorldVisualContext context) { }
+            public void PreviewRevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible) { }
             public void UpdateDirtyTiles(IFogOfWarService s, IEnumerable<Vector2Int> d) { }
-            public void RebuildFullTexture(IFogOfWarService s) { }
+            public void RebuildFullVisual(IFogOfWarService s) { }
         }
 
         private sealed class StubSaveProvider : IFogSaveDataProvider
         {
-            public bool[,] SnapshotToLoad;
+            public bool[,] SnapshotToLoad { get; set; }
             public bool[,] LoadExploredData() => SnapshotToLoad;
             public void SaveExploredData(bool[,] e) { }
         }
@@ -55,7 +57,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Container.DeclareSignal<WorldGeneratedDataSignal>();
 
             Container.BindInstance<IGridService>(new StubGrid()).AsSingle();
-            Container.BindInstance<IFogTextureUpdater>(new StubTexUpdater()).AsSingle();
+            Container.BindInstance<IFogVisualUpdater>(new StubVisualUpdater()).AsSingle();
             Container.BindInstance<IFogSaveDataProvider>(new StubSaveProvider()).AsSingle();
 
             _settings = ScriptableObject.CreateInstance<FogOfWarSettings>();

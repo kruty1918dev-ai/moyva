@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
     /// <summary>
     /// Unit tests for FogOfWarService.
     /// Uses ZenjectUnitTestFixture with real SignalBus.
-    /// IGridService and IFogTextureUpdater are stubbed inline.
+    /// IGridService and IFogVisualUpdater are stubbed inline.
     /// </summary>
     [TestFixture]
     public class FogOfWarServiceTests : ZenjectUnitTestFixture
@@ -29,18 +29,20 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             public void SetTileData(Vector2Int p, string id) { }
         }
 
-        private class TestTextureUpdater : IFogTextureUpdater
+        private class TestVisualUpdater : IFogVisualUpdater
         {
             public int UpdateCallCount { get; private set; }
             public int RebuildCallCount { get; private set; }
-            public void Initialize(int w, int h, Material mat) { }
+            public void Initialize(int w, int h, FogWorldVisualContext context) { }
+            public void SetWorldContext(FogWorldVisualContext context) { }
+            public void PreviewRevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible) { }
             public void UpdateDirtyTiles(IFogOfWarService svc, IEnumerable<Vector2Int> dirty) => UpdateCallCount++;
-            public void RebuildFullTexture(IFogOfWarService svc) => RebuildCallCount++;
+            public void RebuildFullVisual(IFogOfWarService svc) => RebuildCallCount++;
         }
 
         private class TestSaveDataProvider : IFogSaveDataProvider
         {
-            public bool[,] SnapshotToLoad;
+            public bool[,] SnapshotToLoad { get; set; }
             public bool[,] LoadExploredData() => SnapshotToLoad;
             public void SaveExploredData(bool[,] e) { }
         }
@@ -49,7 +51,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
 
         private FogOfWarService     _service;
         private SignalBus           _signalBus;
-        private TestTextureUpdater  _textureUpdater;
+        private TestVisualUpdater  _visualUpdater;
         private TestSaveDataProvider _saveProvider;
         private TestGridService     _gridService;
         private FogOfWarSettings    _settings;
@@ -69,7 +71,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Container.DeclareSignal<WorldGeneratedDataSignal>();
 
             _gridService     = new TestGridService();
-            _textureUpdater  = new TestTextureUpdater();
+            _visualUpdater  = new TestVisualUpdater();
             _saveProvider    = new TestSaveDataProvider();
             _settings        = ScriptableObject.CreateInstance<FogOfWarSettings>();
             _settings.DefaultVisionRange = 1;
@@ -82,7 +84,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             _settings.EnableStartupFallbackReveal = false;
 
             Container.BindInstance<IGridService>(_gridService).AsSingle();
-            Container.BindInstance<IFogTextureUpdater>(_textureUpdater).AsSingle();
+            Container.BindInstance<IFogVisualUpdater>(_visualUpdater).AsSingle();
             Container.BindInstance<IFogSaveDataProvider>(_saveProvider).AsSingle();
             Container.BindInstance(_settings).AsSingle();
 
@@ -414,13 +416,13 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
         public void LoadFromSnapshot_RebuildsTextureImmediately()
         {
             InitMap(5, 5);
-            int rebuildsBefore = _textureUpdater.RebuildCallCount;
+            int rebuildsBefore = _visualUpdater.RebuildCallCount;
             var snap = new bool[5, 5];
             snap[2, 2] = true;
 
             _service.LoadFromSnapshot(snap);
 
-            Assert.Greater(_textureUpdater.RebuildCallCount, rebuildsBefore);
+            Assert.Greater(_visualUpdater.RebuildCallCount, rebuildsBefore);
         }
 
         // ─── 4. UpdateUnitPosition_RemovesVisibilityFromOldTiles ─────────────
@@ -621,7 +623,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             });
 
             Assert.IsTrue(_service.IsVisible(farTile));
-            Assert.GreaterOrEqual(_textureUpdater.RebuildCallCount, 1);
+            Assert.GreaterOrEqual(_visualUpdater.RebuildCallCount, 1);
         }
     }
 }
