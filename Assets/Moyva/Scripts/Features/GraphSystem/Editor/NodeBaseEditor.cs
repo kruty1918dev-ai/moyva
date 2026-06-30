@@ -2,70 +2,50 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
 using Kruty1918.Moyva.GraphSystem.API;
+using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.GraphSystem.Editor
 {
     [CustomEditor(typeof(NodeBase), true)]
-    public sealed class NodeBaseEditor : UnityEditor.Editor
+    public sealed class NodeBaseEditor : OdinEditor
     {
         private readonly Dictionary<string, bool> _foldouts = new Dictionary<string, bool>();
-        private readonly Dictionary<string, UnityEditor.Editor> _nestedEditors = new Dictionary<string, UnityEditor.Editor>();
+        private readonly Dictionary<string, PropertyTree> _nestedTrees = new Dictionary<string, PropertyTree>();
+        private readonly Dictionary<string, ScriptableObject> _nestedTreeTargets = new Dictionary<string, ScriptableObject>();
         private bool _showPorts = true;
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
-            foreach (var editor in _nestedEditors.Values)
+            base.OnDisable();
+
+            foreach (var tree in _nestedTrees.Values)
             {
-                if (editor != null)
-                    DestroyImmediate(editor);
+                if (tree is IDisposable disposable)
+                    disposable.Dispose();
             }
-            _nestedEditors.Clear();
+            _nestedTrees.Clear();
+            _nestedTreeTargets.Clear();
         }
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
-
             var node = target as NodeBase;
             var twcNode = target as TwcModifierNode;
 
             if (node != null)
                 DrawNodeDocumentation(node);
 
-            var property = serializedObject.GetIterator();
-            property.NextVisible(true); // skip m_Script
+            EditorGUI.BeginChangeCheck();
+            base.OnInspectorGUI();
+            bool odinChanged = EditorGUI.EndChangeCheck();
 
-            while (property.NextVisible(false))
-            {
-                if (ShouldHideInternalGraphProperty(property.name))
-                    continue;
+            if (twcNode != null)
+                DrawTwcModifierInspector(twcNode);
 
-                if (twcNode != null && property.name == "_modifierTypeName")
-                    continue;
-
-                if (twcNode != null && property.name == "_modifier")
-                {
-                    DrawTwcModifierInspector(twcNode);
-                    continue;
-                }
-
-                DrawDocumentedProperty(node, property);
-
-                if (property.propertyType == SerializedPropertyType.ObjectReference
-                    && property.objectReferenceValue is ScriptableObject so)
-                {
-                    DrawNestedEditor(property.propertyPath, property.displayName, so);
-                }
-            }
-
-            serializedObject.ApplyModifiedProperties();
-        }
-
-        private static bool ShouldHideInternalGraphProperty(string name)
-        {
-            return name == "_nodeId" || name == "_editorPosition" || name == "_layerId";
+            if (odinChanged && target != null)
+                EditorUtility.SetDirty(target);
         }
 
         private void DrawNodeDocumentation(NodeBase node)
@@ -83,26 +63,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             EditorGUILayout.Space(4);
-        }
-
-        private static void DrawDocumentedProperty(NodeBase node, SerializedProperty property)
-        {
-            if (property == null)
-                return;
-
-            Type nodeType = node != null ? node.GetType() : null;
-            string help = GraphNodeDocumentation.GetParameterDescription(nodeType, property.propertyPath, property.displayName);
-            var content = new GUIContent(property.displayName, help);
-
-            EditorGUILayout.PropertyField(property, content, true);
-
-            if (!string.IsNullOrWhiteSpace(help))
-            {
-                using (new EditorGUI.DisabledScope(true))
-                {
-                    EditorGUILayout.HelpBox(help, MessageType.None);
-                }
-            }
         }
 
         private void DrawTwcModifierInspector(TwcModifierNode node)
@@ -186,31 +146,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
         }
 
-        private void DrawNestedEditor(string key, string displayName, ScriptableObject so)
-        {
-            bool expanded;
-            _foldouts.TryGetValue(key, out expanded);
-
-            expanded = EditorGUILayout.Foldout(expanded, "    ▶ " + displayName + ": " + so.name, true);
-            _foldouts[key] = expanded;
-
-            if (!expanded) return;
-
-            if (!_nestedEditors.TryGetValue(key, out var editor)
-                || editor == null
-                || editor.target != so)
-            {
-                if (editor != null)
-                    DestroyImmediate(editor);
-                editor = CreateEditor(so);
-                _nestedEditors[key] = editor;
-            }
-
-            EditorGUI.indentLevel++;
-            editor.OnInspectorGUI();
-            EditorGUI.indentLevel--;
-        }
-
         private void DrawNestedEditor(string key, ScriptableObject so)
         {
             bool expanded;
@@ -222,18 +157,28 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (!expanded)
                 return;
 
-            if (!_nestedEditors.TryGetValue(key, out var editor)
-                || editor == null
-                || editor.target != so)
+            if (!_nestedTrees.TryGetValue(key, out var tree)
+                || tree == null
+                || !_nestedTreeTargets.TryGetValue(key, out var target)
+                || target != so)
             {
-                if (editor != null)
-                    DestroyImmediate(editor);
-                editor = CreateEditor(so);
-                _nestedEditors[key] = editor;
+                if (tree is IDisposable disposable)
+                    disposable.Dispose();
+
+                tree = PropertyTree.Create(new SerializedObject(so));
+                tree.DrawMonoScriptObjectField = false;
+                _nestedTrees[key] = tree;
+                _nestedTreeTargets[key] = so;
             }
 
             EditorGUI.indentLevel++;
-            editor.OnInspectorGUI();
+            tree.UpdateTree();
+            EditorGUI.BeginChangeCheck();
+            tree.Draw(false);
+            bool changed = EditorGUI.EndChangeCheck();
+            tree.ApplyChanges();
+            if (changed)
+                EditorUtility.SetDirty(so);
             EditorGUI.indentLevel--;
         }
     }

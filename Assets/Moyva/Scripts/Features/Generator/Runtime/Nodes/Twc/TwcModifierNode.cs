@@ -20,8 +20,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
     /// </summary>
     public sealed class TwcModifierNode : NodeBase
     {
-        [SerializeField] private string _modifierTypeName;
-        [SerializeField] private BlueprintModifier _modifier;
+        [HideInInspector, SerializeField] private string _modifierTypeName;
+        [HideInInspector, SerializeField] private BlueprintModifier _modifier;
     #if UNITY_EDITOR
         [System.NonSerialized] private Configuration _editorInspectorConfiguration;
     #endif

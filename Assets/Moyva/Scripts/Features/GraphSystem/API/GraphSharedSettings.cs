@@ -14,16 +14,24 @@ namespace Kruty1918.Moyva.GraphSystem.API
     public sealed class GraphSharedSettings
     {
         [Header("Map Size")]
+        [Sirenix.OdinInspector.BoxGroup("Map Size")]
         [Tooltip("Ширина мапи (у тайлах). 0 = брати розмір із GridService (зовнішнє джерело).")]
+        [Min(0)]
         [SerializeField] private int _mapWidth;
 
         [Tooltip("Висота мапи (у тайлах). 0 = брати розмір із GridService (зовнішнє джерело).")]
+        [Sirenix.OdinInspector.BoxGroup("Map Size")]
+        [Min(0)]
         [SerializeField] private int _mapHeight;
 
         [Header("Grid Mode")]
+        [Sirenix.OdinInspector.BoxGroup("Grid Mode")]
         [SerializeField] private GridTopology _gridTopology = GridTopology.Orthogonal;
+        [Sirenix.OdinInspector.BoxGroup("Grid Mode")]
         [SerializeField] private GridProjectionMode _projectionMode = GridProjectionMode.Orthographic3D;
+        [Sirenix.OdinInspector.BoxGroup("Grid Mode")]
         [SerializeField] private GridRenderMode _renderMode = GridRenderMode.Mesh3D;
+        [Sirenix.OdinInspector.BoxGroup("Grid Mode")]
         [SerializeField] private GridNeighborhoodMode _neighborhoodMode = GridNeighborhoodMode.Auto;
 
         public int MapWidth => _mapWidth;

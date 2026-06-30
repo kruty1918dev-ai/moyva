@@ -35,58 +35,79 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// </summary>
         public void GenerateLayerPreview(string layerName)
         {
-            GenerateLayerPreview(layerName, EditorSeed);
+            GenerateLayerPreview(layerName, ResolveGenerationSeed());
         }
 
         public void GenerateLayerPreview(string layerName, int seed)
         {
+            if (_isGenerating)
+            {
+                Debug.LogWarning("[Moyva TWC Graph Binding] Генерація вже виконується, preview шару пропущено.", this);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(layerName))
             {
                 Debug.LogWarning("[Moyva TWC Graph Binding] Назву шару не задано.", this);
                 return;
             }
 
-            if (_compileBeforeGenerate)
-                CompileGraphToConfiguration(seed);
-
-            var config = Manager?.configuration;
-            if (config?.blueprintLayerFolders == null)
-                return;
-
-            var previousStates = new List<(BlueprintLayer layer, bool enabled)>();
-            bool matched = false;
-
-            foreach (var folder in config.blueprintLayerFolders)
-            {
-                if (folder?.blueprintLayers == null)
-                    continue;
-
-                foreach (var layer in folder.blueprintLayers)
-                {
-                    if (layer == null)
-                        continue;
-
-                    previousStates.Add((layer, layer.isEnabled));
-                    bool isTarget = string.Equals(layer.layerName, layerName, StringComparison.Ordinal);
-                    layer.isEnabled = isTarget;
-                    matched |= isTarget;
-                }
-            }
-
-            if (!matched)
-            {
-                Debug.LogWarning($"[Moyva TWC Graph Binding] Шар '{layerName}' не знайдено серед blueprint-шарів.", this);
-                RestoreLayerStates(previousStates);
-                return;
-            }
-
+            _isGenerating = true;
             try
             {
-                TileWorldCreatorLayerOcclusionOptimizer.GenerateCompleteMap(Manager);
+                if (_compileBeforeGenerate)
+                    CompileGraphToConfiguration(seed);
+
+                var config = Manager?.configuration;
+                if (config?.blueprintLayerFolders == null)
+                    return;
+
+                var previousStates = new List<(BlueprintLayer layer, bool enabled)>();
+                bool matched = false;
+
+                foreach (var folder in config.blueprintLayerFolders)
+                {
+                    if (folder?.blueprintLayers == null)
+                        continue;
+
+                    foreach (var layer in folder.blueprintLayers)
+                    {
+                        if (layer == null)
+                            continue;
+
+                        previousStates.Add((layer, layer.isEnabled));
+                        bool isTarget = string.Equals(layer.layerName, layerName, StringComparison.Ordinal);
+                        layer.isEnabled = isTarget;
+                        matched |= isTarget;
+                    }
+                }
+
+                if (!matched)
+                {
+                    Debug.LogWarning($"[Moyva TWC Graph Binding] Шар '{layerName}' не знайдено серед blueprint-шарів.", this);
+                    RestoreLayerStates(previousStates);
+                    return;
+                }
+
+                try
+                {
+                    TileWorldCreatorLayerOcclusionOptimizer.GenerateCompleteMap(Manager);
+                }
+                finally
+                {
+                    RestoreLayerStates(previousStates);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Moyva TWC Graph Binding] Помилка preview шару '{layerName}': {ex}", this);
             }
             finally
             {
-                RestoreLayerStates(previousStates);
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.ClearProgressBar();
+#endif
+                _isGenerating = false;
             }
         }
 

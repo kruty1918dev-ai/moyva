@@ -954,12 +954,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return false;
             }
 
-            if (!string.IsNullOrWhiteSpace(payload.jsonData))
-                EditorJsonUtility.FromJsonOverwrite(payload.jsonData, node);
+            if (!TryOverwriteSerializedNodeData(payload.jsonData, node, out string pasteError))
+            {
+                _graphAsset.RemoveNode(node);
+                error = $"Не вдалося вставити ноду з тексту: {pasteError}";
+                return false;
+            }
 
             node.NodeId = Guid.NewGuid().ToString();
             if (!GraphStaticNodeUtility.IsStaticGraphNode(node))
                 node.LayerId = ResolveActiveLayerId();
+            ClearPastedNodeLayerReferences(node);
             node.EditorPosition = graphPosition;
 
             var view = new GeneratorNodeView(node);
@@ -1967,7 +1972,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         OriginalNodeId = nodeView.NodeData.NodeId,
                         NodeType = nodeView.NodeData.GetType(),
                         Position = new Vector2(rect.x, rect.y),
-                        JsonData = SanitizeSerializedNodeJsonForClipboard(EditorJsonUtility.ToJson(nodeView.NodeData))
+                        JsonData = EditorJsonUtility.ToJson(nodeView.NodeData)
                     });
                 }
             }
@@ -2011,6 +2016,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var existingOutput = _graphAsset.GetNodesForLayer(targetLayerId)
                 .OfType<OutputNode>()
                 .FirstOrDefault();
+            int failedNodes = 0;
+            string firstPasteError = null;
 
             foreach (var data in _copyBuffer)
             {
@@ -2026,10 +2033,18 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (node == null) continue;
 
                 // Apply serialized data (preserving field values)
-                EditorJsonUtility.FromJsonOverwrite(data.JsonData, node);
+                if (!TryOverwriteSerializedNodeData(data.JsonData, node, out string pasteError))
+                {
+                    failedNodes++;
+                    firstPasteError ??= pasteError;
+                    _graphAsset.RemoveNode(node);
+                    continue;
+                }
+
                 // Reset ID so it's unique
                 node.NodeId = Guid.NewGuid().ToString();
                 node.LayerId = targetLayerId;
+                ClearPastedNodeLayerReferences(node);
                 node.EditorPosition = data.Position + offset;
                 if (!string.IsNullOrEmpty(oldId))
                     idMap[oldId] = node.NodeId;
@@ -2040,6 +2055,18 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 view.SetPreviewVisible(_inlinePreviewsVisible);
                 AddToSelection(view);
                 newViews.Add(view);
+            }
+
+            if (newViews.Count == 0)
+            {
+                if (failedNodes > 0)
+                {
+                    string message = $"Не вдалося вставити ноди: {firstPasteError}";
+                    Debug.LogWarning($"[GeneratorGraphView] {message}");
+                    StatusMessage?.Invoke(message);
+                }
+
+                return;
             }
 
             var copiedIds = new HashSet<string>(idMap.Keys);
@@ -2072,7 +2099,70 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _graphAsset.RemoveInvalidConnections();
             _graphAsset.EnsureLayerGraphStates();
             TryConnectPastedTerminalToLayerOutput(targetLayerId, newViews);
+
+            if (failedNodes > 0)
+            {
+                string message = $"Вставлено {newViews.Count} нод, пропущено {failedNodes}: {firstPasteError}";
+                Debug.LogWarning($"[GeneratorGraphView] {message}");
+                StatusMessage?.Invoke(message);
+            }
+            else
+            {
+                StatusMessage?.Invoke($"Вставлено {newViews.Count} нод.");
+            }
+
             GraphChanged?.Invoke();
+        }
+
+        private static bool TryOverwriteSerializedNodeData(string jsonData, NodeBase node, out string error)
+        {
+            error = null;
+            if (node == null || string.IsNullOrWhiteSpace(jsonData))
+                return true;
+
+            if (TryOverwriteSerializedNodeDataRaw(jsonData, node, out error))
+                return true;
+
+            string sanitized = SanitizeSerializedNodeJsonForClipboard(jsonData);
+            if (!string.Equals(sanitized, jsonData, StringComparison.Ordinal)
+                && TryOverwriteSerializedNodeDataRaw(sanitized, node, out error))
+            {
+                return true;
+            }
+
+            error = string.IsNullOrWhiteSpace(error)
+                ? "serialized node JSON is invalid."
+                : error;
+            return false;
+        }
+
+        private static bool TryOverwriteSerializedNodeDataRaw(string jsonData, NodeBase node, out string error)
+        {
+            error = null;
+            try
+            {
+                EditorJsonUtility.FromJsonOverwrite(jsonData, node);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
+            }
+        }
+
+        private static void ClearPastedNodeLayerReferences(NodeBase node)
+        {
+            if (node == null)
+                return;
+
+            var serialized = new SerializedObject(node);
+            var targetLayerProperty = serialized.FindProperty("_targetGraphLayerId");
+            if (targetLayerProperty == null || targetLayerProperty.propertyType != SerializedPropertyType.String)
+                return;
+
+            targetLayerProperty.stringValue = string.Empty;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private void TryConnectPastedTerminalToLayerOutput(string targetLayerId, IReadOnlyList<GeneratorNodeView> newViews)

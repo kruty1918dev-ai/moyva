@@ -96,7 +96,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 var layerDef = orderedLayers[layerIndex];
                 var blueprint = FindLayerByGuid(existingLayers, layerDef.BlueprintLayerGuid)
                                 ?? FindLayerByName(existingLayers, layerDef.Name)
-                                ?? manager.AddNewBlueprintLayer(layerDef.Name);
+                                ?? CreateBlueprintLayer(config, layerDef.Name);
                 if (blueprint == null)
                     continue;
 
@@ -248,6 +248,71 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (config.blueprintLayerFolders.Count == 0)
                 config.blueprintLayerFolders.Add(new BlueprintLayerFolder("Root"));
+        }
+
+        private static BlueprintLayer CreateBlueprintLayer(Configuration config, string layerName)
+        {
+            if (config == null)
+                return null;
+
+            EnsureRootFolder(config);
+
+            var layer = ScriptableObject.CreateInstance<BlueprintLayer>();
+            layer.layerName = layerName;
+            layer.hideFlags = IsPersistentAsset(config)
+                ? HideFlags.HideInHierarchy
+                : HideFlags.HideAndDontSave;
+
+#if UNITY_EDITOR
+            if (IsPersistentAsset(config))
+            {
+                UnityEditor.AssetDatabase.AddObjectToAsset(layer, config);
+                var serializedObject = new UnityEditor.SerializedObject(config);
+                serializedObject.ApplyModifiedProperties();
+                serializedObject.Update();
+            }
+#endif
+
+            config.blueprintLayerFolders[0].blueprintLayers.Add(layer);
+            return layer;
+        }
+
+        private static T CreateBuildLayer<T>(Configuration config, string layerName) where T : BuildLayer
+        {
+            if (config == null)
+                return null;
+
+            config.buildLayerFolders ??= new List<BuildLayerFolder>();
+            if (config.buildLayerFolders.Count == 0)
+                config.buildLayerFolders.Add(new BuildLayerFolder("Root"));
+
+            var layer = ScriptableObject.CreateInstance<T>();
+            layer.layerName = layerName;
+            layer.hideFlags = IsPersistentAsset(config)
+                ? HideFlags.HideInHierarchy
+                : HideFlags.HideAndDontSave;
+
+#if UNITY_EDITOR
+            if (IsPersistentAsset(config))
+            {
+                UnityEditor.AssetDatabase.AddObjectToAsset(layer, config);
+                var serializedObject = new UnityEditor.SerializedObject(config);
+                serializedObject.ApplyModifiedProperties();
+                serializedObject.Update();
+            }
+#endif
+
+            config.buildLayerFolders[0].buildLayers.Add(layer);
+            return layer;
+        }
+
+        private static bool IsPersistentAsset(UnityEngine.Object obj)
+        {
+#if UNITY_EDITOR
+            return obj != null && UnityEditor.AssetDatabase.Contains(obj);
+#else
+            return false;
+#endif
         }
 
         private static List<BlueprintLayer> GetAllBlueprintLayers(Configuration config)
@@ -869,7 +934,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 }
 
                 if (buildLayer == null)
-                    buildLayer = manager.AddNewBuildLayer<TilesBuildLayer>(layerDef.Name);
+                    buildLayer = CreateBuildLayer<TilesBuildLayer>(config, layerDef.Name);
 
                 TileSettingsNode.ApplyNodesToBuildLayer(buildLayer, tileNodes, config, blueprint, layerDef);
 

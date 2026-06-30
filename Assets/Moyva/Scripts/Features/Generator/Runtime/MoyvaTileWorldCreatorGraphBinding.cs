@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 		[SerializeField] private int _editorSeed = 1;
 		[SerializeField] private bool _compileBeforeGenerate = true;
 		[SerializeField] private bool _generateBuildLayersAfterCompile = true;
+		private bool _isGenerating;
 
 		public TileWorldCreatorManager Manager
 		{

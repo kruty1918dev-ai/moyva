@@ -2,7 +2,8 @@
     "name": "Kruty1918.Moyva.GraphSystem",
     "rootNamespace": "Kruty1918.Moyva.GraphSystem",
     "references": [
-        "Kruty1918.Moyva.Grid"
+        "Kruty1918.Moyva.Grid",
+        "Sirenix.OdinInspector.Attributes"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

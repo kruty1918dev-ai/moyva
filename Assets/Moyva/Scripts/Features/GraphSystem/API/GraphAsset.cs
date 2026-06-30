@@ -9,20 +9,25 @@ namespace Kruty1918.Moyva.GraphSystem.API
     [CreateAssetMenu(menuName = "Moyva/Generator/Graph Asset", fileName = "NewGeneratorGraph")]
     public sealed class GraphAsset : ScriptableObject
     {
-        [SerializeField] private List<NodeBase> _nodes = new();
-        [SerializeField] private List<Connection> _connections = new();
-        [SerializeField] private int _version = 2;
+        [HideInInspector, SerializeField] private List<NodeBase> _nodes = new();
+        [HideInInspector, SerializeField] private List<Connection> _connections = new();
+        [HideInInspector, SerializeField] private int _version = 2;
 
+        [Sirenix.OdinInspector.TitleGroup("Graph Settings")]
+        [Sirenix.OdinInspector.InlineProperty]
         [SerializeField] private GraphSharedSettings _sharedSettings = new();
-        [SerializeField] private LayerGraphState _globalGraphState = new(string.Empty);
+        [HideInInspector, SerializeField] private LayerGraphState _globalGraphState = new(string.Empty);
 
         [Header("Layers")]
         [Tooltip("Шари генератора. Кожен шар має власний підграф і компілюється в blueprint-шар TileWorldCreator.")]
+        [Sirenix.OdinInspector.TitleGroup("Layers")]
+        [Sirenix.OdinInspector.TableList(AlwaysExpanded = true, DrawScrollView = false)]
         [SerializeField] private List<GeneratorLayerDefinition> _layers = new();
-        [SerializeField] private List<LayerGraphState> _layerGraphStates = new();
+        [HideInInspector, SerializeField] private List<LayerGraphState> _layerGraphStates = new();
 
         [Header("Tile Registry")]
         [Tooltip("Реєстр тайлів цього графа.")]
+        [Sirenix.OdinInspector.TitleGroup("Tile Registry")]
         [SerializeField] private TileRegistrySO _tileRegistry;
 
         public IReadOnlyList<NodeBase> Nodes => _nodes;

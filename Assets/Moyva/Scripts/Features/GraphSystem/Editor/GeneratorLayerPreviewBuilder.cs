@@ -8,12 +8,7 @@ using UnityEngine;
 namespace Kruty1918.Moyva.GraphSystem.Editor
 {
     /// <summary>
-    /// Будує превʼю шарів генератора без сцени/RenderTexture (CPU-рендер),
-    /// тому не тягне типи TileWorldCreator у GraphSystem.Editor:
-    /// <list type="bullet">
-    /// <item>матриця кожного шару як кольорова мініатюра (принцип blueprint-preview з TWC);</item>
-    /// <item>складений ізометричний 3D-вид (стек шарів за SortingOrder) у 2D-текстуру.</item>
-    /// </list>
+    /// Будує превʼю шарів генератора без сцени/RenderTexture (CPU-рендер).
     /// </summary>
     internal static class GeneratorLayerPreviewBuilder
     {
@@ -134,6 +129,61 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return tex;
         }
 
+        public static Texture2D BuildTopDownComposite(
+            GraphAsset graph,
+            Dictionary<string, bool[,]> matrices,
+            int width,
+            int height,
+            IReadOnlyDictionary<string, Color> layerColorOverrides,
+            out string[,] tileMap)
+        {
+            tileMap = null;
+            if (graph == null || matrices == null || matrices.Count == 0 || width <= 0 || height <= 0)
+                return null;
+
+            var layers = graph.Layers
+                .Where(l => l != null && l.Enabled && matrices.ContainsKey(l.Id))
+                .OrderBy(l => l.SortingOrder)
+                .ToList();
+            if (layers.Count == 0)
+                return null;
+
+            tileMap = new string[width, height];
+            var colors = new Color[width * height];
+            var background = new Color(0.035f, 0.04f, 0.055f, 1f);
+            for (int i = 0; i < colors.Length; i++)
+                colors[i] = background;
+
+            for (int layerIndex = 0; layerIndex < layers.Count; layerIndex++)
+            {
+                var layer = layers[layerIndex];
+                var matrix = matrices[layer.Id];
+                int matrixWidth = matrix.GetLength(0);
+                int matrixHeight = matrix.GetLength(1);
+                int drawWidth = Mathf.Min(width, matrixWidth);
+                int drawHeight = Mathf.Min(height, matrixHeight);
+                Color color = ResolveLayerPreviewColor(layer, layerColorOverrides);
+                string tileLabel = !string.IsNullOrWhiteSpace(layer.Name) ? layer.Name : layer.Id;
+
+                for (int x = 0; x < drawWidth; x++)
+                {
+                    for (int y = 0; y < drawHeight; y++)
+                    {
+                        if (!matrix[x, y])
+                            continue;
+
+                        colors[y * width + x] = color;
+                        tileMap[x, y] = tileLabel;
+                    }
+                }
+            }
+
+            var tex = NewTexture(width, height);
+            tex.SetPixels(colors);
+            tex.Apply(false, false);
+            return tex;
+        }
+
         /// <summary>
         /// Складений ізометричний 3D-вид усіх шарів у 2D-текстуру.
         /// Кожна клітинка малюється як ізометричний кубик: верхній ромб (колір
@@ -141,6 +191,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         /// </summary>
         public static Texture2D BuildIsometricComposite(
             GraphAsset graph, Dictionary<string, bool[,]> matrices, int width, int height)
+        {
+            return BuildIsometricComposite(graph, matrices, width, height, null);
+        }
+
+        public static Texture2D BuildIsometricComposite(
+            GraphAsset graph,
+            Dictionary<string, bool[,]> matrices,
+            int width,
+            int height,
+            IReadOnlyDictionary<string, Color> layerColorOverrides)
         {
             if (graph == null || matrices == null || matrices.Count == 0 || width <= 0 || height <= 0)
                 return null;
@@ -192,7 +252,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                             BaseLevel = baseLevel,
                             VisualHeight = visualHeight,
                             SortingOrder = layer.SortingOrder,
-                            Color = layer.Color
+                            Color = ResolveLayerPreviewColor(layer, layerColorOverrides)
                         });
                     }
                 }
@@ -230,6 +290,21 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             tex.SetPixels(pixels);
             tex.Apply(false, false);
             return tex;
+        }
+
+        private static Color ResolveLayerPreviewColor(
+            GeneratorLayerDefinition layer,
+            IReadOnlyDictionary<string, Color> layerColorOverrides)
+        {
+            if (layer != null
+                && layerColorOverrides != null
+                && layerColorOverrides.TryGetValue(layer.Id, out var color))
+            {
+                color.a = Mathf.Approximately(color.a, 0f) ? 1f : color.a;
+                return color;
+            }
+
+            return layer != null ? layer.Color : Color.white;
         }
 
         private sealed class IsoCell

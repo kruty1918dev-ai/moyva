@@ -23,11 +23,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             Vector2Int mapSize,
             ISet<string> skippedLayerIds,
             out Dictionary<string, bool[,]> matrices,
+            out Dictionary<string, Color> layerPreviewColors,
             out int width,
             out int height,
             out string status)
         {
             matrices = new Dictionary<string, bool[,]>();
+            layerPreviewColors = new Dictionary<string, Color>();
             width = Mathf.Max(1, mapSize.x);
             height = Mathf.Max(1, mapSize.y);
             status = null;
@@ -40,11 +42,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             Configuration config = null;
             GameObject go = null;
+            var layerState = CaptureLayerState(graph);
             try
             {
-                config = ScriptableObject.CreateInstance<Configuration>();
-                config.name = graph.name + "_SceneParityPreview";
-                config.hideFlags = HideFlags.HideAndDontSave;
+                config = CreateTransientPreviewConfiguration(graph);
 
                 go = EditorUtility.CreateGameObjectWithHideFlags(
                     "__MoyvaSceneParityPreview",
@@ -62,11 +63,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     skippedLayerIds,
                     safeMapSize);
 
-                TileWorldCreatorLayerOcclusionOptimizer.GenerateCompleteMap(manager);
-                BuildMatricesFromBlueprints(graph, manager, compiled, safeMapSize, matrices);
+                TileWorldCreatorLayerOcclusionOptimizer.GenerateBlueprintMap(manager);
+                var logicalMap = GraphLogicalTileMapBuilder.Build(
+                    graph,
+                    manager,
+                    compiled,
+                    safeMapSize.x,
+                    safeMapSize.y);
+                GraphLogicalTileMapDiagnostics.EmitAndCompare(
+                    "Preview mask",
+                    graph,
+                    seed,
+                    logicalMap);
+                matrices = logicalMap.BuildLayerMatrices();
+                BuildLayerPreviewColors(graph, manager, compiled, layerPreviewColors);
 
                 status = matrices.Count > 0
-                    ? "Scene parity preview"
+                    ? "Final scene grid parity preview"
                     : "Scene parity preview has no renderable tile layers.";
                 return true;
             }
@@ -77,6 +90,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
             finally
             {
+                EditorUtility.ClearProgressBar();
+                RestoreLayerState(layerState);
                 if (go != null)
                     Object.DestroyImmediate(go);
                 if (config != null)
@@ -84,18 +99,87 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
         }
 
-        private static void BuildMatricesFromBlueprints(
+        private static Configuration CreateTransientPreviewConfiguration(GraphAsset graph)
+        {
+            string graphName = string.IsNullOrWhiteSpace(graph?.name)
+                ? "Graph"
+                : SanitizeAssetName(graph.name);
+
+            var config = ScriptableObject.CreateInstance<Configuration>();
+            config.name = graphName + "_SceneParityPreview";
+            config.hideFlags = HideFlags.HideAndDontSave;
+            return config;
+        }
+
+        private static List<LayerState> CaptureLayerState(GraphAsset graph)
+        {
+            var result = new List<LayerState>();
+            if (graph?.Layers == null)
+                return result;
+
+            foreach (var layer in graph.Layers)
+            {
+                if (layer == null)
+                    continue;
+
+                result.Add(new LayerState
+                {
+                    Layer = layer,
+                    BlueprintLayerGuid = layer.BlueprintLayerGuid,
+                    BuildLayerKey = layer.BuildLayerKey
+                });
+            }
+
+            return result;
+        }
+
+        private static void RestoreLayerState(List<LayerState> states)
+        {
+            if (states == null)
+                return;
+
+            for (int i = 0; i < states.Count; i++)
+            {
+                var state = states[i];
+                if (state.Layer == null)
+                    continue;
+
+                state.Layer.BlueprintLayerGuid = state.BlueprintLayerGuid;
+                state.Layer.BuildLayerKey = state.BuildLayerKey;
+            }
+        }
+
+        private static string SanitizeAssetName(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return "Graph";
+
+            var invalid = System.IO.Path.GetInvalidFileNameChars();
+            var chars = value.ToCharArray();
+            for (int i = 0; i < chars.Length; i++)
+            {
+                if (Array.IndexOf(invalid, chars[i]) >= 0)
+                    chars[i] = '_';
+            }
+
+            return new string(chars);
+        }
+
+        private sealed class LayerState
+        {
+            public GeneratorLayerDefinition Layer;
+            public string BlueprintLayerGuid;
+            public string BuildLayerKey;
+        }
+
+        private static void BuildLayerPreviewColors(
             GraphAsset graph,
             TileWorldCreatorManager manager,
             IReadOnlyList<CompiledLayerMap> compiled,
-            Vector2Int mapSize,
-            Dictionary<string, bool[,]> matrices)
+            Dictionary<string, Color> layerPreviewColors)
         {
-            if (graph == null || manager == null || compiled == null || matrices == null)
+            if (graph == null || manager == null || compiled == null || layerPreviewColors == null)
                 return;
-
-            int width = Mathf.Max(1, mapSize.x);
-            int height = Mathf.Max(1, mapSize.y);
 
             for (int i = 0; i < compiled.Count; i++)
             {
@@ -110,25 +194,216 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (layer == null || !layer.Enabled)
                     continue;
 
-                var blueprint = manager.GetBlueprintLayerByGuid(layerMap.BlueprintLayerGuid);
-                if (blueprint?.allPositions == null || blueprint.allPositions.Count == 0)
+                var buildLayer = FindTilesBuildLayer(manager.configuration, layerMap.BlueprintLayerGuid);
+                if (buildLayer == null || !buildLayer.isEnabled)
                     continue;
 
-                var matrix = new bool[width, height];
-                bool any = false;
-                foreach (var position in blueprint.allPositions)
+                if (layerPreviewColors != null)
+                    layerPreviewColors[layerMap.GraphLayerId] = ResolveBuildLayerPreviewColorSafe(buildLayer, layer.Color);
+            }
+        }
+
+        private static TilesBuildLayer FindTilesBuildLayer(Configuration configuration, string blueprintLayerGuid)
+        {
+            if (configuration?.buildLayerFolders == null || string.IsNullOrWhiteSpace(blueprintLayerGuid))
+                return null;
+
+            for (int folderIndex = 0; folderIndex < configuration.buildLayerFolders.Count; folderIndex++)
+            {
+                var folder = configuration.buildLayerFolders[folderIndex];
+                if (folder?.buildLayers == null)
+                    continue;
+
+                for (int layerIndex = 0; layerIndex < folder.buildLayers.Count; layerIndex++)
                 {
-                    int x = Mathf.RoundToInt(position.x);
-                    int y = Mathf.RoundToInt(position.y);
-                    if (x < 0 || x >= width || y < 0 || y >= height)
+                    if (folder.buildLayers[layerIndex] is not TilesBuildLayer buildLayer)
                         continue;
 
-                    matrix[x, y] = true;
-                    any = true;
+                    if (string.Equals(buildLayer.assignedBlueprintLayerGuid, blueprintLayerGuid, StringComparison.Ordinal)
+                        || string.Equals(buildLayer.currentBlueprintLayer?.guid, blueprintLayerGuid, StringComparison.Ordinal))
+                    {
+                        return buildLayer;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static Color ResolveBuildLayerPreviewColor(TilesBuildLayer buildLayer, Color fallback)
+        {
+            if (buildLayer == null)
+                return fallback;
+
+            if (buildLayer.generateFlatSurface
+                && TryResolveMaterialColor(buildLayer.flatSurfaceMaterial, out var flatColor))
+            {
+                return flatColor;
+            }
+
+            if (TryResolvePresetListColor(buildLayer.tilePresetsTop, out var topColor)
+                || TryResolvePresetListColor(buildLayer.tilePresetsMiddle, out topColor)
+                || TryResolvePresetListColor(buildLayer.tilePresetsBottom, out topColor))
+            {
+                return topColor;
+            }
+
+            return fallback;
+        }
+
+        private static Color ResolveBuildLayerPreviewColorSafe(TilesBuildLayer buildLayer, Color fallback)
+        {
+            try
+            {
+                return ResolveBuildLayerPreviewColor(buildLayer, fallback);
+            }
+            catch (Exception)
+            {
+                fallback.a = Mathf.Approximately(fallback.a, 0f) ? 1f : fallback.a;
+                return fallback;
+            }
+        }
+
+        private static bool TryResolvePresetListColor(
+            IReadOnlyList<TilesBuildLayer.TilePresetSelection> selections,
+            out Color color)
+        {
+            color = default;
+            if (selections == null || selections.Count == 0)
+                return false;
+
+            TilesBuildLayer.TilePresetSelection best = null;
+            for (int i = 0; i < selections.Count; i++)
+            {
+                var selection = selections[i];
+                if (selection?.preset == null)
+                    continue;
+
+                if (best == null || selection.weight > best.weight)
+                    best = selection;
+            }
+
+            return best?.preset != null && TryResolvePresetColor(best.preset, out color);
+        }
+
+        private static bool TryResolvePresetColor(TilePreset preset, out Color color)
+        {
+            color = default;
+            if (preset == null)
+                return false;
+
+            if (TryResolveMaterialColor(preset.GetMaterialOverride(), out color))
+                return true;
+
+            if (TryResolveTextureAverageColor(preset.previewThumbnail, out color))
+                return true;
+
+            var prefab = ResolveRepresentativePrefab(preset);
+            if (prefab == null)
+                return false;
+
+            var renderer = prefab.GetComponentInChildren<Renderer>(true);
+            if (renderer == null)
+                return false;
+
+            var materials = renderer.sharedMaterials;
+            if (materials != null)
+            {
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    if (TryResolveMaterialColor(materials[i], out color))
+                        return true;
+                }
+            }
+
+            return TryResolveMaterialColor(renderer.sharedMaterial, out color);
+        }
+
+        private static GameObject ResolveRepresentativePrefab(TilePreset preset)
+        {
+            if (preset == null)
+                return null;
+
+            return preset.gridtype == TilePreset.GridType.dual
+                ? preset.DUALGRD_fillTile
+                  ?? preset.DUALGRD_edgeTile
+                  ?? preset.DUALGRD_cornerTile
+                  ?? preset.DUALGRD_invertedCornerTile
+                  ?? preset.DUALGRD_doubleInteriorCornerTile
+                : preset.NRMGRD_fillTile
+                  ?? preset.NRMGRD_singleTile
+                  ?? preset.NRMGRD_fourWayTile
+                  ?? preset.NRMGRD_edgeFillTile
+                  ?? preset.NRMGRD_cornerFillTile
+                  ?? preset.NRMGRD_interiorCornerTile
+                  ?? preset.NRMGRD_deadEndTile;
+        }
+
+        private static bool TryResolveMaterialColor(Material material, out Color color)
+        {
+            color = default;
+            if (material == null)
+                return false;
+
+            if (material.HasProperty("_BaseColor"))
+            {
+                color = material.GetColor("_BaseColor");
+                color.a = 1f;
+                return true;
+            }
+
+            if (material.HasProperty("_Color"))
+            {
+                color = material.GetColor("_Color");
+                color.a = 1f;
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryResolveTextureAverageColor(Texture2D texture, out Color color)
+        {
+            color = default;
+            if (texture == null)
+                return false;
+
+            try
+            {
+                var pixels = texture.GetPixels32();
+                if (pixels == null || pixels.Length == 0)
+                    return false;
+
+                double r = 0d;
+                double g = 0d;
+                double b = 0d;
+                double weight = 0d;
+                for (int i = 0; i < pixels.Length; i++)
+                {
+                    var pixel = pixels[i];
+                    if (pixel.a <= 8)
+                        continue;
+
+                    double alpha = pixel.a / 255d;
+                    r += pixel.r * alpha;
+                    g += pixel.g * alpha;
+                    b += pixel.b * alpha;
+                    weight += alpha;
                 }
 
-                if (any)
-                    matrices[layerMap.GraphLayerId] = matrix;
+                if (weight <= 0.0001d)
+                    return false;
+
+                color = new Color(
+                    (float)(r / weight / 255d),
+                    (float)(g / weight / 255d),
+                    (float)(b / weight / 255d),
+                    1f);
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
     }

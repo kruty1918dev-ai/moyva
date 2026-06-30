@@ -28,12 +28,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (manager == null || manager.configuration == null)
                 return default;
 
-            manager.ExecuteBlueprintLayers();
-            var result = CullOccludedTileCells(manager.configuration);
+            var result = GenerateBlueprintMap(manager);
             LogOcclusionResult(result, "GenerateCompleteMap");
             manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
             manager.OnMapReady?.Invoke();
             return result;
+        }
+
+        public static TileWorldCreatorLayerOcclusionResult GenerateBlueprintMap(TileWorldCreatorManager manager)
+        {
+            if (manager == null || manager.configuration == null)
+                return default;
+
+            manager.ExecuteBlueprintLayers();
+            return CullOccludedTileCells(manager.configuration);
         }
 
         public static TileWorldCreatorLayerOcclusionResult CullOccludedTileCells(Configuration configuration)

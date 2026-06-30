@@ -12,28 +12,35 @@ namespace Kruty1918.Moyva.GraphSystem.API
     [Serializable]
     public sealed class GeneratorLayerDefinition
     {
+        [Sirenix.OdinInspector.ReadOnly]
         [SerializeField] private string _id;
+        [Sirenix.OdinInspector.Required]
         [SerializeField] private string _name = "Layer";
         [SerializeField] private Color _color = Color.white;
         [SerializeField] private int _sortingOrder;
         [SerializeField] private bool _enabled = true;
         [SerializeField] private float _defaultHeight;
         [SerializeField] private bool _useZeroLayerPadding;
+        [Min(0)]
         [SerializeField] private int _extraWidthCells;
+        [Min(0)]
         [SerializeField] private int _extraLengthCells;
         [SerializeField] private bool _generateFlatSurface;
+        [Sirenix.OdinInspector.ShowIf(nameof(_generateFlatSurface))]
         [SerializeField] private Material _flatSurfaceMaterial;
 
         /// <summary>
         /// Опціональний TilePreset/біулд-маркер для зв'язку шару з візуалом TWC.
         /// Зберігаємо як ім'я мапінгу, щоб не тягнути типи TWC у GraphSystem.
         /// </summary>
+        [Sirenix.OdinInspector.ReadOnly]
         [SerializeField] private string _buildLayerKey;
 
         /// <summary>
         /// Стабільний зв'язок із BlueprintLayer у companion TileWorldCreator Configuration.
         /// GraphAsset.Layers залишаються джерелом правди, а BlueprintLayer є їхньою проєкцією.
         /// </summary>
+        [Sirenix.OdinInspector.ReadOnly]
         [SerializeField] private string _blueprintLayerGuid;
 
         public GeneratorLayerDefinition()

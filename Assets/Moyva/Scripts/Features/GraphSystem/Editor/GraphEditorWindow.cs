@@ -15,6 +15,8 @@ using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.GraphSystem.Runtime;
+using Sirenix.OdinInspector;
+using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -36,6 +38,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             public int GridWidth;
             public int GridHeight;
             public bool HasGridSize;
+            public int TwcConfigurationWidth;
+            public int TwcConfigurationHeight;
+            public bool HasTwcConfigurationSize;
             public string Source;
         }
 
@@ -129,6 +134,252 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
         }
 
+        private sealed class GraphEditorWindowOdinSettings
+        {
+            private readonly GraphEditorWindow _window;
+
+            [TitleGroup("Editor Preview")]
+            [LabelText("Preview Settings")]
+            [AssetsOnly]
+            public EditorPreviewSettings PreviewSettings;
+
+            [TitleGroup("Editor Preview")]
+            [MinValue(4)]
+            [LabelText("Preview Width")]
+            public int PreviewWidth = 64;
+
+            [TitleGroup("Editor Preview")]
+            [MinValue(4)]
+            [LabelText("Preview Height")]
+            public int PreviewHeight = 64;
+
+            [TitleGroup("Editor Preview")]
+            [LabelText("Inline Previews")]
+            public bool ShowInlinePreviews;
+
+            [TitleGroup("Editor Preview")]
+            [LabelText("Heatmap")]
+            public bool PreviewHeatmap;
+
+            [TitleGroup("Editor Preview")]
+            [LabelText("Auto Run")]
+            public bool AutoRunOnChange;
+
+            [TitleGroup("Editor Preview")]
+            [LabelText("Preview Resolution")]
+            [ValueDropdown(nameof(PreviewResolutionOptions))]
+            public int PreviewResolution = 1;
+
+            private static IEnumerable<ValueDropdownItem<int>> PreviewResolutionOptions()
+            {
+                yield return new ValueDropdownItem<int>("64", 0);
+                yield return new ValueDropdownItem<int>("128", 1);
+                yield return new ValueDropdownItem<int>("Full", 2);
+            }
+
+            public GraphEditorWindowOdinSettings(GraphEditorWindow window)
+            {
+                _window = window;
+            }
+
+            public void PullFromWindow()
+            {
+                if (_window == null)
+                    return;
+
+                PreviewSettings = _window._previewSettings;
+                PreviewWidth = Mathf.Max(4, _window._previewWidth);
+                PreviewHeight = Mathf.Max(4, _window._previewHeight);
+                ShowInlinePreviews = _window._showInlinePreviews;
+                PreviewHeatmap = _window._previewHeatmap;
+                AutoRunOnChange = _window._autoRunOnChange;
+                PreviewResolution = Mathf.Clamp(_window._previewResolution, 0, 2);
+            }
+
+            public void ApplyToWindow()
+            {
+                if (_window == null)
+                    return;
+
+                bool previewSettingsChanged = _window._previewSettings != PreviewSettings;
+                bool textureSettingsChanged =
+                    _window._previewWidth != Mathf.Max(4, PreviewWidth)
+                    || _window._previewHeight != Mathf.Max(4, PreviewHeight)
+                    || _window._previewHeatmap != PreviewHeatmap
+                    || _window._previewResolution != Mathf.Clamp(PreviewResolution, 0, 2);
+                bool inlineVisibilityChanged = _window._showInlinePreviews != ShowInlinePreviews;
+
+                _window._previewSettings = PreviewSettings;
+                if (_window._previewSettings != null)
+                {
+                    var path = AssetDatabase.GetAssetPath(_window._previewSettings);
+                    _window._previewSettingsGuid = AssetDatabase.AssetPathToGUID(path);
+                }
+                else
+                {
+                    _window._previewSettingsGuid = null;
+                }
+
+                _window._previewWidth = Mathf.Max(4, PreviewWidth);
+                _window._previewHeight = Mathf.Max(4, PreviewHeight);
+                _window._showInlinePreviews = ShowInlinePreviews;
+                _window._previewHeatmap = PreviewHeatmap;
+                _window._autoRunOnChange = AutoRunOnChange;
+                _window._previewResolution = Mathf.Clamp(PreviewResolution, 0, 2);
+
+                if (previewSettingsChanged)
+                    _window.SaveWindowSettings();
+
+                if (inlineVisibilityChanged)
+                {
+                    _window._graphView?.SetInlinePreviewsVisible(_window._showInlinePreviews);
+                    _window.RefreshNodePreviewsFromLastResult();
+                }
+
+                if (textureSettingsChanged)
+                    _window.RequestAutoRun();
+            }
+        }
+
+        private sealed class SelectedLayerOdinSettings
+        {
+            private readonly GraphEditorWindow _window;
+
+            [Required]
+            [TitleGroup("Layer Settings")]
+            public string Name = "Layer";
+
+            [TitleGroup("Layer Settings")]
+            public int SortingOrder;
+
+            [TitleGroup("Layer Settings")]
+            public bool Enabled = true;
+
+            [TitleGroup("Layer Settings")]
+            public Color Color = Color.white;
+
+            [TitleGroup("Generation")]
+            public float DefaultHeight;
+
+            [TitleGroup("Generation")]
+            [LabelText("Zero Layer Padding (+16)")]
+            public bool UseZeroLayerPadding;
+
+            [TitleGroup("Generation")]
+            [MinValue(0)]
+            public int ExtraWidthCells;
+
+            [TitleGroup("Generation")]
+            [MinValue(0)]
+            public int ExtraLengthCells;
+
+            [TitleGroup("Flat Surface")]
+            public bool GenerateFlatSurface;
+
+            [TitleGroup("Flat Surface")]
+            [ShowIf(nameof(GenerateFlatSurface))]
+            [AssetsOnly]
+            public Material FlatSurfaceMaterial;
+
+            [ShowInInspector, ReadOnly]
+            [TitleGroup("Generated Links")]
+            public string BuildLayerKey { get; private set; }
+
+            [ShowInInspector, ReadOnly]
+            [TitleGroup("Generated Links")]
+            public string BlueprintLayerGuid { get; private set; }
+
+            public SelectedLayerOdinSettings(GraphEditorWindow window)
+            {
+                _window = window;
+            }
+
+            public void PullFromLayer(GeneratorLayerDefinition layer)
+            {
+                if (layer == null)
+                    return;
+
+                Name = layer.Name;
+                SortingOrder = layer.SortingOrder;
+                Enabled = layer.Enabled;
+                Color = layer.Color;
+                DefaultHeight = layer.DefaultHeight;
+                UseZeroLayerPadding = layer.UseZeroLayerPadding;
+                ExtraWidthCells = layer.ExtraWidthCells;
+                ExtraLengthCells = layer.ExtraLengthCells;
+                GenerateFlatSurface = layer.GenerateFlatSurface;
+                FlatSurfaceMaterial = layer.FlatSurfaceMaterial;
+                BuildLayerKey = string.IsNullOrEmpty(layer.BuildLayerKey)
+                    ? "(буде призначено після синхронізації Build-шарів)"
+                    : layer.BuildLayerKey;
+                BlueprintLayerGuid = layer.BlueprintLayerGuid;
+            }
+
+            public void ApplyToLayer(GeneratorLayerDefinition layer)
+            {
+                if (_window?._graphAsset == null || layer == null)
+                    return;
+
+                Undo.RecordObject(_window._graphAsset, "Edit Layer Settings");
+                layer.Name = string.IsNullOrWhiteSpace(Name) ? "Layer" : Name;
+                layer.SortingOrder = SortingOrder;
+                layer.Enabled = Enabled;
+                layer.Color = Color;
+                layer.DefaultHeight = DefaultHeight;
+                layer.UseZeroLayerPadding = UseZeroLayerPadding;
+                layer.ExtraWidthCells = Mathf.Max(0, ExtraWidthCells);
+                layer.ExtraLengthCells = Mathf.Max(0, ExtraLengthCells);
+                layer.GenerateFlatSurface = GenerateFlatSurface;
+                layer.FlatSurfaceMaterial = FlatSurfaceMaterial;
+
+                EditorUtility.SetDirty(_window._graphAsset);
+                _window.TrySyncCompanionBlueprintLayers(false);
+                _window.RebuildLayerList();
+                _window.RefreshGraphViewFromAsset();
+                _window.RequestAutoRun();
+            }
+        }
+
+        private sealed class GraphValidationOdinActions
+        {
+            private readonly GraphEditorWindow _window;
+
+            public GraphValidationOdinActions(GraphEditorWindow window)
+            {
+                _window = window;
+            }
+
+            [ShowInInspector, ReadOnly, HorizontalGroup("Counts")]
+            [LabelText("Errors")]
+            public int ErrorCount => _window?._lastValidationReport?.ErrorCount ?? 0;
+
+            [ShowInInspector, ReadOnly, HorizontalGroup("Counts")]
+            [LabelText("Warnings")]
+            public int WarningCount => _window?._lastValidationReport?.WarningCount ?? 0;
+
+            [ShowInInspector, ReadOnly, HorizontalGroup("Counts")]
+            [LabelText("Issues")]
+            public int IssueCount => _window?._lastValidationReport?.Issues.Count ?? 0;
+
+            [Button("Validate", ButtonSizes.Medium), HorizontalGroup("Actions")]
+            private void Validate()
+            {
+                _window?.ValidateGraph();
+            }
+
+            [Button("Auto Fix", ButtonSizes.Medium), HorizontalGroup("Actions")]
+            private void AutoFix()
+            {
+                _window?.ApplyValidationAutoFix();
+            }
+
+            [Button("Clean", ButtonSizes.Medium), HorizontalGroup("Actions")]
+            private void Clean()
+            {
+                _window?.CleanGraph();
+            }
+        }
+
         private GeneratorGraphView _graphView;
         private VisualElement _contentContainer;
         private ScrollView _rightPanel;
@@ -138,12 +389,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         [SerializeField] private string _selectedLayerId;
         private bool _focusSelectedLayerRowAfterRebuild;
         private GraphExecutionResult _lastResult;
+        private Vector2Int _lastExecutionMapSize = new Vector2Int(50, 50);
         private Texture2D _layerCompositeTexture;
         private readonly List<Texture2D> _layerThumbnails = new List<Texture2D>();
         private Dictionary<string, bool[,]> _layerMatrices;
+        private Dictionary<string, Color> _layerPreviewColors;
+        private string[,] _sceneParityTileMap;
         private IMGUIContainer _nodeInspectorGui;
         private VisualElement _twcNodeInspectorGui;
         private IMGUIContainer _graphSettingsGui;
+        private IMGUIContainer _validationActionsGui;
         [SerializeField] private bool _isInspectorVisible = true;
       
         private VisualElement _nodeInspectorSection;
@@ -159,6 +414,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private NodeBase _selectedNode;
         [SerializeField] private string _selectedNodeId;
         private UnityEditor.Editor _selectedNodeEditor;
+        private PropertyTree _graphAssetTree;
+        private GraphAsset _graphAssetTreeTarget;
+        private PropertyTree _selectedLayerTree;
+        private GeneratorLayerDefinition _selectedLayerTreeTarget;
+        private SelectedLayerOdinSettings _selectedLayerSettings;
+        private PropertyTree _previewSettingsTree;
+        private EditorPreviewSettings _previewSettingsTreeTarget;
+        private PropertyTree _twcModifierFallbackTree;
+        private ScriptableObject _twcModifierFallbackTarget;
+        private PropertyTree _validationActionsTree;
+        private GraphValidationOdinActions _validationActions;
+        private GraphEditorWindowOdinSettings _odinWindowSettings;
+        private PropertyTree _odinWindowSettingsTree;
         private List<WorldLayerData> _lastLayerData;
 
         private enum InspectorTab { Settings = 0, Preview = 1 }
@@ -198,9 +466,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private double _nextAutoRunAt;
         private bool _isRunningGraph;
-
-        private readonly Dictionary<string, bool> _inlineObjectFoldouts = new();
-        private readonly Dictionary<string, UnityEditor.Editor> _inlineObjectEditors = new();
 
         private sealed class CopiedLayerData
         {
@@ -296,12 +561,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
 
-            foreach (var editor in _inlineObjectEditors.Values)
-            {
-                if (editor != null)
-                    DestroyImmediate(editor);
-            }
-            _inlineObjectEditors.Clear();
+            DisposeOdinPropertyTrees();
 
             if (_graphView != null)
             {
@@ -600,7 +860,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             _leftPanel.Add(buttonsRow);
 
-            var compositeHeader = new Label("Ізометричне превʼю")
+            var compositeHeader = new Label("Сценове превʼю")
             {
                 style =
                 {
@@ -631,7 +891,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 }
             };
             _compositePreviewImage.tooltip =
-                "Складений ізометричний 3D-вид усіх шарів (Run для оновлення).";
+                "Фінальна top-down мапа після TWC compile, blueprint execution та occlusion. 1 піксель текстури = 1 тайл.";
             _leftPanel.Add(_compositePreviewImage);
 
             _contentContainer.Add(_leftPanel);
@@ -814,7 +1074,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 // Мініатюра матриці шару (якщо граф уже виконано).
                 if (_layerMatrices != null && _layerMatrices.TryGetValue(layerId, out var matrix))
                 {
-                    var thumb = GeneratorLayerPreviewBuilder.BuildLayerThumbnail(matrix, layer.Color);
+                    var thumb = GeneratorLayerPreviewBuilder.BuildLayerThumbnail(
+                        matrix,
+                        ResolveLayerPreviewColor(layer));
                     if (thumb != null)
                     {
                         _layerThumbnails.Add(thumb);
@@ -875,7 +1137,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         }
 
         /// <summary>
-        /// Перераховує матриці шарів, мініатюри та складене ізометричне превʼю
+        /// Перераховує матриці шарів, мініатюри та фінальне сценове превʼю
         /// через той самий TWC compile/generate шлях, що й scene generation.
         /// </summary>
         private void RebuildLayerPreviews(int seed, int mapW, int mapH, ISet<string> skippedLayerIds)
@@ -885,6 +1147,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_graphAsset == null)
             {
                 _layerMatrices = null;
+                _layerPreviewColors = null;
+                _sceneParityTileMap = null;
                 RebuildLayerList();
                 return;
             }
@@ -897,6 +1161,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     new Vector2Int(mapW, mapH),
                     skippedLayerIds,
                     out _layerMatrices,
+                    out _layerPreviewColors,
                     out w,
                     out h,
                     out string sceneParityStatus))
@@ -907,22 +1172,43 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (_lastResult == null)
                 {
                     _layerMatrices = null;
+                    _layerPreviewColors = null;
+                    _sceneParityTileMap = null;
                     RebuildLayerList();
                     return;
                 }
 
                 _layerMatrices = GeneratorLayerPreviewBuilder.ComputeLayerMatrices(
                     _graphAsset, _lastResult, out w, out h);
+                _layerPreviewColors = null;
             }
 
-            _layerCompositeTexture = GeneratorLayerPreviewBuilder.BuildIsometricComposite(
-                _graphAsset, _layerMatrices, w, h);
+            _layerCompositeTexture = GeneratorLayerPreviewBuilder.BuildTopDownComposite(
+                _graphAsset,
+                _layerMatrices,
+                w,
+                h,
+                _layerPreviewColors,
+                out _sceneParityTileMap);
 
             if (_compositePreviewImage != null)
                 _compositePreviewImage.image = _layerCompositeTexture;
 
             RebuildLayerList();
             GraphPreviewWindow.RequestRepaint();
+        }
+
+        private Color ResolveLayerPreviewColor(GeneratorLayerDefinition layer)
+        {
+            if (layer != null
+                && _layerPreviewColors != null
+                && _layerPreviewColors.TryGetValue(layer.Id, out var color))
+            {
+                color.a = Mathf.Approximately(color.a, 0f) ? 1f : color.a;
+                return color;
+            }
+
+            return layer != null ? layer.Color : Color.white;
         }
 
         private void DisposeLayerPreviewTextures()
@@ -941,6 +1227,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 DestroyImmediate(_layerCompositeTexture);
                 _layerCompositeTexture = null;
             }
+
+            _sceneParityTileMap = null;
         }
 
         private void SelectLayer(string layerId)
@@ -1461,13 +1749,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             };
             headerRow.Add(title);
 
-            var autoFixButton = new Button(ApplyValidationAutoFix)
-            {
-                text = "Auto Fix",
-                tooltip = "Автоматично виправити прості проблеми: null-ноди, missing ids, invalid connections та orphan-ноди."
-            };
-            headerRow.Add(autoFixButton);
             _validationPanel.Add(headerRow);
+
+            _validationActionsGui = new IMGUIContainer(DrawValidationActionsWithOdin)
+            {
+                style = { marginBottom = 4 }
+            };
+            _validationPanel.Add(_validationActionsGui);
 
             _validationIssuesContainer = new VisualElement();
             _validationPanel.Add(_validationIssuesContainer);
@@ -1766,6 +2054,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         public void LoadGraph(GraphAsset asset)
         {
+            DisposeGraphOdinTrees();
             _graphAsset = asset;
 
             // Persist GUID for domain reload
@@ -2755,27 +3044,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                 var runtimeSettings = ResolveRuntimeExecutionSettings();
 
-                // Determine map size: Runtime(GridInstaller) > PreviewSettings > SharedSettings > inline fields
-                int mapW = _previewWidth;
-                int mapH = _previewHeight;
-                if (_previewSettings != null)
-                {
-                    mapW = _previewSettings.PreviewWidth;
-                    mapH = _previewSettings.PreviewHeight;
-                }
-
-                if (runtimeSettings.HasGridSize)
-                {
-                    mapW = runtimeSettings.GridWidth;
-                    mapH = runtimeSettings.GridHeight;
-                }
-
                 var sharedSettings = _graphAsset.SharedSettings;
-                if (sharedSettings != null && sharedSettings.HasMapSize)
-                {
-                    mapW = sharedSettings.MapWidth;
-                    mapH = sharedSettings.MapHeight;
-                }
+                var mapSize = ResolveExecutionMapSize(runtimeSettings);
+                int mapW = mapSize.x;
+                int mapH = mapSize.y;
+                _lastExecutionMapSize = mapSize;
 
                 int seed = GetSeedFromGraph();
                 GlobalSeed.Set(seed);
@@ -2912,7 +3185,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_layerCompositeTexture != null)
             {
                 previewTexture = _layerCompositeTexture;
-                status = "Scene parity TWC preview";
+                status = $"Scene parity TWC preview ({_layerCompositeTexture.width}x{_layerCompositeTexture.height} tiles)";
                 return true;
             }
 
@@ -2926,6 +3199,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         internal bool TryGetBestRawMaps(out float[,] floatMap, out string[,] tileMap)
         {
+            if (_sceneParityTileMap != null)
+            {
+                floatMap = null;
+                tileMap = _sceneParityTileMap;
+                return true;
+            }
+
             if (_graphView != null)
                 return _graphView.TryGetBestRawMaps(out floatMap, out tileMap);
 
@@ -3008,7 +3288,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 resolved.HeightMapSettings = so.FindProperty("_heightMapSettings")?.objectReferenceValue as HeightMapSettings;
                 resolved.BiomesSettings = so.FindProperty("_biomesSettings")?.objectReferenceValue as DataBiomesSettings;
                 resolved.WfcSettings = so.FindProperty("_wfcDataSettings")?.objectReferenceValue as WFCDataSettings;
+
+                if (TryReadTileWorldCreatorConfigurationSize(graphBinding, out int twcWidth, out int twcHeight))
+                {
+                    resolved.TwcConfigurationWidth = twcWidth;
+                    resolved.TwcConfigurationHeight = twcHeight;
+                    resolved.HasTwcConfigurationSize = true;
+                }
+
                 resolved.Source = $"MoyvaTWCGraphBinding: {graphBinding.gameObject.scene.name}/{graphBinding.name}";
+                if (resolved.HasTwcConfigurationSize)
+                    resolved.Source += $" | TWC Configuration: {resolved.TwcConfigurationWidth}x{resolved.TwcConfigurationHeight}";
             }
 
             var gridInstaller = FindGridInstallerInSameScene(graphBinding);
@@ -3033,6 +3323,90 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             return resolved;
+        }
+
+        private Vector2Int ResolveExecutionMapSize(RuntimeExecutionSettings runtimeSettings)
+        {
+            var sharedSettings = _graphAsset?.SharedSettings;
+            if (sharedSettings != null && sharedSettings.HasMapSize)
+                return ClampMapSize(sharedSettings.MapSize);
+
+            if (runtimeSettings != null && runtimeSettings.HasTwcConfigurationSize)
+            {
+                return ClampMapSize(new Vector2Int(
+                    runtimeSettings.TwcConfigurationWidth,
+                    runtimeSettings.TwcConfigurationHeight));
+            }
+
+            if (runtimeSettings != null && runtimeSettings.HasGridSize)
+                return ClampMapSize(new Vector2Int(runtimeSettings.GridWidth, runtimeSettings.GridHeight));
+
+            if (sharedSettings != null)
+            {
+                return new Vector2Int(
+                    sharedSettings.MapWidth > 0 ? sharedSettings.MapWidth : 50,
+                    sharedSettings.MapHeight > 0 ? sharedSettings.MapHeight : 50);
+            }
+
+            return new Vector2Int(50, 50);
+        }
+
+        private static Vector2Int ClampMapSize(Vector2Int size)
+        {
+            return new Vector2Int(Mathf.Max(1, size.x), Mathf.Max(1, size.y));
+        }
+
+        private static bool TryReadTileWorldCreatorConfigurationSize(
+            MonoBehaviour graphBinding,
+            out int width,
+            out int height)
+        {
+            width = 0;
+            height = 0;
+            if (graphBinding == null)
+                return false;
+
+            try
+            {
+                UnityEngine.Object manager = null;
+                var bindingObject = new SerializedObject(graphBinding);
+                var managerProperty = bindingObject.FindProperty("_manager");
+                if (managerProperty != null)
+                    manager = managerProperty.objectReferenceValue;
+
+                if (manager == null)
+                {
+                    var runtimeManagerProperty = graphBinding
+                        .GetType()
+                        .GetProperty("Manager", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    manager = runtimeManagerProperty?.GetValue(graphBinding) as UnityEngine.Object;
+                }
+
+                if (manager == null)
+                    return false;
+
+                var managerObject = new SerializedObject(manager);
+                var configProperty = managerObject.FindProperty("configuration");
+                var config = configProperty?.objectReferenceValue;
+                if (config == null)
+                    return false;
+
+                var configObject = new SerializedObject(config);
+                var widthProperty = configObject.FindProperty("width");
+                var heightProperty = configObject.FindProperty("height");
+                if (widthProperty == null || heightProperty == null)
+                    return false;
+
+                width = Mathf.Max(1, widthProperty.intValue);
+                height = Mathf.Max(1, heightProperty.intValue);
+                return true;
+            }
+            catch
+            {
+                width = 0;
+                height = 0;
+                return false;
+            }
         }
 
         private MonoBehaviour FindRuntimeGraphBindingForActiveGraph()
@@ -3326,16 +3700,35 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private int GetSeedFromGraph()
         {
+            if (TryGetLaunchSeed(out int launchSeed))
+                return launchSeed == 0 ? 1 : launchSeed;
+
             if (_graphAsset?.Nodes == null)
                 return GlobalSeed.DefaultSeed;
 
             foreach (var node in _graphAsset.Nodes)
             {
                 if (node is ISeedProvider seedProvider)
-                    return seedProvider.Seed;
+                    return seedProvider.Seed == 0 ? 1 : seedProvider.Seed;
             }
 
             return GlobalSeed.DefaultSeed;
+        }
+
+        private static bool TryGetLaunchSeed(out int seed)
+        {
+            seed = 0;
+            var contextType = Type.GetType("Kruty1918.Moyva.SaveSystem.GameLaunchContext, Kruty1918.Moyva.SaveSystem");
+            var method = contextType?.GetMethod("TryGetSeed", BindingFlags.Public | BindingFlags.Static);
+            if (method == null)
+                return false;
+
+            object[] args = { seed };
+            if (method.Invoke(null, args) is not bool result || !result)
+                return false;
+
+            seed = args[0] is int value ? value : 0;
+            return seed != 0;
         }
 
         private void HighlightExecutionResults(GraphExecutionResult result)
@@ -3432,11 +3825,81 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _selectedNodeId = node?.NodeId;
         }
 
+        private void DisposeOdinPropertyTrees()
+        {
+            DisposeGraphOdinTrees();
+            DisposePropertyTree(ref _validationActionsTree);
+            DisposePropertyTree(ref _odinWindowSettingsTree);
+            _validationActions = null;
+            _odinWindowSettings = null;
+        }
+
+        private void DisposeGraphOdinTrees()
+        {
+            DisposePropertyTree(ref _graphAssetTree);
+            DisposePropertyTree(ref _selectedLayerTree);
+            DisposePropertyTree(ref _previewSettingsTree);
+            DisposePropertyTree(ref _twcModifierFallbackTree);
+            _graphAssetTreeTarget = null;
+            _selectedLayerTreeTarget = null;
+            _previewSettingsTreeTarget = null;
+            _twcModifierFallbackTarget = null;
+            _selectedLayerSettings = null;
+        }
+
+        private static void DisposePropertyTree(ref PropertyTree tree)
+        {
+            if (tree is IDisposable disposable)
+                disposable.Dispose();
+            tree = null;
+        }
+
+        private static PropertyTree CreateOdinTree(UnityEngine.Object target)
+        {
+            if (target == null)
+                return null;
+
+            var tree = PropertyTree.Create(new SerializedObject(target));
+            tree.DrawMonoScriptObjectField = false;
+            return tree;
+        }
+
+        private static PropertyTree CreateOdinTree(object target)
+        {
+            if (target == null)
+                return null;
+
+            var tree = PropertyTree.Create(target);
+            tree.DrawMonoScriptObjectField = false;
+            return tree;
+        }
+
+        private static bool DrawOdinTree(PropertyTree tree)
+        {
+            if (tree == null)
+                return false;
+
+            tree.UpdateTree();
+            EditorGUI.BeginChangeCheck();
+            tree.Draw(false);
+            bool changed = EditorGUI.EndChangeCheck();
+            tree.ApplyChanges();
+            return changed;
+        }
+
+        private void DrawValidationActionsWithOdin()
+        {
+            _validationActions ??= new GraphValidationOdinActions(this);
+            _validationActionsTree ??= CreateOdinTree(_validationActions);
+            DrawOdinTree(_validationActionsTree);
+        }
+
         private void RefreshInspectorPanel()
         {
             RebuildTwcNodeInspectorPanel();
             _nodeInspectorGui?.MarkDirtyRepaint();
             _graphSettingsGui?.MarkDirtyRepaint();
+            _validationActionsGui?.MarkDirtyRepaint();
         }
 
         private void RebuildTwcNodeInspectorPanel()
@@ -3517,11 +3980,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private Vector2Int ResolveInspectorMapSize()
         {
-            var size = _graphAsset?.SharedSettings?.MapSize ?? Vector2Int.zero;
-            if (size.x > 0 && size.y > 0)
-                return size;
-
-            return new Vector2Int(Mathf.Max(1, _previewWidth), Mathf.Max(1, _previewHeight));
+            return ResolveExecutionMapSize(ResolveRuntimeExecutionSettings());
         }
 
         private void OnTwcNodeInspectorChanged(TwcModifierNode node)
@@ -3542,31 +4001,16 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (node == null || node.ModifierAsset == null)
                 return;
 
-            var serializedModifier = new SerializedObject(node.ModifierAsset);
-            serializedModifier.Update();
-
-            EditorGUI.BeginChangeCheck();
-            var property = serializedModifier.GetIterator();
-            bool enterChildren = true;
-            while (property.Next(enterChildren))
+            var modifier = node.ModifierAsset;
+            if (_twcModifierFallbackTree == null || _twcModifierFallbackTarget != modifier)
             {
-                enterChildren = false;
-                if (property.propertyPath.StartsWith("m_", StringComparison.Ordinal)
-                    || property.propertyPath is "asset" or "isEnabled")
-                    continue;
-
-                EditorGUILayout.PropertyField(property, true);
+                DisposePropertyTree(ref _twcModifierFallbackTree);
+                _twcModifierFallbackTarget = modifier;
+                _twcModifierFallbackTree = CreateOdinTree(modifier);
             }
 
-            if (EditorGUI.EndChangeCheck())
-            {
-                serializedModifier.ApplyModifiedProperties();
+            if (DrawOdinTree(_twcModifierFallbackTree))
                 OnTwcNodeInspectorChanged(node);
-            }
-            else
-            {
-                serializedModifier.ApplyModifiedProperties();
-            }
         }
 
         private void DrawSelectedNodeInspector()
@@ -3774,54 +4218,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
             }
 
-            EditorGUILayout.LabelField("Layer Settings", EditorStyles.boldLabel);
-            EditorGUILayout.Space(4);
-
-            EditorGUI.BeginChangeCheck();
-
-            string newName = EditorGUILayout.TextField("Name", layer.Name ?? string.Empty);
-            int newOrder = EditorGUILayout.IntField("Sorting Order", layer.SortingOrder);
-            bool newEnabled = EditorGUILayout.Toggle("Enabled", layer.Enabled);
-            float newHeight = EditorGUILayout.FloatField("Default Height", layer.DefaultHeight);
-            bool newZeroPadding = EditorGUILayout.Toggle(new GUIContent("Zero Layer Padding (+16)", "Позначає шар як розширений: #sym:width/#sym:height стають більшими на 16."), layer.UseZeroLayerPadding);
-            int newExtraWidth = Mathf.Max(0, EditorGUILayout.IntField(new GUIContent("Extra Width Cells", "Додає клітинки до ширини цього шару понад розмір мапи. Шар центрується навколо основної мапи."), layer.ExtraWidthCells));
-            int newExtraLength = Mathf.Max(0, EditorGUILayout.IntField(new GUIContent("Extra Length Cells", "Додає клітинки до довжини цього шару понад розмір мапи. Корисно для води/океану навколо острова."), layer.ExtraLengthCells));
-            bool newGenerateFlatSurface = EditorGUILayout.Toggle(
-                new GUIContent(
-                    "Generate Flat Surface",
-                    "Якщо увімкнено, TWC build-шар створює одну пласку grid-поверхню на весь розмір шару замість TilePreset-тайлів."),
-                layer.GenerateFlatSurface);
-            Material newFlatSurfaceMaterial;
-            using (new EditorGUI.DisabledScope(!newGenerateFlatSurface))
+            if (_selectedLayerTree == null || _selectedLayerTreeTarget != layer)
             {
-                newFlatSurfaceMaterial = (Material)EditorGUILayout.ObjectField(
-                    new GUIContent("Flat Surface Material", "Матеріал, який буде призначений одному пласкому mesh шару."),
-                    layer.FlatSurfaceMaterial,
-                    typeof(Material),
-                    false);
+                DisposePropertyTree(ref _selectedLayerTree);
+                _selectedLayerTreeTarget = layer;
+                _selectedLayerSettings = new SelectedLayerOdinSettings(this);
+                _selectedLayerSettings.PullFromLayer(layer);
+                _selectedLayerTree = CreateOdinTree(_selectedLayerSettings);
             }
-            Color newColor = EditorGUILayout.ColorField("Color", layer.Color);
 
-            if (EditorGUI.EndChangeCheck())
-            {
-                Undo.RecordObject(_graphAsset, "Edit Layer Settings");
-                layer.Name = string.IsNullOrWhiteSpace(newName) ? "Layer" : newName;
-                layer.SortingOrder = newOrder;
-                layer.Enabled = newEnabled;
-                layer.DefaultHeight = newHeight;
-                layer.UseZeroLayerPadding = newZeroPadding;
-                layer.ExtraWidthCells = newExtraWidth;
-                layer.ExtraLengthCells = newExtraLength;
-                layer.GenerateFlatSurface = newGenerateFlatSurface;
-                layer.FlatSurfaceMaterial = newFlatSurfaceMaterial;
-                layer.Color = newColor;
-
-                EditorUtility.SetDirty(_graphAsset);
-                TrySyncCompanionBlueprintLayers(false);
-                RebuildLayerList();
-                RefreshGraphViewFromAsset();
-                RequestAutoRun();
-            }
+            _selectedLayerSettings.PullFromLayer(layer);
+            bool changed = DrawOdinTree(_selectedLayerTree);
+            if (changed)
+                _selectedLayerSettings.ApplyToLayer(layer);
 
             if (layer.GenerateFlatSurface)
             {
@@ -3829,81 +4238,66 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     "Flat Surface режим ігнорує TilePreset-и цього build-шару і генерує один mesh з grid subdivisions за розміром шару.",
                     MessageType.Info);
             }
-
-            EditorGUILayout.Space(8);
-            EditorGUILayout.LabelField("Build Layer Key", EditorStyles.miniBoldLabel);
-            using (new EditorGUI.DisabledScope(true))
-            {
-                EditorGUILayout.TextField(string.IsNullOrEmpty(layer.BuildLayerKey)
-                    ? "(буде призначено після синхронізації Build-шарів)"
-                    : layer.BuildLayerKey);
-            }
         }
 
         private void DrawGraphSettingsInspector()
         {
-            EditorGUILayout.LabelField("Editor Preview", EditorStyles.boldLabel);
-
-            EditorGUI.BeginChangeCheck();
-            var newSettings = (EditorPreviewSettings)EditorGUILayout.ObjectField(
-                "Preview Settings",
-                _previewSettings,
-                typeof(EditorPreviewSettings),
-                false);
-            if (EditorGUI.EndChangeCheck())
+            _odinWindowSettings ??= new GraphEditorWindowOdinSettings(this);
+            if (_odinWindowSettingsTree == null)
             {
-                _previewSettings = newSettings;
-                if (_previewSettings != null)
-                {
-                    var path = AssetDatabase.GetAssetPath(_previewSettings);
-                    _previewSettingsGuid = AssetDatabase.AssetPathToGUID(path);
-                }
-                else
-                {
-                    _previewSettingsGuid = null;
-                }
-                SaveWindowSettings();
+                _odinWindowSettings.PullFromWindow();
+                _odinWindowSettingsTree = CreateOdinTree(_odinWindowSettings);
             }
 
-            EditorGUI.BeginChangeCheck();
-            int newPreviewWidth = Mathf.Max(4, EditorGUILayout.IntField("Preview Width", _previewWidth));
-            int newPreviewHeight = Mathf.Max(4, EditorGUILayout.IntField("Preview Height", _previewHeight));
-            bool newShowInlinePreviews = EditorGUILayout.Toggle("Inline Previews", _showInlinePreviews);
-            bool newPreviewHeatmap = EditorGUILayout.Toggle("Heatmap", _previewHeatmap);
-            if (EditorGUI.EndChangeCheck())
+            _odinWindowSettings.PullFromWindow();
+            if (DrawOdinTree(_odinWindowSettingsTree))
+                _odinWindowSettings.ApplyToWindow();
+
+            if (_graphAsset != null)
             {
-                bool previewTextureSettingsChanged =
-                    newPreviewWidth != _previewWidth
-                    || newPreviewHeight != _previewHeight
-                    || newPreviewHeatmap != _previewHeatmap;
-                bool inlineVisibilityChanged = newShowInlinePreviews != _showInlinePreviews;
+                EditorGUILayout.Space(6);
+                EditorGUILayout.LabelField("Graph Asset", EditorStyles.boldLabel);
 
-                _previewWidth = newPreviewWidth;
-                _previewHeight = newPreviewHeight;
-                _showInlinePreviews = newShowInlinePreviews;
-                _previewHeatmap = newPreviewHeatmap;
-
-                if (inlineVisibilityChanged)
+                if (_graphAssetTree == null || _graphAssetTreeTarget != _graphAsset)
                 {
-                    _graphView?.SetInlinePreviewsVisible(_showInlinePreviews);
-                    RefreshNodePreviewsFromLastResult();
+                    DisposePropertyTree(ref _graphAssetTree);
+                    _graphAssetTreeTarget = _graphAsset;
+                    _graphAssetTree = CreateOdinTree(_graphAsset);
                 }
 
-                if (previewTextureSettingsChanged)
+                if (DrawOdinTree(_graphAssetTree))
+                {
+                    EditorUtility.SetDirty(_graphAsset);
+                    _graphAsset.EnsureLayerGraphStates();
+                    TrySyncCompanionBlueprintLayers(false);
+                    RebuildLayerList();
+                    RefreshGraphViewFromAsset();
                     RequestAutoRun();
+                }
             }
 
             if (_previewSettings != null)
             {
-                EditorGUILayout.Space(4);
+                EditorGUILayout.Space(6);
                 EditorGUILayout.LabelField("Preview Settings Details", EditorStyles.miniBoldLabel);
-                DrawSerializedObjectWithoutScript(new SerializedObject(_previewSettings));
+
+                if (_previewSettingsTree == null || _previewSettingsTreeTarget != _previewSettings)
+                {
+                    DisposePropertyTree(ref _previewSettingsTree);
+                    _previewSettingsTreeTarget = _previewSettings;
+                    _previewSettingsTree = CreateOdinTree(_previewSettings);
+                }
+
+                if (DrawOdinTree(_previewSettingsTree))
+                {
+                    EditorUtility.SetDirty(_previewSettings);
+                    RequestAutoRun();
+                }
             }
             else
             {
                 EditorGUILayout.HelpBox("Призначте EditorPreviewSettings для реалістичного preview сервісів.", MessageType.Info);
             }
-
         }
 
         private void RefreshNodePreviewsFromLastResult()
@@ -3911,13 +4305,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (_graphView == null)
                 return;
 
-            int mapW = _previewWidth;
-            int mapH = _previewHeight;
-            if (_previewSettings != null)
-            {
-                mapW = _previewSettings.PreviewWidth;
-                mapH = _previewSettings.PreviewHeight;
-            }
+            int mapW = _lastExecutionMapSize.x > 0 ? _lastExecutionMapSize.x : 50;
+            int mapH = _lastExecutionMapSize.y > 0 ? _lastExecutionMapSize.y : 50;
 
             int previewSize = ResolvePreviewSize(mapW, mapH);
             _graphView.UpdateNodePreviews(
@@ -4196,42 +4585,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return null;
         }
 
-        private void DrawSerializedObjectWithoutScript(SerializedObject serializedObject)
-        {
-            if (serializedObject == null) return;
-
-            serializedObject.Update();
-            var iterator = serializedObject.GetIterator();
-            bool expanded = true;
-            string hoveredTooltip = null;
-
-            while (iterator.NextVisible(expanded))
-            {
-                if (iterator.propertyPath == "m_Script")
-                {
-                    expanded = false;
-                    continue;
-                }
-
-                var property = iterator.Copy();
-                string tooltip = GetTooltipForProperty(serializedObject.targetObject, property.propertyPath);
-                var label = BuildPropertyLabel(property);
-                EditorGUILayout.PropertyField(property, label, true);
-
-                DrawInlineObjectReferenceControls(serializedObject, property);
-
-                var fieldRect = GUILayoutUtility.GetLastRect();
-                if (!string.IsNullOrEmpty(tooltip) && fieldRect.Contains(Event.current.mousePosition))
-                    hoveredTooltip = tooltip;
-
-                expanded = false;
-            }
-
-            DrawInspectorHoverTooltip(hoveredTooltip);
-
-            serializedObject.ApplyModifiedProperties();
-        }
-
         private static bool DrawSeedNodeControls(NodeBase node)
         {
             if (node is not ISeedProvider)
@@ -4267,61 +4620,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             return value;
         }
 
-        private void DrawInlineObjectReferenceControls(SerializedObject ownerSerializedObject, SerializedProperty property)
-        {
-            if (property.propertyType != SerializedPropertyType.ObjectReference)
-                return;
-
-            var referencedObject = property.objectReferenceValue;
-            if (referencedObject == null)
-                return;
-
-            string key = $"{ownerSerializedObject.targetObject.GetInstanceID()}:{property.propertyPath}";
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.Space(14f);
-
-                if (GUILayout.Button("Ping", EditorStyles.miniButton, GUILayout.Width(52f)))
-                    EditorGUIUtility.PingObject(referencedObject);
-
-                if (GUILayout.Button("Select", EditorStyles.miniButton, GUILayout.Width(52f)))
-                    Selection.activeObject = referencedObject;
-
-                if (GUILayout.Button("Open", EditorStyles.miniButton, GUILayout.Width(52f)))
-                    AssetDatabase.OpenAsset(referencedObject);
-            }
-
-            if (referencedObject is not ScriptableObject scriptableObject)
-                return;
-
-            _inlineObjectFoldouts.TryGetValue(key, out bool expanded);
-            expanded = EditorGUILayout.Foldout(expanded, $"Inline: {property.displayName}", true);
-            _inlineObjectFoldouts[key] = expanded;
-            if (!expanded)
-                return;
-
-            if (!_inlineObjectEditors.TryGetValue(key, out var nestedEditor)
-                || nestedEditor == null
-                || nestedEditor.target != scriptableObject)
-            {
-                if (nestedEditor != null)
-                    DestroyImmediate(nestedEditor);
-
-                nestedEditor = UnityEditor.Editor.CreateEditor(scriptableObject);
-                _inlineObjectEditors[key] = nestedEditor;
-            }
-
-            EditorGUI.indentLevel++;
-            nestedEditor.OnInspectorGUI();
-            EditorGUI.indentLevel--;
-        }
-
-        private static GUIContent BuildPropertyLabel(SerializedProperty property)
-        {
-            return new GUIContent(property.displayName);
-        }
-
         private bool SanitizeGraphAsset(bool refreshView)
         {
             if (_graphAsset == null)
@@ -4341,112 +4639,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 RefreshGraphViewFromAsset();
 
             return true;
-        }
-
-        private static string GetTooltipForProperty(UnityEngine.Object targetObject, string propertyPath)
-        {
-            if (targetObject == null || string.IsNullOrEmpty(propertyPath))
-                return null;
-
-            Type currentType = targetObject.GetType();
-            FieldInfo field = null;
-            var pathParts = propertyPath.Split('.');
-
-            for (int i = 0; i < pathParts.Length; i++)
-            {
-                string part = pathParts[i];
-                if (part == "Array")
-                    continue;
-
-                if (part.StartsWith("data[", StringComparison.Ordinal))
-                    continue;
-
-                field = GetFieldInHierarchy(currentType, part);
-                if (field == null)
-                    return null;
-
-                currentType = GetFieldValueType(field.FieldType);
-            }
-
-            return field?.GetCustomAttribute<TooltipAttribute>(true)?.tooltip;
-        }
-
-        private static Type GetFieldValueType(Type type)
-        {
-            if (type.IsArray)
-                return type.GetElementType() ?? type;
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
-                return type.GetGenericArguments()[0];
-
-            return type;
-        }
-
-        private static FieldInfo GetFieldInHierarchy(Type type, string fieldName)
-        {
-            while (type != null)
-            {
-                var field = type.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                if (field != null)
-                    return field;
-
-                type = type.BaseType;
-            }
-
-            return null;
-        }
-
-        private void DrawInspectorHoverTooltip(string tooltip)
-        {
-            if (string.IsNullOrEmpty(tooltip) || Event.current.type != EventType.Repaint)
-                return;
-
-            var content = new GUIContent(tooltip);
-            var style = new GUIStyle(EditorStyles.label)
-            {
-                wordWrap = true,
-                richText = false,
-                normal = { textColor = new Color(0.94f, 0.94f, 0.94f, 1f) },
-                padding = new RectOffset(0, 0, 0, 0)
-            };
-
-            const float maxWidth = 360f;
-            const float margin = 12f;
-            const float offset = 18f;
-
-            float textWidth = Mathf.Min(maxWidth, style.CalcSize(content).x);
-            float textHeight = style.CalcHeight(content, textWidth);
-            float boxWidth = textWidth + 16f;
-            float boxHeight = textHeight + 12f;
-
-            var mouse = Event.current.mousePosition;
-            float rightSpace = position.width - mouse.x - offset - margin;
-            float leftSpace = mouse.x - offset - margin;
-            float belowSpace = position.height - mouse.y - offset - margin;
-            float aboveSpace = mouse.y - offset - margin;
-
-            float x = (rightSpace >= boxWidth || rightSpace >= leftSpace)
-                ? mouse.x + offset
-                : mouse.x - boxWidth - offset;
-            float y = (belowSpace >= boxHeight || belowSpace >= aboveSpace)
-                ? mouse.y + offset
-                : mouse.y - boxHeight - offset;
-
-            x = Mathf.Clamp(x, margin, Mathf.Max(margin, position.width - boxWidth - margin));
-            y = Mathf.Clamp(y, margin, Mathf.Max(margin, position.height - boxHeight - margin));
-
-            var rect = new Rect(x, y, boxWidth, boxHeight);
-            int previousDepth = GUI.depth;
-            GUI.depth = -100000;
-
-            EditorGUI.DrawRect(rect, new Color(0.11f, 0.11f, 0.11f, 1f));
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, rect.width, 1f), new Color(0.35f, 0.35f, 0.35f, 1f));
-            EditorGUI.DrawRect(new Rect(rect.x, rect.yMax - 1f, rect.width, 1f), new Color(0.35f, 0.35f, 0.35f, 1f));
-            EditorGUI.DrawRect(new Rect(rect.x, rect.y, 1f, rect.height), new Color(0.35f, 0.35f, 0.35f, 1f));
-            EditorGUI.DrawRect(new Rect(rect.xMax - 1f, rect.y, 1f, rect.height), new Color(0.35f, 0.35f, 0.35f, 1f));
-
-            GUI.Label(new Rect(rect.x + 8f, rect.y + 6f, rect.width - 16f, rect.height - 12f), content, style);
-            GUI.depth = previousDepth;
         }
 
         private static void MigrateLegacySharedSettingsNode(GraphAsset asset)

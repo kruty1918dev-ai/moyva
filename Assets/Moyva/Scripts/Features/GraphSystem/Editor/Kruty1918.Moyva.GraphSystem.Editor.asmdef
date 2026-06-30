@@ -7,7 +7,11 @@
         "Kruty1918.Moyva.Grid",
         "Kruty1918.Moyva.Construction",
         "Kruty1918.Moyva.EditorShared",
-        "GiantGrey.TileWorldCreator"
+        "GiantGrey.TileWorldCreator",
+        "Sirenix.OdinInspector.Attributes",
+        "Sirenix.OdinInspector.Editor",
+        "Sirenix.Utilities",
+        "Sirenix.Utilities.Editor"
     ],
     "includePlatforms": [
         "Editor"

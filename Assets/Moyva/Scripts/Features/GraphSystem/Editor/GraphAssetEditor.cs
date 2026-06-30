@@ -1,11 +1,12 @@
 using Kruty1918.Moyva.GraphSystem.API;
+using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.GraphSystem.Editor
 {
     [CustomEditor(typeof(GraphAsset))]
-    public sealed class GraphAssetEditor : UnityEditor.Editor
+    public sealed class GraphAssetEditor : OdinEditor
     {
         public override void OnInspectorGUI()
         {
@@ -19,17 +20,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 graphAsset.Connections.Count.ToString());
             EditorGUILayout.LabelField("Version",
                 graphAsset.Version.ToString());
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Shared Settings", EditorStyles.boldLabel);
-
-            serializedObject.Update();
-            var sharedSettings = serializedObject.FindProperty("_sharedSettings");
-            if (sharedSettings != null)
-                EditorGUILayout.PropertyField(sharedSettings, includeChildren: true);
-            serializedObject.ApplyModifiedProperties();
-
-            EditorGUILayout.Space();
 
             if (GUILayout.Button("Open Graph Editor", GUILayout.Height(32)))
             {
@@ -59,6 +49,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         "OK");
                 }
             }
+
+            EditorGUILayout.Space();
+            base.OnInspectorGUI();
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Node List", EditorStyles.boldLabel);

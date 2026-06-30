@@ -360,7 +360,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             }
 
             var blueprint = FindBlueprintLayer(config, generatedName)
-                            ?? manager.AddNewBlueprintLayer(generatedName);
+                            ?? CreateBlueprintLayer(config, generatedName);
             if (blueprint == null)
                 return;
 
@@ -378,7 +378,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             blueprint.AddCells(positions);
 
             var buildLayer = FindObjectBuildLayer(config, generatedName)
-                             ?? manager.AddNewBuildLayer<ObjectBuildLayer>(generatedName);
+                             ?? CreateBuildLayer<ObjectBuildLayer>(config, generatedName);
             if (buildLayer == null)
                 return;
 
@@ -797,6 +797,59 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
                 config.buildLayerFolders.Add(new BuildLayerFolder("Root"));
         }
 
+        private static BlueprintLayer CreateBlueprintLayer(Configuration config, string layerName)
+        {
+            if (config == null)
+                return null;
+
+            EnsureFolders(config);
+
+            var layer = ScriptableObject.CreateInstance<BlueprintLayer>();
+            layer.layerName = layerName;
+            layer.hideFlags = IsPersistentAsset(config)
+                ? HideFlags.HideInHierarchy
+                : HideFlags.HideAndDontSave;
+
+#if UNITY_EDITOR
+            if (IsPersistentAsset(config))
+                AssetDatabase.AddObjectToAsset(layer, config);
+#endif
+
+            config.blueprintLayerFolders[0].blueprintLayers.Add(layer);
+            return layer;
+        }
+
+        private static T CreateBuildLayer<T>(Configuration config, string layerName) where T : BuildLayer
+        {
+            if (config == null)
+                return null;
+
+            EnsureFolders(config);
+
+            var layer = ScriptableObject.CreateInstance<T>();
+            layer.layerName = layerName;
+            layer.hideFlags = IsPersistentAsset(config)
+                ? HideFlags.HideInHierarchy
+                : HideFlags.HideAndDontSave;
+
+#if UNITY_EDITOR
+            if (IsPersistentAsset(config))
+                AssetDatabase.AddObjectToAsset(layer, config);
+#endif
+
+            config.buildLayerFolders[0].buildLayers.Add(layer);
+            return layer;
+        }
+
+        private static bool IsPersistentAsset(UnityEngine.Object obj)
+        {
+#if UNITY_EDITOR
+            return obj != null && AssetDatabase.Contains(obj);
+#else
+            return false;
+#endif
+        }
+
         private static BlueprintLayer FindBlueprintLayer(Configuration config, string layerName)
         {
             if (config?.blueprintLayerFolders == null)
@@ -860,8 +913,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
         private static void RemoveSubAsset(UnityEngine.Object obj)
         {
 #if UNITY_EDITOR
-            if (obj != null && !Application.isPlaying)
+            if (obj == null || Application.isPlaying)
+                return;
+
+            if (AssetDatabase.Contains(obj))
                 AssetDatabase.RemoveObjectFromAsset(obj);
+            else
+                UnityEngine.Object.DestroyImmediate(obj);
 #endif
         }
 

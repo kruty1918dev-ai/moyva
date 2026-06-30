@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
+using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.GraphSystem.Runtime;
+using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -13,15 +16,34 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         public IReadOnlyList<CompiledLayerMap> CompileGraphToConfiguration()
         {
-            return CompileGraphToConfiguration(EditorSeed);
+            return CompileGraphToConfiguration(ResolveGenerationSeed());
         }
 
         public IReadOnlyList<CompiledLayerMap> CompileGraphToConfiguration(int seed)
+        {
+            return CompileGraphToConfiguration(seed, true);
+        }
+
+        private IReadOnlyList<CompiledLayerMap> CompileGraphToConfiguration(int seed, bool emitLayerLog)
         {
             if (!CanCompile(out string reason))
             {
                 Debug.LogWarning($"[Moyva TWC Graph Binding] Неможливо скомпілювати граф: {reason}", this);
                 LastCompiledLayers = Array.Empty<CompiledLayerMap>();
+                if (emitLayerLog)
+                {
+                    GraphGenerationLayerLog.Emit(
+                        "Graph Binding Compile",
+                        _graphAsset,
+                        Manager,
+                        LastCompiledLayers,
+                        null,
+                        null,
+                        NormalizeSeed(seed),
+                        ResolveGraphMapSize(),
+                        false,
+                        this);
+                }
                 return LastCompiledLayers;
             }
 
@@ -34,6 +56,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     $"[Moyva TWC Graph Binding] Неможливо скомпілювати граф: {globalErrors.Count} global validation error(s).\n{FormatValidationIssues(globalErrors)}",
                     this);
                 LastCompiledLayers = Array.Empty<CompiledLayerMap>();
+                if (emitLayerLog)
+                {
+                    GraphGenerationLayerLog.Emit(
+                        "Graph Binding Compile",
+                        _graphAsset,
+                        Manager,
+                        LastCompiledLayers,
+                        report,
+                        null,
+                        NormalizeSeed(seed),
+                        ResolveGraphMapSize(),
+                        false,
+                        this);
+                }
                 return LastCompiledLayers;
             }
 
@@ -47,26 +83,134 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             int normalizedSeed = NormalizeSeed(seed);
             LastCompiledLayers = GraphToConfigurationCompiler.Compile(_graphAsset, Manager, normalizedSeed, skippedLayerIds);
+            if (emitLayerLog)
+            {
+                GraphGenerationLayerLog.Emit(
+                    "Graph Binding Compile",
+                    _graphAsset,
+                    Manager,
+                    LastCompiledLayers,
+                    report,
+                    skippedLayerIds,
+                    normalizedSeed,
+                    ResolveGraphMapSize(),
+                    false,
+                    this);
+            }
             return LastCompiledLayers;
         }
 
         public void GenerateFromGraph()
         {
-            GenerateFromGraph(EditorSeed);
+            GenerateFromGraph(ResolveGenerationSeed());
         }
 
         public void GenerateFromGraph(int seed)
         {
-            if (_compileBeforeGenerate)
-                CompileGraphToConfiguration(seed);
-
-            if (Manager == null || Manager.configuration == null)
+            if (_isGenerating)
+            {
+                Debug.LogWarning("[Moyva TWC Graph Binding] Генерація вже виконується, повторний запуск пропущено.", this);
                 return;
+            }
 
-            if (_generateBuildLayersAfterCompile)
-                TileWorldCreatorLayerOcclusionOptimizer.GenerateCompleteMap(Manager);
-            else
-                Manager.ExecuteBlueprintLayers();
+            _isGenerating = true;
+            int normalizedSeed = NormalizeSeed(seed);
+            try
+            {
+                if (_compileBeforeGenerate)
+                    CompileGraphToConfiguration(normalizedSeed, false);
+
+                if (Manager == null || Manager.configuration == null)
+                {
+                    GraphGenerationLayerLog.Emit(
+                        "Graph Binding Generate",
+                        _graphAsset,
+                        Manager,
+                        LastCompiledLayers,
+                        null,
+                        null,
+                        normalizedSeed,
+                        ResolveGraphMapSize(),
+                        false,
+                        this);
+                    return;
+                }
+
+                if (_generateBuildLayersAfterCompile)
+                    TileWorldCreatorLayerOcclusionOptimizer.GenerateCompleteMap(Manager);
+                else
+                    TileWorldCreatorLayerOcclusionOptimizer.GenerateBlueprintMap(Manager);
+
+                var mapSize = ResolveGraphMapSize();
+                var logicalMap = GraphLogicalTileMapBuilder.Build(
+                    _graphAsset,
+                    Manager,
+                    LastCompiledLayers,
+                    mapSize.x,
+                    mapSize.y);
+                GraphLogicalTileMapDiagnostics.EmitAndCompare(
+                    "Scene build mask",
+                    _graphAsset,
+                    normalizedSeed,
+                    logicalMap,
+                    this);
+
+                var validator = new GraphValidator();
+                GraphValidationReport report = _graphAsset != null
+                    ? validator.ValidateDetailed(_graphAsset)
+                    : null;
+                GraphGenerationLayerLog.Emit(
+                    "Graph Binding Generate",
+                    _graphAsset,
+                    Manager,
+                    LastCompiledLayers,
+                    report,
+                    GetInvalidLayerIds(report),
+                    normalizedSeed,
+                    ResolveGraphMapSize(),
+                    _generateBuildLayersAfterCompile,
+                    this);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Moyva TWC Graph Binding] Помилка генерації мапи: {ex}", this);
+            }
+            finally
+            {
+#if UNITY_EDITOR
+                UnityEditor.EditorUtility.ClearProgressBar();
+#endif
+                _isGenerating = false;
+            }
+        }
+
+        private Vector2Int ResolveGraphMapSize()
+        {
+            if (_graphAsset?.SharedSettings != null && _graphAsset.SharedSettings.HasMapSize)
+                return _graphAsset.SharedSettings.MapSize;
+
+            var configuration = Manager != null ? Manager.configuration : null;
+            if (configuration != null)
+                return new Vector2Int(Mathf.Max(1, configuration.width), Mathf.Max(1, configuration.height));
+
+            return new Vector2Int(1, 1);
+        }
+
+        private int ResolveGenerationSeed()
+        {
+            if (GameLaunchContext.TryGetSeed(out int launchSeed))
+                return NormalizeSeed(launchSeed);
+
+            if (_graphAsset?.Nodes != null)
+            {
+                foreach (var node in _graphAsset.Nodes)
+                {
+                    if (node is ISeedProvider seedProvider)
+                        return NormalizeSeed(seedProvider.Seed);
+                }
+            }
+
+            return EditorSeed;
         }
 
         private static string FormatValidationReport(Kruty1918.Moyva.GraphSystem.API.GraphValidationReport report)
