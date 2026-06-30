@@ -1,8 +1,29 @@
 using System;
+using System.Collections.Generic;
+using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
 {
+    [Serializable]
+    public sealed class BuildingResourceAmount
+    {
+        [ResourceId]
+        public string ResourceId;
+
+        [Min(1)]
+        public int Amount = 1;
+    }
+
+    public enum BuildingStorageKind
+    {
+        Any = 0,
+        Material = 1,
+        Food = 2,
+        Military = 3,
+        Custom = 4,
+    }
+
     public enum BuildingModuleScope
     {
         None = 0,
@@ -85,6 +106,87 @@ namespace Kruty1918.Moyva.Construction.API
 
         [Tooltip("Пріоритет розподілу робітників для цієї будівлі.\nЧим вище число, тим раніше система намагатиметься виділити сюди людей під час дефіциту робочої сили.\nВикористовуйте це для побудови правильного порядку: їжа, вода, базові матеріали, потім другорядне виробництво.")]
         public int Priority;
+
+        [Tooltip("Новий data-driven production pipeline. Якщо список порожній, runtime тимчасово використовує legacy ResourceId.")]
+        public List<ProductionRecipeDefinition> Recipes = new List<ProductionRecipeDefinition>();
+    }
+
+    [Serializable]
+    public sealed class ProductionRecipeDefinition
+    {
+        public string RecipeId = "recipe";
+
+        public List<BuildingResourceAmount> Inputs = new List<BuildingResourceAmount>();
+        public List<BuildingResourceAmount> Outputs = new List<BuildingResourceAmount>();
+
+        [Min(1)]
+        public int TurnsPerCycle = 1;
+
+        public bool RequiresWorkers = true;
+        public bool RequiresStorageSpace = true;
+    }
+
+    [Serializable]
+    public sealed class WorkforceBuildingModule : BuildingModuleDefinition
+    {
+        [Min(0)]
+        public int WorkersRequired;
+
+        public int Priority;
+        public string WorkerTypeId;
+    }
+
+    [Serializable]
+    public sealed class StorageBuildingModule : BuildingModuleDefinition
+    {
+        public BuildingStorageKind StorageKind = BuildingStorageKind.Any;
+
+        [Min(-1)]
+        public int Capacity = -1;
+
+        [ResourceIdArray]
+        public string[] AcceptedResourceIds = Array.Empty<string>();
+    }
+
+    [Serializable]
+    public sealed class DefenseBuildingModule : BuildingModuleDefinition
+    {
+        [Min(0)]
+        public int Armor;
+
+        [Min(0)]
+        public int GarrisonCapacity;
+
+        [Min(0)]
+        public int AttackRange;
+
+        [Min(0)]
+        public int AttackDamage;
+
+        [Min(0)]
+        public int VisionRevealBonus;
+    }
+
+    [Serializable]
+    public sealed class FogRevealBuildingModule : BuildingModuleDefinition
+    {
+        [Min(0)]
+        public int RevealRadius = 3;
+
+        public FogRevealShape Shape = FogRevealShape.PixelCircle;
+        public bool RevealOnBuilt = true;
+        public bool RevealWhileActive = true;
+        public bool OnlyAfterConstructionComplete = true;
+    }
+
+    [Serializable]
+    public sealed class SettlementCenterBuildingModule : BuildingModuleDefinition
+    {
+        [Min(0)]
+        public int InfluenceRadius = 4;
+
+        [Min(0)]
+        public int MinimumDistanceFromOtherCenters;
     }
 
     [Serializable]

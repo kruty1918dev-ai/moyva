@@ -30,6 +30,12 @@ namespace Kruty1918.Moyva.Construction.API
             if (definition.TownHallProximityRadiusOverride > 0)
                 return definition.TownHallProximityRadiusOverride;
 
+            if (TryGetEnabledModule(definition, out SettlementCenterBuildingModule settlementCenter)
+                && settlementCenter.InfluenceRadius > 0)
+            {
+                return settlementCenter.InfluenceRadius;
+            }
+
             if (TryGetEnabledModule(definition, out TownHallBuildingModule townHall)
                 && townHall.BuildRadius > 0)
             {
@@ -51,7 +57,8 @@ namespace Kruty1918.Moyva.Construction.API
                 return false;
 
             return HasEnabledModule<WarehouseBuildingModule>(definition)
-                || HasEnabledModule<BarnBuildingModule>(definition);
+                || HasEnabledModule<BarnBuildingModule>(definition)
+                || HasEnabledModule<StorageBuildingModule>(definition);
         }
 
         public static bool IsHousing(BuildingDefinition definition)
@@ -83,6 +90,9 @@ namespace Kruty1918.Moyva.Construction.API
                 || HasEnabledModule<GateBuildingModule>(definition))
                 return 0;
 
+            if (TryGetEnabledModule(definition, out WorkforceBuildingModule workforce))
+                return Math.Max(0, workforce.WorkersRequired);
+
             if (TryGetEnabledModule(definition, out ProductionBuildingModule production))
                 return Math.Max(0, production.WorkersRequired);
 
@@ -96,6 +106,9 @@ namespace Kruty1918.Moyva.Construction.API
 
             if (TryGetEnabledModule(definition, out ProductionBuildingModule production))
                 return Math.Max(0, production.Priority);
+
+            if (TryGetEnabledModule(definition, out WorkforceBuildingModule workforce))
+                return Math.Max(0, workforce.Priority);
 
             return 0;
         }
@@ -111,7 +124,38 @@ namespace Kruty1918.Moyva.Construction.API
                 return production.ResourceId;
             }
 
+            if (production?.Recipes != null)
+            {
+                for (int recipeIndex = 0; recipeIndex < production.Recipes.Count; recipeIndex++)
+                {
+                    var recipe = production.Recipes[recipeIndex];
+                    if (recipe?.Outputs == null)
+                        continue;
+
+                    for (int outputIndex = 0; outputIndex < recipe.Outputs.Count; outputIndex++)
+                    {
+                        string resourceId = recipe.Outputs[outputIndex]?.ResourceId;
+                        if (!string.IsNullOrWhiteSpace(resourceId))
+                            return resourceId;
+                    }
+                }
+            }
+
             return string.Empty;
+        }
+
+        public static bool TryGetFogReveal(BuildingDefinition definition, out FogRevealBuildingModule module)
+        {
+            return TryGetEnabledModule(definition, out module)
+                && module != null
+                && module.RevealRadius > 0;
+        }
+
+        public static int GetFogRevealRadius(BuildingDefinition definition)
+        {
+            return TryGetFogReveal(definition, out var module)
+                ? Math.Max(0, module.RevealRadius)
+                : 0;
         }
 
         public static IReadOnlyList<BuildingDefinition.BuildingConstructionCostEntry> GetConstructionCost(BuildingDefinition definition)

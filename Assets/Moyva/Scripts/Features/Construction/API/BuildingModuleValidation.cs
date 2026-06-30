@@ -35,6 +35,8 @@ namespace Kruty1918.Moyva.Construction.API
             bool hasWall = BuildingDefinitionCapabilities.HasEnabledModule<WallBuildingModule>(definition);
             bool hasGate = BuildingDefinitionCapabilities.HasEnabledModule<GateBuildingModule>(definition);
             bool hasProduction = BuildingDefinitionCapabilities.TryGetEnabledModule(definition, out ProductionBuildingModule production);
+            bool hasStorage = BuildingDefinitionCapabilities.TryGetEnabledModule(definition, out StorageBuildingModule storage);
+            bool hasFogReveal = BuildingDefinitionCapabilities.TryGetEnabledModule(definition, out FogRevealBuildingModule fogReveal);
 
             if (hasTownHall && hasHousing)
             {
@@ -57,7 +59,9 @@ namespace Kruty1918.Moyva.Construction.API
             {
                 if (string.IsNullOrWhiteSpace(production.ResourceId))
                 {
-                    AddError(issues, "INV_PRODUCTION_RESOURCE", "ProductionModule потребує валідний ResourceId.");
+                    bool hasRecipeOutput = HasAnyRecipeOutput(production);
+                    if (!hasRecipeOutput)
+                        AddError(issues, "INV_PRODUCTION_RESOURCE", "ProductionModule потребує валідний ResourceId або recipe output.");
                 }
 
                 if ((hasWorkerless || hasWall || hasGate) && production.WorkersRequired > 0)
@@ -65,6 +69,12 @@ namespace Kruty1918.Moyva.Construction.API
                     AddWarning(issues, "INV_WORKERS_AUTOFIX", "WorkersRequired буде примусово встановлено в 0 через Workerless/Wall/Gate семантику.");
                 }
             }
+
+            if (hasStorage && storage.Capacity < -1)
+                AddError(issues, "INV_STORAGE_CAPACITY", "StorageModule capacity має бути -1 або >= 0.");
+
+            if (hasFogReveal && fogReveal.RevealRadius <= 0)
+                AddError(issues, "INV_FOG_REVEAL_RADIUS", "FogRevealModule потребує RevealRadius > 0.");
 
             if (BuildingDefinitionCapabilities.TryGetEnabledModule(definition, out TileRequirementBuildingModule tileReq))
             {
@@ -173,6 +183,27 @@ namespace Kruty1918.Moyva.Construction.API
                 if (!string.IsNullOrWhiteSpace(entry.ResourceId) && !usedResourceIds.Add(entry.ResourceId))
                     AddWarning(issues, "INV_BUILD_COST_DUPLICATE", $"ConstructionCost містить дубльований ресурс '{entry.ResourceId}'.");
             }
+        }
+
+        private static bool HasAnyRecipeOutput(ProductionBuildingModule production)
+        {
+            if (production?.Recipes == null)
+                return false;
+
+            for (int recipeIndex = 0; recipeIndex < production.Recipes.Count; recipeIndex++)
+            {
+                var recipe = production.Recipes[recipeIndex];
+                if (recipe?.Outputs == null)
+                    continue;
+
+                for (int outputIndex = 0; outputIndex < recipe.Outputs.Count; outputIndex++)
+                {
+                    if (!string.IsNullOrWhiteSpace(recipe.Outputs[outputIndex]?.ResourceId))
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         private static void AddError(List<BuildingValidationIssue> issues, string code, string message)

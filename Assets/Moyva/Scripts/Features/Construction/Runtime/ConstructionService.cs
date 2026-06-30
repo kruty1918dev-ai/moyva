@@ -491,6 +491,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 _objectsMapService.Register(pos, id);
                 _playerPlacedBuildings[pos] = id;
+                ApplyBuildingFogReveal(id, pos);
                 _signalBus.Fire(new BuildingPlacedSignal
                 {
                     BuildingId = id,
@@ -732,6 +733,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _objectsMapService.Register(position, buildingId);
             _playerPlacedBuildings[position] = buildingId;
+            ApplyBuildingFogReveal(buildingId, position);
             _signalBus.Fire(new BuildingPlacedSignal
             {
                 BuildingId = buildingId,
@@ -784,6 +786,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _objectsMapService.Register(position, buildingId);
             _factionPlacedBuildings[position] = (buildingId, ownerId);
+            ApplyBuildingFogReveal(buildingId, position);
             _signalBus.Fire(new BuildingPlacedSignal
             {
                 BuildingId = buildingId,
@@ -1264,6 +1267,33 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
         }
+
+        private void ApplyBuildingFogReveal(string buildingId, Vector2Int position)
+        {
+            if (_fogOfWarService == null || _buildingRegistry == null)
+                return;
+
+            var definition = _buildingRegistry.GetById(buildingId);
+            if (!BuildingDefinitionCapabilities.TryGetFogReveal(definition, out var fogReveal))
+                return;
+
+            int radius = Mathf.Max(0, fogReveal.RevealRadius);
+            if (radius <= 0)
+                return;
+
+            string areaId = GetBuildingFogVisionAreaId(position);
+            if (fogReveal.RevealWhileActive)
+            {
+                _fogOfWarService.RegisterFixedVisionArea(areaId, position, radius, fogReveal.Shape);
+                return;
+            }
+
+            if (fogReveal.RevealOnBuilt)
+                _fogOfWarService.RevealArea(position, radius, fogReveal.Shape, keepVisible: false, areaId);
+        }
+
+        private static string GetBuildingFogVisionAreaId(Vector2Int position)
+            => $"building:{position.x}:{position.y}";
 
         private bool IsBlockedByTerrain(Vector2Int position, out string reason)
         {

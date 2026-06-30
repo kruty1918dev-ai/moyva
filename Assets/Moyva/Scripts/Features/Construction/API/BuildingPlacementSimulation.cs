@@ -175,6 +175,10 @@ namespace Kruty1918.Moyva.Construction.API
 
         private static bool IsBlockedByFog(BuildingPlacementEvaluationRequest request, BuildingPlacementEvaluationResult result)
         {
+            var definition = request.BuildingRegistry?.GetById(request.BuildingId);
+            if (definition != null && definition.CanPlaceInFog)
+                return false;
+
             if (request.IsFogBlocked == null || !request.IsFogBlocked(request.Position))
                 return false;
 

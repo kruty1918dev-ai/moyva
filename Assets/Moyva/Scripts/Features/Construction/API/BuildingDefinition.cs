@@ -62,6 +62,9 @@ namespace Kruty1918.Moyva.Construction.API
         public int MaxHp = 100;
 
         [Header("Правила розміщення")]
+        [Tooltip("Дозволяє розміщення, навіть якщо клітинка ще не Visible у Fog of War.")]
+        public bool CanPlaceInFog;
+
         [Tooltip("Увімкнути кастомні правила розміщення відносно ратуші для цієї будівлі.\nЯкщо вимкнено — застосовуються стандартні правила за класом будівлі.")]
         public bool UseCustomTownHallRules;
 

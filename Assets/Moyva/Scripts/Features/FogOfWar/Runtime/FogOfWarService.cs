@@ -763,8 +763,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
-            int requestedRange = _defaultVisionRange;
-            RegisterFixedVisionArea(GetBuildingVisionAreaId(signal.Position), signal.Position, requestedRange, FogRevealShape.PixelCircle);
+            // Building fog reveal is data-driven by Construction.FogRevealBuildingModule.
+            // ConstructionService registers the fixed vision area after a placement is actually accepted.
         }
 
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
