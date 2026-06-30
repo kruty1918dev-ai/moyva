@@ -8,7 +8,7 @@ namespace Kruty1918.Moyva.Construction.UI
 {
 	/// <summary>
 	/// Формує список елементів меню будівель із реєстру.
-	/// Групує за категоріями enum, сортує та дістає іконки зі SpriteRenderer prefab.
+	/// Групує за категоріями enum, сортує та дістає іконки з Icon або SpriteRenderer prefab.
 	/// </summary>
 	public sealed class BuildingMenuFactory
 	{
@@ -221,7 +221,7 @@ namespace Kruty1918.Moyva.Construction.UI
 				return building.Icon;
 			}
 
-			Debug.LogError($"[Construction UI] Не вдалося знайти спрайт для будівлі '{building.Id}'. Меню покаже кнопку без іконки.", context);
+			Debug.LogWarning($"[Construction UI] Не вдалося знайти іконку для будівлі '{building.Id}'. Для 3D prefab без Icon це допустимо; меню покаже кнопку без іконки.", context);
 			return null;
 		}
 
