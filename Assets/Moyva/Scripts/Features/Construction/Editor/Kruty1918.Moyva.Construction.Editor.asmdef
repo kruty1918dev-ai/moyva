@@ -5,6 +5,10 @@
         "Kruty1918.Moyva.Construction",
         "Kruty1918.Moyva.Construction.UI",
         "Kruty1918.Moyva.EditorShared",
+        "Sirenix.OdinInspector.Attributes",
+        "Sirenix.OdinInspector.Editor",
+        "Sirenix.Utilities",
+        "Sirenix.Utilities.Editor",
         "Unity.InputSystem"
     ],
     "includePlatforms": [
