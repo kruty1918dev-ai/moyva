@@ -21,8 +21,8 @@ MonoBehaviour:
     Tags: []
   Presentation:
     Prefab: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
-    Icon: {fileID: 0}
-    RuntimePreview: {fileID: 0}
+    Icon: {fileID: -438762628, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    RuntimePreview: {fileID: -438762628, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
     UiTint: {r: 1, g: 1, b: 1, a: 1}
     PreviewSettings:
       CameraOffset: {x: 4, y: 5, z: -6}
