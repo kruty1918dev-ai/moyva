@@ -941,6 +941,9 @@ namespace Kruty1918.Moyva.Editor
             RegistryEditorStyles.DrawSeparator();
             DrawRegistryMultiSelectionToolbar();
 
+            if (DrawAssetBackedBuildingRegistryRedirect())
+                return;
+
             var blds = _bldSO.FindProperty("Buildings");
             int count = blds?.arraySize ?? 0;
             EditorGUILayout.LabelField($"Записи ({count})", RegistryEditorStyles.SubHeader);
@@ -1138,9 +1141,28 @@ namespace Kruty1918.Moyva.Editor
             if (!confirmed)
                 return;
 
-            BuildingRegistryPopulator.PopulateAndSave(_bldReg);
+            EditorApplication.ExecuteMenuItem("Moyva/Tools/Building Designer");
             RefreshSOs();
-            Info($"Реєстр будівель оновлено. Записів: {_bldReg.Buildings?.Length ?? 0}.");
+            Info("BuildingRegistry is asset-backed. Use the Odin Build Designer to add standard/template buildings.");
+        }
+
+        private bool DrawAssetBackedBuildingRegistryRedirect()
+        {
+            EditorGUILayout.HelpBox(
+                "Building registry is asset-backed now. Use the Odin Build Designer to create, duplicate, validate, migrate and edit BuildingDefinition assets.",
+                MessageType.Info);
+            EditorGUILayout.LabelField(
+                $"BuildingDefinition assets: {_bldReg.BuildingAssets.Length} | legacy inline definitions: {_bldReg.LegacyBuildings.Length}",
+                RegistryEditorStyles.SubHeader);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Open Odin Build Designer", GUILayout.Height(28f)))
+                    EditorApplication.ExecuteMenuItem("Moyva/Tools/Building Designer");
+                if (GUILayout.Button("Open Migration Tool", GUILayout.Height(28f)))
+                    EditorApplication.ExecuteMenuItem("Moyva/Tools/Construction/Building Migration");
+            }
+
+            return true;
         }
 
         private void DrawBuildingInlineEditBox(SerializedProperty el, int index)

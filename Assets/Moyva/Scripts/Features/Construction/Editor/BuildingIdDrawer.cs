@@ -89,8 +89,8 @@ namespace Kruty1918.Moyva.Construction.Editor
                 Rect btnRect = new Rect(position.xMax - btnW, y2, btnW, lineH);
 
                 EditorGUI.HelpBox(errorRect, $"ID \"{currentValue}\" не знайдено!", MessageType.Error);
-                if (GUI.Button(btnRect, "+ Створити"))
-                    CreateBuildingEntry(currentValue);
+                if (GUI.Button(btnRect, "Designer"))
+                    OpenDesignerForBuilding(currentValue);
             }
 
             // Fatal: ID exists but prefab missing
@@ -110,12 +110,8 @@ namespace Kruty1918.Moyva.Construction.Editor
                 var newSprite = (Sprite)EditorGUI.ObjectField(spriteFieldRect, "Sprite", pending, typeof(Sprite), false);
                 if (newSprite != pending) _pendingSprites[key] = newSprite;
 
-                if (GUI.Button(genBtnRect, "\u2699 \u0417\u0433\u0435\u043d\u0435\u0440\u0443\u0432\u0430\u0442\u0438"))
-                {
-                    _pendingSprites.TryGetValue(key, out Sprite spr);
-                    GeneratePrefabForBuildingId(currentValue, spr);
-                    _pendingSprites.Remove(key);
-                }
+                if (GUI.Button(genBtnRect, "Designer"))
+                    OpenDesignerForBuilding(currentValue);
             }
 
             EditorGUI.EndProperty();
@@ -311,16 +307,16 @@ namespace Kruty1918.Moyva.Construction.Editor
             _displayNameCache.Clear();
             _categoryCache.Clear();
 
-            if (_cachedRegistry?.Buildings == null)
+            if (_cachedRegistry == null)
             {
                 _cachedIds = System.Array.Empty<string>();
                 return;
             }
 
             var ids = new List<string>();
-            foreach (var def in _cachedRegistry.Buildings)
+            foreach (var def in _cachedRegistry.GetAll())
             {
-                if (string.IsNullOrEmpty(def.Id)) continue;
+                if (def == null || string.IsNullOrEmpty(def.Id)) continue;
                 ids.Add(def.Id);
                 _prefabCache[def.Id] = def.Prefab != null;
                 _displayNameCache[def.Id] = string.IsNullOrWhiteSpace(def.DisplayName) ? def.Id : def.DisplayName;
@@ -403,27 +399,13 @@ namespace Kruty1918.Moyva.Construction.Editor
             return _displayNameCache.TryGetValue(id, out var name) ? name : id;
         }
 
-        private static void CreateBuildingEntry(string id)
+        private static void OpenDesignerForBuilding(string id)
         {
-            var registry = FindRegistry();
-            if (registry == null)
-            {
-                EditorUtility.DisplayDialog("Помилка", "BuildingRegistrySO не знайдено в проєкті.", "OK");
-                return;
-            }
-
-            var so = new SerializedObject(registry);
-            var arr = so.FindProperty("Buildings");
-            arr.arraySize++;
-            var newElem = arr.GetArrayElementAtIndex(arr.arraySize - 1);
-            newElem.FindPropertyRelative("Id").stringValue = id;
-            newElem.FindPropertyRelative("DisplayName").stringValue = id;
-            newElem.FindPropertyRelative("Prefab").objectReferenceValue = null;
-            so.ApplyModifiedProperties();
-            EditorUtility.SetDirty(registry);
-            AssetDatabase.SaveAssets();
-            InvalidateCache();
-            Debug.Log($"[BuildingIdDrawer] Створено новий запис будівлі з ID: \"{id}\" в {AssetDatabase.GetAssetPath(registry)}");
+            Selection.activeObject = FindRegistry();
+            EditorApplication.ExecuteMenuItem("Moyva/Tools/Building Designer");
+            Debug.LogWarning(
+                $"[BuildingIdDrawer] Building ID '{id}' is not backed by a complete BuildingDefinition asset. " +
+                "Create or update it in the Odin Build Designer.");
         }
 
         private static readonly Dictionary<string, Sprite> _pendingSprites = new();
@@ -435,51 +417,5 @@ namespace Kruty1918.Moyva.Construction.Editor
             return !_prefabCache.TryGetValue(id, out bool has) || has;
         }
 
-        private const string BuildingPrefabFolder = "Assets/Moyva/Prefabs/Buildings";
-
-        private static void GeneratePrefabForBuildingId(string id, Sprite sprite)
-        {
-            var registry = FindRegistry();
-            if (registry == null) return;
-
-            EnsureFolder(BuildingPrefabFolder);
-            string safe = id.Replace(' ', '-');
-            string path = AssetDatabase.GenerateUniqueAssetPath($"{BuildingPrefabFolder}/{safe}.prefab");
-
-            var go = new GameObject(safe);
-            if (sprite != null) go.AddComponent<SpriteRenderer>().sprite = sprite;
-            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
-            UnityEngine.Object.DestroyImmediate(go);
-
-            var so = new SerializedObject(registry);
-            var arr = so.FindProperty("Buildings");
-            for (int i = 0; i < arr.arraySize; i++)
-            {
-                var el = arr.GetArrayElementAtIndex(i);
-                if (el.FindPropertyRelative("Id")?.stringValue == id)
-                {
-                    el.FindPropertyRelative("Prefab").objectReferenceValue = prefab;
-                    break;
-                }
-            }
-            so.ApplyModifiedProperties();
-            EditorUtility.SetDirty(registry);
-            AssetDatabase.SaveAssets();
-            InvalidateCache();
-            Debug.Log($"[BuildingIdDrawer] Згенеровано prefab для \"{id}\": {path}");
-        }
-
-        private static void EnsureFolder(string folder)
-        {
-            string[] parts = folder.Split('/');
-            string cur = parts[0];
-            for (int i = 1; i < parts.Length; i++)
-            {
-                string next = $"{cur}/{parts[i]}";
-                if (!AssetDatabase.IsValidFolder(next))
-                    AssetDatabase.CreateFolder(cur, parts[i]);
-                cur = next;
-            }
-        }
     }
 }

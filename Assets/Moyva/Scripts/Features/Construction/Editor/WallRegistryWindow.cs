@@ -62,7 +62,8 @@ namespace Kruty1918.Moyva.Construction.Editor
         private string _generatorPrefabRoot = DefaultPrefabRoot;
         private int _generatorSortingOrder = 2;
         private float _generatorPixelsPerUnit = 100f;
-        private bool _generatorCreateBuildingEntries = true;
+        private bool _generatorCreateBuildingEntries;
+        private bool _warnedAssetDefinitionFlow;
         private bool _generatorOverwriteBuildingPrefab = false;
         private bool _generatorOverwriteBuildingIcon = false;
         private bool _generatorAutoSaveAssets = true;
@@ -352,8 +353,8 @@ namespace Kruty1918.Moyva.Construction.Editor
                 _generatorPixelsPerUnit);
 
             _generatorCreateBuildingEntries = EditorGUILayout.ToggleLeft(
-                new GUIContent("Створювати BuildingDefinition (wall/gate), якщо відсутні",
-                    "Додає елементи в BuildingRegistrySO.Buildings автоматично"),
+                new GUIContent("Відкрити Build Designer для wall/gate assets",
+                    "Inline BuildingRegistrySO.Buildings більше не створюється. Wall/Gate definitions треба створювати як BuildingDefinition assets."),
                 _generatorCreateBuildingEntries);
 
             _generatorOverwriteBuildingPrefab = EditorGUILayout.ToggleLeft(
@@ -512,14 +513,11 @@ namespace Kruty1918.Moyva.Construction.Editor
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button(
-                    new GUIContent("Створити/оновити BuildingDefinition",
-                        "Гарантує наявність wall/gate записів у BuildingRegistrySO.Buildings"),
+                    new GUIContent("Відкрити Build Designer",
+                        "Wall/Gate definitions створюються як BuildingDefinition assets, а не inline записи в registry."),
                     GUILayout.Height(28f), GUILayout.Width(250f)))
                 {
-                    var so = new SerializedObject(_registry);
-                    so.Update();
-                    EnsureBuildingEntries(so, col, collectOnly: false);
-                    so.ApplyModifiedProperties();
+                    EditorApplication.ExecuteMenuItem("Moyva/Tools/Building Designer");
                 }
             }
         }
@@ -771,6 +769,22 @@ namespace Kruty1918.Moyva.Construction.Editor
 
         private void EnsureBuildingEntries(SerializedObject so, SerializedProperty col, bool collectOnly)
         {
+            if (collectOnly || !_generatorCreateBuildingEntries)
+                return;
+
+            if (!_warnedAssetDefinitionFlow)
+            {
+                _warnedAssetDefinitionFlow = true;
+                Debug.LogWarning(
+                    "[WallRegistry] Inline BuildingDefinition creation is disabled. " +
+                    "Create wall/gate BuildingDefinition assets in Moyva/Tools/Building Designer.",
+                    _registry);
+            }
+
+            EditorApplication.ExecuteMenuItem("Moyva/Tools/Building Designer");
+            return;
+
+            /*
             var buildings = so.FindProperty("Buildings");
             if (buildings == null)
                 return;
@@ -802,6 +816,7 @@ namespace Kruty1918.Moyva.Construction.Editor
                 gatePrefab,
                 BuildingCategory.Walls,
                 collectOnly);
+            */
         }
 
         private static Sprite ExtractSpriteFromPrefab(GameObject prefab)
@@ -875,7 +890,7 @@ namespace Kruty1918.Moyva.Construction.Editor
             _generatorPrefabRoot = DefaultPrefabRoot;
             _generatorSortingOrder = 2;
             _generatorPixelsPerUnit = 100f;
-            _generatorCreateBuildingEntries = true;
+            _generatorCreateBuildingEntries = false;
             _generatorOverwriteBuildingPrefab = false;
             _generatorOverwriteBuildingIcon = false;
             _generatorAutoSaveAssets = true;

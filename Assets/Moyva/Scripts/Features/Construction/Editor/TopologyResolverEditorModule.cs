@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Editor.Shared;
 using UnityEditor;
 using UnityEngine;
@@ -499,6 +500,20 @@ namespace Kruty1918.Moyva.Construction.Editor
         private static List<string> CollectBuildingIds(SerializedObject so)
         {
             var ids = new List<string>();
+            if (so?.targetObject is BuildingRegistrySO registry)
+            {
+                var definitions = registry.GetAll();
+                for (int i = 0; i < definitions.Length; i++)
+                {
+                    string id = definitions[i]?.Id;
+                    if (!string.IsNullOrWhiteSpace(id) && !ids.Contains(id))
+                        ids.Add(id.Trim());
+                }
+
+                ids.Sort(StringComparer.Ordinal);
+                return ids;
+            }
+
             var buildings = so?.FindProperty("Buildings");
             if (buildings == null)
                 return ids;
@@ -701,6 +716,13 @@ namespace Kruty1918.Moyva.Construction.Editor
             if (string.IsNullOrWhiteSpace(id))
                 return;
 
+            Debug.LogWarning(
+                $"[TopologyResolver] Inline BuildingDefinition creation for '{id}' is disabled. " +
+                "Create or update a BuildingDefinition asset in the Odin Build Designer.");
+            EditorApplication.ExecuteMenuItem("Moyva/Tools/Building Designer");
+            return;
+
+            /*
             var buildings = so.FindProperty("Buildings");
             if (buildings == null)
                 return;
@@ -738,6 +760,7 @@ namespace Kruty1918.Moyva.Construction.Editor
 
             if (icon != null)
                 target.FindPropertyRelative("Icon").objectReferenceValue = icon;
+            */
         }
 
         private static string SanitizeFileName(string value)
