@@ -185,7 +185,13 @@ namespace Kruty1918.Moyva.Construction.UI
         /// Підтвердити всі pending-розміщення.
         /// Підключи: Confirm button → OnClick → цей метод.
         /// </summary>
-        public void OnConfirmClicked() => _signalBus.Fire(new PlaceBuildingConfirmRequestSignal());
+        public void OnConfirmClicked()
+        {
+            _signalBus.Fire(new PlaceBuildingConfirmRequestSignal());
+
+            if (_constructionService.State == BuildingPlacementState.Placing || _constructionService.IsDemolishMode)
+                _constructionService.Confirm();
+        }
 
         /// <summary>
         /// Скасувати поточну сесію будівництва.</summary>

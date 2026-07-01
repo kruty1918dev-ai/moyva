@@ -445,73 +445,124 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (VerboseLogs)
                 Debug.Log($"[Construction] Confirm requested. count={_pendingPlacements.Count}");
 
-            foreach (var placement in _pendingPlacements)
+            if (_pendingPlacements.Count == 0)
+            {
+                if (VerboseLogs)
+                    Debug.Log("[Construction] Confirm ignored: no pending placements.");
+                return;
+            }
+
+            var pendingSnapshot = new List<PendingPlacement>(_pendingPlacements);
+            var confirmedPositions = new HashSet<Vector2Int>();
+            int confirmedCount = 0;
+            int skippedCount = 0;
+
+            foreach (var placement in pendingSnapshot)
             {
                 var pos = placement.Position;
                 var id = placement.BuildingId;
-                bool gateReplacementAllowed = _wallPlacementService != null
-                    && _wallPlacementService.IsGate(id)
-                    && _wallPlacementService.CanReplaceWallWithGate(pos, id, out _);
-
-                if (!gateReplacementAllowed && !CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked))
+                try
                 {
-                    Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: placement became invalid. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, terrainBlocked={terrainBlocked}, townHallBuildRadius={_townHallBuildRadius}.");
-                    _signalBus.Fire(new BuildingPreviewChangedSignal
-                    {
-                        Position = pos,
-                        BuildingId = id,
-                        PreviewState = BuildingPreviewState.None
-                    });
-                    continue;
-                }
+                    bool gateReplacementAllowed = _wallPlacementService != null
+                        && _wallPlacementService.IsGate(id)
+                        && _wallPlacementService.CanReplaceWallWithGate(pos, id, out _);
 
-                if (_objectsMapService.IsOccupied(pos))
-                {
-                    if (!gateReplacementAllowed)
+                    if (!gateReplacementAllowed && !CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked))
                     {
-                        Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: tile occupied.");
+                        skippedCount++;
+                        Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: placement became invalid. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, terrainBlocked={terrainBlocked}, townHallBuildRadius={_townHallBuildRadius}.");
                         continue;
                     }
 
-                    _objectsMapService.Unregister(pos);
-                }
-
-                if (!TryConsumeConstructionResources(pos, id, _activeOwnerId, out var resourceReason))
-                {
-                    _lastActionMessage = resourceReason;
-                    Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: {resourceReason}");
-                    _signalBus.Fire(new BuildingPreviewChangedSignal
+                    if (_objectsMapService.IsOccupied(pos))
                     {
-                        Position = pos,
+                        if (!gateReplacementAllowed)
+                        {
+                            skippedCount++;
+                            Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: tile occupied.");
+                            continue;
+                        }
+
+                        _objectsMapService.Unregister(pos);
+                    }
+
+                    if (!TryConsumeConstructionResources(pos, id, _activeOwnerId, out var resourceReason))
+                    {
+                        skippedCount++;
+                        _lastActionMessage = resourceReason;
+                        Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: {resourceReason}");
+                        continue;
+                    }
+
+                    _objectsMapService.Register(pos, id);
+                    _playerPlacedBuildings[pos] = id;
+
+                    _signalBus.Fire(new BuildingPlacedSignal
+                    {
                         BuildingId = id,
-                        PreviewState = BuildingPreviewState.None
+                        Position = pos,
+                        OwnerId = _activeOwnerId,
                     });
-                    continue;
+
+                    try
+                    {
+                        ApplyBuildingFogReveal(id, pos);
+                    }
+                    catch (Exception fogEx)
+                    {
+                        Debug.LogError($"[Construction] Fog reveal failed for '{id}' at {pos}: {fogEx.GetType().Name} - {fogEx.Message}");
+                    }
+
+                    confirmedPositions.Add(pos);
+                    confirmedCount++;
+
+                    if (VerboseLogs)
+                        Debug.Log($"[Construction] Confirm placed '{id}' at {pos}");
                 }
-
-                _objectsMapService.Register(pos, id);
-                _playerPlacedBuildings[pos] = id;
-                ApplyBuildingFogReveal(id, pos);
-                _signalBus.Fire(new BuildingPlacedSignal
+                catch (Exception ex)
                 {
-                    BuildingId = id,
-                    Position = pos,
-                    OwnerId = _activeOwnerId,
-                });
-
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] Confirm placed '{id}' at {pos}");
+                    skippedCount++;
+                    Debug.LogError($"[Construction] Confirm failed for '{id}' at {pos}: {ex.GetType().Name} - {ex.Message}");
+                }
             }
 
-            _pendingPlacements.Clear();
-            _pendingPositions.Clear();
+            if (confirmedPositions.Count > 0)
+            {
+                for (int index = _pendingPlacements.Count - 1; index >= 0; index--)
+                {
+                    var pending = _pendingPlacements[index];
+                    if (!confirmedPositions.Contains(pending.Position))
+                        continue;
+
+                    _pendingPlacements.RemoveAt(index);
+                    _pendingPositions.Remove(pending.Position);
+                    _pendingPlacementStatuses.Remove(pending.Position);
+
+                    _signalBus.Fire(new BuildingPreviewChangedSignal
+                    {
+                        Position = pending.Position,
+                        BuildingId = pending.BuildingId,
+                        PreviewState = BuildingPreviewState.None
+                    });
+                }
+            }
+
             _undoSnapshots.Clear();
             _redoSnapshots.Clear();
-            State = BuildingPlacementState.Idle;
-            _selectedBuildingId = null;
+
+            if (_pendingPlacements.Count == 0)
+            {
+                State = BuildingPlacementState.Idle;
+                _selectedBuildingId = null;
+            }
+            else
+            {
+                State = BuildingPlacementState.Placing;
+                _selectedBuildingId = _pendingPlacements[_pendingPlacements.Count - 1].BuildingId;
+            }
 
             if (VerboseLogs)
-                Debug.Log("[Construction] Confirm completed. state=Idle");
+                Debug.Log($"[Construction] Confirm completed. confirmed={confirmedCount}, skipped={skippedCount}, remainingPending={_pendingPlacements.Count}, state={State}");
         }
 
         public void Cancel()

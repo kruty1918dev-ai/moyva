@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const bool VerboseLogs = true;
         private const int BuildingLayerMinSortingOrder = 5;
         private const float BuildingSurfaceOffsetY = 0.5f;
+        private const float PreviewSurfaceOffsetY = 0.7f;
         private const float GhostAlpha = 0.55f;
         private const float BlockedFlashDuration = 0.35f;
         private const string InfluenceRadiusShaderName = "Moyva/2D/InfluenceRadius";
@@ -251,7 +252,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     prefabForPreview = wallPrefab;
 
                 string prefabTag = prefabForPreview != null ? prefabForPreview.name : "NULL";
-                instance = CreateInstance(prefabForPreview, signal.Position, _previewRoot, $"Preview_{signal.BuildingId}_{prefabTag}_{signal.Position.x}_{signal.Position.y}");
+                instance = CreateInstance(
+                    prefabForPreview,
+                    signal.Position,
+                    _previewRoot,
+                    $"Preview_{signal.BuildingId}_{prefabTag}_{signal.Position.x}_{signal.Position.y}",
+                    isPreviewVisual: true);
                 _previewByPosition[signal.Position] = instance;
             }
 
@@ -503,8 +509,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             UnityEngine.Object.Destroy(existing);
 
             string prefabTag = prefab != null ? prefab.name : "NULL";
-            var instance = CreateInstance(prefab, position, _previewRoot,
-                $"Preview_{sourceBuildingId}_{prefabTag}_{position.x}_{position.y}");
+            var instance = CreateInstance(
+                prefab,
+                position,
+                _previewRoot,
+                $"Preview_{sourceBuildingId}_{prefabTag}_{position.x}_{position.y}",
+                isPreviewVisual: true);
             _previewByPosition[position] = instance;
             if (wasGhostGreen) ApplyGhostStyle(instance, true);
         }
@@ -787,7 +797,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             state.Renderers.Clear();
         }
 
-        private GameObject CreateInstance(GameObject prefab, Vector2Int tile, Transform parent, string objectName, Quaternion? forcedRotation = null)
+        private GameObject CreateInstance(
+            GameObject prefab,
+            Vector2Int tile,
+            Transform parent,
+            string objectName,
+            Quaternion? forcedRotation = null,
+            bool isPreviewVisual = false)
         {
             if (prefab == null)
             {
@@ -818,7 +834,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
                 
                 instance.name = objectName;
-                AlignInstanceToTerrainSurface(instance, tile);
+                instance.SetActive(true);
+                EnsureRenderersEnabled(instance);
+                AlignInstanceToTerrainSurface(instance, tile, isPreviewVisual);
                 
                 if (VerboseLogs)
                     Debug.Log($"[ConstructionVisual] ✓ Created instance: {objectName} at {instance.transform.position}, parent={parent.name}");
@@ -855,12 +873,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return _gridProjection.GridToWorld(tile, elevation, layerOffset);
         }
 
-        private void AlignInstanceToTerrainSurface(GameObject instance, Vector2Int tile)
+        private void AlignInstanceToTerrainSurface(GameObject instance, Vector2Int tile, bool isPreviewVisual)
         {
             if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection) || instance == null)
                 return;
 
-            GridSurfacePlacementUtility.AlignBottomToSurface(instance, ResolveTerrainSurfaceY(tile) + BuildingSurfaceOffsetY);
+            float surfaceOffset = isPreviewVisual ? PreviewSurfaceOffsetY : BuildingSurfaceOffsetY;
+            GridSurfacePlacementUtility.AlignBottomToSurface(instance, ResolveTerrainSurfaceY(tile) + surfaceOffset);
         }
 
         private float ResolveTerrainSurfaceY(Vector2Int tile)
@@ -945,6 +964,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 spriteRenderers[i].color = tint;
             }
+
+            ApplyRendererTint(rootObject, tint, isValid);
         }
 
         private static void ApplySolidStyle(GameObject rootObject)
@@ -954,6 +975,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 spriteRenderers[i].color = Color.white;
             }
+
+            ClearRendererTint(rootObject);
         }
 
         private void RemovePreview(Vector2Int position)
@@ -1002,6 +1025,51 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 if (sg.sortingOrder < minOrder)
                     sg.sortingOrder = minOrder;
+            }
+        }
+
+        private static void EnsureRenderersEnabled(GameObject rootObject)
+        {
+            var renderers = rootObject.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (renderers[i] != null)
+                    renderers[i].enabled = true;
+            }
+        }
+
+        private static void ApplyRendererTint(GameObject rootObject, Color tint, bool isValid)
+        {
+            var renderers = rootObject.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                var renderer = renderers[i];
+                if (renderer == null || renderer is SpriteRenderer)
+                    continue;
+
+                var block = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(block);
+                block.SetColor("_Color", tint);
+                block.SetColor("_BaseColor", tint);
+                block.SetColor("_EmissionColor", isValid ? new Color(0.10f, 0.28f, 0.10f, 1f) : new Color(0.28f, 0.08f, 0.08f, 1f));
+                renderer.SetPropertyBlock(block);
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
+            }
+        }
+
+        private static void ClearRendererTint(GameObject rootObject)
+        {
+            var renderers = rootObject.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                var renderer = renderers[i];
+                if (renderer == null || renderer is SpriteRenderer)
+                    continue;
+
+                renderer.SetPropertyBlock(null);
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+                renderer.receiveShadows = true;
             }
         }
 

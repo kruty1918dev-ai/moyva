@@ -102,7 +102,7 @@ MonoBehaviour:
   RendererCullingBoundsPaddingCells: 0
   UnexploredAlpha: 1
   ExploredAlpha: 0.8
-  EnableStartupFallbackReveal: 1
+  EnableStartupFallbackReveal: 0
   StartupFallbackRevealRadius: 15
   StartupFallbackMinMarginFromBorder: 5
   StartupFallbackRelativeMarginFactor: 0.1667

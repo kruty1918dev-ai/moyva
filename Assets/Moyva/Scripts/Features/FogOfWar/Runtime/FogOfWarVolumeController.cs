@@ -78,8 +78,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private bool _loggedAwake;
         private bool _loggedConstruct;
         private bool _loggedRegisterWithoutUpdater;
-        private bool _startupFallbackApplied;
-
         public FogOfWarSettings Settings => _settings;
         public TileWorldCreatorManager TileWorldCreatorManager => ResolveFogManager();
 
@@ -230,15 +228,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return;
 
             var context = CreatePreviewContext();
-            if (_revealStartupFallbackArea)
+            if (_revealStartupFallbackArea && (_logBuildSummary || _logValidationWarnings))
             {
-                Vector2Int center = PickStartupFallbackCenter(context);
-                int radius = ResolveStartupFallbackRadius(context);
-                var shape = _settings.StartupFallbackRevealShape;
-                volumeUpdater.RequestStartupBuildFromController(this, context, center, radius, shape, keepVisible: true);
-                TeleportMainCameraToStartupFallback(context, center);
-                _startupFallbackApplied = true;
-                return;
+                Debug.Log(
+                    "[FogOfWarVolumeController] Runtime startup fallback reveal is deferred. " +
+                    "The fog volume builds immediately, but the visible startup area is now expected to come from bootstrap/world spawn logic so gameplay fog, camera focus, and construction rules stay synchronized.",
+                    this);
             }
 
             volumeUpdater.RequestStartupBuildFromController(this, context);
@@ -271,7 +266,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int seed = unchecked(width * 73856093 ^ height * 19349663 ^ Mathf.RoundToInt(context.CellSize * 1000f));
             var random = new System.Random(seed);
             var center = new Vector2Int(random.Next(minX, maxX + 1), random.Next(minY, maxY + 1));
-            Debug.Log($"[FogOfWarVolumeController] Startup fallback reveal picked center={center}, radius={radius}, margin={margin}, map={width}x{height}, alreadyApplied={_startupFallbackApplied}.", this);
+            Debug.Log($"[FogOfWarVolumeController] Startup fallback reveal picked center={center}, radius={radius}, margin={margin}, map={width}x{height}.", this);
             return center;
         }
 

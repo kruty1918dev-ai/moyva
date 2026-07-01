@@ -200,6 +200,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 RevealStartingAreas(baseMapSize.x, baseMapSize.y, revealCenter);
                 RegisterStartupCoreVisibility(baseMapSize.x, baseMapSize.y, revealCenter);
+                EnsureStartRevealVisible(baseMapSize.x, baseMapSize.y, revealCenter);
                 _startRevealApplied = true;
                 _appliedStartRevealWidth = baseMapSize.x;
                 _appliedStartRevealHeight = baseMapSize.y;
@@ -214,6 +215,26 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             _startLogicApplied = true;
             Debug.Log($"[Bootstrap] Стартова позиція: {revealCenter}. Туман розкрито, камеру переміщено.");
+        }
+
+        private void EnsureStartRevealVisible(int width, int height, Vector2Int revealCenter)
+        {
+            Vector2Int clampedCenter = ClampToMap(revealCenter, width, height);
+            if (_fogOfWarService.IsVisible(clampedCenter))
+            {
+                Debug.Log($"{DebugTag} Bootstrap.EnsureStartRevealVisible ok center={clampedCenter}, state=Visible.");
+                return;
+            }
+
+            int radius = _settings.ResolveRevealedRadius(width, height);
+            var shape = _settings.ResolveRevealShape();
+            Debug.LogWarning(
+                $"{DebugTag} Bootstrap.EnsureStartRevealVisible repair center={clampedCenter}, radius={radius}, shape={shape}. " +
+                "Start reveal did not become visible after the primary bootstrap pass, so the area is being forced visible again.");
+            _fogOfWarService.RevealArea(clampedCenter, radius, shape, keepVisible: true, visibleAreaId: StartRevealAnchorId);
+
+            if (_settings.keepCoreFullyVisible)
+                RegisterStartupCoreVisibility(width, height, clampedCenter);
         }
 
         private void ReapplyStartRevealIfNeeded(WorldGeneratedDataSignal signal)
