@@ -8,6 +8,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// <summary>
     /// Lightweight fog texture: 1 pixel = 1 tile, R8 format.
     /// No blur, no noise — raw grid values go straight to the GPU.
+    /// Це legacy visual path: gameplay fog state залишається у <see cref="IFogOfWarService"/>,
+    /// а texture updater лише відображає його у shader representation.
     /// </summary>
     [Obsolete("Use FogOfWarVolumeUpdater for TWC dual-grid fog volume visuals.")]
     internal sealed class FogTextureUpdater : IFogTextureUpdater
@@ -25,6 +27,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private bool      _shaderGlobalsPublished;
         private Vector4   _mapParams;
 
+        /// <summary>
+        /// Готує legacy texture presentation для карти заданого розміру.
+        /// Публікує shader globals і створює CPU/GPU buffer-и.
+        /// </summary>
+        /// <param name="width">Ширина карти у клітинках.</param>
+        /// <param name="height">Висота карти у клітинках.</param>
+        /// <param name="fogMaterial">Матеріал, який споживає legacy fog texture.</param>
         public void Initialize(int width, int height, Material fogMaterial)
         {
             _mapWidth  = Mathf.Max(1, width);
@@ -62,6 +71,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Debug.Log($"{DebugTag} FogTexture.Initialize map={_mapWidth}x{_mapHeight}, material={(_material != null ? _material.name : "null")}, renderingDisabled={_renderingDisabled}.");
         }
 
+        /// <summary>
+        /// Застосовує інкрементальні зміни лише до dirty-клітинок у texture presentation.
+        /// </summary>
+        /// <param name="fogService">Gameplay source of truth для fog state.</param>
+        /// <param name="dirtyTiles">Клітинки, які змінилися після останнього update.</param>
         public void UpdateDirtyTiles(IFogOfWarService fogService, IEnumerable<Vector2Int> dirtyTiles)
         {
             if (_fogTexture == null)
@@ -94,6 +108,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 ApplyBuffer();
         }
 
+        /// <summary>
+        /// Повністю перебудовує texture presentation зі стану gameplay fog service.
+        /// </summary>
+        /// <param name="fogService">Gameplay source of truth для fog state.</param>
         public void RebuildFullTexture(IFogOfWarService fogService)
         {
             if (_fogTexture == null)

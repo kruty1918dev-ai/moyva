@@ -2,12 +2,19 @@ using Zenject;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Kruty1918.Moyva.Bootstrap.Runtime;
-using Kruty1918.Moyva.Multiplayer.Runtime;
+using Kruty1918.Moyva.Camera.API;
+using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.Multiplayer.Core;
+using Kruty1918.Moyva.Pathfinding.API;
+using Kruty1918.Moyva.Units.API;
 
 namespace Kruty1918.Moyva.Bootstrap
 {
     public class BootstrapInstaller : MonoInstaller
     {
+        private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
         [SerializeField] private BootstrapInstallerConfigSO _config;
 
         // Fallback для старих сцен, де налаштування були інлайн у Installer.
@@ -16,6 +23,8 @@ namespace Kruty1918.Moyva.Bootstrap
 
         public override void InstallBindings()
         {
+            Debug.Log($"{WorldGenDiagTag} BootstrapInstaller.InstallBindings scene={gameObject.scene.name}, mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
+            Debug.Log($"{DirectDiagTag} BootstrapInstaller.InstallBindings scene={gameObject.scene.name}, mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
             var gameSettings = _config != null ? _config.GameSettings : _legacyGameSettings;
             var startingPositionSettings = _config != null ? _config.StartingPositionSettings : _legacyStartingPositionSettings;
 
@@ -26,7 +35,7 @@ namespace Kruty1918.Moyva.Bootstrap
 
             // Спільний стан стартової позиції (читається BootstrapGameInitializer після того,
             // як StartingPositionInitializer запише значення при обробці WorldGeneratedDataSignal).
-            Container.Bind<BootstrapStartingPositionState>().AsSingle();
+            Container.BindInterfacesAndSelfTo<BootstrapStartingPositionState>().AsSingle();
             Container.Bind<BootstrapStarterPackState>().AsSingle();
 
             // Гра-bootstrap готує owner-контекст і видає стартові ресурси на старті нового світу.
@@ -70,8 +79,8 @@ namespace Kruty1918.Moyva.Bootstrap
             // Розкриває туман навколо стартової позиції і телепортує камеру туди.
             // Виконується після TestUnitSpawner, щоб знати чи є збереження.
             Container.BindInstance(startingPositionSettings).AsSingle();
-            Container.BindInterfacesTo<StartingPositionSyncService>().AsSingle().NonLazy();
-            Container.BindExecutionOrder<StartingPositionSyncService>(100);
+            BindStartingPositionServices();
+            Debug.Log($"{DirectDiagTag} BootstrapInstaller bound StartingPositionInitializer NonLazy=true.");
             Container.BindInterfacesTo<StartingPositionInitializer>().AsSingle().NonLazy();
             Container.BindExecutionOrder<StartingPositionInitializer>(101);
 
@@ -82,19 +91,138 @@ namespace Kruty1918.Moyva.Bootstrap
             Container.BindInterfacesTo<WorldLoadRevealOverlayService>().AsSingle().NonLazy();
             Container.BindExecutionOrder<WorldLoadRevealOverlayService>(104);
         }
+
+        private void BindStartingPositionServices()
+        {
+            Container.BindInterfacesAndSelfTo<StartingPositionSelector>()
+                .FromMethod(ctx => new StartingPositionSelector(
+                    ctx.Container.Resolve<StartingPositionInitializerSettings>(),
+                    TryResolveOptional<IPathfinder>(ctx.Container)))
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<StartingPositionAssignmentFactory>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<StartingPositionPolicy>()
+                .FromMethod(ctx => new StartingPositionPolicy(
+                    ctx.Container.Resolve<StartingPositionInitializerSettings>(),
+                    TryResolveOptional<ISessionManager>(ctx.Container),
+                    ctx.Container.Resolve<IStartingPositionState>()))
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<StartingPositionLocalSpawnResolver>()
+                .FromMethod(ctx => new StartingPositionLocalSpawnResolver(
+                    TryResolveOptional<ISessionManager>(ctx.Container),
+                    ctx.Container.Resolve<IStartingPositionState>()))
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<StartingPositionFogRevealService>()
+                .FromMethod(ctx => new StartingPositionFogRevealService(
+                    ctx.Container.Resolve<IFogOfWarService>(),
+                    TryResolveOptional<IFogVisualUpdater>(ctx.Container),
+                    ctx.Container.Resolve<StartingPositionInitializerSettings>(),
+                    StartingPositionInitializer.StartVisionAnchorId,
+                    StartingPositionInitializer.StartRevealAnchorId,
+                    StartingPositionInitializer.DebugTag))
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<StartingPositionLoadedFogRepairService>()
+                .FromMethod(ctx => new StartingPositionLoadedFogRepairService(
+                    ctx.Container.Resolve<IFogOfWarService>(),
+                    ctx.Container.Resolve<StartingPositionInitializerSettings>(),
+                    ctx.Container.Resolve<IStartingPositionFogRevealService>(),
+                    StartingPositionInitializer.StartRevealAnchorId,
+                    StartingPositionInitializer.DebugTag))
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<StartingPositionCameraService>()
+                .FromMethod(ctx => new StartingPositionCameraService(
+                    ctx.Container.Resolve<ICameraMovement>(),
+                    TryResolveOptional<ICameraZoom>(ctx.Container),
+                    TryResolveOptional<IGridProjection>(ctx.Container),
+                    TryResolveOptional<UnityEngine.Camera>(ctx.Container),
+                    TryResolveOptional<CameraSettingsSO>(ctx.Container),
+                    TryResolveOptional<MoyvaProjectSettingsSO>(ctx.Container),
+                    ctx.Container.Resolve<StartingPositionInitializerSettings>()))
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<StartingPositionCameraTargetResolver>()
+                .FromMethod(ctx => new StartingPositionCameraTargetResolver(
+                    ctx.Container.Resolve<IFogOfWarService>(),
+                    TryResolveOptional<IUnitService>(ctx.Container),
+                    ctx.Container.Resolve<IStartingPositionState>()))
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<StartingPositionSpawnSetupService>()
+                .AsSingle();
+            Debug.Log($"{DirectDiagTag} BootstrapInstaller bound StartingPositionSpawnSetupService.");
+
+            Container.BindInterfacesAndSelfTo<StartingPositionRevealPresentationService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<StartingPositionAutoloadRecoveryService>()
+                .AsSingle();
+
+            Container.BindInterfacesAndSelfTo<StartingPositionWorkflowState>()
+                .AsSingle();
+            Debug.Log($"{DirectDiagTag} BootstrapInstaller bound BootstrapStartingPositionState.");
+
+            Container.BindInterfacesAndSelfTo<StartingPositionWorkflowService>()
+                .AsSingle();
+            Debug.Log($"{DirectDiagTag} BootstrapInstaller bound StartingPositionWorkflowService lifetime=AsSingle rootCreated=false.");
+            Debug.Log($"{DirectDiagTag} BootstrapInstaller bound StartingPositionFogRevealService.");
+        }
+
+        private static T TryResolveOptional<T>(DiContainer container)
+            where T : class
+        {
+            return container.HasBinding(typeof(T))
+                ? container.Resolve<T>()
+                : null;
+        }
     }
 
     internal sealed class DirectGameplayLaunchModeInitializer : IInitializable
     {
+        private const string PolicyDiagTag = "[MoyvaStartPolicyDiag]";
+        private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
+
         public void Initialize()
         {
+            bool expiredBeforeInitialize = GameLaunchContext.IsExpired;
+            GameLaunchContext.EnsureNotExpired();
+            Debug.Log($"{WorldGenDiagTag} DirectLaunch.Initialize BEFORE mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
+            Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize BEFORE mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
+
+            Debug.Log(
+                $"{PolicyDiagTag} DirectLaunch.Initialize before mode={GameLaunchContext.Mode}, expiredBefore={expiredBeforeInitialize}, " +
+                $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, " +
+                $"autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, slot={GameLaunchContext.SaveSlot}.");
+
             if (GameLaunchContext.Mode != GameLaunchMode.Unknown)
+            {
+                Debug.Log($"{WorldGenDiagTag} DirectLaunch.Initialize SKIP reason=mode-not-unknown mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
+                Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize skip reason=mode-not-unknown currentMode={GameLaunchContext.Mode}.");
+                Debug.Log(
+                    $"{PolicyDiagTag} DirectLaunch.Initialize skip mode={GameLaunchContext.Mode}, " +
+                    $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
+                Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize AFTER mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
                 return;
+            }
 
 #if UNITY_EDITOR
+            Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize APPLY direct fallback reason=editor-direct-gameplay-mode-unknown.");
             GameLaunchContext.ConfigureDirectGameplayTest();
+            Debug.Log($"{WorldGenDiagTag} DirectLaunch.Initialize CONFIGURED mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
+            Debug.Log(
+                $"{PolicyDiagTag} DirectLaunch.Initialize configured mode={GameLaunchContext.Mode}, " +
+                $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, " +
+                $"autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, slot={GameLaunchContext.SaveSlot}.");
             Debug.Log("[Bootstrap] Direct gameplay start detected -> solo/no-save test mode enabled.");
 #endif
+            Debug.Log($"{WorldGenDiagTag} DirectLaunch.Initialize AFTER mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
+            Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize AFTER mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
         }
     }
 

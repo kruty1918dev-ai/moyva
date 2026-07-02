@@ -1,7 +1,5 @@
-using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.FogOfWar.API;
-using Kruty1918.Moyva.Grid.API;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using Zenject;
@@ -11,9 +9,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     [DisallowMultipleComponent]
     [RequireComponent(typeof(TileWorldCreatorManager))]
     [HideMonoScript]
-    public sealed class FogOfWarVolumeController : MonoBehaviour
+    /// <summary>
+    /// Тонкий Unity/Odin host-компонент для volume-based FogOfWar presentation.
+    /// Зберігає scene settings, підключається до runtime updater-а через Zenject
+    /// і делегує preview/validation/output cleanup профільним сервісам.
+    /// Не повинен містити gameplay fog logic або створювати runtime сервіси у play mode напряму.
+    /// </summary>
+    public sealed class FogOfWarVolumeController : MonoBehaviour, IFogVolumePreviewHost, IFogVolumeSceneContextHost, IFogVolumeValidationHost
     {
-        private const string GeneratedRootName = "FogOfWar_GeneratedVolume";
+        private const string StartDiagTag = "[MoyvaFogStartDiag]";
 
         [TitleGroup("Settings")]
         [Required]
@@ -59,10 +63,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         [TitleGroup("Startup Fallback")]
         [ShowIf(nameof(_revealStartupFallbackArea))]
-        [SerializeField] private bool _teleportMainCameraToStartupFallback = true;
-
-        [TitleGroup("Startup Fallback")]
-        [ShowIf(nameof(_revealStartupFallbackArea))]
         [MinValue(1)]
         [SerializeField] private int _startupFallbackRevealRadiusOverride;
 
@@ -71,36 +71,78 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         [ReadOnly]
         [MultiLineProperty(7)]
         [PropertyOrder(100)]
-        private string ValidationSummary => BuildValidationSummary();
+        private string ValidationSummary
+        {
+            get
+            {
+                var validationService = ResolveValidationService();
+                return validationService != null
+                    ? validationService.BuildValidationSummary(this)
+                    : "Missing IFogVolumeValidationService runtime binding.";
+            }
+        }
 
-        private IFogVisualUpdater _visualUpdater;
+        private IFogVolumeRuntimeUpdater _runtimeUpdater;
+        private IFogVolumePreviewBuilder _previewBuilder;
+        private IFogVolumeSceneContextBuilder _sceneContextBuilder;
+        private IFogVolumeOutputCleaner _outputCleaner;
+        private IFogVolumeValidationService _validationService;
         private TileWorldCreatorManager _tileWorldCreatorManager;
         private bool _loggedAwake;
         private bool _loggedConstruct;
         private bool _loggedRegisterWithoutUpdater;
+        private bool _deferRuntimePreviewCleanupUntilStart;
+        /// <summary>
+        /// Fog settings asset, який визначає gameplay tuning і volume visual config.
+        /// </summary>
         public FogOfWarSettings Settings => _settings;
+
+        /// <summary>
+        /// TWC manager на цьому ж GameObject, який тримає runtime/editor fog volume output.
+        /// </summary>
         public TileWorldCreatorManager TileWorldCreatorManager => ResolveFogManager();
 
+        /// <summary>
+        /// Ефективний режим оновлення volume у runtime з урахуванням scene override.
+        /// </summary>
         public FogVolumeUpdateMode EffectiveUpdateMode => _overrideUpdateMode
             ? _updateMode
             : (_settings != null ? _settings.Volume.UpdateMode : FogVolumeUpdateMode.DebouncePerFrame);
 
+        /// <summary>
+        /// Ефективний інтервал перебудови volume у runtime.
+        /// </summary>
         public float EffectiveRebuildIntervalSeconds => Mathf.Max(
             0.02f,
             _overrideUpdateMode
                 ? _rebuildIntervalSeconds
                 : (_settings != null ? _settings.Volume.RebuildIntervalSeconds : 0.1f));
 
+        /// <summary>
+        /// Додатковий верхній clearance, який controller передає runtime volume build path.
+        /// </summary>
         public float AdditionalTopClearance => Mathf.Max(0f, _additionalTopClearance);
+
+        /// <summary>
+        /// Чи дозволено підсумкове debug logging для побудови volume.
+        /// </summary>
         public bool LogBuildSummary => _logBuildSummary;
+
+        /// <summary>
+        /// Чи слід логувати кожен volume update окремо.
+        /// </summary>
         public bool LogEveryVolumeUpdate => _logEveryVolumeUpdate;
+
+        /// <summary>
+        /// Чи слід показувати validation warning-и для scene/setup проблем.
+        /// </summary>
         public bool LogValidationWarnings => _logValidationWarnings;
 
         private bool UsesIntervalUpdate => EffectiveUpdateMode == FogVolumeUpdateMode.Interval;
 
         private bool CanRequestRuntimeRebuild
             => Application.isPlaying
-                && _visualUpdater is FogOfWarVolumeUpdater
+                && _runtimeUpdater != null
                 && _settings != null
                 && ResolveFogManager() != null;
 
@@ -109,14 +151,24 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             LogLifecycleOnce(ref _loggedAwake, "Awake", $"settings={(_settings != null ? _settings.name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}, clearPreview={(_settings != null && _settings.Volume.ClearPreviewOnRuntimeStart)}");
 
             if (_settings != null && _settings.Volume.ClearPreviewOnRuntimeStart)
-                ClearGeneratedFogOutput();
+                _deferRuntimePreviewCleanupUntilStart = !TryClearGeneratedFogOutput();
         }
 
         [Inject]
-        private void Construct([InjectOptional] IFogVisualUpdater visualUpdater)
+        private void Construct(
+            [InjectOptional] IFogVolumeRuntimeUpdater runtimeUpdater,
+            [InjectOptional] IFogVolumePreviewBuilder previewBuilder = null,
+            [InjectOptional] IFogVolumeSceneContextBuilder sceneContextBuilder = null,
+            [InjectOptional] IFogVolumeOutputCleaner outputCleaner = null,
+            [InjectOptional] IFogVolumeValidationService validationService = null)
         {
-            _visualUpdater = visualUpdater;
-            LogLifecycleOnce(ref _loggedConstruct, "Construct", $"visualUpdater={(visualUpdater != null ? visualUpdater.GetType().Name : "null")}, settings={(_settings != null ? _settings.name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}");
+            _runtimeUpdater = runtimeUpdater;
+            _previewBuilder = previewBuilder;
+            _sceneContextBuilder = sceneContextBuilder;
+            _outputCleaner = outputCleaner;
+            _validationService = validationService;
+            Debug.Log($"{StartDiagTag} VolumeController.Construct runtimeUpdater={(runtimeUpdater != null ? runtimeUpdater.GetType().Name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}, settings={(_settings != null ? _settings.name : "null")}.");
+            LogLifecycleOnce(ref _loggedConstruct, "Construct", $"runtimeUpdater={(runtimeUpdater != null ? runtimeUpdater.GetType().Name : "null")}, previewBuilder={(previewBuilder != null ? previewBuilder.GetType().Name : "null")}, sceneContextBuilder={(sceneContextBuilder != null ? sceneContextBuilder.GetType().Name : "null")}, outputCleaner={(outputCleaner != null ? outputCleaner.GetType().Name : "null")}, validationService={(validationService != null ? validationService.GetType().Name : "null")}, settings={(_settings != null ? _settings.name : "null")}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}");
             RegisterWithUpdater();
         }
 
@@ -127,14 +179,19 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void Start()
         {
+            if (_deferRuntimePreviewCleanupUntilStart)
+            {
+                TryClearGeneratedFogOutput();
+                _deferRuntimePreviewCleanupUntilStart = false;
+            }
+
             RegisterWithUpdater();
             RequestStartupBuildIfGameplayFogIsNotReady();
         }
 
         private void OnDisable()
         {
-            if (_visualUpdater is FogOfWarVolumeUpdater volumeUpdater)
-                volumeUpdater.DetachController(this);
+            _runtimeUpdater?.DetachController(this);
         }
 
         private void OnValidate()
@@ -152,32 +209,22 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_settings == null || ResolveFogManager() == null)
                 return;
 
-            ClearGeneratedFogOutput();
-            var context = CreatePreviewContext();
-            var updater = new FogOfWarVolumeUpdater(_settings);
-            updater.AttachController(this);
-            updater.Initialize(context.Width, context.Height, context);
-            updater.RebuildFullVisual(new PreviewFogService(context.Width, context.Height));
-            updater.Tick();
+            if (!TryClearGeneratedFogOutput())
+                return;
+
+            var previewBuilder = ResolvePreviewBuilder();
+            var sceneContextBuilder = ResolveSceneContextBuilder();
+            if (previewBuilder == null || sceneContextBuilder == null)
+                return;
+
+            previewBuilder.BuildPreview(this, sceneContextBuilder.BuildContext(this));
         }
 
         [TitleGroup("Preview")]
         [Button("Clear Preview")]
         private void ClearGeneratedFogOutput()
         {
-            var manager = ResolveFogManager();
-            if (manager == null)
-                return;
-
-            for (int i = manager.transform.childCount - 1; i >= 0; i--)
-                DestroyGeneratedObject(manager.transform.GetChild(i).gameObject);
-
-            if (manager.configuration != null
-                && manager.configuration.name.StartsWith("FogOfWar_", System.StringComparison.Ordinal))
-            {
-                DestroyGeneratedObject(manager.configuration);
-                manager.configuration = null;
-            }
+            TryClearGeneratedFogOutput();
         }
 
         [TitleGroup("Runtime Actions")]
@@ -185,10 +232,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         [EnableIf(nameof(CanRequestRuntimeRebuild))]
         private void RebuildFogVolume()
         {
-            if (_visualUpdater is FogOfWarVolumeUpdater volumeUpdater)
-                volumeUpdater.RequestFullRebuildFromController(this);
+            _runtimeUpdater?.RequestFullRebuildFromController(this);
         }
 
+        /// <summary>
+        /// Визначає cell size, який використовуватиме volume build path.
+        /// Scene override має пріоритет над settings і world cell size.
+        /// </summary>
+        /// <param name="worldCellSize">Cell size, отриманий із generated світу.</param>
+        /// <returns>Ефективний cell size для fog volume.</returns>
         public float ResolveCellSize(float worldCellSize)
         {
             if (_overrideCellSize)
@@ -213,21 +265,27 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (!isActiveAndEnabled)
                 return;
 
-            if (_visualUpdater is not FogOfWarVolumeUpdater volumeUpdater)
+            if (_runtimeUpdater == null)
             {
-                LogLifecycleOnce(ref _loggedRegisterWithoutUpdater, "RegisterWithUpdater skipped", $"visualUpdater={(_visualUpdater != null ? _visualUpdater.GetType().Name : "null")}");
+                Debug.LogWarning($"{StartDiagTag} VolumeController.RegisterWithUpdater failed runtimeUpdater=null, object={name}, active={gameObject.activeInHierarchy}, enabled={enabled}.");
+                LogLifecycleOnce(ref _loggedRegisterWithoutUpdater, "RegisterWithUpdater skipped", "runtimeUpdater=null");
                 return;
             }
 
-            volumeUpdater.AttachController(this);
+            Debug.Log($"{StartDiagTag} VolumeController.RegisterWithUpdater success object={name}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}, settings={(_settings != null ? _settings.name : "null")}.");
+            _runtimeUpdater.AttachController(this);
         }
 
         private void RequestStartupBuildIfGameplayFogIsNotReady()
         {
-            if (_settings == null || _visualUpdater is not FogOfWarVolumeUpdater volumeUpdater)
+            if (_settings == null || _runtimeUpdater == null)
                 return;
 
-            var context = CreatePreviewContext();
+            var sceneContextBuilder = ResolveSceneContextBuilder();
+            if (sceneContextBuilder == null)
+                return;
+
+            var context = sceneContextBuilder.BuildContext(this);
             if (_revealStartupFallbackArea && (_logBuildSummary || _logValidationWarnings))
             {
                 Debug.Log(
@@ -236,7 +294,80 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     this);
             }
 
-            volumeUpdater.RequestStartupBuildFromController(this, context);
+            Debug.Log($"{StartDiagTag} VolumeController.RequestStartupBuildFromController object={name}, manager={(ResolveFogManager() != null ? ResolveFogManager().name : "null")}, context={context.Width}x{context.Height}, cell={context.CellSize:0.###}, bounds={(context.HasMapWorldBounds ? context.MapWorldBounds.ToString() : "none")}.");
+            _runtimeUpdater.RequestStartupBuildFromController(this, context);
+        }
+
+        void IFogVolumePreviewHost.AttachPreviewUpdater(IFogVolumeRuntimeUpdater updater)
+        {
+            if (updater == null)
+                return;
+
+            Debug.Log($"{StartDiagTag} VolumeController.AttachPreviewUpdater object={name}, updater={updater.GetType().Name}.");
+            updater.AttachController(this);
+        }
+
+        private bool TryClearGeneratedFogOutput()
+        {
+            var outputCleaner = ResolveOutputCleaner();
+            if (outputCleaner == null)
+                return false;
+
+            outputCleaner.ClearGeneratedOutput(ResolveFogManager());
+            return true;
+        }
+
+        private IFogVolumePreviewBuilder ResolvePreviewBuilder()
+        {
+            if (_previewBuilder != null)
+                return _previewBuilder;
+
+#if UNITY_EDITOR
+            // Editor-only fallback so Odin preview buttons work without a Zenject runtime context.
+            if (!Application.isPlaying)
+                return _previewBuilder = new FogVolumePreviewBuilder();
+#endif
+
+            return null;
+        }
+
+        private IFogVolumeSceneContextBuilder ResolveSceneContextBuilder()
+        {
+            if (_sceneContextBuilder != null)
+                return _sceneContextBuilder;
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                return _sceneContextBuilder = new FogVolumeSceneContextBuilder();
+#endif
+
+            return null;
+        }
+
+        private IFogVolumeOutputCleaner ResolveOutputCleaner()
+        {
+            if (_outputCleaner != null)
+                return _outputCleaner;
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                return _outputCleaner = new FogVolumeOutputCleaner();
+#endif
+
+            return null;
+        }
+
+        private IFogVolumeValidationService ResolveValidationService()
+        {
+            if (_validationService != null)
+                return _validationService;
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                return _validationService = new FogVolumeValidationService();
+#endif
+
+            return null;
         }
 
         private void LogLifecycleOnce(ref bool logged, string stage, string details)
@@ -248,316 +379,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Debug.Log($"[FogOfWarVolumeController] {stage}: object='{name}', active={gameObject.activeInHierarchy}, enabled={enabled}, {details}.", this);
         }
 
-        private Vector2Int PickStartupFallbackCenter(FogWorldVisualContext context)
-        {
-            int width = Mathf.Max(1, context.Width);
-            int height = Mathf.Max(1, context.Height);
-            int radius = ResolveStartupFallbackRadius(context);
-            int margin = Mathf.Clamp(
-                Mathf.Max(_settings.StartupFallbackMinMarginFromBorder, radius),
-                0,
-                Mathf.Max(0, Mathf.Min(width, height) / 2 - 1));
-
-            int minX = Mathf.Clamp(margin, 0, width - 1);
-            int maxX = Mathf.Clamp(width - 1 - margin, minX, width - 1);
-            int minY = Mathf.Clamp(margin, 0, height - 1);
-            int maxY = Mathf.Clamp(height - 1 - margin, minY, height - 1);
-
-            int seed = unchecked(width * 73856093 ^ height * 19349663 ^ Mathf.RoundToInt(context.CellSize * 1000f));
-            var random = new System.Random(seed);
-            var center = new Vector2Int(random.Next(minX, maxX + 1), random.Next(minY, maxY + 1));
-            Debug.Log($"[FogOfWarVolumeController] Startup fallback reveal picked center={center}, radius={radius}, margin={margin}, map={width}x{height}.", this);
-            return center;
-        }
-
-        private int ResolveStartupFallbackRadius(FogWorldVisualContext context)
-        {
-            if (_startupFallbackRevealRadiusOverride > 0)
-                return Mathf.Max(1, _startupFallbackRevealRadiusOverride);
-
-            return Mathf.Max(1, _settings != null ? _settings.StartupFallbackRevealRadius : Mathf.Max(1, Mathf.Min(context.Width, context.Height) / 5));
-        }
-
-        private void TeleportMainCameraToStartupFallback(FogWorldVisualContext context, Vector2Int center)
-        {
-            if (!_teleportMainCameraToStartupFallback)
-                return;
-
-            var camera = UnityEngine.Camera.main;
-            if (camera == null)
-            {
-                Debug.LogWarning("[FogOfWarVolumeController] Startup fallback camera teleport skipped: MainCamera was not found.", this);
-                return;
-            }
-
-            Vector3 focus = ResolveStartupFallbackWorldPoint(context, center);
-            Vector3 forward = camera.transform.forward.sqrMagnitude > 0.0001f
-                ? camera.transform.forward.normalized
-                : Vector3.forward;
-            float distance = ResolveCameraPlaneDistance(camera, focus);
-            camera.transform.position = focus - forward * distance;
-            Debug.Log($"[FogOfWarVolumeController] Startup fallback camera teleported to center={center}, focus={focus}, distance={distance:0.###}.", this);
-        }
-
-        private Vector3 ResolveStartupFallbackWorldPoint(FogWorldVisualContext context, Vector2Int center)
-        {
-            float cellSize = ResolveCellSize(context.CellSize);
-            Vector3 origin = context.HasMapWorldBounds
-                ? new Vector3(context.MapWorldBounds.min.x + cellSize * 0.5f, transform.position.y, context.MapWorldBounds.min.z + cellSize * 0.5f)
-                : transform.position;
-            float height = ResolveStartupFallbackHeight(context, center);
-            return new Vector3(origin.x + center.x * cellSize, transform.position.y + height, origin.z + center.y * cellSize);
-        }
-
-        private float ResolveStartupFallbackHeight(FogWorldVisualContext context, Vector2Int center)
-        {
-            if (context.HeightMap != null
-                && center.x >= 0
-                && center.y >= 0
-                && center.x < context.HeightMap.GetLength(0)
-                && center.y < context.HeightMap.GetLength(1))
-            {
-                return context.HeightMap[center.x, center.y];
-            }
-
-            if (context.TerrainLevelMap != null
-                && center.x >= 0
-                && center.y >= 0
-                && center.x < context.TerrainLevelMap.GetLength(0)
-                && center.y < context.TerrainLevelMap.GetLength(1))
-            {
-                float step = _settings != null ? Mathf.Max(0.001f, _settings.Volume.TerrainLevelHeightStep) : 1f;
-                return Mathf.Max(0, context.TerrainLevelMap[center.x, center.y]) * step;
-            }
-
-            return 0f;
-        }
-
-        private static float ResolveCameraPlaneDistance(UnityEngine.Camera camera, Vector3 focus)
-        {
-            if (camera == null)
-                return 20f;
-
-            float distance = Vector3.Distance(camera.transform.position, focus);
-            if (distance > 0.1f && !float.IsNaN(distance) && !float.IsInfinity(distance))
-                return distance;
-
-            return camera.orthographic ? Mathf.Max(10f, camera.orthographicSize * 2f) : 20f;
-        }
-
-        private FogWorldVisualContext CreatePreviewContext()
-        {
-            var sourceManager = FindSceneSourceTileWorldCreatorManager();
-            var sourceConfiguration = sourceManager != null ? sourceManager.configuration : null;
-            if (sourceConfiguration == null)
-                return CreateFallbackPreviewContext();
-
-            int width = Mathf.Max(1, sourceConfiguration.width);
-            int height = Mathf.Max(1, sourceConfiguration.height);
-            float cellSize = Mathf.Max(0.001f, sourceConfiguration.cellSize);
-            Bounds bounds = CreateGridBounds(sourceManager.transform, width, height, cellSize);
-            float[,] heightMap = BuildPreviewHeightMap(sourceConfiguration, width, height);
-
-            return new FogWorldVisualContext(
-                width,
-                height,
-                GridTopology.Orthogonal,
-                GridProjectionMode.Orthographic3D,
-                GridRenderMode.Mesh3D,
-                GridNeighborhoodMode.Moore8,
-                cellSize,
-                true,
-                bounds,
-                heightMap,
-                null);
-        }
-
-        private FogWorldVisualContext CreateFallbackPreviewContext()
-        {
-            int width = Mathf.Max(1, _settings != null ? _settings.Volume.PreviewFallbackWidth : 16);
-            int height = Mathf.Max(1, _settings != null ? _settings.Volume.PreviewFallbackHeight : 16);
-            Bounds bounds = CreateGridBounds(transform, width, height, 1f);
-            return new FogWorldVisualContext(
-                width,
-                height,
-                GridTopology.Orthogonal,
-                GridProjectionMode.Orthographic3D,
-                GridRenderMode.Mesh3D,
-                GridNeighborhoodMode.Moore8,
-                1f,
-                true,
-                bounds,
-                null,
-                null);
-        }
-
-        private TileWorldCreatorManager FindSceneSourceTileWorldCreatorManager()
-        {
-            var ownManager = ResolveFogManager();
-            var managers = Object.FindObjectsByType<TileWorldCreatorManager>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            for (int i = 0; i < managers.Length; i++)
-            {
-                var manager = managers[i];
-                if (manager != null && manager != ownManager && manager.configuration != null)
-                    return manager;
-            }
-
-            return null;
-        }
-
-        private static float[,] BuildPreviewHeightMap(Configuration configuration, int width, int height)
-        {
-            var heightMap = new float[width, height];
-            if (configuration?.blueprintLayerFolders == null)
-                return heightMap;
-
-            for (int folderIndex = 0; folderIndex < configuration.blueprintLayerFolders.Count; folderIndex++)
-            {
-                var folder = configuration.blueprintLayerFolders[folderIndex];
-                if (folder?.blueprintLayers == null)
-                    continue;
-
-                for (int layerIndex = 0; layerIndex < folder.blueprintLayers.Count; layerIndex++)
-                {
-                    var layer = folder.blueprintLayers[layerIndex];
-                    if (layer == null)
-                        continue;
-
-                    float layerHeight = layer.defaultLayerHeight + ResolveBuildLayerYOffset(configuration, layer.guid);
-                    var positions = layer.GetAllCellPositions(new HashSet<Vector2>());
-                    foreach (var position in positions)
-                    {
-                        int x = Mathf.RoundToInt(position.x);
-                        int y = Mathf.RoundToInt(position.y);
-                        if (x >= 0 && x < width && y >= 0 && y < height)
-                            heightMap[x, y] = Mathf.Max(heightMap[x, y], layerHeight);
-                    }
-                }
-            }
-
-            return heightMap;
-        }
-
-        private static float ResolveBuildLayerYOffset(Configuration configuration, string blueprintGuid)
-        {
-            if (configuration?.buildLayerFolders == null || string.IsNullOrEmpty(blueprintGuid))
-                return 0f;
-
-            for (int folderIndex = 0; folderIndex < configuration.buildLayerFolders.Count; folderIndex++)
-            {
-                var folder = configuration.buildLayerFolders[folderIndex];
-                if (folder?.buildLayers == null)
-                    continue;
-
-                for (int layerIndex = 0; layerIndex < folder.buildLayers.Count; layerIndex++)
-                {
-                    if (folder.buildLayers[layerIndex] is TilesBuildLayer buildLayer
-                        && buildLayer.assignedBlueprintLayerGuid == blueprintGuid)
-                    {
-                        return buildLayer.layerYOffset;
-                    }
-                }
-            }
-
-            return 0f;
-        }
-
-        private static Bounds CreateGridBounds(Transform root, int width, int height, float cellSize)
-        {
-            float halfCell = cellSize * 0.5f;
-            Vector3 localMin = new Vector3(-halfCell, 0f, -halfCell);
-            Vector3 localMax = new Vector3(
-                (width - 1) * cellSize + halfCell,
-                1f,
-                (height - 1) * cellSize + halfCell);
-
-            Vector3 worldMin = root != null ? root.TransformPoint(localMin) : localMin;
-            Vector3 worldMax = worldMin;
-            Encapsulate(root != null ? root.TransformPoint(new Vector3(localMax.x, localMin.y, localMin.z)) : new Vector3(localMax.x, localMin.y, localMin.z), ref worldMin, ref worldMax);
-            Encapsulate(root != null ? root.TransformPoint(new Vector3(localMin.x, localMax.y, localMin.z)) : new Vector3(localMin.x, localMax.y, localMin.z), ref worldMin, ref worldMax);
-            Encapsulate(root != null ? root.TransformPoint(new Vector3(localMin.x, localMin.y, localMax.z)) : new Vector3(localMin.x, localMin.y, localMax.z), ref worldMin, ref worldMax);
-            Encapsulate(root != null ? root.TransformPoint(localMax) : localMax, ref worldMin, ref worldMax);
-            return new Bounds((worldMin + worldMax) * 0.5f, worldMax - worldMin);
-        }
-
-        private static void Encapsulate(Vector3 point, ref Vector3 min, ref Vector3 max)
-        {
-            min = Vector3.Min(min, point);
-            max = Vector3.Max(max, point);
-        }
-
-        private static void DestroyGeneratedObject(Object obj)
-        {
-            if (obj == null)
-                return;
-
-            if (Application.isPlaying)
-                Destroy(obj);
-            else
-                DestroyImmediate(obj);
-        }
-
         private bool HasSettings(FogOfWarSettings settings)
             => settings != null;
 
-        private string BuildValidationSummary()
-        {
-            if (_settings == null)
-                return "Missing FogOfWarSettings.";
-
-            if (ResolveFogManager() == null)
-                return "Missing TileWorldCreatorManager on the same GameObject.";
-
-            if (Object.FindObjectsByType<FogOfWarInstaller>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length == 0)
-                return "Missing FogOfWarInstaller in scene. Zenject bindings are still required for fog service/save/visibility.";
-
-            if (!HasConfiguredFogPreset(_settings.Volume.Unexplored) && !HasConfiguredFogPreset(_settings.Volume.Explored))
-                return "No enabled fog state has a valid dual-grid TilePreset.";
-
-            return "Ready: this component follows generated world grid/height data and builds fog as a TWC dual-grid volume.";
-        }
-
-        private static bool HasConfiguredFogPreset(FogVolumeStateTileSettings state)
-        {
-            if (state == null || !state.Enabled || state.TileVariants == null)
-                return false;
-
-            for (int i = 0; i < state.TileVariants.Count; i++)
-            {
-                var variant = state.TileVariants[i];
-                if (variant != null
-                    && variant.Preset != null
-                    && FogOfWarSettings.HasUsableDualGridPreset(variant.Preset))
-                    return true;
-            }
-
-            return false;
-        }
-
-        private sealed class PreviewFogService : IFogOfWarService
-        {
-            private readonly int _width;
-            private readonly int _height;
-
-            public PreviewFogService(int width, int height)
-            {
-                _width = Mathf.Max(1, width);
-                _height = Mathf.Max(1, height);
-            }
-
-            public void Initialize(int width, int height) { }
-            public void RegisterUnit(string unitId, Vector2Int position, int visionRange) { }
-            public void UpdateUnitVisionRange(string unitId, int visionRange) { }
-            public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape) { }
-            public void RevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId = null) { }
-            public void UpdateUnitPosition(string unitId, Vector2Int newPosition) { }
-            public void UnregisterUnit(string unitId) { }
-            public FogStateType GetFogState(Vector2Int position) => FogStateType.Unexplored;
-            public bool IsVisible(Vector2Int position) => false;
-            public bool IsExplored(Vector2Int position) => false;
-            public bool[,] GetExploredSnapshot() => new bool[_width, _height];
-            public void LoadFromSnapshot(bool[,] explored) { }
-            public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles() => System.Array.Empty<Vector2Int>();
-        }
     }
 }

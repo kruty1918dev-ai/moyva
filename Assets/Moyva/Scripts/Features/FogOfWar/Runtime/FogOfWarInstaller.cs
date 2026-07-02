@@ -5,8 +5,17 @@ using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
+    /// <summary>
+    /// Zenject installer для FogOfWar runtime підсистеми.
+    /// Біндить gameplay fog state, save module, visual update path, validation/preview helpers
+    /// та renderer culling services. Ці bindings runtime-critical для нормальної роботи туману.
+    /// </summary>
     public class FogOfWarInstaller : MonoInstaller
     {
+        /// <summary>
+        /// Реєструє всі FogOfWar сервіси в контейнері сцени.
+        /// Під час інсталяції також знаходить на сцені <see cref="FogOfWarVolumeController"/> і ставить їх у чергу на inject.
+        /// </summary>
         public override void InstallBindings()
         {
             var fogVolumes = Object.FindObjectsByType<FogOfWarVolumeController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -22,6 +31,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Container.Bind<IFogSaveDataProvider>().To<FogSaveDataStub>().AsSingle();
             Container.Bind<IHeightAwareVisionService>().To<HeightAwareVisionService>().AsSingle();
             Container.Bind<IFogVisibilityResolver>().To<FogVisibilityResolver>().AsSingle();
+            Container.Bind<IFogVolumePreviewBuilder>().To<FogVolumePreviewBuilder>().AsSingle();
+            Container.Bind<IFogVolumeSceneContextBuilder>().To<FogVolumeSceneContextBuilder>().AsSingle();
+            Container.Bind<IFogVolumeOutputCleaner>().To<FogVolumeOutputCleaner>().AsSingle();
+            Container.Bind<IFogVolumeValidationService>().To<FogVolumeValidationService>().AsSingle();
             Container.BindInterfacesAndSelfTo<FogOfWarVolumeUpdater>()
                 .AsSingle()
                 .NonLazy();
@@ -55,6 +68,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Container.BindExecutionOrder<FogRendererCullingService>(-3);
         }
 
+        /// <summary>
+        /// Пише у лог короткий діагностичний знімок controller-ів, знайдених у сцені.
+        /// Використовується лише для валідації setup і не впливає на gameplay logic.
+        /// </summary>
+        /// <param name="fogVolumes">Масив знайдених fog volume controller-ів.</param>
         private static void LogControllerDiagnostics(FogOfWarVolumeController[] fogVolumes)
         {
             if (fogVolumes == null || fogVolumes.Length == 0)
@@ -76,6 +94,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
         }
 
+        /// <summary>
+        /// Повертає перший доступний <see cref="FogOfWarSettings"/>, знайдений через fog volume controllers у сцені.
+        /// </summary>
+        /// <param name="fogVolumes">Контролери, які були знайдені у сцені.</param>
+        /// <returns>Знайдений settings asset або <see langword="null"/>.</returns>
         private FogOfWarSettings ResolveSettings(FogOfWarVolumeController[] fogVolumes)
         {
             if (fogVolumes == null)

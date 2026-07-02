@@ -5,8 +5,9 @@ using UnityEngine;
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     /// <summary>
-    /// Save module for Fog of War explored tiles.
-    /// Stores explored map snapshot as width/height + bool grid.
+    /// Save module для FogOfWar explored state.
+    /// Зберігає explored snapshot і fixed vision areas, але не зберігає короткоживучий visible state:
+    /// він має відновлюватися з юнітів, reveal sources та bootstrap/runtime logic після load.
     /// </summary>
     internal sealed class FogOfWarSaveModule : ISaveModule
     {
@@ -15,12 +16,20 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly IFogOfWarService _fogOfWarService;
         private readonly FogOfWarService _runtimeFogOfWarService;
 
+        /// <summary>
+        /// Створює save module для поточного gameplay fog service.
+        /// </summary>
+        /// <param name="fogOfWarService">Fog service, з якого читається і в який завантажується save state.</param>
         public FogOfWarSaveModule(IFogOfWarService fogOfWarService)
         {
             _fogOfWarService = fogOfWarService;
             _runtimeFogOfWarService = fogOfWarService as FogOfWarService;
         }
 
+        /// <summary>
+        /// Записує explored snapshot і fixed vision area snapshot у save context.
+        /// </summary>
+        /// <param name="context">Поточний save context з writer-ом.</param>
         public void OnSave(ISaveContext context)
         {
             context.Writer.Write(FormatVersionWithFixedVisionAreas);
@@ -47,6 +56,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             WriteFixedVisionAreas(context);
         }
 
+        /// <summary>
+        /// Відновлює explored snapshot і fixed vision areas із save context.
+        /// </summary>
+        /// <param name="context">Поточний load context з reader-ом.</param>
         public void OnLoad(ISaveContext context)
         {
             int markerOrWidth = context.Reader.ReadInt32();

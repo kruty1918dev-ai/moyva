@@ -12,6 +12,8 @@ namespace Kruty1918.Moyva.Bootstrap
     /// </summary>
     public sealed class ProjectServicesInstaller : MonoInstaller
     {
+        private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
+
         [Header("Audio")]
         [Tooltip("Реєстр звуків. Якщо порожньо — завантажується з Resources/MoyvaAudioRegistry.")]
         [SerializeField] private AudioRegistrySO _audioRegistry;
@@ -24,6 +26,7 @@ namespace Kruty1918.Moyva.Bootstrap
 
         public override void InstallBindings()
         {
+            Debug.Log($"{DirectDiagTag} ProjectServicesInstaller.InstallBindings mode={GameLaunchContext.Mode}, maxPlayers={GameLaunchContext.MaxPlayers}.");
             SharedInstaller.Install(Container);
 
             AudioInstaller.Install(Container, _audioRegistry, _musicProfiles, _sceneOverrides);
@@ -31,6 +34,7 @@ namespace Kruty1918.Moyva.Bootstrap
             SaveSystemInstaller.Install(Container);
 
             MultiplayerInstaller.Install(Container);
+            Debug.Log($"{DirectDiagTag} ProjectServicesInstaller bound ISessionManager=via MultiplayerInstaller, IGameplaySession=not-bound-in-ProjectContext.");
         }
     }
 }

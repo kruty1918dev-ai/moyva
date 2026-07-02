@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// Height-aware visibility resolver.
     /// Computes a non-uniform field of view based on base unit vision,
     /// terrain height bonus/penalty, and line-of-sight over the heightmap.
+    /// Сам resolver не повинен знати про save, camera або UI.
     /// </summary>
     internal sealed class FogVisibilityResolver : IFogVisibilityResolver
     {
@@ -16,6 +17,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private readonly IHeightAwareVisionService _heightVisionService;
         private readonly FogOfWarSettings _settings;
 
+        /// <summary>
+        /// Створює resolver видимості для gameplay fog state.
+        /// </summary>
+        /// <param name="gridService">Grid service, який дає контекст карти, якщо він потрібен.</param>
+        /// <param name="heightVisionService">Height-aware LOS service.</param>
+        /// <param name="settings">Необов'язкові fog settings для tuning threshold-ів і range-ів.</param>
         public FogVisibilityResolver(
             IGridService gridService,
             IHeightAwareVisionService heightVisionService,
@@ -28,11 +35,24 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Debug.LogWarning("[FogOfWar] FogVisibilityResolver: IGridService is null. Using provided map bounds only.");
         }
 
+        /// <summary>
+        /// Передає height map у height-aware LOS service.
+        /// </summary>
+        /// <param name="heightMap">Мапа висот generated світу.</param>
         public void SetHeightMap(float[,] heightMap)
         {
             _heightVisionService?.SetHeightMap(heightMap);
         }
 
+        /// <summary>
+        /// Повертає лише ті клітинки, що проходять visibility threshold.
+        /// </summary>
+        /// <param name="origin">Клітинка спостерігача.</param>
+        /// <param name="visionRange">Базовий радіус видимості.</param>
+        /// <param name="mapWidth">Ширина карти.</param>
+        /// <param name="mapHeight">Висота карти.</param>
+        /// <param name="observerModifiers">Модифікатори спостерігача.</param>
+        /// <returns>Колекція видимих клітинок.</returns>
         public IReadOnlyList<Vector2Int> ComputeVisibleTiles(
             Vector2Int origin, int visionRange, int mapWidth, int mapHeight, FogVisionModifiers observerModifiers = default)
         {
@@ -49,6 +69,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             return result;
         }
 
+        /// <summary>
+        /// Повертає детальний список клітинок із visibility factor для кожної.
+        /// </summary>
+        /// <param name="origin">Клітинка спостерігача.</param>
+        /// <param name="visionRange">Базовий радіус видимості.</param>
+        /// <param name="mapWidth">Ширина карти.</param>
+        /// <param name="mapHeight">Висота карти.</param>
+        /// <param name="observerModifiers">Модифікатори спостерігача.</param>
+        /// <returns>Список клітинок із нормалізованою видимістю.</returns>
         public IReadOnlyList<FogTileVisibility> ComputeVisibility(
             Vector2Int origin, int visionRange, int mapWidth, int mapHeight, FogVisionModifiers observerModifiers = default)
         {

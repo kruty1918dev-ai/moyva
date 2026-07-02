@@ -10,6 +10,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         private const string LogTag = "[MoyvaTWCHeight]";
         private const string SideWallLogTag = "[MoyvaTWCHeight:SideWalls]";
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
 
         private readonly TileWorldCreatorManager _manager;
         private readonly TileWorldCreatorIdMappingSO _mapping;
@@ -135,10 +136,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     Debug.Log($"{LogTag} Removed {occlusion.RemovedCellCount} occluded TWC tile cells across {occlusion.ProcessedLayerCount} build layers before spawning. occupied={occlusion.OccupiedCellCount}, skipped={occlusion.SkippedLayerCount}.");
 
                 Debug.Log($"{LogTag} Calling ExecuteBuildLayers(FromScratch). Config size={configuration.width}x{configuration.height}, cellSize={configuration.cellSize}, mergeTiles={configuration.mergeTiles}, terrainLayers={terrainLayerPositions.Count}. Runtime cells were already pushed with AddCellsToLayerByGuid, so GenerateCompleteMap is intentionally skipped because it re-executes and resets blueprint layers.");
+                Debug.Log(
+                    $"{WorldGenDiagTag} TWCBuild.START manager={_manager.name}, config={configuration.name}, map={configuration.width}x{configuration.height}, " +
+                    $"frame={Time.frameCount}, childrenBefore={CountManagerChildren()}, asyncHint=coroutine/delayed");
 
+                var buildStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 _manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
+                buildStopwatch.Stop();
 
                 Debug.Log($"{LogTag} ExecuteBuildLayers returned. Immediate renderers={CountComponentsInManager<Renderer>()}, meshFilters={CountComponentsInManager<MeshFilter>()}, childTransforms={CountManagerChildren()}. TWC can continue spawning tiles by coroutine; projector will keep logging while tracking.");
+                Debug.Log(
+                    $"{WorldGenDiagTag} TWCBuild.RETURN manager={_manager.name}, frame={Time.frameCount}, elapsedMs={buildStopwatch.ElapsedMilliseconds}, " +
+                    $"childrenAfterReturn={CountManagerChildren()}, mayContinueAsync=true");
 
                 if (_options.ApplyIntegerTerrainHeights)
                     ApplyIntegerTerrainHeights(worldData, configuration);

@@ -8,9 +8,16 @@ using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
-    internal sealed class FogOfWarVolumeUpdater : IFogVisualUpdater, ITickable, IDisposable
+    /// <summary>
+    /// Runtime visual updater для TWC dual-grid fog volume.
+    /// Працює як presentation layer: читає gameplay fog state через <see cref="IFogOfWarService"/>,
+    /// накопичує dirty-клітинки, керує runtime configuration clone і перебудовує volume geometry.
+    /// Не є source of truth для visible/explored state.
+    /// </summary>
+    internal sealed class FogOfWarVolumeUpdater : IFogVisualUpdater, IFogVolumeRuntimeUpdater, ITickable, IDisposable
     {
         private const string LogTag = "[FogOfWarVolume]";
+        private const string StartDiagTag = "[MoyvaFogStartDiag]";
         private const string FolderName = "Fog Volume";
 
         private readonly FogOfWarSettings _injectedSettings;
@@ -53,6 +60,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private bool _loggedDirtyUpdate;
         private bool _loggedTickWaitingForInterval;
 
+        /// <summary>
+        /// Створює updater для volume visual path.
+        /// У runtime зазвичай отримує settings через Zenject, а у preview може бути створений локально.
+        /// </summary>
+        /// <param name="settings">Fog settings для tuning і побудови runtime layers.</param>
         public FogOfWarVolumeUpdater([InjectOptional] FogOfWarSettings settings = null)
         {
             _injectedSettings = settings;
@@ -62,10 +74,26 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Debug.LogWarning($"{LogTag} Updater constructed without injected FogOfWarSettings. It will use settings from FogOfWarVolumeController if one attaches.");
         }
 
+        /// <summary>
+        /// Діагностична кількість unexplored-клітинок у поточному кеші visual state.
+        /// </summary>
         internal int DebugUnexploredCellCount => _unexploredCells.Count;
+
+        /// <summary>
+        /// Діагностична кількість explored-клітинок у поточному кеші visual state.
+        /// </summary>
         internal int DebugExploredCellCount => _exploredCells.Count;
+
+        /// <summary>
+        /// Діагностичний доступ до runtime TWC configuration clone.
+        /// </summary>
         internal Configuration DebugRuntimeConfiguration => _runtimeConfiguration;
 
+        /// <summary>
+        /// Під'єднує scene controller як host для runtime visual update path.
+        /// Side effect: updater починає працювати з його TWC manager-ом і може запланувати rebuild.
+        /// </summary>
+        /// <param name="controller">Scene host-компонент fog volume.</param>
         public void AttachController(FogOfWarVolumeController controller)
         {
             if (controller == null)
@@ -85,12 +113,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _loggedNoRuntimeLayers = false;
             _loggedUnexploredPresetProblem = false;
             _loggedExploredPresetProblem = false;
+            Debug.Log($"{StartDiagTag} VolumeUpdater.AttachController controller={(controller != null ? controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, settings={(controller.Settings != null ? controller.Settings.name : "null")}, hasLastFogService={_lastFogService != null}, hasBuilt={_hasBuiltAtLeastOnce}.");
             LogUpdaterOnce(ref _loggedAttach, $"AttachController: controller='{controller.name}', manager={(_manager != null ? _manager.name : "null")}, settings={(controller.Settings != null ? controller.Settings.name : "null")}, hasLastFogService={_lastFogService != null}, hasBuilt={_hasBuiltAtLeastOnce}.");
             RequestVisualRebuild();
             if (_lastFogService != null && !_hasBuiltAtLeastOnce)
                 ExecutePendingVisualWork();
         }
 
+        /// <summary>
+        /// Від'єднує scene controller від updater-а.
+        /// Side effect: наступні visual rebuild-и не зможуть використовувати попередній manager напряму.
+        /// </summary>
+        /// <param name="controller">Scene host-компонент, який відключається.</param>
         public void DetachController(FogOfWarVolumeController controller)
         {
             if (_controller != controller)
@@ -101,6 +135,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _runtimeConfigurationDirty = true;
         }
 
+        /// <summary>
+        /// Ініціалізує runtime visual state для карти заданого розміру і world context.
+        /// Side effect: позначає runtime configuration як dirty і планує повну перебудову.
+        /// </summary>
+        /// <param name="width">Ширина карти у клітинках.</param>
+        /// <param name="height">Висота карти у клітинках.</param>
+        /// <param name="context">Світовий контекст для volume build path.</param>
         public void Initialize(int width, int height, FogWorldVisualContext context)
         {
             _mapWidth = Mathf.Max(1, width);
@@ -124,6 +165,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             LogUpdaterOnce(ref _loggedInitialize, $"Initialize: requested={width}x{height}, effective={_mapWidth}x{_mapHeight}, contextValid={context.IsValid}, contextCell={context.CellSize:0.###}, storedCell={_context.CellSize:0.###}, bounds={FormatBounds(_context)}, heightMap={FormatMapSize(_context.HeightMap)}, terrainLevelMap={FormatMapSize(_context.TerrainLevelMap)}, controller={(_controller != null ? _controller.name : "null")}.");
         }
 
+        /// <summary>
+        /// Оновлює world context без зміни gameplay fog state.
+        /// Викликається, коли змінилися bounds, cell size або height/terrain maps.
+        /// </summary>
+        /// <param name="context">Оновлений visual context generated світу.</param>
         public void SetWorldContext(FogWorldVisualContext context)
         {
             if (!context.IsValid)
@@ -148,6 +194,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             LogUpdaterOnce(ref _loggedWorldContext, $"SetWorldContext: map={_mapWidth}x{_mapHeight}, cell={_context.CellSize:0.###}, sizeChanged={sizeChanged}, cellSizeChanged={cellSizeChanged}, boundsChanged={boundsChanged}, bounds={FormatBounds(_context)}, heightMap={FormatMapSize(_context.HeightMap)}, terrainLevelMap={FormatMapSize(_context.TerrainLevelMap)}.");
         }
 
+        /// <summary>
+        /// Будує тимчасовий preview reveal через startup-style preview fog service.
+        /// Не змінює gameplay fog state.
+        /// </summary>
+        /// <param name="center">Центр preview reveal.</param>
+        /// <param name="radius">Радіус preview reveal.</param>
+        /// <param name="shape">Форма reveal області.</param>
+        /// <param name="keepVisible">Чи має preview поводитись як постійна visible область.</param>
         public void PreviewRevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible)
         {
             if (_lastFogService != null)
@@ -164,6 +218,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             RebuildFullVisual(new StartupFogService(_context.Width, _context.Height, center, radius, shape, keepVisible));
         }
 
+        /// <summary>
+        /// Приймає dirty-клітинки від gameplay fog service і планує часткову або негайну visual rebuild.
+        /// </summary>
+        /// <param name="fogService">Gameplay source of truth для fog state.</param>
+        /// <param name="dirtyTiles">Клітинки, чий стан змінився з останнього update.</param>
         public void UpdateDirtyTiles(IFogOfWarService fogService, IEnumerable<Vector2Int> dirtyTiles)
         {
             _lastFogService = fogService;
@@ -181,6 +240,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             _hasPendingVisualWork = _hasPendingVisualWork || _pendingDirtyTiles.Count > 0;
+            Debug.Log($"{StartDiagTag} VolumeUpdater.UpdateDirtyTiles requested={requested}, accepted={_pendingDirtyTiles.Count}, hasFogService={fogService != null}, controller={(_controller != null ? _controller.name : "null")}, map={_mapWidth}x{_mapHeight}, fullRebuildRequested={_fullRebuildRequested}.");
             if (ShouldLogLifecycle(_loggedDirtyUpdate))
             {
                 _loggedDirtyUpdate = true;
@@ -190,13 +250,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 ExecutePendingVisualWork();
         }
 
+        /// <summary>
+        /// Прапорить повну перебудову volume зі стану gameplay fog service.
+        /// </summary>
+        /// <param name="fogService">Gameplay source of truth для fog state.</param>
         public void RebuildFullVisual(IFogOfWarService fogService)
         {
             _lastFogService = fogService;
             if (fogService != null)
-            _loggedMissingFogService = false;
+                _loggedMissingFogService = false;
             _fullRebuildRequested = true;
             _hasPendingVisualWork = true;
+            Debug.Log($"{StartDiagTag} VolumeUpdater.RebuildFullVisual hasFogService={fogService != null}, map={_mapWidth}x{_mapHeight}, controller={(_controller != null ? _controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, contextValid={_context.IsValid}, hasBuilt={_hasBuiltAtLeastOnce}, contextChanged={_worldContextChangedSinceBuild}.");
             if (ShouldLogLifecycle(_loggedRebuildRequest))
             {
                 _loggedRebuildRequest = true;
@@ -206,6 +271,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 ExecutePendingVisualWork();
         }
 
+        /// <summary>
+        /// Виконує відкладену visual rebuild відповідно до обраного update mode.
+        /// Викликається Zenject-ом щокадру як частина runtime lifecycle.
+        /// </summary>
         public void Tick()
         {
             if (!_hasPendingVisualWork)
@@ -229,20 +298,48 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
         }
 
+        /// <summary>
+        /// Звільняє runtime configuration clone і пов'язані ресурси updater-а.
+        /// </summary>
         public void Dispose()
         {
             DisposeRuntimeConfiguration();
         }
 
+        /// <summary>
+        /// Діагностично перевіряє, чи кеш unexplored state містить задану клітинку.
+        /// </summary>
+        /// <param name="tile">Клітинка для перевірки.</param>
+        /// <returns><see langword="true"/>, якщо клітинка входить до unexplored-кешу.</returns>
         internal bool DebugHasUnexploredCell(Vector2Int tile)
             => _unexploredCells.Contains(ToCell(tile));
 
+        /// <summary>
+        /// Діагностично перевіряє, чи кеш explored state містить задану клітинку.
+        /// </summary>
+        /// <param name="tile">Клітинка для перевірки.</param>
+        /// <returns><see langword="true"/>, якщо клітинка входить до explored-кешу.</returns>
         internal bool DebugHasExploredCell(Vector2Int tile)
             => _exploredCells.Contains(ToCell(tile));
 
+        /// <summary>
+        /// Запитує первинну startup build для controller-а без локальної visible області.
+        /// </summary>
+        /// <param name="controller">Host-компонент сцени.</param>
+        /// <param name="context">Світовий контекст для build path.</param>
         internal void RequestStartupBuildFromController(FogOfWarVolumeController controller, FogWorldVisualContext context)
             => RequestStartupBuildFromController(controller, context, null, 0, FogRevealShape.PixelCircle, keepVisible: false);
 
+        /// <summary>
+        /// Запитує первинну startup build для controller-а з необов'язковою visible preview областю.
+        /// Side effect: може ініціалізувати updater і одразу виконати повну visual rebuild.
+        /// </summary>
+        /// <param name="controller">Host-компонент сцени.</param>
+        /// <param name="context">Світовий контекст для build path.</param>
+        /// <param name="visibleCenter">Необов'язковий центр початкової visible області.</param>
+        /// <param name="visibleRadius">Радіус початкової visible області.</param>
+        /// <param name="visibleShape">Форма початкової visible області.</param>
+        /// <param name="keepVisible">Чи має початкова область залишатись visible надалі.</param>
         internal void RequestStartupBuildFromController(
             FogOfWarVolumeController controller,
             FogWorldVisualContext context,
@@ -269,6 +366,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (!context.IsValid)
                 context = CreateFallbackContext(_mapWidth, _mapHeight);
 
+            Debug.Log($"{StartDiagTag} VolumeUpdater.RequestStartupBuildFromController controller={(controller != null ? controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, context={context.Width}x{context.Height}, cell={context.CellSize:0.###}, visibleCenter={(visibleCenter.HasValue ? visibleCenter.Value.ToString() : "none")}, visibleRadius={Mathf.Max(0, visibleRadius)}, keepVisible={keepVisible}, hasLastFogService={_lastFogService != null}, hasBuilt={_hasBuiltAtLeastOnce}.");
             Debug.Log($"{LogTag} Startup build requested by controller='{(controller != null ? controller.name : "null")}', context={context.Width}x{context.Height}, cell={context.CellSize:0.###}, bounds={FormatBounds(context)}, heightMap={FormatMapSize(context.HeightMap)}, terrainLevelMap={FormatMapSize(context.TerrainLevelMap)}, visibleCenter={(visibleCenter.HasValue ? visibleCenter.Value.ToString() : "none")}, visibleRadius={Mathf.Max(0, visibleRadius)}, visibleShape={visibleShape}, keepVisible={keepVisible}.");
             Initialize(context.Width, context.Height, context);
             RebuildFullVisual(visibleCenter.HasValue
@@ -276,6 +374,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 : new StartupFogService(context.Width, context.Height));
         }
 
+        /// <summary>
+        /// Запитує повну runtime rebuild від scene controller-а.
+        /// </summary>
+        /// <param name="controller">Host-компонент сцени, який ініціює rebuild.</param>
         internal void RequestFullRebuildFromController(FogOfWarVolumeController controller)
         {
             if (controller != null)
@@ -284,10 +386,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _runtimeConfigurationDirty = true;
             _fullRebuildRequested = true;
             _hasPendingVisualWork = _lastFogService != null;
+            Debug.Log($"{StartDiagTag} VolumeUpdater.RequestFullRebuildFromController controller={(controller != null ? controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, hasLastFogService={_lastFogService != null}, context={_context.Width}x{_context.Height}.");
 
             if (_hasPendingVisualWork)
                 ExecutePendingVisualWork();
         }
+
+        void IFogVolumeRuntimeUpdater.RequestStartupBuildFromController(FogOfWarVolumeController controller, FogWorldVisualContext context)
+            => RequestStartupBuildFromController(controller, context);
+
+        void IFogVolumeRuntimeUpdater.RequestFullRebuildFromController(FogOfWarVolumeController controller)
+            => RequestFullRebuildFromController(controller);
 
         private void ExecutePendingVisualWork()
         {
@@ -297,6 +406,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return;
             }
 
+            Debug.Log($"{StartDiagTag} VolumeUpdater.ExecutePendingVisualWork hasFogService={_lastFogService != null}, pendingDirty={_pendingDirtyTiles.Count}, fullRebuildRequested={_fullRebuildRequested}, controller={(_controller != null ? _controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, context={_context.Width}x{_context.Height}.");
             bool wasFullRebuild = _fullRebuildRequested;
             int requestedDirtyTiles = _pendingDirtyTiles.Count;
             if (_fullRebuildRequested)
@@ -649,6 +759,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void ApplyCellsToRuntimeLayers()
         {
+            Debug.Log($"{StartDiagTag} VolumeUpdater.ApplyCellsToRuntimeLayers runtimeLayers={_runtimeLayers.Count}, unexploredCells={_unexploredCells.Count}, exploredCells={_exploredCells.Count}, unexploredHeightLayers={_unexploredCellsByHeight.Count}, exploredHeightLayers={_exploredCellsByHeight.Count}.");
             for (int i = 0; i < _runtimeLayers.Count; i++)
             {
                 var runtimeLayer = _runtimeLayers[i];
@@ -679,6 +790,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
             _hasBuiltAtLeastOnce = true;
             _worldContextChangedSinceBuild = false;
+            Debug.Log($"{StartDiagTag} VolumeUpdater.ExecuteTileWorldCreatorBuild manager={_manager.name}, runtimeConfig={_runtimeConfiguration.name}, map={_mapWidth}x{_mapHeight}, rebuild={(wasFullRebuild ? "full" : "dirty")}, dirtyRequested={requestedDirtyTiles}, runtimeLayers={_runtimeLayers.Count}, unexploredCells={_unexploredCells.Count}, exploredCells={_exploredCells.Count}.");
 
             if (ShouldLogBuildSummary(contextChanged))
             {
@@ -1168,6 +1280,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private sealed class RuntimeLayer
         {
+            /// <summary>
+            /// Описує пару runtime blueprint/build layer для конкретного fog state і height bucket.
+            /// </summary>
+            /// <param name="blueprintLayer">Runtime blueprint layer.</param>
+            /// <param name="buildLayer">Пов'язаний runtime build layer.</param>
+            /// <param name="state">Fog state, який цей layer репрезентує.</param>
+            /// <param name="heightKey">Нормалізований ключ висотного bucket-а.</param>
             public RuntimeLayer(BlueprintLayer blueprintLayer, TilesBuildLayer buildLayer, FogRuntimeState state, int heightKey)
             {
                 BlueprintLayer = blueprintLayer;
@@ -1176,12 +1295,30 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 HeightKey = heightKey;
             }
 
+            /// <summary>
+            /// Runtime blueprint layer для конкретного fog state.
+            /// </summary>
             public BlueprintLayer BlueprintLayer { get; }
+
+            /// <summary>
+            /// Runtime build layer, який TWC фактично будує у сцені.
+            /// </summary>
             public TilesBuildLayer BuildLayer { get; }
+
+            /// <summary>
+            /// Fog state, який репрезентує цей runtime layer.
+            /// </summary>
             public FogRuntimeState State { get; }
+
+            /// <summary>
+            /// Bucket ключ для висоти, на якій будується цей layer.
+            /// </summary>
             public int HeightKey { get; }
         }
 
+        /// <summary>
+        /// Мінімальний fog service для startup/preview build path, коли реальний gameplay fog service ще не готовий.
+        /// </summary>
         private sealed class StartupFogService : IFogOfWarService
         {
             private readonly int _width;
@@ -1191,12 +1328,26 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             private readonly int _visibleRadius;
             private readonly FogRevealShape _visibleShape;
 
+            /// <summary>
+            /// Створює startup fog service без початкової visible області.
+            /// </summary>
+            /// <param name="width">Ширина карти.</param>
+            /// <param name="height">Висота карти.</param>
             public StartupFogService(int width, int height)
             {
                 _width = Mathf.Max(1, width);
                 _height = Mathf.Max(1, height);
             }
 
+            /// <summary>
+            /// Створює startup fog service з необов'язковою початковою visible областю.
+            /// </summary>
+            /// <param name="width">Ширина карти.</param>
+            /// <param name="height">Висота карти.</param>
+            /// <param name="visibleCenter">Центр visible області.</param>
+            /// <param name="visibleRadius">Радіус visible області.</param>
+            /// <param name="visibleShape">Форма visible області.</param>
+            /// <param name="keepVisible">Чи має область залишатися visible.</param>
             public StartupFogService(int width, int height, Vector2Int visibleCenter, int visibleRadius, FogRevealShape visibleShape, bool keepVisible)
                 : this(width, height)
             {
@@ -1206,13 +1357,40 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _visibleShape = visibleShape;
             }
 
+            /// <summary>
+            /// Startup stub не потребує окремої ініціалізації.
+            /// </summary>
             public void Initialize(int width, int height) { }
+            /// <summary>
+            /// Startup stub не відстежує runtime юнітів.
+            /// </summary>
             public void RegisterUnit(string unitId, Vector2Int position, int visionRange) { }
+            /// <summary>
+            /// Startup stub не оновлює runtime vision ranges.
+            /// </summary>
             public void UpdateUnitVisionRange(string unitId, int visionRange) { }
+            /// <summary>
+            /// Startup stub не реєструє fixed vision areas окремо.
+            /// </summary>
             public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape) { }
+            /// <summary>
+            /// Startup stub не приймає додаткові runtime reveal operations.
+            /// </summary>
             public void RevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId = null) { }
+            /// <summary>
+            /// Startup stub не відстежує переміщення юнітів.
+            /// </summary>
             public void UpdateUnitPosition(string unitId, Vector2Int newPosition) { }
+            /// <summary>
+            /// Startup stub не тримає runtime unit registrations.
+            /// </summary>
             public void UnregisterUnit(string unitId) { }
+
+            /// <summary>
+            /// Повертає startup fog state для клітинки: visible лише всередині початкової області, інакше unexplored.
+            /// </summary>
+            /// <param name="position">Клітинка, яку запитують.</param>
+            /// <returns>Startup fog state для цієї клітинки.</returns>
             public FogStateType GetFogState(Vector2Int position)
             {
                 if (_hasVisibleReveal && IsInsideVisibleReveal(position))
@@ -1221,10 +1399,29 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return FogStateType.Unexplored;
             }
 
+            /// <summary>
+            /// Перевіряє, чи клітинка входить до початкової visible області.
+            /// </summary>
             public bool IsVisible(Vector2Int position) => GetFogState(position) == FogStateType.Visible;
+
+            /// <summary>
+            /// У startup stub explored трактується так само, як visible.
+            /// </summary>
             public bool IsExplored(Vector2Int position) => IsVisible(position);
+
+            /// <summary>
+            /// Повертає порожній explored snapshot для startup build path.
+            /// </summary>
             public bool[,] GetExploredSnapshot() => new bool[_width, _height];
+
+            /// <summary>
+            /// Startup stub не завантажує snapshot-и.
+            /// </summary>
             public void LoadFromSnapshot(bool[,] explored) { }
+
+            /// <summary>
+            /// Startup stub не накопичує dirty tiles.
+            /// </summary>
             public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles() => Array.Empty<Vector2Int>();
 
             private bool IsInsideVisibleReveal(Vector2Int position)

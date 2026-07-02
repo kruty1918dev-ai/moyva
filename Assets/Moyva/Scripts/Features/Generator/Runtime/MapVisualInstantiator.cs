@@ -14,6 +14,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal sealed class MapVisualInstantiator : IMapInstantiator, IInitializable, System.IDisposable
     {
+        private const string GeneratorBootDiagTag = "[MoyvaGeneratorBootDiag]";
+        private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
         private const int ObjectLayerSortingOrder = 10;
         private const int BuildingLayerMinSortingOrder = 5;
 
@@ -43,6 +46,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly TileWorldCreatorWorldBuildBridge _tileWorldCreatorBridge;
         private readonly List<Sprite> _runtimeLayerSprites = new List<Sprite>();
         private readonly List<Material> _runtimeLayerMaterials = new List<Material>();
+
+        internal bool HasPendingWorldData => _pendingWorldData != null;
+        internal Vector2Int DiagnosticGridSize => new Vector2Int(_gridService.GridWidth, _gridService.GridHeight);
+        internal string DiagnosticMapDataGeneratorTypeName => _mapDataGenerator?.GetType().Name ?? "null";
+        internal bool HasGraphGenerator => _graphTwcGenerator != null;
+        internal bool HasSceneGeneratorConfiguration => _graphTwcGenerator?.HasGraphAsset ?? false;
+        internal bool HasSharedMapSize => _graphTwcGenerator?.HasSharedMapSize ?? false;
+        internal string DiagnosticGraphName => _graphTwcGenerator?.DiagnosticGraphName ?? "null";
+        internal int DiagnosticSeed => _graphTwcGenerator?.DiagnosticSeed ?? 0;
 
         public MapVisualInstantiator(
             TileRegistrySO tileRegistry,
@@ -100,15 +112,33 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void BuildWorld()
         {
+            bool hasPendingWorld = _pendingWorldData != null;
+            string source = hasPendingWorld
+                ? "pending-save"
+                : GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest
+                    ? "direct-test"
+                    : "new";
+            Debug.Log(
+                $"{GeneratorBootDiagTag} MapVisual.BuildWorld ENTER frame={Time.frameCount}, mode={GameLaunchContext.Mode}, " +
+                $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, hasPendingWorld={hasPendingWorld}");
+            Debug.Log(
+                $"{WorldGenDiagTag} MapVisual.BuildWorld ENTER frame={Time.frameCount}, mode={GameLaunchContext.Mode}, " +
+                $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, hasPendingWorld={hasPendingWorld}, source={source}");
             GeneratedWorldData worldData = _pendingWorldData;
             _pendingWorldData = null;
 
             if (worldData == null)
             {
+                Debug.Log($"{WorldGenDiagTag} MapVisual.CALL GenerateNewWorldData source=new");
                 worldData = GenerateNewWorldData();
+                Debug.Log(
+                    $"{WorldGenDiagTag} MapVisual.GenerateNewWorldData.RESULT map={worldData?.Width ?? 0}x{worldData?.Height ?? 0}, " +
+                    $"heightMap={FormatMapSize(worldData?.HeightMap)}, terrainMap={FormatMapSize(worldData?.TerrainLevelMap)}, " +
+                    $"objectMap={FormatMapSize(worldData?.ObjectMap)}, buildingMap={FormatMapSize(worldData?.BuildingMap)}");
             }
 
-            BuildWorldFromData(worldData);
+            BuildWorldFromData(worldData, source);
+            Debug.Log($"{WorldGenDiagTag} MapVisual.BuildWorld EXIT frame={Time.frameCount}, source={source}");
         }
 
         internal void SetPendingWorldData(GeneratedWorldData data)
@@ -124,14 +154,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private GeneratedWorldData GenerateNewWorldData()
         {
+            int requestedWidth = _gridService.GridWidth;
+            int requestedHeight = _gridService.GridHeight;
+            Debug.Log(
+                $"{GeneratorBootDiagTag} MapVisual.GenerateNewWorldData ENTER graph={DiagnosticGraphName}, map={requestedWidth}x{requestedHeight}, seed={DiagnosticSeed}");
+            Debug.Log(
+                $"{WorldGenDiagTag} MapVisual.GenerateNewWorldData ENTER graph={DiagnosticGraphName}, map={requestedWidth}x{requestedHeight}, " +
+                $"seed={DiagnosticSeed}, mapDataGenerator={DiagnosticMapDataGeneratorTypeName}, hasGraphGenerator={HasGraphGenerator}, " +
+                $"hasSharedMapSize={HasSharedMapSize}, hasWorldSettings={GameLaunchContext.HasWorldSettings}");
             string[,] virtualBiomeMap = null;
             string[,] virtualObjectMap = null;
             float[,] finalHeightMap = null;
             string[,] virtualBuildingMap = null;
 
             _mapDataGenerator.GenerateMapData(
-                _gridService.GridWidth,
-                _gridService.GridHeight,
+                requestedWidth,
+                requestedHeight,
                 (biomes, objects, heightMap, buildings) =>
                 {
                     virtualBiomeMap = biomes;
@@ -212,13 +250,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
             data.Difficulty = GameLaunchContext.Difficulty;
         }
 
-        private void BuildWorldFromData(GeneratedWorldData worldData)
+        private void BuildWorldFromData(GeneratedWorldData worldData, string source)
         {
             if (worldData == null)
             {
                 Debug.LogError("[MapVisualInstantiator] BuildWorldFromData received null world data.");
                 return;
             }
+
+            Debug.Log(
+                $"{WorldGenDiagTag} MapVisual.BuildWorldFromData ENTER source={source}, map={worldData.Width}x{worldData.Height}, " +
+                $"heightMap={FormatMapSize(worldData.HeightMap)}, terrainMap={FormatMapSize(worldData.TerrainLevelMap)}, " +
+                $"savedSpawns={worldData.SpawnPositions?.Length ?? 0}, graphBranch={_graphTwcGenerator != null}");
 
             EnsureGridMatchesWorld(worldData);
             EnsureRoots();
@@ -229,17 +272,34 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ClearRoot(_layersRoot);
             _terrainSurfaceYByPosition.Clear();
             ReleaseRuntimeLayerResources();
+            Debug.Log(
+                $"{WorldGenDiagTag} MapVisual.SceneClear.DONE rootsCleared={AreRootsCleared()}, gridCleared=implicit, " +
+                $"tileRootChildren={_tilesRoot?.childCount ?? -1}, objectRootChildren={_objectsRoot?.childCount ?? -1}, " +
+                $"buildingRootChildren={_buildingsRoot?.childCount ?? -1}, layerRootChildren={_layersRoot?.childCount ?? -1}");
 
             NormalizeBiomeMapIds(worldData);
-            BuildGridFromLayerIds(worldData);
+            int filledCells = BuildGridFromLayerIds(worldData);
+            Debug.Log($"{WorldGenDiagTag} MapVisual.GridFill.DONE map={worldData.Width}x{worldData.Height}, filledCells={filledCells}");
 
             // Новий TWC-конвеєр: 3D-візуал вже побудував TileWorldCreator.
             // Тут лише наповнюємо GridService layer-id'ами для ігроладу (рух/будівництво).
             if (_graphTwcGenerator != null)
             {
                 _currentWorldData = worldData.Clone();
+                Debug.Log($"{WorldGenDiagTag} Signal.FIRE WorldBuiltSignal frame={Time.frameCount}, source={source}");
                 _signalBus.Fire(new WorldBuiltSignal());
+                Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldBuiltSignal frame={Time.frameCount}");
                 FireSavedSpawnPositions(_currentWorldData);
+                float graphCellSize = ResolveWorldCellSize(TileWorldCreatorWorldBuildResult.Disabled);
+                bool hasGraphBounds = TryResolveGeneratedMapWorldBounds(
+                    _currentWorldData,
+                    TileWorldCreatorWorldBuildResult.Disabled,
+                    out Bounds graphWorldBounds);
+                Debug.Log(
+                    $"{WorldGenDiagTag} Signal.FIRE WorldGeneratedDataSignal frame={Time.frameCount}, map={_currentWorldData.Width}x{_currentWorldData.Height}, " +
+                    $"bounds={FormatBounds(hasGraphBounds, graphWorldBounds)}, cellSize={graphCellSize:0.###}, heightMap={FormatMapSize(_currentWorldData.HeightMap)}, " +
+                    $"terrainMap={FormatMapSize(_currentWorldData.TerrainLevelMap)}, objectMap={FormatMapSize(_currentWorldData.ObjectMap)}, buildingMap={FormatMapSize(_currentWorldData.BuildingMap)}");
+                Debug.Log($"{DirectDiagTag} WorldSignal.FIRE WorldGeneratedDataSignal map={_currentWorldData.Width}x{_currentWorldData.Height}, hasHeightMap={_currentWorldData.HeightMap != null}, hasSavedSpawns={_currentWorldData.SpawnPositions != null && _currentWorldData.SpawnPositions.Length > 0}.");
                 _signalBus.Fire(new WorldGeneratedDataSignal
                 {
                     Width = _currentWorldData.Width,
@@ -249,10 +309,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     RenderMode = (int)_currentWorldData.RenderMode,
                     NeighborhoodMode = (int)_currentWorldData.NeighborhoodMode,
                     CellSize = ResolveWorldCellSize(TileWorldCreatorWorldBuildResult.Disabled),
-                    HasMapWorldBounds = TryResolveGeneratedMapWorldBounds(
-                        _currentWorldData,
-                        TileWorldCreatorWorldBuildResult.Disabled,
-                        out Bounds graphWorldBounds),
+                    HasMapWorldBounds = hasGraphBounds,
                     MapWorldBoundsCenter = graphWorldBounds.center,
                     MapWorldBoundsSize = graphWorldBounds.size,
                     TileMap = MapArrayUtils.CloneStringMap(_currentWorldData.BiomeMap),
@@ -260,6 +317,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
                     TerrainLevelMap = MapArrayUtils.CloneIntMap(_currentWorldData.TerrainLevelMap),
                 });
+                Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldGeneratedDataSignal frame={Time.frameCount}");
+                Debug.Log($"{DirectDiagTag} WorldSignal.FIRED WorldGeneratedDataSignal");
                 return;
             }
 
@@ -317,8 +376,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ApplyLayerData(worldData);
 
             _currentWorldData = worldData.Clone();
+            Debug.Log($"{WorldGenDiagTag} Signal.FIRE WorldBuiltSignal frame={Time.frameCount}, source={source}");
             _signalBus.Fire(new WorldBuiltSignal());
+            Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldBuiltSignal frame={Time.frameCount}");
             FireSavedSpawnPositions(_currentWorldData);
+            float worldCellSize = ResolveWorldCellSize(tileWorldCreatorResult);
+            bool hasBounds = TryResolveGeneratedMapWorldBounds(
+                _currentWorldData,
+                tileWorldCreatorResult,
+                out Bounds worldBounds);
+            Debug.Log(
+                $"{WorldGenDiagTag} Signal.FIRE WorldGeneratedDataSignal frame={Time.frameCount}, map={_currentWorldData.Width}x{_currentWorldData.Height}, " +
+                $"bounds={FormatBounds(hasBounds, worldBounds)}, cellSize={worldCellSize:0.###}, heightMap={FormatMapSize(_currentWorldData.HeightMap)}, " +
+                $"terrainMap={FormatMapSize(_currentWorldData.TerrainLevelMap)}, objectMap={FormatMapSize(_currentWorldData.ObjectMap)}, buildingMap={FormatMapSize(_currentWorldData.BuildingMap)}");
+            Debug.Log($"{DirectDiagTag} WorldSignal.FIRE WorldGeneratedDataSignal map={_currentWorldData.Width}x{_currentWorldData.Height}, hasHeightMap={_currentWorldData.HeightMap != null}, hasSavedSpawns={_currentWorldData.SpawnPositions != null && _currentWorldData.SpawnPositions.Length > 0}.");
             _signalBus.Fire(new WorldGeneratedDataSignal
             {
                 Width = _currentWorldData.Width,
@@ -328,10 +399,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 RenderMode = (int)_currentWorldData.RenderMode,
                 NeighborhoodMode = (int)_currentWorldData.NeighborhoodMode,
                 CellSize = ResolveWorldCellSize(tileWorldCreatorResult),
-                HasMapWorldBounds = TryResolveGeneratedMapWorldBounds(
-                    _currentWorldData,
-                    tileWorldCreatorResult,
-                    out Bounds worldBounds),
+                HasMapWorldBounds = hasBounds,
                 MapWorldBoundsCenter = worldBounds.center,
                 MapWorldBoundsSize = worldBounds.size,
                 TileMap = MapArrayUtils.CloneStringMap(_currentWorldData.BiomeMap),
@@ -339,6 +407,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
                 TerrainLevelMap = MapArrayUtils.CloneIntMap(_currentWorldData.TerrainLevelMap),
             });
+            Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldGeneratedDataSignal frame={Time.frameCount}");
+            Debug.Log($"{DirectDiagTag} WorldSignal.FIRED WorldGeneratedDataSignal");
         }
 
         private float ResolveWorldCellSize(TileWorldCreatorWorldBuildResult tileWorldCreatorResult)
@@ -379,12 +449,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return false;
         }
 
-        private void BuildGridFromLayerIds(GeneratedWorldData worldData)
+        private int BuildGridFromLayerIds(GeneratedWorldData worldData)
         {
             EnsureGridMatchesWorld(worldData);
 
             if (worldData.BiomeMap == null)
-                return;
+                return 0;
+
+            int filledCells = 0;
 
             for (int x = 0; x < worldData.Width; x++)
             {
@@ -397,8 +469,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     // У новому конвеєрі biomeMap уже містить id шару графа —
                     // не мапимо через legacy ResolveGridTileId.
                     _gridService.SetTileData(new Vector2Int(x, y), layerId);
+                    filledCells++;
                 }
             }
+
+            return filledCells;
         }
 
         private void OnWorldSpawnPositions(WorldSpawnPositionsSignal signal)
@@ -413,10 +488,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (worldData?.SpawnPositions == null || worldData.SpawnPositions.Length == 0)
                 return;
 
+            Debug.Log($"{WorldGenDiagTag} Signal.FIRE WorldSpawnPositionsSignal source=saved assignments={worldData.SpawnPositions.Length}, frame={Time.frameCount}");
+            Debug.Log($"{DirectDiagTag} WorldSignal.FIRE SavedWorldSpawnPositionsSignal assignments={worldData.SpawnPositions.Length}");
             _signalBus.Fire(new WorldSpawnPositionsSignal
             {
                 Assignments = (SpawnPositionAssignment[])worldData.SpawnPositions.Clone(),
             });
+            Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldSpawnPositionsSignal source=saved frame={Time.frameCount}");
+            Debug.Log($"{DirectDiagTag} WorldSignal.FIRED SavedWorldSpawnPositionsSignal");
         }
 
         private void EnsureGridMatchesWorld(GeneratedWorldData worldData)
@@ -588,6 +667,28 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             _runtimeLayerSprites.Clear();
             _runtimeLayerMaterials.Clear();
+        }
+
+        private bool AreRootsCleared()
+        {
+            return (_tilesRoot == null || _tilesRoot.childCount == 0)
+                && (_objectsRoot == null || _objectsRoot.childCount == 0)
+                && (_buildingsRoot == null || _buildingsRoot.childCount == 0)
+                && (_layersRoot == null || _layersRoot.childCount == 0);
+        }
+
+        private static string FormatMapSize(System.Array map)
+        {
+            return map is { Rank: 2 }
+                ? $"{map.GetLength(0)}x{map.GetLength(1)}"
+                : "null";
+        }
+
+        private static string FormatBounds(bool hasBounds, Bounds bounds)
+        {
+            return hasBounds
+                ? $"{bounds.center} / {bounds.size}"
+                : "none";
         }
 
         private void CreateTileView(Vector2Int position, string tileId, Transform root, int sortingOrder, float elevation)

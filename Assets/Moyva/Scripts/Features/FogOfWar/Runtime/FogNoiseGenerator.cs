@@ -1,21 +1,29 @@
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     /// <summary>
-    /// Deterministic CPU Perlin noise generator with seed support.
-    /// Returns float[,] values in [0, 1].
+    /// Детермінований CPU Perlin noise generator із підтримкою seed.
+    /// Може використовуватися для допоміжних fog visual pattern-ів або preview tooling.
     /// </summary>
     internal sealed class FogNoiseGenerator
     {
         private readonly int _seed;
 
+        /// <summary>
+        /// Створює noise generator із фіксованим seed.
+        /// </summary>
+        /// <param name="seed">Seed для детермінованого результату.</param>
         public FogNoiseGenerator(int seed = 0)
         {
             _seed = seed;
         }
 
         /// <summary>
-        /// Generates a noise map of the given size. Values are in [0, 1].
+        /// Генерує noise map заданого розміру зі значеннями в діапазоні [0..1].
         /// </summary>
+        /// <param name="width">Ширина noise map.</param>
+        /// <param name="height">Висота noise map.</param>
+        /// <param name="scale">Масштаб noise pattern.</param>
+        /// <returns>Двовимірний масив noise values.</returns>
         public float[,] Generate(int width, int height, float scale = 1f)
         {
             var map = new float[width, height];

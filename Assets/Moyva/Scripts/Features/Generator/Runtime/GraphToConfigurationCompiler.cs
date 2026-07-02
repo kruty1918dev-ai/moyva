@@ -39,6 +39,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
     /// </summary>
     public static class GraphToConfigurationCompiler
     {
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
+
         public static List<CompiledLayerMap> Compile(
             GraphAsset graph,
             TileWorldCreatorManager manager,
@@ -56,6 +58,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Vector2Int? mapSizeOverride)
         {
             var result = new List<CompiledLayerMap>();
+            Vector2Int requestedMapSize = mapSizeOverride ?? graph?.SharedSettings?.MapSize ?? new Vector2Int(50, 50);
+            Debug.Log(
+                $"{WorldGenDiagTag} GraphCompiler.Compile ENTER graph={(graph != null ? graph.name : "null")}, " +
+                $"map={requestedMapSize.x}x{requestedMapSize.y}, seed={seed}");
             if (graph == null || manager == null || manager.configuration == null)
                 return result;
 
@@ -85,11 +91,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 .Where(l => skippedLayerIds == null || !skippedLayerIds.Contains(l.Id))
                 .OrderBy(l => l.SortingOrder)
                 .ToList();
+            int outputLayerCount = CountOutputLayers(graph, orderedLayers);
+            Debug.Log(
+                $"{WorldGenDiagTag} GraphCompiler.LayerOrder total={graph.Layers?.Count ?? 0}, enabled={orderedLayers.Count}, " +
+                $"outputLayers={outputLayerCount}, helperLayers={Mathf.Max(0, orderedLayers.Count - outputLayerCount)}");
 
             var existingLayers = GetAllBlueprintLayers(config);
             var usedLayerGuids = new HashSet<string>();
             var blueprintGuidByGraphLayerId = new Dictionary<string, string>();
             var blueprintByGraphLayerId = new Dictionary<string, BlueprintLayer>();
+            int topologySkippedCount = 0;
 
             for (int layerIndex = 0; layerIndex < orderedLayers.Count; layerIndex++)
             {
@@ -151,6 +162,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 {
                     Debug.LogWarning(
                         $"[GraphToConfigurationCompiler] Layer '{layerDef.Name}' skipped while compiling TWC modifiers: {executionPlan.ErrorMessage}");
+                    topologySkippedCount++;
                     continue;
                 }
 
@@ -167,8 +179,64 @@ namespace Kruty1918.Moyva.Generator.Runtime
             DisableUnusedLayers(existingLayers, usedLayerGuids);
             var objectLayers = CollectObjectPlacementLayers(graph, seed, new Vector2Int(config.width, config.height), skippedLayerIds);
             TWCObjectPlacementAdapter.Apply(config, manager, objectLayers, result);
+            int buildLayerCount = CountBuildLayers(config);
+            int tileSettingsCount = graph.Nodes?.OfType<TileSettingsNode>().Count() ?? 0;
+            if (skippedLayerIds != null && skippedLayerIds.Count > 0)
+            {
+                Debug.Log(
+                    $"{WorldGenDiagTag} GraphCompiler.SKIPPED skipped={skippedLayerIds.Count}, reasons={BuildSkippedSummary(graph, skippedLayerIds)}");
+            }
+
+            Debug.Log(
+                $"{WorldGenDiagTag} GraphCompiler.RESULT config={config.name}, buildLayers={buildLayerCount}, tileSettings={tileSettingsCount}, " +
+                $"objectPlacementLayers={objectLayers?.Count ?? 0}, warnings={topologySkippedCount}, errors=0");
 
             return result;
+        }
+
+        private static int CountOutputLayers(GraphAsset graph, IReadOnlyList<GeneratorLayerDefinition> orderedLayers)
+        {
+            if (graph == null || orderedLayers == null)
+                return 0;
+
+            int count = 0;
+            for (int index = 0; index < orderedLayers.Count; index++)
+            {
+                GeneratorLayerDefinition layer = orderedLayers[index];
+                if (layer != null && GraphLayerRuntimeSemantics.GetLayerOutputNode(graph, layer.Id) != null)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static int CountBuildLayers(Configuration configuration)
+        {
+            if (configuration?.buildLayerFolders == null)
+                return 0;
+
+            int count = 0;
+            for (int folderIndex = 0; folderIndex < configuration.buildLayerFolders.Count; folderIndex++)
+            {
+                count += configuration.buildLayerFolders[folderIndex]?.buildLayers?.Count ?? 0;
+            }
+
+            return count;
+        }
+
+        private static string BuildSkippedSummary(GraphAsset graph, ISet<string> skippedLayerIds)
+        {
+            if (skippedLayerIds == null || skippedLayerIds.Count == 0)
+                return "none";
+
+            var names = new List<string>(skippedLayerIds.Count);
+            foreach (string skippedLayerId in skippedLayerIds)
+            {
+                GeneratorLayerDefinition layer = graph?.GetLayerById(skippedLayerId);
+                names.Add(layer != null ? layer.Name : skippedLayerId);
+            }
+
+            return string.Join(", ", names);
         }
 
         private static IReadOnlyList<ObjectPlacementLayer> CollectObjectPlacementLayers(

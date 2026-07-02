@@ -23,15 +23,26 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
     internal static class TileWorldCreatorLayerOcclusionOptimizer
     {
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
+
         public static TileWorldCreatorLayerOcclusionResult GenerateCompleteMap(TileWorldCreatorManager manager)
         {
             if (manager == null || manager.configuration == null)
                 return default;
 
+            int childrenBefore = manager.transform.childCount;
+            Debug.Log(
+                $"{WorldGenDiagTag} TWCBuild.START manager={manager.name}, config={manager.configuration.name}, " +
+                $"map={manager.configuration.width}x{manager.configuration.height}, frame={Time.frameCount}, childrenBefore={childrenBefore}, asyncHint=unknown");
             var result = GenerateBlueprintMap(manager);
             LogOcclusionResult(result, "GenerateCompleteMap");
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
+            stopwatch.Stop();
             manager.OnMapReady?.Invoke();
+            Debug.Log(
+                $"{WorldGenDiagTag} TWCBuild.RETURN manager={manager.name}, frame={Time.frameCount}, elapsedMs={stopwatch.ElapsedMilliseconds}, " +
+                $"childrenAfterReturn={manager.transform.childCount}, mayContinueAsync=unknown");
             return result;
         }
 

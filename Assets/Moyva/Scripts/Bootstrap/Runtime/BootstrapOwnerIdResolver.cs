@@ -18,7 +18,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private const string DefaultOwnerId = "player_0";
 
         private readonly IConstructionService _constructionService;
-        private readonly BootstrapStartingPositionState _startingPositionState;
+        private readonly IStartingPositionState _startingPositionState;
 
     #pragma warning disable CS0649
         [InjectOptional] private ISessionManager _sessionManager;
@@ -26,7 +26,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public BootstrapOwnerIdResolver(
             IConstructionService constructionService,
-            BootstrapStartingPositionState startingPositionState)
+            IStartingPositionState startingPositionState)
         {
             _constructionService = constructionService;
             _startingPositionState = startingPositionState;

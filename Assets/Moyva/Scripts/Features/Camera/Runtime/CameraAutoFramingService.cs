@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 {
     internal sealed class CameraAutoFramingService : IInitializable, IDisposable
     {
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
         private readonly SignalBus _signalBus;
         private readonly ICameraMovement _cameraMovement;
         private readonly ICameraZoom _cameraZoom;
@@ -44,6 +45,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         {
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnSpawnPositions);
+            Debug.Log($"{WorldGenDiagTag} Receiver.Camera.Initialize subscribed frame={Time.frameCount}");
         }
 
         public void Dispose()
@@ -54,6 +56,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
+            Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldGenerated RECEIVED frame={Time.frameCount}, map={signal.Width}x{signal.Height}");
             _lastWorld = signal;
             _hasWorld = signal.Width > 0 && signal.Height > 0;
             ApplyAutoFrame();
@@ -61,6 +64,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private void OnSpawnPositions(WorldSpawnPositionsSignal signal)
         {
+            Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldSpawnPositions RECEIVED frame={Time.frameCount}, assignments={signal.Assignments?.Length ?? 0}");
             _lastSpawnAssignments = signal.Assignments;
             ApplyAutoFrame();
         }

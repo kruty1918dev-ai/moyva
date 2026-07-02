@@ -77,6 +77,13 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle();
             }
 
+            if (!Container.HasBinding(typeof(StartingPositionSyncService)))
+            {
+                Container.BindInterfacesTo<StartingPositionSyncService>()
+                    .AsSingle()
+                    .NonLazy();
+            }
+
             // Start the async install process but do not await it here — it will complete and
             // bind network-dependent services when ready. We intentionally do not use
             // `async void` to avoid race conditions where other installers run before
@@ -130,6 +137,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
                 if (!container.HasBinding(typeof(IGameCommandSyncService)))
                     container.Bind<IGameCommandSyncService>().To<GameCommandSyncService>().AsSingle();
+
+                if (!container.HasBinding(typeof(StartingPositionSyncService)))
+                    container.BindInterfacesTo<StartingPositionSyncService>().AsSingle().NonLazy();
             }
             catch (Exception ex)
             {

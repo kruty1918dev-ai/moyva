@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     public sealed class TileWorldCreatorHeightProjector : MonoBehaviour
     {
         private const string LogTag = "[MoyvaTWCHeight]";
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
         private const float DefaultCellSize = 1f;
 
         private Transform _targetRoot;
@@ -39,6 +40,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private int _lastLoggedSkippedSideWallRendererCount = -1;
         private bool _sideWallsRefreshedAfterStable;
         private bool _meshOptimizationRequestedAfterStable;
+        private float _worldGenDiagStartTime;
+        private bool _worldGenDiagEndLogged;
 
         public void Configure(Transform targetRoot, int[,] terrainLevelMap, float cellSize, int heightStep, float trackingSeconds)
         {
@@ -55,8 +58,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _lastLoggedSkippedSideWallRendererCount = -1;
             _sideWallsRefreshedAfterStable = false;
             _meshOptimizationRequestedAfterStable = false;
+            _worldGenDiagStartTime = Time.realtimeSinceStartup;
+            _worldGenDiagEndLogged = false;
             _appliedYOffsetByTransformId.Clear();
             Debug.Log($"{LogTag} Projector.Configure target='{_targetRoot.name}', levelMap={FormatLevelStats(_terrainLevelMap)}, cellSize={_cellSize}, heightStep={_heightStep}, trackingSeconds={_trackingSecondsRemaining}, existingRenderers={_targetRoot.GetComponentsInChildren<Renderer>(true).Length}, existingMeshFilters={_targetRoot.GetComponentsInChildren<MeshFilter>(true).Length}.");
+            Debug.Log($"{WorldGenDiagTag} HeightProjector.START frame={Time.frameCount}, tileCount={CountLevelMapCells(_terrainLevelMap)}");
             ApplyHeightsOnce();
         }
 
@@ -70,6 +76,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             _trackingSecondsRemaining -= Time.unscaledDeltaTime;
             ApplyHeightsOnce();
+
+            if (_trackingSecondsRemaining <= 0f && !_worldGenDiagEndLogged)
+            {
+                _worldGenDiagEndLogged = true;
+                Debug.Log(
+                    $"{WorldGenDiagTag} HeightProjector.END frame={Time.frameCount}, tileCount={CountLevelMapCells(_terrainLevelMap)}, " +
+                    $"elapsedMs={(Time.realtimeSinceStartup - _worldGenDiagStartTime) * 1000f:0}");
+            }
         }
 
         private void ApplyHeightsOnce()
@@ -382,6 +396,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return builder.ToString();
         }
 
+        private static int CountLevelMapCells(int[,] terrainLevelMap)
+        {
+            if (terrainLevelMap == null)
+                return 0;
+
+            return terrainLevelMap.GetLength(0) * terrainLevelMap.GetLength(1);
+        }
+
         private readonly struct TileTransformSample
         {
             public TileTransformSample(Transform transform, Vector3 worldCenter)
@@ -399,6 +421,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     public sealed class TileWorldCreatorRuntimeMeshOptimizer : MonoBehaviour
     {
         private const string LogTag = "[MoyvaTWCHeight:MeshOptimize]";
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
 
         private readonly List<string> _samples = new List<string>(16);
         private Transform _targetRoot;
@@ -446,6 +469,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
+            Debug.Log($"{WorldGenDiagTag} TWCBuild.COROUTINE.START frame={Time.frameCount}");
             StartCoroutine(OptimizeCoroutine(reason));
         }
 
@@ -549,6 +573,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _isOptimizing = false;
 
             Debug.Log($"{LogTag} Optimization complete. root='{root.name}', processedClusters={processedClusters}, combinedClusters={combinedClusters}, skippedSmallClusters={skippedSmallClusters}, skippedNoMeshClusters={skippedNoMeshClusters}, unchangedClusters={unchangedClusters}, failedClusters={failedClusters}, rendererComponents {beforeRendererComponents}->{afterRendererComponents}, renderableMeshRenderers {beforeRenderableRenderers}->{afterRenderableRenderers}, meshFiltersWithMesh {beforeMeshFilters}->{afterMeshFilters}, hiddenSourceRenderers={sourceRenderersHidden}, combinedVertices={totalVertices}, elapsed={Time.realtimeSinceStartup - startTime:0.###}s, samples={FormatSamples(_samples)}.");
+            Debug.Log($"{WorldGenDiagTag} TWCBuild.COROUTINE.END frame={Time.frameCount}, childrenAfterCoroutine={root.childCount}");
         }
 
         private void AddSample(string sample)

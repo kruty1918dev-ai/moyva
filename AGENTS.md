@@ -10,7 +10,6 @@ Moyva is a turn-based strategy game built with:
 - C#
 - URP
 - Zenject
-- DOTween
 - TextMeshPro
 - Odin Inspector where appropriate
 - Square grid / tile-based procedural world systems

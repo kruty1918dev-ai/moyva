@@ -5,6 +5,10 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
+    /// <summary>
+    /// Runtime LOS/visibility service, який враховує terrain height, downhill/uphill modifiers і edge rules.
+    /// Використовується gameplay fog logic, але не повинен знати про camera, save або UI.
+    /// </summary>
     internal sealed class HeightAwareVisionService : IHeightAwareVisionService
     {
         private static readonly Vector2[] TargetSampleOffsets =
@@ -25,18 +29,34 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private float[,] _heightMap;
         private int _cachedSettingsSignature;
 
+        /// <summary>
+        /// Створює height-aware service з необов'язковим доступом до fog settings.
+        /// </summary>
+        /// <param name="settings">Налаштування, які визначають LOS tuning і cache limits.</param>
         public HeightAwareVisionService([Zenject.InjectOptional] FogOfWarSettings settings = null)
         {
             _settings = settings;
             _cachedSettingsSignature = ComputeSettingsSignature();
         }
 
+        /// <summary>
+        /// Передає нову height map і скидає внутрішній visibility cache.
+        /// </summary>
+        /// <param name="heightMap">Мапа висот generated світу.</param>
         public void SetHeightMap(float[,] heightMap)
         {
             _heightMap = heightMap;
             _visibilityCache.Clear();
         }
 
+        /// <summary>
+        /// Обчислює search radius для visibility resolver-а з урахуванням висоти спостерігача.
+        /// </summary>
+        /// <param name="origin">Клітинка спостерігача.</param>
+        /// <param name="baseVisionRange">Базовий vision range.</param>
+        /// <param name="maxVisionRange">Глобальна верхня межа search radius.</param>
+        /// <param name="observerModifiers">Додаткові модифікатори спостерігача.</param>
+        /// <returns>Ефективний радіус пошуку для LOS.</returns>
         public int GetSearchRadius(Vector2Int origin, int baseVisionRange, int maxVisionRange, FogVisionModifiers observerModifiers = default)
         {
             int safeBaseRange = Mathf.Max(1, baseVisionRange);
@@ -48,6 +68,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             return Mathf.Clamp(safeBaseRange + observerBonus + downSlopeBonus, 1, maxVisionRange);
         }
 
+        /// <summary>
+        /// Повертає нормалізований visibility factor для цілі з урахуванням рельєфу й LOS.
+        /// </summary>
+        /// <param name="origin">Клітинка спостерігача.</param>
+        /// <param name="target">Клітинка цілі.</param>
+        /// <param name="baseVisionRange">Базовий vision range.</param>
+        /// <param name="maxVisionRange">Глобальна верхня межа range.</param>
+        /// <param name="observerModifiers">Модифікатори спостерігача.</param>
+        /// <param name="targetModifiers">Модифікатори цілі.</param>
+        /// <returns>Видимість у діапазоні [0..1].</returns>
         public float GetVisibilityFactor(Vector2Int origin, Vector2Int target, int baseVisionRange, int maxVisionRange, FogVisionModifiers observerModifiers = default, FogVisionModifiers targetModifiers = default)
         {
             int safeBaseRange = Mathf.Max(1, baseVisionRange);
@@ -76,6 +106,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             return visibility;
         }
 
+        /// <summary>
+        /// Перевіряє, чи ціль проходить visibility threshold для поточного LOS-розрахунку.
+        /// </summary>
+        /// <param name="origin">Клітинка спостерігача.</param>
+        /// <param name="target">Клітинка цілі.</param>
+        /// <param name="baseVisionRange">Базовий vision range.</param>
+        /// <param name="maxVisionRange">Глобальна верхня межа range.</param>
+        /// <param name="observerModifiers">Модифікатори спостерігача.</param>
+        /// <param name="targetModifiers">Модифікатори цілі.</param>
+        /// <returns><see langword="true"/>, якщо ціль вважається видимою.</returns>
         public bool IsTargetVisible(Vector2Int origin, Vector2Int target, int baseVisionRange, int maxVisionRange, FogVisionModifiers observerModifiers = default, FogVisionModifiers targetModifiers = default)
         {
             return GetVisibilityFactor(origin, target, baseVisionRange, maxVisionRange, observerModifiers, targetModifiers) >= GetVisibilityThreshold();
@@ -731,6 +771,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             private readonly int _observerModifiersSignature;
             private readonly int _targetModifiersSignature;
 
+            /// <summary>
+            /// Створює ключ кешу для LOS/visibility calculation між двома клітинками.
+            /// </summary>
             public VisibilityCacheKey(Vector2Int origin, Vector2Int target, int baseRange, int maxRange, int observerModifiersSignature, int targetModifiersSignature)
             {
                 _originX = origin.x;
@@ -743,6 +786,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _targetModifiersSignature = targetModifiersSignature;
             }
 
+            /// <summary>
+            /// Порівнює два cache key за всіма значущими полями.
+            /// </summary>
+            /// <param name="other">Інший ключ кешу.</param>
+            /// <returns><see langword="true"/>, якщо ключі еквівалентні.</returns>
             public bool Equals(VisibilityCacheKey other)
             {
                 return _originX == other._originX
@@ -755,9 +803,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     && _targetModifiersSignature == other._targetModifiersSignature;
             }
 
+            /// <summary>
+            /// Порівнює поточний ключ кешу з іншим об'єктом.
+            /// </summary>
+            /// <param name="obj">Об'єкт для порівняння.</param>
+            /// <returns><see langword="true"/>, якщо об'єкт є рівним cache key.</returns>
             public override bool Equals(object obj)
                 => obj is VisibilityCacheKey other && Equals(other);
 
+            /// <summary>
+            /// Обчислює hash code для використання у visibility cache dictionary.
+            /// </summary>
+            /// <returns>Hash code поточного ключа.</returns>
             public override int GetHashCode()
             {
                 unchecked

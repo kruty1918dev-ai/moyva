@@ -10,8 +10,19 @@ using Zenject;
 
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
+    /// <summary>
+    /// Save-friendly snapshot однієї fixed vision area.
+    /// Використовується <see cref="FogOfWarSaveModule"/> для серіалізації постійних reveal sources.
+    /// </summary>
     internal readonly struct FogFixedVisionAreaSnapshot
     {
+        /// <summary>
+        /// Створює snapshot постійної області видимості.
+        /// </summary>
+        /// <param name="areaId">Стабільний ідентифікатор області.</param>
+        /// <param name="position">Центр області у координатах клітинок.</param>
+        /// <param name="visionRange">Радіус області.</param>
+        /// <param name="shape">Форма reveal.</param>
         public FogFixedVisionAreaSnapshot(string areaId, Vector2Int position, int visionRange, FogRevealShape shape)
         {
             AreaId = areaId;
@@ -20,14 +31,40 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             Shape = shape;
         }
 
+        /// <summary>
+        /// Ідентифікатор області.
+        /// </summary>
         public string AreaId { get; }
+
+        /// <summary>
+        /// Центр області у координатах клітинок.
+        /// </summary>
         public Vector2Int Position { get; }
+
+        /// <summary>
+        /// Радіус reveal області.
+        /// </summary>
         public int VisionRange { get; }
+
+        /// <summary>
+        /// Форма reveal області.
+        /// </summary>
         public FogRevealShape Shape { get; }
     }
 
+    /// <summary>
+    /// Відкладена reveal-операція, яку можна застосувати після ініціалізації або resize fog map.
+    /// </summary>
     internal readonly struct FogPendingRevealArea
     {
+        /// <summary>
+        /// Створює опис відкладеної reveal-операції.
+        /// </summary>
+        /// <param name="center">Центр області.</param>
+        /// <param name="radius">Радіус області.</param>
+        /// <param name="shape">Форма reveal.</param>
+        /// <param name="keepVisible">Чи має область стати постійно visible.</param>
+        /// <param name="visibleAreaId">Необов'язковий id постійної visible області.</param>
         public FogPendingRevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId)
         {
             Center = center;
@@ -37,10 +74,29 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             VisibleAreaId = visibleAreaId;
         }
 
+        /// <summary>
+        /// Центр reveal області.
+        /// </summary>
         public Vector2Int Center { get; }
+
+        /// <summary>
+        /// Радіус reveal області.
+        /// </summary>
         public int Radius { get; }
+
+        /// <summary>
+        /// Форма reveal області.
+        /// </summary>
         public FogRevealShape Shape { get; }
+
+        /// <summary>
+        /// Чи повинна область лишатися visible після застосування.
+        /// </summary>
         public bool KeepVisible { get; }
+
+        /// <summary>
+        /// Необов'язковий id постійної visible області.
+        /// </summary>
         public string VisibleAreaId { get; }
     }
 
@@ -52,6 +108,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// </summary>
     internal sealed class FogOfWarService : IFogOfWarService, IInitializable, IDisposable
     {
+        private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
         /// <summary>
         /// Зведена документація полів FogOfWarService.
         /// Коротко:
@@ -68,6 +125,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private const string BuildingVisionAreaPrefix = "building:";
         private const string StartupFallbackRevealAreaId = "fog-service-startup-fallback-reveal";
         private const string DebugTag = "[MoyvaFogTrace]";
+        private const string StartDiagTag = "[MoyvaFogStartDiag]";
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
 
         /// <summary>
         /// Сервіс, який обчислює базовий набір видимих клітин з позиції з урахуванням перешкод.
@@ -139,9 +198,26 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private HashSet<Vector2Int> _lastDirtyTiles = new HashSet<Vector2Int>();
         private FogWorldVisualContext _visualContext;
 
+        /// <summary>
+        /// Внутрішня версія fog state, яка збільшується після значущих змін.
+        /// Використовується renderer culling та іншими runtime helpers для cheap dirty-check.
+        /// </summary>
         internal int Version { get; private set; }
+
+        /// <summary>
+        /// Показує, чи fog service уже ініціалізовано під поточний розмір карти.
+        /// </summary>
         internal bool IsReady => _initialized;
 
+        /// <summary>
+        /// Створює головний runtime fog service і підключає його залежності.
+        /// </summary>
+        /// <param name="resolver">Visibility resolver для дискретного набору видимих клітин.</param>
+        /// <param name="heightVisionService">Height-aware LOS service.</param>
+        /// <param name="visualUpdater">Visual layer, який відображає gameplay fog state.</param>
+        /// <param name="saveProvider">Провайдер explored snapshot-ів для save/load.</param>
+        /// <param name="signalBus">SignalBus для інтеграції з runtime подіями.</param>
+        /// <param name="settings">Fog settings asset.</param>
         public FogOfWarService(
             IFogVisibilityResolver resolver,
             IHeightAwareVisionService heightVisionService,
@@ -177,6 +253,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.Subscribe<BuildingDemolishedSignal>(OnBuildingDemolished);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGeneratedData);
+            Debug.Log($"{WorldGenDiagTag} Receiver.Fog.Initialize subscribed frame={Time.frameCount}");
         }
 
         /// <summary>
@@ -207,6 +284,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             width = Mathf.Max(1, width);
             height = Mathf.Max(1, height);
 
+            Debug.Log($"{StartDiagTag} FogService.Initialize map={width}x{height}, wasInitialized={wasInitialized}, pendingRevealCount={_pendingRevealAreas.Count}, pendingUnits={_pendingUnits.Count}, fixedAreas={_fixedVisionShapes.Count}.");
             Debug.Log($"{DebugTag} FogService.Initialize begin requested={width}x{height}, wasInitialized={wasInitialized}, previous={_width}x{_height}, pendingReveals={_pendingRevealAreas.Count}, units={_unitPositions.Count}, fixedAreas={_fixedVisionShapes.Count}.");
 
             _width  = width;
@@ -226,6 +304,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             // Відновити стан досліджених клітин із відкладеного сніпшоту (якщо завантаження відбулося до ініціалізації карти).
             var snapshot = _pendingExploredSnapshot ?? _saveProvider?.LoadExploredData();
             bool hasLoadedSnapshot = snapshot != null;
+            Debug.Log($"{StartDiagTag} FogService.Initialize snapshot={(snapshot != null ? $"{snapshot.GetLength(0)}x{snapshot.GetLength(1)}" : "null")}, willApplyPendingReveals={_pendingRevealAreas.Count > 0}.");
             Debug.Log($"{DebugTag} FogService.Initialize snapshot={(snapshot != null ? $"{snapshot.GetLength(0)}x{snapshot.GetLength(1)}" : "null")}.");
             if (snapshot != null)
                 LoadFromSnapshot(snapshot);
@@ -319,13 +398,31 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         public void RegisterFixedVisionArea(string areaId, Vector2Int position, int visionRange, FogRevealShape shape)
             => RegisterVisionArea(areaId, position, visionRange, shape);
 
+        /// <summary>
+        /// Виконує reveal для заданої області.
+        /// Якщо fog service ще не готовий до поточного розміру карти, reveal може бути відкладений.
+        /// </summary>
+        /// <param name="center">Центр reveal області.</param>
+        /// <param name="radius">Радіус області у клітинках.</param>
+        /// <param name="shape">Форма області.</param>
+        /// <param name="keepVisible">Чи має область лишатися visible надалі.</param>
+        /// <param name="visibleAreaId">Необов'язковий id постійної visible області.</param>
         public void RevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId = null)
         {
             radius = Mathf.Max(0, radius);
+            bool inBounds = IsInBounds(center);
+            bool touchesCurrentMap = _initialized && RevealTouchesCurrentMap(center, radius);
+            Debug.Log($"{DirectDiagTag} FogService.RevealArea RECEIVED center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, initialized={_initialized}, map={_width}x{_height}, inBounds={inBounds}.");
+            Debug.Log($"{StartDiagTag} FogService.RevealArea request initialized={_initialized}, map={_width}x{_height}, center={center}, inBounds={inBounds}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={visibleAreaId ?? "<auto>"}, touchesCurrentMap={touchesCurrentMap}.");
+            if (!inBounds)
+                Debug.LogWarning($"{StartDiagTag} FogService.RevealArea center outside map center={center}, map={_width}x{_height}, initialized={_initialized}.");
+            if (radius <= 0)
+                Debug.LogWarning($"{StartDiagTag} FogService.RevealArea radius<=0 center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}.");
 
             if (!_initialized)
             {
                 _pendingRevealAreas.Add(new FogPendingRevealArea(center, radius, shape, keepVisible, visibleAreaId));
+                Debug.LogWarning($"{StartDiagTag} FogService.RevealArea queued reason=not-initialized center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={visibleAreaId ?? "<auto>"}, pendingRevealCount={_pendingRevealAreas.Count}.");
                 Debug.Log($"{DebugTag} FogService.RevealArea queued-not-initialized center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={visibleAreaId ?? "<auto>"}, pending={_pendingRevealAreas.Count}.");
                 return;
             }
@@ -333,6 +430,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (!RevealTouchesCurrentMap(center, radius))
             {
                 _pendingRevealAreas.Add(new FogPendingRevealArea(center, radius, shape, keepVisible, visibleAreaId));
+                Debug.LogWarning($"{StartDiagTag} FogService.RevealArea queued reason=outside-current-map center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={visibleAreaId ?? "<auto>"}, map={_width}x{_height}, pendingRevealCount={_pendingRevealAreas.Count}.");
                 Debug.LogWarning($"{DebugTag} FogService.RevealArea queued-outside-current-map center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={visibleAreaId ?? "<auto>"}, currentMap={_width}x{_height}, pending={_pendingRevealAreas.Count}. This usually means startup reveal arrived before fog resized to the generated world.");
                 return;
             }
@@ -343,6 +441,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private void ApplyRevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible, string visibleAreaId)
         {
             radius = Mathf.Max(0, radius);
+            var centerStateBefore = GetFogState(center);
+            int visibleBefore = CountVisibleTiles();
+            int exploredBefore = CountExploredTiles();
 
             string areaId = null;
             bool removedOldVisibility = false;
@@ -357,8 +458,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             var tiles = ComputeShapeTiles(center, radius, shape);
+            bool centerIncluded = false;
+            for (int index = 0; index < tiles.Count; index++)
+            {
+                if (tiles[index] == center)
+                {
+                    centerIncluded = true;
+                    break;
+                }
+            }
             if (tiles.Count == 0)
             {
+                Debug.LogWarning($"{StartDiagTag} ApplyRevealArea computed tiles=0, center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={areaId ?? visibleAreaId ?? "<explored-only>"}, map={_width}x{_height}.");
                 Debug.LogWarning($"{DebugTag} FogService.ApplyRevealArea zero-tiles center={center}, radius={radius}, shape={shape}, keepVisible={keepVisible}, id={areaId ?? visibleAreaId ?? "<explored-only>"}, map={_width}x{_height}.");
                 if (removedOldVisibility)
                     FlushVisual();
@@ -381,6 +492,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 }
 
                 FlushVisual();
+                Debug.Log($"{DirectDiagTag} FogService.ApplyRevealArea RESULT tiles={tiles.Count}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, dirty={_lastDirtyTiles.Count}.");
+                Debug.Log($"{StartDiagTag} ApplyRevealArea computed tiles={tiles.Count}, centerIncluded={centerIncluded}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, visibleBefore={visibleBefore}, visibleAfter={CountVisibleTiles()}, exploredBefore={exploredBefore}, exploredAfter={CountExploredTiles()}, dirty={_lastDirtyTiles.Count}, keepVisible={keepVisible}, id={areaId}.");
                 Debug.Log($"{DebugTag} FogService.ApplyRevealArea visible center={center}, radius={radius}, shape={shape}, id={areaId}, tiles={tiles.Count}, map={_width}x{_height}, centerState={GetFogState(center)}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}.");
                 return;
             }
@@ -399,6 +512,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (changed)
                 FlushVisual();
 
+            Debug.Log($"{DirectDiagTag} FogService.ApplyRevealArea RESULT tiles={tiles.Count}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, dirty={_lastDirtyTiles.Count}.");
+            Debug.Log($"{StartDiagTag} ApplyRevealArea computed tiles={tiles.Count}, centerIncluded={centerIncluded}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, visibleBefore={visibleBefore}, visibleAfter={CountVisibleTiles()}, exploredBefore={exploredBefore}, exploredAfter={CountExploredTiles()}, dirty={_lastDirtyTiles.Count}, keepVisible={keepVisible}, id={areaId ?? visibleAreaId ?? "<explored-only>"}.");
             Debug.Log($"{DebugTag} FogService.ApplyRevealArea explored center={center}, radius={radius}, shape={shape}, tiles={tiles.Count}, changed={changed}, map={_width}x{_height}, centerState={GetFogState(center)}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}.");
         }
 
@@ -534,6 +649,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// </summary>
         /// <param name="unitId">Ідентифікатор одиниці.</param>
         /// <param name="newPosition">Нова позиція в координатах сітки.</param>
+        /// <summary>
+        /// Оновлює позицію зареєстрованого юніта або fixed vision source.
+        /// Side effect: перебудовує його вклад у visible/explored state і flush-ить visual update.
+        /// </summary>
+        /// <param name="unitId">Ідентифікатор юніта або vision area.</param>
+        /// <param name="newPosition">Нова клітинка.</param>
         public void UpdateUnitPosition(string unitId, Vector2Int newPosition)
         {
             if (!_initialized)
@@ -587,6 +708,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// Видаляє одиницю з системи туману, зменшуючи відповідні лічильники видимості.
         /// </summary>
         /// <param name="unitId">Ідентифікатор одиниці.</param>
+        /// <summary>
+        /// Прибирає юніта або fixed vision source із системи FogOfWar.
+        /// Side effect: зменшує visibility counters та оновлює visual layer.
+        /// </summary>
+        /// <param name="unitId">Ідентифікатор джерела видимості.</param>
         public void UnregisterUnit(string unitId)
         {
             if (string.IsNullOrWhiteSpace(unitId))
@@ -618,6 +744,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// </summary>
         /// <param name="position">Координати клітини.</param>
         /// <returns>Стан туману для клітини.</returns>
+        /// <summary>
+        /// Повертає повний gameplay fog state для заданої клітинки.
+        /// </summary>
+        /// <param name="position">Клітинка карти.</param>
+        /// <returns>Поточний fog state клітинки.</returns>
         public FogStateType GetFogState(Vector2Int position)
         {
             if (!_initialized || !IsInBounds(position))
@@ -637,6 +768,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// </summary>
         /// <param name="position">Координати клітини.</param>
         /// <returns>True якщо клітина видима, інакше false.</returns>
+        /// <summary>
+        /// Перевіряє, чи клітинка видима прямо зараз.
+        /// </summary>
+        /// <param name="position">Клітинка карти.</param>
+        /// <returns><see langword="true"/>, якщо клітинка зараз visible.</returns>
         public bool IsVisible(Vector2Int position)
             => _initialized && IsInBounds(position) && _visibilityCounters[position.x, position.y] >= 1;
 
@@ -645,6 +781,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// </summary>
         /// <param name="position">Координати клітини.</param>
         /// <returns>True якщо клітина позначена як досліджена.</returns>
+        /// <summary>
+        /// Перевіряє, чи клітинка вже була розвідана.
+        /// </summary>
+        /// <param name="position">Клітинка карти.</param>
+        /// <returns><see langword="true"/>, якщо клітинка explored або visible.</returns>
         public bool IsExplored(Vector2Int position)
             => _initialized && IsInBounds(position) && _exploredTiles[position.x, position.y];
 
@@ -653,6 +794,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// Якщо служба не ініціалізована, повертає відкладений сніпшот (якщо є).
         /// </summary>
         /// <returns>Двовимірний булевий масив ширини `_width` × `_height`, або null якщо немає даних.</returns>
+        /// <summary>
+        /// Формує explored snapshot для save/load.
+        /// Visible state окремо не серіалізується і має бути відновлений runtime reveal sources.
+        /// </summary>
+        /// <returns>Двовимірний explored snapshot.</returns>
         public bool[,] GetExploredSnapshot()
         {
             if (!_initialized)
@@ -676,6 +822,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// Якщо служба ще не ініціалізована — зберігає сніпшот як відкладений для застосування при ініціалізації.
         /// </summary>
         /// <param name="explored">Джерельний масив досліджених клітин.</param>
+        /// <summary>
+        /// Завантажує explored snapshot у runtime fog state.
+        /// Якщо service ще не ініціалізований, snapshot відкладається до моменту створення карти.
+        /// </summary>
+        /// <param name="explored">Snapshot explored-клітинок.</param>
         public void LoadFromSnapshot(bool[,] explored)
         {
             if (explored == null) return;
@@ -701,6 +852,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             BumpVersion();
         }
 
+        /// <summary>
+        /// Формує save-friendly snapshot усіх зареєстрованих fixed vision areas.
+        /// Використовується save module і не призначений для загального gameplay API.
+        /// </summary>
+        /// <returns>Колекція snapshot-ів поточних fixed vision areas.</returns>
         internal IReadOnlyList<FogFixedVisionAreaSnapshot> GetFixedVisionAreasSnapshot()
         {
             var snapshot = new List<FogFixedVisionAreaSnapshot>(_fixedVisionShapes.Count);
@@ -722,6 +878,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             return snapshot;
         }
 
+        /// <summary>
+        /// Відновлює fixed vision areas із save snapshot-ів.
+        /// Side effect: повторно реєструє їх у runtime fog state.
+        /// </summary>
+        /// <param name="areas">Колекція snapshot-ів fixed vision areas.</param>
         internal void LoadFixedVisionAreasSnapshot(IReadOnlyList<FogFixedVisionAreaSnapshot> areas)
         {
             if (areas == null || areas.Count == 0)
@@ -772,6 +933,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void OnWorldGeneratedData(WorldGeneratedDataSignal signal)
         {
+            Debug.Log($"{WorldGenDiagTag} Receiver.Fog.WorldGenerated RECEIVED frame={Time.frameCount}, map={signal.Width}x{signal.Height}, initializedBefore={_initialized}");
             _resolver.SetHeightMap(BuildVisibilityHeightMap(signal.TerrainLevelMap, signal.HeightMap));
 
             Vector2Int baseMapSize = FogWorldSignalUtility.ResolveBaseMapSize(signal);
@@ -792,6 +954,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             ApplyPendingRevealAreas("WorldGeneratedData");
             RecalculateAllVisibility();
+            Debug.Log($"{WorldGenDiagTag} Receiver.Fog.WorldGenerated APPLIED map={_width}x{_height}, initializedAfter={_initialized}, pendingRevealCount={_pendingRevealAreas.Count}");
             Debug.Log($"{DebugTag} FogService.OnWorldGeneratedData end map={_width}x{_height}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, pendingReveals={_pendingRevealAreas.Count}.");
         }
 
@@ -1076,8 +1239,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private void FlushVisual()
         {
             int dirtyCount = _lastDirtyTiles.Count;
+            Debug.Log($"{DirectDiagTag} FogService.FlushVisual dirty={dirtyCount}, hasVisualUpdater={_visualUpdater != null}.");
+            Debug.Log($"{StartDiagTag} FlushVisual dirty={dirtyCount}, hasVisualUpdater={_visualUpdater != null}, updateType=dirty-update.");
+            if (dirtyCount > 0 && _visualUpdater == null)
+                Debug.LogWarning($"{StartDiagTag} FlushVisual dirty tiles exist but visualUpdater is null dirty={dirtyCount}.");
             if (_visualUpdater != null)
+            {
                 _visualUpdater.UpdateDirtyTiles(this, _lastDirtyTiles);
+                Debug.Log($"{StartDiagTag} FlushVisual updaterCalled=true dirty={dirtyCount}.");
+            }
 
             if (dirtyCount > 0)
                 BumpVersion();
@@ -1221,6 +1391,12 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// Перевіряє, чи варто рендерити об'єкт з огляду на стан туману в області його меж.
         /// Повертає true якщо хоча б одна клітина в області не є невідкритою (Unexplored).
         /// </summary>
+        /// <param name="worldBounds">Світові межі об'єкта.</param>
+        /// <param name="fogService">Gameplay fog service.</param>
+        /// <param name="gridService">Grid service для перетворення bounds у діапазон клітин.</param>
+        /// <param name="boundsPaddingCells">Додатковий padding у клітинках.</param>
+        /// <param name="gridProjection">Необов'язковий projected grid adapter.</param>
+        /// <returns><see langword="true"/>, якщо об'єкт слід рендерити.</returns>
         public static bool ShouldRender(Bounds worldBounds, IFogOfWarService fogService, IGridService gridService, float boundsPaddingCells, IGridProjection gridProjection = null)
         {
             if (fogService == null || gridService == null)
@@ -1245,6 +1421,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// Обчислює діапазон клітин, що покриває передані світові межі, з урахуванням паддінгу.
         /// Повертає false якщо область повністю виходить за межі сітки.
         /// </summary>
+        /// <param name="worldBounds">Світові межі об'єкта.</param>
+        /// <param name="gridService">Grid service карти.</param>
+        /// <param name="boundsPaddingCells">Додатковий padding у клітинках.</param>
+        /// <param name="min">Мінімальна клітинка покритого діапазону.</param>
+        /// <param name="max">Максимальна клітинка покритого діапазону.</param>
+        /// <param name="gridProjection">Необов'язковий projected grid adapter.</param>
+        /// <returns><see langword="true"/>, якщо bounds перетинають карту і мають валідний tile range.</returns>
         internal static bool TryGetCoveredTileRange(
             Bounds worldBounds,
             IGridService gridService,
@@ -1375,6 +1558,14 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private int _lastFogVersion = -1;
         private float _nextDiscoveryAt;
 
+        /// <summary>
+        /// Створює runtime culling service для приховування renderer-ів під unexplored fog.
+        /// </summary>
+        /// <param name="fogService">Gameplay fog service, який дає актуальний fog state.</param>
+        /// <param name="gridService">Grid service для розрахунку покритих клітин.</param>
+        /// <param name="signalBus">SignalBus для реакції на зміни світу та об'єктів.</param>
+        /// <param name="gridProjection">Необов'язковий projected grid adapter.</param>
+        /// <param name="settings">Fog settings із culling tuning-ом.</param>
         public FogRendererCullingService(
             FogOfWarService fogService,
             IGridService gridService,
@@ -1715,6 +1906,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private sealed class CullableRenderer
         {
+            /// <summary>
+            /// Renderer, яким керує ця обгортка під час приховування/відновлення через fog culling.
+            /// </summary>
             public readonly Renderer Renderer;
             private bool _hiddenByFog;
             private bool _enabledBeforeFog;
@@ -1769,8 +1963,18 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         }
     }
 
+    /// <summary>
+    /// Shared helper для читання map bounds і базового розміру карти з <see cref="WorldGeneratedDataSignal"/>.
+    /// Не містить gameplay fog state і може перевикористовуватись іншими fog runtime helpers.
+    /// </summary>
     internal static class FogWorldSignalUtility
     {
+        /// <summary>
+        /// Спробувати дістати валідні map world bounds із сигналу генерації світу.
+        /// </summary>
+        /// <param name="signal">Сигнал генерації світу.</param>
+        /// <param name="bounds">Результуючі world bounds карти.</param>
+        /// <returns><see langword="true"/>, якщо bounds присутні й валідні.</returns>
         public static bool TryResolveMapWorldBounds(WorldGeneratedDataSignal signal, out Bounds bounds)
         {
             bounds = default;
@@ -1792,6 +1996,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             return true;
         }
 
+        /// <summary>
+        /// Повертає найбільш надійний розмір базової карти, комбінуючи дані з різних generated map sources.
+        /// </summary>
+        /// <param name="signal">Сигнал генерації світу.</param>
+        /// <returns>Безпечний розмір карти у клітинках.</returns>
         public static Vector2Int ResolveBaseMapSize(WorldGeneratedDataSignal signal)
         {
             int width = Mathf.Max(0, signal.Width);

@@ -22,6 +22,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     /// </summary>
     internal sealed class GraphTwcMapDataGenerator : IMapDataGenerator
     {
+        private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
         private readonly GraphAsset _graphAsset;
         private readonly TileWorldCreatorManager _manager;
         private readonly IGeneratorTerrainLevelService _terrainLevelService;
@@ -32,6 +33,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
         /// </summary>
         internal IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; private set; }
         internal float LastCellSize { get; private set; } = 1f;
+        internal string DiagnosticGraphName => _graphAsset != null ? _graphAsset.name : "null";
+        internal bool HasGraphAsset => _graphAsset != null;
+        internal bool HasSharedMapSize => _graphAsset?.SharedSettings != null && _graphAsset.SharedSettings.HasMapSize;
+        internal Vector2Int DiagnosticSharedMapSize => _graphAsset?.SharedSettings?.MapSize ?? Vector2Int.zero;
+        internal int DiagnosticSeed => GetSeedFromGraph();
+        internal bool HasTileWorldCreatorManager => _manager != null;
 
         private bool _hasLastBaseMapWorldBounds;
         private Bounds _lastBaseMapWorldBounds;
@@ -52,6 +59,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int seed = GetSeedFromGraph();
             GlobalSeed.Set(seed);
             _terrainLevelService?.Clear();
+            Debug.Log(
+                $"{WorldGenDiagTag} GraphMapData.Generate ENTER frame={Time.frameCount}, graph={(_graphAsset != null ? _graphAsset.name : "null")}, " +
+                $"seed={seed}, map={width}x{height}, hasGraph={_graphAsset != null}, hasTwcManager={_manager != null}");
 
             // Launch context has priority for real gameplay starts; SharedSettings keeps direct play-mode aligned with preview.
             var shared = _graphAsset?.SharedSettings;
@@ -92,6 +102,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 var validator = new GraphValidator();
                 var report = validator.ValidateDetailed(_graphAsset);
                 var globalErrors = GetGlobalValidationErrors(report);
+                Debug.Log(
+                    $"{WorldGenDiagTag} GraphMapData.Validation result={(globalErrors.Count == 0 ? "valid" : "invalid")}, " +
+                    $"errors={CountValidationIssues(report, ValidationSeverity.Error)}, warnings={CountValidationIssues(report, ValidationSeverity.Warning)}");
                 if (globalErrors.Count > 0)
                 {
                     Debug.LogError(
@@ -118,6 +131,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 }
 
                 // 1. Граф -> TWC Configuration.
+                Debug.Log(
+                    $"{WorldGenDiagTag} GraphMapData.CALL GraphToConfigurationCompiler.Compile graph={(_graphAsset != null ? _graphAsset.name : "null")}, " +
+                    $"map={baseMapWidth}x{baseMapHeight}");
                 var compiled = GraphToConfigurationCompiler.Compile(
                     _graphAsset,
                     _manager,
@@ -125,6 +141,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     skippedLayerIds,
                     new Vector2Int(baseMapWidth, baseMapHeight));
                 LastCompiledLayers = compiled;
+                Debug.Log(
+                    $"{WorldGenDiagTag} GraphMapData.Compile.RESULT config={(_manager.configuration != null ? _manager.configuration.name : "null")}, " +
+                    $"layers={compiled?.Count ?? 0}, renderableLayers={CountRenderableLayers(compiled)}, skippedLayers={skippedLayerIds.Count}");
 
                 // Gameplay-мапи лишаються розміром базової згенерованої мапи.
                 // Розширення окремих TWC blueprint-шарів через border padding не
@@ -142,7 +161,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     out _lastBaseMapWorldBounds);
 
                 // 2. TWC будує мапу (blueprint-стек + 3D build-стек).
+                var twcStopwatch = System.Diagnostics.Stopwatch.StartNew();
+                Debug.Log(
+                    $"{WorldGenDiagTag} GraphMapData.CALL TWC.GenerateCompleteMap frame={Time.frameCount}, " +
+                    $"config={(_manager.configuration != null ? _manager.configuration.name : "null")}");
                 TileWorldCreatorLayerOcclusionOptimizer.GenerateCompleteMap(_manager);
+                twcStopwatch.Stop();
                 GraphGenerationLayerLog.Emit(
                     "Runtime GraphTwcMapDataGenerator",
                     _graphAsset,
@@ -175,7 +199,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 // Об'єкти/будівлі у новому конвеєрі генерує не граф, а ігролад/TWC build-шари.
                 var objectMap = new string[width, height];
                 var buildingMap = new string[width, height];
+                Debug.Log(
+                    $"{WorldGenDiagTag} GraphMapData.TWC.RESULT frame={Time.frameCount}, elapsedMs={twcStopwatch.ElapsedMilliseconds}, " +
+                    $"hasBiomeMap={biomeMap != null}, hasHeightMap={heightMap != null}, hasObjectMap={objectMap != null}");
 
+                Debug.Log(
+                    $"{WorldGenDiagTag} GraphMapData.EXIT worldData map={width}x{height}, biomeMap={FormatMapSize(biomeMap)}, " +
+                    $"heightMap={FormatMapSize(heightMap)}, objectMap={FormatMapSize(objectMap)}, buildingMap={FormatMapSize(buildingMap)}");
                 onComplete?.Invoke(biomeMap, objectMap, heightMap, buildingMap);
             }
             catch (Exception ex)
@@ -230,6 +260,43 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             return result;
+        }
+
+        private static int CountRenderableLayers(IReadOnlyList<CompiledLayerMap> compiled)
+        {
+            if (compiled == null)
+                return 0;
+
+            int count = 0;
+            for (int index = 0; index < compiled.Count; index++)
+            {
+                if (compiled[index] != null && compiled[index].HasRenderableTileOutput)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static int CountValidationIssues(GraphValidationReport report, ValidationSeverity severity)
+        {
+            if (report?.Issues == null)
+                return 0;
+
+            int count = 0;
+            for (int index = 0; index < report.Issues.Count; index++)
+            {
+                if (report.Issues[index] != null && report.Issues[index].Severity == severity)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static string FormatMapSize(Array map)
+        {
+            return map is { Rank: 2 }
+                ? $"{map.GetLength(0)}x{map.GetLength(1)}"
+                : "null";
         }
 
         internal bool TryGetLastBaseMapWorldBounds(out Bounds bounds)

@@ -16,6 +16,8 @@ namespace Kruty1918.Moyva.Generator
     /// </summary>
     public sealed class GeneratorInstaller : MonoInstaller
     {
+        private const string GeneratorBootDiagTag = "[MoyvaGeneratorBootDiag]";
+
         [Header("Scene Graph Source")]
         [SerializeField] private MoyvaTileWorldCreatorGraphBinding _graphBinding;
         [SerializeField] private TileWorldCreatorManager _tileWorldCreatorManager;
@@ -32,7 +34,14 @@ namespace Kruty1918.Moyva.Generator
 
         public override void InstallBindings()
         {
+            Debug.Log(
+                $"{GeneratorBootDiagTag} GeneratorInstaller.InstallBindings ENTER scene={gameObject.scene.name}, " +
+                $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}");
             ResolveSceneReferences();
+            Debug.Log(
+                $"[MoyvaWorldGenDiag] GeneratorInstaller.InstallBindings scene={gameObject.scene.name}, " +
+                $"hasGraphBinding={_graphBinding != null}, hasTwcManager={_tileWorldCreatorManager != null}, graphAsset={(_graphAsset != null ? _graphAsset.name : "null")}, " +
+                $"hasTileRegistry={_tileRegistry != null}, hasObjectRegistry={_mapObjectRegistry != null}, hasTwcMapping={_tileWorldCreatorMapping != null}.");
 
             var tileRegistry = ResolveTileRegistry();
             var mapObjectRegistry = _mapObjectRegistry;
@@ -60,6 +69,10 @@ namespace Kruty1918.Moyva.Generator
 
             BindMapDataGenerator();
             BindTileWorldCreatorBridge();
+            Debug.Log(
+                $"{GeneratorBootDiagTag} GeneratorInstaller mapVisual={true}, graphGenerator={_graphAsset != null && _tileWorldCreatorManager != null}, " +
+                $"settings={_tileWorldCreatorBuildOptions != null}, graph={(_graphAsset != null ? _graphAsset.name : "null")}, " +
+                $"graphBinding={_graphBinding != null}, twcManager={_tileWorldCreatorManager != null}");
 
             if (_waterLayerMaterialSettings != null)
                 Container.BindInstance(_waterLayerMaterialSettings).AsSingle();
@@ -73,10 +86,13 @@ namespace Kruty1918.Moyva.Generator
                 .AsSingle()
                 .NonLazy();
 
-            Container.BindInterfacesTo<GeneratorWorldStartupBuilder>()
+            Container.BindInterfacesAndSelfTo<GeneratorWorldStartupBuilder>()
                 .AsSingle()
                 .NonLazy();
             Container.BindExecutionOrder<GeneratorWorldStartupBuilder>(105);
+            Debug.Log(
+                $"{GeneratorBootDiagTag} GeneratorInstaller bound GeneratorWorldStartupBuilder interfaces=IInitializable,self, " +
+                $"lifetime=AsSingle, nonLazy=true");
         }
 
         private void BindMapDataGenerator()
@@ -148,40 +164,128 @@ namespace Kruty1918.Moyva.Generator
 
         private sealed class GeneratorWorldStartupBuilder : IInitializable
         {
+            private const string GeneratorBootDiagTag = "[MoyvaGeneratorBootDiag]";
+            private const string PolicyDiagTag = "[MoyvaStartPolicyDiag]";
+            private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
+            private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
             private readonly MapVisualInstantiator _mapVisualInstantiator;
 
             public GeneratorWorldStartupBuilder(MapVisualInstantiator mapVisualInstantiator)
             {
                 _mapVisualInstantiator = mapVisualInstantiator;
+                Debug.Log(
+                    $"{GeneratorBootDiagTag} GeneratorStartup.Construct mapVisual={_mapVisualInstantiator != null}, " +
+                    $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}");
+                Debug.Log(
+                    $"{WorldGenDiagTag} GeneratorStartup.Construct mapVisual={_mapVisualInstantiator != null}, " +
+                    $"settings={(_mapVisualInstantiator != null ? _mapVisualInstantiator.DiagnosticMapDataGeneratorTypeName : "null")}, " +
+                    $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, " +
+                    $"graph={(_mapVisualInstantiator != null ? _mapVisualInstantiator.DiagnosticGraphName : "null")}, " +
+                    $"hasGeneratorSettings={(_mapVisualInstantiator != null && _mapVisualInstantiator.HasSceneGeneratorConfiguration)}, " +
+                    $"hasSharedMapSize={(_mapVisualInstantiator != null && _mapVisualInstantiator.HasSharedMapSize)}");
             }
 
             public void Initialize()
             {
-                if (_mapVisualInstantiator == null)
-                    return;
+                UnityEngine.Debug.Log(
+                    $"{GeneratorBootDiagTag} GeneratorStartup.Initialize ENTER frame={UnityEngine.Time.frameCount}, mode={GameLaunchContext.Mode}, " +
+                    $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, maxPlayers={GameLaunchContext.MaxPlayers}");
+                UnityEngine.Debug.Log($"{DirectDiagTag} GeneratorStartup.Initialize enter mode={GameLaunchContext.Mode}, hasInstantiator={_mapVisualInstantiator != null}.");
+                UnityEngine.Debug.Log($"{PolicyDiagTag} GeneratorStartup.Initialize enter mode={GameLaunchContext.Mode}, hasInstantiator={_mapVisualInstantiator != null}.");
+                UnityEngine.Debug.Log(
+                    $"{WorldGenDiagTag} GeneratorStartup.Initialize ENTER frame={UnityEngine.Time.frameCount}, mode={GameLaunchContext.Mode}, " +
+                    $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, " +
+                    $"autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}");
 
-                if (_mapVisualInstantiator.TryGetCurrentWorldData(out _))
-                    return;
+                bool hasInstantiator = _mapVisualInstantiator != null;
+                bool hasCurrentWorld = false;
+                bool hasPendingWorld = false;
+                bool hasGeneratorSettings = false;
+                bool hasGraph = false;
+                bool hasSharedMapSize = false;
+                bool sceneDirectTest = GameLaunchContext.Mode == GameLaunchMode.DirectGameplayTest;
+                string mapDataGeneratorType = "null";
+                string graphName = "null";
+                string gridSize = "0x0";
 
-                if (!ShouldBuildWorldOnStartup())
+                if (hasInstantiator)
+                {
+                    hasCurrentWorld = _mapVisualInstantiator.TryGetCurrentWorldData(out _);
+                    hasPendingWorld = _mapVisualInstantiator.HasPendingWorldData;
+                    hasGeneratorSettings = _mapVisualInstantiator.HasSceneGeneratorConfiguration;
+                    hasGraph = _mapVisualInstantiator.HasGraphGenerator;
+                    hasSharedMapSize = _mapVisualInstantiator.HasSharedMapSize;
+                    mapDataGeneratorType = _mapVisualInstantiator.DiagnosticMapDataGeneratorTypeName;
+                    graphName = _mapVisualInstantiator.DiagnosticGraphName;
+                    Vector2Int grid = _mapVisualInstantiator.DiagnosticGridSize;
+                    gridSize = $"{grid.x}x{grid.y}";
+                }
+
+                bool shouldBuild = ShouldBuildWorldOnStartup(hasInstantiator, hasCurrentWorld, out string reason);
+                UnityEngine.Debug.Log(
+                    $"{GeneratorBootDiagTag} GeneratorStartup.Decision shouldBuild={shouldBuild}, reason={reason}, " +
+                    $"hasMapVisual={hasInstantiator}, hasGraph={hasGraph}, hasGeneratorSettings={hasGeneratorSettings}, " +
+                    $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, mode={GameLaunchContext.Mode}");
+                UnityEngine.Debug.Log(
+                    $"{WorldGenDiagTag} GeneratorStartup.Decision shouldBuild={shouldBuild}, reason={reason}, mode={GameLaunchContext.Mode}, " +
+                    $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, " +
+                    $"hasPendingWorld={hasPendingWorld}, hasGeneratorSettings={hasGeneratorSettings}, hasGraph={hasGraph}, " +
+                    $"hasSharedMapSize={hasSharedMapSize}, sceneDirectTest={sceneDirectTest}, grid={gridSize}, graph={graphName}, " +
+                    $"mapDataGenerator={mapDataGeneratorType}");
+                UnityEngine.Debug.Log($"{DirectDiagTag} GeneratorStartup.Initialize shouldBuild={shouldBuild}, mode={GameLaunchContext.Mode}.");
+                UnityEngine.Debug.Log($"{PolicyDiagTag} GeneratorStartup.Initialize shouldBuild={shouldBuild}, mode={GameLaunchContext.Mode}.");
+
+                if (!shouldBuild)
+                {
+                    UnityEngine.Debug.LogWarning($"{GeneratorBootDiagTag} GeneratorStartup.SKIP BuildWorld reason={reason}");
+                    UnityEngine.Debug.LogWarning($"{WorldGenDiagTag} GeneratorStartup.SKIP BuildWorld reason={reason}");
                     return;
+                }
 
                 Debug.Log($"[GeneratorStartup] Building world for launch mode '{GameLaunchContext.Mode}'.");
+                string source = hasPendingWorld
+                    ? "pending-save"
+                    : sceneDirectTest
+                        ? "direct-test"
+                        : "new";
+                UnityEngine.Debug.Log($"{GeneratorBootDiagTag} GeneratorStartup.CALL MapVisual.BuildWorld");
+                UnityEngine.Debug.Log($"{WorldGenDiagTag} GeneratorStartup.CALL MapVisualInstantiator.BuildWorld source={source}");
                 _mapVisualInstantiator.BuildWorld();
+                UnityEngine.Debug.Log($"{WorldGenDiagTag} GeneratorStartup.EXIT BuildWorldReturned frame={UnityEngine.Time.frameCount}, time={UnityEngine.Time.realtimeSinceStartup:F3}");
             }
 
-            private static bool ShouldBuildWorldOnStartup()
+            private static bool ShouldBuildWorldOnStartup(bool hasInstantiator, bool hasCurrentWorld, out string reason)
             {
+                if (!hasInstantiator)
+                {
+                    reason = "no-map-visual-instantiator";
+                    return false;
+                }
+
+                if (hasCurrentWorld)
+                {
+                    reason = "world-already-present";
+                    return false;
+                }
+
                 GameLaunchContext.EnsureNotExpired();
 
                 switch (GameLaunchContext.Mode)
                 {
                     case GameLaunchMode.DirectGameplayTest:
+                        reason = "mode-direct-gameplay-test";
+                        return true;
                     case GameLaunchMode.MenuNewGame:
+                        reason = "mode-menu-new-game";
+                        return true;
                     case GameLaunchMode.MenuLoadGame:
+                        reason = "mode-menu-load-game";
+                        return true;
                     case GameLaunchMode.MenuMultiplayerGame:
+                        reason = "mode-menu-multiplayer-game";
                         return true;
                     default:
+                        reason = $"mode-not-supported:{GameLaunchContext.Mode}";
                         return false;
                 }
             }
