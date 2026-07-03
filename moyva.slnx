@@ -106,6 +106,7 @@
   <Project Path="Unity.2D.Tilemap.Extras.Editor.csproj" />
   <Project Path="Unity.Services.Deployment.csproj" />
   <Project Path="Unity.2D.Sprite.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Diagnostics.csproj" />
   <Project Path="Kruty1918.Moyva.Shared.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Multiplayer.csproj" />

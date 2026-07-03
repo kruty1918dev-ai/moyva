@@ -1,6 +1,9 @@
 using Kruty1918.Moyva.SaveSystem;
+using Kruty1918.Moyva.Diagnostics.API;
+using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
@@ -24,6 +27,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IStartingPositionRevealPresentationService _revealPresentationService;
         private readonly IStartingPositionAutoloadRecoveryService _autoloadRecoveryService;
         private readonly IStartingPositionWorkflowState _workflowState;
+        private readonly IWorldGenerationDiagnostics _worldDiagnostics;
+        private readonly ISaveLoadDiagnostics _saveLoadDiagnostics;
+        private readonly ISaveLoadDiagnosticsSession _saveLoadDiagnosticsSession;
 
         public StartingPositionWorkflowService(
             ISaveService saveService,
@@ -32,7 +38,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IStartingPositionSpawnSetupService spawnSetupService,
             IStartingPositionRevealPresentationService revealPresentationService,
             IStartingPositionAutoloadRecoveryService autoloadRecoveryService,
-            IStartingPositionWorkflowState workflowState)
+            IStartingPositionWorkflowState workflowState,
+            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null,
+            [InjectOptional] ISaveLoadDiagnostics saveLoadDiagnostics = null,
+            [InjectOptional] ISaveLoadDiagnosticsSession saveLoadDiagnosticsSession = null)
         {
             _saveService = saveService;
             _startingPositionState = startingPositionState;
@@ -41,6 +50,9 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _revealPresentationService = revealPresentationService;
             _autoloadRecoveryService = autoloadRecoveryService;
             _workflowState = workflowState;
+            _worldDiagnostics = worldDiagnostics;
+            _saveLoadDiagnostics = saveLoadDiagnostics;
+            _saveLoadDiagnosticsSession = saveLoadDiagnosticsSession;
             Debug.Log($"{DirectDiagTag} Workflow.Construct state={startingPositionState != null}, policy={policy != null}, spawnSetup={spawnSetupService != null}, fogReveal={revealPresentationService != null}, loadedFogRepair={autoloadRecoveryService != null}, cameraService={revealPresentationService != null}, saveService={saveService != null}.");
         }
 
@@ -125,18 +137,34 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             if (autoLoad && hasSave)
             {
+                _worldDiagnostics?.BeginStartingPositionLoadRecovery(
+                    $"caller={caller ?? "unknown"}, slot={slot}, map={signal.Width}x{signal.Height}");
                 Debug.Log($"{DirectDiagTag} Workflow.TryApplyStartLogic EXIT reason=autoload-has-save.");
                 Debug.Log($"{StartDiagTag} TryApplyStartLogic path=auto-load map={signal.Width}x{signal.Height}, slot={slot}.");
                 Debug.LogWarning($"{PolicyDiagTag} TryApplyStartLogic EXIT reason=autoload-has-save caller={caller ?? "unknown"}, slot={slot}.");
                 Debug.Log($"{StartingPositionInitializer.DebugTag} Bootstrap.TryApplyStartLogic auto-load path: repair-check and camera teleport.");
-                _autoloadRecoveryService.RepairLoadedFogIfNeeded(signal);
+                bool repaired = _autoloadRecoveryService.RepairLoadedFogIfNeeded(signal);
+                _worldDiagnostics?.FogSnapshotValidated(
+                    $"slot={slot}, repaired={repaired}, map={signal.Width}x{signal.Height}");
+                if (repaired)
+                    _worldDiagnostics?.FogRepairApplied($"slot={slot}, map={signal.Width}x{signal.Height}");
+                else
+                    _worldDiagnostics?.FogRepairSkipped($"slot={slot}, reason=snapshot-usable-or-policy-blocked");
                 Vector2Int baseMapSize = StartingPositionMapUtility.ResolveBaseMapSize(signal);
                 _revealPresentationService.TeleportMainCamera(
                     _autoloadRecoveryService.ResolveStartupCameraTarget(baseMapSize.x, baseMapSize.y, preferStartTile: false),
                     signal);
+                _worldDiagnostics?.CameraFocused($"source=autoload, map={baseMapSize.x}x{baseMapSize.y}");
+                _saveLoadDiagnostics?.CompleteStep(_saveLoadDiagnosticsSession?.CurrentFlow, SaveLoadDiagnosticSteps.CameraFocused, $"source=autoload, map={baseMapSize.x}x{baseMapSize.y}");
+                _saveLoadDiagnostics?.CompleteStep(_saveLoadDiagnosticsSession?.CurrentFlow, SaveLoadDiagnosticSteps.LoadCompleted, $"slot={slot}, map={baseMapSize.x}x{baseMapSize.y}");
+                _saveLoadDiagnostics?.Report(_saveLoadDiagnosticsSession?.CurrentFlow);
+                _saveLoadDiagnosticsSession?.Clear(_saveLoadDiagnosticsSession?.CurrentFlow);
                 _workflowState.StartLogicApplied = true;
                 return;
             }
+
+            _worldDiagnostics?.BeginStartingPositionNewGame(
+                $"caller={caller ?? "unknown"}, map={signal.Width}x{signal.Height}, mode={GameLaunchContext.Mode}");
 
             Debug.Log($"{DirectDiagTag} Workflow.TryApplyStartLogic CALL SpawnSetup.TryPrepareStartingPositions.");
             bool spawnSetupTriggered = _spawnSetupService.TryPrepareStartingPositions(signal);
@@ -194,6 +222,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 Debug.Log($"{DirectDiagTag} Workflow.ApplyStartReveal CALL FogRevealService.ApplyReveal/RevealingMethod.");
                 _revealPresentationService.ApplyReveal(baseMapSize.x, baseMapSize.y, revealCenter);
+                _worldDiagnostics?.FogRevealApplied($"center={revealCenter}, map={baseMapSize.x}x{baseMapSize.y}");
                 _workflowState.StartRevealApplied = true;
                 _workflowState.AppliedStartRevealWidth = baseMapSize.x;
                 _workflowState.AppliedStartRevealHeight = baseMapSize.y;
@@ -203,6 +232,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (teleportCamera && !_workflowState.StartupCameraTeleported)
             {
                 _revealPresentationService.TeleportMainCamera(revealCenter, signal);
+                _worldDiagnostics?.CameraFocused($"center={revealCenter}, map={baseMapSize.x}x{baseMapSize.y}");
                 _workflowState.StartupCameraTeleported = true;
             }
 

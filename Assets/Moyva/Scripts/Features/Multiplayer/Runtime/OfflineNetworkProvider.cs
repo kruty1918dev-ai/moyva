@@ -14,7 +14,6 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     public sealed class OfflineNetworkProvider : INetworkProvider
     {
         private readonly List<IObserver<NetworkMessage>> _messageObservers = new List<IObserver<NetworkMessage>>();
-        private bool _isHosting;
 
         public IObservable<NetworkMessage> Messages => new MessageObservable(_messageObservers);
 
@@ -23,23 +22,18 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         public Task<SessionResult> HostSessionAsync(string sessionId, CancellationToken ct = default)
         {
-            _isHosting = true;
             PeerConnected?.Invoke("local");
             return Task.FromResult(SessionResult.Ok(sessionId));
         }
 
         public Task<SessionResult> JoinSessionAsync(string sessionId, CancellationToken ct = default)
         {
-            if (!_isHosting)
-                return Task.FromResult(SessionResult.Fail("No session to join in offline mode."));
-
             PeerConnected?.Invoke("local");
             return Task.FromResult(SessionResult.Ok(sessionId));
         }
 
         public Task LeaveSessionAsync(CancellationToken ct = default)
         {
-            _isHosting = false;
             PeerDisconnected?.Invoke("local");
             return Task.CompletedTask;
         }

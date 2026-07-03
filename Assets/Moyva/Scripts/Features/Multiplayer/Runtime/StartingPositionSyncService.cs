@@ -104,8 +104,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             if (_sessionManager == null)
                 return true;
 
-            if (_sessionManager.Participants == null || _sessionManager.Participants.Count == 0)
-                return string.IsNullOrEmpty(_sessionManager.LocalPlayerId) || _sessionManager.IsLocalPlayerHost;
+            if (string.IsNullOrEmpty(_sessionManager.LocalPlayerId))
+                return false;
 
             return _sessionManager.IsLocalPlayerHost;
         }

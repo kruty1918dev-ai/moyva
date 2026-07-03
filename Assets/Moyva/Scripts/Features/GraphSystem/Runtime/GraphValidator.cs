@@ -240,8 +240,8 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     {
                         report.Add(new GraphValidationIssue(
                             "LAYER_REF_FORWARD",
-                            ValidationSeverity.Warning,
-                            $"Шар '{layer.Name}' посилається на '{sourceLayer.Name}', який стоїть не раніше в порядку шарів. Це дозволено: Layer Ref буде prewarm-нуто як залежність, але для зрозумілості графа краще тримати source layer вище.",
+                            ValidationSeverity.Error,
+                            $"Шар '{layer.Name}' може посилатися тільки на шари, які виконуються раніше. '{sourceLayer.Name}' має order {sourceLayer.SortingOrder}, а поточний шар має order {layer.SortingOrder}.",
                             layerId: layer.Id,
                             nodeId: node.NodeId));
                     }
@@ -792,15 +792,12 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             string kindName = ResolveLayerOutputKindName(outputNode);
             if (kindName == "Tiles")
             {
-                // TileSettingsNode is the explicit boundary between a data/mask helper layer and a renderable TWC tile layer.
-                // A layer without TileSettingsNode is valid: it may execute its graph, publish Output/LayerRef masks/data,
-                // and intentionally skip runtime TilesBuildLayer/GameObject generation.
                 if (!hasTileSettingsNode)
                 {
                     report.Add(new GraphValidationIssue(
-                        "TILE_OUTPUT_WITHOUT_TILE_SETTINGS_NODE",
-                        ValidationSeverity.Warning,
-                        $"Шар '{layer.Name}' має Output Kind = Tiles, але не має Tile Settings node. Це не помилка: шар буде виконаний як helper mask/data layer, його Output/Layer Ref можна використовувати в інших шарах, але TWC TilesBuildLayer/runtime tile GameObject для нього не створюватиметься.",
+                        "TILE_OUTPUT_WITHOUT_TILE_SETTINGS",
+                        ValidationSeverity.Error,
+                        $"Шар '{layer.Name}' має Output Kind = Tiles, але не має Tile Settings node. Додай Tile Settings node з TilePreset або переключи Output Kind на helper/data output.",
                         layerId: layer.Id,
                         nodeId: outputNode.NodeId));
                 }

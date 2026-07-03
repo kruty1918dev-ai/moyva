@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Kruty1918.Moyva.Diagnostics.API;
+using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Lobbies;
 using Kruty1918.Moyva.Multiplayer.Networking;
@@ -36,6 +38,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         private readonly IWorldSnapshotStore _snapshotStore;
         private readonly IConfigStore _configStore;
         private readonly IMultiplayerLogger _logger;
+        private readonly IMultiplayerSessionDiagnostics _diagnostics;
         private readonly IFailureHandlingPolicy _failurePolicy;
         private readonly IHostMigrationService _hostMigration;
         private readonly IParticipantFallbackService _participantFallback;
@@ -70,6 +73,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             IWorldSnapshotStore snapshotStore,
             IConfigStore configStore,
             IMultiplayerLogger logger,
+            [Zenject.InjectOptional] IMultiplayerSessionDiagnostics diagnostics,
             IFailureHandlingPolicy failurePolicy,
             IHostMigrationService hostMigration,
             IParticipantFallbackService participantFallback,
@@ -82,6 +86,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _snapshotStore       = snapshotStore       ?? throw new ArgumentNullException(nameof(snapshotStore));
             _configStore         = configStore         ?? throw new ArgumentNullException(nameof(configStore));
             _logger              = logger              ?? throw new ArgumentNullException(nameof(logger));
+            _diagnostics         = diagnostics;
             _failurePolicy       = failurePolicy       ?? throw new ArgumentNullException(nameof(failurePolicy));
             _hostMigration       = hostMigration       ?? throw new ArgumentNullException(nameof(hostMigration));
             _participantFallback = participantFallback ?? throw new ArgumentNullException(nameof(participantFallback));
@@ -91,6 +96,34 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _network.PeerDisconnected += OnPeerDisconnected;
             _lobby.LobbyUpdated       += OnLobbyUpdated;
             _lobby.KickedFromLobby    += OnKickedFromLobby;
+        }
+
+        public SessionManager(
+            INetworkProvider network,
+            ILobbyService lobby,
+            IParticipantPolicyService participantPolicy,
+            IWorldConsistencyService consistency,
+            IWorldSnapshotStore snapshotStore,
+            IConfigStore configStore,
+            IMultiplayerLogger logger,
+            IFailureHandlingPolicy failurePolicy,
+            IHostMigrationService hostMigration,
+            IParticipantFallbackService participantFallback,
+            IHostMigrationCheckpointService hostMigrationCheckpoint = null)
+            : this(
+                network,
+                lobby,
+                participantPolicy,
+                consistency,
+                snapshotStore,
+                configStore,
+                logger,
+                diagnostics: null,
+                failurePolicy,
+                hostMigration,
+                participantFallback,
+                hostMigrationCheckpoint)
+        {
         }
 
         public void Dispose()
@@ -108,14 +141,25 @@ namespace Kruty1918.Moyva.Multiplayer.Core
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
 
+            var flow = _diagnostics?.StartFlow(
+                options.RoomId,
+                new DiagnosticContext()
+                    .Add("roomId", options.RoomId)
+                    .Add("createIfNotExists", options.CreateIfNotExists));
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.ConnectRequested, $"roomId={options.RoomId}, create={options.CreateIfNotExists}");
+
             _config = MultiplayerConfigLifecycle.LoadValidateFreeze(_configStore, _logger);
             var opts = NormalizeOptions(options);
             _localPlayerId = opts.LocalIdentity.PlayerId;
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.TransportSelected, $"provider={_config.ProviderType}, player={_localPlayerId}");
 
             // Missing join target: fall back to local solo instead of attempting online join.
             if (!options.CreateIfNotExists && string.IsNullOrWhiteSpace(options.RoomId))
             {
                 _logger.Warn("Join requested without room id. Falling back to local single-player session.");
+                _diagnostics?.SkipStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "missing-room-id");
+                _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.GameplayReady, "fallback=offline-solo");
+                _diagnostics?.Report(flow);
                 return StartOfflineSolo(opts);
             }
 
@@ -127,6 +171,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 {
                     _logger.Warn($"Config checksum mismatch: local={localChecksum:X8}, remote={opts.ConfigChecksum:X8}");
                     _failurePolicy.HandleRecoverable(FailureCategory.ConfigMismatch, "Config checksums differ.");
+                    _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "config-mismatch");
+                    _diagnostics?.Report(flow);
                     return false;
                 }
             }
@@ -134,6 +180,9 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             // Pure-offline / solo path
             if (_config.ProviderType == NetworkProviderType.Offline)
             {
+                _diagnostics?.SkipStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "offline-provider");
+                _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.GameplayReady, "provider=offline");
+                _diagnostics?.Report(flow);
                 return StartOfflineSolo(opts);
             }
 
@@ -142,20 +191,24 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             if (!_participantPolicy.CanJoin(opts.LocalIdentity, _participants, opts.Rules, snapshot))
             {
                 _failurePolicy.HandleRecoverable(FailureCategory.ParticipantRejected, $"Participant {opts.LocalIdentity.PlayerId} rejected.");
+                _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.LocalPlayerRegistered, "participant-rejected", opts.LocalIdentity.PlayerId);
+                _diagnostics?.Report(flow);
                 return false;
             }
 
             try
             {
                 if (opts.CreateIfNotExists)
-                    return await HostFlowAsync(opts, ct);
+                    return await HostFlowAsync(opts, flow, ct);
 
-                return await JoinFlowAsync(opts, ct);
+                return await JoinFlowAsync(opts, flow, ct);
             }
             catch (Exception e)
             {
                 _logger.Error($"CreateOrJoinSession failed: {e.Message}");
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, e.Message);
+                _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, "exception", e.Message);
+                _diagnostics?.Report(flow);
                 return await FallbackToOfflineSoloAsync(opts, "Unhandled exception in session flow.", ct);
             }
         }
@@ -168,7 +221,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
         // ── Host / Join flows ─────────────────────────────────────────────────────
 
-        private async Task<bool> HostFlowAsync(SessionConnectOptions opts, CancellationToken ct)
+        private async Task<bool> HostFlowAsync(SessionConnectOptions opts, Kruty1918.Moyva.Diagnostics.API.IDiagnosticFlow flow, CancellationToken ct)
         {
             _logger.Info($"Host flow: room='{opts.RoomId}' max={opts.Rules.MaxParticipants}");
 
@@ -178,15 +231,17 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             {
                 var error = hostResult?.ErrorMessage ?? "Failed to host network session.";
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, error);
+                _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, "host-session-failed", error);
+                _diagnostics?.Report(flow);
                 return await FallbackToOfflineSoloAsync(opts, error, ct);
             }
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, $"hostSessionId={hostResult.SessionId}");
 
             var transportJoinCode = hostResult.SessionId?.Trim() ?? string.Empty;
             if (_config.ProviderType == NetworkProviderType.Relay && !RelayJoinCodeUtility.IsValid(transportJoinCode))
             {
                 var error = $"Relay host returned invalid join code '{transportJoinCode}'.";
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, error);
-                try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after invalid Relay join code failed: {leaveError.Message}"); }
                 return await FallbackToOfflineSoloAsync(opts, error, ct);
             }
 
@@ -201,16 +256,21 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             catch (Exception e)
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, e.Message);
+                _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "lobby-create-exception", e.Message);
                 try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after failed lobby create failed: {leaveError.Message}"); }
+                _diagnostics?.Report(flow);
                 return await FallbackToOfflineSoloAsync(opts, e.Message, ct);
             }
 
             if (lobby == null)
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Failed to create lobby.");
+                _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "lobby-create-null");
                 try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Leave after failed lobby create failed: {leaveError.Message}"); }
+                _diagnostics?.Report(flow);
                 return await FallbackToOfflineSoloAsync(opts, "Failed to create lobby.", ct);
             }
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, $"lobbyCode={lobby.LobbyCode}, host=true");
 
             _currentLobbyId = lobby.LobbyId;
             _currentLobbyCode = lobby.LobbyCode;
@@ -224,8 +284,10 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             catch (Exception e)
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, e.Message);
+                _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "relay-code-publish-failed", e.Message);
                 try { await _lobby.LeaveAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Lobby leave after Relay code publish failed: {leaveError.Message}"); }
                 try { await _network.LeaveSessionAsync(ct); } catch (Exception leaveError) { _logger.Warn($"Network leave after Relay code publish failed: {leaveError.Message}"); }
+                _diagnostics?.Report(flow);
                 return await FallbackToOfflineSoloAsync(opts, e.Message, ct);
             }
 
@@ -233,8 +295,12 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _currentRules = opts.Rules;
 
             UpsertLocalParticipant(opts.LocalIdentity, isHost: true);
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.LocalPlayerRegistered, $"playerId={opts.LocalIdentity.PlayerId}, host=true");
             CleanupHostAliasParticipants();
             SaveMigrationCheckpoint();
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.ParticipantsSynced, $"count={_participants.Count}, host=true");
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.GameplayReady, $"lobbyCode={_currentLobbyCode}");
+            _diagnostics?.Report(flow);
             _logger.Info($"Session hosted. LobbyCode={_currentLobbyCode} RelayCode={_currentSessionId}");
             return true;
         }
@@ -249,7 +315,7 @@ namespace Kruty1918.Moyva.Multiplayer.Core
                 : roomId.Trim();
         }
 
-        private async Task<bool> JoinFlowAsync(SessionConnectOptions opts, CancellationToken ct)
+        private async Task<bool> JoinFlowAsync(SessionConnectOptions opts, Kruty1918.Moyva.Diagnostics.API.IDiagnosticFlow flow, CancellationToken ct)
         {
             _logger.Info($"Join flow: lobbyCode='{opts.RoomId}'");
 
@@ -257,8 +323,11 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             if (lobby == null)
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Failed to join lobby.");
+                _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, "join-lobby-null");
+                _diagnostics?.Report(flow);
                 return await FallbackToOfflineSoloAsync(opts, "Failed to join lobby.", ct);
             }
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.LobbyResolved, $"lobbyCode={lobby.LobbyCode}, host=false");
 
             _currentLobbyId = lobby.LobbyId;
             _currentLobbyCode = lobby.LobbyCode;
@@ -269,6 +338,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             if (string.IsNullOrEmpty(relayCode))
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, "Relay code not published by host.");
+                _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, "relay-code-missing");
+                _diagnostics?.Report(flow);
                 return await FallbackToOfflineSoloAsync(opts, "Relay code not published by host.", ct);
             }
 
@@ -276,14 +347,21 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             if (!joinResult.Success)
             {
                 _failurePolicy.HandleNonRecoverable(FailureCategory.NetworkDisconnect, joinResult.ErrorMessage);
+                _diagnostics?.FailStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, "join-session-failed", joinResult.ErrorMessage);
+                _diagnostics?.Report(flow);
                 return await FallbackToOfflineSoloAsync(opts, joinResult.ErrorMessage, ct);
             }
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.SessionStarted, $"sessionId={joinResult.SessionId}");
 
             _currentSessionId = joinResult.SessionId;
             _currentRules = opts.Rules;
 
             UpsertLocalParticipant(opts.LocalIdentity, isHost: false);
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.LocalPlayerRegistered, $"playerId={opts.LocalIdentity.PlayerId}, host=false");
             SaveMigrationCheckpoint();
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.ParticipantsSynced, $"count={_participants.Count}, host=false");
+            _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.GameplayReady, $"lobbyCode={_currentLobbyCode}");
+            _diagnostics?.Report(flow);
             _logger.Info($"Session joined. Lobby={_currentLobbyCode}");
             return true;
         }
@@ -504,12 +582,34 @@ namespace Kruty1918.Moyva.Multiplayer.Core
 
         private void ScheduleDisconnectFinalization(string peerId)
         {
+            if (!IsPeerPresentInCurrentLobby(peerId))
+            {
+                _logger.Warn($"Peer '{peerId}' disconnected and is absent from current lobby snapshot. Finalizing immediately.");
+                FinalizePeerDisconnect(peerId);
+                return;
+            }
+
             CancelPendingDisconnect(peerId);
             var cts = new CancellationTokenSource();
             _pendingDisconnects[peerId] = cts;
             var delay = TimeSpan.FromSeconds(Math.Max(1f, _config?.GracefulReconnectWindowSeconds ?? 8f));
             _logger.Warn($"Peer '{peerId}' disconnected. Waiting {delay.TotalSeconds:0.#}s graceful reconnect window.");
             _ = FinalizeDisconnectAfterDelayAsync(peerId, cts.Token, delay);
+        }
+
+        private bool IsPeerPresentInCurrentLobby(string peerId)
+        {
+            var currentLobby = _lobby.Current;
+            if (currentLobby?.Players == null || currentLobby.Players.Count == 0 || string.IsNullOrEmpty(peerId))
+                return false;
+
+            for (int index = 0; index < currentLobby.Players.Count; index++)
+            {
+                if (string.Equals(currentLobby.Players[index].PlayerId, peerId, StringComparison.Ordinal))
+                    return true;
+            }
+
+            return false;
         }
 
         private async Task FinalizeDisconnectAfterDelayAsync(string peerId, CancellationToken ct, TimeSpan delay)

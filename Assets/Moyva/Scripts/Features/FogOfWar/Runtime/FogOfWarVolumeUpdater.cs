@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using GiantGrey.TileWorldCreator;
+using GiantGrey.TileWorldCreator.Components;
 using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
 using Zenject;
@@ -18,6 +19,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     {
         private const string LogTag = "[FogOfWarVolume]";
         private const string StartDiagTag = "[MoyvaFogStartDiag]";
+        private const string StartupChainTag = "[MoyvaStartupChain]";
         private const string FolderName = "Fog Volume";
 
         private readonly FogOfWarSettings _injectedSettings;
@@ -407,12 +409,27 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             }
 
             Debug.Log($"{StartDiagTag} VolumeUpdater.ExecutePendingVisualWork hasFogService={_lastFogService != null}, pendingDirty={_pendingDirtyTiles.Count}, fullRebuildRequested={_fullRebuildRequested}, controller={(_controller != null ? _controller.name : "null")}, manager={(_manager != null ? _manager.name : "null")}, context={_context.Width}x{_context.Height}.");
+            CountAuthoritativeFogStates(
+                _lastFogService,
+                out int authoritativeVisible,
+                out int authoritativeExplored,
+                out int authoritativeUnexplored,
+                out int dirtyVisible,
+                out int dirtyExplored,
+                out int dirtyUnexplored,
+                out int dirtyOutOfBounds);
+            Debug.Log($"{StartupChainTag} FogVolume.ExecutePendingVisualWork ENTER rebuild={(_fullRebuildRequested ? "full" : "dirty")}, map={_mapWidth}x{_mapHeight}, pendingDirty={_pendingDirtyTiles.Count}, authoritativeVisible={authoritativeVisible}, authoritativeExplored={authoritativeExplored}, authoritativeUnexplored={authoritativeUnexplored}, dirtyVisible={dirtyVisible}, dirtyExplored={dirtyExplored}, dirtyUnexplored={dirtyUnexplored}, dirtyOutOfBounds={dirtyOutOfBounds}, dirtySamples={FormatPendingDirtySamples(_lastFogService)}.");
             bool wasFullRebuild = _fullRebuildRequested;
             int requestedDirtyTiles = _pendingDirtyTiles.Count;
             if (_fullRebuildRequested)
                 RebuildStateCaches(_lastFogService);
             else
                 ApplyDirtyStateCacheChanges(_lastFogService);
+
+            int cachedVisible = Mathf.Max(0, _mapWidth * _mapHeight - _unexploredCells.Count - _exploredCells.Count);
+            Debug.Log($"{StartupChainTag} FogVolume.StateCache AFTER_UPDATE rebuild={(wasFullRebuild ? "full" : "dirty")}, requestedDirty={requestedDirtyTiles}, cachedVisible={cachedVisible}, cachedExplored={_exploredCells.Count}, cachedUnexplored={_unexploredCells.Count}, exploredHeightLayers={CountNonEmptyHeightLayers(_exploredCellsByHeight)}, unexploredHeightLayers={CountNonEmptyHeightLayers(_unexploredCellsByHeight)}.");
+            if (TryFindVisibleDirtyCacheMismatch(_lastFogService, out Vector2Int mismatchTile, out string mismatchCache))
+                Debug.LogWarning($"{StartupChainTag} FogVolume.StateCache MISMATCH visible dirty tile is still in fog cache tile={mismatchTile}, cache={mismatchCache}, state={_lastFogService.GetFogState(mismatchTile)}.");
 
             _fullRebuildRequested = false;
             _pendingDirtyTiles.Clear();
@@ -760,6 +777,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private void ApplyCellsToRuntimeLayers()
         {
             Debug.Log($"{StartDiagTag} VolumeUpdater.ApplyCellsToRuntimeLayers runtimeLayers={_runtimeLayers.Count}, unexploredCells={_unexploredCells.Count}, exploredCells={_exploredCells.Count}, unexploredHeightLayers={_unexploredCellsByHeight.Count}, exploredHeightLayers={_exploredCellsByHeight.Count}.");
+            int visibleCells = Mathf.Max(0, _mapWidth * _mapHeight - _unexploredCells.Count - _exploredCells.Count);
+            Debug.Log($"{StartupChainTag} FogVolume.ApplyCellsToRuntimeLayers runtimeLayers={_runtimeLayers.Count}, visibleCells={visibleCells}, exploredCells={_exploredCells.Count}, unexploredCells={_unexploredCells.Count}, exploredHeightLayers={CountNonEmptyHeightLayers(_exploredCellsByHeight)}, unexploredHeightLayers={CountNonEmptyHeightLayers(_unexploredCellsByHeight)}, layerSummary={FormatRuntimeLayerSummary()}.");
             for (int i = 0; i < _runtimeLayers.Count; i++)
             {
                 var runtimeLayer = _runtimeLayers[i];
@@ -786,11 +805,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             bool isInitialBuild = !_hasBuiltAtLeastOnce;
             bool contextChanged = _worldContextChangedSinceBuild;
+            int clustersBeforeBuild = CountGeneratedClusters();
+            int layerObjectsBeforeBuild = CountLayerObjects();
+            Debug.Log($"{StartupChainTag} FogVolume.TWCBuild BEFORE manager={_manager.name}, rebuild={(wasFullRebuild ? "full" : "dirty")}, requestedDirty={requestedDirtyTiles}, runtimeLayers={_runtimeLayers.Count}, clusters={clustersBeforeBuild}, layerObjects={layerObjectsBeforeBuild}, config={_runtimeConfiguration.name}.");
             _manager.configuration = _runtimeConfiguration;
             _manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
             _hasBuiltAtLeastOnce = true;
             _worldContextChangedSinceBuild = false;
+            int clustersAfterBuild = CountGeneratedClusters();
+            int layerObjectsAfterBuild = CountLayerObjects();
             Debug.Log($"{StartDiagTag} VolumeUpdater.ExecuteTileWorldCreatorBuild manager={_manager.name}, runtimeConfig={_runtimeConfiguration.name}, map={_mapWidth}x{_mapHeight}, rebuild={(wasFullRebuild ? "full" : "dirty")}, dirtyRequested={requestedDirtyTiles}, runtimeLayers={_runtimeLayers.Count}, unexploredCells={_unexploredCells.Count}, exploredCells={_exploredCells.Count}.");
+            Debug.Log($"{StartupChainTag} FogVolume.TWCBuild AFTER manager={_manager.name}, rebuild={(wasFullRebuild ? "full" : "dirty")}, requestedDirty={requestedDirtyTiles}, runtimeLayers={_runtimeLayers.Count}, clustersBefore={clustersBeforeBuild}, clustersAfterImmediate={clustersAfterBuild}, layerObjectsBefore={layerObjectsBeforeBuild}, layerObjectsAfterImmediate={layerObjectsAfterBuild}.");
 
             if (ShouldLogBuildSummary(contextChanged))
             {
@@ -985,6 +1010,164 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             return (buildLayer.tilePresetsTop?.Count ?? 0)
                 + (buildLayer.tilePresetsMiddle?.Count ?? 0)
                 + (buildLayer.tilePresetsBottom?.Count ?? 0);
+        }
+
+        private void CountAuthoritativeFogStates(
+            IFogOfWarService fogService,
+            out int visible,
+            out int explored,
+            out int unexplored,
+            out int dirtyVisible,
+            out int dirtyExplored,
+            out int dirtyUnexplored,
+            out int dirtyOutOfBounds)
+        {
+            visible = 0;
+            explored = 0;
+            unexplored = 0;
+            dirtyVisible = 0;
+            dirtyExplored = 0;
+            dirtyUnexplored = 0;
+            dirtyOutOfBounds = 0;
+
+            if (fogService == null)
+                return;
+
+            for (int y = 0; y < _mapHeight; y++)
+            {
+                for (int x = 0; x < _mapWidth; x++)
+                {
+                    switch (fogService.GetFogState(new Vector2Int(x, y)))
+                    {
+                        case FogStateType.Visible:
+                            visible++;
+                            break;
+                        case FogStateType.Explored:
+                            explored++;
+                            break;
+                        default:
+                            unexplored++;
+                            break;
+                    }
+                }
+            }
+
+            foreach (var tile in _pendingDirtyTiles)
+            {
+                if (!IsInBounds(tile))
+                {
+                    dirtyOutOfBounds++;
+                    continue;
+                }
+
+                switch (fogService.GetFogState(tile))
+                {
+                    case FogStateType.Visible:
+                        dirtyVisible++;
+                        break;
+                    case FogStateType.Explored:
+                        dirtyExplored++;
+                        break;
+                    default:
+                        dirtyUnexplored++;
+                        break;
+                }
+            }
+        }
+
+        private string FormatPendingDirtySamples(IFogOfWarService fogService, int maxSamples = 8)
+        {
+            if (_pendingDirtyTiles.Count == 0)
+                return "none";
+
+            var sb = new StringBuilder();
+            int count = 0;
+            foreach (var tile in _pendingDirtyTiles)
+            {
+                if (count > 0)
+                    sb.Append(", ");
+
+                sb.Append(tile)
+                    .Append('=')
+                    .Append(fogService != null ? fogService.GetFogState(tile).ToString() : "no-fog-service");
+
+                count++;
+                if (count >= maxSamples)
+                    break;
+            }
+
+            if (_pendingDirtyTiles.Count > count)
+                sb.Append(", ...");
+
+            return sb.ToString();
+        }
+
+        private string FormatRuntimeLayerSummary()
+        {
+            if (_runtimeLayers.Count == 0)
+                return "none";
+
+            var sb = new StringBuilder();
+            for (int i = 0; i < _runtimeLayers.Count; i++)
+            {
+                if (i > 0)
+                    sb.Append(" | ");
+
+                var layer = _runtimeLayers[i];
+                sb.Append(layer.State)
+                    .Append(":heightKey=").Append(layer.HeightKey)
+                    .Append(",cells=").Append(ResolveCells(layer)?.Count ?? 0)
+                    .Append(",enabled=").Append(layer.BuildLayer != null && layer.BuildLayer.isEnabled)
+                    .Append(",presets=").Append(CountBuildLayerPresets(layer.BuildLayer));
+            }
+
+            return sb.ToString();
+        }
+
+        private bool TryFindVisibleDirtyCacheMismatch(IFogOfWarService fogService, out Vector2Int tile, out string cache)
+        {
+            tile = default;
+            cache = null;
+
+            if (fogService == null)
+                return false;
+
+            foreach (var dirtyTile in _pendingDirtyTiles)
+            {
+                if (!IsInBounds(dirtyTile) || fogService.GetFogState(dirtyTile) != FogStateType.Visible)
+                    continue;
+
+                var cell = ToCell(dirtyTile);
+                if (_unexploredCells.Contains(cell))
+                {
+                    tile = dirtyTile;
+                    cache = "unexplored";
+                    return true;
+                }
+
+                if (_exploredCells.Contains(cell))
+                {
+                    tile = dirtyTile;
+                    cache = "explored";
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private int CountGeneratedClusters()
+        {
+            return _manager != null
+                ? _manager.GetComponentsInChildren<ClusterIdentifier>(true).Length
+                : 0;
+        }
+
+        private int CountLayerObjects()
+        {
+            return _manager != null
+                ? _manager.GetComponentsInChildren<LayerIdentifier>(true).Length
+                : 0;
         }
 
         private void RequestVisualRebuild()

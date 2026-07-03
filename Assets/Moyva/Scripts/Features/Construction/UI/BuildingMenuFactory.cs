@@ -48,6 +48,7 @@ namespace Kruty1918.Moyva.Construction.UI
 				foreach (var building in categoryBuildings)
 				{
 					var sprite = ExtractSpriteForMenu(building, buildingRegistry, context);
+					var previewSprite = building.RuntimePreview;
 					bool isInteractable = isInteractableSelector == null || isInteractableSelector(building);
 					Debug.Log(
 						$"[Construction UI] → id='{building.Id}' display='{building.DisplayName}' " +
@@ -55,7 +56,7 @@ namespace Kruty1918.Moyva.Construction.UI
 						$"icon={(building.Icon != null ? building.Icon.name : "NULL")} " +
 						$"extractedSprite={(sprite != null ? sprite.name : "NULL")}",
 						context);
-					result.Add(new BuildingListItemData(building.Id, GetDisplayName(building), building.Category, sprite, isInteractable));
+					result.Add(new BuildingListItemData(building.Id, GetDisplayName(building), building.Category, sprite, previewSprite, isInteractable));
 				}
 			}
 

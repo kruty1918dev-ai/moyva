@@ -3,6 +3,7 @@ using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.Camera.API;
+using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Multiplayer.Core;
@@ -180,6 +181,7 @@ namespace Kruty1918.Moyva.Bootstrap
                 ? container.Resolve<T>()
                 : null;
         }
+
     }
 
     internal sealed class DirectGameplayLaunchModeInitializer : IInitializable
@@ -187,6 +189,12 @@ namespace Kruty1918.Moyva.Bootstrap
         private const string PolicyDiagTag = "[MoyvaStartPolicyDiag]";
         private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
         private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
+        private readonly IWorldGenerationDiagnostics _worldDiagnostics;
+
+        public DirectGameplayLaunchModeInitializer([InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
+        {
+            _worldDiagnostics = worldDiagnostics;
+        }
 
         public void Initialize()
         {
@@ -202,6 +210,8 @@ namespace Kruty1918.Moyva.Bootstrap
 
             if (GameLaunchContext.Mode != GameLaunchMode.Unknown)
             {
+                _worldDiagnostics?.DirectLaunchConfigured(
+                    $"mode={GameLaunchContext.Mode}, reason=mode-not-unknown, hasWorldSettings={GameLaunchContext.HasWorldSettings}");
                 Debug.Log($"{WorldGenDiagTag} DirectLaunch.Initialize SKIP reason=mode-not-unknown mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}.");
                 Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize skip reason=mode-not-unknown currentMode={GameLaunchContext.Mode}.");
                 Debug.Log(
@@ -223,6 +233,8 @@ namespace Kruty1918.Moyva.Bootstrap
 #endif
             Debug.Log($"{WorldGenDiagTag} DirectLaunch.Initialize AFTER mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
             Debug.Log($"{DirectDiagTag} DirectLaunch.Initialize AFTER mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, saveSlot={GameLaunchContext.SaveSlot}.");
+            _worldDiagnostics?.DirectLaunchConfigured(
+                $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}, maxPlayers={GameLaunchContext.MaxPlayers}");
         }
     }
 

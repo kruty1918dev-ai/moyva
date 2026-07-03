@@ -18,7 +18,6 @@ namespace Kruty1918.Moyva.Units.Runtime
         private readonly IGridService _gridService;
         private readonly ITileSettingsService _tileSettings;
         private readonly IUnitClassConfig _unitClassConfig;
-        private readonly IUnitGameplayProfileService _unitGameplayProfileService;
         private readonly IObjectsMapService _objectsMapService;
         private readonly ICalendarService _calendarService;
 
@@ -37,7 +36,28 @@ namespace Kruty1918.Moyva.Units.Runtime
             IGridService gridService,
             ITileSettingsService tileSettings,
             IUnitClassConfig unitClassConfig,
-            IUnitGameplayProfileService unitGameplayProfileService,
+            IObjectsMapService objectsMapService)
+            : this(signalBus, gridService, tileSettings, unitClassConfig, objectsMapService, null, null)
+        {
+        }
+
+        public UnitService(
+            SignalBus signalBus,
+            IGridService gridService,
+            ITileSettingsService tileSettings,
+            IUnitClassConfig unitClassConfig,
+            IObjectsMapService objectsMapService,
+            IHealthRegistry healthRegistry)
+            : this(signalBus, gridService, tileSettings, unitClassConfig, objectsMapService, healthRegistry, null)
+        {
+        }
+
+        [Inject]
+        public UnitService(
+            SignalBus signalBus,
+            IGridService gridService,
+            ITileSettingsService tileSettings,
+            IUnitClassConfig unitClassConfig,
             IObjectsMapService objectsMapService,
             IHealthRegistry healthRegistry = null,
             ICalendarService calendarService = null)
@@ -46,7 +66,6 @@ namespace Kruty1918.Moyva.Units.Runtime
             _gridService = gridService;
             _tileSettings = tileSettings;
             _unitClassConfig = unitClassConfig;
-            _unitGameplayProfileService = unitGameplayProfileService;
             _objectsMapService = objectsMapService;
             _healthRegistry = healthRegistry;
             _calendarService = calendarService;
@@ -75,7 +94,7 @@ namespace Kruty1918.Moyva.Units.Runtime
                 return;
             }
 
-            float startStamina = _unitGameplayProfileService.RollStartingStamina(signal.UnitTypeId);
+            float startStamina = ResolveStartingStamina(signal.UnitTypeId, config);
 
             _unitStamina[signal.UnitId] = startStamina;
             _unitPositions[signal.UnitId] = signal.Position;
@@ -190,6 +209,11 @@ namespace Kruty1918.Moyva.Units.Runtime
 
             var tileCost = _tileSettings.GetTileWeight(tileTypeId);
             return _unitStamina[unitId] >= tileCost;
+        }
+
+        private float ResolveStartingStamina(string unitTypeId, UnitClassConfig config)
+        {
+            return config == null ? 0f : Mathf.Max(0f, config.BaseStamina);
         }
     }
 }

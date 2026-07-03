@@ -91,13 +91,26 @@ namespace Kruty1918.Moyva.Units.API
             DefenderCounterAttack = defenderCounterAttack;
 
             if (attackerAttack.HitsToDefeat == defenderCounterAttack.HitsToDefeat)
-                Outcome = UnitCombatOutcome.Even;
+            {
+                Outcome = attackerAttack.HitsToDefeat == int.MaxValue
+                    ? UnitCombatOutcome.Even
+                    : UnitCombatOutcome.AttackerAdvantage;
+            }
             else
                 Outcome = attackerAttack.HitsToDefeat < defenderCounterAttack.HitsToDefeat
                     ? UnitCombatOutcome.AttackerAdvantage
                     : UnitCombatOutcome.DefenderAdvantage;
 
             AdvantageScore = defenderCounterAttack.HitsToDefeat - attackerAttack.HitsToDefeat;
+            if (AdvantageScore == 0)
+            {
+                AdvantageScore = Outcome switch
+                {
+                    UnitCombatOutcome.AttackerAdvantage when attackerAttack.HitsToDefeat != int.MaxValue => 1,
+                    UnitCombatOutcome.DefenderAdvantage when defenderCounterAttack.HitsToDefeat != int.MaxValue => -1,
+                    _ => 0
+                };
+            }
         }
 
         public UnitCombatBreakdown AttackerAttack { get; }

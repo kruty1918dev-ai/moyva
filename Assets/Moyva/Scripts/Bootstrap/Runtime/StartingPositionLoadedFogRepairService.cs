@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
     internal interface IStartingPositionLoadedFogRepairService
     {
-        void RepairLoadedFogIfNeeded(
+        bool RepairLoadedFogIfNeeded(
             WorldGeneratedDataSignal signal,
             System.Func<bool> canRunStartLogic,
             StartingPositionTryResolvePosition tryGetLocalSpawnPosition,
@@ -52,7 +52,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _debugTag = debugTag;
         }
 
-        public void RepairLoadedFogIfNeeded(
+        public bool RepairLoadedFogIfNeeded(
             WorldGeneratedDataSignal signal,
             System.Func<bool> canRunStartLogic,
             StartingPositionTryResolvePosition tryGetLocalSpawnPosition,
@@ -66,7 +66,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 Debug.LogWarning($"{StartDiagTag} RepairLoadedFogIfNeeded blocked canRunStartLogic=false.");
                 Debug.LogWarning($"{_debugTag} Bootstrap.RepairLoadedFogIfNeeded blocked by CanRunStartLogic=false.");
-                return;
+                return false;
             }
 
             var snapshot = _fogOfWarService.GetExploredSnapshot();
@@ -89,7 +89,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             {
                 Debug.Log($"{StartDiagTag} RepairLoadedFogIfNeeded snapshot usable, no repair reveal needed.");
                 Debug.Log($"{_debugTag} Bootstrap.RepairLoadedFogIfNeeded snapshot usable, no reveal repair needed.");
-                return;
+                return false;
             }
 
             Vector2Int center = ResolveRepairCenter(
@@ -122,6 +122,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Debug.Log($"{StartDiagTag} RepairLoadedFogIfNeeded result center={center}, repairExecuted=true, visibleAfter={visibleAfter}, exploredAfter={exploredAfter}.");
 
             Debug.LogWarning($"[Bootstrap] FogOfWar snapshot був невалідний або без видимої ділянки для мапи {baseMapSize.x}x{baseMapSize.y}. Стартову область відновлено біля {center}.");
+            return true;
         }
 
         public Vector2Int ResolveRepairCenter(

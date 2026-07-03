@@ -22,6 +22,26 @@ namespace Kruty1918.Moyva.InfoPanel.UI
 
         public WorldInfoPanelController(
             SignalBus signalBus,
+            GameObject panelRoot,
+            Component titleText,
+            Component subtitleText,
+            Component resourcesText,
+            Button closeButton)
+            : this(
+                signalBus,
+                panelRoot,
+                titleText as TMP_Text,
+                subtitleText as TMP_Text,
+                resourcesText as TMP_Text,
+                closeButton,
+                null,
+                null)
+        {
+        }
+
+        [Inject]
+        public WorldInfoPanelController(
+            SignalBus signalBus,
             [Inject(Id = "BuildingInfoPanelRoot")] GameObject panelRoot,
             [Inject(Id = "BuildingInfoTitleText")] TMP_Text titleText,
             [Inject(Id = "BuildingInfoSubtitleText")] TMP_Text subtitleText,

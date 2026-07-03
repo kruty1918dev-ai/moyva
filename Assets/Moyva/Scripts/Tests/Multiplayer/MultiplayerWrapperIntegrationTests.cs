@@ -460,6 +460,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
                 snapshotStore,
                 new BinaryConfigStore(Path.Combine(Path.GetTempPath(), $"moyva_join_cfg_{Guid.NewGuid():N}.dat")),
                 logger,
+                null,
                 new FakeFailurePolicy(),
                 new HostMigrationService(logger),
                 new ParticipantFallbackService());

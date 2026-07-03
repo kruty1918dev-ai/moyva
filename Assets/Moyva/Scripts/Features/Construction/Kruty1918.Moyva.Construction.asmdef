@@ -8,6 +8,7 @@
         "Kruty1918.Moyva.Grid",
         "Kruty1918.Moyva.SaveSystem",
         "Kruty1918.Moyva.FogOfWar",
+        "Kruty1918.Moyva.Diagnostics",
         "Sirenix.OdinInspector.Attributes",
         "Unity.InputSystem",
         "Kruty1918.Moyva.WorldCreation.API",

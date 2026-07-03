@@ -74,6 +74,8 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             manager.configuration = sourceConfiguration;
             var controller = managerObject.AddComponent<FogOfWarVolumeController>();
             SetPrivateField(controller, "_settings", settings);
+            SetPrivateField(controller, "_logBuildSummary", false);
+            SetPrivateField(controller, "_logValidationWarnings", false);
 
             var updater = new FogOfWarVolumeUpdater(settings);
             var fog = new FakeFogService(2, 2);
@@ -84,8 +86,8 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Assert.AreNotSame(sourceConfiguration, manager.configuration);
             Assert.AreEqual(0, sourceConfiguration.blueprintLayerFolders.Count);
             Assert.AreEqual(0, sourceConfiguration.buildLayerFolders.Count);
-            Assert.AreEqual(2, updater.DebugRuntimeConfiguration.blueprintLayerFolders[0].blueprintLayers.Count);
-            Assert.AreEqual(2, updater.DebugRuntimeConfiguration.buildLayerFolders[0].buildLayers.Count);
+            Assert.AreEqual(1, updater.DebugRuntimeConfiguration.blueprintLayerFolders[0].blueprintLayers.Count);
+            Assert.AreEqual(1, updater.DebugRuntimeConfiguration.buildLayerFolders[0].buildLayers.Count);
 
             updater.Dispose();
             Assert.AreSame(sourceConfiguration, manager.configuration);
@@ -102,6 +104,8 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             var manager = managerObject.AddComponent<TileWorldCreatorManager>();
             var controller = managerObject.AddComponent<FogOfWarVolumeController>();
             SetPrivateField(controller, "_settings", settings);
+            SetPrivateField(controller, "_logBuildSummary", false);
+            SetPrivateField(controller, "_logValidationWarnings", false);
 
             var updater = new FogOfWarVolumeUpdater(settings);
             var fog = new FakeFogService(2, 1);
@@ -129,6 +133,8 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             managerObject.AddComponent<TileWorldCreatorManager>();
             var controller = managerObject.AddComponent<FogOfWarVolumeController>();
             SetPrivateField(controller, "_settings", settings);
+            SetPrivateField(controller, "_logBuildSummary", false);
+            SetPrivateField(controller, "_logValidationWarnings", false);
 
             var updater = new FogOfWarVolumeUpdater(settings);
             var fog = new FakeFogService(2, 1);

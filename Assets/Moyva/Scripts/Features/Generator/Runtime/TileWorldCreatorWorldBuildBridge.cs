@@ -258,9 +258,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 buildLayer.useDualGrid = useDualGrid;
                 buildLayer.scaleTileToCellSize = mapping.ScaleTileToCellSize || useDualGrid;
                 buildLayer.layerYOffset = 0f;
-                if (_options.ApplyIntegerTerrainHeights && buildLayer.meshGenerationOverride && buildLayer.mergeTiles)
+                if (buildLayer.mergeTiles && (_options.ApplyIntegerTerrainHeights || _options.CombineTerrainMeshesAfterHeightProjection))
                 {
-                    Debug.LogWarning($"{LogTag} Disabling buildLayer.mergeTiles for '{buildLayer.layerName}' because meshGenerationOverride was forcing merged cluster meshes.");
+                    Debug.LogWarning(
+                        $"{LogTag} Disabling buildLayer.mergeTiles for '{buildLayer.layerName}' because Moyva runtime height/mesh pipeline " +
+                        "needs per-tile meshes and some source meshes are not readable for TWC cluster combine.");
                     buildLayer.mergeTiles = false;
                 }
 

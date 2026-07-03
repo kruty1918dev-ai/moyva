@@ -437,7 +437,7 @@ namespace Kruty1918.Moyva.Tests.Economy
         [Test]
         public void AllEnums_HaveUniqueCounts()
         {
-            Assert.AreEqual(3, System.Enum.GetValues(typeof(EconomyResourceCategory)).Length);
+            Assert.AreEqual(4, System.Enum.GetValues(typeof(EconomyResourceCategory)).Length);
             Assert.AreEqual(2, System.Enum.GetValues(typeof(EconomySettlementType)).Length);
             Assert.AreEqual(2, System.Enum.GetValues(typeof(EconomyWarehouseType)).Length);
         }

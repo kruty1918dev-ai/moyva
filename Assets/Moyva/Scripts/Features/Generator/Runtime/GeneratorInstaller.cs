@@ -1,5 +1,6 @@
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.GraphSystem.API;
@@ -17,6 +18,7 @@ namespace Kruty1918.Moyva.Generator
     public sealed class GeneratorInstaller : MonoInstaller
     {
         private const string GeneratorBootDiagTag = "[MoyvaGeneratorBootDiag]";
+        private IWorldGenerationDiagnostics _worldDiagnostics;
 
         [Header("Scene Graph Source")]
         [SerializeField] private MoyvaTileWorldCreatorGraphBinding _graphBinding;
@@ -32,12 +34,20 @@ namespace Kruty1918.Moyva.Generator
         [SerializeField] private TileWorldCreatorBuildOptions _tileWorldCreatorBuildOptions = new TileWorldCreatorBuildOptions();
         [SerializeField] private WaterLayerMaterialSettings _waterLayerMaterialSettings;
 
+        [Inject]
+        public void Construct([InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
+        {
+            _worldDiagnostics = worldDiagnostics;
+        }
+
         public override void InstallBindings()
         {
             Debug.Log(
                 $"{GeneratorBootDiagTag} GeneratorInstaller.InstallBindings ENTER scene={gameObject.scene.name}, " +
                 $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}");
             ResolveSceneReferences();
+            _worldDiagnostics?.GeneratorInstallerInstalled(
+                $"scene={gameObject.scene.name}, graph={(_graphAsset != null ? _graphAsset.name : "null")}, twc={_tileWorldCreatorManager != null}");
             Debug.Log(
                 $"[MoyvaWorldGenDiag] GeneratorInstaller.InstallBindings scene={gameObject.scene.name}, " +
                 $"hasGraphBinding={_graphBinding != null}, hasTwcManager={_tileWorldCreatorManager != null}, graphAsset={(_graphAsset != null ? _graphAsset.name : "null")}, " +
@@ -93,6 +103,23 @@ namespace Kruty1918.Moyva.Generator
             Debug.Log(
                 $"{GeneratorBootDiagTag} GeneratorInstaller bound GeneratorWorldStartupBuilder interfaces=IInitializable,self, " +
                 $"lifetime=AsSingle, nonLazy=true");
+        }
+
+        private new void Start()
+        {
+            if (!Application.isPlaying)
+                return;
+
+            bool hasStartupBinding = Container != null && Container.HasBinding<GeneratorWorldStartupBuilder>();
+            Debug.Log(
+                $"{GeneratorBootDiagTag} GeneratorInstaller.Start fallbackCheck scene={gameObject.scene.name}, " +
+                $"hasStartupBinding={hasStartupBinding}, mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}");
+
+            if (!hasStartupBinding)
+                return;
+
+            var startupBuilder = Container.Resolve<GeneratorWorldStartupBuilder>();
+            startupBuilder.EnsureStartedFromFallback();
         }
 
         private void BindMapDataGenerator()
@@ -169,10 +196,15 @@ namespace Kruty1918.Moyva.Generator
             private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
             private const string WorldGenDiagTag = "[MoyvaWorldGenDiag]";
             private readonly MapVisualInstantiator _mapVisualInstantiator;
+            private readonly IWorldGenerationDiagnostics _worldDiagnostics;
+            private bool _buildTriggered;
 
-            public GeneratorWorldStartupBuilder(MapVisualInstantiator mapVisualInstantiator)
+            public GeneratorWorldStartupBuilder(
+                MapVisualInstantiator mapVisualInstantiator,
+                [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
             {
                 _mapVisualInstantiator = mapVisualInstantiator;
+                _worldDiagnostics = worldDiagnostics;
                 Debug.Log(
                     $"{GeneratorBootDiagTag} GeneratorStartup.Construct mapVisual={_mapVisualInstantiator != null}, " +
                     $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}");
@@ -187,9 +219,22 @@ namespace Kruty1918.Moyva.Generator
 
             public void Initialize()
             {
+                AttemptStartup("IInitializable");
+            }
+
+            public void EnsureStartedFromFallback()
+            {
+                AttemptStartup("GeneratorInstaller.Start");
+            }
+
+            private void AttemptStartup(string source)
+            {
+                _worldDiagnostics?.GeneratorStartupInitialized(
+                    $"source={source}, frame={UnityEngine.Time.frameCount}, mode={GameLaunchContext.Mode}");
                 UnityEngine.Debug.Log(
                     $"{GeneratorBootDiagTag} GeneratorStartup.Initialize ENTER frame={UnityEngine.Time.frameCount}, mode={GameLaunchContext.Mode}, " +
-                    $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, maxPlayers={GameLaunchContext.MaxPlayers}");
+                    $"hasWorldSettings={GameLaunchContext.HasWorldSettings}, autoLoad={GameLaunchContext.IsAutoLoadEnabled()}, maxPlayers={GameLaunchContext.MaxPlayers}, " +
+                    $"source={source}, buildTriggered={_buildTriggered}");
                 UnityEngine.Debug.Log($"{DirectDiagTag} GeneratorStartup.Initialize enter mode={GameLaunchContext.Mode}, hasInstantiator={_mapVisualInstantiator != null}.");
                 UnityEngine.Debug.Log($"{PolicyDiagTag} GeneratorStartup.Initialize enter mode={GameLaunchContext.Mode}, hasInstantiator={_mapVisualInstantiator != null}.");
                 UnityEngine.Debug.Log(
@@ -239,17 +284,26 @@ namespace Kruty1918.Moyva.Generator
                 {
                     UnityEngine.Debug.LogWarning($"{GeneratorBootDiagTag} GeneratorStartup.SKIP BuildWorld reason={reason}");
                     UnityEngine.Debug.LogWarning($"{WorldGenDiagTag} GeneratorStartup.SKIP BuildWorld reason={reason}");
+                    _worldDiagnostics?.ReportStartup();
                     return;
                 }
 
+                if (_buildTriggered)
+                {
+                    UnityEngine.Debug.Log($"{GeneratorBootDiagTag} GeneratorStartup.SKIP BuildWorld reason=already-triggered");
+                    return;
+                }
+
+                _buildTriggered = true;
                 Debug.Log($"[GeneratorStartup] Building world for launch mode '{GameLaunchContext.Mode}'.");
-                string source = hasPendingWorld
+                string buildSource = hasPendingWorld
                     ? "pending-save"
                     : sceneDirectTest
                         ? "direct-test"
                         : "new";
+                _worldDiagnostics?.MapVisualBuildWorldCalled($"source={buildSource}, caller=GeneratorStartup");
                 UnityEngine.Debug.Log($"{GeneratorBootDiagTag} GeneratorStartup.CALL MapVisual.BuildWorld");
-                UnityEngine.Debug.Log($"{WorldGenDiagTag} GeneratorStartup.CALL MapVisualInstantiator.BuildWorld source={source}");
+                UnityEngine.Debug.Log($"{WorldGenDiagTag} GeneratorStartup.CALL MapVisualInstantiator.BuildWorld source={buildSource}");
                 _mapVisualInstantiator.BuildWorld();
                 UnityEngine.Debug.Log($"{WorldGenDiagTag} GeneratorStartup.EXIT BuildWorldReturned frame={UnityEngine.Time.frameCount}, time={UnityEngine.Time.realtimeSinceStartup:F3}");
             }

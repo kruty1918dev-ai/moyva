@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Signals;
 using Zenject;
 
@@ -22,13 +23,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private readonly SignalBus _signalBus;
         private readonly IStartingPositionWorkflowService _workflowService;
+        private readonly IWorldGenerationDiagnostics _worldDiagnostics;
 
         public StartingPositionInitializer(
             SignalBus signalBus,
-            IStartingPositionWorkflowService workflowService)
+            IStartingPositionWorkflowService workflowService,
+            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
         {
             _signalBus = signalBus;
             _workflowService = workflowService;
+            _worldDiagnostics = worldDiagnostics;
             UnityEngine.Debug.Log($"{DirectDiagTag} StartingPositionInitializer.Construct workflow={workflowService != null}, signalBus={signalBus != null}.");
         }
 
@@ -41,6 +45,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             UnityEngine.Debug.Log($"{PolicyDiagTag} StartingPositionInitializer.Initialize subscribe-start.");
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
+            _worldDiagnostics?.BootstrapSubscribedWorldSignals($"frame={UnityEngine.Time.frameCount}");
             UnityEngine.Debug.Log($"{PolicyDiagTag} StartingPositionInitializer.Initialize subscribe-complete.");
             UnityEngine.Debug.Log($"{WorldGenDiagTag} Receiver.Bootstrap.Initialize subscribed frame={UnityEngine.Time.frameCount}");
         }
@@ -65,6 +70,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
+            _worldDiagnostics?.BootstrapWorldGeneratedReceived($"map={signal.Width}x{signal.Height}, frame={UnityEngine.Time.frameCount}");
             UnityEngine.Debug.Log($"{WorldGenDiagTag} Receiver.Bootstrap.WorldGenerated RECEIVED frame={UnityEngine.Time.frameCount}, map={signal.Width}x{signal.Height}");
             UnityEngine.Debug.Log($"{DirectDiagTag} StartingPositionInitializer.OnWorldGenerated received map={signal.Width}x{signal.Height}, forwardingToWorkflow=true.");
             UnityEngine.Debug.Log($"{PolicyDiagTag} StartingPositionInitializer.OnWorldGenerated map={signal.Width}x{signal.Height}.");

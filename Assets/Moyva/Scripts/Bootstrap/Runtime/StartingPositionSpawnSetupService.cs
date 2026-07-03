@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
@@ -23,19 +24,22 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IStartingPositionPolicy _policy;
         private readonly IStartingPositionState _startingPositionState;
         private readonly SignalBus _signalBus;
+        private readonly IWorldGenerationDiagnostics _worldDiagnostics;
 
         public StartingPositionSpawnSetupService(
             IStartingPositionSelector selector,
             IStartingPositionAssignmentFactory assignmentFactory,
             IStartingPositionPolicy policy,
             IStartingPositionState startingPositionState,
-            SignalBus signalBus)
+            SignalBus signalBus,
+            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
         {
             _selector = selector;
             _assignmentFactory = assignmentFactory;
             _policy = policy;
             _startingPositionState = startingPositionState;
             _signalBus = signalBus;
+            _worldDiagnostics = worldDiagnostics;
         }
 
         public bool TryPrepareStartingPositions(WorldGeneratedDataSignal signal)
@@ -66,6 +70,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Debug.Log($"{DirectDiagTag} SpawnSetup.CALL Selector.SelectStartPositions count={requestedPlayerCount}, map={baseMapSize.x}x{baseMapSize.y}.");
             Debug.Log($"{WorldGenDiagTag} SpawnSetup.CALL selector frame={Time.frameCount}, requested={requestedPlayerCount}, map={baseMapSize.x}x{baseMapSize.y}");
             List<Vector2Int> startPositions = _selector.PickStartingPositions(signal, requestedPlayerCount);
+            _worldDiagnostics?.SpawnPositionsSelected(
+                $"selected={startPositions.Count}, requested={requestedPlayerCount}, map={baseMapSize.x}x{baseMapSize.y}");
             Debug.Log($"{DirectDiagTag} SpawnSetup.Selector.RESULT selected={startPositions.Count}, positions={FormatPositions(startPositions)}.");
             Vector2Int startPos = startPositions.Count > 0
                 ? startPositions[0]
@@ -100,6 +106,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 signalFired = true;
                 Debug.Log($"{WorldGenDiagTag} Signal.FIRE WorldSpawnPositionsSignal source=new-game assignments={_startingPositionState.SpawnAssignments.Count}, frame={Time.frameCount}");
                 Debug.Log($"{DirectDiagTag} SpawnSetup.Signal.FIRE WorldSpawnPositionsSignal assignments={_startingPositionState.SpawnAssignments.Count}.");
+                _worldDiagnostics?.WorldSpawnPositionsSignalFired(
+                    $"assignments={_startingPositionState.SpawnAssignments.Count}, frame={Time.frameCount}");
                 _signalBus.Fire(new WorldSpawnPositionsSignal
                 {
                     Assignments = _assignmentFactory.CopySpawnAssignments(_startingPositionState.SpawnAssignments),

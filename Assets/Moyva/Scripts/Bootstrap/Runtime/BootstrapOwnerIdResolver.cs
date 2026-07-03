@@ -26,7 +26,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public BootstrapOwnerIdResolver(
             IConstructionService constructionService,
-            IStartingPositionState startingPositionState)
+            [InjectOptional] IStartingPositionState startingPositionState = null)
         {
             _constructionService = constructionService;
             _startingPositionState = startingPositionState;
@@ -34,7 +34,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public string ResolveActiveOwnerId()
         {
-            var assignments = _startingPositionState.SpawnAssignments;
+            var assignments = _startingPositionState?.SpawnAssignments;
             if (assignments != null && assignments.Count > 0)
                 return NormalizeOwnerId(ResolveLocalActiveOwnerId(assignments));
 
@@ -50,7 +50,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (participants == null || participants.Count == 0)
                 return true;
 
-            return _startingPositionState.IsSet;
+            return _startingPositionState?.IsSet ?? false;
         }
 
         private string ResolveLocalActiveOwnerId(IReadOnlyList<SpawnPositionAssignment> targets)

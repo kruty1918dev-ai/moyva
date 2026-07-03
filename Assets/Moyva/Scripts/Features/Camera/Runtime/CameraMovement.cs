@@ -7,6 +7,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
 {
     internal sealed class CameraMovement : ICameraMovement, IInitializable, ILateTickable
     {
+        private const string StartupChainTag = "[MoyvaStartupChain]";
+
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
         private readonly ICameraBoundsProvider _boundsProvider;
@@ -18,6 +20,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly Vector3[] _viewportWorldCorners = new Vector3[4];
 
         private float _forceBlockTimer;
+        private bool _pendingTeleportLateTickLog;
+        private string _lastTeleportSource;
         private const float ForceBlockDuration = 1.5f; // Час затримки після форсованого руху (можна винести в SO)
 
         // Zenject автоматично підставить активну камеру та налаштування
@@ -139,21 +143,29 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         public void TeleportCamera(Vector3 position)
         {
+            Vector3 before = _camera.transform.position;
             _targetPosition = position;
             ApplyFixedPlaneAxis();
             ClampTargetToBounds();
             _currentVelocity = Vector3.zero;
             _camera.transform.position = _targetPosition;
+            _pendingTeleportLateTickLog = true;
+            _lastTeleportSource = "TeleportCamera";
+            Debug.Log($"{StartupChainTag} CameraMovement.TeleportCamera before={FormatVector(before)}, requested={FormatVector(position)}, targetAfterClamp={FormatVector(_targetPosition)}, actualAfter={FormatVector(_camera.transform.position)}.");
         }
 
         public void TeleportCameraToFocusPoint(Vector3 focusPoint, float distance)
         {
+            Vector3 before = _camera.transform.position;
             float resolvedDistance = Mathf.Max(0.1f, distance);
             _targetPosition = focusPoint - _camera.transform.forward * resolvedDistance;
             _fixedPlaneAxisValue = UsesXzPlane ? _targetPosition.y : _targetPosition.z;
             ClampTargetToBounds();
             _currentVelocity = Vector3.zero;
             _camera.transform.position = _targetPosition;
+            _pendingTeleportLateTickLog = true;
+            _lastTeleportSource = "TeleportCameraToFocusPoint";
+            Debug.Log($"{StartupChainTag} CameraMovement.TeleportCameraToFocusPoint before={FormatVector(before)}, focusPoint={FormatVector(focusPoint)}, requestedDistance={distance:0.###}, resolvedDistance={resolvedDistance:0.###}, targetAfterClamp={FormatVector(_targetPosition)}, actualAfter={FormatVector(_camera.transform.position)}, forward={FormatVector(_camera.transform.forward)}.");
         }
 
         public void LateTick()
@@ -171,6 +183,17 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 ref _currentVelocity,
                 _settings.ResolveSmoothTime()
             );
+
+            if (_pendingTeleportLateTickLog)
+            {
+                _pendingTeleportLateTickLog = false;
+                Debug.Log($"{StartupChainTag} CameraMovement.LateTickAfterTeleport source={_lastTeleportSource}, final={FormatVector(_camera.transform.position)}, target={FormatVector(_targetPosition)}, velocity={FormatVector(_currentVelocity)}, frame={Time.frameCount}.");
+            }
+        }
+
+        private static string FormatVector(Vector3 value)
+        {
+            return $"({value.x:0.###}, {value.y:0.###}, {value.z:0.###})";
         }
 
         private void ClampTargetToBounds()

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Diagnostics.API;
+using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
@@ -53,6 +55,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
         private readonly WorldCreationDefaultsSO _worldDefaults;
         private readonly ITileSettingsService _tileSettings; // може бути null
+        private readonly IConstructionDiagnostics _diagnostics;
+        private readonly IConstructionDiagnosticsSession _diagnosticsSession;
         private bool _initialized;
         private bool _disposed;
 
@@ -87,7 +91,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IGridService gridService,
             [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery,
             [InjectOptional] WorldCreationDefaultsSO worldDefaults = null,
-            [InjectOptional] ITileSettingsService tileSettings = null)
+            [InjectOptional] ITileSettingsService tileSettings = null,
+            [InjectOptional] IConstructionDiagnostics diagnostics = null,
+            [InjectOptional] IConstructionDiagnosticsSession diagnosticsSession = null)
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
@@ -101,6 +107,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
             _worldDefaults = worldDefaults;
             _tileSettings = tileSettings;
+            _diagnostics = diagnostics;
+            _diagnosticsSession = diagnosticsSession;
         }
 
         public void Initialize()
@@ -436,9 +444,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Confirm()
         {
+            IDiagnosticFlow flow = _diagnosticsSession?.CurrentFlow;
             if (IsDemolishMode)
             {
                 ConfirmPendingDemolitions();
+                _diagnostics?.SkipStep(flow, ConstructionDiagnosticSteps.BuildConfirmed, "demolish-mode");
+                _diagnostics?.Report(flow);
+                _diagnosticsSession?.Clear(flow);
                 return;
             }
 
@@ -449,8 +461,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 if (VerboseLogs)
                     Debug.Log("[Construction] Confirm ignored: no pending placements.");
+                _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.BuildConfirmed, "no-pending-placements");
+                _diagnostics?.Report(flow);
+                _diagnosticsSession?.Clear(flow);
                 return;
             }
+
+            _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildConfirmed, $"pending={_pendingPlacements.Count}");
 
             var pendingSnapshot = new List<PendingPlacement>(_pendingPlacements);
             var confirmedPositions = new HashSet<Vector2Int>();
@@ -470,9 +487,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     if (!gateReplacementAllowed && !CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked))
                     {
                         skippedCount++;
+                        _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.GridCellValidated, "placement-invalid", $"building={id}, pos={pos}");
                         Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: placement became invalid. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, terrainBlocked={terrainBlocked}, townHallBuildRadius={_townHallBuildRadius}.");
                         continue;
                     }
+
+                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.GridCellValidated, $"building={id}, pos={pos}");
+                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.TerrainValidated, $"building={id}, pos={pos}");
 
                     if (_objectsMapService.IsOccupied(pos))
                     {
@@ -490,11 +511,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     {
                         skippedCount++;
                         _lastActionMessage = resourceReason;
+                        _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, "resources-blocked", resourceReason);
                         Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: {resourceReason}");
                         continue;
                     }
 
+                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, $"building={id}, owner={_activeOwnerId}");
+                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesReserved, $"building={id}, owner={_activeOwnerId}");
+
                     _objectsMapService.Register(pos, id);
+                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingRegistered, $"building={id}, pos={pos}");
                     _playerPlacedBuildings[pos] = id;
 
                     _signalBus.Fire(new BuildingPlacedSignal
@@ -503,6 +529,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         Position = pos,
                         OwnerId = _activeOwnerId,
                     });
+                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingSpawned, $"building={id}, pos={pos}");
+                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ConstructionSignalFired, $"building={id}, pos={pos}");
 
                     try
                     {
@@ -563,6 +591,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (VerboseLogs)
                 Debug.Log($"[Construction] Confirm completed. confirmed={confirmedCount}, skipped={skippedCount}, remainingPending={_pendingPlacements.Count}, state={State}");
+
+            if (confirmedCount > 0)
+                _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.UiUpdated, $"confirmed={confirmedCount}, skipped={skippedCount}");
+            else
+                _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.BuildingSpawned, "no-buildings-confirmed", $"skipped={skippedCount}");
+
+            _diagnostics?.Report(flow);
+            _diagnosticsSession?.Clear(flow);
         }
 
         public void Cancel()
@@ -784,13 +820,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _objectsMapService.Register(position, buildingId);
             _playerPlacedBuildings[position] = buildingId;
-            ApplyBuildingFogReveal(buildingId, position);
             _signalBus.Fire(new BuildingPlacedSignal
             {
                 BuildingId = buildingId,
                 Position = position,
                 OwnerId = _activeOwnerId,
             });
+            ApplyBuildingFogReveal(buildingId, position);
 
             if (VerboseLogs)
                 Debug.Log($"[Construction] RestoreFromSave: відновлено '{buildingId}' на {position}");
@@ -837,7 +873,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _objectsMapService.Register(position, buildingId);
             _factionPlacedBuildings[position] = (buildingId, ownerId);
-            ApplyBuildingFogReveal(buildingId, position);
             _signalBus.Fire(new BuildingPlacedSignal
             {
                 BuildingId = buildingId,
@@ -845,6 +880,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 OwnerId = ownerId,
                 SourceFactionId = ownerId,
             });
+            ApplyBuildingFogReveal(buildingId, position);
             if (VerboseLogs) Debug.Log($"[Construction] TryDirectPlace: розміщено '{buildingId}' на {position} від '{ownerId}'.");
             return true;
         }
@@ -1330,7 +1366,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             int radius = Mathf.Max(0, fogReveal.RevealRadius);
             if (radius <= 0)
+            {
+                _fogOfWarService.UnregisterUnit(GetBuildingFogVisionAreaId(position));
                 return;
+            }
 
             string areaId = GetBuildingFogVisionAreaId(position);
             if (fogReveal.RevealWhileActive)
@@ -1338,6 +1377,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _fogOfWarService.RegisterFixedVisionArea(areaId, position, radius, fogReveal.Shape);
                 return;
             }
+
+            _fogOfWarService.UnregisterUnit(areaId);
 
             if (fogReveal.RevealOnBuilt)
                 _fogOfWarService.RevealArea(position, radius, fogReveal.Shape, keepVisible: false, areaId);

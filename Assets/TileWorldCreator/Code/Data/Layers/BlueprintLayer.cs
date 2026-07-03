@@ -183,6 +183,7 @@ namespace GiantGrey.TileWorldCreator
 					currentSeed = System.Environment.TickCount;
 				}
 				
+                currentSeed = EnsureNonZeroSeed(currentSeed);
                 UnityEngine.Random.InitState(currentSeed);
                 random = new Unity.Mathematics.Random((uint)currentSeed);
 
@@ -201,6 +202,7 @@ namespace GiantGrey.TileWorldCreator
                     _seed = configuration.currentRandomSeed;
                 }
 
+                _seed = EnsureNonZeroSeed(_seed);
                 random = new Unity.Mathematics.Random(_seed);
                 UnityEngine.Random.InitState((int)_seed);
 
@@ -254,6 +256,16 @@ namespace GiantGrey.TileWorldCreator
                 paintGrid.Add(_pos);
                 allPositions.Add(_pos);
             }
+        }
+
+        private static int EnsureNonZeroSeed(int seed)
+        {
+            return seed == 0 ? 1 : seed;
+        }
+
+        private static uint EnsureNonZeroSeed(uint seed)
+        {
+            return seed == 0u ? 1u : seed;
         }
 
 

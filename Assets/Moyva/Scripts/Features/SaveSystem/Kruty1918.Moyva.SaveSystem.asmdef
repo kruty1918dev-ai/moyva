@@ -3,7 +3,8 @@
     "rootNamespace": "Kruty1918.Moyva.SaveSystem",
     "references": [
         "Zenject",
-        "Kruty1918.Moyva.Signals"
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.Diagnostics"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

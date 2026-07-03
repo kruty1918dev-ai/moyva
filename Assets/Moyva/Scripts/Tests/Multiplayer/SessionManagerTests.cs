@@ -263,7 +263,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
             var participantFallback = new FakeParticipantFallbackService();
             var lobbyService = lobby ?? new FakeLobbyService();
 
-            return new SessionManager(netProvider, lobbyService, participantPolicy, consistencyService, snapStore, cfgStore, logger, failPolicy, hostMigration, participantFallback);
+            return new SessionManager(netProvider, lobbyService, participantPolicy, consistencyService, snapStore, cfgStore, logger, null, failPolicy, hostMigration, participantFallback);
         }
 
         private SessionConnectOptions MakeOptions(string roomId = "room-1", bool create = true)
@@ -618,7 +618,7 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
 
             var manager = new SessionManager(
                 net, lobby, participantPolicy, consistencyService, snapStore, cfgStore,
-                logger, failPolicy, hostMigration, participantFallback);
+                logger, null, failPolicy, hostMigration, participantFallback);
 
             return (manager, net, logger);
         }

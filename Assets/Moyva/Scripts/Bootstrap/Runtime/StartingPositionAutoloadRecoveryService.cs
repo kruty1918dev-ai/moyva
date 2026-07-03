@@ -5,7 +5,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 {
     internal interface IStartingPositionAutoloadRecoveryService
     {
-        void RepairLoadedFogIfNeeded(WorldGeneratedDataSignal signal);
+        bool RepairLoadedFogIfNeeded(WorldGeneratedDataSignal signal);
         Vector2Int ResolveStartupCameraTarget(int width, int height, bool preferStartTile);
     }
 
@@ -33,10 +33,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _startingPositionState = startingPositionState;
         }
 
-        public void RepairLoadedFogIfNeeded(WorldGeneratedDataSignal signal)
+        public bool RepairLoadedFogIfNeeded(WorldGeneratedDataSignal signal)
         {
             Debug.Log($"{DirectDiagTag} Workflow.RepairLoadedFogIfNeeded ENTER map={signal.Width}x{signal.Height}, canRunPolicyAvailable={_policy != null}, localSpawnResolver={_localSpawnResolver != null}, stateSet={_startingPositionState.IsSet}.");
-            _loadedFogRepairService.RepairLoadedFogIfNeeded(
+            bool repaired = _loadedFogRepairService.RepairLoadedFogIfNeeded(
                 signal,
                 _policy.CanRunStartLogic,
                 _localSpawnResolver.TryGetLocalSpawnPosition,
@@ -44,6 +44,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _startingPositionState.StartPosition,
                 _cameraTargetResolver.TryGetClosestUnitPosition);
             Debug.Log($"{DirectDiagTag} Workflow.RepairLoadedFogIfNeeded EXIT.");
+            return repaired;
         }
 
         public Vector2Int ResolveStartupCameraTarget(int width, int height, bool preferStartTile)

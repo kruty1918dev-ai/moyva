@@ -36,6 +36,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 $"map={manager.configuration.width}x{manager.configuration.height}, frame={Time.frameCount}, childrenBefore={childrenBefore}, asyncHint=unknown");
             var result = GenerateBlueprintMap(manager);
             LogOcclusionResult(result, "GenerateCompleteMap");
+            DisableRuntimeTileClusterMerging(manager.configuration);
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
             stopwatch.Stop();
@@ -83,6 +84,46 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             return new TileWorldCreatorLayerOcclusionResult(layers.Count, removedCount, occupiedByHigherLayers.Count, skippedCount);
+        }
+
+        private static void DisableRuntimeTileClusterMerging(Configuration configuration)
+        {
+            if (!Application.isPlaying || configuration == null)
+                return;
+
+            bool configChanged = configuration.mergeTiles;
+            if (configChanged)
+                configuration.mergeTiles = false;
+
+            int changedBuildLayers = 0;
+            if (configuration.buildLayerFolders != null)
+            {
+                for (int folderIndex = 0; folderIndex < configuration.buildLayerFolders.Count; folderIndex++)
+                {
+                    var folder = configuration.buildLayerFolders[folderIndex];
+                    if (folder?.buildLayers == null)
+                        continue;
+
+                    for (int layerIndex = 0; layerIndex < folder.buildLayers.Count; layerIndex++)
+                    {
+                        if (folder.buildLayers[layerIndex] is not TilesBuildLayer buildLayer)
+                            continue;
+
+                        if (buildLayer.mergeTiles)
+                        {
+                            buildLayer.mergeTiles = false;
+                            changedBuildLayers++;
+                        }
+                    }
+                }
+            }
+
+            if (configChanged || changedBuildLayers > 0)
+            {
+                Debug.Log(
+                    $"[Moyva TWC Occlusion] Runtime disabled tile cluster merging before ExecuteBuildLayers. " +
+                    $"configuration.mergeTilesChanged={configChanged}, buildLayersChanged={changedBuildLayers}.");
+            }
         }
 
         private static Vector2Int ToCellKey(Vector2 position)

@@ -13,6 +13,7 @@
         "Kruty1918.Moyva.Multiplayer",
         "Kruty1918.Moyva.Pathfinding",
         "Kruty1918.Moyva.Grid",
+        "Kruty1918.Moyva.Diagnostics",
         "Kruty1918.Moyva.Shared"
     ],
     "includePlatforms": [],

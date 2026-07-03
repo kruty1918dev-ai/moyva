@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
     internal sealed class StartingPositionFogRevealService
         : IStartingPositionFogRevealService
     {
+        private const string StartupChainTag = "[MoyvaStartupChain]";
         private const string StartDiagTag = "[MoyvaFogStartDiag]";
         private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
 
@@ -48,11 +49,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool wasVisible = _fogOfWarService != null && _fogOfWarService.IsVisible(clampedCenter);
             bool wasExplored = _fogOfWarService != null && _fogOfWarService.IsExplored(clampedCenter);
             Debug.Log($"{DirectDiagTag} FogReveal.EnsureVisible ENTER center={clampedCenter}, centerVisible={wasVisible}, centerExplored={wasExplored}.");
+            Debug.Log($"{StartupChainTag} Fog.EnsureVisible ENTER center={clampedCenter}, map={width}x{height}, centerState={ResolveState(clampedCenter)}, samples={FormatStateSamples(clampedCenter)}.");
             Debug.Log($"{StartDiagTag} EnsureStartRevealVisible begin center={clampedCenter}, map={width}x{height}, visibleBefore={wasVisible}, exploredBefore={wasExplored}, hasFogService={_fogOfWarService != null}.");
             if (wasVisible)
             {
                 Debug.Log($"{DirectDiagTag} FogReveal.EnsureVisible ACTION extraReveal=false, reason=already-visible.");
                 Debug.Log($"{DirectDiagTag} FogReveal.EnsureVisible EXIT centerVisible=true, centerExplored={wasExplored || wasVisible}.");
+                Debug.Log($"{StartupChainTag} Fog.EnsureVisible EXIT action=skip reason=already-visible center={clampedCenter}, centerState={ResolveState(clampedCenter)}, samples={FormatStateSamples(clampedCenter)}.");
                 Debug.Log($"{_debugTag} Bootstrap.EnsureStartRevealVisible ok center={clampedCenter}, state=Visible.");
                 Debug.Log($"{StartDiagTag} EnsureStartRevealVisible result center={clampedCenter}, extraReveal=false, visibleAfter=true, exploredAfter={wasExplored || wasVisible}.");
                 return;
@@ -73,6 +76,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool isVisibleAfter = _fogOfWarService != null && _fogOfWarService.IsVisible(clampedCenter);
             bool isExploredAfter = _fogOfWarService != null && _fogOfWarService.IsExplored(clampedCenter);
             Debug.Log($"{DirectDiagTag} FogReveal.EnsureVisible EXIT centerVisible={isVisibleAfter}, centerExplored={isExploredAfter}.");
+            Debug.Log($"{StartupChainTag} Fog.EnsureVisible EXIT action=extra-reveal center={clampedCenter}, centerState={ResolveState(clampedCenter)}, samples={FormatStateSamples(clampedCenter)}.");
             Debug.Log($"{StartDiagTag} EnsureStartRevealVisible result center={clampedCenter}, extraReveal=true, visibleAfter={isVisibleAfter}, exploredAfter={isExploredAfter}.");
         }
 
@@ -99,6 +103,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             string anchorId = ResolveStartVisionAnchorId(0);
             var shape = _settings.ResolveRevealShape();
             Debug.Log($"{DirectDiagTag} FogReveal.RegisterCore ENTER center={revealCenter}, radius={visibleRange}, shape={shape}, anchorId={anchorId}, hasFogService={_fogOfWarService != null}.");
+            Debug.Log($"{StartupChainTag} Fog.RegisterCore ENTER center={revealCenter}, radius={visibleRange}, shape={shape}, anchorId={anchorId}, beforeState={ResolveState(revealCenter)}, samples={FormatStateSamples(revealCenter)}.");
             _fogOfWarService.RegisterFixedVisionArea(ResolveStartVisionAnchorId(0), revealCenter, visibleRange, _settings.ResolveRevealShape());
             _startAnchorRegistered = true;
             _registeredStartAnchorCount = 1;
@@ -106,6 +111,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool isVisibleAfter = _fogOfWarService != null && _fogOfWarService.IsVisible(revealCenter);
             bool isExploredAfter = _fogOfWarService != null && _fogOfWarService.IsExplored(revealCenter);
             Debug.Log($"{DirectDiagTag} FogReveal.RegisterCore AFTER centerVisible={isVisibleAfter}, centerExplored={isExploredAfter}.");
+            Debug.Log($"{StartupChainTag} Fog.RegisterCore EXIT center={revealCenter}, afterState={ResolveState(revealCenter)}, samples={FormatStateSamples(revealCenter)}.");
             Debug.Log($"{StartDiagTag} RegisterStartupCoreVisibility center={revealCenter}, radius={visibleRange}, anchorId={anchorId}, shape={shape}, keepVisible=true, visibleAfter={isVisibleAfter}, exploredAfter={isExploredAfter}.");
         }
 
@@ -118,6 +124,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
             Debug.Log($"{DirectDiagTag} FogReveal.RevealStartingAreas ENTER center={center}, map={width}x{height}, radius={radius}, shape={shape}, keepVisible=true, hasFogService={_fogOfWarService != null}.");
             Debug.Log($"{DirectDiagTag} FogReveal.Before centerVisible={visibleBefore}, centerExplored={exploredBefore}.");
+            Debug.Log($"{StartupChainTag} Fog.RevealStartingAreas ENTER center={center}, map={width}x{height}, radius={radius}, shape={shape}, anchorId={_startRevealAnchorId}, beforeState={ResolveState(center)}, samples={FormatStateSamples(center)}.");
             Debug.Log($"{StartDiagTag} RevealStartingAreas request center={center}, map={width}x{height}, radius={radius}, shape={shape}, keepVisible=true, hasFogService={_fogOfWarService != null}, hasVisualUpdater={_fogVisualUpdater != null}, centerVisibleBefore={visibleBefore}, centerExploredBefore={exploredBefore}.");
             Debug.Log($"{_debugTag} Bootstrap.RevealStartingAreas center={center}, radius={radius}, shape={shape}, map={width}x{height}, scaled={_settings.useMapSizeScaledFog}, keepCore={_settings.keepCoreFullyVisible}.");
             Debug.Log($"{DirectDiagTag} FogReveal.CALL FogOfWarService.RevealArea center={center}, radius={radius}.");
@@ -127,6 +134,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             bool visibleAfter = _fogOfWarService != null && _fogOfWarService.IsVisible(center);
             bool exploredAfter = _fogOfWarService != null && _fogOfWarService.IsExplored(center);
             Debug.Log($"{DirectDiagTag} FogReveal.After centerVisible={visibleAfter}, centerExplored={exploredAfter}.");
+            Debug.Log($"{StartupChainTag} Fog.RevealStartingAreas EXIT center={center}, afterState={ResolveState(center)}, samples={FormatStateSamples(center)}.");
             Debug.Log($"{StartDiagTag} RevealStartingAreas result center={center}, centerVisibleBefore={visibleBefore}, centerExploredBefore={exploredBefore}, centerVisibleAfter={visibleAfter}, centerExploredAfter={exploredAfter}.");
             if (!visibleAfter && !exploredAfter)
                 Debug.LogWarning($"{StartDiagTag} RevealStartingAreas center did not become visible or explored after RevealArea center={center}, radius={radius}, shape={shape}, map={width}x{height}.");
@@ -144,6 +152,21 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _fogOfWarService.UnregisterUnit(ResolveStartVisionAnchorId(index));
 
             _registeredStartAnchorCount = 0;
+        }
+
+        private FogStateType ResolveState(Vector2Int position)
+        {
+            return _fogOfWarService != null
+                ? _fogOfWarService.GetFogState(position)
+                : FogStateType.Unexplored;
+        }
+
+        private string FormatStateSamples(Vector2Int center)
+        {
+            if (_fogOfWarService == null)
+                return "fog-service=null";
+
+            return $"C={ResolveState(center)}, E={ResolveState(center + Vector2Int.right)}, W={ResolveState(center + Vector2Int.left)}, N={ResolveState(center + Vector2Int.up)}, S={ResolveState(center + Vector2Int.down)}";
         }
     }
 }

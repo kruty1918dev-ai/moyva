@@ -1,3 +1,5 @@
+using Kruty1918.Moyva.Diagnostics.API;
+using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Units.API;
@@ -32,14 +34,23 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IUnitService _unitService;
         private readonly IUnitFactory _unitFactory;
         private readonly SignalBus _signalBus;
+        private readonly ISaveLoadDiagnostics _loadDiagnostics;
+        private readonly ISaveLoadDiagnosticsSession _loadDiagnosticsSession;
         private readonly System.Collections.Generic.List<UnitRecord> _pendingRecords = new();
         private bool _worldBuilt;
 
-        public UnitsSaveModule(IUnitService unitService, IUnitFactory unitFactory, SignalBus signalBus)
+        public UnitsSaveModule(
+            IUnitService unitService,
+            IUnitFactory unitFactory,
+            SignalBus signalBus,
+            [InjectOptional] ISaveLoadDiagnostics loadDiagnostics = null,
+            [InjectOptional] ISaveLoadDiagnosticsSession loadDiagnosticsSession = null)
         {
             _unitService = unitService;
             _unitFactory = unitFactory;
             _signalBus = signalBus;
+            _loadDiagnostics = loadDiagnostics;
+            _loadDiagnosticsSession = loadDiagnosticsSession;
         }
 
         public void Initialize()
@@ -97,6 +108,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 _pendingRecords.Clear();
                 _pendingRecords.AddRange(records);
                 Debug.Log($"[UnitsSave] Світ ще не побудований. Відкладено завантаження {records.Count} юнітів до WorldBuiltSignal.");
+                _loadDiagnostics?.CompleteStep(_loadDiagnosticsSession?.CurrentFlow, SaveLoadDiagnosticSteps.UnitsRestored, $"deferred={records.Count}");
                 return;
             }
 
@@ -137,6 +149,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             Debug.Log($"[UnitsSave] Завантажено {records.Count} юнітів.");
+            _loadDiagnostics?.CompleteStep(_loadDiagnosticsSession?.CurrentFlow, SaveLoadDiagnosticSteps.UnitsRestored, $"spawned={records.Count}");
         }
 
         private static bool TryParseRecordsWithStamina(System.IO.BinaryReader reader, int count, out System.Collections.Generic.List<UnitRecord> records)

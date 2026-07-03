@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.Diagnostics.API;
+using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.SaveSystem;
@@ -109,6 +111,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     internal sealed class FogOfWarService : IFogOfWarService, IInitializable, IDisposable
     {
         private const string DirectDiagTag = "[MoyvaDirectStartDiag]";
+        private const string StartupChainTag = "[MoyvaStartupChain]";
         /// <summary>
         /// Зведена документація полів FogOfWarService.
         /// Коротко:
@@ -156,6 +159,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// `SignalBus` (Zenject) для підписки на ігрові події: створення/рух/знищення одиниць, будівлі, генерація світу тощо.
         /// </summary>
         private readonly SignalBus              _signalBus;
+        private readonly IFogStartupDiagnostics _startupDiagnostics;
 
         /// <summary>
         /// Налаштування `FogOfWarSettings`: мін/макс дальність, пороги висотної видимості, опції відсіювання рендерерів тощо.
@@ -197,6 +201,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private HashSet<Vector2Int> _lastDirtyTiles = new HashSet<Vector2Int>();
         private FogWorldVisualContext _visualContext;
+        private IDiagnosticFlow _startupRevealFlow;
 
         /// <summary>
         /// Внутрішня версія fog state, яка збільшується після значущих змін.
@@ -224,7 +229,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             IFogVisualUpdater     visualUpdater,
             IFogSaveDataProvider   saveProvider,
             SignalBus              signalBus,
-            [InjectOptional] FogOfWarSettings settings)
+            [InjectOptional] FogOfWarSettings settings,
+            [InjectOptional] IFogStartupDiagnostics startupDiagnostics = null)
         {
             _resolver       = resolver;
             _heightVisionService = heightVisionService;
@@ -232,6 +238,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _saveProvider   = saveProvider;
             _signalBus      = signalBus;
             _settings       = settings;
+            _startupDiagnostics = startupDiagnostics;
 
             if (_settings != null)
                 _defaultVisionRange = _settings.DefaultVisionRange;
@@ -491,9 +498,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     _lastDirtyTiles.Add(tile);
                 }
 
+                int dirtyBeforeFlush = _lastDirtyTiles.Count;
+                CountFogStateTiles(out int stateVisibleBeforeFlush, out int stateExploredBeforeFlush, out int stateUnexploredBeforeFlush);
+                Debug.Log($"{StartupChainTag} Fog.ApplyRevealArea PRE_FLUSH center={center}, radius={radius}, shape={shape}, keepVisible=true, id={areaId}, tiles={tiles.Count}, centerIncluded={centerIncluded}, centerStateBefore={centerStateBefore}, centerStateNow={GetFogState(center)}, dirty={dirtyBeforeFlush}, stateVisible={stateVisibleBeforeFlush}, stateExplored={stateExploredBeforeFlush}, stateUnexplored={stateUnexploredBeforeFlush}, dirtySamples={FormatDirtyTileSamples()}.");
                 FlushVisual();
-                Debug.Log($"{DirectDiagTag} FogService.ApplyRevealArea RESULT tiles={tiles.Count}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, dirty={_lastDirtyTiles.Count}.");
-                Debug.Log($"{StartDiagTag} ApplyRevealArea computed tiles={tiles.Count}, centerIncluded={centerIncluded}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, visibleBefore={visibleBefore}, visibleAfter={CountVisibleTiles()}, exploredBefore={exploredBefore}, exploredAfter={CountExploredTiles()}, dirty={_lastDirtyTiles.Count}, keepVisible={keepVisible}, id={areaId}.");
+                Debug.Log($"{DirectDiagTag} FogService.ApplyRevealArea RESULT tiles={tiles.Count}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, dirtyBeforeFlush={dirtyBeforeFlush}, dirtyAfterFlush={_lastDirtyTiles.Count}.");
+                Debug.Log($"{StartDiagTag} ApplyRevealArea computed tiles={tiles.Count}, centerIncluded={centerIncluded}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, visibleBefore={visibleBefore}, visibleAfter={CountVisibleTiles()}, exploredBefore={exploredBefore}, exploredAfter={CountExploredTiles()}, dirtyBeforeFlush={dirtyBeforeFlush}, dirtyAfterFlush={_lastDirtyTiles.Count}, keepVisible={keepVisible}, id={areaId}.");
+                Debug.Log($"{StartupChainTag} Fog.ApplyRevealArea POST_FLUSH center={center}, centerState={GetFogState(center)}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, dirtyAfterFlush={_lastDirtyTiles.Count}.");
                 Debug.Log($"{DebugTag} FogService.ApplyRevealArea visible center={center}, radius={radius}, shape={shape}, id={areaId}, tiles={tiles.Count}, map={_width}x{_height}, centerState={GetFogState(center)}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}.");
                 return;
             }
@@ -509,11 +520,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 changed = true;
             }
 
+            int exploredDirtyBeforeFlush = _lastDirtyTiles.Count;
             if (changed)
+            {
+                CountFogStateTiles(out int stateVisibleBeforeFlush, out int stateExploredBeforeFlush, out int stateUnexploredBeforeFlush);
+                Debug.Log($"{StartupChainTag} Fog.ApplyRevealArea PRE_FLUSH center={center}, radius={radius}, shape={shape}, keepVisible=false, tiles={tiles.Count}, centerIncluded={centerIncluded}, centerStateBefore={centerStateBefore}, centerStateNow={GetFogState(center)}, dirty={exploredDirtyBeforeFlush}, stateVisible={stateVisibleBeforeFlush}, stateExplored={stateExploredBeforeFlush}, stateUnexplored={stateUnexploredBeforeFlush}, dirtySamples={FormatDirtyTileSamples()}.");
                 FlushVisual();
+            }
 
-            Debug.Log($"{DirectDiagTag} FogService.ApplyRevealArea RESULT tiles={tiles.Count}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, dirty={_lastDirtyTiles.Count}.");
-            Debug.Log($"{StartDiagTag} ApplyRevealArea computed tiles={tiles.Count}, centerIncluded={centerIncluded}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, visibleBefore={visibleBefore}, visibleAfter={CountVisibleTiles()}, exploredBefore={exploredBefore}, exploredAfter={CountExploredTiles()}, dirty={_lastDirtyTiles.Count}, keepVisible={keepVisible}, id={areaId ?? visibleAreaId ?? "<explored-only>"}.");
+            Debug.Log($"{DirectDiagTag} FogService.ApplyRevealArea RESULT tiles={tiles.Count}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, dirtyBeforeFlush={exploredDirtyBeforeFlush}, dirtyAfterFlush={_lastDirtyTiles.Count}.");
+            Debug.Log($"{StartDiagTag} ApplyRevealArea computed tiles={tiles.Count}, centerIncluded={centerIncluded}, centerStateBefore={centerStateBefore}, centerStateAfter={GetFogState(center)}, visibleBefore={visibleBefore}, visibleAfter={CountVisibleTiles()}, exploredBefore={exploredBefore}, exploredAfter={CountExploredTiles()}, dirtyBeforeFlush={exploredDirtyBeforeFlush}, dirtyAfterFlush={_lastDirtyTiles.Count}, keepVisible={keepVisible}, id={areaId ?? visibleAreaId ?? "<explored-only>"}.");
+            Debug.Log($"{StartupChainTag} Fog.ApplyRevealArea POST_FLUSH center={center}, centerState={GetFogState(center)}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, dirtyAfterFlush={_lastDirtyTiles.Count}, changed={changed}.");
             Debug.Log($"{DebugTag} FogService.ApplyRevealArea explored center={center}, radius={radius}, shape={shape}, tiles={tiles.Count}, changed={changed}, map={_width}x{_height}, centerState={GetFogState(center)}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}.");
         }
 
@@ -924,8 +941,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
-            // Building fog reveal is data-driven by Construction.FogRevealBuildingModule.
-            // ConstructionService registers the fixed vision area after a placement is actually accepted.
+            RegisterFixedVisionArea(
+                GetBuildingVisionAreaId(signal.Position),
+                signal.Position,
+                _defaultVisionRange,
+                FogRevealShape.PixelCircle);
         }
 
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
@@ -934,6 +954,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private void OnWorldGeneratedData(WorldGeneratedDataSignal signal)
         {
             Debug.Log($"{WorldGenDiagTag} Receiver.Fog.WorldGenerated RECEIVED frame={Time.frameCount}, map={signal.Width}x{signal.Height}, initializedBefore={_initialized}");
+            _startupRevealFlow = _startupDiagnostics?.StartFlow(
+                "fog-startup",
+                new DiagnosticContext().Add("map", $"{signal.Width}x{signal.Height}"));
+            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.WorldGenerated, $"map={signal.Width}x{signal.Height}");
             _resolver.SetHeightMap(BuildVisibilityHeightMap(signal.TerrainLevelMap, signal.HeightMap));
 
             Vector2Int baseMapSize = FogWorldSignalUtility.ResolveBaseMapSize(signal);
@@ -941,6 +965,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int signalHeight = baseMapSize.y;
             _visualContext = CreateVisualContext(signal, signalWidth, signalHeight);
             _visualUpdater?.SetWorldContext(_visualContext);
+            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.FogServiceInitializeMap, $"baseMap={signalWidth}x{signalHeight}");
             Debug.Log($"{DebugTag} FogService.OnWorldGeneratedData signal={signal.Width}x{signal.Height}, baseMap={signalWidth}x{signalHeight}, initialized={_initialized}, current={_width}x{_height}, pendingReveals={_pendingRevealAreas.Count}.");
 
             if (!_initialized)
@@ -953,7 +978,13 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 ResizeToWorldDimensions(signalWidth, signalHeight);
 
             ApplyPendingRevealAreas("WorldGeneratedData");
+            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.SpawnResolved, $"pendingReveals={_pendingRevealAreas.Count}");
+            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.RevealArea, $"reason=WorldGeneratedData");
+            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.RegisterCoreVision, $"fixedAreas={_fixedVisionShapes.Count}");
             RecalculateAllVisibility();
+            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.FlushVisual, $"visible={CountVisibleTiles()}, explored={CountExploredTiles()}");
+            _startupDiagnostics?.CompleteStep(_startupRevealFlow, FogStartupDiagnosticSteps.VolumeUpdaterRebuild, $"visualUpdater={_visualUpdater != null}");
+            _startupDiagnostics?.Report(_startupRevealFlow);
             Debug.Log($"{WorldGenDiagTag} Receiver.Fog.WorldGenerated APPLIED map={_width}x{_height}, initializedAfter={_initialized}, pendingRevealCount={_pendingRevealAreas.Count}");
             Debug.Log($"{DebugTag} FogService.OnWorldGeneratedData end map={_width}x{_height}, visible={CountVisibleTiles()}, explored={CountExploredTiles()}, pendingReveals={_pendingRevealAreas.Count}.");
         }
@@ -1112,11 +1143,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         /// <summary>
         /// Обчислює початковий набір видимих клітин для одиниці при її реєстрації.
-        /// За поточною логікою — делегує виконання в <see cref="ComputeVisibleTiles"/>.
+        /// Для першого reveal юніта використовується детермінована фігура без terrain LOS-дір,
+        /// щоб стартова видимість була стабільною навіть до наступного повного перерахунку.
         /// </summary>
         private IReadOnlyList<Vector2Int> ComputeInitialVisibleTiles(string unitId, Vector2Int position, int range)
         {
-            return ComputeVisibleTiles(unitId, position, range);
+            if (_fixedVisionShapes.TryGetValue(unitId, out var shape))
+                return ComputeShapeTiles(position, range, shape);
+
+            return ComputeShapeTiles(position, range, FogRevealShape.PixelCircle);
         }
 
         /// <summary>
@@ -1241,18 +1276,22 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             int dirtyCount = _lastDirtyTiles.Count;
             Debug.Log($"{DirectDiagTag} FogService.FlushVisual dirty={dirtyCount}, hasVisualUpdater={_visualUpdater != null}.");
             Debug.Log($"{StartDiagTag} FlushVisual dirty={dirtyCount}, hasVisualUpdater={_visualUpdater != null}, updateType=dirty-update.");
+            CountFogStateTiles(out int visibleBeforeFlush, out int exploredBeforeFlush, out int unexploredBeforeFlush);
+            Debug.Log($"{StartupChainTag} Fog.FlushVisual ENTER dirty={dirtyCount}, hasVisualUpdater={_visualUpdater != null}, stateVisible={visibleBeforeFlush}, stateExplored={exploredBeforeFlush}, stateUnexplored={unexploredBeforeFlush}, dirtySamples={FormatDirtyTileSamples()}.");
             if (dirtyCount > 0 && _visualUpdater == null)
                 Debug.LogWarning($"{StartDiagTag} FlushVisual dirty tiles exist but visualUpdater is null dirty={dirtyCount}.");
             if (_visualUpdater != null)
             {
                 _visualUpdater.UpdateDirtyTiles(this, _lastDirtyTiles);
                 Debug.Log($"{StartDiagTag} FlushVisual updaterCalled=true dirty={dirtyCount}.");
+                Debug.Log($"{StartupChainTag} Fog.FlushVisual UPDATER_CALLED dirty={dirtyCount}, updater={_visualUpdater.GetType().Name}.");
             }
 
             if (dirtyCount > 0)
                 BumpVersion();
 
             _lastDirtyTiles.Clear();
+            Debug.Log($"{StartupChainTag} Fog.FlushVisual EXIT dirtyAfterClear={_lastDirtyTiles.Count}, version={Version}.");
         }
 
         /// <summary>
@@ -1376,6 +1415,60 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     count++;
 
             return count;
+        }
+
+        private void CountFogStateTiles(out int visible, out int explored, out int unexplored)
+        {
+            visible = 0;
+            explored = 0;
+            unexplored = 0;
+
+            if (!_initialized || _visibilityCounters == null || _exploredTiles == null)
+                return;
+
+            for (int x = 0; x < _width; x++)
+            {
+                for (int y = 0; y < _height; y++)
+                {
+                    var state = GetFogState(new Vector2Int(x, y));
+                    switch (state)
+                    {
+                        case FogStateType.Visible:
+                            visible++;
+                            break;
+                        case FogStateType.Explored:
+                            explored++;
+                            break;
+                        default:
+                            unexplored++;
+                            break;
+                    }
+                }
+            }
+        }
+
+        private string FormatDirtyTileSamples(int maxSamples = 8)
+        {
+            if (_lastDirtyTiles == null || _lastDirtyTiles.Count == 0)
+                return "none";
+
+            int count = 0;
+            var samples = new System.Text.StringBuilder();
+            foreach (var tile in _lastDirtyTiles)
+            {
+                if (count > 0)
+                    samples.Append(", ");
+
+                samples.Append(tile).Append('=').Append(GetFogState(tile));
+                count++;
+                if (count >= maxSamples)
+                    break;
+            }
+
+            if (_lastDirtyTiles.Count > count)
+                samples.Append(", ...");
+
+            return samples.ToString();
         }
     }
 

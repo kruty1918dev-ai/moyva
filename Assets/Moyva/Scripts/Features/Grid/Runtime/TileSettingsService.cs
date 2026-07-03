@@ -29,6 +29,11 @@ namespace Kruty1918.Moyva.Grid.Runtime
         /// </summary>
         /// <param name="registry">Реєстр визначень тайлів (legacy, може бути null).</param>
         /// <param name="layerProfiles">Профілі шарів terrain (нова ідентичність, опційно).</param>
+        public TileSettingsService(TileRegistrySO registry)
+            : this(registry, null)
+        {
+        }
+
         public TileSettingsService(
             [Zenject.InjectOptional] TileRegistrySO registry = null,
             [Zenject.InjectOptional] TerrainLayerProfileSO layerProfiles = null)

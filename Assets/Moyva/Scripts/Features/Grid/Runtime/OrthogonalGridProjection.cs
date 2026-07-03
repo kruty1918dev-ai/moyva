@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
 
         public GridProjectionMode ProjectionMode => GridProjectionMode.Orthographic3D;
         public GridTopology Topology => GridTopology.Orthogonal;
-        public GridWorldPlane WorldPlane => GridWorldPlane.XZ;
+        public GridWorldPlane WorldPlane => GridWorldPlane.XY;
 
         public OrthogonalGridProjection()
             : this(null)
@@ -32,15 +32,15 @@ namespace Kruty1918.Moyva.Grid.Runtime
         {
             return new Vector3(
                 gridPosition.x * _cellSize.x,
-                elevation * _heightScale + layerOffset,
-                gridPosition.y * _cellSize.y);
+                gridPosition.y * _cellSize.y,
+                elevation * _heightScale + layerOffset);
         }
 
         public Vector2Int WorldToGrid(Vector3 worldPosition)
         {
             return new Vector2Int(
                 Mathf.RoundToInt(worldPosition.x / _cellSize.x),
-                Mathf.RoundToInt(worldPosition.z / _cellSize.y));
+                Mathf.RoundToInt(worldPosition.y / _cellSize.y));
         }
 
         public IEnumerable<Vector2Int> GetNeighborCandidates(Vector2Int gridPosition)
@@ -72,8 +72,8 @@ namespace Kruty1918.Moyva.Grid.Runtime
             float safeWidth = Mathf.Max(1, width) * _cellSize.x;
             float safeHeight = Mathf.Max(1, height) * _cellSize.y;
             return new Bounds(
-                new Vector3((safeWidth - _cellSize.x) * 0.5f, 0f, (safeHeight - _cellSize.y) * 0.5f),
-                new Vector3(safeWidth, 1f, safeHeight));
+                new Vector3((safeWidth - _cellSize.x) * 0.5f, (safeHeight - _cellSize.y) * 0.5f, 0f),
+                new Vector3(safeWidth, safeHeight, Mathf.Max(1f, _heightScale)));
         }
     }
 }

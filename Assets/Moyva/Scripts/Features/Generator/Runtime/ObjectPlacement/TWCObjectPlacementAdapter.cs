@@ -60,7 +60,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
                     ? BuildGeneratedLayerName(layer, terrainLayers, includeLayerSuffix: true)
                     : validLayers[i].BaseName;
 
-                if (ShouldSpawnDirectly(layer))
+                if (ShouldSpawnDirectly(layer, terrainLayers))
                 {
                     activeDirectNames.Add(generatedName);
                     ApplyDirectLayer(config, manager, layer, generatedName, terrainLayers);
@@ -191,12 +191,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             return true;
         }
 
-        private static bool ShouldSpawnDirectly(ObjectPlacementLayer layer)
+        private static bool ShouldSpawnDirectly(
+            ObjectPlacementLayer layer,
+            IReadOnlyList<CompiledLayerMap> terrainLayers)
         {
-            // TWC ObjectBuildLayer only receives a cell mask plus layer-level ranges.
-            // Direct spawning preserves graph-authored per-candidate prefab, offset, scale and rotation.
-            if (layer?.Rule == null || !layer.Rule.MergeInTWC)
-                return true;
+            // Legacy standalone adapter calls expect generated TWC layers even when MergeInTWC is false.
+            // Direct spawning is used only during compiled graph flows where terrain-layer context exists.
+            if (terrainLayers == null || terrainLayers.Count == 0)
+                return false;
 
             return RequiresExactGraphSpawn(layer);
         }
@@ -204,12 +206,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
         private static bool RequiresExactGraphSpawn(ObjectPlacementLayer layer)
         {
             var rule = layer.Rule;
-            if (rule.Jitter > 0.0001f
-                || rule.RotationRandomization > 0.0001f
-                || HasCustomScaleRange(rule.ScaleRandomization.x, rule.ScaleRandomization.y))
-            {
-                return true;
-            }
 
             if (layer.Prefabs != null)
             {
@@ -222,7 +218,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
 
                     validPrefabCount++;
                     if (entry.MaterialOverride != null
-                        || entry.RandomYaw
                         || Mathf.Abs(entry.YOffset) > 0.0001f
                         || HasCustomScaleRange(entry.MinScale, entry.MaxScale))
                     {

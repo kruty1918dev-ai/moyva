@@ -154,14 +154,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var shape = AddTwcNode(graph, layerId, "GiantGrey.TileWorldCreator.Shapes, GiantGrey.TileWorldCreator", new Vector2(-620f, 0f), result);
             var smooth = AddTwcNode(graph, layerId, "GiantGrey.TileWorldCreator.Smooth, GiantGrey.TileWorldCreator", new Vector2(-300f, 0f), result);
             var expand = AddTwcNode(graph, layerId, "GiantGrey.TileWorldCreator.Expand, GiantGrey.TileWorldCreator", new Vector2(20f, 0f), result);
+            var tileSettings = AddNode<TileSettingsNode>(graph, layerId, new Vector2(340f, 0f), result);
 
             ConfigureFullMapShape(shape?.Modifier);
             SetIntField(smooth?.Modifier, "smoothCount", 1);
             SetIntField(expand?.Modifier, "iterations", 1);
+            SetField(tileSettings, "_generateFlatSurface", true);
 
             Connect(graph, shape, 0, smooth, 0, result);
             Connect(graph, smooth, 0, expand, 0, result);
-            EnsureLayerOutputNode(graph, layerId, result, expand, 0, LayerOutputKind.Tiles);
+            Connect(graph, expand, 0, tileSettings, 0, result);
+            EnsureLayerOutputNode(graph, layerId, result, tileSettings, 0, LayerOutputKind.Tiles);
         }
 
         private static void AddShorelineObjectPipeline(GraphAsset graph, string layerId, GraphPresetApplyResult result)
@@ -779,7 +782,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             result.GraphId = graph.GetLayerGraphState(result.LayerId)?.GraphId;
             result.ValidationReport = new GraphValidator().ValidateDetailed(graph);
             result.Success = IsPresetValid(result);
-            if (string.IsNullOrEmpty(result.Message) || result.Changed)
+            if (string.IsNullOrEmpty(result.Message))
                 result.Message = BuildMessage(result);
             EditorUtility.SetDirty(graph);
             return result;
