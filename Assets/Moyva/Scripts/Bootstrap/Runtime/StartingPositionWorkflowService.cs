@@ -58,6 +58,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void HandleWorldGenerated(WorldGeneratedDataSignal signal)
         {
+            ResetForNewStartupWorldIfNeeded(signal.StartupSequence, signal.StartupSessionId, $"world:{signal.Source}");
             Debug.Log($"{DirectDiagTag} Workflow.HandleWorldGenerated ENTER signalNull=false, map={signal.Width}x{signal.Height}, pendingWorldBefore={_workflowState.HasPendingWorldGeneratedSignal}, startStateSet={_startingPositionState.IsSet}.");
             _workflowState.PendingWorldGeneratedSignal = signal;
             _workflowState.HasPendingWorldGeneratedSignal = true;
@@ -69,10 +70,20 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         public void HandleWorldSpawnPositions(WorldSpawnPositionsSignal signal)
         {
+            ResetForNewStartupWorldIfNeeded(signal.StartupSequence, signal.StartupSessionId, $"spawns:{signal.Source}");
             Debug.Log($"{DirectDiagTag} Workflow.HandleWorldSpawnPositions ENTER signalNull={(signal.Assignments == null)}, assignments={signal.Assignments?.Length ?? 0}, startStateSetBefore={_startingPositionState.IsSet}.");
             if (signal.Assignments == null || signal.Assignments.Length == 0)
             {
                 Debug.LogWarning($"{StartingPositionInitializer.DebugTag} Bootstrap.OnWorldSpawnPositions ignored empty assignments.");
+                return;
+            }
+
+            if (_workflowState.HasPendingWorldGeneratedSignal
+                && signal.StartupSequence > 0
+                && _workflowState.PendingWorldGeneratedSignal.StartupSequence > 0
+                && signal.StartupSequence < _workflowState.PendingWorldGeneratedSignal.StartupSequence)
+            {
+                Debug.LogWarning($"{StartDiagTag} Workflow.HandleWorldSpawnPositions SKIP stale sequence={signal.StartupSequence}, pendingWorldSequence={_workflowState.PendingWorldGeneratedSignal.StartupSequence}, source={signal.Source}.");
                 return;
             }
 
@@ -247,6 +258,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             Debug.Log($"{DirectDiagTag} Workflow.ReapplyStartRevealIfNeeded ENTER map={signal.Width}x{signal.Height}.");
             Vector2Int baseMapSize = StartingPositionMapUtility.ResolveBaseMapSize(signal);
             Vector2Int revealCenter = _revealPresentationService.ResolveRevealCenter(baseMapSize.x, baseMapSize.y);
+            bool revealCenterChanged = _workflowState.AppliedStartRevealCenter != revealCenter;
             if (_workflowState.StartRevealApplied
                 && _workflowState.AppliedStartRevealWidth == baseMapSize.x
                 && _workflowState.AppliedStartRevealHeight == baseMapSize.y
@@ -255,7 +267,32 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return;
             }
 
-            ApplyStartReveal(signal, teleportCamera: !_workflowState.StartupCameraTeleported);
+            ApplyStartReveal(signal, teleportCamera: !_workflowState.StartupCameraTeleported || revealCenterChanged);
+        }
+
+        private void ResetForNewStartupWorldIfNeeded(long startupSequence, string startupSessionId, string reason)
+        {
+            if (startupSequence <= 0)
+                return;
+
+            if (_workflowState.CurrentStartupSequence == startupSequence
+                && string.Equals(_workflowState.CurrentStartupSessionId, startupSessionId))
+            {
+                return;
+            }
+
+            _workflowState.CurrentStartupSequence = startupSequence;
+            _workflowState.CurrentStartupSessionId = startupSessionId;
+            _workflowState.StartLogicApplied = false;
+            _workflowState.StartRevealApplied = false;
+            _workflowState.StartupCameraTeleported = false;
+            _workflowState.AppliedStartRevealCenter = default;
+            _workflowState.AppliedStartRevealWidth = 0;
+            _workflowState.AppliedStartRevealHeight = 0;
+            _workflowState.HasPendingWorldGeneratedSignal = false;
+            _workflowState.PendingWorldGeneratedSignal = default;
+            _startingPositionState.Reset();
+            Debug.Log($"{StartDiagTag} Workflow.ResetForNewStartupWorld sequence={startupSequence}, session={startupSessionId ?? "<null>"}, reason={reason}.");
         }
 
         private static int ResolveLaunchExtraSlotsEquivalent(int participantCount)

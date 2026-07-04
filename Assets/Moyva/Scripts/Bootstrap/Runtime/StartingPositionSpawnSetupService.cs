@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IStartingPositionState _startingPositionState;
         private readonly SignalBus _signalBus;
         private readonly IWorldGenerationDiagnostics _worldDiagnostics;
+        private readonly IWorldGenerationSignalState _worldGenerationSignalState;
 
         public StartingPositionSpawnSetupService(
             IStartingPositionSelector selector,
@@ -32,7 +33,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IStartingPositionPolicy policy,
             IStartingPositionState startingPositionState,
             SignalBus signalBus,
-            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
+            [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null,
+            [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null)
         {
             _selector = selector;
             _assignmentFactory = assignmentFactory;
@@ -40,6 +42,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _startingPositionState = startingPositionState;
             _signalBus = signalBus;
             _worldDiagnostics = worldDiagnostics;
+            _worldGenerationSignalState = worldGenerationSignalState;
         }
 
         public bool TryPrepareStartingPositions(WorldGeneratedDataSignal signal)
@@ -108,10 +111,18 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 Debug.Log($"{DirectDiagTag} SpawnSetup.Signal.FIRE WorldSpawnPositionsSignal assignments={_startingPositionState.SpawnAssignments.Count}.");
                 _worldDiagnostics?.WorldSpawnPositionsSignalFired(
                     $"assignments={_startingPositionState.SpawnAssignments.Count}, frame={Time.frameCount}");
-                _signalBus.Fire(new WorldSpawnPositionsSignal
+                var spawnPositionsSignal = new WorldSpawnPositionsSignal
                 {
+                    StartupSequence = signal.StartupSequence,
+                    StartupSessionId = signal.StartupSessionId,
+                    Source = signal.Source == WorldGeneratedDataSource.DirectGameplayTest
+                        ? WorldSpawnPositionsSource.DirectGameplayTest
+                        : WorldSpawnPositionsSource.GeneratedHost,
+                    PublishedFrame = Time.frameCount,
                     Assignments = _assignmentFactory.CopySpawnAssignments(_startingPositionState.SpawnAssignments),
-                });
+                };
+                if (_worldGenerationSignalState == null || _worldGenerationSignalState.TryStoreWorldSpawnPositions(spawnPositionsSignal, out spawnPositionsSignal))
+                    _signalBus.Fire(spawnPositionsSignal);
                 Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldSpawnPositionsSignal source=new-game frame={Time.frameCount}");
             }
 

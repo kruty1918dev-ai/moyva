@@ -37,6 +37,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             public void SetWorldContext(FogWorldVisualContext context) { }
             public void PreviewRevealArea(Vector2Int center, int radius, FogRevealShape shape, bool keepVisible) { }
             public void UpdateDirtyTiles(IFogOfWarService svc, IEnumerable<Vector2Int> dirty) => UpdateCallCount++;
+            public void RequestCellsUpdate(IFogOfWarService svc, IReadOnlyList<FogCellVisualChange> changes, FogWorldVisualContext context) => UpdateCallCount++;
             public void RebuildFullVisual(IFogOfWarService svc) => RebuildCallCount++;
         }
 

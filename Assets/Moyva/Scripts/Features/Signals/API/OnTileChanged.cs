@@ -93,11 +93,34 @@ namespace Kruty1918.Moyva.Signals
     {
     }
 
+    public enum WorldGeneratedDataSource
+    {
+        Unknown = 0,
+        GeneratedHost = 1,
+        LoadedSave = 2,
+        DirectGameplayTest = 3,
+    }
+
+    public enum WorldSpawnPositionsSource
+    {
+        Unknown = 0,
+        GeneratedHost = 1,
+        DirectGameplayTest = 2,
+        MultiplayerSync = 3,
+        SavedGame = 4,
+    }
+
     /// <summary>
     /// Надсилається після завершення побудови світу і містить згенеровані мапи.
     /// </summary>
     public struct WorldGeneratedDataSignal
     {
+        public long StartupSequence;
+        public int SnapshotRevision;
+        public string StartupSessionId;
+        public WorldGeneratedDataSource Source;
+        public int PublishedFrame;
+        public long PublishedAtUtcTicks;
         public int Width;
         public int Height;
         public int GridTopology;
@@ -124,6 +147,12 @@ namespace Kruty1918.Moyva.Signals
 
     public struct WorldSpawnPositionsSignal
     {
+        public long StartupSequence;
+        public int SnapshotRevision;
+        public string StartupSessionId;
+        public WorldSpawnPositionsSource Source;
+        public int PublishedFrame;
+        public long PublishedAtUtcTicks;
         public SpawnPositionAssignment[] Assignments;
     }
 }

@@ -11,6 +11,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         Vector2Int AppliedStartRevealCenter { get; set; }
         int AppliedStartRevealWidth { get; set; }
         int AppliedStartRevealHeight { get; set; }
+        long CurrentStartupSequence { get; set; }
+        string CurrentStartupSessionId { get; set; }
         bool HasPendingWorldGeneratedSignal { get; set; }
         WorldGeneratedDataSignal PendingWorldGeneratedSignal { get; set; }
     }
@@ -24,6 +26,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         public Vector2Int AppliedStartRevealCenter { get; set; }
         public int AppliedStartRevealWidth { get; set; }
         public int AppliedStartRevealHeight { get; set; }
+        public long CurrentStartupSequence { get; set; }
+        public string CurrentStartupSessionId { get; set; }
         public bool HasPendingWorldGeneratedSignal { get; set; }
         public WorldGeneratedDataSignal PendingWorldGeneratedSignal { get; set; }
     }

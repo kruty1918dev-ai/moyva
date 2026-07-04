@@ -60,16 +60,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
                     ? BuildGeneratedLayerName(layer, terrainLayers, includeLayerSuffix: true)
                     : validLayers[i].BaseName;
 
-                if (ShouldSpawnDirectly(layer, terrainLayers))
-                {
-                    activeDirectNames.Add(generatedName);
-                    ApplyDirectLayer(config, manager, layer, generatedName, terrainLayers);
-                }
-                else
-                {
-                    activeGeneratedNames.Add(generatedName);
-                    ApplyLayer(config, manager, layer, generatedName, terrainLayers);
-                }
+                activeGeneratedNames.Add(generatedName);
+                ApplyLayer(config, manager, layer, generatedName, terrainLayers);
             }
 
             RemoveStaleGeneratedLayers(config, activeGeneratedNames);
@@ -373,7 +365,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             blueprint.AddCells(positions);
 
             var buildLayer = FindObjectBuildLayer(config, generatedName)
-                             ?? CreateBuildLayer<ObjectBuildLayer>(config, generatedName);
+                             ?? manager.AddNewBuildLayer<ObjectBuildLayer>(generatedName);
             if (buildLayer == null)
                 return;
 

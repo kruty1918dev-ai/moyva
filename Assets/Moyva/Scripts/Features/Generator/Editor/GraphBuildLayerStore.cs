@@ -287,7 +287,7 @@ namespace Kruty1918.Moyva.Generator.Editor
                 var tileNodes = TileSettingsNode.GetNodesForLayer(graph, layerDef.Id);
                 bool hasNodeTiles = GraphLayerRuntimeSemantics.HasRenderableTileOutput(graph, layerDef.Id);
 
-                // OutputKind + TileSettingsNode are the source of truth for TWC TilesBuildLayer creation.
+                // TileSettingsNode is the source of truth for TWC TilesBuildLayer creation.
                 // Data-only/helper layers intentionally do not create runtime tile GameObjects.
                 if (!hasNodeTiles)
                 {

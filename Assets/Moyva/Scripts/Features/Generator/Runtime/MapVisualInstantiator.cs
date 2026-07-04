@@ -49,6 +49,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IWorldGenerationDiagnostics _worldDiagnostics;
         private readonly ISaveLoadDiagnostics _saveLoadDiagnostics;
         private readonly ISaveLoadDiagnosticsSession _saveLoadDiagnosticsSession;
+        private readonly IWorldGenerationSignalState _worldGenerationSignalState;
         private readonly List<Sprite> _runtimeLayerSprites = new List<Sprite>();
         private readonly List<Material> _runtimeLayerMaterials = new List<Material>();
 
@@ -78,7 +79,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             [InjectOptional] TileWorldCreatorWorldBuildBridge tileWorldCreatorBridge = null,
             [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null,
             [InjectOptional] ISaveLoadDiagnostics saveLoadDiagnostics = null,
-            [InjectOptional] ISaveLoadDiagnosticsSession saveLoadDiagnosticsSession = null)
+            [InjectOptional] ISaveLoadDiagnosticsSession saveLoadDiagnosticsSession = null,
+            [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null)
         {
             _tileRegistry = tileRegistry;
             _objectRegistry = objectRegistry;
@@ -97,6 +99,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _worldDiagnostics = worldDiagnostics;
             _saveLoadDiagnostics = saveLoadDiagnostics;
             _saveLoadDiagnosticsSession = saveLoadDiagnosticsSession;
+            _worldGenerationSignalState = worldGenerationSignalState;
         }
 
         public void Initialize()
@@ -309,12 +312,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (_graphTwcGenerator != null)
             {
                 _currentWorldData = worldData.Clone();
+                long graphStartupSequence = BeginWorldSignalCycle(worldData, source, out string graphStartupSessionId);
                 _worldDiagnostics?.TwcBuildCompleted(
                     $"source=graph-generator, map={_currentWorldData.Width}x{_currentWorldData.Height}");
                 Debug.Log($"{WorldGenDiagTag} Signal.FIRE WorldBuiltSignal frame={Time.frameCount}, source={source}");
                 _signalBus.Fire(new WorldBuiltSignal());
                 Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldBuiltSignal frame={Time.frameCount}");
-                FireSavedSpawnPositions(_currentWorldData);
+                FireSavedSpawnPositions(_currentWorldData, graphStartupSequence, graphStartupSessionId);
                 float graphCellSize = ResolveWorldCellSize(TileWorldCreatorWorldBuildResult.Disabled);
                 bool hasGraphBounds = TryResolveGeneratedMapWorldBounds(
                     _currentWorldData,
@@ -331,8 +335,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     _saveLoadDiagnosticsSession?.CurrentFlow,
                     SaveLoadDiagnosticSteps.WorldGeneratedDataSignalFired,
                     $"source={source}, map={_currentWorldData.Width}x{_currentWorldData.Height}");
-                _signalBus.Fire(new WorldGeneratedDataSignal
+                var graphWorldGeneratedSignal = new WorldGeneratedDataSignal
                 {
+                    StartupSequence = graphStartupSequence,
+                    StartupSessionId = graphStartupSessionId,
+                    Source = ResolveWorldGeneratedDataSource(source),
+                    PublishedFrame = Time.frameCount,
                     Width = _currentWorldData.Width,
                     Height = _currentWorldData.Height,
                     GridTopology = (int)_currentWorldData.GridTopology,
@@ -347,7 +355,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
                     HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
                     TerrainLevelMap = MapArrayUtils.CloneIntMap(_currentWorldData.TerrainLevelMap),
-                });
+                };
+                graphWorldGeneratedSignal = _worldGenerationSignalState != null
+                    ? _worldGenerationSignalState.StoreWorldGeneratedData(graphWorldGeneratedSignal)
+                    : graphWorldGeneratedSignal;
+                _signalBus.Fire(graphWorldGeneratedSignal);
                 Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldGeneratedDataSignal frame={Time.frameCount}");
                 Debug.Log($"{DirectDiagTag} WorldSignal.FIRED WorldGeneratedDataSignal");
                 return;
@@ -409,10 +421,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ApplyLayerData(worldData);
 
             _currentWorldData = worldData.Clone();
+            long startupSequence = BeginWorldSignalCycle(worldData, source, out string startupSessionId);
             Debug.Log($"{WorldGenDiagTag} Signal.FIRE WorldBuiltSignal frame={Time.frameCount}, source={source}");
             _signalBus.Fire(new WorldBuiltSignal());
             Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldBuiltSignal frame={Time.frameCount}");
-            FireSavedSpawnPositions(_currentWorldData);
+            FireSavedSpawnPositions(_currentWorldData, startupSequence, startupSessionId);
             float worldCellSize = ResolveWorldCellSize(tileWorldCreatorResult);
             bool hasBounds = TryResolveGeneratedMapWorldBounds(
                 _currentWorldData,
@@ -429,8 +442,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 _saveLoadDiagnosticsSession?.CurrentFlow,
                 SaveLoadDiagnosticSteps.WorldGeneratedDataSignalFired,
                 $"source={source}, map={_currentWorldData.Width}x{_currentWorldData.Height}");
-            _signalBus.Fire(new WorldGeneratedDataSignal
+            var worldGeneratedSignal = new WorldGeneratedDataSignal
             {
+                StartupSequence = startupSequence,
+                StartupSessionId = startupSessionId,
+                Source = ResolveWorldGeneratedDataSource(source),
+                PublishedFrame = Time.frameCount,
                 Width = _currentWorldData.Width,
                 Height = _currentWorldData.Height,
                 GridTopology = (int)_currentWorldData.GridTopology,
@@ -445,7 +462,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ObjectMap = MapArrayUtils.CloneStringMap(_currentWorldData.ObjectMap),
                 HeightMap = MapArrayUtils.CloneFloatMap(_currentWorldData.HeightMap),
                 TerrainLevelMap = MapArrayUtils.CloneIntMap(_currentWorldData.TerrainLevelMap),
-            });
+            };
+            worldGeneratedSignal = _worldGenerationSignalState != null
+                ? _worldGenerationSignalState.StoreWorldGeneratedData(worldGeneratedSignal)
+                : worldGeneratedSignal;
+            _signalBus.Fire(worldGeneratedSignal);
             Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldGeneratedDataSignal frame={Time.frameCount}");
             Debug.Log($"{DirectDiagTag} WorldSignal.FIRED WorldGeneratedDataSignal");
         }
@@ -522,19 +543,50 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _currentWorldData.SpawnPositions = (SpawnPositionAssignment[])signal.Assignments.Clone();
         }
 
-        private void FireSavedSpawnPositions(GeneratedWorldData worldData)
+        private void FireSavedSpawnPositions(GeneratedWorldData worldData, long startupSequence, string startupSessionId)
         {
             if (worldData?.SpawnPositions == null || worldData.SpawnPositions.Length == 0)
                 return;
 
             Debug.Log($"{WorldGenDiagTag} Signal.FIRE WorldSpawnPositionsSignal source=saved assignments={worldData.SpawnPositions.Length}, frame={Time.frameCount}");
             Debug.Log($"{DirectDiagTag} WorldSignal.FIRE SavedWorldSpawnPositionsSignal assignments={worldData.SpawnPositions.Length}");
-            _signalBus.Fire(new WorldSpawnPositionsSignal
+            var spawnPositionsSignal = new WorldSpawnPositionsSignal
             {
+                StartupSequence = startupSequence,
+                StartupSessionId = startupSessionId,
+                Source = WorldSpawnPositionsSource.SavedGame,
+                PublishedFrame = Time.frameCount,
                 Assignments = (SpawnPositionAssignment[])worldData.SpawnPositions.Clone(),
-            });
+            };
+            if (_worldGenerationSignalState == null || _worldGenerationSignalState.TryStoreWorldSpawnPositions(spawnPositionsSignal, out spawnPositionsSignal))
+                _signalBus.Fire(spawnPositionsSignal);
             Debug.Log($"{WorldGenDiagTag} Signal.FIRED WorldSpawnPositionsSignal source=saved frame={Time.frameCount}");
             Debug.Log($"{DirectDiagTag} WorldSignal.FIRED SavedWorldSpawnPositionsSignal");
+        }
+
+        private long BeginWorldSignalCycle(GeneratedWorldData worldData, string source, out string startupSessionId)
+        {
+            startupSessionId = BuildWorldSessionId(worldData, source);
+            return _worldGenerationSignalState != null
+                ? _worldGenerationSignalState.BeginWorldSnapshotCycle(startupSessionId)
+                : 0L;
+        }
+
+        private static WorldGeneratedDataSource ResolveWorldGeneratedDataSource(string source)
+        {
+            return source switch
+            {
+                "pending-save" => WorldGeneratedDataSource.LoadedSave,
+                "direct-test" => WorldGeneratedDataSource.DirectGameplayTest,
+                _ => WorldGeneratedDataSource.GeneratedHost,
+            };
+        }
+
+        private static string BuildWorldSessionId(GeneratedWorldData worldData, string source)
+        {
+            int width = worldData != null ? Mathf.Max(1, worldData.Width) : 0;
+            int height = worldData != null ? Mathf.Max(1, worldData.Height) : 0;
+            return $"{GameLaunchContext.Mode}:{source}:{GameLaunchContext.SaveSlot}:{GameLaunchContext.WorldName}:{GameLaunchContext.Seed}:{width}x{height}:{GameLaunchContext.MaxPlayers}";
         }
 
         private void EnsureGridMatchesWorld(GeneratedWorldData worldData)

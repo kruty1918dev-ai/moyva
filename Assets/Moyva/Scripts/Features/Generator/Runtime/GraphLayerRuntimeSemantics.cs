@@ -12,8 +12,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         public static bool HasRenderableTileOutput(GraphAsset graph, string layerId)
         {
-            return IsTileOutputLayer(graph, layerId)
-                && TileSettingsNode.HasRenderableTiles(graph, layerId);
+            return TileSettingsNode.HasRenderableTiles(graph, layerId);
         }
 
         public static bool IsTileOutputLayer(GraphAsset graph, string layerId)

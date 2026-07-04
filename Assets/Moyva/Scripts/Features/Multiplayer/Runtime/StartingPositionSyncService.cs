@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private readonly INetworkProvider _networkProvider;
         private readonly IGameCommandSyncService _commandSyncService;
         private readonly IMultiplayerLogger _logger;
+        private readonly IWorldGenerationSignalState _worldGenerationSignalState;
 
     #pragma warning disable CS0649
         [InjectOptional] private ISessionManager _sessionManager;
@@ -32,12 +33,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             SignalBus signalBus,
             INetworkProvider networkProvider,
             IGameCommandSyncService commandSyncService,
-            IMultiplayerLogger logger)
+            IMultiplayerLogger logger,
+            [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null)
         {
             _signalBus = signalBus ?? throw new ArgumentNullException(nameof(signalBus));
             _networkProvider = networkProvider ?? throw new ArgumentNullException(nameof(networkProvider));
             _commandSyncService = commandSyncService ?? throw new ArgumentNullException(nameof(commandSyncService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _worldGenerationSignalState = worldGenerationSignalState;
         }
 
         public void Initialize()
@@ -93,10 +96,20 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             CacheAssignments(assignments);
             _logger.Trace($"StartingPositionSyncService: received {assignments.Length} assignments from {senderId}.");
             _suppressNextBroadcast = true;
-            _signalBus.Fire(new WorldSpawnPositionsSignal
+            long startupSequence = 0;
+            string startupSessionId = null;
+            if (_worldGenerationSignalState != null)
+                _worldGenerationSignalState.TryGetCurrentWorldIdentity(out startupSequence, out startupSessionId);
+            var spawnPositionsSignal = new WorldSpawnPositionsSignal
             {
+                StartupSequence = startupSequence,
+                StartupSessionId = startupSessionId,
+                Source = WorldSpawnPositionsSource.MultiplayerSync,
+                PublishedFrame = Time.frameCount,
                 Assignments = assignments,
-            });
+            };
+            if (_worldGenerationSignalState == null || _worldGenerationSignalState.TryStoreWorldSpawnPositions(spawnPositionsSignal, out spawnPositionsSignal))
+                _signalBus.Fire(spawnPositionsSignal);
         }
 
         private bool ShouldBroadcastFromThisPeer()

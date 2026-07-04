@@ -103,6 +103,7 @@ namespace Kruty1918.Moyva.Signals
         private void BindDomainEventBridge()
         {
             Container.BindInterfacesAndSelfTo<SignalDomainEventBridge>().AsSingle().NonLazy();
+            Container.Bind<IWorldGenerationSignalState>().To<WorldGenerationSignalState>().AsSingle();
         }
     }
 }

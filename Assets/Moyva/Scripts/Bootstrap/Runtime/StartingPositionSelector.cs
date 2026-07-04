@@ -111,18 +111,14 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             if (width <= 0 || height <= 0)
                 return Vector2Int.zero;
 
-            int minSide = Mathf.Min(width, height);
-            int relativeMargin = Mathf.FloorToInt(minSide * Mathf.Clamp01(_settings.relativeMarginFactor));
-            int margin = Mathf.Max(_settings.minMarginFromBorder, relativeMargin);
-
-            int xMin = Mathf.Clamp(margin, 0, width - 1);
-            int xMax = Mathf.Clamp(width - margin - 1, xMin, width - 1);
-            int yMin = Mathf.Clamp(margin, 0, height - 1);
-            int yMax = Mathf.Clamp(height - margin - 1, yMin, height - 1);
-
-            int x = UnityEngine.Random.Range(xMin, xMax + 1);
-            int y = UnityEngine.Random.Range(yMin, yMax + 1);
-            return new Vector2Int(x, y);
+            Vector2Int position = StartingPositionMapUtility.PickRuntimeRandomPoint(
+                width,
+                height,
+                _settings.minMarginFromBorder,
+                _settings.relativeMarginFactor,
+                out int seed);
+            Debug.Log($"{DirectDiagTag} Selector.PickRandom position={position}, seed={seed}, map={width}x{height}.");
+            return position;
         }
 
         public bool IsInsideStartBounds(Vector2Int position, int width, int height)

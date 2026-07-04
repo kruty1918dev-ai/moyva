@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         void Set(Vector2Int position);
         void Set(IReadOnlyList<Vector2Int> positions, IReadOnlyList<string> playerIds = null);
         void Set(SpawnPositionAssignment[] assignments);
+        void Reset();
     }
 
     /// <summary>
@@ -129,6 +130,16 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             }
 
             Debug.Log($"{DirectDiagTag} StartState.SET startPosition={StartPosition}, playerStarts={_playerStartPositions.Count}, assignments={_spawnAssignments.Count}, local={(_spawnAssignments.Count > 0 ? _spawnAssignments[0].Position.ToString() : "<none>")}.");
+        }
+
+        public void Reset()
+        {
+            _startPositions.Clear();
+            _playerStartPositions.Clear();
+            _spawnAssignments.Clear();
+            StartPosition = Vector2Int.zero;
+            IsSet = false;
+            Debug.Log($"{DirectDiagTag} StartState.RESET");
         }
     }
 }

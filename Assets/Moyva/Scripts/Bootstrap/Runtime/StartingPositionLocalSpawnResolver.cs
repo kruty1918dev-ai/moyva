@@ -67,8 +67,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 return center;
             }
 
-            Vector2Int fallbackCenter = new Vector2Int(Mathf.Max(0, width / 2), Mathf.Max(0, height / 2));
-            Debug.Log($"{DirectDiagTag} LocalSpawnResolver.RESULT center={fallbackCenter}, source=map-center-fallback, found=false.");
+            Vector2Int fallbackCenter = StartingPositionMapUtility.PickRuntimeRandomPoint(
+                width,
+                height,
+                minMarginFromBorder: 0,
+                relativeMarginFactor: 0f,
+                out int seed);
+            Debug.Log($"{DirectDiagTag} LocalSpawnResolver.RESULT center={fallbackCenter}, source=random-map-fallback, seed={seed}, found=false.");
             return fallbackCenter;
         }
     }

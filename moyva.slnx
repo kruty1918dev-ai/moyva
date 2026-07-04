@@ -97,12 +97,12 @@
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
   <Project Path="Unity.Services.Core.Editor.csproj" />
   <Project Path="UnityEditor.UI.csproj" />
+  <Project Path="Kruty1918.Moyva.FogOfWar.csproj" />
   <Project Path="Unity.Multiplayer.Center.Common.csproj" />
   <Project Path="Unity.UnifiedRayTracing.Runtime.csproj" />
   <Project Path="Kruty1918.Moyva.InfoPanel.csproj" />
   <Project Path="Unity.Multiplayer.Tools.DependencyInjection.UIElements.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkSimulator.Editor.csproj" />
-  <Project Path="Kruty1918.Moyva.FogOfWar.csproj" />
   <Project Path="Unity.2D.Tilemap.Extras.Editor.csproj" />
   <Project Path="Unity.Services.Deployment.csproj" />
   <Project Path="Unity.2D.Sprite.Editor.csproj" />
@@ -170,9 +170,9 @@
   <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.UI.csproj" />
   <Project Path="Unity.2D.Common.Runtime.csproj" />
-  <Project Path="Kruty1918.Moyva.FogOfWar.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Signals.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
   <Project Path="Unity.Multiplayer.Tools.MetricEvents.csproj" />
   <Project Path="Unity.InputSystem.ForUI.csproj" />
@@ -184,6 +184,7 @@
   <Project Path="Unity.InputSystem.DocCodeSamples.csproj" />
   <Project Path="Sirenix.OdinInspector.Modules.UnityMathematics.csproj" />
   <Project Path="Kruty1918.Moyva.Shared.UI.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.FogOfWar.Editor.csproj" />
   <Project Path="Unity.InternalAPIEngineBridge.004.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetVis.Editor.Visualization.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Adapters.Ngo1.csproj" />
@@ -235,6 +236,5 @@
   <Project Path="Kruty1918.Moyva.Tests.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.WorldCreation.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Config.Runtime.csproj" />
-  <Project Path="Kruty1918.Moyva.Tests.Signals.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Grid.csproj" />
 </Solution>

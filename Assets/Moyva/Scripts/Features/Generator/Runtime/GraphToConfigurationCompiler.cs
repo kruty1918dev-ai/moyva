@@ -465,7 +465,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 layerNodes.Add(node);
             }
 
-            if (TryAddPrecomputedMaskModifier(blueprint, layerId, graph, config, precomputedLayerMasks))
+            if (!UsesNativeTwcBlueprintStack(layerNodes)
+                && TryAddPrecomputedMaskModifier(blueprint, layerId, graph, config, precomputedLayerMasks))
                 return;
 
             for (int i = 0; i < layerNodes.Count; i++)
@@ -499,6 +500,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 clone.asset = config;
                 blueprint.tileMapModifiers.Add(clone);
             }
+        }
+
+        private static bool UsesNativeTwcBlueprintStack(IReadOnlyList<NodeBase> layerNodes)
+        {
+            if (layerNodes == null)
+                return false;
+
+            for (int i = 0; i < layerNodes.Count; i++)
+            {
+                if (layerNodes[i] is TwcModifierNode || layerNodes[i] is LayerMaskReferenceNode)
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool TryAddPrecomputedMaskModifier(
@@ -979,11 +994,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     continue;
 
                 var tileNodes = TileSettingsNode.GetNodesForLayer(graph, layerDef.Id);
-                bool hasNodeTiles = GraphLayerRuntimeSemantics.HasRenderableTileOutput(graph, layerDef.Id);
+                bool hasNodeTiles = tileNodes.Any(node => node != null && node.HasRenderableTileOutput);
 
-                // OutputKind + TileSettingsNode are the source of truth for renderable TWC tile output.
-                // Helper/mask/data layers keep their blueprint mask pipeline available for Layer Ref/TWC
-                // modifiers, but do not create a TilesBuildLayer/runtime tile GameObject.
+                // TileSettingsNode is the source of truth for renderable TWC tile output.
+                // Layers without TileSettingsNode keep their blueprint mask pipeline available
+                // for Layer Ref/TWC modifiers, but do not create runtime tile GameObjects.
                 if (!hasNodeTiles)
                 {
                     layerDef.BuildLayerKey = string.Empty;
@@ -1002,7 +1017,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 }
 
                 if (buildLayer == null)
-                    buildLayer = CreateBuildLayer<TilesBuildLayer>(config, layerDef.Name);
+                    buildLayer = manager.AddNewBuildLayer<TilesBuildLayer>(layerDef.Name);
 
                 TileSettingsNode.ApplyNodesToBuildLayer(buildLayer, tileNodes, config, blueprint, layerDef);
 

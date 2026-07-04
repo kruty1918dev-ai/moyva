@@ -157,6 +157,44 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             Object.DestroyImmediate(settings);
         }
 
+        [Test]
+        public void RuntimeSetup_CapsNoisyHeightMapLayerCount()
+        {
+            var settings = CreateSettings();
+            settings.Volume.HeightSource = FogVolumeHeightSource.HeightMapThenTerrainLevelMap;
+            settings.Volume.HeightLayerSnap = 0.001f;
+
+            const int width = 32;
+            const int height = 1;
+            var heightMap = new float[width, height];
+            for (int x = 0; x < width; x++)
+                heightMap[x, 0] = x * 0.1f;
+
+            var managerObject = new GameObject("Fog TWC Manager");
+            managerObject.AddComponent<TileWorldCreatorManager>();
+            var controller = managerObject.AddComponent<FogOfWarVolumeController>();
+            SetPrivateField(controller, "_settings", settings);
+            SetPrivateField(controller, "_logBuildSummary", false);
+            SetPrivateField(controller, "_logValidationWarnings", false);
+
+            var updater = new FogOfWarVolumeUpdater(settings);
+            var fog = new FakeFogService(width, height);
+            for (int x = 0; x < width; x++)
+                fog.SetState(new Vector2Int(x, 0), FogStateType.Unexplored);
+
+            updater.AttachController(controller);
+            updater.Initialize(width, height, CreateContext(width, height, heightMap, null));
+            updater.RebuildFullVisual(fog);
+            updater.Tick();
+
+            Assert.LessOrEqual(updater.DebugRuntimeConfiguration.blueprintLayerFolders[0].blueprintLayers.Count, 9);
+            Assert.LessOrEqual(updater.DebugRuntimeConfiguration.buildLayerFolders[0].buildLayers.Count, 9);
+
+            updater.Dispose();
+            Object.DestroyImmediate(managerObject);
+            Object.DestroyImmediate(settings);
+        }
+
         private static FogOfWarSettings CreateSettings()
         {
             var settings = ScriptableObject.CreateInstance<FogOfWarSettings>();
@@ -171,6 +209,9 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
             => CreateContext(width, height, null);
 
         private static FogWorldVisualContext CreateContext(int width, int height, int[,] terrainLevelMap)
+            => CreateContext(width, height, null, terrainLevelMap);
+
+        private static FogWorldVisualContext CreateContext(int width, int height, float[,] heightMap, int[,] terrainLevelMap)
         {
             return new FogWorldVisualContext(
                 width,
@@ -182,7 +223,7 @@ namespace Kruty1918.Moyva.Tests.FogOfWar
                 1f,
                 false,
                 default,
-                null,
+                heightMap,
                 terrainLevelMap);
         }
 

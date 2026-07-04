@@ -18,11 +18,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly CameraSettingsSO _cameraSettings;
         private readonly MoyvaProjectSettingsSO _projectSettings;
         private readonly UnityEngine.Camera _camera;
+        private readonly IWorldGenerationSignalState _worldGenerationSignalState;
 
         private WorldGeneratedDataSignal _lastWorld;
         private bool _hasWorld;
         private bool _hasAppliedStartupFrame;
         private SpawnPositionAssignment[] _lastSpawnAssignments;
+        private long _currentStartupSequence;
+        private long _currentSpawnSequence;
+        private int _lastHandledWorldRevision;
+        private int _lastHandledSpawnRevision;
 
         public CameraAutoFramingService(
             SignalBus signalBus,
@@ -31,7 +36,8 @@ namespace Kruty1918.Moyva.Camera.Runtime
             CameraSettingsSO cameraSettings,
             [InjectOptional] MoyvaProjectSettingsSO projectSettings = null,
             [InjectOptional] IGridProjection gridProjection = null,
-            [InjectOptional] UnityEngine.Camera camera = null)
+            [InjectOptional] UnityEngine.Camera camera = null,
+            [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null)
         {
             _signalBus = signalBus;
             _cameraMovement = cameraMovement;
@@ -40,12 +46,14 @@ namespace Kruty1918.Moyva.Camera.Runtime
             _projectSettings = projectSettings;
             _gridProjection = gridProjection;
             _camera = camera;
+            _worldGenerationSignalState = worldGenerationSignalState;
         }
 
         public void Initialize()
         {
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnSpawnPositions);
+            ReplayCachedWorldSignalsIfAvailable();
             Debug.Log($"{WorldGenDiagTag} Receiver.Camera.Initialize subscribed frame={Time.frameCount}");
         }
 
@@ -57,7 +65,18 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
+            if (ShouldSkipWorldSignal(signal))
+                return;
+
             Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldGenerated RECEIVED frame={Time.frameCount}, map={signal.Width}x{signal.Height}");
+            if (_currentStartupSequence != signal.StartupSequence)
+            {
+                _currentStartupSequence = signal.StartupSequence;
+                _hasAppliedStartupFrame = false;
+                _hasWorld = false;
+                if (_currentSpawnSequence != signal.StartupSequence)
+                    _lastSpawnAssignments = null;
+            }
             _lastWorld = signal;
             _hasWorld = signal.Width > 0 && signal.Height > 0;
             ApplyAutoFrame();
@@ -65,7 +84,20 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private void OnSpawnPositions(WorldSpawnPositionsSignal signal)
         {
+            if (ShouldSkipSpawnSignal(signal))
+                return;
+
             Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldSpawnPositions RECEIVED frame={Time.frameCount}, assignments={signal.Assignments?.Length ?? 0}");
+            if (_currentSpawnSequence != signal.StartupSequence)
+            {
+                _currentSpawnSequence = signal.StartupSequence;
+                if (_currentStartupSequence != signal.StartupSequence)
+                    _hasAppliedStartupFrame = false;
+            }
+            else
+            {
+                _hasAppliedStartupFrame = false;
+            }
             _lastSpawnAssignments = signal.Assignments;
             ApplyAutoFrame();
         }
@@ -119,6 +151,48 @@ namespace Kruty1918.Moyva.Camera.Runtime
                 return "camera-null";
 
             return null;
+        }
+
+        private void ReplayCachedWorldSignalsIfAvailable()
+        {
+            if (_worldGenerationSignalState == null)
+                return;
+
+            if (_worldGenerationSignalState.TryGetWorldGeneratedData(out var worldSignal))
+            {
+                Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldGenerated REPLAY frame={Time.frameCount}, map={worldSignal.Width}x{worldSignal.Height}");
+                OnWorldGenerated(worldSignal);
+            }
+
+            if (_worldGenerationSignalState.TryGetWorldSpawnPositions(out var spawnSignal))
+            {
+                Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldSpawnPositions REPLAY frame={Time.frameCount}, assignments={spawnSignal.Assignments?.Length ?? 0}");
+                OnSpawnPositions(spawnSignal);
+            }
+        }
+
+        private bool ShouldSkipWorldSignal(WorldGeneratedDataSignal signal)
+        {
+            if (signal.SnapshotRevision <= 0 || signal.SnapshotRevision != _lastHandledWorldRevision)
+            {
+                _lastHandledWorldRevision = signal.SnapshotRevision;
+                return false;
+            }
+
+            Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldGenerated SKIP duplicate revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}");
+            return true;
+        }
+
+        private bool ShouldSkipSpawnSignal(WorldSpawnPositionsSignal signal)
+        {
+            if (signal.SnapshotRevision <= 0 || signal.SnapshotRevision != _lastHandledSpawnRevision)
+            {
+                _lastHandledSpawnRevision = signal.SnapshotRevision;
+                return false;
+            }
+
+            Debug.Log($"{WorldGenDiagTag} Receiver.Camera.WorldSpawnPositions SKIP duplicate revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}");
+            return true;
         }
 
         private void ConfigureStartupCameraPose()

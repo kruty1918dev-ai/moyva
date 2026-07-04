@@ -26,9 +26,13 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
         private readonly IBootstrapStarterPackDecisionService _decisionService;
         private readonly IBootstrapStarterPackPersistenceService _persistenceService;
         private readonly IBootstrapStarterPackGrantService _grantService;
+        private readonly IWorldGenerationSignalState _worldGenerationSignalState;
         private bool _hasPendingWorldGeneratedSignal;
         private bool _bootstrapApplied;
         private bool _starterPackGrantEnabled;
+        private long _currentStartupSequence;
+        private int _lastHandledWorldRevision;
+        private int _lastHandledSpawnRevision;
 
         [Inject]
         public BootstrapGameInitializer(
@@ -39,7 +43,8 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             IBootstrapOwnerIdResolver ownerIdResolver,
             IBootstrapStarterPackDecisionService decisionService,
             IBootstrapStarterPackPersistenceService persistenceService,
-            IBootstrapStarterPackGrantService grantService)
+            IBootstrapStarterPackGrantService grantService,
+            [InjectOptional] IWorldGenerationSignalState worldGenerationSignalState = null)
         {
             _constructionService   = constructionService;
             _signalBus             = signalBus;
@@ -49,6 +54,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _decisionService       = decisionService;
             _persistenceService    = persistenceService;
             _grantService          = grantService;
+            _worldGenerationSignalState = worldGenerationSignalState;
         }
 
         public void Initialize()
@@ -56,6 +62,7 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             _signalBus.Subscribe<WorldGeneratedDataSignal>(OnWorldGenerated);
             _signalBus.Subscribe<WorldSpawnPositionsSignal>(OnWorldSpawnPositions);
             _signalBus.Subscribe<SettlementCreatedSignal>(OnSettlementCreated);
+            ReplayCachedWorldSignalsIfAvailable();
         }
 
         public void Dispose()
@@ -69,6 +76,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void OnWorldGenerated(WorldGeneratedDataSignal signal)
         {
+            if (ShouldSkipWorldSignal(signal))
+                return;
+
+            ResetForNewStartupWorldIfNeeded(signal.StartupSequence, signal.StartupSessionId, $"world:{signal.Source}");
             _hasPendingWorldGeneratedSignal = true;
 
             TryApplyBootstrap();
@@ -76,6 +87,10 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
 
         private void OnWorldSpawnPositions(WorldSpawnPositionsSignal signal)
         {
+            if (ShouldSkipSpawnSignal(signal))
+                return;
+
+            ResetForNewStartupWorldIfNeeded(signal.StartupSequence, signal.StartupSessionId, $"spawns:{signal.Source}");
             if (signal.Assignments == null || signal.Assignments.Length == 0)
                 return;
 
@@ -173,6 +188,54 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
             return string.IsNullOrWhiteSpace(ownerId)
                 ? "player_0"
                 : ownerId.Trim();
+        }
+
+        private void ReplayCachedWorldSignalsIfAvailable()
+        {
+            if (_worldGenerationSignalState == null)
+                return;
+
+            if (_worldGenerationSignalState.TryGetWorldGeneratedData(out var worldSignal))
+                OnWorldGenerated(worldSignal);
+
+            if (_worldGenerationSignalState.TryGetWorldSpawnPositions(out var spawnSignal))
+                OnWorldSpawnPositions(spawnSignal);
+        }
+
+        private void ResetForNewStartupWorldIfNeeded(long startupSequence, string startupSessionId, string reason)
+        {
+            if (startupSequence <= 0 || startupSequence == _currentStartupSequence)
+                return;
+
+            _currentStartupSequence = startupSequence;
+            _hasPendingWorldGeneratedSignal = false;
+            _bootstrapApplied = false;
+            _starterPackGrantEnabled = false;
+            Debug.Log($"{StarterPackLogTag} Reset for startup world sequence={startupSequence}, session='{startupSessionId}', reason={reason}.");
+        }
+
+        private bool ShouldSkipWorldSignal(WorldGeneratedDataSignal signal)
+        {
+            if (signal.SnapshotRevision <= 0 || signal.SnapshotRevision != _lastHandledWorldRevision)
+            {
+                _lastHandledWorldRevision = signal.SnapshotRevision;
+                return false;
+            }
+
+            Debug.Log($"{StarterPackLogTag} Skip duplicate world signal revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}.");
+            return true;
+        }
+
+        private bool ShouldSkipSpawnSignal(WorldSpawnPositionsSignal signal)
+        {
+            if (signal.SnapshotRevision <= 0 || signal.SnapshotRevision != _lastHandledSpawnRevision)
+            {
+                _lastHandledSpawnRevision = signal.SnapshotRevision;
+                return false;
+            }
+
+            Debug.Log($"{StarterPackLogTag} Skip duplicate spawn signal revision={signal.SnapshotRevision}, sequence={signal.StartupSequence}, source={signal.Source}.");
+            return true;
         }
 
         // BootstrapGameInitializer intentionally stays as a signal coordinator.

@@ -52,6 +52,41 @@ namespace Kruty1918.Moyva.Bootstrap.Runtime
                 Mathf.Clamp(position.y, 0, Mathf.Max(0, height - 1)));
         }
 
+        public static Vector2Int PickRuntimeRandomPoint(
+            int width,
+            int height,
+            int minMarginFromBorder,
+            float relativeMarginFactor,
+            out int seed)
+        {
+            seed = CreateRuntimeRandomSeed();
+            width = Mathf.Max(0, width);
+            height = Mathf.Max(0, height);
+            if (width <= 0 || height <= 0)
+                return Vector2Int.zero;
+
+            int minSide = Mathf.Min(width, height);
+            int relativeMargin = Mathf.FloorToInt(minSide * Mathf.Clamp01(relativeMarginFactor));
+            int margin = Mathf.Max(0, Mathf.Max(minMarginFromBorder, relativeMargin));
+
+            int xMin = Mathf.Clamp(margin, 0, width - 1);
+            int xMax = Mathf.Clamp(width - margin - 1, xMin, width - 1);
+            int yMin = Mathf.Clamp(margin, 0, height - 1);
+            int yMax = Mathf.Clamp(height - margin - 1, yMin, height - 1);
+            var random = new System.Random(seed);
+            return new Vector2Int(
+                random.Next(xMin, xMax + 1),
+                random.Next(yMin, yMax + 1));
+        }
+
+        private static int CreateRuntimeRandomSeed()
+        {
+            unchecked
+            {
+                return System.Environment.TickCount ^ System.Guid.NewGuid().GetHashCode() ^ (Time.frameCount * 397);
+            }
+        }
+
         public static Vector2Int FindRepairCenter(bool[,] snapshot, int width, int height)
         {
             if (snapshot == null)
