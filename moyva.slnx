@@ -20,6 +20,7 @@
   <Project Path="Unity.VisualScripting.Flow.Editor.csproj" />
   <Project Path="Unity.Services.Relay.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Construction.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
   <Project Path="Unity.VisualStudio.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.Editor.csproj" />
@@ -56,6 +57,7 @@
   <Project Path="UnityEngine.TestRunner.csproj" />
   <Project Path="Unity.2D.Tilemap.Editor.csproj" />
   <Project Path="Unity.PerformanceTesting.csproj" />
+  <Project Path="Kruty1918.Moyva.Construction.csproj" />
   <Project Path="Unity.Netcode.Runtime.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsMonitor.Implementation.csproj" />
   <Project Path="Unity.TextMeshPro.csproj" />
@@ -64,7 +66,6 @@
   <Project Path="PsdPlugin.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsMonitor.Component.csproj" />
   <Project Path="Unity.2D.IK.Editor.csproj" />
-  <Project Path="Kruty1918.Moyva.Construction.csproj" />
   <Project Path="Kruty1918.Moyva.Bootstrap.csproj" />
   <Project Path="Unity.2D.Common.Editor.csproj" />
   <Project Path="Unity.RenderPipelines.GPUDriven.Runtime.csproj" />
@@ -92,7 +93,6 @@
   <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkSimulator.Runtime.csproj" />
   <Project Path="Unity.Multiplayer.Tools.MetricTestData.csproj" />
-  <Project Path="Kruty1918.Moyva.Construction.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkProfiler.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
   <Project Path="Unity.Services.Core.Editor.csproj" />
@@ -107,6 +107,7 @@
   <Project Path="Unity.Services.Deployment.csproj" />
   <Project Path="Unity.2D.Sprite.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Diagnostics.csproj" />
+  <Project Path="Kruty1918.Moyva.Construction.UI.csproj" />
   <Project Path="Kruty1918.Moyva.Shared.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Multiplayer.csproj" />
@@ -168,7 +169,6 @@
   <Project Path="Unity.Services.Multiplayer.Editor.csproj" />
   <Project Path="Unity.Services.DeploymentApi.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
-  <Project Path="Kruty1918.Moyva.Construction.UI.csproj" />
   <Project Path="Unity.2D.Common.Runtime.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
