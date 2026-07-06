@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.MapChunks.Runtime;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Zenject;
@@ -65,9 +66,10 @@ namespace Kruty1918.Moyva.Grid.Runtime
 			if (!Container.HasBinding<IGridProjection>())
 				Container.Bind<IGridProjection>().FromInstance(GridProjectionFactory.Create(resolvedProjectSettings)).AsSingle();
 
+			MapChunkFeatureBindings.Install(Container);
 			Container.BindInterfacesTo<Project3DLightingInitializer>().AsSingle().NonLazy();
 
-			Container.Bind<IGridService>().To<GridService>().AsSingle()
+			Container.BindInterfacesTo<ChunkedGridService>().AsSingle()
 				.WithArguments(resolvedWidth, resolvedHeight);
 
 			Container.Bind<ITileSettingsService>().To<TileSettingsService>().AsSingle();

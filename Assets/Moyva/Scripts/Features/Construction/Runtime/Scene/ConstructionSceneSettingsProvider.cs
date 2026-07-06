@@ -44,6 +44,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public bool RequireVisibleFogTile => _sceneContext?.ResolvePlacementRulesProfile()?.RequireVisibleFogTile ?? true;
         public bool AllowBuildingOnWater => _sceneContext?.ResolvePlacementRulesProfile()?.AllowBuildingOnWater ?? false;
         public bool AllowBuildingOnHills => _sceneContext?.ResolvePlacementRulesProfile()?.AllowBuildingOnHills ?? true;
+        public bool BlockEdgeTerrainTiles => _sceneContext?.ResolvePlacementRulesProfile()?.BlockEdgeTerrainTiles ?? true;
         public string[] BlockedTileIds => _sceneContext?.ResolvePlacementRulesProfile()?.BlockedTileIds ?? System.Array.Empty<string>();
         public TerrainLevelRestrictionRange[] BlockedTerrainLevelRanges => _sceneContext?.ResolvePlacementRulesProfile()?.BlockedTerrainLevelRanges ?? System.Array.Empty<TerrainLevelRestrictionRange>();
 
@@ -52,6 +53,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public float PreviewSurfaceOffsetY => _sceneContext?.ResolveVisualProfile()?.PreviewSurfaceOffsetY ?? 0.7f;
         public float GhostAlpha => _sceneContext?.ResolveVisualProfile()?.GhostAlpha ?? 0.55f;
         public float BlockedFlashDurationSeconds => _sceneContext?.ResolveVisualProfile()?.BlockedFlashDurationSeconds ?? 0.35f;
+        public bool UseBuildGridOverlay => _sceneContext?.ResolveVisualProfile()?.UseBuildGridOverlay ?? true;
+        public float BuildGridFillAlpha => _sceneContext?.ResolveVisualProfile()?.BuildGridFillAlpha ?? 0.045f;
+        public float BuildGridLineAlpha => _sceneContext?.ResolveVisualProfile()?.BuildGridLineAlpha ?? 0.22f;
+        public float BuildGridLineWidthNormalized => _sceneContext?.ResolveVisualProfile()?.BuildGridLineWidthNormalized ?? 0.035f;
+        public float BuildGridSurfaceOffsetY => _sceneContext?.ResolveVisualProfile()?.BuildGridSurfaceOffsetY ?? 0.06f;
+        public string BuildGridShaderName => _sceneContext?.ResolveVisualProfile()?.BuildGridShaderName ?? "Moyva/Overlay/ConstructionBuildGrid";
         public bool UseInfluenceRadiusOverlay => _sceneContext?.ResolveVisualProfile()?.UseInfluenceRadiusOverlay ?? true;
         public float InfluenceRadiusFillAlpha => _sceneContext?.ResolveVisualProfile()?.InfluenceRadiusFillAlpha ?? 0.055f;
         public float InfluenceRadiusBorderWidth => _sceneContext?.ResolveVisualProfile()?.InfluenceRadiusBorderWidth ?? 0.5f;

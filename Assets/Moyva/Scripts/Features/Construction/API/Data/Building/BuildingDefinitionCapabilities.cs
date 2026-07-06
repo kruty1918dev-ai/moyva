@@ -200,6 +200,24 @@ namespace Kruty1918.Moyva.Construction.API
             return TryGetEnabledModule(definition, out TModule _);
         }
 
+        public static bool IsGlobalSingleton(BuildingDefinition definition)
+        {
+            if (definition?.Modules == null)
+                return false;
+
+            List<BuildingModuleDefinition> source = definition.Modules;
+            for (int i = 0; i < source.Count; i++)
+            {
+                if (source[i] == null || !source[i].IsEnabled)
+                    continue;
+
+                if (source[i].SingletonScope == BuildingModuleScope.Global)
+                    return true;
+            }
+
+            return false;
+        }
+
         public static bool TryGetEnabledModule<TModule>(BuildingDefinition definition, out TModule module)
             where TModule : BuildingModuleDefinition
         {

@@ -31,6 +31,7 @@
   <Project Path="UnityEngine.UI.csproj" />
   <Project Path="Unity.Services.Authentication.Editor.csproj" />
   <Project Path="Unity.Searcher.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Construction.csproj" />
   <Project Path="Unity.2D.Aseprite.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.MetricTypes.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Adapters.csproj" />
@@ -57,7 +58,6 @@
   <Project Path="UnityEngine.TestRunner.csproj" />
   <Project Path="Unity.2D.Tilemap.Editor.csproj" />
   <Project Path="Unity.PerformanceTesting.csproj" />
-  <Project Path="Kruty1918.Moyva.Construction.csproj" />
   <Project Path="Unity.Netcode.Runtime.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsMonitor.Implementation.csproj" />
   <Project Path="Unity.TextMeshPro.csproj" />
@@ -75,6 +75,7 @@
   <Project Path="Unity.InternalAPIEditorBridge.001.csproj" />
   <Project Path="Unity.VisualScripting.State.Editor.csproj" />
   <Project Path="Unity.2D.Tooling.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.MapChunks.csproj" />
   <Project Path="Unity.SysrootPackage.Editor.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.2D.Runtime.csproj" />
   <Project Path="Unity.Collections.csproj" />

@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private const int TargetTileClusterBudget = 32;
         private const int MinimumClusterCellSize = 8;
 
-        public static TileWorldCreatorLayerOcclusionResult GenerateCompleteMap(TileWorldCreatorManager manager)
+        public static TileWorldCreatorLayerOcclusionResult GenerateCompleteMap(TileWorldCreatorManager manager, int chunkSizeTiles = 0)
         {
             if (manager == null || manager.configuration == null)
                 return default;
@@ -38,7 +38,10 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 $"map={manager.configuration.width}x{manager.configuration.height}, frame={Time.frameCount}, childrenBefore={childrenBefore}, asyncHint=unknown");
             var result = GenerateBlueprintMap(manager);
             LogOcclusionResult(result, "GenerateCompleteMap");
-            ApplyTileBatchingBudget(manager.configuration);
+            if (chunkSizeTiles > 0)
+                TileWorldCreatorChunkBatchingUtility.Apply(manager.configuration, chunkSizeTiles, true, "graph-binding");
+            else
+                ApplyTileBatchingBudget(manager.configuration);
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
             stopwatch.Stop();

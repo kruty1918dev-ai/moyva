@@ -1,4 +1,6 @@
 using Kruty1918.Moyva.FogOfWar.API;
+using Kruty1918.Moyva.MapChunks.API;
+using Kruty1918.Moyva.MapChunks.Runtime;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Zenject;
@@ -27,6 +29,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
             Debug.Log($"[FogOfWar] Installer found {fogVolumes?.Length ?? 0} FogOfWarVolumeController(s); settings={(resolvedSettings != null ? resolvedSettings.name : "null")}. Diagnostics build=2026-06-30-fog-volume-logging.");
             LogControllerDiagnostics(fogVolumes);
+            MapChunkFeatureBindings.Install(Container);
 
             Container.Bind<IFogSaveDataProvider>().To<FogSaveDataStub>().AsSingle();
             Container.Bind<HeightAwareVisionEngine>().AsSingle();
@@ -79,9 +82,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .To<FogOfWarServiceRegistry>()
                 .AsSingle();
 
+            if (!Container.HasBinding<IMapFogChunkCoverageService>())
+                Container.Bind<IMapFogChunkCoverageService>().To<MapFogChunkCoverageService>().AsSingle();
+
+            Container.BindInterfacesAndSelfTo<MapFogChunkCoverageRefreshService>()
+                .AsSingle()
+                .NonLazy();
+
             Container.BindExecutionOrder<FogOfWarService>(-5);
             Container.BindExecutionOrder<FogOfWarVolumeUpdater>(-4);
             Container.BindExecutionOrder<FogRendererCullingService>(-3);
+            Container.BindExecutionOrder<MapFogChunkCoverageRefreshService>(260);
         }
 
         /// <summary>

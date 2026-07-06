@@ -11,7 +11,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         private readonly SignalBus _signalBus;
         private readonly IBuildingRegistry _buildingRegistry;
-        private readonly ConstructionVisualService _visualService;
+        private readonly IConstructionPlacedVisualLookup _placedVisualLookup;
         private readonly IEconomyInfoMediator _economyInfo;
         private readonly SettlementLabelSettings _settings;
 
@@ -23,13 +23,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public SettlementLabelService(
             SignalBus signalBus,
             IBuildingRegistry buildingRegistry,
-            ConstructionVisualService visualService,
+            IConstructionPlacedVisualLookup placedVisualLookup,
             IEconomyInfoMediator economyInfo,
             SettlementLabelSettings settings)
         {
             _signalBus = signalBus;
             _buildingRegistry = buildingRegistry;
-            _visualService = visualService;
+            _placedVisualLookup = placedVisualLookup;
             _economyInfo = economyInfo;
             _settings = settings;
         }
@@ -68,7 +68,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (!kind.HasValue) return;
 
-            if (!_visualService.TryGetPlacedVisual(signal.Position, out var buildingGo))
+            if (!_placedVisualLookup.TryGetPlacedVisual(signal.Position, out var buildingGo))
             {
                 Debug.LogWarning($"[SettlementLabel] Візуал будівлі '{signal.BuildingId}' не знайдено на {signal.Position}.");
                 return;

@@ -315,7 +315,9 @@ namespace Kruty1918.Moyva.Generator.Editor
                         b => b != null && b.layerName == layerDef.Name && !ordered.Contains(b));
 
                 if (buildLayer == null)
-                    buildLayer = manager.AddNewBuildLayer<TilesBuildLayer>(layerDef.Name);
+                    buildLayer = MoyvaTerrainBuildLayerUpgradeUtility.CreateHeightAware(manager, layerDef.Name);
+                else
+                    buildLayer = MoyvaTerrainBuildLayerUpgradeUtility.EnsureHeightAware(manager, config, buildLayer, layerDef.Name);
 
                 TileSettingsNode.ApplyNodesToBuildLayer(buildLayer, tileNodes, config, blueprint, layerDef);
 

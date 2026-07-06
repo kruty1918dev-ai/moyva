@@ -17,6 +17,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             var placement = _pendingPlacements[index];
+            if (IsRelocation(placement))
+            {
+                status = new ConstructionPendingPlacementStatus(
+                    position: position,
+                    buildingId: placement.BuildingId,
+                    settlementId: "Relocation",
+                    settlementName: "Relocation",
+                    hasSettlement: true,
+                    isAffordable: true,
+                    errorMessage: string.Empty);
+                return true;
+            }
+
             var projection = BuildResourceProjectionForPlacement(
                 placement.Position,
                 placement.BuildingId,
@@ -44,6 +57,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             try
             {
                 if (!TryGetPendingBuildingIdAt(position, out var buildingId))
+                    return ConstructionResourceProjection.Empty;
+
+                int pendingIndex = FindPendingPlacementIndex(position);
+                if (pendingIndex >= 0 && IsRelocation(_pendingPlacements[pendingIndex]))
                     return ConstructionResourceProjection.Empty;
 
                 return BuildResourceProjectionForPlacement(position, buildingId, _activeOwnerId, ignoredPendingPosition: position);
@@ -250,6 +267,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 var placement = _pendingPlacements[i];
                 if (ignoredPendingPosition.HasValue && placement.Position == ignoredPendingPosition.Value)
                     continue;
+                if (IsRelocation(placement))
+                    continue;
 
                 AddCosts(reserved, BuildConstructionCostMap(placement.BuildingId));
             }
@@ -270,6 +289,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 var placement = _pendingPlacements[i];
                 if (ignoredPendingPosition.HasValue && placement.Position == ignoredPendingPosition.Value)
+                    continue;
+                if (IsRelocation(placement))
                     continue;
 
                 if (!_economyInfoMediator.TryResolveConstructionSettlement(placement.Position, ownerId, out var pendingSettlement)

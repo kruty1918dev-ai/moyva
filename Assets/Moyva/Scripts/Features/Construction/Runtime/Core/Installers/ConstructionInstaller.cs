@@ -143,21 +143,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            Container.Bind<IConstructionVisualStyleService>()
-                .To<ConstructionVisualStyleService>()
-                .AsSingle();
-
-            Container.Bind<IConstructionTerrainAlignmentService>()
-                .To<ConstructionTerrainAlignmentService>()
-                .AsSingle();
-
-            Container.Bind<IConstructionVisualFactory>()
-                .To<ConstructionVisualFactory>()
-                .AsSingle();
-
-            Container.Bind<IConstructionBlockedFlashService>()
-                .To<ConstructionBlockedFlashService>()
-                .AsSingle();
+            ConstructionVisualBindingsInstaller.Install(Container);
 
             Container.Bind<IConstructionInteractiveUiHitTester>()
                 .To<ConstructionInteractiveUiHitTester>()

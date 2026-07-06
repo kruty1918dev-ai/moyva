@@ -24,6 +24,25 @@ namespace Kruty1918.Moyva.Construction.API
         [MinValue(0f)]
         [SerializeField] private float _blockedFlashDurationSeconds = 0.35f;
 
+        [BoxGroup("Build Grid")]
+        [SerializeField] private bool _useBuildGridOverlay = true;
+
+        [BoxGroup("Build Grid")]
+        [Range(0f, 1f)]
+        [SerializeField] private float _buildGridFillAlpha = 0.045f;
+
+        [BoxGroup("Build Grid")]
+        [Range(0f, 1f)]
+        [SerializeField] private float _buildGridLineAlpha = 0.22f;
+
+        [BoxGroup("Build Grid")]
+        [Range(0.005f, 0.49f)]
+        [SerializeField] private float _buildGridLineWidthNormalized = 0.035f;
+
+        [BoxGroup("Build Grid")]
+        [MinValue(0f)]
+        [SerializeField] private float _buildGridSurfaceOffsetY = 0.06f;
+
         [BoxGroup("Influence Radius")]
         [SerializeField] private bool _useInfluenceRadiusOverlay = true;
 
@@ -41,6 +60,9 @@ namespace Kruty1918.Moyva.Construction.API
         [BoxGroup("Shaders")]
         [SerializeField] private string _influenceRadiusShaderName3D = "Moyva/3D/InfluenceRadiusExistingMeshOverlay";
 
+        [BoxGroup("Shaders")]
+        [SerializeField] private string _buildGridShaderName = "Moyva/Overlay/ConstructionBuildGrid";
+
         [BoxGroup("Roots")]
         [SerializeField] private string _previewRootName = "ConstructionPreviewRoot";
 
@@ -55,11 +77,17 @@ namespace Kruty1918.Moyva.Construction.API
         public float PreviewSurfaceOffsetY => _previewSurfaceOffsetY;
         public float GhostAlpha => Mathf.Clamp01(_ghostAlpha);
         public float BlockedFlashDurationSeconds => Mathf.Max(0f, _blockedFlashDurationSeconds);
+        public bool UseBuildGridOverlay => _useBuildGridOverlay;
+        public float BuildGridFillAlpha => Mathf.Clamp01(_buildGridFillAlpha);
+        public float BuildGridLineAlpha => Mathf.Clamp01(_buildGridLineAlpha);
+        public float BuildGridLineWidthNormalized => Mathf.Clamp(_buildGridLineWidthNormalized, 0.005f, 0.49f);
+        public float BuildGridSurfaceOffsetY => Mathf.Max(0f, _buildGridSurfaceOffsetY);
         public bool UseInfluenceRadiusOverlay => _useInfluenceRadiusOverlay;
         public float InfluenceRadiusFillAlpha => Mathf.Clamp01(_influenceRadiusFillAlpha);
         public float InfluenceRadiusBorderWidth => Mathf.Max(0f, _influenceRadiusBorderWidth);
         public string InfluenceRadiusShaderName2D => string.IsNullOrWhiteSpace(_influenceRadiusShaderName2D) ? "Moyva/2D/InfluenceRadius" : _influenceRadiusShaderName2D;
         public string InfluenceRadiusShaderName3D => string.IsNullOrWhiteSpace(_influenceRadiusShaderName3D) ? "Moyva/3D/InfluenceRadiusExistingMeshOverlay" : _influenceRadiusShaderName3D;
+        public string BuildGridShaderName => string.IsNullOrWhiteSpace(_buildGridShaderName) ? "Moyva/Overlay/ConstructionBuildGrid" : _buildGridShaderName;
         public string PreviewRootName => string.IsNullOrWhiteSpace(_previewRootName) ? "ConstructionPreviewRoot" : _previewRootName;
         public string PlacedRootName => string.IsNullOrWhiteSpace(_placedRootName) ? "PlayerBuildingsRoot" : _placedRootName;
         public string RadiusRootName => string.IsNullOrWhiteSpace(_radiusRootName) ? "ConstructionRadiusRoot" : _radiusRootName;

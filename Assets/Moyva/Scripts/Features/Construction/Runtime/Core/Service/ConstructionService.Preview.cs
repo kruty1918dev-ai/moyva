@@ -24,6 +24,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            if (TryHandleSingletonPreview(position))
+                return true;
+
             bool selectedIsGate = _wallTopologyService != null && _wallTopologyService.IsGate(_selectedBuildingId);
             if (_pendingPositions.Contains(position))
             {
@@ -164,31 +167,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            if (!gateReplacementAllowed && !CanPlaceAt(toPosition, fromPosition, placement.BuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked))
+            Vector2Int? ignoredOccupiedPosition = placement.OriginalPosition;
+            if (!gateReplacementAllowed && !CanPlaceAt(toPosition, fromPosition, placement.BuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked, ignoredOccupiedPosition))
             {
-                _signalBus.Fire(new BuildingPreviewChangedSignal
-                {
-                    Position = toPosition,
-                    BuildingId = placement.BuildingId,
-                    PreviewState = BuildingPreviewState.Blocked
-                });
-
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, terrainBlocked={terrainBlocked}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
+                    Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> BLOCKED. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, terrainBlocked={terrainBlocked}, relocation={IsRelocation(placement)}, minSpacing={_minSpacing}, townHallBuildRadius={_townHallBuildRadius}");
 
                 return false;
             }
 
-            if (!TryValidateConstructionResources(toPosition, placement.BuildingId, _activeOwnerId, fromPosition, out var resourceReason))
+            if (!IsRelocation(placement)
+                && !TryValidateConstructionResources(toPosition, placement.BuildingId, _activeOwnerId, fromPosition, out var resourceReason))
             {
-                _lastActionMessage = resourceReason;
-                _signalBus.Fire(new BuildingPreviewChangedSignal
-                {
-                    Position = toPosition,
-                    BuildingId = placement.BuildingId,
-                    PreviewState = BuildingPreviewState.Blocked
-                });
-
+                _lastActionMessage = resourceReason;                
                 if (VerboseLogs)
                     Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> BLOCKED. resourcesBlocked=True, reason={resourceReason}");
 
@@ -199,7 +190,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _pendingPositions.Remove(fromPosition);
             _pendingPositions.Add(toPosition);
-            _pendingPlacements[index] = new PendingPlacement(toPosition, placement.BuildingId);
+            _pendingPlacements[index] = new PendingPlacement(toPosition, placement.BuildingId, placement.OriginalPosition);
 
             _signalBus.Fire(new BuildingPreviewChangedSignal
             {
@@ -218,7 +209,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _selectedBuildingId = placement.BuildingId;
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> VALID.");
+                Debug.Log($"[Construction] TryMovePendingPlacement({fromPosition} -> {toPosition}) -> VALID. relocation={IsRelocation(placement)}");
 
             return true;
         }
@@ -251,7 +242,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return true;
         }
 
-        private bool AddPendingPlacement(Vector2Int position, string buildingId, bool clearRedoHistory)
+        private bool AddPendingPlacement(Vector2Int position, string buildingId, bool clearRedoHistory, Vector2Int? originalPosition = null)
         {
             if (string.IsNullOrWhiteSpace(buildingId))
             {
@@ -275,7 +266,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 SaveSnapshotForUndo(clearRedoHistory);
 
-                _pendingPlacements.Add(new PendingPlacement(position, buildingId));
+                _pendingPlacements.Add(new PendingPlacement(position, buildingId, originalPosition));
                 _pendingPositions.Add(position);
 
                 _signalBus.Fire(new BuildingPreviewChangedSignal
@@ -286,7 +277,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 });
 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] ✓ Pending placement додана для '{buildingId}' at {position}. pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
+                    Debug.Log($"[Construction] ✓ Pending placement додана для '{buildingId}' at {position}. relocationFrom={originalPosition?.ToString() ?? "none"}, pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
 
                 return true;
             }
@@ -387,7 +378,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 SaveSnapshotForUndo(clearRedoHistory: true);
 
-                _pendingPlacements[index] = new PendingPlacement(position, gateBuildingId);
+                _pendingPlacements[index] = new PendingPlacement(position, gateBuildingId, current.OriginalPosition);
                 _selectedBuildingId = gateBuildingId;
 
                 _signalBus.Fire(new BuildingPreviewChangedSignal

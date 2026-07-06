@@ -12,7 +12,8 @@
         "Sirenix.OdinInspector.Attributes",
         "Unity.InputSystem",
         "Kruty1918.Moyva.WorldCreation.API",
-        "Kruty1918.Moyva.Combat"
+        "Kruty1918.Moyva.Combat",
+        "Kruty1918.Moyva.GameMode"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

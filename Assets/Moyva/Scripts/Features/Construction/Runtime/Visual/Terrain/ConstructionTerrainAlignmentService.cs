@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
@@ -14,9 +13,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private readonly IGridService _gridService;
         private readonly IGridProjection _gridProjection;
+        private readonly IConstructionGridGeometryService _gridGeometry;
+        private readonly IConstructionTileSurfaceOffsetService _tileSurfaceOffsets;
+        private readonly IConstructionVisualBoundsAlignmentService _boundsAlignment;
         private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
-        private readonly TileRegistrySO _tileRegistry;
-        private readonly Dictionary<string, float> _tileSurfaceOffsetYById = new();
         private readonly float _buildingSurfaceOffsetY;
         private readonly float _previewSurfaceOffsetY;
 
@@ -24,14 +24,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public ConstructionTerrainAlignmentService(
             IGridService gridService,
             [InjectOptional] IGridProjection gridProjection = null,
+            [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
+            [InjectOptional] IConstructionTileSurfaceOffsetService tileSurfaceOffsets = null,
+            [InjectOptional] IConstructionVisualBoundsAlignmentService boundsAlignment = null,
             [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery = null,
-            [InjectOptional] IConstructionVisualSettingsProvider visualSettingsProvider = null,
-            [InjectOptional] TileRegistrySO tileRegistry = null)
+            [InjectOptional] IConstructionVisualSettingsProvider visualSettingsProvider = null)
         {
             _gridService = gridService;
             _gridProjection = gridProjection;
+            _gridGeometry = gridGeometry;
+            _tileSurfaceOffsets = tileSurfaceOffsets;
+            _boundsAlignment = boundsAlignment;
             _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
-            _tileRegistry = tileRegistry;
             _buildingSurfaceOffsetY = visualSettingsProvider?.BuildingSurfaceOffsetY ?? BuildingSurfaceOffsetY;
             _previewSurfaceOffsetY = visualSettingsProvider?.PreviewSurfaceOffsetY ?? PreviewSurfaceOffsetY;
         }
@@ -39,29 +43,69 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public Vector3 ResolveWorldPosition(Vector2Int tile, float layerOffset)
         {
             if (_gridProjection == null)
-                return new Vector3(tile.x, tile.y, layerOffset);
+            {
+                Vector3 fallback = ResolveGridCenter(tile);
+                fallback.y += layerOffset;
+                return fallback;
+            }
 
             if (GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection)
-                && TryGetGeneratedTerrainSurfaceY(tile, out float surfaceY))
+                && TryGetGeneratedTerrainSurfaceY(tile, out _))
             {
-                Vector3 position = _gridProjection.GridToWorld(tile, 0f, 0f);
-                position.y = surfaceY + layerOffset;
+                Vector3 position = ResolveGridCenter(tile);
+                position.y = ResolveTerrainSurfaceY(tile) + layerOffset;
                 return position;
             }
 
             float elevation = _generatedTerrainLevelQuery != null && _generatedTerrainLevelQuery.TryGetTerrainLevel(tile, out int level)
                 ? level
                 : 0f;
-            return _gridProjection.GridToWorld(tile, elevation, layerOffset);
+            Vector3 projected = _gridProjection.GridToWorld(tile, elevation, layerOffset);
+            Vector3 center = ResolveGridCenter(tile);
+            projected.x = center.x;
+            projected.z = center.z;
+            return projected;
         }
 
-        public void AlignInstanceToTerrainSurface(GameObject instance, Vector2Int tile, bool isPreviewVisual)
+        public void AlignInstanceToTerrainSurface(GameObject instance, Vector2Int tile, bool isPreviewVisual, float visualOffsetY = 0f)
         {
             if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection) || instance == null)
                 return;
 
-            float surfaceOffset = isPreviewVisual ? _previewSurfaceOffsetY : _buildingSurfaceOffsetY;
-            GridSurfacePlacementUtility.AlignBottomToSurface(instance, ResolveTerrainSurfaceY(tile) + surfaceOffset);
+            Vector3 gridCenter = ResolveGridCenter(tile);
+            AlignCenterXZ(instance, gridCenter);
+
+            float surfaceOffset = ResolveVisualSurfaceOffsetY(isPreviewVisual);
+            GridSurfacePlacementUtility.AlignBottomToSurface(instance, ResolveTerrainSurfaceY(tile) + surfaceOffset + visualOffsetY, 0f);
+            AlignCenterXZ(instance, gridCenter);
+        }
+
+        private void AlignCenterXZ(GameObject instance, Vector3 gridCenter)
+        {
+            if (_boundsAlignment != null)
+                _boundsAlignment.AlignCenterXZ(instance, gridCenter);
+        }
+
+        private Vector3 ResolveGridCenter(Vector2Int tile)
+        {
+            if (GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection)
+                && _gridGeometry != null
+                && _gridGeometry.TryGetCellCenter(tile, out Vector3 center))
+            {
+                return center;
+            }
+
+            return _gridProjection != null
+                ? _gridProjection.GridToWorld(tile, 0f, 0f)
+                : new Vector3(tile.x, 0f, tile.y);
+        }
+
+        private float ResolveVisualSurfaceOffsetY(bool isPreviewVisual)
+        {
+            if (GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
+                return 0f;
+
+            return isPreviewVisual ? _previewSurfaceOffsetY : _buildingSurfaceOffsetY;
         }
 
         private float ResolveTerrainSurfaceY(Vector2Int tile)
@@ -73,8 +117,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ? surfaceY
                 : ResolveProjectedTerrainBaseY(tile);
 
-            if (_gridService.TryGetTileData(tile, out string tileId) && TryResolveTileSurfaceOffsetY(tileId, out float offsetY))
+            if (_gridService.TryGetTileData(tile, out string tileId)
+                && _tileSurfaceOffsets != null
+                && _tileSurfaceOffsets.TryResolveTileSurfaceOffsetY(tileId, out float offsetY))
+            {
                 return baseY + offsetY;
+            }
 
             return baseY;
         }
@@ -96,32 +144,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 : 0f;
 
             return _gridProjection.GridToWorld(tile, elevation, 0f).y;
-        }
-
-        private bool TryResolveTileSurfaceOffsetY(string tileId, out float offsetY)
-        {
-            offsetY = 0f;
-            if (string.IsNullOrWhiteSpace(tileId) || _tileRegistry?.Definitions == null)
-                return false;
-
-            if (_tileSurfaceOffsetYById.TryGetValue(tileId, out offsetY))
-                return true;
-
-            for (int i = 0; i < _tileRegistry.Definitions.Length; i++)
-            {
-                var definition = _tileRegistry.Definitions[i];
-                var surfacePrefab = definition?.SurfaceReferencePrefab;
-                if (definition == null || definition.Id != tileId || surfacePrefab == null)
-                    continue;
-
-                if (!GridSurfacePlacementUtility.TryResolveTopOffsetY(surfacePrefab, out offsetY))
-                    offsetY = 0f;
-
-                _tileSurfaceOffsetYById[tileId] = offsetY;
-                return true;
-            }
-
-            return false;
         }
     }
 }

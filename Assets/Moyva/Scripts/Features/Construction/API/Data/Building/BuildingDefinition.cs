@@ -47,6 +47,10 @@ namespace Kruty1918.Moyva.Construction.API
         public Sprite RuntimePreview;
         public GameObject Prefab;       // Prefab будівлі (stub: null поки арт не готовий)
 
+        [Header("Візуальне вирівнювання")]
+        [Tooltip("Додатковий Y-offset для візуалу цієї будівлі. Не впливає на логіку клітинки чи колайдер розміщення.")]
+        public float VisualYOffset;
+
         [Header("Вартість будівництва")]
         [Tooltip("Список ресурсів і кількостей, необхідних для побудови 1 екземпляра цієї будівлі.\nПорожній список означає безкоштовне будівництво.")]
         public List<BuildingConstructionCostEntry> ConstructionCost = new List<BuildingConstructionCostEntry>();

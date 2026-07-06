@@ -69,7 +69,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out bool spacingBlocked,
             out bool fogBlocked,
             out bool influenceZoneBlocked,
-            out bool terrainBlocked)
+            out bool terrainBlocked,
+            Vector2Int? ignoredOccupiedPosition = null)
         {
             if (VerboseLogs)
                 Debug.Log($"[Construction] CanPlaceAt({position}, buildingId={buildingId}) проверка ПОЧАЛАСЬ");
@@ -82,10 +83,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     BuildingId = buildingId,
                     Position = position,
                     IgnoredPendingPosition = ignoredPendingPosition,
+                    IgnoredOccupiedPosition = ignoredOccupiedPosition,
                     MinSpacing = _minSpacing,
                     TownHallBuildRadius = _townHallBuildRadius,
-                    IsOccupied = _objectsMapService.IsOccupied,
-                    GetOccupantId = GetObjectOccupantId,
+                    IsOccupied = tilePosition => !ignoredOccupiedPosition.HasValue || tilePosition != ignoredOccupiedPosition.Value
+                        ? _objectsMapService.IsOccupied(tilePosition)
+                        : false,
+                    GetOccupantId = tilePosition => GetObjectOccupantId(tilePosition, ignoredOccupiedPosition),
                     IsFogBlocked = IsBlockedByFog,
                     PendingPlacements = BuildPlacementSimulationEntries(),
                 });
@@ -128,8 +132,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
-        private string GetObjectOccupantId(Vector2Int position)
+        private string GetObjectOccupantId(Vector2Int position, Vector2Int? ignoredOccupiedPosition = null)
         {
+            if (ignoredOccupiedPosition.HasValue && position == ignoredOccupiedPosition.Value)
+                return null;
+
             return _objectsMapService.TryGetOccupant(position, out var occupantId)
                 ? occupantId
                 : null;

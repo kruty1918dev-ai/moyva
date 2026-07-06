@@ -27,6 +27,9 @@ namespace Kruty1918.Moyva.Construction.API
         [BoxGroup("Terrain")]
         [SerializeField] private bool _allowBuildingOnHills = true;
 
+        [BoxGroup("Terrain")]
+        [SerializeField] private bool _blockEdgeTerrainTiles = true;
+
         [BoxGroup("Fog")]
         [SerializeField] private bool _enableFogRules = true;
 
@@ -45,6 +48,7 @@ namespace Kruty1918.Moyva.Construction.API
         public bool EnableTerrainRules => _enableTerrainRules;
         public bool AllowBuildingOnWater => _allowBuildingOnWater;
         public bool AllowBuildingOnHills => _allowBuildingOnHills;
+        public bool BlockEdgeTerrainTiles => _blockEdgeTerrainTiles;
         public bool EnableFogRules => _enableFogRules;
         public bool RequireVisibleFogTile => _requireVisibleFogTile;
         public string[] BlockedTileIds => _blockedTileIds;

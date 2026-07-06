@@ -3,7 +3,8 @@
     "rootNamespace": "Kruty1918.Moyva.ObjectsMap",
     "references": [
         "Zenject",
-        "Kruty1918.Moyva.Signals"
+        "Kruty1918.Moyva.Signals",
+        "Kruty1918.Moyva.MapChunks"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

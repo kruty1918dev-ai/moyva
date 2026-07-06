@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.MapChunks.Runtime;
 using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Zenject;
@@ -46,6 +47,7 @@ namespace Kruty1918.Moyva.Generator
                 $"{GeneratorBootDiagTag} GeneratorInstaller.InstallBindings ENTER scene={gameObject.scene.name}, " +
                 $"mode={GameLaunchContext.Mode}, hasWorldSettings={GameLaunchContext.HasWorldSettings}");
             ResolveSceneReferences();
+            MapChunkFeatureBindings.Install(Container);
             _worldDiagnostics?.GeneratorInstallerInstalled(
                 $"scene={gameObject.scene.name}, graph={(_graphAsset != null ? _graphAsset.name : "null")}, twc={_tileWorldCreatorManager != null}");
             Debug.Log(
@@ -76,6 +78,20 @@ namespace Kruty1918.Moyva.Generator
             Container.Bind<IGeneratedTerrainLevelQuery>()
                 .To<GeneratedTerrainLevelQueryService>()
                 .AsSingle();
+            Container.Bind<ITileWorldCreatorTerrainBuildPolicyService>()
+                .To<TileWorldCreatorTerrainBuildPolicyService>()
+                .AsSingle();
+            GraphGenerationLayerLogFeatureBindings.Install(Container);
+            GraphLogicalTileMapFeatureBindings.Install(Container);
+            GraphCompilerFeatureBindings.Install(Container);
+            GraphTwcMapDataFeatureBindings.Install(Container);
+            MoyvaTwcGraphBindingFeatureBindings.Install(Container);
+            TileWorldCreatorHeightProjectionFeatureBindings.Install(Container);
+            TileWorldCreatorTerrainSideWallFeatureBindings.Install(Container);
+            MapVisualFeatureBindings.Install(Container);
+            WaterLayerMaterialFeatureBindings.Install(Container);
+            MenuWorldPreviewKingdomPlacementFeatureBindings.Install(Container);
+            MenuWorldPreviewTextureBuilderFeatureBindings.Install(Container);
 
             BindMapDataGenerator();
             BindTileWorldCreatorBridge();
@@ -85,7 +101,12 @@ namespace Kruty1918.Moyva.Generator
                 $"graphBinding={_graphBinding != null}, twcManager={_tileWorldCreatorManager != null}");
 
             if (_waterLayerMaterialSettings != null)
+            {
                 Container.BindInstance(_waterLayerMaterialSettings).AsSingle();
+                Container.Bind<IWaterLayerMaterialSettings>()
+                    .FromInstance(_waterLayerMaterialSettings)
+                    .AsSingle();
+            }
 
             Container.BindInterfacesAndSelfTo<MapVisualInstantiator>()
                 .AsSingle()
@@ -126,9 +147,13 @@ namespace Kruty1918.Moyva.Generator
         {
             if (_graphAsset != null && _tileWorldCreatorManager != null)
             {
+                Container.Bind<IGraphTwcMapDataEnvironment>()
+                    .FromInstance(new GraphTwcMapDataEnvironment(_graphAsset, _tileWorldCreatorManager))
+                    .AsSingle();
+                Container.BindInterfacesAndSelfTo<GraphTwcMapDataState>()
+                    .AsSingle();
                 Container.Bind<GraphTwcMapDataGenerator>()
-                    .AsSingle()
-                    .WithArguments(_graphAsset, _tileWorldCreatorManager);
+                    .AsSingle();
                 Container.Bind<IMapDataGenerator>()
                     .To<GraphTwcMapDataGenerator>()
                     .FromResolve();
@@ -146,12 +171,26 @@ namespace Kruty1918.Moyva.Generator
             if (_tileWorldCreatorManager == null || _tileWorldCreatorMapping == null)
                 return;
 
-            Container.Bind<TileWorldCreatorWorldBuildBridge>()
-                .AsSingle()
-                .WithArguments(
-                    _tileWorldCreatorManager,
-                    _tileWorldCreatorMapping,
-                    _tileWorldCreatorBuildOptions ?? new TileWorldCreatorBuildOptions());
+            var buildOptions = _tileWorldCreatorBuildOptions ?? new TileWorldCreatorBuildOptions();
+            var environment = new TileWorldCreatorBuildEnvironment(
+                _tileWorldCreatorManager,
+                _tileWorldCreatorMapping,
+                buildOptions);
+
+            Container.Bind<ITileWorldCreatorBuildEnvironment>().FromInstance(environment).AsSingle();
+            Container.Bind<ITileWorldCreatorBlueprintLayerResolver>().To<TileWorldCreatorBlueprintLayerResolver>().AsSingle();
+            Container.Bind<ITileWorldCreatorTerrainLevelMapService>().To<TileWorldCreatorTerrainLevelMapService>().AsSingle();
+            Container.Bind<ITileWorldCreatorShoreBandService>().To<TileWorldCreatorShoreBandService>().AsSingle();
+            Container.Bind<ITileWorldCreatorConfigurationPreparationService>().To<TileWorldCreatorConfigurationPreparationService>().AsSingle();
+            Container.Bind<ITileWorldCreatorTerrainBuildLayerConfigurationService>().To<TileWorldCreatorTerrainBuildLayerConfigurationService>().AsSingle();
+            Container.Bind<ITileWorldCreatorLayerPositionCollector>().To<TileWorldCreatorLayerPositionCollector>().AsSingle();
+            Container.Bind<ITileWorldCreatorLayerPositionApplier>().To<TileWorldCreatorLayerPositionApplier>().AsSingle();
+            Container.Bind<ITileWorldCreatorBuildDiagnosticsService>().To<TileWorldCreatorBuildDiagnosticsService>().AsSingle();
+            Container.Bind<ITileWorldCreatorBuildExecutionService>().To<TileWorldCreatorBuildExecutionService>().AsSingle();
+            Container.Bind<ITileWorldCreatorTerrainBaseHeightResolver>().To<TileWorldCreatorTerrainBaseHeightResolver>().AsSingle();
+            Container.Bind<ITileWorldCreatorTerrainVisualPostProcessor>().To<TileWorldCreatorTerrainVisualPostProcessor>().AsSingle();
+            Container.Bind<ITileWorldCreatorTerrainHeightPublisher>().To<TileWorldCreatorTerrainHeightPublisher>().AsSingle();
+            Container.Bind<ITileWorldCreatorWorldBuildBridge>().To<TileWorldCreatorWorldBuildBridge>().AsSingle();
         }
 
         private void ResolveSceneReferences()

@@ -19,14 +19,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private readonly struct PendingPlacement
         {
-            public PendingPlacement(Vector2Int position, string buildingId)
+            public PendingPlacement(Vector2Int position, string buildingId, Vector2Int? originalPosition = null)
             {
                 Position = position;
                 BuildingId = buildingId;
+                OriginalPosition = originalPosition;
             }
 
             public Vector2Int Position { get; }
             public string BuildingId { get; }
+            public Vector2Int? OriginalPosition { get; }
         }
 
         private readonly struct PendingDemolition

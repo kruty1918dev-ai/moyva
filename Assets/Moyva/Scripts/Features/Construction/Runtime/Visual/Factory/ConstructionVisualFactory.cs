@@ -23,7 +23,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string objectName,
             int minSortingOrder,
             Quaternion? forcedRotation = null,
-            bool isPreviewVisual = false)
+            bool isPreviewVisual = false,
+            float visualOffsetY = 0f)
         {
             if (prefab == null)
             {
@@ -53,7 +54,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 instance.name = objectName;
                 instance.SetActive(true);
                 _styleService.EnsureRenderersEnabled(instance);
-                _terrainAlignmentService.AlignInstanceToTerrainSurface(instance, tile, isPreviewVisual);
+                _terrainAlignmentService.AlignInstanceToTerrainSurface(instance, tile, isPreviewVisual, visualOffsetY);
                 _styleService.EnsureBuildingSortingOrder(instance, minSortingOrder);
                 _styleService.DisableColliders(instance);
                 return instance;

@@ -2,6 +2,7 @@ using Kruty1918.Moyva.HomeMenu.API;
 using Kruty1918.Moyva.HomeMenu.Runtime.Services;
 using Kruty1918.Moyva.HomeMenu.Runtime.Startup;
 using Kruty1918.Moyva.HomeMenu.UI;
+using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Multiplayer.Runtime;
 using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
@@ -35,6 +36,8 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
         public override void InstallBindings()
         {
             HomeMenuRuntimeUiFactory.EnsureRequiredPanels(_infoPanelName);
+            MenuWorldPreviewKingdomPlacementFeatureBindings.Install(Container);
+            MenuWorldPreviewTextureBuilderFeatureBindings.Install(Container);
 
             var menuRevealFade = _menuRevealFade ?? new HomeMenuRevealFadeSettings();
             Container.BindInstance(menuRevealFade).AsSingle();

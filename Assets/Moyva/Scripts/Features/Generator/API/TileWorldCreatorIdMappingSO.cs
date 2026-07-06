@@ -110,6 +110,12 @@ namespace Kruty1918.Moyva.Generator.API
         }
     }
 
+    public enum TileWorldCreatorTerrainBuildMode
+    {
+        MergedChunksWithPrecomputedHeights = 0,
+        LegacyPostBuildHeightProjection = 1
+    }
+
     [Serializable]
     public sealed class TileWorldCreatorBuildOptions
     {
@@ -127,6 +133,8 @@ namespace Kruty1918.Moyva.Generator.API
         [Header("Terrain shaping")]
         [Tooltip("Підіймати тайли по інтегральному TerrainLevelMap після GenerateCompleteMap.")]
         [SerializeField] private bool _applyIntegerTerrainHeights = true;
+        [Tooltip("Основний режим будує TWC merged chunks і підставляє висоту до merge. Legacy лишає старий post-build projector.")]
+        [SerializeField] private TileWorldCreatorTerrainBuildMode _terrainBuildMode = TileWorldCreatorTerrainBuildMode.MergedChunksWithPrecomputedHeights;
         [Tooltip("Висота однієї одиниці level (Y units), завжди використовується як цілий множник.")]
         [SerializeField] private int _terrainHeightStep = 1;
         [Tooltip("Скільки секунд відстежувати нові tile transforms після GenerateCompleteMap (TWC спавнить тайли через корутини).")]
@@ -180,6 +188,7 @@ namespace Kruty1918.Moyva.Generator.API
         public float ConfigurationCellSizeOverride => _configurationCellSizeOverride;
 
         public bool ApplyIntegerTerrainHeights => _applyIntegerTerrainHeights;
+        public TileWorldCreatorTerrainBuildMode TerrainBuildMode => _terrainBuildMode;
         public int TerrainHeightStep => Mathf.Max(1, _terrainHeightStep);
         public float TerrainHeightTrackingSeconds => Mathf.Max(0f, _terrainHeightTrackingSeconds);
         public bool NormalizeTerrainLevelsForTileWorldCreator => _normalizeTerrainLevelsForTileWorldCreator;

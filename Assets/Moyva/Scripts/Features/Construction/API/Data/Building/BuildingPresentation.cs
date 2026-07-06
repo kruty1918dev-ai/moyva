@@ -21,6 +21,9 @@ namespace Kruty1918.Moyva.Construction.API
 
         public Color UiTint = Color.white;
 
+        [Tooltip("Додатковий Y-offset для preview та поставленої будівлі. Корисно, якщо prefab візуально сидить нижче/вище surface.")]
+        public float VisualYOffset;
+
         [InlineProperty]
         [HideLabel]
         public BuildingPreviewSettings PreviewSettings = new BuildingPreviewSettings();

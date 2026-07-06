@@ -46,6 +46,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 var pos = placement.Position;
                 var id = placement.BuildingId;
+                bool isRelocation = IsRelocation(placement);
+                Vector2Int? relocationSource = placement.OriginalPosition;
+                string relocationOwnerId = _activeOwnerId;
+                bool relocationWasFactionOwned = false;
                 try
                 {
                     bool gateReplacementAllowed = _wallTopologyService != null
@@ -53,7 +57,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         && _wallTopologyService.IsGate(id)
                         && _wallGateReplacementValidator.CanReplaceWallWithGate(pos, id, out _);
 
-                    if (!gateReplacementAllowed && !CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked))
+                    if (!gateReplacementAllowed && !CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked, relocationSource))
                     {
                         skippedCount++;
                         _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.GridCellValidated, "placement-invalid", $"building={id}, pos={pos}");
@@ -64,7 +68,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.GridCellValidated, $"building={id}, pos={pos}");
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.TerrainValidated, $"building={id}, pos={pos}");
 
-                    if (_objectsMapService.IsOccupied(pos))
+                    if (_objectsMapService.IsOccupied(pos) && (!relocationSource.HasValue || relocationSource.Value != pos))
                     {
                         if (!gateReplacementAllowed)
                         {
@@ -76,7 +80,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         _objectsMapService.Unregister(pos);
                     }
 
-                    if (!TryConsumeConstructionResources(pos, id, _activeOwnerId, out var resourceReason))
+                    if (!isRelocation && !TryConsumeConstructionResources(pos, id, _activeOwnerId, out var resourceReason))
                     {
                         skippedCount++;
                         _lastActionMessage = resourceReason;
@@ -85,18 +89,36 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         continue;
                     }
 
-                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, $"building={id}, owner={_activeOwnerId}");
-                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesReserved, $"building={id}, owner={_activeOwnerId}");
+                    if (!isRelocation)
+                    {
+                        _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, $"building={id}, owner={_activeOwnerId}");
+                        _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesReserved, $"building={id}, owner={_activeOwnerId}");
+                    }
+
+                    if (isRelocation && relocationSource.HasValue && relocationSource.Value != pos)
+                    {
+                        if (_factionPlacedBuildings.TryGetValue(relocationSource.Value, out var sourceFactionEntry))
+                        {
+                            relocationWasFactionOwned = true;
+                            relocationOwnerId = sourceFactionEntry.FactionId;
+                        }
+
+                        _objectsMapService.Unregister(relocationSource.Value);
+                        RemovePlacedRecordAt(relocationSource.Value);
+                    }
 
                     _objectsMapService.Register(pos, id);
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingRegistered, $"building={id}, pos={pos}");
-                    _playerPlacedBuildings[pos] = id;
+                    if (relocationWasFactionOwned)
+                        _factionPlacedBuildings[pos] = (id, relocationOwnerId);
+                    else
+                        _playerPlacedBuildings[pos] = id;
 
                     _signalBus.Fire(new BuildingPlacedSignal
                     {
                         BuildingId = id,
                         Position = pos,
-                        OwnerId = _activeOwnerId,
+                        OwnerId = relocationOwnerId,
                     });
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingSpawned, $"building={id}, pos={pos}");
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ConstructionSignalFired, $"building={id}, pos={pos}");
@@ -114,7 +136,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     confirmedCount++;
 
                     if (VerboseLogs)
-                        Debug.Log($"[Construction] Confirm placed '{id}' at {pos}");
+                        Debug.Log($"[Construction] Confirm {(isRelocation ? "relocated" : "placed")} '{id}' at {pos}{(relocationSource.HasValue ? $" from {relocationSource.Value}" : string.Empty)}");
                 }
                 catch (Exception ex)
                 {

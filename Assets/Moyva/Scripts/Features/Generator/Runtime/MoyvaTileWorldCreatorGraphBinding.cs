@@ -3,18 +3,19 @@ using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
 	/// <summary>
 	/// Місток між GraphAsset та TileWorldCreator: граф є джерелом правди,
-	/// а TWC лише виконує згенеровані інструкції. Логіка розділена на partial-файли:
-	/// ядро (цей файл), компіляція графа та превʼю окремих шарів.
+	/// а TWC лише виконує згенеровані інструкції. MonoBehaviour тримає
+	/// serialized state, а роботу делегує сервісам GraphBinding.
 	/// </summary>
 	[DisallowMultipleComponent]
 	[RequireComponent(typeof(TileWorldCreatorManager))]
 	[AddComponentMenu("Moyva/Generator/Moyva TWC Graph Binding")]
-	public sealed partial class MoyvaTileWorldCreatorGraphBinding : MonoBehaviour
+	public sealed class MoyvaTileWorldCreatorGraphBinding : MonoBehaviour, IMoyvaTwcGraphBindingContext
 	{
 		[SerializeField] private TileWorldCreatorManager _manager;
 		[SerializeField] private GraphAsset _graphAsset;
@@ -22,6 +23,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 		[SerializeField] private bool _compileBeforeGenerate = true;
 		[SerializeField] private bool _generateBuildLayersAfterCompile = true;
 		private bool _isGenerating;
+		private IMoyvaTwcGraphBindingService _service;
 
 		public TileWorldCreatorManager Manager
 		{
@@ -38,16 +40,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
 		public bool CompileBeforeGenerate => _compileBeforeGenerate;
 		public bool GenerateBuildLayersAfterCompile => _generateBuildLayersAfterCompile;
 		public IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; private set; } = Array.Empty<CompiledLayerMap>();
+		public bool IsGenerating => _isGenerating;
 
-		public void SetGraphAsset(GraphAsset graphAsset)
+		[Inject]
+		private void Construct([InjectOptional] IMoyvaTwcGraphBindingService service = null)
 		{
-			_graphAsset = graphAsset;
+			_service = service;
 		}
 
-		public void SetEditorSeed(int seed)
-		{
-			_editorSeed = NormalizeSeed(seed);
-		}
+		public void SetGraphAsset(GraphAsset graphAsset) => _graphAsset = graphAsset;
+
+		public void SetEditorSeed(int seed) => _editorSeed = NormalizeSeed(seed);
 
 		public void SetCompileBeforeGenerate(bool value)
 		{
@@ -61,26 +64,64 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
 		public bool CanCompile(out string reason)
 		{
-			if (Manager == null)
-			{
-				reason = "TileWorldCreatorManager відсутній.";
-				return false;
-			}
+			return ResolveService().CanCompile(this, out reason);
+		}
 
-			if (Manager.configuration == null)
-			{
-				reason = "TWC Configuration не задано.";
-				return false;
-			}
+		public IReadOnlyList<CompiledLayerMap> CompileGraphToConfiguration()
+		{
+			return ResolveService().CompileGraphToConfiguration(this);
+		}
 
-			if (_graphAsset == null)
-			{
-				reason = "GraphAsset не задано.";
-				return false;
-			}
+		public IReadOnlyList<CompiledLayerMap> CompileGraphToConfiguration(int seed)
+		{
+			return ResolveService().CompileGraphToConfiguration(this, seed);
+		}
 
-			reason = null;
-			return true;
+		public void GenerateFromGraph()
+		{
+			ResolveService().GenerateFromGraph(this);
+		}
+
+		public void GenerateFromGraph(int seed)
+		{
+			ResolveService().GenerateFromGraph(this, seed);
+		}
+
+		public IReadOnlyList<string> GetGraphLayerNames()
+		{
+			return ResolveService().GetGraphLayerNames(this);
+		}
+
+		public void GenerateLayerPreview(string layerName)
+		{
+			ResolveService().GenerateLayerPreview(this, layerName);
+		}
+
+		public void GenerateLayerPreview(string layerName, int seed)
+		{
+			ResolveService().GenerateLayerPreview(this, layerName, seed);
+		}
+
+		public void ClearGeneratedMap()
+		{
+			ResolveService().ClearGeneratedMap(this);
+		}
+
+		void IMoyvaTwcGraphBindingContext.SetLastCompiledLayers(IReadOnlyList<CompiledLayerMap> layers)
+		{
+			LastCompiledLayers = layers ?? Array.Empty<CompiledLayerMap>();
+		}
+
+		void IMoyvaTwcGraphBindingContext.SetGenerating(bool value)
+		{
+			_isGenerating = value;
+		}
+
+		UnityEngine.Object IMoyvaTwcGraphBindingContext.LogContext => this;
+
+		private IMoyvaTwcGraphBindingService ResolveService()
+		{
+			return _service ??= MoyvaTwcGraphBindingComposition.Create();
 		}
 
 		private void Reset()

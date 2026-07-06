@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.Construction.API
         bool RequireVisibleFogTile { get; }
         bool AllowBuildingOnWater { get; }
         bool AllowBuildingOnHills { get; }
+        bool BlockEdgeTerrainTiles { get; }
         string[] BlockedTileIds { get; }
         TerrainLevelRestrictionRange[] BlockedTerrainLevelRanges { get; }
     }

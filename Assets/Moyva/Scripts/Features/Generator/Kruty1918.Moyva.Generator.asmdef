@@ -11,7 +11,9 @@
         "Kruty1918.Moyva.GraphSystem",
         "GUID:2184a61147db9a3028e020da0232f700",
         "Kruty1918.Moyva.Diagnostics",
-        "GiantGrey.TileWorldCreator"
+        "Kruty1918.Moyva.MapChunks",
+        "GiantGrey.TileWorldCreator",
+        "Unity.Mathematics"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

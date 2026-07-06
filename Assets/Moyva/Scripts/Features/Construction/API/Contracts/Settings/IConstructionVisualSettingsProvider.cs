@@ -12,6 +12,12 @@ namespace Kruty1918.Moyva.Construction.API
         float InfluenceRadiusBorderWidth { get; }
         string InfluenceRadiusShaderName2D { get; }
         string InfluenceRadiusShaderName3D { get; }
+        bool UseBuildGridOverlay { get; }
+        float BuildGridFillAlpha { get; }
+        float BuildGridLineAlpha { get; }
+        float BuildGridLineWidthNormalized { get; }
+        float BuildGridSurfaceOffsetY { get; }
+        string BuildGridShaderName { get; }
         string PreviewRootName { get; }
         string PlacedRootName { get; }
         string RadiusRootName { get; }

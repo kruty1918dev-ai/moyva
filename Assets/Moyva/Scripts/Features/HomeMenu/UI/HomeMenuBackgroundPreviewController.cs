@@ -10,6 +10,7 @@ using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UI;
+using Zenject;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -97,8 +98,19 @@ namespace Kruty1918.Moyva.HomeMenu.UI
         private GameObject _livePreviewRoot;
         private Camera _livePreviewCamera;
         private Light _livePreviewLight;
+        private IMenuWorldPreviewKingdomPlacementService _kingdomPlacementService;
+        private IMenuWorldPreviewTextureBuilderService _textureBuilderService;
         private readonly List<Mesh> _livePreviewMeshes = new List<Mesh>();
         private static MoyvaProjectSettingsSO _runtimeFallbackSettings;
+
+        [Inject]
+        public void Construct(
+            [InjectOptional] IMenuWorldPreviewKingdomPlacementService kingdomPlacementService = null,
+            [InjectOptional] IMenuWorldPreviewTextureBuilderService textureBuilderService = null)
+        {
+            _kingdomPlacementService = kingdomPlacementService;
+            _textureBuilderService = textureBuilderService;
+        }
 
         private void Awake()
         {
@@ -190,7 +202,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
 
             if (_kingdomPlacement != null && _kingdomPlacement.Enabled)
             {
-                var placementReport = MenuWorldPreviewKingdomPlacer.Apply(previewData, _kingdomPlacement);
+                var placementReport = _kingdomPlacementService != null
+                    ? _kingdomPlacementService.Apply(previewData, _kingdomPlacement)
+                    : MenuWorldPreviewKingdomPlacer.Apply(previewData, _kingdomPlacement);
                 if (!string.IsNullOrWhiteSpace(placementReport.Warning))
                     Debug.LogWarning($"[HomeMenuBackgroundPreview] Kingdom placement warning: {placementReport.Warning}");
 
@@ -215,7 +229,7 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 return;
             }
 
-            var texture = MenuWorldPreviewTextureBuilder.Build(
+            var textureRequest = new MenuWorldPreviewTextureBuildRequest(
                 previewData,
                 tileRegistry,
                 _mapObjectRegistry,
@@ -223,6 +237,16 @@ namespace Kruty1918.Moyva.HomeMenu.UI
                 _pixelsPerTile,
                 _maxTextureEdge,
                 projectSettings);
+            var texture = _textureBuilderService != null
+                ? _textureBuilderService.Build(textureRequest)
+                : MenuWorldPreviewTextureBuilder.Build(
+                    previewData,
+                    tileRegistry,
+                    _mapObjectRegistry,
+                    _buildingRegistry,
+                    _pixelsPerTile,
+                    _maxTextureEdge,
+                    projectSettings);
 
             if (texture == null)
             {

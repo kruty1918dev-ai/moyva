@@ -1,0 +1,17 @@
+{
+    "name": "Kruty1918.Moyva.MapChunks",
+    "rootNamespace": "Kruty1918.Moyva.MapChunks",
+    "references": [
+        "Kruty1918.Moyva.Signals",
+        "Zenject"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

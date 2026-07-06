@@ -93,6 +93,7 @@ namespace Kruty1918.Moyva.Construction.API
                 Icon = Presentation.Icon,
                 RuntimePreview = Presentation.RuntimePreview,
                 Prefab = Presentation.Prefab,
+                VisualYOffset = Presentation.VisualYOffset,
                 ConstructionCost = CloneCost(Construction.Cost),
                 Modules = CloneModuleList(Modules),
                 MaxHp = Mathf.Max(1, RuntimeStats.MaxHp),
@@ -118,6 +119,7 @@ namespace Kruty1918.Moyva.Construction.API
             Presentation.Icon = legacy.Icon;
             Presentation.RuntimePreview = legacy.RuntimePreview;
             Presentation.Prefab = legacy.Prefab;
+            Presentation.VisualYOffset = legacy.VisualYOffset;
 
             Construction.Cost = CloneCost(legacy.ConstructionCost);
 
