@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Grid.Runtime;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.Signals;
+using Zenject;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {

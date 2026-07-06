@@ -5,7 +5,7 @@ using GiantGrey.TileWorldCreator.Components;
 namespace Kruty1918.Moyva.Generator.Runtime
 {
 
-    internal sealed class GraphGenerationLayerTwcLookup : IGraphGenerationLayerTwcLookup
+    internal sealed class GraphGenerationLayerTwcLookup : global::Kruty1918.Moyva.Generator.Runtime.IGraphGenerationLayerTwcLookup
     {
         public int CountGeneratedCells(TileWorldCreatorManager manager, CompiledLayerMap compiled)
         {

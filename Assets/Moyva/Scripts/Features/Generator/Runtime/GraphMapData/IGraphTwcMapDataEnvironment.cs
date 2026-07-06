@@ -1,4 +1,4 @@
-using GiantGrey.TileWorldCreator.Components;
+using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime

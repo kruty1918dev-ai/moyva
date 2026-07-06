@@ -8,14 +8,14 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
-    internal sealed class GraphGenerationLayerReportBuilder : IGraphGenerationLayerReportBuilder
+    internal sealed class GraphGenerationLayerReportBuilder : global::Kruty1918.Moyva.Generator.Runtime.IGraphGenerationLayerReportBuilder
     {
-        private readonly IGraphGenerationLayerIssueService _issues;
-        private readonly IGraphGenerationLayerAnalyzer _analyzer;
+        private readonly global::Kruty1918.Moyva.Generator.Runtime.IGraphGenerationLayerIssueService _issues;
+        private readonly global::Kruty1918.Moyva.Generator.Runtime.IGraphGenerationLayerAnalyzer _analyzer;
 
         public GraphGenerationLayerReportBuilder(
-            IGraphGenerationLayerIssueService issues,
-            IGraphGenerationLayerAnalyzer analyzer)
+            global::Kruty1918.Moyva.Generator.Runtime.IGraphGenerationLayerIssueService issues,
+            global::Kruty1918.Moyva.Generator.Runtime.IGraphGenerationLayerAnalyzer analyzer)
         {
             _issues = issues;
             _analyzer = analyzer;

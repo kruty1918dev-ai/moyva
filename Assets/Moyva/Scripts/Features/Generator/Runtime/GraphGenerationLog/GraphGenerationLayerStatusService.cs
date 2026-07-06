@@ -6,11 +6,11 @@ using Kruty1918.Moyva.GraphSystem.API;
 namespace Kruty1918.Moyva.Generator.Runtime
 {
 
-    internal sealed class GraphGenerationLayerStatusService : IGraphGenerationLayerStatusService
+    internal sealed class GraphGenerationLayerStatusService : global::Kruty1918.Moyva.Generator.Runtime.IGraphGenerationLayerStatusService
     {
-        private readonly IGraphGenerationLayerIssueService _issues;
+        private readonly global::Kruty1918.Moyva.Generator.Runtime.IGraphGenerationLayerIssueService _issues;
 
-        public GraphGenerationLayerStatusService(IGraphGenerationLayerIssueService issues)
+        public GraphGenerationLayerStatusService(global::Kruty1918.Moyva.Generator.Runtime.IGraphGenerationLayerIssueService issues)
         {
             _issues = issues;
         }

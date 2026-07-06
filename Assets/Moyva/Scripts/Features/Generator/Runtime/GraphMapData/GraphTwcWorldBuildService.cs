@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using GiantGrey.TileWorldCreator.Components;
+using GiantGrey.TileWorldCreator;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Kruty1918.Moyva.GraphSystem.Runtime;
+using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {

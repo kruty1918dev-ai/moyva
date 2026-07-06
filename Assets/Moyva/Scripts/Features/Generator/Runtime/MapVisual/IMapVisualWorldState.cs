@@ -1,3 +1,5 @@
+using Kruty1918.Moyva.Signals;
+
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal interface IMapVisualWorldState

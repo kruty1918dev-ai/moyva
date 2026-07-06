@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using GiantGrey.TileWorldCreator.Components;
+using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 

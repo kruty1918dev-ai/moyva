@@ -7,7 +7,7 @@ using Kruty1918.Moyva.GraphSystem.API;
 namespace Kruty1918.Moyva.Generator.Runtime
 {
 
-    internal sealed class GraphGenerationLayerIssueService : IGraphGenerationLayerIssueService
+    internal sealed class GraphGenerationLayerIssueService : global::Kruty1918.Moyva.Generator.Runtime.IGraphGenerationLayerIssueService
     {
         public Dictionary<string, List<GraphValidationIssue>> GroupByLayer(GraphValidationReport report)
         {
