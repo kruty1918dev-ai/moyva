@@ -1,4 +1,4 @@
-using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Grid.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {

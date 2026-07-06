@@ -8,11 +8,6 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
-    internal interface IGraphGenerationLayerReportBuilder
-    {
-        string Build(GraphGenerationLayerLogRequest request);
-    }
-
     internal sealed class GraphGenerationLayerReportBuilder : IGraphGenerationLayerReportBuilder
     {
         private readonly IGraphGenerationLayerIssueService _issues;
