@@ -23,16 +23,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ISaveLoadDiagnostics saveLoadDiagnostics,
             ISaveLoadDiagnosticsSession saveLoadDiagnosticsSession,
             IWorldGenerationSignalState signalState)
-        {
+           {
             projection ??= new OrthogonalGridProjection();
             var tileResolver = new MapVisualTileIdResolver(tileRegistry);
             return new MapVisualWorldBuildOrchestrator(
-                state,
-                new MapVisualWorldDataFactory(gridService, projection, mapDataGenerator, graphDiagnostics, worldDiagnostics),
-                new MapVisualGridWriter(gridService, tileResolver),
-                new MapVisualWorldSignalPublisher(signalBus, projection, graphDiagnostics, signalState, worldDiagnostics,
+                state: state,
+                dataFactory: new MapVisualWorldDataFactory(gridService, projection, mapDataGenerator, graphDiagnostics, worldDiagnostics),
+                gridWriter: new MapVisualGridWriter(gridService, tileResolver),
+                signals: new MapVisualWorldSignalPublisher(signalBus, projection, graphDiagnostics, signalState, worldDiagnostics,
                     saveLoadDiagnostics, saveLoadDiagnosticsSession),
-                worldDiagnostics);
+                tileWorldCreatorBridge: null,
+                worldDiagnostics: worldDiagnostics);
         }
     }
 }

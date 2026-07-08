@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public string[,] ObjectMap;
         public float[,] HeightMap;
         public string[,] BuildingMap;
+        public GraphLogicalTileMap LogicalMap;
         public IReadOnlyList<CompiledLayerMap> CompiledLayers;
         public float CellSize = 1f;
         public bool HasBaseMapWorldBounds;

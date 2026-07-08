@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.MapChunks.Runtime
 {
-    internal sealed class DefaultMapChunkSettingsProvider : IMapChunkSettingsProvider
+    public sealed class DefaultMapChunkSettingsProvider : IMapChunkSettingsProvider
     {
         private static readonly string[] IgnoredNames = { "Fog", "Canvas", "UI", "Camera", "Light" };
 

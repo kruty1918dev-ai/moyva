@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.MapChunks.Runtime
 {
-    internal sealed class MapVisualChunkRootService : IMapVisualChunkRootService
+    public sealed class MapVisualChunkRootService : IMapVisualChunkRootService
     {
         private const string RootName = "MapVisualChunks";
         private readonly Dictionary<MapChunkCoord, Transform> _roots = new();
@@ -16,7 +16,15 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                 return existing;
 
             EnsureRoot();
-            var chunkObject = new GameObject($"MapChunk_{coord.X}_{coord.Y}");
+            string chunkName = $"MapChunk_{coord.X}_{coord.Y}";
+            var existingChild = _root.Find(chunkName);
+            if (existingChild != null)
+            {
+                _roots[coord] = existingChild;
+                return existingChild;
+            }
+
+            var chunkObject = new GameObject(chunkName);
             chunkObject.transform.SetParent(_root, false);
             var transform = chunkObject.transform;
             _roots[coord] = transform;

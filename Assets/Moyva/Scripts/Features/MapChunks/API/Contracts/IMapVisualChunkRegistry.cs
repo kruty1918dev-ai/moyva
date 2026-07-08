@@ -8,7 +8,9 @@ namespace Kruty1918.Moyva.MapChunks.API
         void Clear();
         void ResetVisibilityState();
         void Register(Renderer renderer, IReadOnlyList<MapChunkCoord> chunks);
+        int CameraVisibilityVersion { get; }
         void SetCameraVisible(IReadOnlyCollection<MapChunkCoord> visibleChunks);
+        bool IsCameraVisible(MapChunkCoord coord);
         void SetFogFullyHidden(MapChunkCoord coord, bool hidden);
         void ApplyVisibility();
     }

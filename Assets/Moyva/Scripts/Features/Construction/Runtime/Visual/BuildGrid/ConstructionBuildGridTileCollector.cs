@@ -105,11 +105,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (_gridGeometry == null || !_gridGeometry.TryGetCellSize(out Vector2 cellSize))
                 return Vector3.one;
 
-            return new Vector3(Mathf.Max(0.01f, cellSize.x), Mathf.Max(0.01f, cellSize.y), 1f);
+            float tileScale = 1f - ResolveTileInsetNormalized() * 2f;
+            return new Vector3(
+                Mathf.Max(0.01f, cellSize.x * tileScale),
+                Mathf.Max(0.01f, cellSize.y * tileScale),
+                1f);
         }
 
         private Vector4 ResolveEdgeMask(Vector2Int position, System.Predicate<Vector2Int> shouldInclude)
         {
+            if (ResolveTileInsetNormalized() > 0.0001f)
+                return Vector4.one;
+
             return new Vector4(
                 1f,
                 1f,
@@ -127,5 +134,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private float ResolveSurfaceOffsetY()
             => Mathf.Clamp(_settingsProvider?.BuildGridSurfaceOffsetY ?? 0.06f, MinSurfaceOffsetY, MaxSurfaceOffsetY);
+
+        private float ResolveTileInsetNormalized()
+            => Mathf.Clamp(_settingsProvider?.BuildGridTileInsetNormalized ?? 0.08f, 0f, 0.45f);
     }
 }

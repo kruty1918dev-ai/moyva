@@ -3,6 +3,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Diagnostics.Runtime.Flows;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
+using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.MapChunks.Runtime;
@@ -178,6 +179,7 @@ namespace Kruty1918.Moyva.Generator
                 buildOptions);
 
             Container.Bind<ITileWorldCreatorBuildEnvironment>().FromInstance(environment).AsSingle();
+            ChunkFirstFeatureBindings.Install(Container);
             Container.Bind<ITileWorldCreatorBlueprintLayerResolver>().To<TileWorldCreatorBlueprintLayerResolver>().AsSingle();
             Container.Bind<ITileWorldCreatorTerrainLevelMapService>().To<TileWorldCreatorTerrainLevelMapService>().AsSingle();
             Container.Bind<ITileWorldCreatorShoreBandService>().To<TileWorldCreatorShoreBandService>().AsSingle();

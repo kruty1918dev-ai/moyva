@@ -13,7 +13,8 @@
         "Unity.InputSystem",
         "Kruty1918.Moyva.WorldCreation.API",
         "Kruty1918.Moyva.Combat",
-        "Kruty1918.Moyva.GameMode"
+        "Kruty1918.Moyva.GameMode",
+        "Kruty1918.Moyva.MapChunks"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -1,3 +1,4 @@
+
 namespace Kruty1918.Moyva.Construction.API
 {
     public interface IConstructionVisualSettingsProvider
@@ -13,10 +14,13 @@ namespace Kruty1918.Moyva.Construction.API
         string InfluenceRadiusShaderName2D { get; }
         string InfluenceRadiusShaderName3D { get; }
         bool UseBuildGridOverlay { get; }
+        ConstructionBuildGridRenderMode BuildGridRenderMode { get; }
+        bool BuildGridSurfacePlaneUseBuildableFilter { get; }
         float BuildGridFillAlpha { get; }
         float BuildGridLineAlpha { get; }
         float BuildGridLineWidthNormalized { get; }
         float BuildGridSurfaceOffsetY { get; }
+        float BuildGridTileInsetNormalized { get; }
         string BuildGridShaderName { get; }
         string PreviewRootName { get; }
         string PlacedRootName { get; }

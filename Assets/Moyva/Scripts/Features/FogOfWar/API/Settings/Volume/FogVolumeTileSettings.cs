@@ -48,6 +48,25 @@ namespace Kruty1918.Moyva.FogOfWar.API
         public int ClusterPaddingCells = 1;
 
         /// <summary>
+        /// Невелике горизонтальне перекриття volume tiles, щоб TWC dual-grid fog не залишав щілини між сусідніми клітинками.
+        /// Застосовується тільки до X/Z scale runtime fog tiles; вертикальна Y-висота не змінюється.
+        /// </summary>
+        [BoxGroup("Runtime")]
+        [Tooltip("Extra X/Z scale overlap for runtime fog volume tiles. Helps close visible gaps between neighboring fog cells.")]
+        [MinValue(0f)]
+        [MaxValue(0.25f)]
+        public float HorizontalTileOverlap = 0.03f;
+
+        /// <summary>
+        /// Додатковий вертикальний простір між fog шарами різних висот.
+        /// Залишай 0, якщо потрібна максимально щільна посадка без штучних проміжків.
+        /// </summary>
+        [BoxGroup("Runtime")]
+        [Tooltip("Extra vertical gap between fog layers on different heights. Leave at 0 to keep layers tight.")]
+        [MinValue(0f)]
+        public float VerticalLayerSpacing = 0f;
+
+        /// <summary>
         /// Дозволяє clustered renderer-у перейти на full clustered rebuild, якщо dirty update зачіпає забагато clusters.
         /// </summary>
         [BoxGroup("Runtime Clustered Renderer")]
@@ -164,6 +183,8 @@ namespace Kruty1918.Moyva.FogOfWar.API
             RebuildIntervalSeconds = Mathf.Max(0.02f, RebuildIntervalSeconds);
             ClusterSize = Mathf.Max(1, ClusterSize);
             ClusterPaddingCells = Mathf.Clamp(ClusterPaddingCells, 0, ClusterSize);
+            HorizontalTileOverlap = Mathf.Clamp(HorizontalTileOverlap, 0f, 0.25f);
+            VerticalLayerSpacing = Mathf.Max(0f, VerticalLayerSpacing);
             FullRebuildDirtyClusterRatioThreshold = Mathf.Clamp(FullRebuildDirtyClusterRatioThreshold, 0.01f, 1f);
             TopClearance = Mathf.Max(0f, TopClearance);
             CellSizeOverride = Mathf.Max(0.001f, CellSizeOverride);

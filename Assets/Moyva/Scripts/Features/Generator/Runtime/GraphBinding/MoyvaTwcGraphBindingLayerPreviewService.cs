@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
+using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -70,8 +71,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
+            GuardChunkFirstVisualBuild(context);
             context.Manager.ResetConfiguration();
             context.Manager.ExecuteBuildLayers(ExecutionMode.FromScratch);
+        }
+
+        private static void GuardChunkFirstVisualBuild(IMoyvaTwcGraphBindingContext context)
+        {
+            if (!TileWorldCreatorChunkFirstGuard.IsActive)
+                return;
+
+            Debug.LogError("[Moyva TWC Graph Binding] ExecuteBuildLayers reached during chunk-first mode.", context?.LogContext);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            throw new InvalidOperationException("TWC visual build is forbidden during chunk-first generation.");
+#endif
         }
 
         private void GeneratePreviewInternal(IMoyvaTwcGraphBindingContext context, string layerName, int seed)

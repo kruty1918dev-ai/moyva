@@ -6,6 +6,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
     internal interface IGraphTwcMapDataDiagnostics
     {
         IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; }
+        GraphLogicalTileMap LastLogicalMap { get; }
         float LastCellSize { get; }
         string DiagnosticGraphName { get; }
         bool HasGraphAsset { get; }

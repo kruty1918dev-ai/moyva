@@ -11,11 +11,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void Set(GraphLogicalTileMap map, int x, int y, GraphLogicalTileLayerData layer)
         {
-            map.TileIds[x, y] = layer.TileId;
-            map.GraphLayerIds[x, y] = layer.GraphLayerId;
-            map.LayerNames[x, y] = layer.LayerName;
-            map.LayerHeights[x, y] = layer.LayerHeight;
-            map.SurfaceHeights[x, y] = layer.SurfaceHeight;
+            map.AddSample(x, y, layer.ToSample());
         }
     }
 }

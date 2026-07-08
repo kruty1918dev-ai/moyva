@@ -1,5 +1,6 @@
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
 using Kruty1918.Moyva.MapChunks.API;
 using UnityEngine;
 using Zenject;
@@ -23,6 +24,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly ITileWorldCreatorBuildExecutionService _execution;
         private readonly ITileWorldCreatorTerrainVisualPostProcessor _visualPostProcessor;
         private readonly ITileWorldCreatorTerrainHeightPublisher _heightPublisher;
+        private readonly IChunkFirstWorldBuildService _chunkFirstBuild;
 
         public TileWorldCreatorWorldBuildBridge(
             ITileWorldCreatorBuildEnvironment environment,
@@ -37,7 +39,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ITileWorldCreatorTerrainVisualPostProcessor visualPostProcessor,
             ITileWorldCreatorTerrainHeightPublisher heightPublisher,
             [InjectOptional] IGeneratorTerrainLevelService terrainLevelService = null,
-            [InjectOptional] IMapChunkSettingsProvider chunkSettings = null)
+            [InjectOptional] IMapChunkSettingsProvider chunkSettings = null,
+            [InjectOptional] IChunkFirstWorldBuildService chunkFirstBuild = null)
         {
             _environment = environment;
             _terrainPolicyService = terrainPolicyService;
@@ -52,6 +55,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _heightPublisher = heightPublisher;
             _terrainLevelService = terrainLevelService;
             _chunkSettings = chunkSettings;
+            _chunkFirstBuild = chunkFirstBuild;
         }
 
         public TileWorldCreatorWorldBuildResult Build(GeneratedWorldData worldData)
@@ -70,9 +74,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return TileWorldCreatorWorldBuildResult.Disabled;
             }
 
-            TileWorldCreatorTerrainBuildPolicyResult terrainPolicy = _terrainPolicyService.Resolve(options, _chunkSettings?.ChunkSize ?? 0);
+            TileWorldCreatorTerrainBuildPolicyResult terrainPolicy = worldData.ForceChunkFirstCompositeBuild
+                ? new TileWorldCreatorTerrainBuildPolicyResult(
+                    TileWorldCreatorTerrainBuildMode.ChunkFirstCompositeMesh,
+                    _chunkSettings?.ChunkSize ?? 0,
+                    options.ApplyIntegerTerrainHeights)
+                : _terrainPolicyService.Resolve(options, _chunkSettings?.ChunkSize ?? 0);
             _diagnostics.LogBuildStart(worldData, configuration);
             PrepareTerrainData(worldData, options);
+
+            if (terrainPolicy.UsesChunkFirstComposite)
+                return BuildChunkFirst(worldData, configuration, terrainPolicy);
 
             TileWorldCreatorLayerPositionSet positions = _positionCollector.Collect(worldData, configuration);
             LogPositionSummaries(positions, configuration);
@@ -110,6 +122,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 Debug.LogError($"{LogTag} Build failed: {ex}");
                 return TileWorldCreatorWorldBuildResult.Disabled;
             }
+        }
+
+        private TileWorldCreatorWorldBuildResult BuildChunkFirst(
+            GeneratedWorldData worldData,
+            Configuration configuration,
+            TileWorldCreatorTerrainBuildPolicyResult terrainPolicy)
+        {
+            if (_chunkFirstBuild == null)
+            {
+                Debug.LogError($"{LogTag} Chunk-first build selected but IChunkFirstWorldBuildService is not bound.");
+                return TileWorldCreatorWorldBuildResult.Disabled;
+            }
+
+            _configurationPreparation.Prepare(configuration, worldData, terrainPolicy);
+            return _chunkFirstBuild.Build(worldData, configuration, terrainPolicy);
         }
 
         private void PrepareTerrainData(GeneratedWorldData worldData, TileWorldCreatorBuildOptions options)

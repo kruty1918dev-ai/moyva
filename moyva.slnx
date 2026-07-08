@@ -18,9 +18,9 @@
   <Project Path="Zenject-IntegrationTests-Editor.csproj" />
   <Project Path="Unity.Burst.csproj" />
   <Project Path="Unity.VisualScripting.Flow.Editor.csproj" />
-  <Project Path="Unity.Services.Relay.csproj" />
-  <Project Path="Unity.RenderPipelines.Core.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.Editor.csproj" />
+  <Project Path="Unity.RenderPipelines.Core.Editor.csproj" />
+  <Project Path="Unity.Services.Relay.csproj" />
   <Project Path="Kruty1918.Moyva.Generator.csproj" />
   <Project Path="Unity.VisualStudio.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.Editor.csproj" />
@@ -45,8 +45,8 @@
   <Project Path="Zenject-IntegrationTests.csproj" />
   <Project Path="Unity.Services.Deployment.Core.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Runtime.csproj" />
-  <Project Path="unity-websocket-sharp.csproj" />
   <Project Path="Unity.Services.Multiplayer.csproj" />
+  <Project Path="unity-websocket-sharp.csproj" />
   <Project Path="Unity.Burst.CodeGen.csproj" />
   <Project Path="Kruty1918.Moyva.Pathfinding.csproj" />
   <Project Path="Unity.InputSystem.csproj" />

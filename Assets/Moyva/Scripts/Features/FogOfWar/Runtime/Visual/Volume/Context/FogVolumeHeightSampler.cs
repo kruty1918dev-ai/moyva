@@ -30,7 +30,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         {
             float clearance = _settings?.Volume.TopClearance ?? 0.08f;
             float layerOffset = stateSettings != null ? stateSettings.LayerYOffset : 0f;
-            return heightKey * Mathf.Max(0.001f, _effectiveSnap) + Mathf.Max(0f, clearance) + layerOffset;
+            float verticalSpacing = _settings?.Volume.VerticalLayerSpacing ?? 0f;
+            return heightKey * Mathf.Max(0.001f, _effectiveSnap) + Mathf.Max(0f, clearance) + layerOffset + Mathf.Max(0f, verticalSpacing);
+        }
+
+        public float ResolveWorldHeight(float surfaceHeight, FogVolumeStateTileSettings stateSettings)
+        {
+            float clearance = _settings?.Volume.TopClearance ?? 0.08f;
+            float layerOffset = stateSettings != null ? stateSettings.LayerYOffset : 0f;
+            float verticalSpacing = _settings?.Volume.VerticalLayerSpacing ?? 0f;
+            return surfaceHeight + Mathf.Max(0f, clearance) + layerOffset + Mathf.Max(0f, verticalSpacing);
         }
 
         public float ResolveGeneratedSurfaceHeight(Vector2Int tile)

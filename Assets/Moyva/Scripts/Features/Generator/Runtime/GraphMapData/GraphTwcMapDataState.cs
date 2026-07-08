@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         public IReadOnlyList<CompiledLayerMap> LastCompiledLayers { get; private set; }
+        public GraphLogicalTileMap LastLogicalMap { get; private set; }
         public float LastCellSize { get; private set; } = 1f;
         public string DiagnosticGraphName => _environment.Graph != null ? _environment.Graph.name : "null";
         public bool HasGraphAsset => _environment.Graph != null;
@@ -40,6 +41,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             if (result.CompiledLayers != null)
                 LastCompiledLayers = result.CompiledLayers;
+            LastLogicalMap = result.LogicalMap;
             LastCellSize = result.CellSize > 0.0001f ? result.CellSize : 1f;
             _hasLastBaseMapWorldBounds = result.HasBaseMapWorldBounds;
             _lastBaseMapWorldBounds = result.BaseMapWorldBounds;

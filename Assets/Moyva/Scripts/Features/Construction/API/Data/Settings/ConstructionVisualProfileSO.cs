@@ -1,3 +1,4 @@
+
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -28,6 +29,13 @@ namespace Kruty1918.Moyva.Construction.API
         [SerializeField] private bool _useBuildGridOverlay = true;
 
         [BoxGroup("Build Grid")]
+        [SerializeField] private ConstructionBuildGridRenderMode _buildGridRenderMode =
+            ConstructionBuildGridRenderMode.LegacyDrawMeshPerTile;
+
+        [BoxGroup("Build Grid")]
+        [SerializeField] private bool _buildGridSurfacePlaneUseBuildableFilter = false;
+
+        [BoxGroup("Build Grid")]
         [Range(0f, 1f)]
         [SerializeField] private float _buildGridFillAlpha = 0.045f;
 
@@ -42,6 +50,10 @@ namespace Kruty1918.Moyva.Construction.API
         [BoxGroup("Build Grid")]
         [MinValue(0f)]
         [SerializeField] private float _buildGridSurfaceOffsetY = 0.06f;
+
+        [BoxGroup("Build Grid")]
+        [Range(0f, 0.45f)]
+        [SerializeField] private float _buildGridTileInsetNormalized = 0.08f;
 
         [BoxGroup("Influence Radius")]
         [SerializeField] private bool _useInfluenceRadiusOverlay = true;
@@ -78,10 +90,13 @@ namespace Kruty1918.Moyva.Construction.API
         public float GhostAlpha => Mathf.Clamp01(_ghostAlpha);
         public float BlockedFlashDurationSeconds => Mathf.Max(0f, _blockedFlashDurationSeconds);
         public bool UseBuildGridOverlay => _useBuildGridOverlay;
+        public ConstructionBuildGridRenderMode BuildGridRenderMode => _buildGridRenderMode;
+        public bool BuildGridSurfacePlaneUseBuildableFilter => _buildGridSurfacePlaneUseBuildableFilter;
         public float BuildGridFillAlpha => Mathf.Clamp01(_buildGridFillAlpha);
         public float BuildGridLineAlpha => Mathf.Clamp01(_buildGridLineAlpha);
         public float BuildGridLineWidthNormalized => Mathf.Clamp(_buildGridLineWidthNormalized, 0.005f, 0.49f);
         public float BuildGridSurfaceOffsetY => Mathf.Max(0f, _buildGridSurfaceOffsetY);
+        public float BuildGridTileInsetNormalized => Mathf.Clamp(_buildGridTileInsetNormalized, 0f, 0.45f);
         public bool UseInfluenceRadiusOverlay => _useInfluenceRadiusOverlay;
         public float InfluenceRadiusFillAlpha => Mathf.Clamp01(_influenceRadiusFillAlpha);
         public float InfluenceRadiusBorderWidth => Mathf.Max(0f, _influenceRadiusBorderWidth);

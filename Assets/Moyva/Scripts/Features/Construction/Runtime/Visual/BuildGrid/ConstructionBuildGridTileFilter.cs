@@ -1,6 +1,6 @@
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.MapChunks.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using UnityEngine;
 using Zenject;
@@ -14,7 +14,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IConstructionPlacementRulesProvider _placementRulesProvider;
         private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
         private readonly ITileSettingsService _tileSettings;
-        private readonly IFogOfWarService _fogOfWarService;
+        private readonly IMapChunkLayoutService _chunkLayout;
+        private readonly IMapVisualChunkRegistry _chunkRegistry;
 
         [Inject]
         public ConstructionBuildGridTileFilter(
@@ -23,14 +24,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IConstructionPlacementRulesProvider placementRulesProvider = null,
             [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery = null,
             [InjectOptional] ITileSettingsService tileSettings = null,
-            [InjectOptional] IFogOfWarService fogOfWarService = null)
+            [InjectOptional] IMapChunkLayoutService chunkLayout = null,
+            [InjectOptional] IMapVisualChunkRegistry chunkRegistry = null)
         {
             _gridService = gridService;
             _objectsMapService = objectsMapService;
             _placementRulesProvider = placementRulesProvider;
             _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
             _tileSettings = tileSettings;
-            _fogOfWarService = fogOfWarService;
+            _chunkLayout = chunkLayout;
+            _chunkRegistry = chunkRegistry;
         }
 
         public bool ShouldRender(Vector2Int position)
@@ -53,16 +56,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            return !RequiresVisibleFog(position);
+            return IsInActiveChunk(position);
         }
 
-        private bool RequiresVisibleFog(Vector2Int position)
+        private bool IsInActiveChunk(Vector2Int position)
         {
-            return _placementRulesProvider != null
-                && _placementRulesProvider.EnableFogRules
-                && _placementRulesProvider.RequireVisibleFogTile
-                && _fogOfWarService != null
-                && _fogOfWarService.GetFogState(position) != FogStateType.Visible;
+            if (_chunkLayout == null || !_chunkLayout.IsConfigured || _chunkRegistry == null)
+                return true;
+
+            return _chunkLayout.TryGetChunkCoord(position, out MapChunkCoord coord)
+                && _chunkRegistry.IsCameraVisible(coord);
         }
     }
 }

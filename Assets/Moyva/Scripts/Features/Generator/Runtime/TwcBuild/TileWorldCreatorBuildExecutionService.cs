@@ -1,5 +1,6 @@
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -34,6 +35,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public void Execute(Configuration configuration, TileWorldCreatorLayerPositionSet positions, TileWorldCreatorTerrainBuildPolicyResult terrainPolicy)
         {
+            if (TileWorldCreatorChunkFirstGuard.IsActive)
+            {
+                Debug.LogError($"{LogTag} ExecuteBuildLayers path reached through TileWorldCreatorBuildExecutionService during chunk-first mode.");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                throw new System.InvalidOperationException("TWC visual build is forbidden during chunk-first generation.");
+#endif
+            }
+
             ResetIfNeeded();
             _positionApplier.Apply(positions.TerrainPositions);
             _positionApplier.Apply(positions.ObjectPositions);

@@ -33,8 +33,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 .Where(layer => skippedLayerIds == null || !skippedLayerIds.Contains(layer.Id))
                 .OrderBy(layer => layer.SortingOrder));
 
-            foreach (var layerDef in result.OrderedLayers)
-                SyncLayer(graph, config, layerDef, result);
+            for (int layerOrder = 0; layerOrder < result.OrderedLayers.Count; layerOrder++)
+                SyncLayer(graph, config, result.OrderedLayers[layerOrder], result, layerOrder);
 
             GraphCompilerBlueprintOrderUtility.Reorder(config, result.OrderedLayers, result.BlueprintByGraphLayerId);
             return result;
@@ -58,7 +58,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         private void SyncLayer(GraphAsset graph, Configuration config, GeneratorLayerDefinition layerDef,
-            GraphCompilerBlueprintSyncResult result)
+            GraphCompilerBlueprintSyncResult result, int graphLayerOrder)
         {
             var blueprint = FindByGuid(result.ExistingLayers, layerDef.BlueprintLayerGuid)
                             ?? FindByName(result.ExistingLayers, layerDef.Name)
@@ -70,12 +70,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             result.UsedLayerGuids.Add(blueprint.guid);
             result.BlueprintGuidByGraphLayerId[layerDef.Id] = blueprint.guid;
             result.BlueprintByGraphLayerId[layerDef.Id] = blueprint;
-            result.CompiledLayers.Add(CreateCompiledMap(graph, config, layerDef, blueprint));
+            result.CompiledLayers.Add(CreateCompiledMap(graph, config, layerDef, blueprint, graphLayerOrder));
         }
 
         private CompiledLayerMap CreateCompiledMap(GraphAsset graph, Configuration config,
-            GeneratorLayerDefinition layerDef, BlueprintLayer blueprint)
+            GeneratorLayerDefinition layerDef, BlueprintLayer blueprint, int graphLayerOrder)
         {
+            var buildLayer = _buildLayerLookup.Find(config, layerDef.BuildLayerKey, blueprint.guid);
             return new CompiledLayerMap
             {
                 GraphLayerId = layerDef.Id,
@@ -83,9 +84,25 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BlueprintLayerGuid = blueprint.guid,
                 LayerName = blueprint.layerName,
                 SortingOrder = layerDef.SortingOrder,
+                GraphLayerOrder = graphLayerOrder,
+                TerrainPriority = layerDef.SortingOrder,
+                BuildLayerGuid = buildLayer?.guid,
+                PresetId = ResolvePresetId(buildLayer),
+                SourceNodeId = ResolveSourceNodeId(graph, layerDef),
                 HasRenderableTileOutput = GraphLayerRuntimeSemantics.HasRenderableTileOutput(graph, layerDef.Id)
             };
         }
+
+        private static string ResolvePresetId(TilesBuildLayer buildLayer)
+        {
+            var preset = buildLayer?.tilePresetsTop?.FirstOrDefault(selection => selection?.preset != null)?.preset
+                         ?? buildLayer?.tilePresetsMiddle?.FirstOrDefault(selection => selection?.preset != null)?.preset
+                         ?? buildLayer?.tilePresetsBottom?.FirstOrDefault(selection => selection?.preset != null)?.preset;
+            return !string.IsNullOrWhiteSpace(preset?.tileId) ? preset.tileId.Trim() : preset != null ? preset.name : null;
+        }
+
+        private static string ResolveSourceNodeId(GraphAsset graph, GeneratorLayerDefinition layerDef)
+            => TileSettingsNode.GetNodesForLayer(graph, layerDef?.Id).FirstOrDefault(node => node != null)?.NodeId;
 
         private string ResolveGridTileIdForLayer(GraphAsset graph, Configuration config,
             GeneratorLayerDefinition layerDef, string blueprintLayerGuid)

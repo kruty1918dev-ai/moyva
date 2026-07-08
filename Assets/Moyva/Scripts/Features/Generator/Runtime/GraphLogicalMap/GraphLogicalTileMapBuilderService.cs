@@ -2,6 +2,8 @@ using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using GiantGrey.TileWorldCreator.Components;
 using Kruty1918.Moyva.Generator.API;
+using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
+using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
@@ -40,20 +42,26 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private void ApplyLayer(GraphAsset graph, TileWorldCreatorManager manager,
             GraphLogicalTileMap map, CompiledLayerMap layerMap)
         {
-            if (!CanApplyLayer(graph, layerMap, out var graphLayer))
+            if (!CanApplyLayer(graph, layerMap, out var graphLayer, out var layerKind))
                 return;
 
             var buildLayer = _twcLookup.FindTilesBuildLayer(manager.configuration, layerMap.BlueprintLayerGuid);
-            if (buildLayer == null || !buildLayer.isEnabled)
+            if (layerKind != LayerKind.MaskOnly && (buildLayer == null || !buildLayer.isEnabled))
                 return;
 
             var blueprint = manager.GetBlueprintLayerByGuid(layerMap.BlueprintLayerGuid);
             if (blueprint == null)
                 return;
 
-            var data = CreateLayerData(layerMap, graphLayer.Name, blueprint.defaultLayerHeight,
-                _twcLookup.ResolveSurfaceHeight(blueprint, buildLayer));
-            if (buildLayer.generateFlatSurface)
+            var data = CreateLayerData(
+                graph,
+                layerMap,
+                graphLayer.Name,
+                blueprint.defaultLayerHeight,
+                _twcLookup.ResolveSurfaceHeight(blueprint, buildLayer),
+                buildLayer,
+                layerKind);
+            if (buildLayer != null && buildLayer.generateFlatSurface)
             {
                 _cellWriter.Fill(map, data);
                 return;
@@ -72,13 +80,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         private static bool CanApplyLayer(GraphAsset graph, CompiledLayerMap layerMap,
-            out GeneratorLayerDefinition graphLayer)
+            out GeneratorLayerDefinition graphLayer,
+            out LayerKind layerKind)
         {
             graphLayer = null;
+            layerKind = LayerKind.BaseTerrain;
             if (layerMap == null
-                || !layerMap.HasRenderableTileOutput
                 || string.IsNullOrEmpty(layerMap.GraphLayerId)
                 || string.IsNullOrEmpty(layerMap.BlueprintLayerGuid))
+                return false;
+
+            layerKind = ResolveLayerKind(graph, layerMap.GraphLayerId);
+            if (!layerMap.HasRenderableTileOutput && layerKind != LayerKind.MaskOnly)
                 return false;
 
             graphLayer = graph.GetLayerById(layerMap.GraphLayerId);
@@ -86,10 +99,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         private static GraphLogicalTileLayerData CreateLayerData(
+            GraphAsset graph,
             CompiledLayerMap layerMap,
             string graphLayerName,
             float layerHeight,
-            float surfaceHeight)
+            float surfaceHeight,
+            TilesBuildLayer buildLayer,
+            LayerKind layerKind)
         {
             string tileId = !string.IsNullOrWhiteSpace(layerMap.GridTileId)
                 ? layerMap.GridTileId
@@ -97,7 +113,50 @@ namespace Kruty1918.Moyva.Generator.Runtime
             string layerName = !string.IsNullOrWhiteSpace(layerMap.LayerName)
                 ? layerMap.LayerName
                 : graphLayerName;
-            return new GraphLogicalTileLayerData(layerMap.GraphLayerId, layerName, tileId, layerHeight, surfaceHeight);
+            return new GraphLogicalTileLayerData(
+                layerMap.GraphLayerId,
+                layerName,
+                tileId,
+                layerHeight,
+                surfaceHeight,
+                layerMap.BlueprintLayerGuid,
+                !string.IsNullOrWhiteSpace(layerMap.BuildLayerGuid) ? layerMap.BuildLayerGuid : buildLayer?.guid,
+                ResolvePresetId(buildLayer, layerMap),
+                layerKind,
+                layerMap.SortingOrder,
+                layerMap.GraphLayerOrder,
+                layerMap.TerrainPriority,
+                !string.IsNullOrWhiteSpace(layerMap.SourceNodeId)
+                    ? layerMap.SourceNodeId
+                    : TileSettingsNode.GetNodesForLayer(graph, layerMap.GraphLayerId).Find(node => node != null)?.NodeId);
+        }
+
+        private static string ResolvePresetId(TilesBuildLayer buildLayer, CompiledLayerMap layerMap)
+        {
+            if (!string.IsNullOrWhiteSpace(layerMap.PresetId))
+                return layerMap.PresetId;
+
+            var preset = buildLayer?.tilePresetsTop?.Find(selection => selection?.preset != null)?.preset
+                         ?? buildLayer?.tilePresetsMiddle?.Find(selection => selection?.preset != null)?.preset
+                         ?? buildLayer?.tilePresetsBottom?.Find(selection => selection?.preset != null)?.preset;
+            if (preset == null)
+                return null;
+
+            return !string.IsNullOrWhiteSpace(preset.tileId) ? preset.tileId.Trim() : preset.name;
+        }
+
+        private static LayerKind ResolveLayerKind(GraphAsset graph, string graphLayerId)
+        {
+            var output = GraphLayerRuntimeSemantics.GetLayerOutputNode(graph, graphLayerId);
+            if (output == null)
+                return LayerKind.BaseTerrain;
+
+            return output.OutputKind switch
+            {
+                LayerOutputKind.Objects => LayerKind.ObjectSpawn,
+                LayerOutputKind.Masks => LayerKind.MaskOnly,
+                _ => LayerKind.BaseTerrain
+            };
         }
 
         private static List<CompiledLayerMap> Order(IReadOnlyList<CompiledLayerMap> compiled)

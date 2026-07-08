@@ -112,8 +112,11 @@ namespace Kruty1918.Moyva.Generator.API
 
     public enum TileWorldCreatorTerrainBuildMode
     {
+        // Historical serialized value. Despite the old name, this now routes to the
+        // chunk-first composite terrain builder. Do not change the numeric value.
         MergedChunksWithPrecomputedHeights = 0,
-        LegacyPostBuildHeightProjection = 1
+        LegacyPostBuildHeightProjection = 1,
+        ChunkFirstCompositeMesh = 2
     }
 
     [Serializable]

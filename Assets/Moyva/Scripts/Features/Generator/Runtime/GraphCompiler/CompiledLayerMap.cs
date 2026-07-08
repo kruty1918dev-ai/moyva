@@ -10,6 +10,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public string BlueprintLayerGuid;
         public string LayerName;
         public int SortingOrder;
+        public int GraphLayerOrder;
+        public int TerrainPriority;
+        public string BuildLayerGuid;
+        public string PresetId;
+        public string SourceNodeId;
         public bool HasRenderableTileOutput;
     }
 }

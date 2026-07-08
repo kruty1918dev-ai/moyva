@@ -21,6 +21,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public float[,] HeightMap;
         public int[,] TerrainLevelMap;
         public string[,] BuildingMap;
+        public GraphLogicalTileMap LogicalTileMap;
+        public System.Collections.Generic.IReadOnlyList<CompiledLayerMap> CompiledLayers;
+        public bool ForceChunkFirstCompositeBuild;
+        public float CellSize = 1f;
+        public bool HasBaseMapWorldBounds;
+        public Bounds BaseMapWorldBounds;
         public string WorldName;
         public int Seed;
         public int Size;
@@ -48,6 +54,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 HeightMap = MapArrayUtils.CloneFloatMap(HeightMap),
                 TerrainLevelMap = MapArrayUtils.CloneIntMap(TerrainLevelMap),
                 BuildingMap = MapArrayUtils.CloneStringMap(BuildingMap),
+                LogicalTileMap = LogicalTileMap,
+                CompiledLayers = CompiledLayers,
+                ForceChunkFirstCompositeBuild = ForceChunkFirstCompositeBuild,
+                CellSize = CellSize,
+                HasBaseMapWorldBounds = HasBaseMapWorldBounds,
+                BaseMapWorldBounds = BaseMapWorldBounds,
                 WorldName = WorldName,
                 Seed = Seed,
                 Size = Size,

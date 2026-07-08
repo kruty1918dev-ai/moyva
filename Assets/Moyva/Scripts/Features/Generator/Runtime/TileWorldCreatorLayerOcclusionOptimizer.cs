@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using GiantGrey.TileWorldCreator.Components;
+using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -29,6 +30,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public static TileWorldCreatorLayerOcclusionResult GenerateCompleteMap(TileWorldCreatorManager manager, int chunkSizeTiles = 0)
         {
+            GuardChunkFirstVisualBuild();
             if (manager == null || manager.configuration == null)
                 return default;
 
@@ -50,6 +52,17 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 $"{WorldGenDiagTag} TWCBuild.RETURN manager={manager.name}, frame={Time.frameCount}, elapsedMs={stopwatch.ElapsedMilliseconds}, " +
                 $"childrenAfterReturn={manager.transform.childCount}, mayContinueAsync=unknown");
             return result;
+        }
+
+        private static void GuardChunkFirstVisualBuild()
+        {
+            if (!TileWorldCreatorChunkFirstGuard.IsActive)
+                return;
+
+            Debug.LogError($"{WorldGenDiagTag} ExecuteBuildLayers path reached through TileWorldCreatorLayerOcclusionOptimizer during chunk-first mode.");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            throw new System.InvalidOperationException("TWC visual build is forbidden during chunk-first generation.");
+#endif
         }
 
         public static TileWorldCreatorLayerOcclusionResult GenerateBlueprintMap(TileWorldCreatorManager manager)

@@ -4,12 +4,14 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.MapChunks.Runtime
 {
-    internal sealed class MapVisualChunkRegistry : IMapVisualChunkRegistry
+    public sealed class MapVisualChunkRegistry : IMapVisualChunkRegistry
     {
         private readonly Dictionary<MapChunkCoord, bool> _cameraVisible = new();
         private readonly HashSet<MapChunkCoord> _fogHidden = new();
         private readonly Dictionary<Renderer, RendererEntry> _renderers = new();
         private bool _hasCameraState;
+
+        public int CameraVisibilityVersion { get; private set; }
 
         public void Clear()
         {
@@ -24,6 +26,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
             _cameraVisible.Clear();
             _fogHidden.Clear();
             _hasCameraState = false;
+            CameraVisibilityVersion++;
         }
 
         public void Register(Renderer renderer, IReadOnlyList<MapChunkCoord> chunks)
@@ -50,8 +53,12 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                     _cameraVisible[coord] = true;
             }
 
+            CameraVisibilityVersion++;
             ApplyVisibility();
         }
+
+        public bool IsCameraVisible(MapChunkCoord coord)
+            => !_hasCameraState || _cameraVisible.ContainsKey(coord);
 
         public void SetFogFullyHidden(MapChunkCoord coord, bool hidden)
         {

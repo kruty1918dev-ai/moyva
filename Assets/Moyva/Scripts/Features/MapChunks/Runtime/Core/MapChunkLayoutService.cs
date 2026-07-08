@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.MapChunks.Runtime
 {
-    internal sealed class MapChunkLayoutService : IMapChunkLayoutService
+    public sealed class MapChunkLayoutService : IMapChunkLayoutService
     {
         private readonly IMapChunkSettingsProvider _settings;
         private readonly List<MapChunkDescriptor> _chunks = new();

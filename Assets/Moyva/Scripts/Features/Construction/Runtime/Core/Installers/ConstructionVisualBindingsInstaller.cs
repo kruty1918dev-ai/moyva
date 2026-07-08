@@ -1,3 +1,4 @@
+
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
@@ -28,6 +29,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             container.Bind<IConstructionBuildGridTileCollector>().To<ConstructionBuildGridTileCollector>().AsSingle();
             container.Bind<IConstructionBuildGridDiagnostics>().To<ConstructionBuildGridDiagnostics>().AsSingle();
             container.Bind<IConstructionBuildGridOverlayRenderer>().To<ConstructionBuildGridOverlayRenderer>().AsSingle();
+            container.Bind<IConstructionBuildGridChunkSurfaceBuilder>().To<ConstructionBuildGridChunkSurfaceBuilder>().AsSingle();
+            container.Bind<IConstructionBuildGridChunkSurfaceService>().To<ConstructionBuildGridChunkSurfaceService>().AsSingle();
             container.Bind<IConstructionBuildGridOverlayService>().To<ConstructionBuildGridOverlayService>().AsSingle();
             container.Bind<IConstructionBlockedFlashService>().To<ConstructionBlockedFlashService>().AsSingle();
         }

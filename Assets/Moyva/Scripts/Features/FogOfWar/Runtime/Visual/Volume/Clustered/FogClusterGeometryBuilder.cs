@@ -48,6 +48,41 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             _uvs.Add(new Vector2(1f, 0f));
         }
 
+        public void AddCellSide(
+            Vector3 topStart,
+            Vector3 topEnd,
+            Vector3 bottomEnd,
+            Vector3 bottomStart,
+            int subMeshIndex)
+        {
+            int vertexStart = _vertices.Count;
+
+            _vertices.Add(topStart);
+            _vertices.Add(bottomStart);
+            _vertices.Add(bottomEnd);
+            _vertices.Add(topEnd);
+
+            var triangles = subMeshIndex == 1 ? _exploredTriangles : _unexploredTriangles;
+            triangles.Add(vertexStart);
+            triangles.Add(vertexStart + 1);
+            triangles.Add(vertexStart + 2);
+            triangles.Add(vertexStart);
+            triangles.Add(vertexStart + 2);
+            triangles.Add(vertexStart + 3);
+
+            triangles.Add(vertexStart);
+            triangles.Add(vertexStart + 2);
+            triangles.Add(vertexStart + 1);
+            triangles.Add(vertexStart);
+            triangles.Add(vertexStart + 3);
+            triangles.Add(vertexStart + 2);
+
+            _uvs.Add(new Vector2(0f, 1f));
+            _uvs.Add(new Vector2(0f, 0f));
+            _uvs.Add(new Vector2(1f, 0f));
+            _uvs.Add(new Vector2(1f, 1f));
+        }
+
         public void ApplyTo(Mesh mesh)
         {
             if (mesh == null)

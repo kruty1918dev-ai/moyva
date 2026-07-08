@@ -8,12 +8,17 @@ namespace Kruty1918.Moyva.Generator.Editor
 {
     internal static class TileWorldCreatorChunkGizmoBoundsCollector
     {
+        private const string MapVisualChunksRootName = "MapVisualChunks";
+        private const string MapChunkPrefix = "MapChunk_";
         private static readonly List<Renderer> Renderers = new(128);
 
         public static void CollectManagerChunks(TileWorldCreatorManager manager, List<Bounds> results)
         {
             results.Clear();
             if (manager == null)
+                return;
+
+            if (TryCollectMapVisualChunks(results))
                 return;
 
             if (TileWorldCreatorLogicalChunkBoundsUtility.TryCollectAll(manager, results))
@@ -35,6 +40,9 @@ namespace Kruty1918.Moyva.Generator.Editor
             bounds = default;
             if (selected == null)
                 return false;
+
+            if (TryFindMapVisualChunkRoot(selected, out var chunkRoot))
+                return TryResolveVisualBounds(chunkRoot, out bounds);
 
             TileWorldCreatorManager manager = selected.GetComponentInParent<TileWorldCreatorManager>();
             if (manager == null)
@@ -65,11 +73,54 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (selected == null)
                 return false;
 
+            if (TryFindMapVisualChunkRoot(selected, out var chunkRoot))
+                return TryResolveVisualBounds(chunkRoot, out bounds);
+
             ClusterIdentifier cluster = selected.GetComponentInParent<ClusterIdentifier>();
             if (cluster != null)
                 return TryResolveVisualBounds(cluster.transform, out bounds);
 
             return TryResolveVisualBounds(selected, out bounds);
+        }
+
+        private static bool TryCollectMapVisualChunks(List<Bounds> results)
+        {
+            var rootObject = GameObject.Find(MapVisualChunksRootName);
+            Transform root = rootObject != null ? rootObject.transform : null;
+            if (root == null)
+                return false;
+
+            int before = results.Count;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (child == null || !child.name.StartsWith(MapChunkPrefix, System.StringComparison.Ordinal))
+                    continue;
+
+                if (TryResolveVisualBounds(child, out var bounds))
+                    results.Add(bounds);
+            }
+
+            return results.Count > before;
+        }
+
+        private static bool TryFindMapVisualChunkRoot(Transform selected, out Transform chunkRoot)
+        {
+            chunkRoot = null;
+            for (Transform current = selected; current != null; current = current.parent)
+            {
+                if (!current.name.StartsWith(MapChunkPrefix, System.StringComparison.Ordinal))
+                    continue;
+
+                if (current.parent == null
+                    || !string.Equals(current.parent.name, MapVisualChunksRootName, System.StringComparison.Ordinal))
+                    continue;
+
+                chunkRoot = current;
+                return true;
+            }
+
+            return false;
         }
 
         private static bool TryResolveVisualBounds(Transform root, out Bounds bounds)

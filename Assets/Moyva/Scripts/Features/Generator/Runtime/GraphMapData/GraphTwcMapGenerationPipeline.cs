@@ -12,7 +12,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IGraphTwcMapSizeResolver _sizeResolver;
         private readonly IGraphTwcValidationService _validation;
         private readonly IGraphToConfigurationCompilerService _compiler;
-        private readonly IGraphTwcWorldBuildService _worldBuild;
         private readonly IGraphTwcLogicalMapExportService _logicalMapExport;
         private readonly IGraphTwcTerrainHeightPublisher _terrainHeightPublisher;
         private readonly IGraphTwcMapDataDiagnosticsService _diagnostics;
@@ -33,7 +32,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _sizeResolver = sizeResolver;
             _validation = validation;
             _compiler = compiler;
-            _worldBuild = worldBuild;
             _logicalMapExport = logicalMapExport;
             _terrainHeightPublisher = terrainHeightPublisher;
             _diagnostics = diagnostics;
@@ -81,8 +79,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 out bounds);
 
             _diagnostics.LogTwcCall(request.Manager);
-            long elapsedMs = _worldBuild.Build(request.Manager);
-            _diagnostics.EmitLayerLog(request, validation, validation.SkippedLayerIds, seed, mapSize, true, compiled);
+            long elapsedMs = ExecuteLogicalBlueprintLayers(request);
+            _diagnostics.EmitLayerLog(request, validation, validation.SkippedLayerIds, seed, mapSize, false, compiled);
 
             var logicalMap = _logicalMapExport.Export(request.Graph, request.Manager, compiled, mapSize.x, mapSize.y, seed);
             _terrainHeightPublisher.Publish(logicalMap.SurfaceHeights);
@@ -125,6 +123,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 ObjectMap = new string[logicalMap.TileIds.GetLength(0), logicalMap.TileIds.GetLength(1)],
                 HeightMap = logicalMap.LayerHeights,
                 BuildingMap = new string[logicalMap.TileIds.GetLength(0), logicalMap.TileIds.GetLength(1)],
+                LogicalMap = logicalMap,
                 CompiledLayers = compiled,
                 CellSize = cellSize,
                 HasBaseMapWorldBounds = hasBounds,
@@ -137,6 +136,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return request.Manager.configuration.cellSize > 0.0001f
                 ? request.Manager.configuration.cellSize
                 : 1f;
+        }
+
+        private long ExecuteLogicalBlueprintLayers(GraphTwcMapGenerationRequest request)
+        {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            request.Manager.ExecuteBlueprintLayers();
+            stopwatch.Stop();
+            return stopwatch.ElapsedMilliseconds;
         }
     }
 }

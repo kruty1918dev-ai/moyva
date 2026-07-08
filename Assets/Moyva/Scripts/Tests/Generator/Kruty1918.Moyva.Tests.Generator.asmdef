@@ -8,6 +8,7 @@
         "Kruty1918.Moyva.Generator.Editor",
         "Kruty1918.Moyva.GraphSystem",
         "Kruty1918.Moyva.GraphSystem.Editor",
+        "Kruty1918.Moyva.MapChunks",
         "GiantGrey.TileWorldCreator"
     ],
     "includePlatforms": ["Editor"],

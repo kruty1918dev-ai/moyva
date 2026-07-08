@@ -10,12 +10,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             Mode = mode;
             ChunkSizeTiles = Mathf.Max(0, chunkSizeTiles);
-            UsesPrecomputedHeights = applyHeights && mode == TileWorldCreatorTerrainBuildMode.MergedChunksWithPrecomputedHeights;
+            UsesChunkFirstComposite = mode == TileWorldCreatorTerrainBuildMode.MergedChunksWithPrecomputedHeights
+                                      || mode == TileWorldCreatorTerrainBuildMode.ChunkFirstCompositeMesh;
+            UsesPrecomputedHeights = applyHeights && UsesChunkFirstComposite;
             UsesLegacyHeightProjection = applyHeights && mode == TileWorldCreatorTerrainBuildMode.LegacyPostBuildHeightProjection;
         }
 
         public TileWorldCreatorTerrainBuildMode Mode { get; }
         public int ChunkSizeTiles { get; }
+        public bool UsesChunkFirstComposite { get; }
         public bool UsesPrecomputedHeights { get; }
         public bool UsesLegacyHeightProjection { get; }
         public bool ForceMergeTiles => !UsesLegacyHeightProjection;
@@ -55,7 +58,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             Debug.Log(
                 $"{LogTag} Terrain build policy apply: source={source}, mode={policy.Mode}, chunk={policy.ChunkSizeTiles}, " +
-                $"forceMergeTiles={policy.ForceMergeTiles}, precomputedHeights={policy.UsesPrecomputedHeights}, legacyProjector={policy.UsesLegacyHeightProjection}.");
+                $"forceMergeTiles={policy.ForceMergeTiles}, chunkFirst={policy.UsesChunkFirstComposite}, precomputedHeights={policy.UsesPrecomputedHeights}, legacyProjector={policy.UsesLegacyHeightProjection}.");
             TileWorldCreatorChunkBatchingUtility.Apply(configuration, policy.ChunkSizeTiles, policy.ForceMergeTiles, source);
         }
     }

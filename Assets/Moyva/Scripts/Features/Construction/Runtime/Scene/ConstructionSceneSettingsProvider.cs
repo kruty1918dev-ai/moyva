@@ -1,3 +1,4 @@
+
 using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
 using Zenject;
@@ -54,10 +55,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public float GhostAlpha => _sceneContext?.ResolveVisualProfile()?.GhostAlpha ?? 0.55f;
         public float BlockedFlashDurationSeconds => _sceneContext?.ResolveVisualProfile()?.BlockedFlashDurationSeconds ?? 0.35f;
         public bool UseBuildGridOverlay => _sceneContext?.ResolveVisualProfile()?.UseBuildGridOverlay ?? true;
+        public ConstructionBuildGridRenderMode BuildGridRenderMode => _sceneContext?.ResolveVisualProfile()?.BuildGridRenderMode ?? ConstructionBuildGridRenderMode.LegacyDrawMeshPerTile;
+        public bool BuildGridSurfacePlaneUseBuildableFilter => _sceneContext?.ResolveVisualProfile()?.BuildGridSurfacePlaneUseBuildableFilter ?? false;
         public float BuildGridFillAlpha => _sceneContext?.ResolveVisualProfile()?.BuildGridFillAlpha ?? 0.045f;
         public float BuildGridLineAlpha => _sceneContext?.ResolveVisualProfile()?.BuildGridLineAlpha ?? 0.22f;
         public float BuildGridLineWidthNormalized => _sceneContext?.ResolveVisualProfile()?.BuildGridLineWidthNormalized ?? 0.035f;
         public float BuildGridSurfaceOffsetY => _sceneContext?.ResolveVisualProfile()?.BuildGridSurfaceOffsetY ?? 0.06f;
+        public float BuildGridTileInsetNormalized => _sceneContext?.ResolveVisualProfile()?.BuildGridTileInsetNormalized ?? 0.08f;
         public string BuildGridShaderName => _sceneContext?.ResolveVisualProfile()?.BuildGridShaderName ?? "Moyva/Overlay/ConstructionBuildGrid";
         public bool UseInfluenceRadiusOverlay => _sceneContext?.ResolveVisualProfile()?.UseInfluenceRadiusOverlay ?? true;
         public float InfluenceRadiusFillAlpha => _sceneContext?.ResolveVisualProfile()?.InfluenceRadiusFillAlpha ?? 0.055f;

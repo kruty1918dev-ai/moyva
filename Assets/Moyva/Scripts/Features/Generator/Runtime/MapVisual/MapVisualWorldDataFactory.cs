@@ -56,8 +56,16 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 BiomeMap = biomeMap,
                 ObjectMap = objectMap,
                 HeightMap = heightMap,
-                BuildingMap = buildingMap
+                BuildingMap = buildingMap,
+                LogicalTileMap = _graphDiagnostics?.LastLogicalMap,
+                CompiledLayers = _graphDiagnostics?.LastCompiledLayers,
+                CellSize = _graphDiagnostics?.LastCellSize ?? 1f
             };
+            if (_graphDiagnostics != null && _graphDiagnostics.TryGetLastBaseMapWorldBounds(out var bounds))
+            {
+                data.HasBaseMapWorldBounds = true;
+                data.BaseMapWorldBounds = bounds;
+            }
             ApplyLaunchMetadata(data);
             _worldDiagnostics?.GraphMapDataGenerated($"graph={_graphDiagnostics?.DiagnosticGraphName ?? "null"}, map={data.Width}x{data.Height}, seed={_graphDiagnostics?.DiagnosticSeed ?? 0}");
             return data;

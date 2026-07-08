@@ -57,7 +57,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
-            if (_options.TerrainBuildMode == TileWorldCreatorTerrainBuildMode.MergedChunksWithPrecomputedHeights)
+            if (_options.TerrainBuildMode != TileWorldCreatorTerrainBuildMode.LegacyPostBuildHeightProjection)
                 buildLayer = MoyvaTerrainBuildLayerUpgradeUtility.EnsureHeightAware(_manager, configuration, buildLayer, buildLayer.layerName);
 
             bool useDualGrid = TileWorldCreatorTerrainPresetUtility.ShouldUseDualGrid(mapping.TilePreset, mapping.UseDualGrid);

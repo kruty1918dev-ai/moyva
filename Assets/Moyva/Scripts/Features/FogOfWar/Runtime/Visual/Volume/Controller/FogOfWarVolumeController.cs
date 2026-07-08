@@ -19,6 +19,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         [TitleGroup("Settings")]
         [Required]
         [ValidateInput(nameof(HasSettings), "Assign FogOfWarSettings.")]
+        [InlineEditor(Expanded = true)]
+        [HideLabel]
         [SerializeField] private FogOfWarSettings _settings;
 
         [TitleGroup("Runtime Overrides")]

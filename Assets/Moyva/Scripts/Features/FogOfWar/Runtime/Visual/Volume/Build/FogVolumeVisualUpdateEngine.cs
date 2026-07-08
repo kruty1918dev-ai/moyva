@@ -730,7 +730,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             buildLayer.useDualGrid = true;
             buildLayer.scaleTileToCellSize = true;
             buildLayer.layerYOffset = settings.LayerYOffset;
-            buildLayer.scaleOffset = settings.ScaleOffset;
+            buildLayer.scaleOffset = ResolveRuntimeFogScaleOffset(settings);
             buildLayer.generateFlatSurface = false;
             buildLayer.meshGenerationOverride = true;
             buildLayer.mergeTiles = true;
@@ -744,6 +744,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             ApplyPresetSelections(buildLayer, settings);
             EnsureTileLayer(buildLayer);
             return new RuntimeLayer(blueprintLayer, buildLayer, state, heightKey);
+        }
+
+        private Vector3 ResolveRuntimeFogScaleOffset(FogVolumeStateTileSettings settings)
+        {
+            Vector3 scale = settings != null ? settings.ScaleOffset : Vector3.one;
+            float horizontalScale = 1f + Mathf.Clamp(GetSettings()?.Volume.HorizontalTileOverlap ?? 0.03f, 0f, 0.25f);
+            scale.x = Mathf.Max(scale.x, horizontalScale);
+            scale.z = Mathf.Max(scale.z, horizontalScale);
+            return scale;
         }
 
         private static void ApplyPresetSelections(TilesBuildLayer buildLayer, FogVolumeStateTileSettings settings)
@@ -1374,8 +1383,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             float height = ResolveGeneratedSurfaceHeight(tile);
             float snap = ResolveEffectiveHeightLayerSnap();
             int key = Mathf.RoundToInt(height / snap);
-            if (!_heightByKey.ContainsKey(key))
-                _heightByKey.Add(key, key * snap);
+            if (_heightByKey.TryGetValue(key, out float existingHeight))
+            {
+                if (height > existingHeight)
+                    _heightByKey[key] = height;
+            }
+            else
+            {
+                _heightByKey.Add(key, height);
+            }
 
             return key;
         }

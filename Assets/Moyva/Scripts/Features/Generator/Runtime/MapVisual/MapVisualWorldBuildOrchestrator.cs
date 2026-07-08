@@ -13,18 +13,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
         private readonly IMapVisualGridWriter _gridWriter;
         private readonly IMapVisualWorldSignalPublisher _signals;
         private readonly IWorldGenerationDiagnostics _worldDiagnostics;
+        private readonly ITileWorldCreatorWorldBuildBridge _tileWorldCreatorBridge;
 
         public MapVisualWorldBuildOrchestrator(
             IMapVisualWorldState state,
             IMapVisualWorldDataFactory dataFactory,
             IMapVisualGridWriter gridWriter,
             IMapVisualWorldSignalPublisher signals,
+            [InjectOptional] ITileWorldCreatorWorldBuildBridge tileWorldCreatorBridge = null,
             [InjectOptional] IWorldGenerationDiagnostics worldDiagnostics = null)
         {
             _state = state;
             _dataFactory = dataFactory;
             _gridWriter = gridWriter;
             _signals = signals;
+            _tileWorldCreatorBridge = tileWorldCreatorBridge;
             _worldDiagnostics = worldDiagnostics;
         }
 
@@ -44,6 +47,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 return;
             }
 
+            _tileWorldCreatorBridge?.Build(worldData);
             int filledCells = _gridWriter.Write(worldData);
             Debug.Log($"{WorldGenDiagTag} MapVisual.GridFill.DONE map={worldData.Width}x{worldData.Height}, filledCells={filledCells}");
             _state.SetCurrentWorldData(worldData);
