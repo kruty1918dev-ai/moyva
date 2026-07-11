@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
@@ -7,12 +9,26 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         private const int BuildGridRenderQueue = 3990;
         private static readonly int EdgeMaskPropertyId = Shader.PropertyToID("_EdgeMask");
+        private static readonly int GridOriginXZPropertyId = Shader.PropertyToID("_GridOriginXZ");
+        private static readonly int CellSizeXZPropertyId = Shader.PropertyToID("_CellSizeXZ");
+        private static readonly int UseCellMaskPropertyId = Shader.PropertyToID("_UseCellMask");
+        private static readonly int SurfaceLiftPropertyId = Shader.PropertyToID("_SurfaceLift");
+        private static readonly int MinUpNormalYPropertyId = Shader.PropertyToID("_MinUpNormalY");
+
+        private readonly IConstructionGridGeometryService _gridGeometry;
 
         private GameObject _overlayGo;
         private Material _material;
         private MaterialPropertyBlock _propertyBlock;
 
         public bool MaterialReady => _material != null;
+
+        [Inject]
+        public ConstructionBuildGridOverlayRenderer(
+            [InjectOptional] IConstructionGridGeometryService gridGeometry = null)
+        {
+            _gridGeometry = gridGeometry;
+        }
 
         public void Initialize(Transform parent, string shaderName)
         {
@@ -36,6 +52,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 name = "ConstructionBuildGridOverlay_Material",
                 renderQueue = BuildGridRenderQueue
             };
+
+            ApplySharedGridProperties();
         }
 
         public void ApplyStyle(Color lineColor, Color fillColor, float lineWidth)
@@ -43,6 +61,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (_material == null)
                 return;
 
+            ApplySharedGridProperties();
             _material.SetColor("_LineColor", lineColor);
             _material.SetColor("_FillColor", fillColor);
             _material.SetFloat("_LineWidth", lineWidth);
@@ -89,6 +108,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _propertyBlock.Clear();
             _propertyBlock.SetVector(EdgeMaskPropertyId, entry.EdgeMask);
             Graphics.DrawMesh(entry.Mesh, entry.Matrix, _material, entry.Layer, null, 0, _propertyBlock);
+        }
+
+        private void ApplySharedGridProperties()
+        {
+            if (_material == null)
+                return;
+
+            if (_gridGeometry != null
+                && _gridGeometry.TryGetCellSize(out Vector2 cellSize)
+                && _gridGeometry.TryGetCellCenter(Vector2Int.zero, out Vector3 center))
+            {
+                _material.SetVector(GridOriginXZPropertyId, new Vector4(
+                    center.x - cellSize.x * 0.5f,
+                    center.z - cellSize.y * 0.5f,
+                    0f,
+                    0f));
+                _material.SetVector(CellSizeXZPropertyId, new Vector4(cellSize.x, cellSize.y, 0f, 0f));
+            }
+
+            _material.SetFloat(UseCellMaskPropertyId, 0f);
+            _material.SetFloat(SurfaceLiftPropertyId, 0f);
+            _material.SetFloat(MinUpNormalYPropertyId, 0.2f);
         }
     }
 }

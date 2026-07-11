@@ -59,29 +59,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
         }
 
         private static float ResolveTilesBuildLayerTopHeight(BlueprintLayer blueprint, TilesBuildLayer buildLayer)
-        {
-            float baseHeight = blueprint != null ? blueprint.defaultLayerHeight : 0f;
-            if (buildLayer == null)
-                return baseHeight;
-
-            float layerBaseHeight = baseHeight + buildLayer.layerYOffset;
-            if (buildLayer.tileLayers == null || buildLayer.tileLayers.Count == 0)
-                return layerBaseHeight;
-
-            bool hasTileLayer = false;
-            float topHeight = layerBaseHeight;
-            for (int i = 0; i < buildLayer.tileLayers.Count; i++)
-            {
-                var tileLayer = buildLayer.tileLayers[i];
-                if (tileLayer == null)
-                    continue;
-
-                float candidate = layerBaseHeight + tileLayer.heightOffset;
-                topHeight = hasTileLayer ? Mathf.Max(topHeight, candidate) : candidate;
-                hasTileLayer = true;
-            }
-
-            return hasTileLayer ? topHeight : layerBaseHeight;
-        }
+            => TileWorldCreatorFillTileSurfaceHeightUtility.ResolveTilesBuildLayerTopHeight(blueprint, buildLayer);
     }
 }

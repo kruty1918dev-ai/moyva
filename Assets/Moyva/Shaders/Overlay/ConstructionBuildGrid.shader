@@ -6,6 +6,14 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
         _FillColor ("Fill Color", Color) = (0.70, 0.95, 1.00, 0.045)
         _LineWidth ("Line Width", Range(0.005, 0.49)) = 0.035
         _EdgeMask ("Edge Mask", Vector) = (1, 1, 1, 1)
+        _GridOriginXZ ("Grid Origin XZ", Vector) = (0, 0, 0, 0)
+        _CellSizeXZ ("Cell Size XZ", Vector) = (1, 1, 0, 0)
+        _ChunkTileOrigin ("Chunk Tile Origin", Vector) = (0, 0, 0, 0)
+        _ChunkTileSize ("Chunk Tile Size", Vector) = (1, 1, 0, 0)
+        _SurfaceLift ("Surface Lift", Range(0, 0.5)) = 0
+        _MinUpNormalY ("Min Up Normal Y", Range(0, 1)) = 0.2
+        _UseCellMask ("Use Cell Mask", Float) = 0
+        [NoScaleOffset] _CellMaskTex ("Cell Mask", 2D) = "white" {}
     }
 
     SubShader
@@ -26,7 +34,7 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
             ZWrite Off
             ZTest LEqual
             Cull Off
-            Offset -1, -1
+            Offset -2, -2
 
             HLSLPROGRAM
             #pragma target 2.0
@@ -39,12 +47,23 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
                 float4 _LineColor;
                 float4 _FillColor;
                 float4 _EdgeMask;
+                float4 _GridOriginXZ;
+                float4 _CellSizeXZ;
+                float4 _ChunkTileOrigin;
+                float4 _ChunkTileSize;
                 float _LineWidth;
+                float _SurfaceLift;
+                float _MinUpNormalY;
+                float _UseCellMask;
             CBUFFER_END
+
+            TEXTURE2D(_CellMaskTex);
+            SAMPLER(sampler_CellMaskTex);
 
             struct Attributes
             {
                 float4 positionOS : POSITION;
+                float3 normalOS : NORMAL;
                 float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -52,7 +71,9 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
             struct Varyings
             {
                 float4 positionHCS : SV_POSITION;
-                float2 uv : TEXCOORD0;
+                float2 worldXZ : TEXCOORD0;
+                float3 normalWS : TEXCOORD1;
+                float2 uv : TEXCOORD2;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -61,19 +82,47 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
                 Varyings OUT;
                 UNITY_SETUP_INSTANCE_ID(IN);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
-                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+
+                float3 worldPos = TransformObjectToWorld(IN.positionOS.xyz);
+                float3 worldNormal = SafeNormalize(TransformObjectToWorldNormal(IN.normalOS));
+                worldPos += worldNormal * max(_SurfaceLift, 0.0);
+
+                OUT.positionHCS = TransformWorldToHClip(worldPos);
+                OUT.worldXZ = worldPos.xz;
+                OUT.normalWS = worldNormal;
                 OUT.uv = IN.uv;
                 return OUT;
             }
 
             float4 frag(Varyings IN) : SV_Target
             {
-                float feather = max(fwidth(IN.uv.x) + fwidth(IN.uv.y), 0.0015);
-                float leftLine = 1.0 - smoothstep(_LineWidth - feather, _LineWidth + feather, IN.uv.x);
-                float bottomLine = 1.0 - smoothstep(_LineWidth - feather, _LineWidth + feather, IN.uv.y);
-                float rightLine = 1.0 - smoothstep(_LineWidth - feather, _LineWidth + feather, 1.0 - IN.uv.x);
-                float topLine = 1.0 - smoothstep(_LineWidth - feather, _LineWidth + feather, 1.0 - IN.uv.y);
-                float lineMask = max(max(leftLine * _EdgeMask.x, bottomLine * _EdgeMask.y), max(rightLine * _EdgeMask.z, topLine * _EdgeMask.w));
+                float2 cellSize = max(_CellSizeXZ.xy, float2(0.0001, 0.0001));
+                float2 gridCoords = (IN.worldXZ - _GridOriginXZ.xy) / cellSize;
+                float2 cellUv = IN.uv;
+
+                if (_UseCellMask > 0.5)
+                {
+                    clip(IN.normalWS.y - _MinUpNormalY);
+                    cellUv = frac(gridCoords);
+                    float2 chunkSize = max(_ChunkTileSize.xy, float2(1.0, 1.0));
+                    float2 tileCoord = floor(gridCoords);
+                    float2 localTile = tileCoord - _ChunkTileOrigin.xy;
+                    float2 insideMask = step(0.0, localTile) * step(localTile, chunkSize - 0.001);
+                    clip(insideMask.x * insideMask.y - 0.5);
+
+                    float2 maskUv = (localTile + 0.5) / chunkSize;
+                    float mask = SAMPLE_TEXTURE2D(_CellMaskTex, sampler_CellMaskTex, maskUv).r;
+                    clip(mask - 0.5);
+                }
+
+                float feather = max(fwidth(cellUv.x) + fwidth(cellUv.y), 0.0015);
+                float leftLine = 1.0 - smoothstep(_LineWidth - feather, _LineWidth + feather, cellUv.x);
+                float bottomLine = 1.0 - smoothstep(_LineWidth - feather, _LineWidth + feather, cellUv.y);
+                float rightLine = 1.0 - smoothstep(_LineWidth - feather, _LineWidth + feather, 1.0 - cellUv.x);
+                float topLine = 1.0 - smoothstep(_LineWidth - feather, _LineWidth + feather, 1.0 - cellUv.y);
+                float lineMask = max(
+                    max(leftLine * _EdgeMask.x, bottomLine * _EdgeMask.y),
+                    max(rightLine * _EdgeMask.z, topLine * _EdgeMask.w));
 
                 float3 rgb = lerp(_FillColor.rgb, _LineColor.rgb, lineMask);
                 float alpha = max(_FillColor.a, _LineColor.a * lineMask);

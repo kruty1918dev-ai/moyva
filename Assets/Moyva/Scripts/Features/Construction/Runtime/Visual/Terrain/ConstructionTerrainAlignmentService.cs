@@ -113,9 +113,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
                 return ResolveWorldPosition(tile, 0f).y;
 
-            float baseY = TryGetGeneratedTerrainSurfaceY(tile, out float surfaceY)
+            bool hasGeneratedSurface = TryGetGeneratedTerrainSurfaceY(tile, out float surfaceY);
+            float baseY = hasGeneratedSurface
                 ? surfaceY
                 : ResolveProjectedTerrainBaseY(tile);
+
+            if (hasGeneratedSurface && _generatedTerrainLevelQuery.HasExplicitTerrainSurfaceMap)
+                return baseY;
 
             if (_gridService.TryGetTileData(tile, out string tileId)
                 && _tileSurfaceOffsets != null

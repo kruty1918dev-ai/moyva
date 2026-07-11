@@ -15,6 +15,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _terrainLevelService = terrainLevelService;
         }
 
+        public bool HasExplicitTerrainSurfaceMap => _terrainLevelService?.HasExplicitSurfaceHeightMap ?? false;
+
         public bool TryGetTerrainLevel(Vector2Int position, out int level)
         {
             if (_terrainLevelService == null)

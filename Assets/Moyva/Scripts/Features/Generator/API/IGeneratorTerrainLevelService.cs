@@ -6,6 +6,7 @@ namespace Kruty1918.Moyva.Generator.API
     {
         bool HasLevelMap { get; }
         bool HasSurfaceHeightMap { get; }
+        bool HasExplicitSurfaceHeightMap { get; }
         int Width { get; }
         int Height { get; }
         HillLevelDataMap CurrentHillLevelData { get; }

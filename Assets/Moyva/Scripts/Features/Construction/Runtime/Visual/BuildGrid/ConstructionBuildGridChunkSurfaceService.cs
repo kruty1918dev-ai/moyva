@@ -1,5 +1,6 @@
 
 using System.Collections.Generic;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.MapChunks.API;
 using UnityEngine;
 using Zenject;
@@ -15,11 +16,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static readonly int FillColorPropertyId = Shader.PropertyToID("_FillColor");
         private static readonly int LineWidthPropertyId = Shader.PropertyToID("_LineWidth");
         private static readonly int EdgeMaskPropertyId = Shader.PropertyToID("_EdgeMask");
+        private static readonly int GridOriginXZPropertyId = Shader.PropertyToID("_GridOriginXZ");
+        private static readonly int CellSizeXZPropertyId = Shader.PropertyToID("_CellSizeXZ");
+        private static readonly int UseCellMaskPropertyId = Shader.PropertyToID("_UseCellMask");
+        private static readonly int ChunkTileOriginPropertyId = Shader.PropertyToID("_ChunkTileOrigin");
+        private static readonly int ChunkTileSizePropertyId = Shader.PropertyToID("_ChunkTileSize");
+        private static readonly int SurfaceLiftPropertyId = Shader.PropertyToID("_SurfaceLift");
+        private static readonly int MinUpNormalYPropertyId = Shader.PropertyToID("_MinUpNormalY");
 
         private readonly IMapChunkLayoutService _chunkLayout;
         private readonly IMapVisualChunkRootService _chunkRoots;
         private readonly IMapVisualChunkRegistry _chunkRegistry;
         private readonly IConstructionBuildGridChunkSurfaceBuilder _builder;
+        private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly Dictionary<MapChunkCoord, ConstructionBuildGridChunkSurfaceHandle> _handles = new();
 
         private Material _material;
@@ -30,12 +39,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IMapChunkLayoutService chunkLayout,
             IMapVisualChunkRootService chunkRoots,
             IConstructionBuildGridChunkSurfaceBuilder builder,
-            [InjectOptional] IMapVisualChunkRegistry chunkRegistry = null)
+            [InjectOptional] IMapVisualChunkRegistry chunkRegistry = null,
+            [InjectOptional] IConstructionGridGeometryService gridGeometry = null)
         {
             _chunkLayout = chunkLayout;
             _chunkRoots = chunkRoots;
             _builder = builder;
             _chunkRegistry = chunkRegistry;
+            _gridGeometry = gridGeometry;
         }
 
         public bool MaterialReady => _material != null;
@@ -55,7 +66,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 renderQueue = BuildGridRenderQueue
             };
 
-            _material.SetVector(EdgeMaskPropertyId, Vector4.one);
+            ApplySharedMaterialProperties();
         }
 
         public void ApplyStyle(Color lineColor, Color fillColor, float lineWidth)
@@ -63,10 +74,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (_material == null)
                 return;
 
+            ApplySharedMaterialProperties();
             _material.SetColor(LineColorPropertyId, lineColor);
             _material.SetColor(FillColorPropertyId, fillColor);
             _material.SetFloat(LineWidthPropertyId, lineWidth);
-            _material.SetVector(EdgeMaskPropertyId, Vector4.one);
         }
 
         public void Rebuild()
@@ -102,9 +113,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 MeshFilter meshFilter = go.AddComponent<MeshFilter>();
                 MeshRenderer meshRenderer = go.AddComponent<MeshRenderer>();
                 meshFilter.sharedMesh = mesh;
-                meshRenderer.sharedMaterial = _material;
+                meshRenderer.sharedMaterials = BuildMaterialArray(mesh);
+                ApplyRendererProperties(meshRenderer, descriptor);
 
-                var handle = new ConstructionBuildGridChunkSurfaceHandle(descriptor.Coord, go, mesh, meshRenderer);
+                var handle = new ConstructionBuildGridChunkSurfaceHandle(
+                    descriptor.Coord,
+                    go,
+                    mesh,
+                    meshRenderer);
                 _handles[descriptor.Coord] = handle;
             }
 
@@ -144,6 +160,76 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             _handles.Clear();
+        }
+
+        private void ApplySharedMaterialProperties()
+        {
+            if (_material == null)
+                return;
+
+            _material.SetVector(EdgeMaskPropertyId, Vector4.one);
+            _material.SetFloat(UseCellMaskPropertyId, 0f);
+            _material.SetFloat(SurfaceLiftPropertyId, 0f);
+            _material.SetFloat(MinUpNormalYPropertyId, 0.2f);
+
+            if (_gridGeometry != null
+                && _gridGeometry.TryGetCellSize(out Vector2 cellSize)
+                && _gridGeometry.TryGetCellCenter(Vector2Int.zero, out Vector3 center))
+            {
+                _material.SetVector(GridOriginXZPropertyId, new Vector4(
+                    center.x - cellSize.x * 0.5f,
+                    center.z - cellSize.y * 0.5f,
+                    0f,
+                    0f));
+                _material.SetVector(CellSizeXZPropertyId, new Vector4(cellSize.x, cellSize.y, 0f, 0f));
+            }
+        }
+
+        private void ApplyRendererProperties(
+            MeshRenderer renderer,
+            MapChunkDescriptor descriptor)
+        {
+            if (renderer == null)
+                return;
+
+            var block = new MaterialPropertyBlock();
+            block.SetVector(EdgeMaskPropertyId, Vector4.one);
+            block.SetFloat(UseCellMaskPropertyId, 0f);
+            block.SetVector(ChunkTileOriginPropertyId, new Vector4(
+                descriptor.TileRect.xMin,
+                descriptor.TileRect.yMin,
+                0f,
+                0f));
+            block.SetVector(ChunkTileSizePropertyId, new Vector4(
+                descriptor.TileRect.width,
+                descriptor.TileRect.height,
+                0f,
+                0f));
+            block.SetFloat(SurfaceLiftPropertyId, 0f);
+            block.SetFloat(MinUpNormalYPropertyId, 0.2f);
+
+            if (_gridGeometry != null
+                && _gridGeometry.TryGetCellSize(out Vector2 cellSize)
+                && _gridGeometry.TryGetCellCenter(Vector2Int.zero, out Vector3 center))
+            {
+                block.SetVector(GridOriginXZPropertyId, new Vector4(
+                    center.x - cellSize.x * 0.5f,
+                    center.z - cellSize.y * 0.5f,
+                    0f,
+                    0f));
+                block.SetVector(CellSizeXZPropertyId, new Vector4(cellSize.x, cellSize.y, 0f, 0f));
+            }
+
+            renderer.SetPropertyBlock(block);
+        }
+
+        private Material[] BuildMaterialArray(Mesh mesh)
+        {
+            int count = Mathf.Max(1, mesh != null ? mesh.subMeshCount : 1);
+            var materials = new Material[count];
+            for (int i = 0; i < count; i++)
+                materials[i] = _material;
+            return materials;
         }
 
         private static Transform GetOrCreateOverlaysRoot(Transform chunkRoot)

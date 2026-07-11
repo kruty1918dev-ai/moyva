@@ -136,7 +136,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             _configurationPreparation.Prepare(configuration, worldData, terrainPolicy);
-            return _chunkFirstBuild.Build(worldData, configuration, terrainPolicy);
+            TileWorldCreatorWorldBuildResult result = _chunkFirstBuild.Build(worldData, configuration, terrainPolicy);
+            PublishChunkFirstSurfaceHeights(worldData);
+            return result;
+        }
+
+        private void PublishChunkFirstSurfaceHeights(GeneratedWorldData worldData)
+        {
+            if (_terrainLevelService == null || worldData == null)
+                return;
+
+            if (worldData.TerrainLevelMap != null)
+                _terrainLevelService.SetLevelMap(worldData.TerrainLevelMap);
+
+            if (worldData.LogicalTileMap?.SurfaceHeights != null)
+                _terrainLevelService.SetSurfaceHeightMap(worldData.LogicalTileMap.SurfaceHeights);
         }
 
         private void PrepareTerrainData(GeneratedWorldData worldData, TileWorldCreatorBuildOptions options)

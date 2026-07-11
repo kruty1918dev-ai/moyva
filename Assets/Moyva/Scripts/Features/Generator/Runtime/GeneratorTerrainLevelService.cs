@@ -7,9 +7,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         private int[,] _levelMap;
         private float[,] _surfaceHeightMap;
+        private bool _hasExplicitSurfaceHeightMap;
 
         public bool HasLevelMap => _levelMap != null;
         public bool HasSurfaceHeightMap => _surfaceHeightMap != null;
+        public bool HasExplicitSurfaceHeightMap => _surfaceHeightMap != null && _hasExplicitSurfaceHeightMap;
         public int Width => _levelMap?.GetLength(0) ?? _surfaceHeightMap?.GetLength(0) ?? 0;
         public int Height => _levelMap?.GetLength(1) ?? _surfaceHeightMap?.GetLength(1) ?? 0;
         public HillLevelDataMap CurrentHillLevelData { get; private set; }
@@ -18,6 +20,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             _levelMap = null;
             _surfaceHeightMap = null;
+            _hasExplicitSurfaceHeightMap = false;
             CurrentHillLevelData = null;
         }
 
@@ -25,12 +28,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
         {
             _levelMap = CloneLevelMap(levelMap);
             _surfaceHeightMap = BuildSurfaceHeightMapFromLevels(_levelMap);
+            _hasExplicitSurfaceHeightMap = false;
             CurrentHillLevelData = null;
         }
 
         public void SetSurfaceHeightMap(float[,] surfaceHeightMap)
         {
             _surfaceHeightMap = CloneSurfaceHeightMap(surfaceHeightMap);
+            _hasExplicitSurfaceHeightMap = _surfaceHeightMap != null;
         }
 
         public void SetHillLevelData(HillLevelDataMap data)
@@ -40,6 +45,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             {
                 _levelMap = null;
                 _surfaceHeightMap = null;
+                _hasExplicitSurfaceHeightMap = false;
                 return;
             }
 
@@ -50,6 +56,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             _levelMap = levels;
             _surfaceHeightMap = BuildSurfaceHeightMapFromLevels(_levelMap);
+            _hasExplicitSurfaceHeightMap = false;
         }
 
         public bool TryGetLevel(Vector2Int position, out int level)

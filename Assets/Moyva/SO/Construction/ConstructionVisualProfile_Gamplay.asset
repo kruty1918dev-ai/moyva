@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15204de3d698673669e38bbfa773fcd9, type: 3}
+  m_Name: ConstructionVisualProfile_Gamplay
+  m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.ConstructionVisualProfileSO
+  _buildingLayerMinSortingOrder: 5
+  _buildingSurfaceOffsetY: 0.5
+  _previewSurfaceOffsetY: 0.7
+  _ghostAlpha: 0.55
+  _blockedFlashDurationSeconds: 0.35
+  _useBuildGridOverlay: 1
+  _buildGridRenderMode: 1
+  _buildGridSurfacePlaneUseBuildableFilter: 0
+  _buildGridFillAlpha: 0.045
+  _buildGridLineAlpha: 0.22
+  _buildGridLineWidthNormalized: 0.035
+  _buildGridSurfaceOffsetY: 0.1
+  _buildGridTileInsetNormalized: 0
+  _useInfluenceRadiusOverlay: 1
+  _influenceRadiusFillAlpha: 0.055
+  _influenceRadiusBorderWidth: 0.5
+  _influenceRadiusShaderName2D: Moyva/2D/InfluenceRadius
+  _influenceRadiusShaderName3D: Moyva/3D/InfluenceRadiusExistingMeshOverlay
+  _buildGridShaderName: Moyva/Overlay/ConstructionBuildGrid
+  _previewRootName: ConstructionPreviewRoot
+  _placedRootName: PlayerBuildingsRoot
+  _radiusRootName: ConstructionRadiusRoot

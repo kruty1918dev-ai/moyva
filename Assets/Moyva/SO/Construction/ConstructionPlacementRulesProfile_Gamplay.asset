@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0344b02ac4c346dbfbe0f7aeb60fbe72, type: 3}
+  m_Name: ConstructionPlacementRulesProfile_Gamplay
+  m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.ConstructionPlacementRulesProfileSO
+  _minSpacing: 0
+  _townHallBuildRadius: 25
+  _enableInfluenceZoneRules: 1
+  _enableTerrainRules: 1
+  _allowBuildingOnWater: 0
+  _allowBuildingOnHills: 1
+  _blockEdgeTerrainTiles: 1
+  _enableFogRules: 1
+  _requireVisibleFogTile: 1
+  _blockedTileIds: []
+  _blockedTerrainLevelRanges: []
