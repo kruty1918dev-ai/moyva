@@ -20,6 +20,10 @@ namespace Kruty1918.Moyva.Tests.Construction
                 asset.Identity.Id = "house";
                 asset.Identity.DisplayName = "Asset House";
                 asset.Identity.Category = BuildingCategory.Civilian;
+                asset.Footprint.Size = new Vector2Int(2, 1);
+                asset.Footprint.Anchor = BuildingFootprintAnchor.SouthWest;
+                asset.Footprint.OccupiedCells = new[] { Vector2Int.zero, Vector2Int.right };
+                asset.Placement.RequiredTerrainIds = new[] { "grass" };
                 asset.Modules.Add(new FogRevealBuildingModule { RevealRadius = 2 });
 
                 registry.Buildings = new[]
@@ -38,6 +42,13 @@ namespace Kruty1918.Moyva.Tests.Construction
                 Assert.NotNull(definition);
                 Assert.AreEqual("Asset House", definition.DisplayName);
                 Assert.AreEqual(BuildingCategory.Civilian, definition.Category);
+                CollectionAssert.AreEqual(new[] { "grass" }, definition.RequiredTerrainIds);
+                Assert.AreEqual(new Vector2Int(2, 1), definition.Footprint.Size);
+                CollectionAssert.AreEqual(
+                    new[] { Vector2Int.zero, Vector2Int.right },
+                    definition.Footprint.OccupiedCells);
+                Assert.AreNotSame(asset.Footprint, definition.Footprint);
+                Assert.AreNotSame(asset.Footprint.OccupiedCells, definition.Footprint.OccupiedCells);
                 Assert.AreEqual(2, BuildingDefinitionCapabilities.GetFogRevealRadius(definition));
                 Assert.AreEqual(1, registry.GetAll().Length);
             }
@@ -45,6 +56,41 @@ namespace Kruty1918.Moyva.Tests.Construction
             {
                 UnityEngine.Object.DestroyImmediate(asset);
                 UnityEngine.Object.DestroyImmediate(registry);
+            }
+        }
+
+        [Test]
+        public void ApplyLegacy_CopiesFootprintWithoutSharingArrays()
+        {
+            var asset = ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
+            try
+            {
+                var legacy = new BuildingDefinition
+                {
+                    Id = "legacy-wide",
+                    DisplayName = "Legacy Wide",
+                    Footprint = new BuildingFootprint
+                    {
+                        Size = new Vector2Int(3, 1),
+                        Anchor = BuildingFootprintAnchor.Custom,
+                        CustomAnchor = Vector2Int.right,
+                        OccupiedCells = new[] { Vector2Int.zero, Vector2Int.right },
+                        EntranceCells = new[] { new Vector2Int(2, 0) },
+                    },
+                };
+
+                asset.ApplyLegacy(legacy);
+
+                Assert.AreEqual(legacy.Footprint.Size, asset.Footprint.Size);
+                Assert.AreEqual(legacy.Footprint.Anchor, asset.Footprint.Anchor);
+                CollectionAssert.AreEqual(legacy.Footprint.OccupiedCells, asset.Footprint.OccupiedCells);
+                CollectionAssert.AreEqual(legacy.Footprint.EntranceCells, asset.Footprint.EntranceCells);
+                Assert.AreNotSame(legacy.Footprint, asset.Footprint);
+                Assert.AreNotSame(legacy.Footprint.OccupiedCells, asset.Footprint.OccupiedCells);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(asset);
             }
         }
 

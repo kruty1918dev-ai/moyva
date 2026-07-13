@@ -47,6 +47,10 @@ namespace Kruty1918.Moyva.Construction.API
         public Sprite RuntimePreview;
         public GameObject Prefab;       // Prefab будівлі (stub: null поки арт не готовий)
 
+        [Header("Footprint")]
+        [Tooltip("Runtime footprint used by validation, occupancy and build-grid preview.")]
+        public BuildingFootprint Footprint = new BuildingFootprint();
+
         [Header("Візуальне вирівнювання")]
         [Tooltip("Додатковий Y-offset для візуалу цієї будівлі. Не впливає на логіку клітинки чи колайдер розміщення.")]
         public float VisualYOffset;
@@ -68,6 +72,9 @@ namespace Kruty1918.Moyva.Construction.API
         [Header("Правила розміщення")]
         [Tooltip("Дозволяє розміщення, навіть якщо клітинка ще не Visible у Fog of War.")]
         public bool CanPlaceInFog;
+
+        [Tooltip("Якщо список не порожній, будівлю можна ставити тільки на тайли з цими ID.")]
+        public string[] RequiredTerrainIds = System.Array.Empty<string>();
 
         [Tooltip("Увімкнути кастомні правила розміщення відносно ратуші для цієї будівлі.\nЯкщо вимкнено — застосовуються стандартні правила за класом будівлі.")]
         public bool UseCustomTownHallRules;

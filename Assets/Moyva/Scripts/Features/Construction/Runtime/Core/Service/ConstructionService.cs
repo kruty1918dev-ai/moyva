@@ -13,7 +13,7 @@ using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed partial class ConstructionService : IConstructionService, IInitializable, IDisposable
+    internal sealed partial class ConstructionService : IConstructionService, IConstructionPlacementQuery, IInitializable, IDisposable
     {
         private const string DefaultOwnerId = "player_0";
 
@@ -45,6 +45,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private readonly IObjectsMapService _objectsMapService;
         private readonly IBuildingRegistry _buildingRegistry;
+        private readonly IBuildingRegistry _placementBuildingRegistry;
         private readonly SignalBus _signalBus;
         private readonly int _minSpacing;
         private readonly int _townHallBuildRadius;
@@ -65,6 +66,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private string _selectedBuildingId;
         private readonly List<PendingPlacement> _pendingPlacements = new();
+        private readonly List<BuildingPlacementSimulationEntry> _placementSimulationSnapshot = new();
         private readonly List<List<PendingPlacement>> _undoSnapshots = new();
         private readonly List<List<PendingPlacement>> _redoSnapshots = new();
         private readonly HashSet<Vector2Int> _pendingPositions = new();
@@ -76,6 +78,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private string _lastActionMessage = string.Empty;
         private readonly Dictionary<Vector2Int, (string BuildingId, string FactionId)> _factionPlacedBuildings = new();
         private bool _isActive;
+        private int _pendingPlacementsVersion;
+        private int _placementSimulationSnapshotVersion = -1;
 
         public BuildingPlacementState State { get; private set; } = BuildingPlacementState.Idle;
         public bool IsDemolishMode { get; private set; }
@@ -103,6 +107,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
+            _placementBuildingRegistry = new ConstructionBuildingRegistrySnapshot(buildingRegistry);
             _signalBus = signalBus;
             _minSpacing = minSpacing;
             _townHallBuildRadius = Mathf.Max(0, townHallBuildRadius);
@@ -136,6 +141,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
 
                 _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
+                _signalBus.Subscribe<SettlementResourceChangedSignal>(OnSettlementResourceChanged);
                 _initialized = true;
                 Debug.Log("[Construction] ✓ GameModeChangedSignal підписано");
             }
@@ -162,6 +168,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
 
                 _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
+                _signalBus.TryUnsubscribe<SettlementResourceChangedSignal>(OnSettlementResourceChanged);
                 Debug.Log("[Construction] ✓ GameModeChangedSignal відписано");
             }
             catch (Exception ex)
@@ -178,9 +185,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (!_isActive)
             {
-                ResetSession(clearRedoHistory: true);
                 IsDemolishMode = false;
+                ResetSession(clearRedoHistory: true);
             }
         }
+
+        private void OnSettlementResourceChanged(SettlementResourceChangedSignal _)
+            => InvalidatePlacementResourceValidationCache();
     }
 }

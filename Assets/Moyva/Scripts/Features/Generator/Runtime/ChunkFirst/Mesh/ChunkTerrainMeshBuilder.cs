@@ -11,6 +11,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly ChunkFirstRuntimeMeshRegistry _meshRegistry;
         private readonly ChunkFirstBuildDiagnostics _diagnostics;
         private readonly Dictionary<Material, List<CombineInstance>> _byMaterial = new Dictionary<Material, List<CombineInstance>>();
+        private readonly Stack<List<CombineInstance>> _combineListPool = new Stack<List<CombineInstance>>();
         private readonly List<CombineInstance> _finalCombine = new List<CombineInstance>(16);
         private readonly List<Material> _materials = new List<Material>(16);
         private readonly List<TileMeshSource> _cellSources = new List<TileMeshSource>(4);
@@ -34,7 +35,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             var terrainRoot = EnsureTerrainRoot(chunkRoot);
             ClearExistingMesh(terrainRoot);
-            _byMaterial.Clear();
+            RecycleCombineLists();
             _finalCombine.Clear();
             _materials.Clear();
 
@@ -57,7 +58,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             renderer.sharedMaterials = _materials.ToArray();
             _meshRegistry.Register(combined);
 
-            _diagnostics.LogChunkMesh(terrainRoot.name, combined.vertexCount, combined.triangles.Length);
+            _diagnostics.LogChunkMesh(terrainRoot.name, combined.vertexCount, CountIndices(combined));
             return 1;
         }
 
@@ -101,7 +102,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
                 if (!_byMaterial.TryGetValue(material, out var combines))
                 {
-                    combines = new List<CombineInstance>(64);
+                    combines = _combineListPool.Count > 0
+                        ? _combineListPool.Pop()
+                        : new List<CombineInstance>(64);
                     _byMaterial[material] = combines;
                 }
 
@@ -150,8 +153,29 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             mesh.CombineMeshes(_finalCombine.ToArray(), false, false);
             mesh.RecalculateBounds();
             mesh.bounds = CreateStableChunkBounds(area, mesh.bounds);
-            mesh.RecalculateNormals();
+            if (!mesh.HasVertexAttribute(VertexAttribute.Normal))
+                mesh.RecalculateNormals();
             return mesh;
+        }
+
+        private void RecycleCombineLists()
+        {
+            foreach (List<CombineInstance> combines in _byMaterial.Values)
+            {
+                combines.Clear();
+                _combineListPool.Push(combines);
+            }
+
+            _byMaterial.Clear();
+        }
+
+        private static int CountIndices(Mesh mesh)
+        {
+            long count = 0;
+            for (int subMesh = 0; subMesh < mesh.subMeshCount; subMesh++)
+                count += (long)mesh.GetIndexCount(subMesh);
+
+            return count > int.MaxValue ? int.MaxValue : (int)count;
         }
 
         private static Bounds CreateStableChunkBounds(ChunkBuildArea area, Bounds actualBounds)

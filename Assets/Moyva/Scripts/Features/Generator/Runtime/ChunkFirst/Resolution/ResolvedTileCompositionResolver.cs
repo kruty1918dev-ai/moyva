@@ -4,6 +4,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
     internal sealed class ResolvedTileCompositionResolver : IResolvedTileCompositionResolver
     {
+        private const string TerrainWinnerReason =
+            "Main terrain won by LayerKind/TerrainPriority/CompositionRuleTable/SortingOrder fallback.";
+
         private readonly ICompositionRuleTable _rules;
 
         public ResolvedTileCompositionResolver(ICompositionRuleTable rules = null)
@@ -18,9 +21,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             bool hasMain = TryResolveMainTerrain(neighborhood, out var main);
             bool hasOverlay = TryResolveOverlay(neighborhood, out var overlay);
-            string reason = hasMain
-                ? $"{main.GraphLayerName ?? main.GraphLayerId} won by LayerKind/TerrainPriority/CompositionRuleTable/SortingOrder fallback."
-                : "no terrain-like layer in stack";
+            string reason = hasMain ? TerrainWinnerReason : "no terrain-like layer in stack";
 
             return new ResolvedTileComposition(
                 cell,

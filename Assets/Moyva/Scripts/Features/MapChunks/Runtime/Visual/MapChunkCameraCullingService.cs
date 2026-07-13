@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         private readonly IMapChunkVisibilityService _visibility;
         private readonly UnityEngine.Camera _camera;
         private readonly HashSet<MapChunkCoord> _visible = new();
-        private Plane[] _planes;
+        private readonly Plane[] _planes = new Plane[6];
         private float _nextUpdateAt;
 
         public MapChunkCameraCullingService(
@@ -44,7 +44,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
             if (camera == null)
                 return;
 
-            _planes = GeometryUtility.CalculateFrustumPlanes(camera);
+            GeometryUtility.CalculateFrustumPlanes(camera, _planes);
             _visible.Clear();
             foreach (var chunk in _layout.Chunks)
             {

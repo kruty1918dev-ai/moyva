@@ -23,6 +23,8 @@ namespace Kruty1918.Moyva.Signals
         public Vector2Int Position;
         public string OwnerId;
         public string SourceFactionId;
+        public bool HasRelocationSource;
+        public Vector2Int RelocationSourcePosition;
     }
 
     /// <summary>
@@ -40,6 +42,56 @@ namespace Kruty1918.Moyva.Signals
         public Vector2Int Position;
         public string BuildingId;
         public BuildingPreviewState PreviewState;
+    }
+
+    /// <summary>
+    /// Надсилається, коли гравець обирає іншу будівлю або перемикає demolish-режим.
+    /// Дає visual-layer змогу перебудувати сітку під актуальні правила будівлі.
+    /// </summary>
+    public struct BuildingSelectionChangedSignal
+    {
+        public string BuildingId;
+        public bool IsDemolishMode;
+    }
+
+    /// <summary>
+    /// Надсилається, коли pending-preview переноситься між клітинками.
+    /// Дає візуальному шару шанс переїхати плавно, не знищуючи GameObject.
+    /// </summary>
+    public struct BuildingPreviewMovedSignal
+    {
+        public Vector2Int FromPosition;
+        public Vector2Int ToPosition;
+        public string BuildingId;
+    }
+
+    /// <summary>
+    /// Надсилається під час drag pending-preview для м'якого руху під курсором/пальцем.
+    /// SnapToGrid = true означає повернути візуал у центр найближчої валідної клітинки.
+    /// </summary>
+    public struct BuildingPreviewDragVisualSignal
+    {
+        public Vector2Int Position;
+        public string BuildingId;
+        public Vector3 WorldPosition;
+        public bool SnapToGrid;
+        public bool HasSnapTarget;
+        public Vector2Int SnapTargetPosition;
+        public bool IsSnapTargetValid;
+    }
+
+    /// <summary>
+    /// Emitted only when the actual grid cell below the pointer (or its validity)
+    /// changes. The arrays describe the selected building footprint for rendering.
+    /// </summary>
+    public struct BuildGridHoverChangedSignal
+    {
+        public bool HasTile;
+        public Vector2Int Position;
+        public string BuildingId;
+        public bool IsPlacementValid;
+        public Vector2Int[] FootprintPositions;
+        public Vector2Int[] InvalidFootprintPositions;
     }
 
     /// <summary>

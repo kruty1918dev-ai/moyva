@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
@@ -8,13 +9,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         public void RestoreFromSave(Vector2Int position, string buildingId)
         {
-            if (_objectsMapService.IsOccupied(position))
+            if (!TryRegisterBuildingFootprint(position, buildingId))
             {
-                Debug.LogWarning($"[Construction] RestoreFromSave: позиція {position} вже зайнята, пропускаємо '{buildingId}'.");
+                Debug.LogWarning($"[Construction] RestoreFromSave: footprint at {position} is occupied, skipping '{buildingId}'.");
                 return;
             }
 
-            _objectsMapService.Register(position, buildingId);
             _playerPlacedBuildings[position] = buildingId;
             _signalBus.Fire(new BuildingPlacedSignal
             {
@@ -40,36 +40,70 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ? DefaultOwnerId
                 : placedByFactionId.Trim();
 
-            if (_objectsMapService.IsOccupied(position))
+            ConstructionPlacementQueryResult placement = EvaluatePlacement(
+                new ConstructionPlacementQueryRequest(
+                    buildingId,
+                    position,
+                    includeResources: true,
+                    includeDetails: true,
+                    ownerId: ownerId));
+            if (!placement.IsValid)
             {
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}): тайл зайнятий.");
+                    Debug.Log($"[MoyvaBuildGridDiag] direct-placement-blocked building='{buildingId}' origin={position} reason='{placement.Reason}'");
                 return false;
             }
 
-            if (IsBlockedByInfluenceZone(position, buildingId, ignoredPendingPosition: null))
+            bool replacementRemoved = false;
+            bool targetRegistered = false;
+            bool modelCommitted = false;
+            Vector2Int replacedOrigin = default;
+            string replacedBuildingId = null;
+            try
             {
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}) -> BLOCKED. influenceZoneBlocked=True, townHallBuildRadius={_townHallBuildRadius}.");
-                return false;
+                if (placement.IsGateReplacement)
+                {
+                    if (!TryResolveGateReplacement(
+                            position,
+                            buildingId,
+                            out replacedOrigin,
+                            out replacedBuildingId))
+                    {
+                        return false;
+                    }
+
+                    UnregisterBuildingFootprint(replacedOrigin, replacedBuildingId);
+                    replacementRemoved = true;
+                }
+
+                if (!TryRegisterBuildingFootprint(position, buildingId))
+                    return false;
+                targetRegistered = true;
+
+                if (!TryConsumeConstructionResources(position, buildingId, ownerId, out var resourceReason))
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"[MoyvaBuildGridDiag] direct-placement-blocked building='{buildingId}' origin={position} reason='{resourceReason}'");
+                    return false;
+                }
+
+                if (replacementRemoved)
+                    RemovePlacedRecordAt(replacedOrigin);
+
+                _factionPlacedBuildings[position] = (buildingId, ownerId);
+                modelCommitted = true;
+            }
+            finally
+            {
+                if (!modelCommitted)
+                {
+                    if (targetRegistered)
+                        UnregisterBuildingFootprint(position, buildingId);
+                    if (replacementRemoved)
+                        RestoreBuildingFootprintOrLog(replacedOrigin, replacedBuildingId, "direct-gate-replacement");
+                }
             }
 
-            if (IsBlockedByTerrain(position, out var terrainReason))
-            {
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}) -> BLOCKED. terrainBlocked=True, reason={terrainReason}.");
-                return false;
-            }
-
-            if (!TryConsumeConstructionResources(position, buildingId, ownerId, out var resourceReason))
-            {
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] TryDirectPlace({buildingId},{position}) -> BLOCKED. resourcesBlocked=True, reason={resourceReason}.");
-                return false;
-            }
-
-            _objectsMapService.Register(position, buildingId);
-            _factionPlacedBuildings[position] = (buildingId, ownerId);
             _signalBus.Fire(new BuildingPlacedSignal
             {
                 BuildingId = buildingId,
@@ -85,23 +119,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public bool TryDemolishByFaction(Vector2Int position, string factionId)
         {
-            if (!_factionPlacedBuildings.TryGetValue(position, out var entry) || entry.FactionId != factionId)
+            Vector2Int origin = ResolvePlacedOrigin(position);
+            if (!_factionPlacedBuildings.TryGetValue(origin, out var entry) || entry.FactionId != factionId)
             {
                 if (VerboseLogs)
                     Debug.Log($"[Construction] TryDemolishByFaction({position}): будівля не знайдена або не належить фракції '{factionId}'.");
                 return false;
             }
 
-            _objectsMapService.Unregister(position);
-            _factionPlacedBuildings.Remove(position);
+            UnregisterBuildingFootprint(origin, entry.BuildingId);
+            _factionPlacedBuildings.Remove(origin);
             _signalBus.Fire(new BuildingDemolishedSignal
             {
                 BuildingId = entry.BuildingId,
-                Position = position,
+                Position = origin,
                 SourceFactionId = factionId
             });
             if (VerboseLogs)
-                Debug.Log($"[Construction] TryDemolishByFaction: знесено '{entry.BuildingId}' на {position} від '{factionId}'.");
+                Debug.Log($"[Construction] TryDemolishByFaction: знесено '{entry.BuildingId}' на {origin} від '{factionId}'.");
             return true;
         }
 

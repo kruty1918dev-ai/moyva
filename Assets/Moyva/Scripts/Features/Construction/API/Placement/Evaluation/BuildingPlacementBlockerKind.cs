@@ -8,5 +8,6 @@ namespace Kruty1918.Moyva.Construction.API
         InfluenceRequired = 3,
         InfluenceOverlap = 4,
         Configuration = 5,
+        Terrain = 6,
     }
 }

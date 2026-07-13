@@ -4,7 +4,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal interface IConstructionPlacedVisualService : IConstructionPlacedVisualLookup
     {
-        void Replace(Vector2Int position, string buildingId, GameObject prefab, Quaternion rotation, float visualOffsetY = 0f);
+        void Replace(Vector2Int position, string buildingId, GameObject prefab, Quaternion rotation, float visualOffsetY = 0f, GameObject sourceVisual = null);
         void Remove(Vector2Int position);
         void Select(Vector2Int position);
         void ClearSelection();

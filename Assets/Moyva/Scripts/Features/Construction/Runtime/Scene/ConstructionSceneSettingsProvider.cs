@@ -47,6 +47,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public bool AllowBuildingOnHills => _sceneContext?.ResolvePlacementRulesProfile()?.AllowBuildingOnHills ?? true;
         public bool BlockEdgeTerrainTiles => _sceneContext?.ResolvePlacementRulesProfile()?.BlockEdgeTerrainTiles ?? true;
         public string[] BlockedTileIds => _sceneContext?.ResolvePlacementRulesProfile()?.BlockedTileIds ?? System.Array.Empty<string>();
+        public string[] AllowedTileIds => _sceneContext?.ResolvePlacementRulesProfile()?.AllowedTileIds ?? System.Array.Empty<string>();
         public TerrainLevelRestrictionRange[] BlockedTerrainLevelRanges => _sceneContext?.ResolvePlacementRulesProfile()?.BlockedTerrainLevelRanges ?? System.Array.Empty<TerrainLevelRestrictionRange>();
 
         public int BuildingLayerMinSortingOrder => _sceneContext?.ResolveVisualProfile()?.BuildingLayerMinSortingOrder ?? 5;
@@ -54,6 +55,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public float PreviewSurfaceOffsetY => _sceneContext?.ResolveVisualProfile()?.PreviewSurfaceOffsetY ?? 0.7f;
         public float GhostAlpha => _sceneContext?.ResolveVisualProfile()?.GhostAlpha ?? 0.55f;
         public float BlockedFlashDurationSeconds => _sceneContext?.ResolveVisualProfile()?.BlockedFlashDurationSeconds ?? 0.35f;
+        public float PreviewDragFollowSharpness => _sceneContext?.ResolveVisualProfile()?.PreviewDragFollowSharpness ?? 28f;
+        public Vector2 PreviewDragCursorOffsetXZ => _sceneContext?.ResolveVisualProfile()?.PreviewDragCursorOffsetXZ ?? Vector2.zero;
+        public bool ShowSnapTargetHighlight => _sceneContext?.ResolveVisualProfile()?.ShowSnapTargetHighlight ?? true;
+        public Color SnapTargetHighlightLineColor => _sceneContext?.ResolveVisualProfile()?.SnapTargetHighlightLineColor ?? new Color(1f, 0.58f, 0.12f, 0.9f);
+        public Color SnapTargetHighlightFillColor => _sceneContext?.ResolveVisualProfile()?.SnapTargetHighlightFillColor ?? new Color(1f, 0.58f, 0.12f, 0.16f);
+        public float SnapTargetHighlightLineWidthNormalized => _sceneContext?.ResolveVisualProfile()?.SnapTargetHighlightLineWidthNormalized ?? 0.06f;
+        public float SnapTargetHighlightInsetNormalized => _sceneContext?.ResolveVisualProfile()?.SnapTargetHighlightInsetNormalized ?? 0.04f;
+        public float SnapTargetHighlightSurfaceOffsetY => _sceneContext?.ResolveVisualProfile()?.SnapTargetHighlightSurfaceOffsetY ?? 0.16f;
         public bool UseBuildGridOverlay => _sceneContext?.ResolveVisualProfile()?.UseBuildGridOverlay ?? true;
         public ConstructionBuildGridRenderMode BuildGridRenderMode => _sceneContext?.ResolveVisualProfile()?.BuildGridRenderMode ?? ConstructionBuildGridRenderMode.LegacyDrawMeshPerTile;
         public bool BuildGridSurfacePlaneUseBuildableFilter => _sceneContext?.ResolveVisualProfile()?.BuildGridSurfacePlaneUseBuildableFilter ?? false;
@@ -62,6 +71,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public float BuildGridLineWidthNormalized => _sceneContext?.ResolveVisualProfile()?.BuildGridLineWidthNormalized ?? 0.035f;
         public float BuildGridSurfaceOffsetY => _sceneContext?.ResolveVisualProfile()?.BuildGridSurfaceOffsetY ?? 0.06f;
         public float BuildGridTileInsetNormalized => _sceneContext?.ResolveVisualProfile()?.BuildGridTileInsetNormalized ?? 0.08f;
+        public float BuildGridUpdateBudgetMilliseconds => _sceneContext?.ResolveVisualProfile()?.BuildGridUpdateBudgetMilliseconds ?? 2f;
         public string BuildGridShaderName => _sceneContext?.ResolveVisualProfile()?.BuildGridShaderName ?? "Moyva/Overlay/ConstructionBuildGrid";
         public bool UseInfluenceRadiusOverlay => _sceneContext?.ResolveVisualProfile()?.UseInfluenceRadiusOverlay ?? true;
         public float InfluenceRadiusFillAlpha => _sceneContext?.ResolveVisualProfile()?.InfluenceRadiusFillAlpha ?? 0.055f;

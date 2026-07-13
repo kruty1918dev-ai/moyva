@@ -6,6 +6,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed class ConstructionBuildGridDiagnostics : IConstructionBuildGridDiagnostics
     {
+        private const string Tag = "[MoyvaBuildGridDiag]";
         private readonly IConstructionDiagnosticsSettingsProvider _settingsProvider;
 
         [Inject]
@@ -20,19 +21,46 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!VerboseLogs)
                 return;
 
-            Debug.Log($"[ConstructionBuildGrid] Initialized. Shader='{shaderName}', materialReady={materialReady}, projectionReady={projectionReady}");
+            Debug.Log($"{Tag} initialized shader='{shaderName}' materialReady={materialReady} projectionReady={projectionReady}");
         }
 
-        public void LogModeChanged(bool active)
+        public void LogStateTransition(
+            BuildModeGridState previousState,
+            BuildModeGridState currentState,
+            string previousBuildingId,
+            string currentBuildingId,
+            string reason)
         {
             if (VerboseLogs)
-                Debug.Log($"[ConstructionBuildGrid] Construction mode active={active}. Overlay marked dirty.");
+            {
+                Debug.Log(
+                    $"{Tag} state {previousState}->{currentState} " +
+                    $"building='{previousBuildingId ?? "none"}'->'{currentBuildingId ?? "none"}' reason='{reason}'");
+            }
+        }
+
+        public void LogFullRefreshRequested(BuildModeGridState state, string buildingId)
+        {
+            if (VerboseLogs)
+                Debug.Log($"{Tag} full-refresh-requested state={state} building='{buildingId ?? "none"}'");
+        }
+
+        public void LogPartialRefreshRequested(Vector2Int position, int radius)
+        {
+            if (VerboseLogs)
+                Debug.Log($"{Tag} partial-refresh-requested center={position} radius={radius}");
+        }
+
+        public void LogHoverChanged(bool hasTile, Vector2Int position, ConstructionBuildGridTileVisualState visualState)
+        {
+            if (VerboseLogs)
+                Debug.Log($"{Tag} hover hasTile={hasTile} tile={position} visualState={visualState}");
         }
 
         public void LogRebuildSkipped(string reason)
         {
             if (VerboseLogs)
-                Debug.LogWarning($"[ConstructionBuildGrid] Rebuild skipped: {reason}");
+                Debug.LogWarning($"{Tag} rebuild-skipped reason='{reason}'");
         }
 
         public void LogRebuildCompleted(ConstructionBuildGridCollectionStats stats)
@@ -41,15 +69,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
 
             Debug.Log(
-                $"[ConstructionBuildGrid] Rebuilt. entries={stats.EntriesCreated}, scanned={stats.PositionsScanned}, " +
+                $"{Tag} full-refresh-completed entries={stats.EntriesCreated} scanned={stats.PositionsScanned} " +
                 $"tileData={stats.PositionsWithTileData}, filtered={stats.FilteredOut}, skipped={stats.SkippedEntries}, " +
                 $"missingSurface={stats.MissingSurfaceData}");
+        }
+
+        public void LogChunkMaskUpdated(RectInt tileRect, int general, int valid, int invalid, int hidden)
+        {
+            if (!VerboseLogs)
+                return;
+
+            Debug.Log(
+                $"{Tag} chunk-refresh-completed area={tileRect} updated={general + valid + invalid} " +
+                $"general={general} valid={valid} invalid={invalid} hidden={hidden}");
         }
 
         public void LogEntriesPruned(int prunedCount, int remainingCount)
         {
             if (VerboseLogs && prunedCount > 0)
-                Debug.Log($"[ConstructionBuildGrid] Pruned stale entries={prunedCount}, remaining={remainingCount}");
+                Debug.Log($"{Tag} pruned stale={prunedCount} remaining={remainingCount}");
         }
 
         private bool VerboseLogs => _settingsProvider?.EnableVerboseLogs ?? (Application.isEditor && Debug.isDebugBuild);

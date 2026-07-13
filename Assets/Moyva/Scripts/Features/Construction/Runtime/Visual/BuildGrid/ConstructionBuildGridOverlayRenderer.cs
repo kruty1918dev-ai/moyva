@@ -9,6 +9,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         private const int BuildGridRenderQueue = 3990;
         private static readonly int EdgeMaskPropertyId = Shader.PropertyToID("_EdgeMask");
+        private static readonly int LineColorPropertyId = Shader.PropertyToID("_LineColor");
+        private static readonly int FillColorPropertyId = Shader.PropertyToID("_FillColor");
+        private static readonly int ValidLineColorPropertyId = Shader.PropertyToID("_ValidLineColor");
+        private static readonly int ValidFillColorPropertyId = Shader.PropertyToID("_ValidFillColor");
+        private static readonly int InvalidLineColorPropertyId = Shader.PropertyToID("_InvalidLineColor");
+        private static readonly int InvalidFillColorPropertyId = Shader.PropertyToID("_InvalidFillColor");
         private static readonly int GridOriginXZPropertyId = Shader.PropertyToID("_GridOriginXZ");
         private static readonly int CellSizeXZPropertyId = Shader.PropertyToID("_CellSizeXZ");
         private static readonly int UseCellMaskPropertyId = Shader.PropertyToID("_UseCellMask");
@@ -20,6 +26,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private GameObject _overlayGo;
         private Material _material;
         private MaterialPropertyBlock _propertyBlock;
+        private Color _generalLineColor;
+        private Color _generalFillColor;
+        private Color _validLineColor;
+        private Color _validFillColor;
+        private Color _invalidLineColor;
+        private Color _invalidFillColor;
 
         public bool MaterialReady => _material != null;
 
@@ -62,8 +74,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
 
             ApplySharedGridProperties();
-            _material.SetColor("_LineColor", lineColor);
-            _material.SetColor("_FillColor", fillColor);
+            _generalLineColor = lineColor;
+            _generalFillColor = fillColor;
+            _validLineColor = new Color(0.28f, 1f, 0.42f, lineColor.a);
+            _validFillColor = new Color(0.20f, 0.82f, 0.32f, fillColor.a);
+            _invalidLineColor = new Color(1f, 0.26f, 0.22f, lineColor.a);
+            _invalidFillColor = new Color(0.92f, 0.12f, 0.10f, fillColor.a);
+
+            _material.SetColor(LineColorPropertyId, _generalLineColor);
+            _material.SetColor(FillColorPropertyId, _generalFillColor);
+            _material.SetColor(ValidLineColorPropertyId, _validLineColor);
+            _material.SetColor(ValidFillColorPropertyId, _validFillColor);
+            _material.SetColor(InvalidLineColorPropertyId, _invalidLineColor);
+            _material.SetColor(InvalidFillColorPropertyId, _invalidFillColor);
             _material.SetFloat("_LineWidth", lineWidth);
         }
 
@@ -107,7 +130,32 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _propertyBlock ??= new MaterialPropertyBlock();
             _propertyBlock.Clear();
             _propertyBlock.SetVector(EdgeMaskPropertyId, entry.EdgeMask);
+            ResolveEntryColors(entry.VisualState, out Color lineColor, out Color fillColor);
+            _propertyBlock.SetColor(LineColorPropertyId, lineColor);
+            _propertyBlock.SetColor(FillColorPropertyId, fillColor);
             Graphics.DrawMesh(entry.Mesh, entry.Matrix, _material, entry.Layer, null, 0, _propertyBlock);
+        }
+
+        private void ResolveEntryColors(
+            ConstructionBuildGridTileVisualState visualState,
+            out Color lineColor,
+            out Color fillColor)
+        {
+            switch (visualState)
+            {
+                case ConstructionBuildGridTileVisualState.Valid:
+                    lineColor = _validLineColor;
+                    fillColor = _validFillColor;
+                    return;
+                case ConstructionBuildGridTileVisualState.Invalid:
+                    lineColor = _invalidLineColor;
+                    fillColor = _invalidFillColor;
+                    return;
+                default:
+                    lineColor = _generalLineColor;
+                    fillColor = _generalFillColor;
+                    return;
+            }
         }
 
         private void ApplySharedGridProperties()

@@ -14,6 +14,7 @@ namespace Kruty1918.Moyva.Construction.API
         bool AllowBuildingOnHills { get; }
         bool BlockEdgeTerrainTiles { get; }
         string[] BlockedTileIds { get; }
+        string[] AllowedTileIds { get; }
         TerrainLevelRestrictionRange[] BlockedTerrainLevelRanges { get; }
     }
 }

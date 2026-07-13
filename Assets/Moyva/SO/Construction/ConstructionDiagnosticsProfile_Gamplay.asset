@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a542f562a8c5c520a97a69b4df23b28a, type: 3}
   m_Name: ConstructionDiagnosticsProfile_Gamplay
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.ConstructionDiagnosticsProfileSO
-  _enableVerboseLogs: 1
-  _enablePlacementDebug: 1
+  _enableVerboseLogs: 0
+  _enablePlacementDebug: 0
   _enableResourceDebug: 1
-  _enableVisualDebug: 1
+  _enableVisualDebug: 0
   _enableWallDebug: 1
   _drawSceneGizmos: 1
   _drawBlockedTiles: 0

@@ -120,6 +120,36 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public void TwcConfigurationMasks_PreserveNeighborBitLayoutWithoutTemporaryArrays()
+        {
+            var composition = new ResolvedTileComposition(
+                Vector2Int.zero,
+                default,
+                default,
+                false,
+                false,
+                string.Empty,
+                northMatches: true,
+                eastMatches: true,
+                southMatches: true,
+                westMatches: false,
+                northEastMatches: false,
+                southEastMatches: true,
+                southWestMatches: false,
+                northWestMatches: true);
+
+            int normal = TwcTileMeshSourceProvider.BuildNormalConfiguration(composition);
+            int dual = TwcTileMeshSourceProvider.BuildDualConfiguration(
+                topLeft: true,
+                topRight: false,
+                bottomLeft: true,
+                bottomRight: true);
+
+            Assert.AreEqual(1 | 2 | 16 | 32 | 128 | 256, normal);
+            Assert.AreEqual(1 | 4 | 8, dual);
+        }
+
+        [Test]
         public void ChunkFirstPolicy_RoutesLegacySerializedNameToChunkFirst()
         {
             var policy = new TileWorldCreatorTerrainBuildPolicyResult(

@@ -197,12 +197,16 @@ namespace Kruty1918.Moyva.Tests.Signals
                 BuildingId = "townhall",
                 Position = new Vector2Int(5, 5),
                 OwnerId = "p0",
-                SourceFactionId = "f0"
+                SourceFactionId = "f0",
+                HasRelocationSource = true,
+                RelocationSourcePosition = new Vector2Int(4, 5)
             };
             Assert.AreEqual("townhall", s.BuildingId);
             Assert.AreEqual(new Vector2Int(5, 5), s.Position);
             Assert.AreEqual("p0", s.OwnerId);
             Assert.AreEqual("f0", s.SourceFactionId);
+            Assert.IsTrue(s.HasRelocationSource);
+            Assert.AreEqual(new Vector2Int(4, 5), s.RelocationSourcePosition);
         }
     }
 
@@ -213,6 +217,23 @@ namespace Kruty1918.Moyva.Tests.Signals
         public void CanBeConstructed()
         {
             Assert.DoesNotThrow(() => new BuildingCancelledSignal());
+        }
+    }
+
+    [TestFixture]
+    public sealed class BuildingSelectionChangedSignalTests
+    {
+        [Test]
+        public void Fields_SetCorrectly()
+        {
+            var s = new BuildingSelectionChangedSignal
+            {
+                BuildingId = "house",
+                IsDemolishMode = false
+            };
+
+            Assert.AreEqual("house", s.BuildingId);
+            Assert.IsFalse(s.IsDemolishMode);
         }
     }
 

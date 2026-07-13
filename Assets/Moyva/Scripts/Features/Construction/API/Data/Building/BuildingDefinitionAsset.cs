@@ -93,11 +93,15 @@ namespace Kruty1918.Moyva.Construction.API
                 Icon = Presentation.Icon,
                 RuntimePreview = Presentation.RuntimePreview,
                 Prefab = Presentation.Prefab,
+                Footprint = CloneFootprint(Footprint),
                 VisualYOffset = Presentation.VisualYOffset,
                 ConstructionCost = CloneCost(Construction.Cost),
                 Modules = CloneModuleList(Modules),
                 MaxHp = Mathf.Max(1, RuntimeStats.MaxHp),
                 CanPlaceInFog = Placement.CanPlaceInFog,
+                RequiredTerrainIds = Placement.RequiredTerrainIds != null
+                    ? (string[])Placement.RequiredTerrainIds.Clone()
+                    : System.Array.Empty<string>(),
                 UseCustomTownHallRules = true,
                 RequireTownHallInRange = Placement.RequiresSettlementInfluence,
                 BlockIfTownHallAlreadyInRange = Placement.BlockIfSettlementCenterInRange,
@@ -121,10 +125,15 @@ namespace Kruty1918.Moyva.Construction.API
             Presentation.Prefab = legacy.Prefab;
             Presentation.VisualYOffset = legacy.VisualYOffset;
 
+            Footprint = CloneFootprint(legacy.Footprint);
+
             Construction.Cost = CloneCost(legacy.ConstructionCost);
 
             Placement.RequiresSettlementInfluence = legacy.RequireTownHallInRange;
             Placement.CanPlaceInFog = legacy.CanPlaceInFog;
+            Placement.RequiredTerrainIds = legacy.RequiredTerrainIds != null
+                ? (string[])legacy.RequiredTerrainIds.Clone()
+                : System.Array.Empty<string>();
             Placement.BlockIfSettlementCenterInRange = legacy.BlockIfTownHallAlreadyInRange;
             Placement.InfluenceRadius = Mathf.Max(0, legacy.TownHallProximityRadiusOverride);
             Placement.CreatesSettlementInfluence =
@@ -178,6 +187,29 @@ namespace Kruty1918.Moyva.Construction.API
             }
 
             return result;
+        }
+
+        private static BuildingFootprint CloneFootprint(BuildingFootprint source)
+        {
+            source ??= new BuildingFootprint();
+            return new BuildingFootprint
+            {
+                Size = new Vector2Int(Mathf.Max(1, source.Size.x), Mathf.Max(1, source.Size.y)),
+                Anchor = source.Anchor,
+                CustomAnchor = source.CustomAnchor,
+                BlocksMovement = source.BlocksMovement,
+                BlocksConstruction = source.BlocksConstruction,
+                RequiresFlatGround = source.RequiresFlatGround,
+                OccupiedCells = source.OccupiedCells != null
+                    ? (Vector2Int[])source.OccupiedCells.Clone()
+                    : Array.Empty<Vector2Int>(),
+                EntranceCells = source.EntranceCells != null
+                    ? (Vector2Int[])source.EntranceCells.Clone()
+                    : Array.Empty<Vector2Int>(),
+                RoadConnectionCells = source.RoadConnectionCells != null
+                    ? (Vector2Int[])source.RoadConnectionCells.Clone()
+                    : Array.Empty<Vector2Int>(),
+            };
         }
 
         private static List<BuildingModuleDefinition> CloneModuleList(IReadOnlyList<BuildingModuleDefinition> source)

@@ -74,6 +74,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return true;
             }
 
+            if (!IsAllowedBuildingTile(tileTypeId, placementRulesProvider?.AllowedTileIds))
+            {
+                reason = $"tile '{tileTypeId}' is not in allowed build list";
+                return true;
+            }
+
             if (tileSettings != null && tileSettings.IsBuildBlocked(tileTypeId))
             {
                 reason = $"build-blocked layer '{tileTypeId}'";
@@ -134,24 +140,35 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (string.IsNullOrWhiteSpace(tileTypeId))
                 return false;
 
-            if (ContainsBlockedTileId(profileBlockedTileIds, tileTypeId))
+            if (ContainsTileId(profileBlockedTileIds, tileTypeId))
                 return true;
 
-            return ContainsBlockedTileId(worldBlockedTileIds, tileTypeId);
+            return ContainsTileId(worldBlockedTileIds, tileTypeId);
         }
 
-        private static bool ContainsBlockedTileId(IReadOnlyList<string> blockedTileIds, string tileTypeId)
+        private static bool IsAllowedBuildingTile(string tileTypeId, IReadOnlyList<string> allowedTileIds)
         {
-            if (blockedTileIds == null || blockedTileIds.Count == 0)
+            if (allowedTileIds == null || allowedTileIds.Count == 0)
+                return true;
+
+            if (string.IsNullOrWhiteSpace(tileTypeId))
                 return false;
 
-            for (int i = 0; i < blockedTileIds.Count; i++)
+            return ContainsTileId(allowedTileIds, tileTypeId);
+        }
+
+        private static bool ContainsTileId(IReadOnlyList<string> tileIds, string tileTypeId)
+        {
+            if (tileIds == null || tileIds.Count == 0)
+                return false;
+
+            for (int i = 0; i < tileIds.Count; i++)
             {
-                string blockedId = blockedTileIds[i];
-                if (string.IsNullOrWhiteSpace(blockedId))
+                string candidateId = tileIds[i];
+                if (string.IsNullOrWhiteSpace(candidateId))
                     continue;
 
-                if (string.Equals(blockedId.Trim(), tileTypeId, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(candidateId.Trim(), tileTypeId, StringComparison.OrdinalIgnoreCase))
                     return true;
             }
 

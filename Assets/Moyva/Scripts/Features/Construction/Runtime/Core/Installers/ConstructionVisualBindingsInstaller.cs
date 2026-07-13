@@ -7,6 +7,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         public static void Install(DiContainer container)
         {
+            container.Bind<BuildModeGridStateController>().AsSingle();
             container.Bind<IConstructionVisualStyleService>().To<ConstructionVisualStyleService>().AsSingle();
             container.BindInterfacesTo<ConstructionGridGeometryService>().AsSingle();
             container.Bind<IConstructionTileSurfaceOffsetService>().To<ConstructionTileSurfaceOffsetService>().AsSingle();

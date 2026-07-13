@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
@@ -9,39 +10,97 @@ namespace Kruty1918.Moyva.Construction.API
         public static BuildingPlacementEvaluationResult Evaluate(BuildingPlacementEvaluationRequest request)
         {
             var result = new BuildingPlacementEvaluationResult();
+            EvaluateCore(request, result);
+            return result;
+        }
+
+        public static bool CanPlace(BuildingPlacementEvaluationRequest request)
+        {
+            return EvaluateCore(request, result: null);
+        }
+
+        private static bool EvaluateCore(
+            BuildingPlacementEvaluationRequest request,
+            BuildingPlacementEvaluationResult result)
+        {
             if (request == null)
             {
-                result.AddBlocker(new BuildingPlacementBlocker
+                if (result != null)
+                    result.ConfigurationBlocked = true;
+                result?.AddBlocker(new BuildingPlacementBlocker
                 {
                     Kind = BuildingPlacementBlockerKind.Configuration,
                     Message = "Placement request is null.",
                 });
-                return result;
+                return false;
             }
 
-            result.TileOccupied = IsTileOccupied(request, request.Position);
-            if (result.TileOccupied)
+            BuildingDefinition definition = request.BuildingRegistry?.GetById(request.BuildingId);
+            if (definition == null)
             {
-                result.AddBlocker(new BuildingPlacementBlocker
+                if (result != null)
+                    result.ConfigurationBlocked = true;
+                result?.AddBlocker(new BuildingPlacementBlocker
                 {
-                    Kind = BuildingPlacementBlockerKind.OccupiedTile,
-                    Message = "Тайл уже зайнятий будівлею або pending-preview.",
+                    Kind = BuildingPlacementBlockerKind.Configuration,
+                    Message = $"Building definition '{request.BuildingId}' is missing.",
                     Position = request.Position,
-                    BuildingId = GetOccupantId(request, request.Position),
+                    BuildingId = request.BuildingId,
                 });
-                return result;
+                return false;
             }
 
-            result.SpacingBlocked = IsBlockedBySpacing(request, result);
-            if (result.SpacingBlocked)
-                return result;
+            if (!BuildingFootprintUtility.TryValidate(definition, out string footprintConfigurationReason))
+            {
+                if (result != null)
+                    result.ConfigurationBlocked = true;
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.Configuration,
+                    Message = footprintConfigurationReason,
+                    Position = request.Position,
+                    BuildingId = request.BuildingId,
+                });
+                return false;
+            }
 
-            result.FogBlocked = IsBlockedByFog(request, result);
-            if (result.FogBlocked)
-                return result;
+            int footprintCellCount = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            if (result != null)
+            {
+                for (int index = 0; index < footprintCellCount; index++)
+                    result.AddFootprintPosition(BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index));
+            }
 
-            result.InfluenceZoneBlocked = IsBlockedByInfluenceZone(request, result);
-            return result;
+            bool tileOccupied = IsFootprintOccupied(request, definition, result);
+            if (result != null)
+                result.TileOccupied = tileOccupied;
+            if (tileOccupied)
+                return false;
+
+            bool terrainBlocked = IsBlockedByTerrain(request, definition, result)
+                || IsBlockedByRequiredTerrain(request, definition, result)
+                || IsBlockedByFootprintSlope(request, definition, result);
+            if (result != null)
+                result.TerrainBlocked = terrainBlocked;
+            if (terrainBlocked)
+                return false;
+
+            bool spacingBlocked = IsBlockedBySpacing(request, definition, result);
+            if (result != null)
+                result.SpacingBlocked = spacingBlocked;
+            if (spacingBlocked)
+                return false;
+
+            bool fogBlocked = IsBlockedByFog(request, definition, result);
+            if (result != null)
+                result.FogBlocked = fogBlocked;
+            if (fogBlocked)
+                return false;
+
+            bool influenceBlocked = !request.SkipInfluenceRules && IsBlockedByInfluenceZone(request, result);
+            if (result != null)
+                result.InfluenceZoneBlocked = influenceBlocked;
+            return !influenceBlocked;
         }
 
         public static int ResolveInfluenceRadius(BuildingDefinition definition, int fallbackRadius)
@@ -60,90 +119,257 @@ namespace Kruty1918.Moyva.Construction.API
                 || BuildingDefinitionCapabilities.IsCastle(definition);
         }
 
-        private static bool IsTileOccupied(BuildingPlacementEvaluationRequest request, Vector2Int position)
+        private static bool IsBlockedByRequiredTerrain(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
         {
-            if (request.IsOccupied != null && request.IsOccupied(position))
-                return true;
+            IReadOnlyList<string> requiredTerrainIds = definition?.RequiredTerrainIds;
+            if (requiredTerrainIds == null || requiredTerrainIds.Count == 0)
+                return false;
 
-            return HasPendingAt(request, position, request.IgnoredPendingPosition, out _);
+            if (request.GetTileId == null)
+            {
+                result?.AddNote("GetTileId не заданий, terrain-вимогу будівлі пропущено.");
+                return false;
+            }
+
+            int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int index = 0; index < count; index++)
+            {
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                string tileId = request.GetTileId(position);
+                if (ContainsTileId(requiredTerrainIds, tileId))
+                    continue;
+
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.Terrain,
+                    Message = $"Будівлю '{request.BuildingId}' не можна ставити на tile '{tileId}'.",
+                    Position = position,
+                    BuildingId = request.BuildingId,
+                });
+                return true;
+            }
+
+            return false;
         }
 
-        private static bool IsBlockedBySpacing(BuildingPlacementEvaluationRequest request, BuildingPlacementEvaluationResult result)
+        private static bool IsBlockedByTerrain(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
+        {
+            if (request.IsTerrainBlocked == null)
+                return false;
+
+            int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int index = 0; index < count; index++)
+            {
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                if (!request.IsTerrainBlocked(position))
+                    continue;
+
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.Terrain,
+                    Message = "Footprint contains a terrain cell blocked for construction.",
+                    Position = position,
+                    BuildingId = request.BuildingId,
+                });
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsBlockedByFootprintSlope(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
+        {
+            if (definition?.Footprint == null
+                || !definition.Footprint.RequiresFlatGround
+                || request.GetTerrainLevel == null)
+            {
+                return false;
+            }
+
+            int? expectedLevel = null;
+            int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int index = 0; index < count; index++)
+            {
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                int? level = request.GetTerrainLevel(position);
+                if (!level.HasValue)
+                    continue;
+
+                if (!expectedLevel.HasValue)
+                {
+                    expectedLevel = level;
+                    continue;
+                }
+
+                if (expectedLevel.Value == level.Value)
+                    continue;
+
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.Terrain,
+                    Message = $"Footprint requires flat ground, but terrain levels differ ({expectedLevel.Value} and {level.Value}).",
+                    Position = position,
+                    BuildingId = request.BuildingId,
+                });
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool ContainsTileId(IReadOnlyList<string> tileIds, string tileId)
+        {
+            if (tileIds == null || tileIds.Count == 0 || string.IsNullOrWhiteSpace(tileId))
+                return false;
+
+            for (int i = 0; i < tileIds.Count; i++)
+            {
+                string candidate = tileIds[i];
+                if (string.IsNullOrWhiteSpace(candidate))
+                    continue;
+
+                if (string.Equals(candidate.Trim(), tileId, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsFootprintOccupied(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
+        {
+            int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int index = 0; index < count; index++)
+            {
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                bool occupied = request.IsOccupied != null && request.IsOccupied(position);
+                bool pending = HasPendingAt(request, position, request.IgnoredPendingPosition, out var pendingEntry);
+                if (!occupied && !pending)
+                    continue;
+
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.OccupiedTile,
+                    Message = "Footprint cell is already occupied by a building or pending preview.",
+                    Position = position,
+                    BuildingId = pending ? pendingEntry.BuildingId : GetOccupantId(request, position),
+                });
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsBlockedBySpacing(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
         {
             int spacing = Mathf.Max(0, request.MinSpacing);
             if (spacing <= 0)
                 return false;
 
-            for (int offsetX = -spacing; offsetX <= spacing; offsetX++)
+            int footprintCount = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int cellIndex = 0; cellIndex < footprintCount; cellIndex++)
             {
-                for (int offsetY = -spacing; offsetY <= spacing; offsetY++)
+                Vector2Int footprintCell = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, cellIndex);
+                for (int offsetX = -spacing; offsetX <= spacing; offsetX++)
                 {
-                    if (offsetX == 0 && offsetY == 0)
-                        continue;
-
-                    var neighbor = new Vector2Int(request.Position.x + offsetX, request.Position.y + offsetY);
-                    bool occupied = request.IsOccupied != null && request.IsOccupied(neighbor);
-                    bool pending = HasPendingAt(request, neighbor, request.IgnoredPendingPosition, out var pendingEntry);
-                    if (!occupied && !pending)
-                        continue;
-
-                    result.AddBlocker(new BuildingPlacementBlocker
+                    for (int offsetY = -spacing; offsetY <= spacing; offsetY++)
                     {
-                        Kind = BuildingPlacementBlockerKind.Spacing,
-                        Message = $"Порушено мінімальний відступ {spacing}: поруч є {(pending ? "pending-preview" : "зайнятий тайл") }.",
-                        Position = neighbor,
-                        BuildingId = pending ? pendingEntry.BuildingId : GetOccupantId(request, neighbor),
-                        Radius = spacing,
-                    });
-                    return true;
+                        if (offsetX == 0 && offsetY == 0)
+                            continue;
+
+                        var neighbor = new Vector2Int(footprintCell.x + offsetX, footprintCell.y + offsetY);
+                        if (BuildingFootprintUtility.Contains(definition, request.Position, neighbor))
+                            continue;
+
+                        bool occupied = request.IsOccupied != null && request.IsOccupied(neighbor);
+                        bool pending = HasPendingAt(request, neighbor, request.IgnoredPendingPosition, out var pendingEntry);
+                        if (!occupied && !pending)
+                            continue;
+
+                        result?.AddBlocker(new BuildingPlacementBlocker
+                        {
+                            Kind = BuildingPlacementBlockerKind.Spacing,
+                            Message = $"Порушено мінімальний відступ {spacing}: поруч є {(pending ? "pending-preview" : "зайнятий тайл")}.",
+                            Position = neighbor,
+                            BuildingId = pending ? pendingEntry.BuildingId : GetOccupantId(request, neighbor),
+                            Radius = spacing,
+                        });
+                        return true;
+                    }
                 }
             }
 
             return false;
         }
 
-        private static bool IsBlockedByFog(BuildingPlacementEvaluationRequest request, BuildingPlacementEvaluationResult result)
+        private static bool IsBlockedByFog(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
         {
-            var definition = request.BuildingRegistry?.GetById(request.BuildingId);
             if (definition != null && definition.CanPlaceInFog)
                 return false;
 
-            if (request.IsFogBlocked == null || !request.IsFogBlocked(request.Position))
+            if (request.IsFogBlocked == null)
                 return false;
 
-            result.AddBlocker(new BuildingPlacementBlocker
+            int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int index = 0; index < count; index++)
             {
-                Kind = BuildingPlacementBlockerKind.Fog,
-                Message = "Тайл не є видимим у Fog of War. Будівництво дозволене тільки на Visible.",
-                Position = request.Position,
-            });
-            return true;
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                if (!request.IsFogBlocked(position))
+                    continue;
+
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.Fog,
+                    Message = "Тайл не є видимим у Fog of War. Будівництво дозволене тільки на Visible.",
+                    Position = position,
+                });
+                return true;
+            }
+
+            return false;
         }
 
         private static bool IsBlockedByInfluenceZone(BuildingPlacementEvaluationRequest request, BuildingPlacementEvaluationResult result)
         {
             if (string.IsNullOrWhiteSpace(request.BuildingId))
             {
-                result.AddNote("BuildingId порожній, influence-перевірку пропущено.");
+                result?.AddNote("BuildingId порожній, influence-перевірку пропущено.");
                 return false;
             }
 
             if (request.BuildingRegistry == null)
             {
-                result.AddNote("BuildingRegistry не заданий, influence-перевірку пропущено.");
+                result?.AddNote("BuildingRegistry не заданий, influence-перевірку пропущено.");
                 return false;
             }
 
             var candidate = request.BuildingRegistry.GetById(request.BuildingId);
             if (candidate == null)
             {
-                result.AddNote($"Будівлю '{request.BuildingId}' не знайдено у реєстрі, influence-перевірку пропущено.");
+                result?.AddNote($"Будівлю '{request.BuildingId}' не знайдено у реєстрі, influence-перевірку пропущено.");
                 return false;
             }
 
             if (!AnyInfluenceCenterDefined(request))
             {
-                result.AddNote("У реєстрі немає ратуші або замку, тому правило зони поселення вимкнене.");
+                result?.AddNote("У реєстрі немає ратуші або замку, тому правило зони поселення вимкнене.");
                 return false;
             }
 
@@ -152,7 +378,7 @@ namespace Kruty1918.Moyva.Construction.API
                 : ResolveMaxInfluenceRadius(request);
             if (ruleRadius <= 0)
             {
-                result.AddNote("Радіус influence-правила дорівнює 0, перевірку пропущено.");
+                result?.AddNote("Радіус influence-правила дорівнює 0, перевірку пропущено.");
                 return false;
             }
 
@@ -173,7 +399,7 @@ namespace Kruty1918.Moyva.Construction.API
             bool hasInfluenceCenterInRange = HasInfluenceCenterCoveringPosition(request, request.Position, candidate, out var coveringCenter);
             if (requireInfluenceCenterInRange && !hasInfluenceCenterInRange)
             {
-                result.AddBlocker(new BuildingPlacementBlocker
+                result?.AddBlocker(new BuildingPlacementBlocker
                 {
                     Kind = BuildingPlacementBlockerKind.InfluenceRequired,
                     Message = $"Потрібна ратуша або замок у радіусі {ruleRadius}.",
@@ -185,14 +411,14 @@ namespace Kruty1918.Moyva.Construction.API
 
             if (coveringCenter.HasValue)
             {
-                result.AddNote($"Позицію покриває центр '{coveringCenter.Value.BuildingId}' на {coveringCenter.Value.Position}.");
+                result?.AddNote($"Позицію покриває центр '{coveringCenter.Value.BuildingId}' на {coveringCenter.Value.Position}.");
             }
 
             int candidateRadius = ResolveInfluenceRadius(candidate, Mathf.Max(0, request.TownHallBuildRadius));
             if (blockWhenInfluenceCenterExists
                 && HasOverlappingInfluenceCenter(request, request.Position, candidateRadius, out var overlap))
             {
-                result.AddBlocker(new BuildingPlacementBlocker
+                result?.AddBlocker(new BuildingPlacementBlocker
                 {
                     Kind = BuildingPlacementBlockerKind.InfluenceOverlap,
                     Message = $"Зона центру перетинається з '{overlap.BuildingId}' на {overlap.Position}.",
@@ -240,6 +466,8 @@ namespace Kruty1918.Moyva.Construction.API
                     if (string.IsNullOrWhiteSpace(occupantId))
                         continue;
 
+                    Vector2Int resolvedOrigin = ResolveOccupantOrigin(request, centerPosition);
+
                     var definition = request.BuildingRegistry.GetById(occupantId);
                     if (!IsInfluenceCenter(definition))
                         continue;
@@ -248,9 +476,9 @@ namespace Kruty1918.Moyva.Construction.API
                     if (allowedRadius <= 0)
                         continue;
 
-                    if (GetChebyshevDistance(centerPosition, position) <= allowedRadius)
+                    if (GetChebyshevDistance(resolvedOrigin, position) <= allowedRadius)
                     {
-                        coveringCenter = new BuildingPlacementSimulationEntry(centerPosition, occupantId);
+                        coveringCenter = new BuildingPlacementSimulationEntry(resolvedOrigin, occupantId);
                         return true;
                     }
                 }
@@ -307,6 +535,8 @@ namespace Kruty1918.Moyva.Construction.API
                     if (string.IsNullOrWhiteSpace(occupantId))
                         continue;
 
+                    Vector2Int resolvedOrigin = ResolveOccupantOrigin(request, centerPosition);
+
                     var definition = request.BuildingRegistry.GetById(occupantId);
                     if (!IsInfluenceCenter(definition))
                         continue;
@@ -315,10 +545,10 @@ namespace Kruty1918.Moyva.Construction.API
                     if (existingRadius <= 0)
                         continue;
 
-                    if (GetChebyshevDistance(centerPosition, candidatePosition) > candidateRadius + existingRadius)
+                    if (GetChebyshevDistance(resolvedOrigin, candidatePosition) > candidateRadius + existingRadius)
                         continue;
 
-                    overlap = new BuildingPlacementOverlap(centerPosition, occupantId, existingRadius);
+                    overlap = new BuildingPlacementOverlap(resolvedOrigin, occupantId, existingRadius);
                     return true;
                 }
             }
@@ -407,7 +637,11 @@ namespace Kruty1918.Moyva.Construction.API
             for (int index = 0; index < pendingPlacements.Count; index++)
             {
                 var pending = pendingPlacements[index];
-                if (pending.Position != position || pending.Position == ignoredPendingPosition)
+                if (pending.Position == ignoredPendingPosition)
+                    continue;
+
+                BuildingDefinition pendingDefinition = request.BuildingRegistry?.GetById(pending.BuildingId);
+                if (!BuildingFootprintUtility.Contains(pendingDefinition, pending.Position, position))
                     continue;
 
                 pendingEntry = pending;
@@ -420,6 +654,12 @@ namespace Kruty1918.Moyva.Construction.API
         private static string GetOccupantId(BuildingPlacementEvaluationRequest request, Vector2Int position)
         {
             return request.GetOccupantId != null ? request.GetOccupantId(position) : null;
+        }
+
+        private static Vector2Int ResolveOccupantOrigin(BuildingPlacementEvaluationRequest request, Vector2Int position)
+        {
+            Vector2Int? origin = request.GetOccupantOrigin?.Invoke(position);
+            return origin ?? position;
         }
 
         private readonly struct BuildingPlacementOverlap

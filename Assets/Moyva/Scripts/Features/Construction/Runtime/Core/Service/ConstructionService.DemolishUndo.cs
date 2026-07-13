@@ -31,7 +31,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ApplyPendingSnapshot(snapshot);
 
             if (_pendingPlacements.Count == 0 && State == BuildingPlacementState.Idle)
-                State = BuildingPlacementState.Placing;
+                SetPlacementSelection(_selectedBuildingId, BuildingPlacementState.Placing);
 
             if (VerboseLogs)
                 Debug.Log($"[Construction] UndoLast completed. pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
@@ -61,11 +61,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             ApplyPendingSnapshot(snapshot);
 
-            if (State == BuildingPlacementState.Idle)
-                State = BuildingPlacementState.Placing;
-
             if (_pendingPlacements.Count > 0)
-                _selectedBuildingId = _pendingPlacements[_pendingPlacements.Count - 1].BuildingId;
+            {
+                SetPlacementSelection(
+                    _pendingPlacements[_pendingPlacements.Count - 1].BuildingId,
+                    BuildingPlacementState.Placing);
+            }
+            else if (State == BuildingPlacementState.Idle)
+            {
+                SetPlacementSelection(_selectedBuildingId, BuildingPlacementState.Placing);
+            }
 
             if (VerboseLogs)
                 Debug.Log($"[Construction] RedoLast completed. pendingCount={_pendingPlacements.Count}, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
@@ -80,6 +85,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            position = ResolvePlacedOrigin(position);
             if (!_playerPlacedBuildings.TryGetValue(position, out var buildingId))
             {
                 Debug.LogWarning($"[Construction] TryDemolishAt({position}): будівля не була розміщена гравцем.");
@@ -145,10 +151,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 var pos = demolition.Position;
                 var id = demolition.BuildingId;
 
-                if (!_playerPlacedBuildings.ContainsKey(pos) || !_objectsMapService.IsOccupied(pos))
+                if (!_playerPlacedBuildings.ContainsKey(pos))
                     continue;
 
-                _objectsMapService.Unregister(pos);
+                UnregisterBuildingFootprint(pos, id);
                 _playerPlacedBuildings.Remove(pos);
                 _signalBus.Fire(new BuildingDemolishedSignal
                 {
@@ -192,6 +198,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _pendingPlacements.Clear();
             _pendingPositions.Clear();
+            MarkPendingPlacementsChanged();
             if (clearRedoHistory)
                 _redoSnapshots.Clear();
 
@@ -199,9 +206,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _undoSnapshots.Clear();
 
+            SetPlacementSelection(null, BuildingPlacementState.Idle);
             _signalBus.Fire(new BuildingCancelledSignal());
-            State = BuildingPlacementState.Idle;
-            _selectedBuildingId = null;
 
             if (VerboseLogs)
                 Debug.Log($"[Construction] ResetSession completed. state=Idle, undoCount={_undoSnapshots.Count}, redoCount={_redoSnapshots.Count}");
@@ -249,6 +255,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _pendingPlacements.Add(placement);
                 _pendingPositions.Add(placement.Position);
             }
+            MarkPendingPlacementsChanged();
 
             var previousByPosition = new Dictionary<Vector2Int, PendingPlacement>();
             for (int i = 0; i < previous.Count; i++)

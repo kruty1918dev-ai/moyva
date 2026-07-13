@@ -25,6 +25,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
+            if (signal.HasRelocationSource && signal.RelocationSourcePosition != signal.Position)
+                UnregisterUnit(GetBuildingVisionAreaId(signal.RelocationSourcePosition));
+
             RegisterFixedVisionArea(
                 GetBuildingVisionAreaId(signal.Position),
                 signal.Position,

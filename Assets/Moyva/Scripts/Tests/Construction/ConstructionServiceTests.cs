@@ -42,7 +42,10 @@ namespace Kruty1918.Moyva.Tests.Construction
             public IReadOnlyCollection<Vector2Int> GetLastDirtyTiles() => System.Array.Empty<Vector2Int>();
         }
 
-        private sealed class FakeWallPlacementService : IWallPlacementService
+        private sealed class FakeWallPlacementService :
+            IWallPlacementService,
+            IWallTopologyService,
+            IWallGateReplacementValidator
         {
             private readonly IObjectsMapService _objectsMapService;
 
@@ -57,6 +60,34 @@ namespace Kruty1918.Moyva.Tests.Construction
             public bool IsWallOrGate(string buildingId) => IsWall(buildingId) || IsGate(buildingId);
             public bool IsWall(string buildingId) => buildingId == "wall";
             public bool IsGate(string buildingId) => buildingId == "gate";
+
+            public bool TryBuildPlacedMask(
+                Vector2Int position,
+                string buildingId,
+                out WallCollectionDefinition collection,
+                out TopologyNeighborMask mask)
+            {
+                collection = null;
+                mask = default;
+                return false;
+            }
+
+            public bool TryBuildPreviewMask(
+                Vector2Int position,
+                string buildingId,
+                out WallCollectionDefinition collection,
+                out TopologyNeighborMask mask)
+            {
+                collection = null;
+                mask = default;
+                return false;
+            }
+
+            public bool IsHorizontalWallSegment(
+                Vector2Int position,
+                WallCollectionDefinition collection,
+                bool includePendingNeighbors)
+                => false;
 
             public bool CanReplaceWallWithGate(Vector2Int position, string gateBuildingId, out string replacedWallId)
             {
@@ -106,7 +137,10 @@ namespace Kruty1918.Moyva.Tests.Construction
             Container.DeclareSignal<BuildingPlacedSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildingCancelledSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildingPreviewChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingPreviewMovedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingSelectionChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<SettlementResourceChangedSignal>().OptionalSubscriber();
 
             // Сигнали ObjectsMap (потрібні для ObjectsMapService)
             Container.DeclareSignal<UnitCreatedSignal>().OptionalSubscriber();
@@ -117,9 +151,17 @@ namespace Kruty1918.Moyva.Tests.Construction
 
             Container.BindInterfacesAndSelfTo<ObjectsMapService>().AsSingle().NonLazy();
             Container.Bind<IFogOfWarService>().To<FakeFogOfWarService>().AsSingle();
-            Container.Bind<IWallPlacementService>().To<FakeWallPlacementService>().AsSingle();
+            Container.BindInterfacesTo<FakeWallPlacementService>().AsSingle();
 
             _buildingRegistry = ScriptableObject.CreateInstance<BuildingRegistrySO>();
+            _buildingRegistry.Buildings = CreateUnrestrictedDefinitions(
+                "house",
+                "barracks",
+                "tower",
+                "market",
+                "wall",
+                "gate",
+                "castle");
             Container.Bind<IBuildingRegistry>().FromInstance(_buildingRegistry).AsSingle();
             Container.BindInstance(0).WithId("minSpacing");
             Container.BindInstance(2).WithId("townHallBuildRadius");
@@ -519,6 +561,64 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.IsTrue(_service.TryDemolishAt(pos)); // повторний виклик скасовує відмітку
         }
 
+        [Test]
+        public void ConfirmedFootprint_RegistersAllCells_AndDemolishFromSecondaryCellClearsAll()
+        {
+            var origin = new Vector2Int(24, 24);
+            var secondary = origin + Vector2Int.right;
+            _buildingRegistry.Buildings = new[]
+            {
+                new BuildingDefinition
+                {
+                    Id = "wide-house",
+                    Footprint = new BuildingFootprint
+                    {
+                        Size = new Vector2Int(2, 1),
+                        Anchor = BuildingFootprintAnchor.SouthWest,
+                    },
+                    UseCustomTownHallRules = true,
+                    RequireTownHallInRange = false,
+                },
+            };
+
+            _service.SelectBuilding("wide-house");
+            Assert.IsTrue(_service.TryPreviewAt(origin));
+            _service.Confirm();
+
+            Assert.IsTrue(_objectsMap.IsOccupied(origin));
+            Assert.IsTrue(_objectsMap.IsOccupied(secondary));
+
+            _service.ToggleDemolishMode();
+            Assert.IsTrue(_service.TryDemolishAt(secondary));
+            _service.Confirm();
+
+            Assert.IsFalse(_objectsMap.IsOccupied(origin));
+            Assert.IsFalse(_objectsMap.IsOccupied(secondary));
+        }
+
+        [Test]
+        public void Confirm_UpdatesOccupancyBeforePlacedSignal_ThenClearsSelection()
+        {
+            var position = new Vector2Int(26, 26);
+            _service.SelectBuilding("house");
+            Assert.IsTrue(_service.TryPreviewAt(position));
+
+            var events = new List<string>();
+            _signalBus.Subscribe<OnObjectsMapChangedSignal>(_ => events.Add("map"));
+            _signalBus.Subscribe<BuildingPlacedSignal>(_ => events.Add("placed"));
+            _signalBus.Subscribe<BuildingSelectionChangedSignal>(signal =>
+            {
+                if (signal.BuildingId == null)
+                    events.Add("selection-cleared");
+            });
+
+            _service.Confirm();
+
+            CollectionAssert.AreEqual(new[] { "map", "placed", "selection-cleared" }, events);
+            Assert.AreEqual(BuildingPlacementState.Idle, _service.State);
+            Assert.IsNull(_service.GetSelectedBuildingId());
+        }
+
         // ─── Допоміжні методи ────────────────────────────────────────────────
 
         private void PlaceAndConfirmBuilding(string buildingId, Vector2Int pos)
@@ -553,6 +653,23 @@ namespace Kruty1918.Moyva.Tests.Construction
                     ? new List<BuildingModuleDefinition>(modules)
                     : new List<BuildingModuleDefinition>(),
             };
+        }
+
+        private static BuildingDefinition[] CreateUnrestrictedDefinitions(params string[] ids)
+        {
+            var definitions = new BuildingDefinition[ids.Length];
+            for (int index = 0; index < ids.Length; index++)
+            {
+                definitions[index] = new BuildingDefinition
+                {
+                    Id = ids[index],
+                    UseCustomTownHallRules = true,
+                    RequireTownHallInRange = false,
+                    BlockIfTownHallAlreadyInRange = false,
+                };
+            }
+
+            return definitions;
         }
     }
 }

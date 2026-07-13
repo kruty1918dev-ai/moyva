@@ -1,5 +1,6 @@
 using System;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
@@ -22,12 +23,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
+            if (_placementBuildingRegistry.GetById(buildingId) == null)
+            {
+                Debug.LogWarning($"[MoyvaBuildGridDiag] selection-rejected building='{buildingId}' reason='definition-missing'");
+                return;
+            }
+
             try
             {
                 ClearPendingDemolitionsPreview();
                 IsDemolishMode = false;
-                _selectedBuildingId = buildingId;
-                State = BuildingPlacementState.Placing;
+                SetPlacementSelection(buildingId, BuildingPlacementState.Placing);
 
                 Debug.Log($"[Construction] ✓ SelectBuilding -> id='{_selectedBuildingId}', state={State}");
             }
@@ -65,8 +71,36 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!IsDemolishMode)
                 ClearPendingDemolitionsPreview();
 
+            PublishSelectionChanged();
+
             if (VerboseLogs)
                 Debug.Log($"[Construction] ToggleDemolishMode -> {IsDemolishMode}");
+        }
+
+        private void PublishSelectionChanged()
+        {
+            _signalBus?.Fire(new BuildingSelectionChangedSignal
+            {
+                BuildingId = _selectedBuildingId,
+                IsDemolishMode = IsDemolishMode
+            });
+        }
+
+        private bool SetPlacementSelection(string buildingId, BuildingPlacementState state)
+        {
+            string normalizedId = string.IsNullOrWhiteSpace(buildingId) ? null : buildingId.Trim();
+            bool changed = State != state
+                || !string.Equals(_selectedBuildingId, normalizedId, StringComparison.Ordinal);
+
+            State = state;
+            _selectedBuildingId = normalizedId;
+            if (!changed)
+                return false;
+
+            PublishSelectionChanged();
+            if (VerboseLogs)
+                Debug.Log($"[MoyvaBuildGridDiag] selection state={State} building='{_selectedBuildingId ?? "none"}' demolish={IsDemolishMode}");
+            return true;
         }
     }
 }

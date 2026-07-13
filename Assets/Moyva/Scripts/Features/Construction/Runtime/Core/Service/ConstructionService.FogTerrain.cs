@@ -84,5 +84,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _worldDefaults,
                 out reason);
         }
+
+        private string GetTileId(Vector2Int position)
+        {
+            return _gridService != null && _gridService.TryGetTileData(position, out string tileId)
+                ? tileId
+                : null;
+        }
     }
 }

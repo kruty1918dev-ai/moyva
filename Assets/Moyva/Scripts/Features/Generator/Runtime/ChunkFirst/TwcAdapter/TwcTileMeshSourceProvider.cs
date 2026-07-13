@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     {
         private readonly ITileWorldCreatorBuildEnvironment _environment;
         private readonly Dictionary<string, TilesBuildLayer> _buildLayerByGuid = new Dictionary<string, TilesBuildLayer>(System.StringComparer.Ordinal);
+        private readonly Dictionary<GameObject, PrefabMeshTemplate> _meshTemplateByPrefab = new Dictionary<GameObject, PrefabMeshTemplate>();
 
         public TwcTileMeshSourceProvider(ITileWorldCreatorBuildEnvironment environment)
         {
@@ -135,7 +136,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (!ownedByCurrentCell)
                 return;
 
-            int configuration = BuildConfiguration(topLeft, topRight, bottomLeft, bottomRight);
+            int configuration = BuildDualConfiguration(topLeft, topRight, bottomLeft, bottomRight);
             var tileData = new BuildLayer.TileData
             {
                 configuration = configuration,
@@ -171,15 +172,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (prefab == null)
                 return false;
 
-            MeshFilter meshFilter = prefab.GetComponentInChildren<MeshFilter>(true);
-            MeshRenderer renderer = meshFilter != null
-                ? meshFilter.GetComponent<MeshRenderer>() ?? meshFilter.GetComponentInParent<MeshRenderer>(true)
-                : null;
-            if (meshFilter == null || meshFilter.sharedMesh == null || renderer == null)
+            if (!TryGetMeshTemplate(prefab, out PrefabMeshTemplate template))
                 return false;
 
             float cellSize = ResolveCellSize();
-            Vector3 scale = prefab.transform.localScale;
+            Vector3 scale = template.PrefabScale;
             if (buildLayer.scaleTileToCellSize)
                 scale *= cellSize;
 
@@ -194,13 +191,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 tilePosition.y * cellSize);
             Quaternion rotation = Quaternion.Euler(xRotationOffset, yRotation + yRotationOffset, 0f);
             Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, scale);
-            Matrix4x4 childMatrix = prefab.transform.worldToLocalMatrix * meshFilter.transform.localToWorldMatrix;
-            Material[] materials = ResolveMaterials(renderer, preset);
+            Material[] materials = template.ResolveMaterials(preset.GetMaterialOverride());
 
             var meshSource = new TileMeshSource(
-                meshFilter.sharedMesh,
+                template.Mesh,
                 materials,
-                rootMatrix * childMatrix);
+                rootMatrix * template.ChildMatrix);
             if (!meshSource.IsValid)
                 return false;
 
@@ -208,44 +204,48 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return true;
         }
 
-        private static Material[] ResolveMaterials(MeshRenderer renderer, TilePreset preset)
+        private bool TryGetMeshTemplate(GameObject prefab, out PrefabMeshTemplate template)
         {
-            var overrideMaterial = preset.GetMaterialOverride();
-            if (overrideMaterial == null)
-                return renderer.sharedMaterials;
+            if (_meshTemplateByPrefab.TryGetValue(prefab, out template) && template.Mesh != null)
+                return true;
 
-            int count = Mathf.Max(1, renderer.sharedMaterials?.Length ?? 0);
-            var materials = new Material[count];
-            for (int i = 0; i < count; i++)
-                materials[i] = overrideMaterial;
-            return materials;
-        }
-
-        private static int BuildNormalConfiguration(ResolvedTileComposition composition)
-        {
-            return BuildConfiguration(
-                composition.NorthWestMatches,
-                composition.NorthMatches,
-                composition.NorthEastMatches,
-                composition.WestMatches,
-                true,
-                composition.EastMatches,
-                composition.SouthWestMatches,
-                composition.SouthMatches,
-                composition.SouthEastMatches);
-        }
-
-        private static int BuildConfiguration(params bool[] bits)
-        {
-            int configuration = 0;
-            for (int i = 0; i < bits.Length; i++)
+            MeshFilter meshFilter = prefab.GetComponentInChildren<MeshFilter>(true);
+            MeshRenderer renderer = meshFilter != null
+                ? meshFilter.GetComponent<MeshRenderer>() ?? meshFilter.GetComponentInParent<MeshRenderer>(true)
+                : null;
+            if (meshFilter == null || meshFilter.sharedMesh == null || renderer == null)
             {
-                if (bits[i])
-                    configuration += 1 << i;
+                template = null;
+                return false;
             }
 
-            return configuration;
+            template = new PrefabMeshTemplate(
+                meshFilter.sharedMesh,
+                prefab.transform.worldToLocalMatrix * meshFilter.transform.localToWorldMatrix,
+                prefab.transform.localScale,
+                renderer.sharedMaterials);
+            _meshTemplateByPrefab[prefab] = template;
+            return true;
         }
+
+        internal static int BuildNormalConfiguration(ResolvedTileComposition composition)
+        {
+            return (composition.NorthWestMatches ? 1 << 0 : 0)
+                   | (composition.NorthMatches ? 1 << 1 : 0)
+                   | (composition.NorthEastMatches ? 1 << 2 : 0)
+                   | (composition.WestMatches ? 1 << 3 : 0)
+                   | 1 << 4
+                   | (composition.EastMatches ? 1 << 5 : 0)
+                   | (composition.SouthWestMatches ? 1 << 6 : 0)
+                   | (composition.SouthMatches ? 1 << 7 : 0)
+                   | (composition.SouthEastMatches ? 1 << 8 : 0);
+        }
+
+        internal static int BuildDualConfiguration(bool topLeft, bool topRight, bool bottomLeft, bool bottomRight)
+            => (topLeft ? 1 << 0 : 0)
+               | (topRight ? 1 << 1 : 0)
+               | (bottomLeft ? 1 << 2 : 0)
+               | (bottomRight ? 1 << 3 : 0);
 
         private static bool ShouldCurrentOwnDualFragment(bool west, bool south, bool southWest)
             => !west && !south && !southWest;
@@ -387,6 +387,45 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         {
             var configuration = _environment?.Manager?.configuration;
             return configuration != null && configuration.cellSize > 0.0001f ? configuration.cellSize : 1f;
+        }
+
+        private sealed class PrefabMeshTemplate
+        {
+            private readonly Material[] _baseMaterials;
+            private readonly Dictionary<Material, Material[]> _overrideMaterials = new Dictionary<Material, Material[]>();
+
+            public PrefabMeshTemplate(
+                Mesh mesh,
+                Matrix4x4 childMatrix,
+                Vector3 prefabScale,
+                Material[] baseMaterials)
+            {
+                Mesh = mesh;
+                ChildMatrix = childMatrix;
+                PrefabScale = prefabScale;
+                _baseMaterials = baseMaterials;
+            }
+
+            public Mesh Mesh { get; }
+            public Matrix4x4 ChildMatrix { get; }
+            public Vector3 PrefabScale { get; }
+
+            public Material[] ResolveMaterials(Material overrideMaterial)
+            {
+                if (overrideMaterial == null)
+                    return _baseMaterials;
+
+                if (_overrideMaterials.TryGetValue(overrideMaterial, out Material[] materials))
+                    return materials;
+
+                int count = Mathf.Max(1, _baseMaterials?.Length ?? 0);
+                materials = new Material[count];
+                for (int i = 0; i < count; i++)
+                    materials[i] = overrideMaterial;
+
+                _overrideMaterials[overrideMaterial] = materials;
+                return materials;
+            }
         }
     }
 }

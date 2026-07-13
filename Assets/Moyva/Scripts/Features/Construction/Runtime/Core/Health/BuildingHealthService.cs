@@ -45,6 +45,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
+            if (signal.HasRelocationSource && signal.RelocationSourcePosition != signal.Position)
+            {
+                _healthRegistry.Unregister(
+                    BuildingEntityId(signal.BuildingId, signal.RelocationSourcePosition));
+            }
+
             var definition = _buildingRegistry.GetById(signal.BuildingId);
             if (definition == null)
             {

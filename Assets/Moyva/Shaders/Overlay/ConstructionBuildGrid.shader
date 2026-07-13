@@ -4,6 +4,10 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
     {
         _LineColor ("Line Color", Color) = (0.70, 0.95, 1.00, 0.22)
         _FillColor ("Fill Color", Color) = (0.70, 0.95, 1.00, 0.045)
+        _ValidLineColor ("Valid Line Color", Color) = (0.28, 1.00, 0.42, 0.22)
+        _ValidFillColor ("Valid Fill Color", Color) = (0.20, 0.82, 0.32, 0.045)
+        _InvalidLineColor ("Invalid Line Color", Color) = (1.00, 0.26, 0.22, 0.22)
+        _InvalidFillColor ("Invalid Fill Color", Color) = (0.92, 0.12, 0.10, 0.045)
         _LineWidth ("Line Width", Range(0.005, 0.49)) = 0.035
         _EdgeMask ("Edge Mask", Vector) = (1, 1, 1, 1)
         _GridOriginXZ ("Grid Origin XZ", Vector) = (0, 0, 0, 0)
@@ -46,6 +50,10 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
             CBUFFER_START(UnityPerMaterial)
                 float4 _LineColor;
                 float4 _FillColor;
+                float4 _ValidLineColor;
+                float4 _ValidFillColor;
+                float4 _InvalidLineColor;
+                float4 _InvalidFillColor;
                 float4 _EdgeMask;
                 float4 _GridOriginXZ;
                 float4 _CellSizeXZ;
@@ -100,6 +108,8 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
                 float2 gridCoords = (IN.worldXZ - _GridOriginXZ.xy) / cellSize;
                 float2 cellUv = IN.uv;
 
+                float4 lineColor = _LineColor;
+                float4 fillColor = _FillColor;
                 if (_UseCellMask > 0.5)
                 {
                     clip(IN.normalWS.y - _MinUpNormalY);
@@ -112,7 +122,15 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
 
                     float2 maskUv = (localTile + 0.5) / chunkSize;
                     float mask = SAMPLE_TEXTURE2D(_CellMaskTex, sampler_CellMaskTex, maskUv).r;
-                    clip(mask - 0.5);
+                    clip(mask - 0.16);
+
+                    // R8 values: 1/3 = General, 2/3 = Invalid, 1 = Valid.
+                    float invalidWeight = step(0.50, mask) * (1.0 - step(0.84, mask));
+                    float validWeight = step(0.84, mask);
+                    lineColor = lerp(lineColor, _InvalidLineColor, invalidWeight);
+                    fillColor = lerp(fillColor, _InvalidFillColor, invalidWeight);
+                    lineColor = lerp(lineColor, _ValidLineColor, validWeight);
+                    fillColor = lerp(fillColor, _ValidFillColor, validWeight);
                 }
 
                 float feather = max(fwidth(cellUv.x) + fwidth(cellUv.y), 0.0015);
@@ -124,8 +142,8 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
                     max(leftLine * _EdgeMask.x, bottomLine * _EdgeMask.y),
                     max(rightLine * _EdgeMask.z, topLine * _EdgeMask.w));
 
-                float3 rgb = lerp(_FillColor.rgb, _LineColor.rgb, lineMask);
-                float alpha = max(_FillColor.a, _LineColor.a * lineMask);
+                float3 rgb = lerp(fillColor.rgb, lineColor.rgb, lineMask);
+                float alpha = max(fillColor.a, lineColor.a * lineMask);
                 return float4(rgb, alpha);
             }
             ENDHLSL

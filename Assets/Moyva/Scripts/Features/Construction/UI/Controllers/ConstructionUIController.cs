@@ -102,6 +102,7 @@ namespace Kruty1918.Moyva.Construction.UI
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
             _signalBus.Subscribe<BuildingCancelledSignal>(OnBuildingCancelled);
             _signalBus.Subscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
+            _signalBus.Subscribe<BuildingSelectionChangedSignal>(OnBuildingSelectionChanged);
             _signalBus.Subscribe<GameModeChangedSignal>(OnGameModeChanged);
             _signalBus.Subscribe<TileClickedSignal>(OnTileClicked);
 
@@ -142,6 +143,7 @@ namespace Kruty1918.Moyva.Construction.UI
                 _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
                 _signalBus.TryUnsubscribe<BuildingCancelledSignal>(OnBuildingCancelled);
                 _signalBus.TryUnsubscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
+                _signalBus.TryUnsubscribe<BuildingSelectionChangedSignal>(OnBuildingSelectionChanged);
                 _signalBus.TryUnsubscribe<GameModeChangedSignal>(OnGameModeChanged);
                 _signalBus.TryUnsubscribe<TileClickedSignal>(OnTileClicked);
             }
@@ -291,6 +293,21 @@ namespace Kruty1918.Moyva.Construction.UI
                 _pinnedPreviewPosition = signal.Position;
                 ShowPreviewInfoPanel(signal.BuildingId, signal.Position, pinToPreviewObject: true);
             }
+
+            RefreshUI();
+        }
+
+        private void OnBuildingSelectionChanged(BuildingSelectionChangedSignal signal)
+        {
+            _selectedBuildingId = signal.IsDemolishMode ? null : signal.BuildingId;
+            _isPreviewInfoPinned = false;
+            _pinnedPreviewBuildingId = null;
+
+            if (selectionPanel != null)
+                selectionPanel.SetSelectedBuilding(_selectedBuildingId);
+
+            if (string.IsNullOrWhiteSpace(_selectedBuildingId))
+                HidePreviewInfoPanel();
 
             RefreshUI();
         }

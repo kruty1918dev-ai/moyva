@@ -22,4 +22,5 @@ MonoBehaviour:
   _enableFogRules: 1
   _requireVisibleFogTile: 1
   _blockedTileIds: []
+  _allowedTileIds: []
   _blockedTerrainLevelRanges: []

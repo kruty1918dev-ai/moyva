@@ -84,6 +84,14 @@ namespace Kruty1918.Moyva.Signals
         public string OccupantId;      // null якщо тайл звільнено
     }
 
+    /// <summary>Fired after the grid model has committed a tile-data change.</summary>
+    public struct GridTileChangedSignal
+    {
+        public Vector2Int Position;
+        public string PreviousTileId;
+        public string CurrentTileId;
+    }
+
     public struct FogStateChangedSignal
     {
         public int ChangedTilesCount;

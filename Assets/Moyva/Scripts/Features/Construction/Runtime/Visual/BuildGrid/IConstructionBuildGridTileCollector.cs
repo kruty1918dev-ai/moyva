@@ -8,7 +8,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         void Collect(
             List<ConstructionBuildGridOverlayEntry> results,
-            Predicate<Vector2Int> shouldInclude,
+            Func<Vector2Int, ConstructionBuildGridTileVisualState> resolveVisualState,
             out ConstructionBuildGridCollectionStats stats);
     }
 }

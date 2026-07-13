@@ -37,12 +37,16 @@ namespace Kruty1918.Moyva.Tests.ConstructionUI
                 BuildingId = "house",
                 Position = new Vector2Int(3, 4),
                 OwnerId = "f1",
-                SourceFactionId = "f1"
+                SourceFactionId = "f1",
+                HasRelocationSource = true,
+                RelocationSourcePosition = new Vector2Int(2, 4)
             };
             Assert.AreEqual("house", s.BuildingId);
             Assert.AreEqual(new Vector2Int(3, 4), s.Position);
             Assert.AreEqual("f1", s.OwnerId);
             Assert.AreEqual("f1", s.SourceFactionId);
+            Assert.IsTrue(s.HasRelocationSource);
+            Assert.AreEqual(new Vector2Int(2, 4), s.RelocationSourcePosition);
         }
 
         [Test]

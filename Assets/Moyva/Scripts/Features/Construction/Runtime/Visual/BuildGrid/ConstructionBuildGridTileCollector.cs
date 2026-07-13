@@ -32,7 +32,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Collect(
             List<ConstructionBuildGridOverlayEntry> results,
-            System.Predicate<Vector2Int> shouldInclude,
+            System.Func<Vector2Int, ConstructionBuildGridTileVisualState> resolveVisualState,
             out ConstructionBuildGridCollectionStats stats)
         {
             results.Clear();
@@ -59,13 +59,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         continue;
 
                     positionsWithTileData++;
-                    if (shouldInclude != null && !shouldInclude(position))
+                    ConstructionBuildGridTileVisualState visualState = resolveVisualState != null
+                        ? resolveVisualState(position)
+                        : ConstructionBuildGridTileVisualState.General;
+                    if (visualState == ConstructionBuildGridTileVisualState.Missing)
                     {
                         filteredOut++;
                         continue;
                     }
 
-                    if (!TryCreateEntry(position, shouldInclude, cellScale, out ConstructionBuildGridOverlayEntry entry))
+                    if (!TryCreateEntry(position, visualState, cellScale, out ConstructionBuildGridOverlayEntry entry))
                     {
                         skippedEntries++;
                         continue;
@@ -86,7 +89,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private bool TryCreateEntry(
             Vector2Int position,
-            System.Predicate<Vector2Int> shouldInclude,
+            ConstructionBuildGridTileVisualState visualState,
             Vector3 cellScale,
             out ConstructionBuildGridOverlayEntry entry)
         {
@@ -96,7 +99,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             Vector3 center = _terrainAlignment.ResolveWorldPosition(position, ResolveSurfaceOffsetY());
             Matrix4x4 matrix = Matrix4x4.TRS(center, Quaternion.Euler(90f, 0f, 0f), cellScale);
-            entry = new ConstructionBuildGridOverlayEntry(_quadMesh, matrix, 0, ResolveEdgeMask(position, shouldInclude), null);
+            entry = new ConstructionBuildGridOverlayEntry(
+                position,
+                visualState,
+                _quadMesh,
+                matrix,
+                0,
+                ResolveEdgeMask(position),
+                null);
             return true;
         }
 
@@ -112,7 +122,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 1f);
         }
 
-        private Vector4 ResolveEdgeMask(Vector2Int position, System.Predicate<Vector2Int> shouldInclude)
+        private Vector4 ResolveEdgeMask(Vector2Int position)
         {
             if (ResolveTileInsetNormalized() > 0.0001f)
                 return Vector4.one;
@@ -120,16 +130,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return new Vector4(
                 1f,
                 1f,
-                ShouldDrawBoundary(position + Vector2Int.right, shouldInclude) ? 1f : 0f,
-                ShouldDrawBoundary(position + Vector2Int.up, shouldInclude) ? 1f : 0f);
+                ShouldDrawBoundary(position + Vector2Int.right) ? 1f : 0f,
+                ShouldDrawBoundary(position + Vector2Int.up) ? 1f : 0f);
         }
 
-        private bool ShouldDrawBoundary(Vector2Int position, System.Predicate<Vector2Int> shouldInclude)
+        private bool ShouldDrawBoundary(Vector2Int position)
         {
-            if (_gridService == null || !_gridService.TryGetTileData(position, out _))
-                return true;
-
-            return shouldInclude != null && !shouldInclude(position);
+            return _gridService == null || !_gridService.TryGetTileData(position, out _);
         }
 
         private float ResolveSurfaceOffsetY()

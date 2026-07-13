@@ -57,6 +57,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
+            if (signal.HasRelocationSource && signal.RelocationSourcePosition != signal.Position)
+                RemoveLabel(signal.RelocationSourcePosition);
+
             var def = _buildingRegistry.GetById(signal.BuildingId);
             if (def == null) return;
 
@@ -90,12 +93,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         private void OnBuildingDemolished(BuildingDemolishedSignal signal)
+            => RemoveLabel(signal.Position);
+
+        private void RemoveLabel(Vector2Int position)
         {
-            if (_labels.TryGetValue(signal.Position, out var label))
+            if (_labels.TryGetValue(position, out var label))
             {
                 if (label != null)
                     UnityEngine.Object.Destroy(label);
-                _labels.Remove(signal.Position);
+                _labels.Remove(position);
             }
         }
 

@@ -25,6 +25,7 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<InterruptMovementSignal>();
             Container.DeclareSignal<OnMapObjectSpawnedSignal>();
             Container.DeclareSignal<OnObjectsMapChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<GridTileChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<WorldBuiltSignal>();
             Container.DeclareSignal<WorldGeneratedDataSignal>().OptionalSubscriber();
             Container.DeclareSignal<WorldSpawnPositionsSignal>().OptionalSubscriber();
@@ -37,6 +38,10 @@ namespace Kruty1918.Moyva.Signals
             Container.DeclareSignal<BuildingPlacedSignal>();
             Container.DeclareSignal<BuildingCancelledSignal>();
             Container.DeclareSignal<BuildingPreviewChangedSignal>();
+            Container.DeclareSignal<BuildingSelectionChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingPreviewMovedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingPreviewDragVisualSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildGridHoverChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<BuildingDemolishedSignal>().OptionalSubscriber();
             Container.DeclareSignal<ShowWallHandlesSignal>();
             Container.DeclareSignal<PlaceBuildingConfirmRequestSignal>().OptionalSubscriber();

@@ -34,6 +34,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     if (!_objectsMapService.TryGetOccupant(tile, out var occupantId) || !_wallTopologyService.IsWallOrGate(occupantId))
                     {
+                        string selectedBuildingId = _constructionService.GetSelectedBuildingId();
+                        if (!IsBuildGridPlacementAllowed(tile, selectedBuildingId))
+                            break;
+
                         bool placed = _constructionService.TryPreviewAt(tile);
                         if (!placed)
                             break;

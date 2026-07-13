@@ -70,9 +70,30 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
+        public void Handle(BuildingPreviewMovedSignal signal)
+        {
+            if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
+                _previewVisuals.TryMove(signal.FromPosition, signal.ToPosition, signal.BuildingId, def.VisualYOffset);
+        }
+
+        public void Handle(BuildingPreviewDragVisualSignal signal)
+        {
+            if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
+                _previewVisuals.MoveDragVisual(signal.Position, signal.BuildingId, signal.WorldPosition, signal.SnapToGrid, signal.HasSnapTarget, signal.SnapTargetPosition, def.VisualYOffset);
+        }
+
+        public void Handle(BuildGridHoverChangedSignal signal)
+        {
+            if (signal.HasTile)
+                _previewVisuals.ShowGridHover(signal);
+            else
+                _previewVisuals.ClearGridHover();
+        }
+
         public void Handle(BuildingCancelledSignal signal)
         {
             _previewVisuals.Clear();
+            _previewVisuals.ClearGridHover();
             _placedVisuals.ClearDemolitionPreviewStyles();
             _radiusVisuals.HidePreview();
         }

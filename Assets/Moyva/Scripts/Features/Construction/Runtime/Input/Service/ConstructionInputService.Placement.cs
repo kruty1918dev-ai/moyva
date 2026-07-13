@@ -15,7 +15,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            TryResolvePointerTile(screenPos, out Vector2Int tilePos);
+            if (!TryResolvePointerTile(screenPos, out Vector2Int tilePos))
+            {
+                if (VerboseLogs)
+                    Debug.LogWarning($"{LogTag} Pointer is outside the generated map. Selection ignored.");
+                return;
+            }
 
             if (VerboseLogs)
             {
@@ -83,6 +88,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     && _wallTopologyService.IsGate(selectedBuildingId);
                 if (gateMode)
                 {
+                    if (!IsBuildGridPlacementAllowed(tilePos, selectedBuildingId))
+                    {
+                        if (VerboseLogs)
+                            Debug.Log($"{LogTag} Gate placement rejected by build grid at {tilePos}");
+                        return;
+                    }
+
                     bool placed = _constructionService.TryPreviewAt(tilePos);
                     if (VerboseLogs)
                         Debug.Log($"{LogTag} Gate placement on pending tile {tilePos} => {placed}");
@@ -91,6 +103,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 _isDraggingPendingPlacement = allowDragStart && _enableMousePendingPreviewDrag;
                 _draggedPlacementPosition = tilePos;
+                ClearPendingPlacementSnapTarget();
 
                 if (VerboseLogs)
                     Debug.Log($"{LogTag} Drag started for preview at {tilePos}");
@@ -100,6 +113,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (wallMode)
             {
+                if (!IsBuildGridPlacementAllowed(tilePos, selectedBuildingId))
+                {
+                    if (VerboseLogs)
+                        Debug.Log($"{LogTag} Wall placement rejected by build grid at {tilePos}");
+                    return;
+                }
+
                 bool placed = _constructionService.TryPreviewAt(tilePos);
                 if (placed && allowDragStart)
                 {
@@ -116,6 +136,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
+            if (!IsBuildGridPlacementAllowed(tilePos, selectedBuildingId))
+            {
+                if (VerboseLogs)
+                    Debug.Log($"{LogTag} Placement rejected by build grid at {tilePos}");
+                return;
+            }
+
             bool result = _constructionService.TryPreviewAt(tilePos);
             if (VerboseLogs)
                 Debug.Log($"{LogTag} TryPreviewAt({tilePos}) => {result}");
@@ -124,6 +151,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 _isDraggingPendingPlacement = true;
                 _draggedPlacementPosition = tilePos;
+                ClearPendingPlacementSnapTarget();
             }
         }
     }

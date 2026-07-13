@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly ChunkFirstRuntimeMeshRegistry _meshRegistry;
         private readonly ChunkFirstBuildDiagnostics _diagnostics;
         private readonly Dictionary<Vector2Int, ResolvedTileComposition> _resolved = new Dictionary<Vector2Int, ResolvedTileComposition>();
+        private readonly List<MapChunkCoord> _singleChunk = new List<MapChunkCoord>(1);
 
         public ChunkFirstWorldBuildService(
             ITileWorldCreatorBuildEnvironment environment,
@@ -147,7 +148,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Transform terrain = chunkRoot != null ? chunkRoot.Find("TerrainMesh") : null;
             var renderer = terrain != null ? terrain.GetComponent<Renderer>() : null;
             if (renderer != null)
-                _registry.Register(renderer, new[] { coord });
+            {
+                _singleChunk.Clear();
+                _singleChunk.Add(coord);
+                _registry.Register(renderer, _singleChunk);
+            }
         }
 
         private TileWorldCreatorWorldBuildResult CreateResult(GeneratedWorldData worldData, Configuration configuration)

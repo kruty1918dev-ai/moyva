@@ -17,7 +17,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IGridService _gridService;
         private readonly IConstructionTerrainAlignmentService _terrainAlignment;
         private readonly IConstructionGridGeometryService _gridGeometry;
-        private readonly IConstructionBuildGridTileFilter _tileFilter;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
 
         [Inject]
@@ -25,13 +24,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IGridService gridService,
             IConstructionTerrainAlignmentService terrainAlignment,
             [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
-            [InjectOptional] IConstructionBuildGridTileFilter tileFilter = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
         {
             _gridService = gridService;
             _terrainAlignment = terrainAlignment;
             _gridGeometry = gridGeometry;
-            _tileFilter = tileFilter;
             _settingsProvider = settingsProvider;
         }
 
@@ -53,6 +50,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             float halfZ = Mathf.Max(0.01f, cellSize.y * tileScale * 0.5f);
 
             var vertices = new List<Vector3>(rect.width * rect.height * 4);
+            var normals = new List<Vector3>(rect.width * rect.height * 4);
             var uvs = new List<Vector2>(rect.width * rect.height * 4);
             var triangles = new List<int>(rect.width * rect.height * 6);
 
@@ -64,10 +62,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     if (!_gridService.TryGetTileData(tile, out _))
                         continue;
 
-                    if (UseBuildableFilter() && _tileFilter != null && !_tileFilter.ShouldRender(tile))
-                        continue;
-
-                    AddTileQuad(tile, halfX, halfZ, vertices, uvs, triangles);
+                    AddTileQuad(tile, halfX, halfZ, vertices, normals, uvs, triangles);
                 }
             }
 
@@ -83,9 +78,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 mesh.indexFormat = IndexFormat.UInt32;
 
             mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
             mesh.SetUVs(0, uvs);
             mesh.SetTriangles(triangles, 0);
-            mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return true;
         }
@@ -95,6 +90,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             float halfX,
             float halfZ,
             List<Vector3> vertices,
+            List<Vector3> normals,
             List<Vector2> uvs,
             List<int> triangles)
         {
@@ -105,6 +101,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             vertices.Add(center + new Vector3( halfX, 0f, -halfZ));
             vertices.Add(center + new Vector3( halfX, 0f,  halfZ));
             vertices.Add(center + new Vector3(-halfX, 0f,  halfZ));
+
+            normals.Add(Vector3.up);
+            normals.Add(Vector3.up);
+            normals.Add(Vector3.up);
+            normals.Add(Vector3.up);
 
             uvs.Add(new Vector2(0f, 0f));
             uvs.Add(new Vector2(1f, 0f));
@@ -132,9 +133,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             return Vector2.one;
         }
-
-        private bool UseBuildableFilter()
-            => _settingsProvider?.BuildGridSurfacePlaneUseBuildableFilter ?? false;
 
         private float ResolveSurfaceOffsetY()
             => Mathf.Clamp(_settingsProvider?.BuildGridSurfaceOffsetY ?? 0.06f, MinSurfaceOffsetY, MaxSurfaceOffsetY);

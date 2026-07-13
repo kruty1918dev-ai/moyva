@@ -45,6 +45,9 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
 
         public void SetCameraVisible(IReadOnlyCollection<MapChunkCoord> visibleChunks)
         {
+            if (_hasCameraState && MatchesCameraVisibleSet(visibleChunks))
+                return;
+
             _cameraVisible.Clear();
             _hasCameraState = true;
             if (visibleChunks != null)
@@ -55,6 +58,24 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
 
             CameraVisibilityVersion++;
             ApplyVisibility();
+        }
+
+        private bool MatchesCameraVisibleSet(IReadOnlyCollection<MapChunkCoord> visibleChunks)
+        {
+            int incomingCount = visibleChunks?.Count ?? 0;
+            if (_cameraVisible.Count != incomingCount)
+                return false;
+
+            if (visibleChunks == null)
+                return true;
+
+            foreach (MapChunkCoord coord in visibleChunks)
+            {
+                if (!_cameraVisible.ContainsKey(coord))
+                    return false;
+            }
+
+            return true;
         }
 
         public bool IsCameraVisible(MapChunkCoord coord)

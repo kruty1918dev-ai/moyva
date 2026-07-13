@@ -222,6 +222,9 @@ namespace Kruty1918.Moyva.Tests.Construction
             Container.DeclareSignal<BuildingCancelledSignal>();
             Container.DeclareSignal<BuildingDemolishedSignal>();
             Container.DeclareSignal<BuildingPreviewChangedSignal>();
+            Container.DeclareSignal<BuildingPreviewMovedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<BuildingSelectionChangedSignal>().OptionalSubscriber();
+            Container.DeclareSignal<SettlementResourceChangedSignal>().OptionalSubscriber();
             Container.DeclareSignal<ShowWallHandlesSignal>();
             Container.DeclareSignal<OnObjectsMapChangedSignal>();
             Container.DeclareSignal<UnitCreatedSignal>();
@@ -239,6 +242,10 @@ namespace Kruty1918.Moyva.Tests.Construction
             Container.Bind<IEconomyInfoMediator>().FromInstance(_economyInfoMediator).AsSingle();
 
             _buildingRegistry = ScriptableObject.CreateInstance<BuildingRegistrySO>();
+            _buildingRegistry.Buildings = CreateUnrestrictedDefinitions(
+                "house",
+                "barracks",
+                "castle");
             Container.Bind<IBuildingRegistry>().FromInstance(_buildingRegistry).AsSingle();
             Container.BindInstance(0).WithId("minSpacing");
             Container.BindInstance(0).WithId("townHallBuildRadius");
@@ -540,6 +547,23 @@ namespace Kruty1918.Moyva.Tests.Construction
             }
 
             return definition;
+        }
+
+        private static BuildingDefinition[] CreateUnrestrictedDefinitions(params string[] ids)
+        {
+            var definitions = new BuildingDefinition[ids.Length];
+            for (int index = 0; index < ids.Length; index++)
+            {
+                definitions[index] = new BuildingDefinition
+                {
+                    Id = ids[index],
+                    UseCustomTownHallRules = true,
+                    RequireTownHallInRange = false,
+                    BlockIfTownHallAlreadyInRange = false,
+                };
+            }
+
+            return definitions;
         }
     }
 }

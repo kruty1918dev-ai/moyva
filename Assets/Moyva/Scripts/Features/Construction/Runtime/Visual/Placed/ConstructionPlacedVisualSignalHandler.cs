@@ -39,24 +39,30 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Handle(BuildingPlacedSignal signal)
         {
-            _previewVisuals.Remove(signal.Position);
+            if (signal.HasRelocationSource && signal.RelocationSourcePosition != signal.Position)
+                _placedVisuals.Remove(signal.RelocationSourcePosition);
+
+            _previewVisuals.TryRelease(signal.Position, out GameObject previewVisual);
             _radiusVisuals.HidePreview();
-            _buildGridOverlay.MarkDirty();
 
             if (_wallTopologyService.IsWallOrGate(signal.BuildingId))
             {
+                if (previewVisual != null)
+                    Object.Destroy(previewVisual);
+
                 _wallVisuals.RefreshPlacedNeighborhood(signal.Position);
                 return;
             }
 
             BuildingDefinition def = _buildingRegistry.GetById(signal.BuildingId);
             if (def?.Prefab != null)
-                _placedVisuals.Replace(signal.Position, signal.BuildingId, def.Prefab, Quaternion.identity, def.VisualYOffset);
+                _placedVisuals.Replace(signal.Position, signal.BuildingId, def.Prefab, Quaternion.identity, def.VisualYOffset, previewVisual);
+            else if (previewVisual != null)
+                Object.Destroy(previewVisual);
         }
 
         public void Handle(BuildingDemolishedSignal signal)
         {
-            _buildGridOverlay.MarkDirty();
             _placedVisuals.Remove(signal.Position);
 
             if (_placedVisuals.ClearSelectionIfMatches(signal.Position))
@@ -85,7 +91,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public void Handle(GameModeChangedSignal signal)
         {
-            _buildGridOverlay.SetConstructionModeActive(signal.NewMode == GameModeType.Construction);
+            bool active = signal.NewMode == GameModeType.Construction;
+            _buildGridOverlay.SetConstructionModeActive(active);
+            if (!active)
+                _previewVisuals.Clear();
         }
 
         private bool HasInfluenceRadius(BuildingDefinition def)

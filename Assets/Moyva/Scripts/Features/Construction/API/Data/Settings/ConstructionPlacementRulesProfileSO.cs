@@ -40,6 +40,9 @@ namespace Kruty1918.Moyva.Construction.API
         [SerializeField] private string[] _blockedTileIds = new string[0];
 
         [BoxGroup("Terrain")]
+        [SerializeField] private string[] _allowedTileIds = new string[0];
+
+        [BoxGroup("Terrain")]
         [SerializeField] private TerrainLevelRestrictionRange[] _blockedTerrainLevelRanges = new TerrainLevelRestrictionRange[0];
 
         public int MinSpacing => Mathf.Max(0, _minSpacing);
@@ -52,6 +55,7 @@ namespace Kruty1918.Moyva.Construction.API
         public bool EnableFogRules => _enableFogRules;
         public bool RequireVisibleFogTile => _requireVisibleFogTile;
         public string[] BlockedTileIds => _blockedTileIds;
+        public string[] AllowedTileIds => _allowedTileIds;
         public TerrainLevelRestrictionRange[] BlockedTerrainLevelRanges => _blockedTerrainLevelRanges;
     }
 }

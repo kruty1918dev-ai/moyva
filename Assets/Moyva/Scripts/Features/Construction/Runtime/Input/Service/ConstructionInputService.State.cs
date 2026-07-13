@@ -8,6 +8,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private void CancelActivePointerDrags()
         {
             _isDraggingPendingPlacement = false;
+            ClearPendingPlacementSnapTarget();
             ClearTouchPendingDragCandidate();
 
             if (_isDraggingWallPath)
@@ -61,7 +62,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _isActive = signal.NewMode == GameModeType.Construction;
             if (!_isActive)
+            {
+                ClearBuildGridHover();
                 CancelActiveDrags();
+            }
 
             if (VerboseLogs)
                 Debug.Log($"{LogTag} Active changed -> {_isActive}");

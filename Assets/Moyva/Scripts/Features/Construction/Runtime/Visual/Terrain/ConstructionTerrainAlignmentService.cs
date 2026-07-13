@@ -67,6 +67,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return projected;
         }
 
+        public Vector3 ResolveAlignedInstancePosition(GameObject instance, Vector2Int tile, bool isPreviewVisual, float visualOffsetY = 0f)
+        {
+            Vector3 fallback = ResolveWorldPosition(tile, 0.1f);
+            if (instance == null || !GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection))
+                return fallback;
+
+            Transform transform = instance.transform;
+            Vector3 originalPosition = transform.position;
+            AlignInstanceToTerrainSurface(instance, tile, isPreviewVisual, visualOffsetY);
+            Vector3 alignedPosition = transform.position;
+            transform.position = originalPosition;
+            return alignedPosition;
+        }
+
         public void AlignInstanceToTerrainSurface(GameObject instance, Vector2Int tile, bool isPreviewVisual, float visualOffsetY = 0f)
         {
             if (!GridSurfacePlacementUtility.Uses3DWorldPlane(_gridProjection) || instance == null)

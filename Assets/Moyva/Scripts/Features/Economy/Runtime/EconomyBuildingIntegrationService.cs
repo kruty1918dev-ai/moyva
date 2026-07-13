@@ -23,6 +23,32 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
             var ownerId = NormalizeOwnerId(signal.OwnerId);
 
+            if (signal.HasRelocationSource
+                && signal.RelocationSourcePosition != signal.Position
+                && registry.TryGetSettlementByPosition(signal.RelocationSourcePosition, out var relocatedSettlement))
+            {
+                if (BuildingDefinitionCapabilities.IsWarehouse(definition))
+                {
+                    string previousWarehouseKey = ToWarehouseKey(signal.RelocationSourcePosition);
+                    string nextWarehouseKey = ToWarehouseKey(signal.Position);
+                    if (relocatedSettlement.WarehouseResourcePools.TryGetValue(
+                            previousWarehouseKey,
+                            out var warehouseResources))
+                    {
+                        relocatedSettlement.WarehouseResourcePools.Remove(previousWarehouseKey);
+                        relocatedSettlement.WarehouseResourcePools[nextWarehouseKey] = warehouseResources;
+                    }
+                }
+
+                registry.UnregisterBuildingPosition(signal.RelocationSourcePosition);
+                registry.RegisterBuildingPosition(
+                    signal.Position,
+                    relocatedSettlement.SettlementId,
+                    signal.BuildingId,
+                    ownerId);
+                return null;
+            }
+
             // If this building is a TownHall or Castle, create a new settlement
             if (BuildingDefinitionCapabilities.IsTownHall(definition) ||
                 BuildingDefinitionCapabilities.IsCastle(definition))

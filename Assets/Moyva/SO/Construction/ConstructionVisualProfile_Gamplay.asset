@@ -17,14 +17,23 @@ MonoBehaviour:
   _previewSurfaceOffsetY: 0.7
   _ghostAlpha: 0.55
   _blockedFlashDurationSeconds: 0.35
+  _previewDragFollowSharpness: 28
+  _previewDragCursorOffsetXZ: {x: 0, y: 0}
+  _showSnapTargetHighlight: 1
+  _snapTargetHighlightLineColor: {r: 1, g: 0.58, b: 0.12, a: 0.9}
+  _snapTargetHighlightFillColor: {r: 1, g: 0.58, b: 0.12, a: 0.16}
+  _snapTargetHighlightLineWidthNormalized: 0.06
+  _snapTargetHighlightInsetNormalized: 0.04
+  _snapTargetHighlightSurfaceOffsetY: 0.16
   _useBuildGridOverlay: 1
   _buildGridRenderMode: 1
-  _buildGridSurfacePlaneUseBuildableFilter: 0
+  _buildGridSurfacePlaneUseBuildableFilter: 1
   _buildGridFillAlpha: 0.045
   _buildGridLineAlpha: 0.22
   _buildGridLineWidthNormalized: 0.035
   _buildGridSurfaceOffsetY: 0.1
   _buildGridTileInsetNormalized: 0
+  _buildGridUpdateBudgetMilliseconds: 2
   _useInfluenceRadiusOverlay: 1
   _influenceRadiusFillAlpha: 0.055
   _influenceRadiusBorderWidth: 0.5

@@ -25,6 +25,34 @@ namespace Kruty1918.Moyva.Construction.API
         [MinValue(0f)]
         [SerializeField] private float _blockedFlashDurationSeconds = 0.35f;
 
+        [BoxGroup("Preview Drag")]
+        [MinValue(0.01f)]
+        [SerializeField] private float _previewDragFollowSharpness = 28f;
+
+        [BoxGroup("Preview Drag")]
+        [SerializeField] private Vector2 _previewDragCursorOffsetXZ = Vector2.zero;
+
+        [BoxGroup("Preview Drag")]
+        [SerializeField] private bool _showSnapTargetHighlight = true;
+
+        [BoxGroup("Preview Drag")]
+        [SerializeField] private Color _snapTargetHighlightLineColor = new Color(1f, 0.58f, 0.12f, 0.9f);
+
+        [BoxGroup("Preview Drag")]
+        [SerializeField] private Color _snapTargetHighlightFillColor = new Color(1f, 0.58f, 0.12f, 0.16f);
+
+        [BoxGroup("Preview Drag")]
+        [Range(0.005f, 0.49f)]
+        [SerializeField] private float _snapTargetHighlightLineWidthNormalized = 0.06f;
+
+        [BoxGroup("Preview Drag")]
+        [Range(0f, 0.45f)]
+        [SerializeField] private float _snapTargetHighlightInsetNormalized = 0.04f;
+
+        [BoxGroup("Preview Drag")]
+        [MinValue(0f)]
+        [SerializeField] private float _snapTargetHighlightSurfaceOffsetY = 0.16f;
+
         [BoxGroup("Build Grid")]
         [SerializeField] private bool _useBuildGridOverlay = true;
 
@@ -54,6 +82,10 @@ namespace Kruty1918.Moyva.Construction.API
         [BoxGroup("Build Grid")]
         [Range(0f, 0.45f)]
         [SerializeField] private float _buildGridTileInsetNormalized = 0.08f;
+
+        [BoxGroup("Build Grid")]
+        [MinValue(0.1f)]
+        [SerializeField] private float _buildGridUpdateBudgetMilliseconds = 2f;
 
         [BoxGroup("Influence Radius")]
         [SerializeField] private bool _useInfluenceRadiusOverlay = true;
@@ -89,6 +121,14 @@ namespace Kruty1918.Moyva.Construction.API
         public float PreviewSurfaceOffsetY => _previewSurfaceOffsetY;
         public float GhostAlpha => Mathf.Clamp01(_ghostAlpha);
         public float BlockedFlashDurationSeconds => Mathf.Max(0f, _blockedFlashDurationSeconds);
+        public float PreviewDragFollowSharpness => Mathf.Max(0.01f, _previewDragFollowSharpness);
+        public Vector2 PreviewDragCursorOffsetXZ => _previewDragCursorOffsetXZ;
+        public bool ShowSnapTargetHighlight => _showSnapTargetHighlight;
+        public Color SnapTargetHighlightLineColor => _snapTargetHighlightLineColor;
+        public Color SnapTargetHighlightFillColor => _snapTargetHighlightFillColor;
+        public float SnapTargetHighlightLineWidthNormalized => Mathf.Clamp(_snapTargetHighlightLineWidthNormalized, 0.005f, 0.49f);
+        public float SnapTargetHighlightInsetNormalized => Mathf.Clamp(_snapTargetHighlightInsetNormalized, 0f, 0.45f);
+        public float SnapTargetHighlightSurfaceOffsetY => Mathf.Max(0f, _snapTargetHighlightSurfaceOffsetY);
         public bool UseBuildGridOverlay => _useBuildGridOverlay;
         public ConstructionBuildGridRenderMode BuildGridRenderMode => _buildGridRenderMode;
         public bool BuildGridSurfacePlaneUseBuildableFilter => _buildGridSurfacePlaneUseBuildableFilter;
@@ -97,6 +137,7 @@ namespace Kruty1918.Moyva.Construction.API
         public float BuildGridLineWidthNormalized => Mathf.Clamp(_buildGridLineWidthNormalized, 0.005f, 0.49f);
         public float BuildGridSurfaceOffsetY => Mathf.Max(0f, _buildGridSurfaceOffsetY);
         public float BuildGridTileInsetNormalized => Mathf.Clamp(_buildGridTileInsetNormalized, 0f, 0.45f);
+        public float BuildGridUpdateBudgetMilliseconds => Mathf.Max(0.1f, _buildGridUpdateBudgetMilliseconds);
         public bool UseInfluenceRadiusOverlay => _useInfluenceRadiusOverlay;
         public float InfluenceRadiusFillAlpha => Mathf.Clamp01(_influenceRadiusFillAlpha);
         public float InfluenceRadiusBorderWidth => Mathf.Max(0f, _influenceRadiusBorderWidth);

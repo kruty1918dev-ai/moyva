@@ -23,7 +23,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] Confirm requested. count={_pendingPlacements.Count}");
+                Debug.Log($"[MoyvaBuildGridDiag] placement-start pending={_pendingPlacements.Count} state={State}");
 
             if (_pendingPlacements.Count == 0)
             {
@@ -47,84 +47,157 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 var pos = placement.Position;
                 var id = placement.BuildingId;
                 bool isRelocation = IsRelocation(placement);
+                bool hasRelocationSource = placement.OriginalPosition.HasValue;
                 Vector2Int? relocationSource = placement.OriginalPosition;
                 string relocationOwnerId = _activeOwnerId;
                 bool relocationWasFactionOwned = false;
+                bool modelCommitted = false;
+                bool targetFootprintRegistered = false;
+                bool relocationFootprintRemoved = false;
+                bool replacementFootprintRemoved = false;
+                Vector2Int replacedOrigin = default;
+                string replacedBuildingId = null;
                 try
                 {
-                    bool gateReplacementAllowed = _wallTopologyService != null
-                        && _wallGateReplacementValidator != null
-                        && _wallTopologyService.IsGate(id)
-                        && _wallGateReplacementValidator.CanReplaceWallWithGate(pos, id, out _);
+                    if (hasRelocationSource && relocationSource.Value == pos)
+                    {
+                        confirmedPositions.Add(pos);
+                        if (VerboseLogs)
+                            Debug.Log($"[MoyvaBuildGridDiag] placement-complete building='{id}' origin={pos} result='relocation-no-op'");
+                        continue;
+                    }
 
-                    if (!gateReplacementAllowed && !CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked, relocationSource))
+                    bool gateReplacementAllowed = TryResolveGateReplacement(
+                        pos,
+                        id,
+                        out replacedOrigin,
+                        out replacedBuildingId);
+
+                    if (!CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked, relocationSource))
                     {
                         skippedCount++;
                         _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.GridCellValidated, "placement-invalid", $"building={id}, pos={pos}");
-                        Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: placement became invalid. occupied={tileOccupied}, spacingViolation={spacingBlocked}, fogBlocked={fogBlocked}, influenceZoneBlocked={influenceZoneBlocked}, terrainBlocked={terrainBlocked}, townHallBuildRadius={_townHallBuildRadius}.");
+                        Debug.LogWarning($"[MoyvaBuildGridDiag] placement-failed building='{id}' origin={pos} reason='validation' occupied={tileOccupied} spacing={spacingBlocked} fog={fogBlocked} influence={influenceZoneBlocked} terrain={terrainBlocked}");
                         continue;
                     }
 
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.GridCellValidated, $"building={id}, pos={pos}");
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.TerrainValidated, $"building={id}, pos={pos}");
 
-                    if (_objectsMapService.IsOccupied(pos) && (!relocationSource.HasValue || relocationSource.Value != pos))
+                    if (hasRelocationSource
+                        && relocationSource.HasValue
+                        && _factionPlacedBuildings.TryGetValue(relocationSource.Value, out var sourceFactionEntry))
                     {
-                        if (!gateReplacementAllowed)
-                        {
-                            skippedCount++;
-                            Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: tile occupied.");
-                            continue;
-                        }
-
-                        _objectsMapService.Unregister(pos);
+                        relocationWasFactionOwned = true;
+                        relocationOwnerId = sourceFactionEntry.FactionId;
+                    }
+                    else if (!hasRelocationSource
+                             && gateReplacementAllowed
+                             && _factionPlacedBuildings.TryGetValue(replacedOrigin, out var replacedFactionEntry))
+                    {
+                        relocationWasFactionOwned = true;
+                        relocationOwnerId = replacedFactionEntry.FactionId;
                     }
 
-                    if (!isRelocation && !TryConsumeConstructionResources(pos, id, _activeOwnerId, out var resourceReason))
+                    if (gateReplacementAllowed)
+                    {
+                        UnregisterBuildingFootprint(replacedOrigin, replacedBuildingId);
+                        replacementFootprintRemoved = true;
+                    }
+
+                    if (hasRelocationSource
+                        && relocationSource.HasValue
+                        && (!gateReplacementAllowed || relocationSource.Value != replacedOrigin))
+                    {
+                        UnregisterBuildingFootprint(relocationSource.Value, id);
+                        relocationFootprintRemoved = true;
+                    }
+
+                    if (!TryRegisterBuildingFootprint(pos, id))
+                    {
+                        skippedCount++;
+                        Debug.LogError($"[MoyvaBuildGridDiag] placement-failed building='{id}' origin={pos} reason='footprint-registration'");
+                        continue;
+                    }
+                    targetFootprintRegistered = true;
+                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingRegistered, $"building={id}, pos={pos}");
+
+                    if (!hasRelocationSource
+                        && !TryConsumeConstructionResources(pos, id, relocationOwnerId, out var resourceReason))
                     {
                         skippedCount++;
                         _lastActionMessage = resourceReason;
                         _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, "resources-blocked", resourceReason);
-                        Debug.LogWarning($"[Construction] Confirm skipped '{id}' at {pos}: {resourceReason}");
+                        Debug.LogWarning($"[MoyvaBuildGridDiag] placement-failed building='{id}' origin={pos} reason='{resourceReason}'");
                         continue;
                     }
 
-                    if (!isRelocation)
+                    if (!hasRelocationSource)
                     {
-                        _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, $"building={id}, owner={_activeOwnerId}");
-                        _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesReserved, $"building={id}, owner={_activeOwnerId}");
+                        _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, $"building={id}, owner={relocationOwnerId}");
+                        _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesReserved, $"building={id}, owner={relocationOwnerId}");
                     }
 
-                    if (isRelocation && relocationSource.HasValue && relocationSource.Value != pos)
-                    {
-                        if (_factionPlacedBuildings.TryGetValue(relocationSource.Value, out var sourceFactionEntry))
-                        {
-                            relocationWasFactionOwned = true;
-                            relocationOwnerId = sourceFactionEntry.FactionId;
-                        }
-
-                        _objectsMapService.Unregister(relocationSource.Value);
+                    if (gateReplacementAllowed)
+                        RemovePlacedRecordAt(replacedOrigin);
+                    if (hasRelocationSource && relocationSource.HasValue)
                         RemovePlacedRecordAt(relocationSource.Value);
-                    }
 
-                    _objectsMapService.Register(pos, id);
-                    _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingRegistered, $"building={id}, pos={pos}");
                     if (relocationWasFactionOwned)
                         _factionPlacedBuildings[pos] = (id, relocationOwnerId);
                     else
                         _playerPlacedBuildings[pos] = id;
 
+                    modelCommitted = true;
+                    confirmedPositions.Add(pos);
+                    confirmedCount++;
+                }
+                catch (Exception ex)
+                {
+                    skippedCount++;
+                    Debug.LogError($"[MoyvaBuildGridDiag] placement-failed building='{id}' origin={pos} reason='{ex.GetType().Name}: {ex.Message}'");
+                }
+                finally
+                {
+                    if (!modelCommitted)
+                    {
+                        if (targetFootprintRegistered)
+                            UnregisterBuildingFootprint(pos, id);
+
+                        if (relocationFootprintRemoved && relocationSource.HasValue)
+                            RestoreBuildingFootprintOrLog(relocationSource.Value, id, "relocation");
+
+                        if (replacementFootprintRemoved
+                            && (!relocationFootprintRemoved
+                                || !relocationSource.HasValue
+                                || replacedOrigin != relocationSource.Value))
+                        {
+                            RestoreBuildingFootprintOrLog(replacedOrigin, replacedBuildingId, "gate-replacement");
+                        }
+                    }
+                }
+
+                if (!modelCommitted)
+                    continue;
+
+                try
+                {
                     _signalBus.Fire(new BuildingPlacedSignal
                     {
                         BuildingId = id,
                         Position = pos,
                         OwnerId = relocationOwnerId,
+                        SourceFactionId = relocationWasFactionOwned ? relocationOwnerId : null,
+                        HasRelocationSource = isRelocation && relocationSource.HasValue && relocationSource.Value != pos,
+                        RelocationSourcePosition = relocationSource.GetValueOrDefault(),
                     });
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingSpawned, $"building={id}, pos={pos}");
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ConstructionSignalFired, $"building={id}, pos={pos}");
 
                     try
                     {
+                        if (isRelocation && relocationSource.HasValue)
+                            _fogOfWarService?.UnregisterUnit(GetBuildingFogVisionAreaId(relocationSource.Value));
                         ApplyBuildingFogReveal(id, pos);
                     }
                     catch (Exception fogEx)
@@ -132,16 +205,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         Debug.LogError($"[Construction] Fog reveal failed for '{id}' at {pos}: {fogEx.GetType().Name} - {fogEx.Message}");
                     }
 
-                    confirmedPositions.Add(pos);
-                    confirmedCount++;
-
                     if (VerboseLogs)
-                        Debug.Log($"[Construction] Confirm {(isRelocation ? "relocated" : "placed")} '{id}' at {pos}{(relocationSource.HasValue ? $" from {relocationSource.Value}" : string.Empty)}");
+                        Debug.Log($"[MoyvaBuildGridDiag] placement-complete building='{id}' origin={pos} result='{(isRelocation ? "relocated" : "placed")}' source={relocationSource?.ToString() ?? "none"}");
                 }
                 catch (Exception ex)
                 {
-                    skippedCount++;
-                    Debug.LogError($"[Construction] Confirm failed for '{id}' at {pos}: {ex.GetType().Name} - {ex.Message}");
+                    Debug.LogError($"[MoyvaBuildGridDiag] placement-notification-failed building='{id}' origin={pos} reason='{ex.GetType().Name}: {ex.Message}'");
                 }
             }
 
@@ -156,6 +225,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _pendingPlacements.RemoveAt(index);
                     _pendingPositions.Remove(pending.Position);
                     _pendingPlacementStatuses.Remove(pending.Position);
+                    MarkPendingPlacementsChanged();
 
                     _signalBus.Fire(new BuildingPreviewChangedSignal
                     {
@@ -170,20 +240,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _redoSnapshots.Clear();
 
             if (_pendingPlacements.Count == 0)
-            {
-                State = BuildingPlacementState.Idle;
-                _selectedBuildingId = null;
-            }
+                SetPlacementSelection(null, BuildingPlacementState.Idle);
             else
-            {
-                State = BuildingPlacementState.Placing;
-                _selectedBuildingId = _pendingPlacements[_pendingPlacements.Count - 1].BuildingId;
-            }
+                SetPlacementSelection(
+                    _pendingPlacements[_pendingPlacements.Count - 1].BuildingId,
+                    BuildingPlacementState.Placing);
 
             if (VerboseLogs)
-                Debug.Log($"[Construction] Confirm completed. confirmed={confirmedCount}, skipped={skippedCount}, remainingPending={_pendingPlacements.Count}, state={State}");
+                Debug.Log($"[MoyvaBuildGridDiag] placement-batch-complete confirmed={confirmedCount} skipped={skippedCount} remaining={_pendingPlacements.Count} state={State}");
 
-            if (confirmedCount > 0)
+            if (confirmedPositions.Count > 0)
                 _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.UiUpdated, $"confirmed={confirmedCount}, skipped={skippedCount}");
             else
                 _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.BuildingSpawned, "no-buildings-confirmed", $"skipped={skippedCount}");

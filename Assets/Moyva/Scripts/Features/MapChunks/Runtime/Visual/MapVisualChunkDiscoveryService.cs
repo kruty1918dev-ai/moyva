@@ -13,6 +13,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         private readonly IMapChunkLayoutService _layout;
         private readonly IMapVisualChunkDiscoveryRebuildService _rebuildService;
         private bool _requested = true;
+        private float _discoveryUntil;
         private float _nextDiscoveryAt;
 
         public MapVisualChunkDiscoveryService(
@@ -52,6 +53,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         public void RequestDiscovery()
         {
             _requested = true;
+            _discoveryUntil = Time.unscaledTime + _settings.VisualPartitionDurationSeconds;
             _nextDiscoveryAt = 0f;
         }
 
@@ -60,8 +62,20 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
             if (!_settings.EnableVisualChunkDiscovery || !_layout.IsConfigured)
                 return false;
 
-            return _requested || Time.unscaledTime >= _nextDiscoveryAt;
+            return ShouldRunDiscovery(
+                _requested,
+                Time.unscaledTime,
+                _nextDiscoveryAt,
+                _discoveryUntil);
         }
+
+        internal static bool ShouldRunDiscovery(
+            bool requested,
+            float currentTime,
+            float nextDiscoveryAt,
+            float discoveryUntil)
+            => requested
+               || currentTime <= discoveryUntil && currentTime >= nextDiscoveryAt;
 
         private void OnWorldBuilt(WorldBuiltSignal _) => RequestDiscovery();
         private void OnWorldGenerated(WorldGeneratedDataSignal _) => RequestDiscovery();

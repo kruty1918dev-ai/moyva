@@ -119,6 +119,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (!_economyInfoMediator.TryConsumeOwnerPoolResources(normalizedOwnerId, costs, out reason))
                     return false;
 
+                InvalidatePlacementResourceValidationCache();
                 reason = null;
                 return true;
             }
@@ -133,6 +134,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!_economyInfoMediator.TryConsumeSettlementResources(settlement.SettlementId, costs, out reason))
                 return false;
 
+            InvalidatePlacementResourceValidationCache();
             reason = null;
             return true;
         }
