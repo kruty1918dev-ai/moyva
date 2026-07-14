@@ -158,6 +158,17 @@ namespace Kruty1918.Moyva.Construction.API
                 : 0;
         }
 
+        /// <summary>
+        /// Повертає ліміт копій цієї будівлі для одного власника.
+        /// 0 означає, що обмеження вимкнене або модуль відсутній.
+        /// </summary>
+        public static int GetMaxBuildingsPerPlayer(BuildingDefinition definition)
+        {
+            return TryGetEnabledModule(definition, out BuildingPerPlayerLimitModule module)
+                ? Math.Max(0, module.MaxBuildingsPerPlayer)
+                : 0;
+        }
+
         public static IReadOnlyList<BuildingDefinition.BuildingConstructionCostEntry> GetConstructionCost(BuildingDefinition definition)
         {
             if (definition?.ConstructionCost == null)

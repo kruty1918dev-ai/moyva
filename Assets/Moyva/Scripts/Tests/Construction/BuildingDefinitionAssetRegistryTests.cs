@@ -95,6 +95,40 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
+        public void PerPlayerLimitModule_IsCopiedToRuntimeDefinition_AndValidated()
+        {
+            var asset = ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
+            try
+            {
+                asset.Identity.Id = "unique-building";
+                asset.Modules.Add(new BuildingPerPlayerLimitModule { MaxBuildingsPerPlayer = 1 });
+
+                BuildingDefinition runtime = asset.ToRuntimeDefinition();
+
+                Assert.AreEqual(1, BuildingDefinitionCapabilities.GetMaxBuildingsPerPlayer(runtime));
+                Assert.IsFalse(BuildingModuleValidation.HasErrors(BuildingModuleValidation.Validate(runtime)));
+
+                runtime.Modules[0] = new BuildingPerPlayerLimitModule { MaxBuildingsPerPlayer = -1 };
+                var issues = BuildingModuleValidation.Validate(runtime);
+                Assert.IsTrue(BuildingModuleValidation.HasErrors(issues));
+                bool hasLimitIssue = false;
+                for (int index = 0; index < issues.Count; index++)
+                {
+                    if (issues[index]?.Code == "INV_PER_PLAYER_BUILDING_LIMIT")
+                    {
+                        hasLimitIssue = true;
+                        break;
+                    }
+                }
+                Assert.IsTrue(hasLimitIssue);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(asset);
+            }
+        }
+
+        [Test]
         public void PlacementEvaluator_AllowsFog_WhenDefinitionCanPlaceInFog()
         {
             var registry = new TestRegistry(new BuildingDefinition

@@ -388,6 +388,97 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
+        public void PerPlayerLimit_BlocksSecondCopyAndAllowsAnotherFaction()
+        {
+            ConfigurePerPlayerLimitRegistry(1);
+
+            Assert.IsTrue(_service.TryDirectPlace("limited", new Vector2Int(50, 1), "faction-a"));
+            Assert.IsFalse(_service.TryDirectPlace("limited", new Vector2Int(51, 1), "faction-a"));
+            Assert.IsTrue(_service.TryDirectPlace("limited", new Vector2Int(51, 1), "faction-b"));
+        }
+
+        [Test]
+        public void PerPlayerLimit_BlocksSecondPendingCopyBeforeConfirm()
+        {
+            ConfigurePerPlayerLimitRegistry(1);
+            _service.SetActiveOwner("solo-player");
+            _service.SelectBuilding("limited");
+
+            Assert.IsTrue(_service.TryPreviewAt(new Vector2Int(52, 1)));
+            Assert.IsFalse(_service.TryPreviewAt(new Vector2Int(53, 1)));
+        }
+
+        [Test]
+        public void BuildGridQuery_IgnoresPendingPreview_WhileAuthoritativeQueryStillCountsIt()
+        {
+            ConfigurePerPlayerLimitRegistry(1);
+            _service.SetActiveOwner("solo-player");
+            _service.SelectBuilding("limited");
+            var previewPosition = new Vector2Int(52, 2);
+            var otherPosition = new Vector2Int(53, 2);
+
+            Assert.IsTrue(_service.TryPreviewAt(previewPosition));
+
+            var placementQuery = (IConstructionPlacementQuery)_service;
+            ConstructionPlacementQueryResult authoritative = placementQuery.EvaluatePlacement(
+                new ConstructionPlacementQueryRequest("limited", otherPosition));
+            ConstructionPlacementQueryResult buildGrid = placementQuery.EvaluatePlacement(
+                new ConstructionPlacementQueryRequest(
+                    "limited",
+                    previewPosition,
+                    includePendingPlacements: false));
+
+            Assert.IsFalse(authoritative.IsValid, "Final placement must count pending previews.");
+            Assert.IsTrue(buildGrid.IsValid, "Base grid must not be changed by a temporary preview.");
+        }
+
+        [Test]
+        public void PerPlayerLimit_IsReleasedAfterDemolition()
+        {
+            ConfigurePerPlayerLimitRegistry(1);
+            var position = new Vector2Int(54, 1);
+
+            Assert.IsTrue(_service.TryDirectPlace("limited", position, "faction-a"));
+            Assert.IsTrue(_service.TryDemolishByFaction(position, "faction-a"));
+            Assert.IsTrue(_service.TryDirectPlace("limited", new Vector2Int(55, 1), "faction-a"));
+        }
+
+        [Test]
+        public void PerPlayerLimit_DoesNotBlockRelocatingTheSameBuilding()
+        {
+            ConfigurePerPlayerLimitRegistry(1, singletonScope: BuildingModuleScope.Global);
+            var source = new Vector2Int(56, 1);
+            var destination = new Vector2Int(57, 1);
+
+            Assert.IsTrue(_service.TryDirectPlace("limited", source, "faction-a"));
+            _service.SetActiveOwner("faction-a");
+            _service.SelectBuilding("limited");
+
+            Assert.IsTrue(_service.TryPreviewAt(destination));
+            _service.Confirm();
+            Assert.IsFalse(_service.HasPlacedBuilding("limited", "missing-owner"));
+            Assert.IsTrue(_service.HasPlacedBuilding("limited", "faction-a"));
+            Assert.IsFalse(_objectsMap.IsOccupied(source));
+            Assert.IsTrue(_objectsMap.IsOccupied(destination));
+        }
+
+        [Test]
+        public void PerPlayerLimit_ZeroDoesNotBlockPlacement()
+        {
+            ConfigurePerPlayerLimitRegistry(0);
+            Assert.IsTrue(_service.TryDirectPlace("limited", new Vector2Int(58, 1), "faction-a"));
+            Assert.IsTrue(_service.TryDirectPlace("limited", new Vector2Int(59, 1), "faction-a"));
+        }
+
+        [Test]
+        public void PerPlayerLimit_DisabledModuleDoesNotBlockPlacement()
+        {
+            ConfigurePerPlayerLimitRegistry(1, isEnabled: false);
+            Assert.IsTrue(_service.TryDirectPlace("limited", new Vector2Int(60, 1), "faction-a"));
+            Assert.IsTrue(_service.TryDirectPlace("limited", new Vector2Int(61, 1), "faction-a"));
+        }
+
+        [Test]
         public void TryPreviewAt_ShouldBlockRegularBuildingOutsideTownHallOrCastleRadius()
         {
             ConfigureInfluenceRegistry();
@@ -641,6 +732,27 @@ namespace Kruty1918.Moyva.Tests.Construction
                 CreateBuilding("townhall", new TownHallBuildingModule { BuildRadius = 2 }),
                 CreateBuilding("castle", new CastleBuildingModule { ExclusionRadius = 3 }),
                 CreateBuilding("house"),
+            };
+        }
+
+        private void ConfigurePerPlayerLimitRegistry(
+            int limit,
+            bool isEnabled = true,
+            BuildingModuleScope singletonScope = BuildingModuleScope.PerBuilding)
+        {
+            var definition = CreateBuilding(
+                "limited",
+                new BuildingPerPlayerLimitModule
+                {
+                        MaxBuildingsPerPlayer = limit,
+                        IsEnabled = isEnabled,
+                        SingletonScope = singletonScope,
+                });
+            definition.UseCustomTownHallRules = true;
+            definition.RequireTownHallInRange = false;
+            _buildingRegistry.Buildings = new[]
+            {
+                definition,
             };
         }
 

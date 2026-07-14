@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Construction.API
             var collector = new BuildingValidationCollector(null);
             if (registry == null)
             {
-                collector.AddError("REGISTRY_NULL", "BuildingRegistry is missing.");
+                collector.AddError("REGISTRY_NULL", "BuildingRegistry не задано.");
                 collector.LogSummary("registry");
                 return collector.Issues;
             }
@@ -36,14 +36,14 @@ namespace Kruty1918.Moyva.Construction.API
                 var definition = definitions[i];
                 if (definition == null)
                 {
-                    collector.AddError("REGISTRY_NULL_ENTRY", $"Registry entry [{i}] is null.");
+                    collector.AddError("REGISTRY_NULL_ENTRY", $"Запис реєстру [{i}] порожній.");
                     continue;
                 }
 
                 if (!string.IsNullOrWhiteSpace(definition.Id))
                 {
                     if (ids.ContainsKey(definition.Id))
-                        collector.AddError("REGISTRY_DUPLICATE_ID", $"Duplicate building ID '{definition.Id}'.");
+                        collector.AddError("REGISTRY_DUPLICATE_ID", $"ID будівлі «{definition.Id}» дублюється.");
                     else
                         ids.Add(definition.Id, i);
                 }

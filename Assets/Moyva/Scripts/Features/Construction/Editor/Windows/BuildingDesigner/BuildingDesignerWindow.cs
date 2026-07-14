@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
+using Kruty1918.Moyva.Editor.Shared;
 using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEngine;
@@ -19,7 +20,7 @@ namespace Kruty1918.Moyva.Construction.Editor
         [SerializeField] private BuildingTemplateLibrarySO _templateLibrary;
         [SerializeField] private BuildingArchetypeSO _newBuildingTemplate;
         [SerializeField] private string _newBuildingId = "new-building";
-        [SerializeField] private string _newBuildingName = "New Building";
+        [SerializeField] private string _newBuildingName = "Нова будівля";
         [SerializeField] private string _outputFolder = DefaultOutputFolder;
         [SerializeField] private bool _filterByCategory;
         [SerializeField] private BuildingCategory _categoryFilter = BuildingCategory.Civilian;
@@ -28,7 +29,7 @@ namespace Kruty1918.Moyva.Construction.Editor
         [MenuItem("Moyva/Tools/Building Designer", priority = 32)]
         public static void Open()
         {
-            var window = GetWindow<BuildingDesignerWindow>("Building Designer");
+            var window = GetWindow<BuildingDesignerWindow>("Редактор будівель");
             window.minSize = new Vector2(1080f, 680f);
             window.Show();
             window.Focus();
@@ -64,12 +65,12 @@ namespace Kruty1918.Moyva.Construction.Editor
                 }
             };
 
-            tree.Add("Library/Registry", _registry);
-            tree.Add("Library/Templates", _templateLibrary);
+            tree.Add("Бібліотека/Реєстр", _registry);
+            tree.Add("Бібліотека/Шаблони", _templateLibrary);
 
             if (_registry == null)
             {
-                tree.Add("Library/No Registry Selected", this);
+                tree.Add("Бібліотека/Реєстр не вибрано", this);
                 return tree;
             }
 
@@ -84,7 +85,7 @@ namespace Kruty1918.Moyva.Construction.Editor
                     continue;
 
                 string label = string.IsNullOrWhiteSpace(asset.DisplayName) ? asset.name : asset.DisplayName;
-                tree.Add($"Library/{asset.Category}/{label}", asset);
+                tree.Add($"Бібліотека/{GetCategoryLabel(asset.Category)}/{label}", asset);
             }
 
             var legacy = _registry.LegacyBuildings;
@@ -101,7 +102,7 @@ namespace Kruty1918.Moyva.Construction.Editor
                     continue;
 
                 string label = string.IsNullOrWhiteSpace(definition.DisplayName) ? definition.Id : definition.DisplayName;
-                tree.Add($"Library/Legacy Inline/{label}", definition);
+                tree.Add($"Бібліотека/Застарілі inline-дані/{label}", definition);
             }
 
             return tree;
@@ -121,8 +122,22 @@ namespace Kruty1918.Moyva.Construction.Editor
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     EditorGUI.BeginChangeCheck();
-                    _registry = (BuildingRegistrySO)EditorGUILayout.ObjectField("Registry", _registry, typeof(BuildingRegistrySO), false);
-                    _templateLibrary = (BuildingTemplateLibrarySO)EditorGUILayout.ObjectField("Templates", _templateLibrary, typeof(BuildingTemplateLibrarySO), false);
+                    _registry = (BuildingRegistrySO)EditorGUILayout.ObjectField(
+                        EditorTooltipStandard.Content(
+                            "Реєстр",
+                            "Вибирає реєстр, із якого завантажуються будівлі.",
+                            "Визначає набір будівель, доступних у грі та цьому редакторі."),
+                        _registry,
+                        typeof(BuildingRegistrySO),
+                        false);
+                    _templateLibrary = (BuildingTemplateLibrarySO)EditorGUILayout.ObjectField(
+                        EditorTooltipStandard.Content(
+                            "Шаблони",
+                            "Вибирає бібліотеку заготовок будівель.",
+                            "Дозволяє швидко створювати узгоджені конфігурації."),
+                        _templateLibrary,
+                        typeof(BuildingTemplateLibrarySO),
+                        false);
                     if (EditorGUI.EndChangeCheck())
                     {
                         SavePreferences();
@@ -132,34 +147,92 @@ namespace Kruty1918.Moyva.Construction.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    _outputFolder = EditorGUILayout.TextField("Output Folder", string.IsNullOrWhiteSpace(_outputFolder) ? DefaultOutputFolder : _outputFolder);
-                    if (GUILayout.Button("Pick", GUILayout.Width(64f)))
+                    _outputFolder = EditorGUILayout.TextField(
+                        EditorTooltipStandard.Content(
+                            "Папка збереження",
+                            "Задає папку для нових BuildingDefinition asset.",
+                            "Не впливає на runtime, але визначає структуру проєкту."),
+                        string.IsNullOrWhiteSpace(_outputFolder) ? DefaultOutputFolder : _outputFolder);
+                    if (GUILayout.Button(
+                            EditorTooltipStandard.Content(
+                                "Обрати",
+                                "Відкриває вибір папки всередині Assets.",
+                                "Змінює місце створення нових building asset."),
+                            GUILayout.Width(64f)))
                         PickOutputFolder();
-                    _filterByCategory = EditorGUILayout.ToggleLeft("Filter", _filterByCategory, GUILayout.Width(64f));
+                    _filterByCategory = EditorGUILayout.ToggleLeft(
+                        EditorTooltipStandard.Content(
+                            "Фільтр",
+                            "Вмикає показ лише однієї категорії.",
+                            "Не змінює реєстр або доступність будівель у грі."),
+                        _filterByCategory,
+                        GUILayout.Width(72f));
                     using (new EditorGUI.DisabledScope(!_filterByCategory))
-                        _categoryFilter = (BuildingCategory)EditorGUILayout.EnumPopup(_categoryFilter, GUILayout.Width(110f));
+                        _categoryFilter = (BuildingCategory)EditorGUILayout.EnumPopup(
+                            EditorTooltipStandard.Content(
+                                "Категорія",
+                                "Вибирає категорію для фільтра дерева.",
+                                "Не змінює категорії самих будівель."),
+                            _categoryFilter,
+                            GUILayout.Width(190f));
                 }
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    _newBuildingId = EditorGUILayout.TextField("New ID", _newBuildingId);
-                    _newBuildingName = EditorGUILayout.TextField("Name", _newBuildingName);
-                    _newBuildingTemplate = (BuildingArchetypeSO)EditorGUILayout.ObjectField(_newBuildingTemplate, typeof(BuildingArchetypeSO), false, GUILayout.Width(210f));
+                    _newBuildingId = EditorGUILayout.TextField(
+                        EditorTooltipStandard.Content(
+                            "Новий ID",
+                            "Задає технічний ID нової будівлі.",
+                            "Після створення ID використовується збереженням і мережею."),
+                        _newBuildingId);
+                    _newBuildingName = EditorGUILayout.TextField(
+                        EditorTooltipStandard.Content(
+                            "Назва",
+                            "Задає видиму назву нової будівлі.",
+                            "Відображається гравцю в меню та панелях."),
+                        _newBuildingName);
+                    _newBuildingTemplate = (BuildingArchetypeSO)EditorGUILayout.ObjectField(
+                        EditorTooltipStandard.Content(
+                            "Шаблон",
+                            "Застосовує початковий набір полів і модулів.",
+                            "Прискорює створення будівель однакового архетипу."),
+                        _newBuildingTemplate,
+                        typeof(BuildingArchetypeSO),
+                        false,
+                        GUILayout.Width(250f));
                 }
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("New Building"))
+                    if (GUILayout.Button(EditorTooltipStandard.Content(
+                            "Нова будівля",
+                            "Створює новий BuildingDefinition asset і додає його до реєстру.",
+                            "Нова будівля стане доступною системі після коректного налаштування.")))
                         CreateBuilding();
-                    if (GUILayout.Button("Duplicate Selected"))
+                    if (GUILayout.Button(EditorTooltipStandard.Content(
+                            "Дублювати вибрану",
+                            "Створює копію вибраної будівлі з новим ID.",
+                            "Дає незалежну конфігурацію на основі існуючої.")))
                         DuplicateSelected();
-                    if (GUILayout.Button("Delete Selected"))
+                    if (GUILayout.Button(EditorTooltipStandard.Content(
+                            "Видалити вибрану",
+                            "Видаляє вибраний asset після підтвердження.",
+                            "Будівля зникне з реєстру й не буде доступна в грі.")))
                         DeleteSelected();
-                    if (GUILayout.Button("Validate Registry"))
+                    if (GUILayout.Button(EditorTooltipStandard.Content(
+                            "Перевірити реєстр",
+                            "Запускає повну валідацію всіх будівель.",
+                            "Знаходить конфігурації, які можуть зламати меню або будівництво.")))
                         ValidateRegistry();
-                    if (GUILayout.Button("Rebuild Registry"))
+                    if (GUILayout.Button(EditorTooltipStandard.Content(
+                            "Перебудувати реєстр",
+                            "Повторно збирає всі BuildingDefinition asset у реєстр.",
+                            "Відновлює пропущені посилання без зміни самих будівель.")))
                         RebuildRegistryFromAssets();
-                    if (GUILayout.Button("Migrate Legacy"))
+                    if (GUILayout.Button(EditorTooltipStandard.Content(
+                            "Мігрувати старі дані",
+                            "Перетворює legacy inline definitions на окремі asset.",
+                            "Зберігає старі будівлі в актуальному data-driven форматі.")))
                         MigrateLegacy();
                 }
             }
@@ -169,7 +242,7 @@ namespace Kruty1918.Moyva.Construction.Editor
         {
             if (_registry == null)
             {
-                Debug.LogWarning("[BuildingDesigner] Select a BuildingRegistry first.");
+                Debug.LogWarning("[BuildingDesigner] Спочатку виберіть BuildingRegistry.");
                 return;
             }
 
@@ -193,7 +266,7 @@ namespace Kruty1918.Moyva.Construction.Editor
             var selected = MenuTree?.Selection?.SelectedValue as BuildingDefinitionAsset;
             if (selected == null)
             {
-                Debug.LogWarning("[BuildingDesigner] Select a BuildingDefinition asset to duplicate.");
+                Debug.LogWarning("[BuildingDesigner] Виберіть BuildingDefinition asset для дублювання.");
                 return;
             }
 
@@ -216,12 +289,16 @@ namespace Kruty1918.Moyva.Construction.Editor
             var selected = MenuTree?.Selection?.SelectedValue as BuildingDefinitionAsset;
             if (selected == null)
             {
-                Debug.LogWarning("[BuildingDesigner] Select a BuildingDefinition asset to delete.");
+                Debug.LogWarning("[BuildingDesigner] Виберіть BuildingDefinition asset для видалення.");
                 return;
             }
 
             string path = AssetDatabase.GetAssetPath(selected);
-            if (!EditorUtility.DisplayDialog("Delete Building", $"Delete '{selected.DisplayName}'?\n{path}", "Delete", "Cancel"))
+            if (!EditorUtility.DisplayDialog(
+                    "Видалення будівлі",
+                    $"Видалити «{selected.DisplayName}»?\n{path}",
+                    "Видалити",
+                    "Скасувати"))
                 return;
 
             RemoveAssetFromRegistry(selected);
@@ -245,7 +322,7 @@ namespace Kruty1918.Moyva.Construction.Editor
                     warnings++;
             }
 
-            Debug.Log($"[BuildingDesigner] Registry validation: errors={errors}, warnings={warnings}, issues={issues.Count}");
+            Debug.Log($"[BuildingDesigner] Перевірка реєстру: помилок={errors}, попереджень={warnings}, усього={issues.Count}");
             for (int i = 0; i < issues.Count; i++)
                 Debug.Log($"[BuildingDesigner] {issues[i].Severity} {issues[i].Code}: {issues[i].Message}");
         }
@@ -254,7 +331,7 @@ namespace Kruty1918.Moyva.Construction.Editor
         {
             if (_registry == null)
             {
-                Debug.LogWarning("[BuildingDesigner] Select a BuildingRegistry first.");
+                Debug.LogWarning("[BuildingDesigner] Спочатку виберіть BuildingRegistry.");
                 return;
             }
 
@@ -272,19 +349,19 @@ namespace Kruty1918.Moyva.Construction.Editor
             EditorUtility.SetDirty(_registry);
             AssetDatabase.SaveAssets();
             ForceMenuTreeRebuild();
-            Debug.Log($"[BuildingDesigner] Rebuilt registry with {assets.Count} BuildingDefinition assets.");
+            Debug.Log($"[BuildingDesigner] Реєстр перебудовано: {assets.Count} BuildingDefinition asset.");
         }
 
         private void MigrateLegacy()
         {
             if (_registry == null)
             {
-                Debug.LogWarning("[BuildingDesigner] Select a BuildingRegistry first.");
+                Debug.LogWarning("[BuildingDesigner] Спочатку виберіть BuildingRegistry.");
                 return;
             }
 
             var report = BuildingMigrationUtility.MigrateLegacyRegistry(_registry, _outputFolder, _migrationAddsFogReveal);
-            Debug.Log($"[BuildingDesigner] Migration complete: {report}\n{string.Join("\n", report.Messages)}");
+            Debug.Log($"[BuildingDesigner] Міграцію завершено: {report}\n{string.Join("\n", report.Messages)}");
             ForceMenuTreeRebuild();
         }
 
@@ -313,7 +390,7 @@ namespace Kruty1918.Moyva.Construction.Editor
 
         private void PickOutputFolder()
         {
-            string selected = EditorUtility.OpenFolderPanel("Building Definition Output Folder", Application.dataPath, string.Empty);
+            string selected = EditorUtility.OpenFolderPanel("Папка для Building Definition", Application.dataPath, string.Empty);
             if (string.IsNullOrWhiteSpace(selected))
                 return;
 
@@ -321,7 +398,7 @@ namespace Kruty1918.Moyva.Construction.Editor
             string assetsPath = Application.dataPath.Replace('\\', '/');
             if (!selected.StartsWith(assetsPath, StringComparison.Ordinal))
             {
-                Debug.LogWarning("[BuildingDesigner] Folder must be inside Assets.");
+                Debug.LogWarning("[BuildingDesigner] Папка має бути всередині Assets.");
                 return;
             }
 
@@ -398,6 +475,18 @@ namespace Kruty1918.Moyva.Construction.Editor
             foreach (char invalid in Path.GetInvalidFileNameChars())
                 value = value.Replace(invalid, '-');
             return string.IsNullOrWhiteSpace(value) ? "building-definition" : value;
+        }
+
+        private static string GetCategoryLabel(BuildingCategory category)
+        {
+            return category switch
+            {
+                BuildingCategory.Military => "Військові",
+                BuildingCategory.Civilian => "Цивільні",
+                BuildingCategory.Industrial => "Промислові",
+                BuildingCategory.Walls => "Стіни та ворота",
+                _ => category.ToString(),
+            };
         }
     }
 }

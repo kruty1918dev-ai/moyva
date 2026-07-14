@@ -39,6 +39,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string placementOwnerId = string.IsNullOrWhiteSpace(request.OwnerId)
                 ? _activeOwnerId
                 : request.OwnerId.Trim();
+            if (!TryValidatePerPlayerBuildingLimit(request, placementOwnerId, out string perPlayerLimitReason))
+            {
+                return InvalidPlacementQueryResult(
+                    perPlayerLimitReason,
+                    request,
+                    BuildingPlacementBlockerKind.Configuration);
+            }
             if (gateReplacement
                 && replacedWallOrigin.HasValue
                 && _factionPlacedBuildings.TryGetValue(replacedWallOrigin.Value, out var replacedFactionEntry)
@@ -106,7 +113,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placementQueryEvaluationRequest.Position = request.Position;
             _placementQueryEvaluationRequest.IgnoredPendingPosition = request.IgnoredPendingPosition;
             _placementQueryEvaluationRequest.IgnoredOccupiedPosition = ignoredOccupiedPosition;
-            _placementQueryEvaluationRequest.PendingPlacements = BuildPlacementSimulationEntries();
+            _placementQueryEvaluationRequest.PendingPlacements = request.IncludePendingPlacements
+                ? BuildPlacementSimulationEntries()
+                : Array.Empty<BuildingPlacementSimulationEntry>();
             evaluationResult = request.IncludeDetails
                 ? BuildingPlacementEvaluator.Evaluate(_placementQueryEvaluationRequest)
                 : null;
@@ -249,7 +258,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     request.BuildingId,
                     ownerId,
                     request.IgnoredPendingPosition,
-                    out reason);
+                    out reason,
+                    request.IncludePendingPlacements);
             }
 
             int frame = Time.frameCount;
@@ -265,7 +275,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 request.BuildingId,
                 normalizedOwnerId,
                 fundingContext,
-                _pendingPlacementsVersion);
+                request.IncludePendingPlacements ? _pendingPlacementsVersion : -1);
             if (_resourceValidationCache.TryGetValue(key, out ResourceValidationCacheValue cached))
             {
                 reason = cached.Reason;
@@ -277,7 +287,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 request.BuildingId,
                 normalizedOwnerId,
                 ignoredPendingPosition: null,
-                out reason);
+                out reason,
+                request.IncludePendingPlacements);
             _resourceValidationCache[key] = new ResourceValidationCacheValue(isValid, reason);
             return isValid;
         }

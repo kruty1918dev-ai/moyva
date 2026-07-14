@@ -12,17 +12,17 @@ namespace Kruty1918.Moyva.Construction.API
 
             if (snapshot.HasTownHall && snapshot.HasHousing)
             {
-                collector.AddError("INV_TOWNHALL_HOUSING", "TownHallModule несумісний з HousingModule.");
+                collector.AddError("INV_TOWNHALL_HOUSING", "Модуль ратуші несумісний із житловим модулем.");
             }
 
             if (snapshot.HasWorkerlessSemantics && snapshot.HasHousing)
             {
-                collector.AddError("INV_WORKERLESS_HOUSING", "Workerless/Wall/Gate несумісні з HousingModule.");
+                collector.AddError("INV_WORKERLESS_HOUSING", "Модуль без робітників, стіна або ворота несумісні з житловим модулем.");
             }
 
             if (snapshot.HasWorkerlessSemantics && snapshot.HasProduction)
             {
-                collector.AddError("INV_WORKERLESS_PRODUCTION", "Workerless/Wall/Gate несумісні з ProductionModule.");
+                collector.AddError("INV_WORKERLESS_PRODUCTION", "Модуль без робітників, стіна або ворота несумісні з виробничим модулем.");
             }
         }
     }
@@ -41,18 +41,18 @@ namespace Kruty1918.Moyva.Construction.API
                 var entry = entries[i];
                 if (entry == null)
                 {
-                    context.Collector.AddError("INV_BUILD_COST_NULL", $"ConstructionCost[{i}] має порожній запис.");
+                    context.Collector.AddError("INV_BUILD_COST_NULL", $"Вартість будівництва [{i}] має порожній запис.");
                     continue;
                 }
 
                 if (string.IsNullOrWhiteSpace(entry.ResourceId))
-                    context.Collector.AddError("INV_BUILD_COST_RESOURCE", $"ConstructionCost[{i}] має порожній ResourceId.");
+                    context.Collector.AddError("INV_BUILD_COST_RESOURCE", $"Вартість будівництва [{i}] не має ID ресурсу.");
 
                 if (entry.Amount <= 0)
-                    context.Collector.AddError("INV_BUILD_COST_AMOUNT", $"ConstructionCost[{i}] має Amount <= 0.");
+                    context.Collector.AddError("INV_BUILD_COST_AMOUNT", $"Кількість у вартості будівництва [{i}] має бути більшою за 0.");
 
                 if (!string.IsNullOrWhiteSpace(entry.ResourceId) && !usedResourceIds.Add(entry.ResourceId))
-                    context.Collector.AddWarning("INV_BUILD_COST_DUPLICATE", $"ConstructionCost містить дубльований ресурс '{entry.ResourceId}'.");
+                    context.Collector.AddWarning("INV_BUILD_COST_DUPLICATE", $"Вартість будівництва містить дубльований ресурс «{entry.ResourceId}».");
             }
         }
     }
@@ -69,12 +69,12 @@ namespace Kruty1918.Moyva.Construction.API
             var collector = context.Collector;
             if (string.IsNullOrWhiteSpace(production.ResourceId) && !HasAnyRecipeOutput(production))
             {
-                collector.AddError("INV_PRODUCTION_RESOURCE", "ProductionModule потребує валідний ResourceId або recipe output.");
+                collector.AddError("INV_PRODUCTION_RESOURCE", "Виробничий модуль потребує основний ресурс або вихідний ресурс у рецепті.");
             }
 
             if (snapshot.HasWorkerlessSemantics && production.WorkersRequired > 0)
             {
-                collector.AddWarning("INV_WORKERS_AUTOFIX", "WorkersRequired буде примусово встановлено в 0 через Workerless/Wall/Gate семантику.");
+                collector.AddWarning("INV_WORKERS_AUTOFIX", "Кількість робітників буде примусово встановлена в 0 через модуль без робітників, стіну або ворота.");
             }
         }
 
@@ -107,7 +107,7 @@ namespace Kruty1918.Moyva.Construction.API
             var snapshot = context.Snapshot;
             if (snapshot.HasStorage && snapshot.Storage != null && snapshot.Storage.Capacity < -1)
             {
-                context.Collector.AddError("INV_STORAGE_CAPACITY", "StorageModule capacity має бути -1 або >= 0.");
+                context.Collector.AddError("INV_STORAGE_CAPACITY", "Місткість сховища має бути -1 або невід'ємним значенням.");
             }
         }
     }
@@ -119,7 +119,7 @@ namespace Kruty1918.Moyva.Construction.API
             var snapshot = context.Snapshot;
             if (snapshot.HasFogReveal && snapshot.FogReveal != null && snapshot.FogReveal.RevealRadius <= 0)
             {
-                context.Collector.AddError("INV_FOG_REVEAL_RADIUS", "FogRevealModule потребує RevealRadius > 0.");
+                context.Collector.AddError("INV_FOG_REVEAL_RADIUS", "Модуль відкриття туману потребує радіус більший за 0.");
             }
         }
     }
@@ -135,7 +135,7 @@ namespace Kruty1918.Moyva.Construction.API
             var requirements = snapshot.TileRequirement.Requirements ?? Array.Empty<TileRequirementDefinition>();
             if (requirements.Length == 0)
             {
-                context.Collector.AddError("INV_TILE_REQUIREMENTS_EMPTY", "TileRequirementModule повинен містити хоча б один запис.");
+                context.Collector.AddError("INV_TILE_REQUIREMENTS_EMPTY", "Модуль вимог до тайлів повинен містити хоча б один запис.");
                 return;
             }
 
@@ -152,7 +152,23 @@ namespace Kruty1918.Moyva.Construction.API
 
             if (validCount == 0)
             {
-                context.Collector.AddError("INV_TILE_REQUIREMENTS_INVALID", "TileRequirementModule не містить валідних TileRequirementDefinition (TileId + MinimumTileCount>=1).");
+                context.Collector.AddError("INV_TILE_REQUIREMENTS_INVALID", "Модуль вимог не містить коректного ID тайла з мінімальною кількістю від 1.");
+            }
+        }
+    }
+
+    internal sealed class BuildingModulePerPlayerLimitValidator : IBuildingModuleValidator
+    {
+        public void Validate(BuildingModuleValidationContext context)
+        {
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    context.Definition,
+                    out BuildingPerPlayerLimitModule module)
+                && module.MaxBuildingsPerPlayer < 0)
+            {
+                context.Collector.AddError(
+                    "INV_PER_PLAYER_BUILDING_LIMIT",
+                    "Максимальна кількість будівель на гравця не може бути від'ємною.");
             }
         }
     }

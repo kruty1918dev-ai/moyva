@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.Construction.API
             var collector = new BuildingValidationCollector(definition);
             if (definition == null)
             {
-                collector.AddError("BUILDING_NULL", "BuildingDefinition is null.");
+                collector.AddError("BUILDING_NULL", "BuildingDefinition відсутній.");
                 collector.LogSummary();
                 return collector.Issues;
             }

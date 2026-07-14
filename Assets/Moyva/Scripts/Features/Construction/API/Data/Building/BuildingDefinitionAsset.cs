@@ -8,70 +8,92 @@ namespace Kruty1918.Moyva.Construction.API
     [CreateAssetMenu(menuName = "Moyva/Construction/Building Definition", fileName = "NewBuildingDefinition")]
     public sealed class BuildingDefinitionAsset : ScriptableObject
     {
-        [TabGroup("Basic")]
+        [NonSerialized] private BuildingDefinition _editorRuntimeCache;
+        [NonSerialized] private IReadOnlyList<BuildingValidationIssue> _editorValidationCache;
+        [NonSerialized] private string _editorPreviewSummaryCache;
+
+        [TabGroup("Основне")]
         [InlineProperty]
         [HideLabel]
+        [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingIdentity Identity = new BuildingIdentity();
 
-        [TabGroup("Visual")]
+        [TabGroup("Вигляд")]
         [InlineProperty]
         [HideLabel]
+        [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingPresentation Presentation = new BuildingPresentation();
 
-        [TabGroup("Footprint")]
+        [TabGroup("Зайняті клітинки")]
         [InlineProperty]
         [HideLabel]
+        [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingFootprint Footprint = new BuildingFootprint();
 
-        [TabGroup("Placement")]
+        [TabGroup("Розміщення")]
         [InlineProperty]
         [HideLabel]
+        [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingPlacementRules Placement = new BuildingPlacementRules();
 
-        [TabGroup("Economy")]
+        [TabGroup("Економіка")]
         [InlineProperty]
         [HideLabel]
+        [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingConstructionData Construction = new BuildingConstructionData();
 
-        [TabGroup("Runtime")]
+        [TabGroup("Ігрові параметри")]
         [InlineProperty]
         [HideLabel]
+        [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public BuildingRuntimeStats RuntimeStats = new BuildingRuntimeStats();
 
-        [TabGroup("Modules")]
+        [TabGroup("Модулі")]
         [SerializeReference]
-        [ListDrawerSettings(DraggableItems = true, ShowFoldout = true, DefaultExpandedState = true)]
+        [BuildingModuleList]
+        [ListDrawerSettings(DraggableItems = false, HideAddButton = true, ShowFoldout = true, DefaultExpandedState = true)]
+        [OnValueChanged(nameof(NotifyEditorDataChanged), IncludeChildren = true)]
         public List<BuildingModuleDefinition> Modules = new List<BuildingModuleDefinition>();
 
-        [TabGroup("Preview")]
+        [TabGroup("Огляд")]
         [ShowInInspector]
         [ReadOnly]
-        public string PreviewSummary => BuildPreviewSummary();
+        [LabelText("Підсумок")]
+        [PropertyTooltip("Що робить: Показує стислий опис ролі, модулів і параметрів будівлі.\nВплив у грі: Допомагає швидко перевірити конфігурацію перед запуском гри.")]
+        public string PreviewSummary => _editorPreviewSummaryCache ??= BuildPreviewSummary(GetEditorRuntimeDefinition());
 
-        [TabGroup("Preview")]
+        [TabGroup("Огляд")]
         [ShowInInspector]
         [ReadOnly]
-        public int FogRevealRadius => BuildingDefinitionCapabilities.GetFogRevealRadius(ToRuntimeDefinition());
+        [LabelText("Радіус відкриття туману")]
+        [PropertyTooltip("Що робить: Показує підсумковий радіус відкриття туману війни з активного модуля.\nВплив у грі: Визначає, яку область бачить гравець навколо споруди.")]
+        public int FogRevealRadius => BuildingDefinitionCapabilities.GetFogRevealRadius(GetEditorRuntimeDefinition());
 
-        [TabGroup("Preview")]
+        [TabGroup("Огляд")]
         [ShowInInspector]
         [ReadOnly]
+        [LabelText("Кількість зайнятих клітинок")]
+        [PropertyTooltip("Що робить: Показує фактичну кількість клітинок footprint.\nВплив у грі: Від цієї кількості залежить перевірка місця та блокування сітки.")]
         public int OccupiedCellCount => Footprint?.OccupiedCells?.Length > 0
             ? Footprint.OccupiedCells.Length
             : Mathf.Max(1, Footprint?.Size.x ?? 1) * Mathf.Max(1, Footprint?.Size.y ?? 1);
 
-        [TabGroup("Validation")]
+        [TabGroup("Перевірка")]
         [ShowInInspector]
         [ReadOnly]
         [ListDrawerSettings(ShowFoldout = true, DefaultExpandedState = true)]
-        public IReadOnlyList<BuildingValidationIssue> ValidationIssues => BuildingValidator.Validate(ToRuntimeDefinition());
+        [LabelText("Знайдені проблеми")]
+        [PropertyTooltip("Що робить: Перевіряє обов'язкові поля, модулі та правила будівлі.\nВплив у грі: Помилки тут можуть блокувати або ламати будівництво.")]
+        public IReadOnlyList<BuildingValidationIssue> ValidationIssues
+            => _editorValidationCache ??= BuildingValidator.Validate(GetEditorRuntimeDefinition());
 
         public string Id => Identity != null ? Identity.Id : string.Empty;
         public string DisplayName => Identity != null ? Identity.DisplayName : name;
         public BuildingCategory Category => Identity != null ? Identity.Category : BuildingCategory.Civilian;
 
-        [TabGroup("Validation")]
-        [Button(ButtonSizes.Medium)]
+        [TabGroup("Перевірка")]
+        [Button("Нормалізувати дані", ButtonSizes.Medium)]
+        [PropertyTooltip("Що робить: Заповнює відсутні ID, назву та стандартні вкладені об'єкти.\nВплив у грі: Запобігає помилкам через неповну конфігурацію asset.")]
         public void Normalize()
         {
             EnsureDefaults();
@@ -79,6 +101,17 @@ namespace Kruty1918.Moyva.Construction.API
                 Identity.Id = CreateIdFromName(!string.IsNullOrWhiteSpace(Identity.DisplayName) ? Identity.DisplayName : name);
             if (string.IsNullOrWhiteSpace(Identity.DisplayName))
                 Identity.DisplayName = CreateDisplayNameFromId(Identity.Id);
+            NotifyEditorDataChanged();
+        }
+
+        /// <summary>
+        /// Інвалідує лише editor-preview cache. Не змінює серіалізовані gameplay-дані.
+        /// </summary>
+        public void NotifyEditorDataChanged()
+        {
+            _editorRuntimeCache = null;
+            _editorValidationCache = null;
+            _editorPreviewSummaryCache = null;
         }
 
         public BuildingDefinition ToRuntimeDefinition()
@@ -142,7 +175,13 @@ namespace Kruty1918.Moyva.Construction.API
 
             RuntimeStats.MaxHp = Mathf.Max(1, legacy.MaxHp);
             Modules = CloneModuleList(legacy.Modules);
+            NotifyEditorDataChanged();
         }
+
+        private void OnValidate() => NotifyEditorDataChanged();
+
+        private BuildingDefinition GetEditorRuntimeDefinition()
+            => _editorRuntimeCache ??= ToRuntimeDefinition();
 
         private int ResolvePlacementRadius()
         {
@@ -268,7 +307,7 @@ namespace Kruty1918.Moyva.Construction.API
         private static string CreateDisplayNameFromId(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
-                return "New Building";
+                return "Нова будівля";
 
             var parts = id.Replace('_', '-').Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 0; i < parts.Length; i++)
@@ -282,14 +321,14 @@ namespace Kruty1918.Moyva.Construction.API
             return parts.Length > 0 ? string.Join(" ", parts) : id;
         }
 
-        private string BuildPreviewSummary()
+        private string BuildPreviewSummary(BuildingDefinition runtimeDefinition)
         {
             EnsureDefaults();
-            string prefab = Presentation.Prefab != null ? Presentation.Prefab.name : "<missing prefab>";
+            string prefab = Presentation.Prefab != null ? Presentation.Prefab.name : "<префаб не задано>";
             string footprint = $"{Mathf.Max(1, Footprint.Size.x)}x{Mathf.Max(1, Footprint.Size.y)}";
-            int fog = BuildingDefinitionCapabilities.GetFogRevealRadius(ToRuntimeDefinition());
+            int fog = BuildingDefinitionCapabilities.GetFogRevealRadius(runtimeDefinition);
             int modules = Modules != null ? Modules.Count : 0;
-            return $"{DisplayName} ({Id}) | prefab={prefab}, footprint={footprint}, modules={modules}, fogReveal={fog}";
+            return $"{DisplayName} ({Id}) | префаб: {prefab}, клітинки: {footprint}, модулі: {modules}, відкриття туману: {fog}";
         }
     }
 }

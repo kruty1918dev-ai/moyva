@@ -18,13 +18,13 @@ namespace Kruty1918.Moyva.Construction.API
                 var amount = amounts[i];
                 if (amount == null)
                 {
-                    collector.AddError("RESOURCE_AMOUNT_NULL", $"{label} [{i}] is null.");
+                    collector.AddError("RESOURCE_AMOUNT_NULL", $"{label} [{i}] порожній.");
                     continue;
                 }
 
                 if (string.IsNullOrWhiteSpace(amount.ResourceId))
                 {
-                    collector.AddError("RESOURCE_ID_MISSING", $"{label} [{i}] has no resource ID.");
+                    collector.AddError("RESOURCE_ID_MISSING", $"{label} [{i}] не має ID ресурсу.");
                 }
                 else
                 {
@@ -32,7 +32,7 @@ namespace Kruty1918.Moyva.Construction.API
                 }
 
                 if (amount.Amount <= 0)
-                    collector.AddError("RESOURCE_AMOUNT_INVALID", $"{label} [{i}] has amount <= 0.");
+                    collector.AddError("RESOURCE_AMOUNT_INVALID", $"Кількість у {label} [{i}] має бути більшою за 0.");
             }
         }
 
@@ -46,7 +46,7 @@ namespace Kruty1918.Moyva.Construction.API
                 return;
 
             if (!context.ResourceIds.Contains(resourceId))
-                collector.AddError("RESOURCE_UNKNOWN", $"{label} is not present in the resource database.");
+                collector.AddError("RESOURCE_UNKNOWN", $"{label} відсутній у базі ресурсів.");
         }
     }
 }

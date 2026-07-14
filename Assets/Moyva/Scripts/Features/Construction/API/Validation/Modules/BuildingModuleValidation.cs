@@ -17,6 +17,7 @@ namespace Kruty1918.Moyva.Construction.API
                 new BuildingModuleStorageValidator(),
                 new BuildingModuleFogRevealValidator(),
                 new BuildingModuleTileRequirementValidator(),
+                new BuildingModulePerPlayerLimitValidator(),
                 new BuildingModuleSingletonValidator(),
             });
 

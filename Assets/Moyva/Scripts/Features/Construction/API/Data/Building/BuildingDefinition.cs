@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Grid.API;
+using Sirenix.OdinInspector;
 
 namespace Kruty1918.Moyva.Construction.API
 {
@@ -13,14 +14,17 @@ namespace Kruty1918.Moyva.Construction.API
     {
         [Tooltip("ID потрібного тайла або біому.\nСаме це поле каже системі, який тип місцевості шукати навколо будівлі.\nПриклади: forest-dense для лісу, water для води, grass для відкритої рівнини.")]
         [TileId]
+        [LabelText("ID тайла")]
         public string TileId;
 
         [Tooltip("Радіус пошуку тайла в клітинках.\nВизначає, наскільки далеко від будівлі дозволено шукати потрібну місцевість.\nЗбільшуйте значення для споруд, що використовують широку околицю, і зменшуйте для локальних залежностей.")]
         [Min(1)]
+        [LabelText("Радіус пошуку")]
         public int Radius = 3;
 
         [Tooltip("Мінімальна кількість клітинок цього типу, яку треба знайти в заданому радіусі.\nПоле задає поріг достатності місцевості для роботи будівлі.\nНаприклад, мисливська хатина може вимагати кілька лісових клітин, а місту вистачає однієї водної.")]
         [Min(1)]
+        [LabelText("Мінімальна кількість")]
         public int MinimumTileCount = 1;
     }
 
@@ -32,10 +36,12 @@ namespace Kruty1918.Moyva.Construction.API
         {
             [Tooltip("ID ресурсу з EconomyDatabaseSO, який потрібен для будівництва.\nВибирається зі списку ресурсів через dropdown.")]
             [ResourceId]
+            [LabelText("Ресурс")]
             public string ResourceId;
 
             [Tooltip("Кількість ресурсу, яка витрачається на будівництво 1 одиниці цієї споруди.")]
             [Min(1)]
+            [LabelText("Кількість")]
             public int Amount = 1;
         }
 

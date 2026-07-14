@@ -77,7 +77,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 buildingId,
                 position,
                 ignoredPendingPosition,
-                includeResources: true);
+                includeResources: true,
+                includePendingPlacements: false);
             return _placementQuery.EvaluatePlacement(request).IsValid;
         }
 

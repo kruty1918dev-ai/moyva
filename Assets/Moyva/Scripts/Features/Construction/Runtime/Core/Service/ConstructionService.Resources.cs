@@ -82,9 +82,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string buildingId,
             string ownerId,
             Vector2Int? ignoredPendingPosition,
-            out string reason)
+            out string reason,
+            bool includePendingPlacements = true)
         {
-            var projection = BuildResourceProjectionForPlacement(position, buildingId, ownerId, ignoredPendingPosition);
+            var projection = BuildResourceProjectionForPlacement(
+                position,
+                buildingId,
+                ownerId,
+                ignoredPendingPosition,
+                includePendingPlacements);
             if (!projection.HasDeficit)
             {
                 reason = null;
@@ -143,7 +149,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Vector2Int position,
             string buildingId,
             string ownerId,
-            Vector2Int? ignoredPendingPosition)
+            Vector2Int? ignoredPendingPosition,
+            bool includePendingPlacements = true)
         {
             string normalizedOwnerId = NormalizeOwnerId(ownerId);
             var costs = BuildConstructionCostMap(buildingId);
@@ -177,7 +184,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (ShouldUseOwnerPoolConstructionFunding(normalizedOwnerId))
             {
                 var ownerPoolAvailable = _economyInfoMediator.GetOwnerPoolResourceTotals(normalizedOwnerId);
-                var ownerPoolReserved = BuildReservedOwnerPoolCosts(normalizedOwnerId, ignoredPendingPosition);
+                var ownerPoolReserved = includePendingPlacements
+                    ? BuildReservedOwnerPoolCosts(normalizedOwnerId, ignoredPendingPosition)
+                    : new Dictionary<string, float>(StringComparer.Ordinal);
                 AddCosts(ownerPoolReserved, costs);
 
                 var ownerPoolBalances = new List<ConstructionResourceBalance>(ownerPoolReserved.Count);
@@ -223,7 +232,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             var available = _economyInfoMediator.GetSettlementResourceTotals(settlement.SettlementId);
-            var reserved = BuildReservedConstructionCosts(settlement.SettlementId, ownerId, ignoredPendingPosition);
+            var reserved = includePendingPlacements
+                ? BuildReservedConstructionCosts(settlement.SettlementId, ownerId, ignoredPendingPosition)
+                : new Dictionary<string, float>(StringComparer.Ordinal);
             AddCosts(reserved, costs);
 
             var balances = new List<ConstructionResourceBalance>(reserved.Count);

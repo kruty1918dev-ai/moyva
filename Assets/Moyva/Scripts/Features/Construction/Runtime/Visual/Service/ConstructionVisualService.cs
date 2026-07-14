@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IConstructionPlacementRulesProvider _placementRules;
         private int _gridInvalidationRadius;
         private int _localGridInvalidationRadius;
+        private string _selectedBuildingId;
 
         [Inject]
         public ConstructionVisualService(
@@ -81,10 +82,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private void SubscribeSignals()
         {
             _signalBus.Subscribe<BuildingPreviewChangedSignal>(_previewSignals.Handle);
-            _signalBus.Subscribe<BuildingPreviewChangedSignal>(HandleBuildGridStateChanged);
             _signalBus.Subscribe<BuildingSelectionChangedSignal>(HandleBuildGridStateChanged);
             _signalBus.Subscribe<BuildingPreviewMovedSignal>(_previewSignals.Handle);
-            _signalBus.Subscribe<BuildingPreviewMovedSignal>(HandleBuildGridStateChanged);
             _signalBus.Subscribe<BuildingPreviewDragVisualSignal>(_previewSignals.Handle);
             _signalBus.Subscribe<BuildGridHoverChangedSignal>(_previewSignals.Handle);
             _signalBus.Subscribe<BuildingCancelledSignal>(_previewSignals.Handle);
@@ -105,10 +104,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private void UnsubscribeSignals()
         {
             _signalBus.TryUnsubscribe<BuildingPreviewChangedSignal>(_previewSignals.Handle);
-            _signalBus.TryUnsubscribe<BuildingPreviewChangedSignal>(HandleBuildGridStateChanged);
             _signalBus.TryUnsubscribe<BuildingSelectionChangedSignal>(HandleBuildGridStateChanged);
             _signalBus.TryUnsubscribe<BuildingPreviewMovedSignal>(_previewSignals.Handle);
-            _signalBus.TryUnsubscribe<BuildingPreviewMovedSignal>(HandleBuildGridStateChanged);
             _signalBus.TryUnsubscribe<BuildingPreviewDragVisualSignal>(_previewSignals.Handle);
             _signalBus.TryUnsubscribe<BuildGridHoverChangedSignal>(_previewSignals.Handle);
             _signalBus.TryUnsubscribe<BuildingCancelledSignal>(_previewSignals.Handle);
@@ -131,21 +128,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _buildGridOverlay.ResetWorld();
         }
 
-        private void HandleBuildGridStateChanged(BuildingPreviewChangedSignal signal)
-        {
-            if (signal.PreviewState == BuildingPreviewState.Blocked)
-                return;
-
-            _buildGridOverlay.MarkDirty(signal.Position, ResolveGridInvalidationRadius(signal.BuildingId));
-        }
-
-        private void HandleBuildGridStateChanged(BuildingPreviewMovedSignal signal)
-        {
-            int radius = ResolveGridInvalidationRadius(signal.BuildingId);
-            _buildGridOverlay.MarkDirty(signal.FromPosition, radius);
-            _buildGridOverlay.MarkDirty(signal.ToPosition, radius);
-        }
-
         private void HandleBuildGridStateChanged(BuildingCancelledSignal _)
         {
             _previewVisuals.ClearGridHover();
@@ -153,6 +135,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void HandleBuildGridStateChanged(BuildingSelectionChangedSignal signal)
         {
+            _selectedBuildingId = string.IsNullOrWhiteSpace(signal.BuildingId)
+                ? null
+                : signal.BuildingId.Trim();
             _previewVisuals.ClearGridHover();
             _buildGridOverlay.SetSelectedBuilding(signal.BuildingId, signal.IsDemolishMode);
         }
@@ -197,9 +182,27 @@ namespace Kruty1918.Moyva.Construction.Runtime
             BuildingDefinition definition = string.IsNullOrWhiteSpace(changedBuildingId)
                 ? null
                 : _buildingRegistry?.GetById(changedBuildingId);
-            return definition != null && BuildingPlacementEvaluator.IsInfluenceCenter(definition)
+            return definition != null
+                   && BuildingPlacementEvaluator.IsInfluenceCenter(definition)
+                   && SelectedBuildingDependsOnInfluence()
                 ? _gridInvalidationRadius
                 : _localGridInvalidationRadius;
+        }
+
+        private bool SelectedBuildingDependsOnInfluence()
+        {
+            BuildingDefinition selected = string.IsNullOrWhiteSpace(_selectedBuildingId)
+                ? null
+                : _buildingRegistry?.GetById(_selectedBuildingId);
+            if (selected == null)
+                return false;
+
+            if (selected.UseCustomTownHallRules)
+                return selected.RequireTownHallInRange || selected.BlockIfTownHallAlreadyInRange;
+
+            // Legacy definitions implicitly require a center for ordinary buildings
+            // and prevent influence-center overlap for centers.
+            return true;
         }
 
         private void ResolveGridInvalidationRadii(out int localRadius, out int influenceRadius)

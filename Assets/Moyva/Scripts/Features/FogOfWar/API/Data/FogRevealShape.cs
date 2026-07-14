@@ -8,16 +8,19 @@ namespace Kruty1918.Moyva.FogOfWar.API
         /// <summary>
         /// Коло в дискретній сітці з м'якою діагональною аппроксимацією.
         /// </summary>
+        [UnityEngine.InspectorName("Піксельне коло")]
         PixelCircle = 0,
 
         /// <summary>
         /// Ромб за Manhattan distance.
         /// </summary>
+        [UnityEngine.InspectorName("Ромб")]
         Diamond = 1,
 
         /// <summary>
         /// Квадрат за Chebyshev distance.
         /// </summary>
+        [UnityEngine.InspectorName("Квадрат")]
         Square = 2,
     }
 }

@@ -11,7 +11,8 @@ namespace Kruty1918.Moyva.Construction.API
             Vector2Int? ignoredOccupiedPosition = null,
             bool includeResources = false,
             bool includeDetails = false,
-            string ownerId = null)
+            string ownerId = null,
+            bool includePendingPlacements = true)
         {
             BuildingId = buildingId;
             Position = position;
@@ -20,6 +21,7 @@ namespace Kruty1918.Moyva.Construction.API
             IncludeResources = includeResources;
             IncludeDetails = includeDetails;
             OwnerId = ownerId;
+            IncludePendingPlacements = includePendingPlacements;
         }
 
         public string BuildingId { get; }
@@ -29,5 +31,10 @@ namespace Kruty1918.Moyva.Construction.API
         public bool IncludeResources { get; }
         public bool IncludeDetails { get; }
         public string OwnerId { get; }
+        /// <summary>
+        /// When false, evaluates the persistent world state without temporary placement
+        /// previews. Authoritative placement and confirmation requests keep the default true.
+        /// </summary>
+        public bool IncludePendingPlacements { get; }
     }
 }

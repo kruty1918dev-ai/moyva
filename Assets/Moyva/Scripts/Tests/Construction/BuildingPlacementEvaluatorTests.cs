@@ -95,6 +95,23 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
+        public void Evaluate_InfluenceCenter_AllowsNearbyCenter_WhenOverlapRuleIsDisabled()
+        {
+            BuildingDefinition center = TownHall("town-hall", 2);
+            center.BlockIfTownHallAlreadyInRange = false;
+            var registry = new TestBuildingRegistry(center);
+            var occupants = new Dictionary<Vector2Int, string>
+            {
+                [Vector2Int.zero] = center.Id,
+            };
+
+            var result = Evaluate(registry, center.Id, Vector2Int.right, occupants);
+
+            Assert.IsTrue(result.IsValid);
+            Assert.IsFalse(result.InfluenceZoneBlocked);
+        }
+
+        [Test]
         public void Evaluate_PendingInfluenceCenter_CoversSameSessionBuilding()
         {
             var registry = new TestBuildingRegistry(TownHall("town-hall", 3), House("house"));

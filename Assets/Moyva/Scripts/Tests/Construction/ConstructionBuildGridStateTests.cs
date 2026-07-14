@@ -35,10 +35,12 @@ namespace Kruty1918.Moyva.Tests.Construction
         {
             public readonly HashSet<Vector2Int> ValidPositions = new();
             public int CallCount { get; private set; }
+            public ConstructionPlacementQueryRequest LastRequest { get; private set; }
 
             public ConstructionPlacementQueryResult EvaluatePlacement(ConstructionPlacementQueryRequest request)
             {
                 CallCount++;
+                LastRequest = request;
                 bool valid = ValidPositions.Contains(request.Position);
                 return new ConstructionPlacementQueryResult(valid, true, false);
             }
@@ -67,6 +69,9 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.AreEqual(ConstructionBuildGridTileVisualState.Valid, filter.ResolveVisualState(valid));
             Assert.AreEqual(ConstructionBuildGridTileVisualState.Invalid, filter.ResolveVisualState(invalid));
             Assert.AreEqual(2, query.CallCount);
+            Assert.IsFalse(
+                query.LastRequest.IncludePendingPlacements,
+                "Base grid must evaluate persistent rules without temporary preview placements.");
 
             Assert.IsTrue(state.SetSelection(null, isDemolishMode: false));
             Assert.AreEqual(BuildModeGridState.General, state.State);

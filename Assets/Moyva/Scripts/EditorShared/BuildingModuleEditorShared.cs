@@ -9,28 +9,13 @@ namespace Kruty1918.Moyva.Editor.Shared
 {
     public static class BuildingModuleEditorShared
     {
-        private sealed class ModuleOption
-        {
-            public ModuleOption(string typeName, string displayName, string description, Func<BuildingModuleDefinition> factory)
-            {
-                TypeName = typeName;
-                DisplayName = displayName;
-                Description = description;
-                Factory = factory;
-            }
-
-            public string TypeName { get; }
-            public string DisplayName { get; }
-            public string Description { get; }
-            public Func<BuildingModuleDefinition> Factory { get; }
-        }
-
         private sealed class ModulePickerPopup : PopupWindowContent
         {
             private readonly SerializedProperty _modulesProp;
             private readonly Action _onChanged;
             private readonly List<BuildingModuleDefinition> _currentModules;
             private Vector2 _scroll;
+            private string _search = string.Empty;
 
             public ModulePickerPopup(SerializedProperty modulesProp, Action onChanged)
             {
@@ -47,13 +32,30 @@ namespace Kruty1918.Moyva.Editor.Shared
             public override void OnGUI(Rect rect)
             {
                 EditorGUILayout.LabelField("Оберіть модуль", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField("Сіризовані модулі заблоковані через конфлікти. Наведіть курсор на пункт для опису.", EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.LabelField("Недоступні модулі заблоковані з поясненням. Пошук працює українською та за технічною назвою.", EditorStyles.wordWrappedMiniLabel);
                 EditorGUILayout.Space(6f);
 
+                _search = EditorGUILayout.TextField(
+                    new GUIContent("Пошук", "Шукає за українською назвою, описом і C#-типом модуля."),
+                    _search);
+
                 _scroll = EditorGUILayout.BeginScrollView(_scroll);
-                for (int i = 0; i < ModuleOptions.Length; i++)
+                IReadOnlyList<BuildingModuleEditorDescriptor> options = BuildingModuleEditorCatalog.Options;
+                string lastCategory = null;
+                for (int i = 0; i < options.Count; i++)
                 {
-                    DrawOption(ModuleOptions[i]);
+                    BuildingModuleEditorDescriptor option = options[i];
+                    if (!option.MatchesSearch(_search))
+                        continue;
+
+                    if (!string.Equals(lastCategory, option.Category, StringComparison.Ordinal))
+                    {
+                        lastCategory = option.Category;
+                        EditorGUILayout.Space(4f);
+                        EditorGUILayout.LabelField(lastCategory, EditorStyles.boldLabel);
+                    }
+
+                    DrawOption(option);
                 }
                 EditorGUILayout.EndScrollView();
 
@@ -64,9 +66,9 @@ namespace Kruty1918.Moyva.Editor.Shared
                 EditorGUILayout.HelpBox(tooltip, MessageType.None);
             }
 
-            private void DrawOption(ModuleOption option)
+            private void DrawOption(BuildingModuleEditorDescriptor option)
             {
-                string conflictReason = GetModuleConflictReason(option);
+                string conflictReason = BuildingModuleEditorCatalog.GetConflictReason(_currentModules, option.ModuleType);
                 bool isConflicted = !string.IsNullOrEmpty(conflictReason);
 
                 EditorGUILayout.BeginVertical("box");
@@ -80,7 +82,7 @@ namespace Kruty1918.Moyva.Editor.Shared
                 string tooltip = isConflicted ? $"{option.Description}\n\n⚠️ Конфлікт: {conflictReason}" : option.Description;
                 if (GUILayout.Button(new GUIContent(displayText, tooltip), EditorStyles.miniButton))
                 {
-                    AddModule(_modulesProp, option.Factory(), _onChanged);
+                    AddModule(_modulesProp, option.Create(), _onChanged);
                     editorWindow.Close();
                 }
 
@@ -95,51 +97,6 @@ namespace Kruty1918.Moyva.Editor.Shared
                 EditorGUILayout.Space(2f);
             }
 
-            private string GetModuleConflictReason(ModuleOption option)
-            {
-                // Перевіряємо правила сумісності
-                bool hasTownHall = HasModule<TownHallBuildingModule>();
-                bool hasHousing = HasModule<HousingBuildingModule>();
-                bool hasWorkerless = HasModule<WorkerlessBuildingModule>();
-                bool hasWall = HasModule<WallBuildingModule>();
-                bool hasGate = HasModule<GateBuildingModule>();
-                bool hasProduction = HasModule<ProductionBuildingModule>();
-
-                switch (option.TypeName)
-                {
-                    case "TownHallBuildingModule":
-                        if (hasHousing) return "не може бути з Housing";
-                        break;
-                    
-                    case "HousingBuildingModule":
-                        if (hasTownHall) return "не може бути з TownHall";
-                        if (hasWorkerless || hasWall || hasGate) return "не може бути з Workerless/Wall/Gate";
-                        break;
-                    
-                    case "WorkerlessBuildingModule":
-                    case "WallBuildingModule":
-                    case "GateBuildingModule":
-                        if (hasHousing) return "не може бути з Housing";
-                        if (hasProduction) return "не може бути з Production";
-                        break;
-                    
-                    case "ProductionBuildingModule":
-                        if (hasWorkerless || hasWall || hasGate) return "не може бути з Workerless/Wall/Gate";
-                        break;
-                }
-
-                return null;
-            }
-
-            private bool HasModule<T>() where T : BuildingModuleDefinition
-            {
-                if (_currentModules == null) return false;
-                for (int i = 0; i < _currentModules.Count; i++)
-                {
-                    if (_currentModules[i] is T) return true;
-                }
-                return false;
-            }
         }
 
         private static List<BuildingModuleDefinition> ExtractCurrentModules(SerializedProperty modulesProp)
@@ -157,60 +114,6 @@ namespace Kruty1918.Moyva.Editor.Shared
 
             return result;
         }
-
-        private static readonly ModuleOption[] ModuleOptions =
-        {
-            new ModuleOption(
-                "HousingBuildingModule",
-                "Житловий модуль",
-                "Додає місткість житла та, за потреби, підтримку гарнізону для населення.",
-                () => new HousingBuildingModule()),
-            new ModuleOption(
-                "TownHallBuildingModule",
-                "Модуль ратуші",
-                "Позначає будівлю як центр поселення та задає радіус його дії.",
-                () => new TownHallBuildingModule()),
-            new ModuleOption(
-                "CastleBuildingModule",
-                "Модуль замку",
-                "Позначає окрему центральну точку з гарнізоном і радіусом виключення.",
-                () => new CastleBuildingModule()),
-            new ModuleOption(
-                "WarehouseBuildingModule",
-                "Модуль складу",
-                "Надає будівлі функцію зберігання нехарчових ресурсів.",
-                () => new WarehouseBuildingModule()),
-            new ModuleOption(
-                "BarnBuildingModule",
-                "Модуль амбару",
-                "Надає будівлі функцію зберігання харчових ресурсів.",
-                () => new BarnBuildingModule()),
-            new ModuleOption(
-                "ProductionBuildingModule",
-                "Виробничий модуль",
-                "Додає виробництво ресурсу, кількість робітників і пріоритет будівлі.",
-                () => new ProductionBuildingModule()),
-            new ModuleOption(
-                "TileRequirementBuildingModule",
-                "Модуль вимог до тайлів",
-                "Додає перевірку навколишніх тайлів: біом, радіус і мінімальну кількість.",
-                () => new TileRequirementBuildingModule()),
-            new ModuleOption(
-                "WorkerlessBuildingModule",
-                "Модуль без робітників",
-                "Позначає будівлю як таку, що працює без призначення населення.",
-                () => new WorkerlessBuildingModule()),
-            new ModuleOption(
-                "WallBuildingModule",
-                "Модуль стіни",
-                "Надає будівлі логіку стіни з міцністю та прапором прохідності.",
-                () => new WallBuildingModule()),
-            new ModuleOption(
-                "GateBuildingModule",
-                "Модуль воріт",
-                "Надає будівлі логіку воріт з міцністю та швидкістю відкриття.",
-                () => new GateBuildingModule()),
-        };
 
         public static void DrawModulesSection(SerializedProperty modulesProp, GUIStyle sectionStyle = null, Action onChanged = null)
         {
@@ -378,11 +281,9 @@ namespace Kruty1918.Moyva.Editor.Shared
             if (string.IsNullOrWhiteSpace(typeName))
                 return "Модуль";
 
-            for (int i = 0; i < ModuleOptions.Length; i++)
-            {
-                if (string.Equals(ModuleOptions[i].TypeName, typeName, StringComparison.Ordinal))
-                    return ModuleOptions[i].DisplayName;
-            }
+            BuildingModuleEditorDescriptor descriptor = BuildingModuleEditorCatalog.Find(typeName);
+            if (descriptor != null)
+                return descriptor.DisplayName;
 
             return typeName;
         }

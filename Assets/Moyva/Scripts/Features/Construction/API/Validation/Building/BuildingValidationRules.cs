@@ -8,10 +8,10 @@ namespace Kruty1918.Moyva.Construction.API
         public void Validate(BuildingDefinitionValidationContext context)
         {
             if (string.IsNullOrWhiteSpace(context.Definition.Id))
-                context.Collector.AddError("ID_MISSING", "Building ID is required.");
+                context.Collector.AddError("ID_MISSING", "ID будівлі є обов'язковим.");
 
             if (string.IsNullOrWhiteSpace(context.Definition.DisplayName))
-                context.Collector.AddWarning("DISPLAY_NAME_MISSING", "Display name is empty.");
+                context.Collector.AddWarning("DISPLAY_NAME_MISSING", "Назва будівлі для гравця не задана.");
         }
     }
 
@@ -20,10 +20,10 @@ namespace Kruty1918.Moyva.Construction.API
         public void Validate(BuildingDefinitionValidationContext context)
         {
             if (context.Definition.Prefab == null)
-                context.Collector.AddError("PREFAB_MISSING", $"Building '{context.Collector.BuildingLabel}' has no prefab.");
+                context.Collector.AddError("PREFAB_MISSING", $"Будівля «{context.Collector.BuildingLabel}» не має префаба.");
 
             if (context.Definition.Icon == null && context.Definition.RuntimePreview == null)
-                context.Collector.AddWarning("ICON_MISSING", $"Building '{context.Collector.BuildingLabel}' has no icon/runtime preview.");
+                context.Collector.AddWarning("ICON_MISSING", $"Будівля «{context.Collector.BuildingLabel}» не має іконки або runtime-прев'ю.");
         }
     }
 
@@ -41,28 +41,28 @@ namespace Kruty1918.Moyva.Construction.API
                 var entry = costs[i];
                 if (entry == null)
                 {
-                    context.Collector.AddError("COST_NULL", $"Cost entry [{i}] is null.");
+                    context.Collector.AddError("COST_NULL", $"Запис вартості [{i}] порожній.");
                     continue;
                 }
 
                 if (string.IsNullOrWhiteSpace(entry.ResourceId))
                 {
-                    context.Collector.AddError("COST_RESOURCE_MISSING", $"Cost entry [{i}] has no resource ID.");
+                    context.Collector.AddError("COST_RESOURCE_MISSING", $"Запис вартості [{i}] не має ID ресурсу.");
                 }
                 else
                 {
                     if (!seen.Add(entry.ResourceId))
-                        context.Collector.AddWarning("COST_RESOURCE_DUPLICATE", $"Resource '{entry.ResourceId}' appears more than once in construction cost.");
+                        context.Collector.AddWarning("COST_RESOURCE_DUPLICATE", $"Ресурс «{entry.ResourceId}» повторюється у вартості будівництва.");
 
                     BuildingResourceValidationUtility.ValidateResourceId(
                         context.Options,
                         entry.ResourceId,
-                        $"Cost resource '{entry.ResourceId}'",
+                        $"Ресурс вартості «{entry.ResourceId}»",
                         context.Collector);
                 }
 
                 if (entry.Amount <= 0)
-                    context.Collector.AddError("COST_AMOUNT_INVALID", $"Cost entry [{i}] has amount <= 0.");
+                    context.Collector.AddError("COST_AMOUNT_INVALID", $"Кількість у записі вартості [{i}] має бути більшою за 0.");
             }
         }
     }
@@ -73,7 +73,7 @@ namespace Kruty1918.Moyva.Construction.API
         {
             if (context.Definition.RequireTownHallInRange && context.Definition.BlockIfTownHallAlreadyInRange)
             {
-                context.Collector.AddWarning("PLACEMENT_RULE_CONFLICT", "Building both requires and blocks a settlement center in range.");
+                context.Collector.AddWarning("PLACEMENT_RULE_CONFLICT", "Будівля одночасно потребує центр поселення в радіусі та блокується ним.");
             }
         }
     }
@@ -83,7 +83,7 @@ namespace Kruty1918.Moyva.Construction.API
         public void Validate(BuildingDefinitionValidationContext context)
         {
             if (context.Definition.MaxHp <= 0)
-                context.Collector.AddError("HP_INVALID", "MaxHp must be greater than 0.");
+                context.Collector.AddError("HP_INVALID", "Максимальна міцність має бути більшою за 0.");
         }
     }
 
@@ -100,7 +100,7 @@ namespace Kruty1918.Moyva.Construction.API
 
             if (context.Options.Registry.GetById(context.Definition.Id) == null)
             {
-                context.Collector.AddWarning("REGISTRY_MISSING_BUILDING", $"Registry does not include building '{context.Definition.Id}'.");
+                context.Collector.AddWarning("REGISTRY_MISSING_BUILDING", $"Реєстр не містить будівлю «{context.Definition.Id}».");
             }
         }
     }
@@ -122,7 +122,7 @@ namespace Kruty1918.Moyva.Construction.API
                         BuildingResourceValidationUtility.ValidateResourceId(
                             context.Options,
                             production.ResourceId,
-                            $"Production resource '{production.ResourceId}'",
+                            $"Ресурс виробництва «{production.ResourceId}»",
                             context.Collector);
                     }
 
@@ -136,7 +136,7 @@ namespace Kruty1918.Moyva.Construction.API
                         BuildingResourceValidationUtility.ValidateResourceId(
                             context.Options,
                             storage.AcceptedResourceIds[i],
-                            $"Storage resource '{storage.AcceptedResourceIds[i]}'",
+                            $"Ресурс сховища «{storage.AcceptedResourceIds[i]}»",
                             context.Collector);
                     }
                 }
@@ -155,18 +155,18 @@ namespace Kruty1918.Moyva.Construction.API
                 var recipe = recipes[recipeIndex];
                 if (recipe == null)
                 {
-                    context.Collector.AddError("RECIPE_NULL", $"Recipe [{recipeIndex}] is null.");
+                    context.Collector.AddError("RECIPE_NULL", $"Рецепт [{recipeIndex}] порожній.");
                     continue;
                 }
 
                 if (recipe.TurnsPerCycle <= 0)
-                    context.Collector.AddError("RECIPE_TURNS_INVALID", $"Recipe '{recipe.RecipeId}' has TurnsPerCycle <= 0.");
+                    context.Collector.AddError("RECIPE_TURNS_INVALID", $"Рецепт «{recipe.RecipeId}» повинен тривати щонайменше 1 хід.");
 
-                BuildingResourceValidationUtility.ValidateResourceAmounts(recipe.Inputs, context.Options, $"Recipe '{recipe.RecipeId}' input", context.Collector);
-                BuildingResourceValidationUtility.ValidateResourceAmounts(recipe.Outputs, context.Options, $"Recipe '{recipe.RecipeId}' output", context.Collector);
+                BuildingResourceValidationUtility.ValidateResourceAmounts(recipe.Inputs, context.Options, $"Вхід рецепта «{recipe.RecipeId}»", context.Collector);
+                BuildingResourceValidationUtility.ValidateResourceAmounts(recipe.Outputs, context.Options, $"Вихід рецепта «{recipe.RecipeId}»", context.Collector);
 
                 if (recipe.Outputs == null || recipe.Outputs.Count == 0)
-                    context.Collector.AddWarning("RECIPE_OUTPUT_EMPTY", $"Recipe '{recipe.RecipeId}' has no outputs.");
+                    context.Collector.AddWarning("RECIPE_OUTPUT_EMPTY", $"Рецепт «{recipe.RecipeId}» не має вихідних ресурсів.");
             }
         }
     }
