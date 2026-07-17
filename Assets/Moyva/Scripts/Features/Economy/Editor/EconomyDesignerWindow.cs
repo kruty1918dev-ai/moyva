@@ -37,6 +37,11 @@ namespace Kruty1918.Moyva.Economy.Editor
             Simulation = 14,
             EntitiesSettings = 15,
             MapObjects = 16,
+            Settlements = 18,
+            Warehouses = 19,
+            Production = 20,
+            Caravans = 21,
+            AiRules = 22,
         }
 
         private enum TabGroup
@@ -58,6 +63,11 @@ namespace Kruty1918.Moyva.Economy.Editor
         private static readonly Dictionary<Tab, string> TabLabels = new Dictionary<Tab, string>
         {
             { Tab.Resources, "Ресурси" },
+            { Tab.Settlements, "Поселення" },
+            { Tab.Warehouses, "Склади" },
+            { Tab.Production, "Виробництво" },
+            { Tab.Caravans, "Каравани" },
+            { Tab.AiRules, "ШІ Правила" },
             { Tab.StartingEconomy, "Стартова економіка" },
             { Tab.OverridableParameters, "Оверайди" },
             { Tab.SettlementRules, "Поселення" },
@@ -79,7 +89,21 @@ namespace Kruty1918.Moyva.Economy.Editor
 
         private static readonly Dictionary<TabGroup, Tab[]> TabsByGroup = new Dictionary<TabGroup, Tab[]>
         {
-            { TabGroup.Дані, new[] { Tab.Resources, Tab.StartingEconomy, Tab.OverridableParameters, Tab.MapObjects } },
+            {
+                TabGroup.Дані,
+                new[]
+                {
+                    Tab.Resources,
+                    Tab.Settlements,
+                    Tab.Warehouses,
+                    Tab.Production,
+                    Tab.Caravans,
+                    Tab.AiRules,
+                    Tab.StartingEconomy,
+                    Tab.OverridableParameters,
+                    Tab.MapObjects
+                }
+            },
             {
                 TabGroup.Правила,
                 new[]
@@ -580,6 +604,51 @@ namespace Kruty1918.Moyva.Economy.Editor
                         "_resources",
                         resource => resource == null ? string.Empty : resource.Id,
                         "Resource");
+                    break;
+
+                case Tab.Settlements:
+                    DrawEntityTab<EconomySettlementDefinition>(
+                        "Поселення",
+                        Tips.SettlementsTab,
+                        "_settlements",
+                        settlement => settlement == null ? string.Empty : settlement.SettlementId,
+                        "SettlementDefinition");
+                    break;
+
+                case Tab.Warehouses:
+                    DrawEntityTab<EconomyWarehousePolicy>(
+                        "Склади",
+                        Tips.WarehousesTab,
+                        "_warehousePolicies",
+                        policy => policy == null ? string.Empty : policy.WarehouseType.ToString(),
+                        "WarehousePolicy");
+                    break;
+
+                case Tab.Production:
+                    DrawEntityTab<EconomyProductionProfile>(
+                        "Виробництво",
+                        Tips.ProductionTab,
+                        "_productionProfiles",
+                        profile => profile == null ? string.Empty : $"{profile.BuildingId} ({profile.RecipeId})",
+                        "ProductionProfile");
+                    break;
+
+                case Tab.Caravans:
+                    DrawEntityTab<EconomyCaravanTemplate>(
+                        "Каравани",
+                        Tips.CaravansTab,
+                        "_caravanTemplates",
+                        caravan => caravan == null ? string.Empty : caravan.TemplateId,
+                        "CaravanTemplate");
+                    break;
+
+                case Tab.AiRules:
+                    DrawEntityTab<EconomyAiRuleProfile>(
+                        "ШІ Правила",
+                        Tips.AiRulesTab,
+                        "_aiRuleProfiles",
+                        profile => profile == null ? string.Empty : profile.ProfileId,
+                        "AiRuleProfile");
                     break;
 
                 case Tab.OverridableParameters:
