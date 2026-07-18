@@ -59,6 +59,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private void GenerateInternal(IMoyvaTwcGraphBindingContext context, int seed)
         {
+            seed = GlobalSeed.InitializeDeterministic(seed);
+
             if (context.CompileBeforeGenerate)
                 _compiler.Compile(context, seed, false);
 

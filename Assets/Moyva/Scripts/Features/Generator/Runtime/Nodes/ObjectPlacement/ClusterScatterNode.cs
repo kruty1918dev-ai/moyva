@@ -6,15 +6,15 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Cluster Scatter", "Object Placement", "Creates Bad North-style grouped scatter candidates from a placement mask.")]
+    [NodeInfo("Кластерний розкид", "Розміщення об'єктів", "Створює групові кандидати розкиду у стилі Bad North з маски розміщення.")]
     public sealed class ClusterScatterNode : NodeBase, IPreviewableNode
     {
         [SerializeField]
-        [Tooltip("Cluster shape and density settings.")]
+        [Tooltip("Налаштування форми та густини кластерів.")]
         private ClusterSettings _cluster = new();
 
         [SerializeField]
-        [Tooltip("Per-candidate scatter rules. Density and min distance are applied inside each cluster.")]
+        [Tooltip("Правила розкиду для кожного кандидата. Густина та мінімальна відстань застосовуються всередині кожного кластеру.")]
         private ObjectPlacementRule _rule = new()
         {
             Density = 0.75f,
@@ -26,23 +26,23 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
         [NonSerialized] private ScatterMask _lastMask;
         [NonSerialized] private List<ScatterCandidate> _lastCandidates;
 
-        public override string Title => "Cluster Scatter";
-        public override string Category => "Object Placement";
+        public override string Title => "Кластерний розкид";
+        public override string Category => "Розміщення об'єктів";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<ScatterMask>("Scatter Mask")
+            PortDefinition.Input<ScatterMask>("Маска розкиду")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<List<ScatterCandidate>>("Candidates")
+            PortDefinition.Output<List<ScatterCandidate>>("Кандидати")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
             if (inputs == null || inputs.Length == 0 || inputs[0] is not ScatterMask mask)
-                return NodeOutput.Error("Scatter Mask input is required.");
+                return NodeOutput.Error("Вхідна маска розкиду є обов'язковою.");
 
             _lastMask = mask;
             _lastCandidates = _cluster.Enabled

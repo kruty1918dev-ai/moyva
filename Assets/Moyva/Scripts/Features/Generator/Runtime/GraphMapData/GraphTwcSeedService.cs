@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public int Resolve(GraphAsset graph)
         {
             if (GameLaunchContext.TryGetSeed(out int launchSeed))
-                return launchSeed;
+                return GlobalSeed.Normalize(launchSeed);
 
             if (graph?.Nodes == null)
                 return GlobalSeed.DefaultSeed;
@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             foreach (var node in graph.Nodes)
             {
                 if (node is ISeedProvider seedProvider)
-                    return seedProvider.Seed;
+                    return GlobalSeed.Normalize(seedProvider.Seed);
             }
 
             return GlobalSeed.DefaultSeed;

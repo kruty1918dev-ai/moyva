@@ -12,10 +12,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
     /// A = base data
     /// B = data to merge OR bool[,] mask, depending on Mode
     ///
-    /// Important mode:
-    /// ApplyMask = output A only where B mask is true.
+    /// Modes:
+    /// AddOrMerge = додати/злити (OR для bool, + для чисел, concat для string)
+    /// ApplyMask = застосувати маску (A лише там де B=true)
+    /// SubtractMask = відняти маску (A лише там де B=false)
+    /// OverlayBOnA = накладати B на A (B переписує A тільки на зайнятих клітинках)
+    /// Min/Max = мінімум/максимум
+    /// Subtract = віднімання
+    /// Multiply = множення
+    /// Divide = ділення
+    /// Power = степінь (A^B)
+    /// Modulo = остача від ділення
     /// </summary>
-    [NodeInfo("Add", "Math", "Typed Add/Merge node with modes: add/merge, apply mask, subtract mask, overlay, min, max.")]
+    [NodeInfo("Додати", "Математика", "Універсальний типізований нод додавання/злиття з режимами: додати, застосувати маску, відняти маску, накладати, мінімум, максимум, віднімання, множення, ділення, степінь, остача.")]
     public sealed class AddNode : NodeBase, IPreviewableNode
     {
         public enum AddValueKind
@@ -82,7 +91,33 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             /// <summary>
             /// Numeric max. Supports int, float, int[,], float[,].
             /// </summary>
-            Max = 5
+            Max = 5,
+
+            /// <summary>
+            /// Numeric subtract. Supports int, float, int[,], float[,].
+            /// </summary>
+            Subtract = 6,
+
+            /// <summary>
+            /// Numeric multiply. Supports int, float, int[,], float[,].
+            /// </summary>
+            Multiply = 7,
+
+            /// <summary>
+            /// Numeric divide. Supports int, float, int[,], float[,].
+            /// Division by zero returns 0 for int, NaN for float.
+            /// </summary>
+            Divide = 8,
+
+            /// <summary>
+            /// Numeric power (A^B). Supports int, float, int[,], float[,].
+            /// </summary>
+            Power = 9,
+
+            /// <summary>
+            /// Numeric modulo (A % B). Supports int, float, int[,], float[,].
+            /// </summary>
+            Modulo = 10
         }
 
         [SerializeField]
@@ -112,6 +147,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                     AddMode.OverlayBOnA => $"Add Overlay ({type})",
                     AddMode.Min => $"Add Min ({type})",
                     AddMode.Max => $"Add Max ({type})",
+                    AddMode.Subtract => $"Add Subtract ({type})",
+                    AddMode.Multiply => $"Add Multiply ({type})",
+                    AddMode.Divide => $"Add Divide ({type})",
+                    AddMode.Power => $"Add Power ({type})",
+                    AddMode.Modulo => $"Add Modulo ({type})",
                     _ => _valueKind == AddValueKind.Any ? "Add" : $"Add ({type})"
                 };
             }
@@ -157,8 +197,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (UsesMaskOnPortB && _valueKind != AddValueKind.Any && !IsMapKind(_valueKind))
                 _valueKind = AddValueKind.Any;
 
-            // Min/Max are numeric only.
-            if ((_mode is AddMode.Min or AddMode.Max) && _valueKind != AddValueKind.Any && !IsNumericKind(_valueKind))
+            // Min/Max/Subtract/Multiply/Divide/Power/Modulo are numeric only.
+            if ((_mode is AddMode.Min or AddMode.Max or AddMode.Subtract or AddMode.Multiply or AddMode.Divide or AddMode.Power or AddMode.Modulo) && _valueKind != AddValueKind.Any && !IsNumericKind(_valueKind))
                 _valueKind = AddValueKind.Any;
 
             return true;
@@ -172,7 +212,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (UsesMaskOnPortB && !IsMapKind(kind))
                 return false;
 
-            if ((_mode is AddMode.Min or AddMode.Max) && !IsNumericKind(kind))
+            if ((_mode is AddMode.Min or AddMode.Max or AddMode.Subtract or AddMode.Multiply or AddMode.Divide or AddMode.Power or AddMode.Modulo) && !IsNumericKind(kind))
                 return false;
 
             return SetValueKind(kind);
@@ -192,7 +232,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (UsesMaskOnPortB && !IsMapKind(kind))
                 return false;
 
-            if ((_mode is AddMode.Min or AddMode.Max) && !IsNumericKind(kind))
+            if ((_mode is AddMode.Min or AddMode.Max or AddMode.Subtract or AddMode.Multiply or AddMode.Divide or AddMode.Power or AddMode.Modulo) && !IsNumericKind(kind))
                 return false;
 
             return SetValueKind(kind);
@@ -203,7 +243,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             if (UsesMaskOnPortB && kind != AddValueKind.Any && !IsMapKind(kind))
                 return false;
 
-            if ((_mode is AddMode.Min or AddMode.Max) && kind != AddValueKind.Any && !IsNumericKind(kind))
+            if ((_mode is AddMode.Min or AddMode.Max or AddMode.Subtract or AddMode.Multiply or AddMode.Divide or AddMode.Power or AddMode.Modulo) && kind != AddValueKind.Any && !IsNumericKind(kind))
                 return false;
 
             if (_valueKind == kind)
@@ -240,7 +280,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 if (UsesMaskOnPortB && !IsMapKind(kind))
                     return NodeOutput.Error($"Mode '{_mode}' supports only map/mask base data on A, but got '{FormatKind(kind)}'.");
 
-                if ((_mode is AddMode.Min or AddMode.Max) && !IsNumericKind(kind))
+                if ((_mode is AddMode.Min or AddMode.Max or AddMode.Subtract or AddMode.Multiply or AddMode.Divide or AddMode.Power or AddMode.Modulo) && !IsNumericKind(kind))
                     return NodeOutput.Error($"Mode '{_mode}' supports only numeric values/maps, but got '{FormatKind(kind)}'.");
             }
 
@@ -257,6 +297,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                     AddMode.OverlayBOnA => Overlay(kind, a, b),
                     AddMode.Min => Min(kind, a, b),
                     AddMode.Max => Max(kind, a, b),
+                    AddMode.Subtract => Subtract(kind, a, b),
+                    AddMode.Multiply => Multiply(kind, a, b),
+                    AddMode.Divide => Divide(kind, a, b),
+                    AddMode.Power => Power(kind, a, b),
+                    AddMode.Modulo => Modulo(kind, a, b),
                     _ => AddOrMerge(kind, a, b)
                 };
             }
@@ -576,7 +621,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 return false;
             }
 
-            if (mode is AddMode.Min or AddMode.Max && !IsNumericKind(kind))
+            if (mode is AddMode.Min or AddMode.Max or AddMode.Subtract or AddMode.Multiply or AddMode.Divide or AddMode.Power or AddMode.Modulo && !IsNumericKind(kind))
             {
                 error = $"Mode '{mode}' supports only numeric values/maps. Got '{FormatKind(kind)}'.";
                 return false;
@@ -709,6 +754,196 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 float av = a[x, y];
                 float bv = b[x, y];
                 result[x, y] = !IsFinite(av) ? bv : !IsFinite(bv) ? av : Mathf.Max(av, bv);
+            }
+            return result;
+        }
+
+        private static object Subtract(AddValueKind kind, object a, object b)
+        {
+            return kind switch
+            {
+                AddValueKind.Int => (int)a - (int)b,
+                AddValueKind.Float => (float)a - (float)b,
+                AddValueKind.IntMap => SubtractIntMaps((int[,])a, (int[,])b),
+                AddValueKind.FloatMap => SubtractFloatMaps((float[,])a, (float[,])b),
+                _ => throw new NotSupportedException($"Subtract supports only numeric types. Got '{FormatKind(kind)}'.")
+            };
+        }
+
+        private static object Multiply(AddValueKind kind, object a, object b)
+        {
+            return kind switch
+            {
+                AddValueKind.Int => (int)a * (int)b,
+                AddValueKind.Float => (float)a * (float)b,
+                AddValueKind.IntMap => MultiplyIntMaps((int[,])a, (int[,])b),
+                AddValueKind.FloatMap => MultiplyFloatMaps((float[,])a, (float[,])b),
+                _ => throw new NotSupportedException($"Multiply supports only numeric types. Got '{FormatKind(kind)}'.")
+            };
+        }
+
+        private static object Divide(AddValueKind kind, object a, object b)
+        {
+            return kind switch
+            {
+                AddValueKind.Int => DivideIntMaps((int[,])a, (int[,])b),
+                AddValueKind.Float => DivideFloatMaps((float[,])a, (float[,])b),
+                AddValueKind.IntMap => DivideIntMaps((int[,])a, (int[,])b),
+                AddValueKind.FloatMap => DivideFloatMaps((float[,])a, (float[,])b),
+                _ => throw new NotSupportedException($"Divide supports only numeric types. Got '{FormatKind(kind)}'.")
+            };
+        }
+
+        private static object Power(AddValueKind kind, object a, object b)
+        {
+            return kind switch
+            {
+                AddValueKind.Int => (int)Mathf.Pow((int)a, (int)b),
+                AddValueKind.Float => Mathf.Pow((float)a, (float)b),
+                AddValueKind.IntMap => PowerIntMaps((int[,])a, (int[,])b),
+                AddValueKind.FloatMap => PowerFloatMaps((float[,])a, (float[,])b),
+                _ => throw new NotSupportedException($"Power supports only numeric types. Got '{FormatKind(kind)}'.")
+            };
+        }
+
+        private static object Modulo(AddValueKind kind, object a, object b)
+        {
+            return kind switch
+            {
+                AddValueKind.Int => ((int)a) % ((int)b),
+                AddValueKind.Float => Mathf.Repeat((float)a, (float)b),
+                AddValueKind.IntMap => ModuloIntMaps((int[,])a, (int[,])b),
+                AddValueKind.FloatMap => ModuloFloatMaps((float[,])a, (float[,])b),
+                _ => throw new NotSupportedException($"Modulo supports only numeric types. Got '{FormatKind(kind)}'.")
+            };
+        }
+
+        private static int[,] SubtractIntMaps(int[,] a, int[,] b)
+        {
+            int w = a.GetLength(0);
+            int h = a.GetLength(1);
+            var result = new int[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                result[x, y] = a[x, y] - b[x, y];
+            return result;
+        }
+
+        private static float[,] SubtractFloatMaps(float[,] a, float[,] b)
+        {
+            int w = a.GetLength(0);
+            int h = a.GetLength(1);
+            var result = new float[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                float av = IsFinite(a[x, y]) ? a[x, y] : 0f;
+                float bv = IsFinite(b[x, y]) ? b[x, y] : 0f;
+                result[x, y] = av - bv;
+            }
+            return result;
+        }
+
+        private static int[,] MultiplyIntMaps(int[,] a, int[,] b)
+        {
+            int w = a.GetLength(0);
+            int h = a.GetLength(1);
+            var result = new int[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                result[x, y] = a[x, y] * b[x, y];
+            return result;
+        }
+
+        private static float[,] MultiplyFloatMaps(float[,] a, float[,] b)
+        {
+            int w = a.GetLength(0);
+            int h = a.GetLength(1);
+            var result = new float[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                float av = IsFinite(a[x, y]) ? a[x, y] : 0f;
+                float bv = IsFinite(b[x, y]) ? b[x, y] : 0f;
+                result[x, y] = av * bv;
+            }
+            return result;
+        }
+
+        private static int[,] DivideIntMaps(int[,] a, int[,] b)
+        {
+            int w = a.GetLength(0);
+            int h = a.GetLength(1);
+            var result = new int[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                result[x, y] = b[x, y] != 0 ? a[x, y] / b[x, y] : 0;
+            return result;
+        }
+
+        private static float[,] DivideFloatMaps(float[,] a, float[,] b)
+        {
+            int w = a.GetLength(0);
+            int h = a.GetLength(1);
+            var result = new float[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                float av = IsFinite(a[x, y]) ? a[x, y] : 0f;
+                float bv = IsFinite(b[x, y]) && b[x, y] != 0f ? b[x, y] : 1f;
+                result[x, y] = av / bv;
+            }
+            return result;
+        }
+
+        private static int[,] PowerIntMaps(int[,] a, int[,] b)
+        {
+            int w = a.GetLength(0);
+            int h = a.GetLength(1);
+            var result = new int[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                result[x, y] = (int)Mathf.Pow(a[x, y], b[x, y]);
+            return result;
+        }
+
+        private static float[,] PowerFloatMaps(float[,] a, float[,] b)
+        {
+            int w = a.GetLength(0);
+            int h = a.GetLength(1);
+            var result = new float[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                float av = IsFinite(a[x, y]) ? a[x, y] : 0f;
+                float bv = IsFinite(b[x, y]) ? b[x, y] : 0f;
+                result[x, y] = Mathf.Pow(av, bv);
+            }
+            return result;
+        }
+
+        private static int[,] ModuloIntMaps(int[,] a, int[,] b)
+        {
+            int w = a.GetLength(0);
+            int h = a.GetLength(1);
+            var result = new int[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+                result[x, y] = b[x, y] != 0 ? a[x, y] % b[x, y] : 0;
+            return result;
+        }
+
+        private static float[,] ModuloFloatMaps(float[,] a, float[,] b)
+        {
+            int w = a.GetLength(0);
+            int h = a.GetLength(1);
+            var result = new float[w, h];
+            for (int x = 0; x < w; x++)
+            for (int y = 0; y < h; y++)
+            {
+                float av = IsFinite(a[x, y]) ? a[x, y] : 0f;
+                float bv = IsFinite(b[x, y]) ? b[x, y] : 1f;
+                result[x, y] = bv != 0f ? Mathf.Repeat(av, bv) : 0f;
             }
             return result;
         }

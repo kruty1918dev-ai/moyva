@@ -586,7 +586,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         internal void UpdateNodePreviews(GraphExecutionResult result,
             EditorPreviewSettings settings = null,
             List<WorldLayerData> layerData = null,
-            int previewSize = 128,
+            int previewWidth = 128,
+            int previewHeight = 128,
             bool heatmap = false,
             bool buildTextures = true)
         {
@@ -647,8 +648,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         {
                             outputPreview = NodePreviewTextureFactory.TryBuild(
                                 new object[] { maskMap },
-                                previewSize,
-                                previewSize,
+                                previewWidth,
+                                previewHeight,
                                 out ownsOutputPreview,
                                 out previewStatus,
                                 tileRegistry,
@@ -709,7 +710,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 {
                     if (node is IPreviewableNode previewable)
                     {
-                        preview = previewable.GeneratePreview(previewSize, previewSize);
+                        preview = previewable.GeneratePreview(previewWidth, previewHeight);
                         if (preview != null)
                         {
                             status = "Node preview";
@@ -723,8 +724,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                         preview = NodePreviewTextureFactory.TryBuild(
                             previewOutputs,
-                            previewSize,
-                            previewSize,
+                            previewWidth,
+                            previewHeight,
                             out ownsPreview,
                             out status,
                             tileRegistry,

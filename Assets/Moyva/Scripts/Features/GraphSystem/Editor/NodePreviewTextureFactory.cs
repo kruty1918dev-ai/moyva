@@ -426,8 +426,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             sourceWidth = source.GetLength(0);
             sourceHeight = source.GetLength(1);
 
-            targetWidth = Mathf.Clamp(requestedWidth > 0 ? requestedWidth : DefaultSize, 32, 256);
-            targetHeight = Mathf.Clamp(requestedHeight > 0 ? requestedHeight : DefaultSize, 32, 256);
+            targetWidth = Mathf.Max(1, requestedWidth > 0 ? requestedWidth : DefaultSize);
+            targetHeight = Mathf.Max(1, requestedHeight > 0 ? requestedHeight : DefaultSize);
         }
 
         private static Color StringToColor(string value)

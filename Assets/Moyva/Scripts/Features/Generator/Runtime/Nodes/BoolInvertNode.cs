@@ -2,20 +2,20 @@ using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Bool Invert", "Math", "Інвертує булеву маску: true стає false, false стає true. Корисно для швидкого перетворення забороненої зони у дозволену і навпаки.")]
+    [NodeInfo("Bool Invert", "Математика", "Інвертує булеву маску: true стає false, false стає true. Корисно для швидкого перетворення забороненої зони у дозволену і навпаки.")]
     public sealed class BoolInvertNode : NodeBase
     {
         public override string Title => "Bool Invert";
-        public override string Category => "Math";
+        public override string Category => "Математика";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<bool[,]>("Source")
+            PortDefinition.Input<bool[,]>("Джерело")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Mask")
+            PortDefinition.Output<bool[,]>("Маска")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)

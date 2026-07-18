@@ -2,11 +2,11 @@ using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Bool Xor", "Math", "Симетрична різниця масок. Результат true тільки там, де значення A і B різні.")]
+    [NodeInfo("Bool Xor", "Математика", "Симетрична різниця масок. Результат true тільки там, де значення A і B різні.")]
     public sealed class BoolXorNode : NodeBase
     {
         public override string Title => "Bool Xor";
-        public override string Category => "Math";
+        public override string Category => "Математика";
 
         public override PortDefinition[] Inputs => new[]
         {
@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Mask")
+            PortDefinition.Output<bool[,]>("Маска")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)

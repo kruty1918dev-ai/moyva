@@ -40,8 +40,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public GraphTwcMapGenerationResult Generate(GraphTwcMapGenerationRequest request)
         {
-            int seed = _seedService.Resolve(request.Graph);
-            GlobalSeed.Set(seed);
+            int seed = GlobalSeed.InitializeDeterministic(_seedService.Resolve(request.Graph));
             _terrainHeightPublisher.Clear();
             _diagnostics.LogEnter(request.Graph, request.Manager, seed, request.Width, request.Height);
             Vector2Int mapSize = _sizeResolver.Resolve(request.Graph, request.Width, request.Height);

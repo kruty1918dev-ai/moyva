@@ -2,11 +2,11 @@ using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Bool Subtract", "Math", "Віднімає маску B з A. Результат true тільки там, де A=true і B=false.")]
+    [NodeInfo("Bool Subtract", "Математика", "Віднімає маску B з A. Результат true тільки там, де A=true і B=false.")]
     public sealed class BoolSubtractNode : NodeBase
     {
         public override string Title => "Bool Subtract";
-        public override string Category => "Math";
+        public override string Category => "Математика";
 
         public override PortDefinition[] Inputs => new[]
         {
@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Mask")
+            PortDefinition.Output<bool[,]>("Маска")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)

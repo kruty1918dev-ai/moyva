@@ -4,16 +4,16 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Bool Value", "Values", "Повертає булеве значення (bool) для умовних входів інших нод.")]
+    [NodeInfo("Bool Value", "Значення", "Повертає булеве значення (bool) для умовних входів інших нод.")]
     [HidePreview]
     public sealed class BoolValueNode : NodeBase
     {
         [SerializeField]
-        [InlineEditable("value")]
+        [InlineEditable("значення")]
         private bool value;
 
         public override string Title => "Bool Value";
-        public override string Category => "Values";
+        public override string Category => "Значення";
 
         public override PortDefinition[] Inputs => Array.Empty<PortDefinition>();
 

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("String Value", "Values", "Повертає рядок (string) для текстових входів, зокрема формул у функціональних нодах.")]
+    [NodeInfo("String Value", "Значення", "Повертає рядок (string) для текстових входів, зокрема формул у функціональних нодах.")]
     [HidePreview]
     public sealed class StringValueNode : NodeBase
     {
@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         private string value = string.Empty;
 
         public override string Title => "String Value";
-        public override string Category => "Values";
+        public override string Category => "Значення";
 
         public override PortDefinition[] Inputs => Array.Empty<PortDefinition>();
 

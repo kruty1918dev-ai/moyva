@@ -14,9 +14,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (current is MoyvaTerrainHeightAwareTilesBuildLayer heightAware)
                 return heightAware;
 
-            var replacement = manager != null
-                ? manager.AddNewBuildLayer<MoyvaTerrainHeightAwareTilesBuildLayer>(layerName)
-                : ScriptableObject.CreateInstance<MoyvaTerrainHeightAwareTilesBuildLayer>();
+            var replacement = CreateLayer(manager, layerName);
 
             CopyIdentity(current, replacement, layerName);
             ReplaceInConfiguration(configuration, current, replacement);
@@ -26,9 +24,39 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         public static MoyvaTerrainHeightAwareTilesBuildLayer CreateHeightAware(TileWorldCreatorManager manager, string layerName)
         {
+            return CreateLayer(manager, layerName);
+        }
+
+        private static MoyvaTerrainHeightAwareTilesBuildLayer CreateLayer(
+            TileWorldCreatorManager manager,
+            string layerName)
+        {
+            if (CanUseManagerAssetApi(manager))
+                return manager.AddNewBuildLayer<MoyvaTerrainHeightAwareTilesBuildLayer>(layerName);
+
+            var layer = ScriptableObject.CreateInstance<MoyvaTerrainHeightAwareTilesBuildLayer>();
+            layer.layerName = layerName;
+            layer.hideFlags = HideFlags.HideAndDontSave;
+
+            Configuration configuration = manager != null ? manager.configuration : null;
+            if (configuration != null)
+            {
+                GraphCompilerLayerAssetUtility.EnsureBuildRootFolder(configuration);
+                if (!configuration.buildLayerFolders[0].buildLayers.Contains(layer))
+                    configuration.buildLayerFolders[0].buildLayers.Add(layer);
+            }
+
+            return layer;
+        }
+
+        private static bool CanUseManagerAssetApi(TileWorldCreatorManager manager)
+        {
+#if UNITY_EDITOR
             return manager != null
-                ? manager.AddNewBuildLayer<MoyvaTerrainHeightAwareTilesBuildLayer>(layerName)
-                : ScriptableObject.CreateInstance<MoyvaTerrainHeightAwareTilesBuildLayer>();
+                   && GraphCompilerLayerAssetUtility.IsPersistentAsset(manager.configuration);
+#else
+            return manager != null;
+#endif
         }
 
         private static void CopyIdentity(TilesBuildLayer source, MoyvaTerrainHeightAwareTilesBuildLayer target, string layerName)

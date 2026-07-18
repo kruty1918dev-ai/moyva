@@ -5,24 +5,24 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Placement Mask", "Object Placement", "Combines a placement mask and an optional exclude mask into an object scatter mask.")]
+    [NodeInfo("Маска розміщення", "Розміщення об'єктів", "Комбінує маску розміщення та необов'язкову маску виключення у маску розкиду об'єктів.")]
     public sealed class PlacementMaskNode : NodeBase, IPreviewableNode
     {
         [NonSerialized] private ScatterMask _lastMask;
 
-        public override string Title => "Placement Mask";
-        public override string Category => "Object Placement";
+        public override string Title => "Маска розміщення";
+        public override string Category => "Розміщення об'єктів";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<bool[,]>("Placement"),
-            PortDefinition.Input<bool[,]>("Exclude")
+            PortDefinition.Input<bool[,]>("Маска розміщення"),
+            PortDefinition.Input<bool[,]>("Маска виключення")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<ScatterMask>("Scatter Mask"),
-            PortDefinition.Output<bool[,]>("Allowed Mask")
+            PortDefinition.Output<ScatterMask>("Маска розкиду"),
+            PortDefinition.Output<bool[,]>("Дозволена маска")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
@@ -59,7 +59,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
                 && (placement.GetLength(0) != exclude.GetLength(0)
                     || placement.GetLength(1) != exclude.GetLength(1)))
             {
-                return NodeOutput.Error("Placement and Exclude masks must have the same size.");
+                return NodeOutput.Error("Маски розміщення та виключення мають різний розмір.");
             }
 
             _lastMask = new ScatterMask(placement, exclude);

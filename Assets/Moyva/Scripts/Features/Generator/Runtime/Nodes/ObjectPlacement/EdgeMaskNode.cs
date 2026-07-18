@@ -5,44 +5,44 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Edge Mask", "Object Placement", "Creates a soft weighted band near island or terrain mask edges.")]
+    [NodeInfo("Маска краю", "Розміщення об'єктів", "Створює м’яку зважену смугу біля краю острова або маски рельєфу.")]
     public sealed class EdgeMaskNode : NodeBase, IPreviewableNode
     {
         [SerializeField, Min(0)]
-        [InlineEditable("Distance")]
-        [Tooltip("Full-strength distance from the source mask edge, in cells.")]
+        [InlineEditable("Відстань")]
+        [Tooltip("Повна інтенсивність на відстані від краю маски, у клітинах.")]
         private int _distanceFromEdge = 2;
 
         [SerializeField, Min(0)]
-        [InlineEditable("Falloff")]
-        [Tooltip("Additional soft falloff distance, in cells.")]
+        [InlineEditable("Спад")]
+        [Tooltip("Додаткова м’яка відстань спаду, у клітинах.")]
         private int _falloff = 2;
 
         [SerializeField]
-        [Tooltip("Outputs the interior away from the edge instead of the edge band.")]
+        [Tooltip("Виводить інтерір біля краю замість смуги краю.")]
         private bool _invert;
 
         [NonSerialized] private bool[,] _lastMask;
         [NonSerialized] private float[,] _lastWeights;
 
-        public override string Title => "Edge Mask";
-        public override string Category => "Object Placement";
+        public override string Title => "Маска краю";
+        public override string Category => "Розміщення об'єктів";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<bool[,]>("Source")
+            PortDefinition.Input<bool[,]>("Джерело")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Mask"),
-            PortDefinition.Output<ScatterMask>("Scatter Mask")
+            PortDefinition.Output<bool[,]>("Маска"),
+            PortDefinition.Output<ScatterMask>("Маска розкиду")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
             if (inputs == null || inputs.Length == 0 || inputs[0] is not bool[,] source)
-                return NodeOutput.Error("Source mask is required.");
+                return NodeOutput.Error("Маска джерела є обов'язковою.");
 
             int w = source.GetLength(0);
             int h = source.GetLength(1);

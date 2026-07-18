@@ -23,8 +23,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public NodeContext(int seed, CancellationToken cancellation = default,
             IProgress<float> progress = null)
         {
-            Seed = seed;
-            GlobalSeed.Set(seed);
+            Seed = GlobalSeed.Normalize(seed);
+            GlobalSeed.Set(Seed);
             Cancellation = cancellation;
             Progress = progress;
         }

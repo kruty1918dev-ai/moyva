@@ -10,9 +10,26 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
         public static int Current => _current;
 
+        public static int Normalize(int seed)
+        {
+            return seed == 0 ? 1 : seed;
+        }
+
         public static void Set(int seed)
         {
             _current = seed;
+        }
+
+        /// <summary>
+        /// Applies the same normalized seed to Moyva and Unity random sources.
+        /// Every graph compile/generate entry point must use this before doing work.
+        /// </summary>
+        public static int InitializeDeterministic(int seed)
+        {
+            int effectiveSeed = Normalize(seed);
+            Set(effectiveSeed);
+            UnityEngine.Random.InitState(effectiveSeed);
+            return effectiveSeed;
         }
 
         public static Random CreateRandom()

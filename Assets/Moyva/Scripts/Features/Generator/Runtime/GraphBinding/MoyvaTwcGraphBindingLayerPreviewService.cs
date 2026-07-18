@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
+using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime
@@ -89,6 +90,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
         private void GeneratePreviewInternal(IMoyvaTwcGraphBindingContext context, string layerName, int seed)
         {
+            seed = GlobalSeed.InitializeDeterministic(_resolver.NormalizeSeed(seed));
+
             if (context.CompileBeforeGenerate)
                 _compiler.Compile(context, seed);
 

@@ -2,11 +2,11 @@ using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Bool Or", "Math", "Логічне об'єднання двох масок. Результат true там, де true хоча б одна з масок A або B.")]
+    [NodeInfo("Bool Or", "Математика", "Логічне об'єднання двох масок. Результат true там, де true хоча б одна з масок A або B.")]
     public sealed class BoolOrNode : NodeBase
     {
         public override string Title => "Bool Or";
-        public override string Category => "Math";
+        public override string Category => "Математика";
 
         public override PortDefinition[] Inputs => new[]
         {
@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Mask")
+            PortDefinition.Output<bool[,]>("Маска")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)

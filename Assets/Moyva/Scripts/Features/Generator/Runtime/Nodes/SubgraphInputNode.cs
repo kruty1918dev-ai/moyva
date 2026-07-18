@@ -2,11 +2,11 @@ using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Subgraph Input", "Macros", "Точка входу для підграфа. Повертає мапи, передані з батьківського графа через Subgraph Node.")]
+    [NodeInfo("Підграф Input", "Макроси", "Точка входу для підграфа. Повертає мапи, передані з батьківського графа через Subgraph Node.")]
     public sealed class SubgraphInputNode : NodeBase
     {
-        public override string Title => "Subgraph Input";
-        public override string Category => "Macros";
+        public override string Title => "Підграф Input";
+        public override string Category => "Макроси";
 
         public override PortDefinition[] Inputs => System.Array.Empty<PortDefinition>();
         public override PortDefinition[] Outputs => new[]

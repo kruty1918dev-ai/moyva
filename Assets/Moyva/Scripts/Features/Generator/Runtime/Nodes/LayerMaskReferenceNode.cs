@@ -7,13 +7,13 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Layer Ref", "Layers", "Повертає bool-маску іншого шару за його Layer ID, щоб далі комбінувати її в поточному шарі.")]
+    [NodeInfo("Шар Ref", "Шари", "Повертає bool-маску іншого шару за його Layer ID, щоб далі комбінувати її в поточному шарі.")]
     public sealed class LayerMaskReferenceNode : NodeBase, IPreviewableNode
     {
         [SerializeField, HideInInspector] private string _sourceLayerId;
 
-        public override string Title => "Layer Ref";
-        public override string Category => "Layers";
+        public override string Title => "Шар Ref";
+        public override string Category => "Шари";
 
         public string SourceLayerId => _sourceLayerId;
 

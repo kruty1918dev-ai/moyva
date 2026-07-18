@@ -41,24 +41,25 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ISet<string> skippedLayerIds = null,
             Vector2Int? mapSizeOverride = null)
         {
+            int effectiveSeed = GlobalSeed.InitializeDeterministic(seed);
             var result = new List<CompiledLayerMap>();
             Vector2Int requestedSize = _configuration.ResolveRequestedSize(graph, mapSizeOverride);
-            _diagnostics.LogEnter(graph, requestedSize, seed);
+            _diagnostics.LogEnter(graph, requestedSize, effectiveSeed);
             if (graph == null || manager == null || manager.configuration == null)
                 return result;
 
             var config = manager.configuration;
-            _configuration.Apply(graph, config, seed, mapSizeOverride);
+            _configuration.Apply(graph, config, effectiveSeed, mapSizeOverride);
             var sync = _blueprints.Sync(graph, config, skippedLayerIds);
             _diagnostics.LogLayerOrder(graph, sync.OrderedLayers);
             _buildLayers.Sync(graph, config, manager, sync, skippedLayerIds);
 
             var mapSize = new Vector2Int(config.width, config.height);
-            var masks = _masks.Build(graph, seed, mapSize, skippedLayerIds);
+            var masks = _masks.Build(graph, effectiveSeed, mapSize, skippedLayerIds);
             int topologyWarnings = CompileModifiers(graph, config, sync, masks);
 
             _blueprints.DisableUnused(sync.ExistingLayers, sync.UsedLayerGuids);
-            var objectLayers = _objects.Collect(graph, seed, mapSize, skippedLayerIds);
+            var objectLayers = _objects.Collect(graph, effectiveSeed, mapSize, skippedLayerIds);
             _objects.Apply(config, manager, objectLayers, sync.CompiledLayers);
             _diagnostics.LogSkipped(graph, skippedLayerIds);
             _diagnostics.LogResult(graph, config, objectLayers?.Count ?? 0, topologyWarnings);

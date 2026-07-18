@@ -5,13 +5,13 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Subgraph", "Macros", "Виконує вкладений граф як повторно використовуваний модуль. Передає в підграф вхідні мапи через Subgraph Input node.")]
+    [NodeInfo("Підграф", "Макроси", "Виконує вкладений граф як повторно використовуваний модуль. Передає в підграф вхідні мапи через Subgraph Input node.")]
     public sealed class SubgraphNode : NodeBase
     {
         [SerializeField] private GraphAsset _subgraph;
 
-        public override string Title => "Subgraph";
-        public override string Category => "Macros";
+        public override string Title => "Підграф";
+        public override string Category => "Макроси";
 
         public override PortDefinition[] Inputs => new[]
         {

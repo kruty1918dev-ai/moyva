@@ -6,51 +6,51 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Object Layer", "Object Placement", "Packages scatter candidates, prefab variants, and spawn settings into a generated TWC object layer.")]
+    [NodeInfo("Шар об'єктів", "Розміщення об'єктів", "Конвертує кандидати розкиду, варіанти префабів та налаштування появи у згенерований TWC object layer.")]
     public sealed class ObjectLayerNode : NodeBase, IPreviewableNode
     {
-        [SerializeField, InlineEditable("Layer")]
-        [Tooltip("Name of the generated TWC blueprint/build object layer.")]
+        [SerializeField, InlineEditable("шар")]
+        [Tooltip("Назва згенерованого TWC blueprint/build object layer.")]
         private string _layerName = "Props";
 
         [SerializeField]
-        [Tooltip("Optional graph terrain layer id this object layer conceptually belongs to.")]
+        [Tooltip("Опціональний id графічного шару, до якого логічно належить цей шар об'єктів.")]
         private string _targetGraphLayerId;
 
         [SerializeField]
-        [Tooltip("Prefab variants used by the generated TWC Object Build Layer.")]
+        [Tooltip("Варіанти префабів, використовуються у згенерованому TWC Object Build Layer.")]
         private List<ObjectPrefabEntry> _prefabs = new();
 
         [SerializeField]
-        [Tooltip("Spawn settings that are mapped to the generated TWC Object Build Layer.")]
+        [Tooltip("Налаштування появи, які мапляться у згенерований TWC Object Build Layer.")]
         private ObjectPlacementRule _rule = new();
 
         [SerializeField]
-        [Tooltip("Stored with the output layer for editor/debug context. Cluster generation usually happens in Cluster Scatter.")]
+        [Tooltip("Зберігається разом з вихідним шаром для редактора/дебагу. Генерація кластерів зазвичай відбувається в Cluster Scatter.")]
         private ClusterSettings _cluster = new();
 
         [NonSerialized] private ScatterMask _lastMask;
         [NonSerialized] private List<ScatterCandidate> _lastCandidates;
 
-        public override string Title => "Object Layer";
-        public override string Category => "Object Placement";
+        public override string Title => "Шар об'єктів";
+        public override string Category => "Розміщення об'єктів";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<List<ScatterCandidate>>("Candidates"),
-            PortDefinition.Input<bool[,]>("Exclude"),
-            PortDefinition.Input<GrassCardSettings>("Grass")
+            PortDefinition.Input<List<ScatterCandidate>>("Кандидати"),
+            PortDefinition.Input<bool[,]>("Маска виключення"),
+            PortDefinition.Input<GrassCardSettings>("Трава")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<ObjectPlacementLayer>("Object Layer")
+            PortDefinition.Output<ObjectPlacementLayer>("Шар об'єктів")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
             if (inputs == null || inputs.Length == 0 || inputs[0] is not List<ScatterCandidate> candidates)
-                return NodeOutput.Error("Candidates input is required.");
+                return NodeOutput.Error("Вхідні кандидати є обов'язковими.");
 
             var exclude = inputs.Length > 1 ? inputs[1] as bool[,] : null;
             var grass = inputs.Length > 2 ? inputs[2] as GrassCardSettings : null;
@@ -75,14 +75,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
             if (layer.Prefabs.Count == 0)
             {
                 string grassHint = grassConnectedWithoutPrefab
-                    ? " Grass settings are connected, but no generated/assigned grass prefab is set."
+                    ? " Налаштування трави підключені, але не встановлено згенерований/призначений префаб трави."
                     : string.Empty;
-                return NodeOutput.Warning($"Object layer has no prefabs.{grassHint} TWC layer will be skipped.", layer);
+                return NodeOutput.Warning($"Шар об'єктів не має префабів.{grassHint} Шар TWC буде пропущений.", layer);
             }
 
             if (layer.Candidates.Count == 0)
                 return NodeOutput.Warning(
-                    $"Object layer has no candidates after filtering ({candidates.Count} input, {candidates.Count - filtered.Count} excluded).",
+                    $"Шар об'єктів не має кандидатів після фільтрації ({candidates.Count} вхідних, {candidates.Count - filtered.Count} виключених).",
                     layer);
 
             return NodeOutput.Success(layer);

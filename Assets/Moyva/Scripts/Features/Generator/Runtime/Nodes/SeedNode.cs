@@ -6,20 +6,20 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Seed Settings", "Generators", "Налаштування сіду")]
+    [NodeInfo("Налаштування сіду", "Генерація", "Налаштування випадковості для генерації. Сід контролює результати всіх випадкових процесів у графі.")]
     [HidePreview]
     [UniqueNode]
     [StaticGraphNode]
     public sealed class SeedNode : NodeBase, ISeedProvider
     {       
         [SerializeField]
-        [InlineEditable("Seed")]
+        [InlineEditable("сід")]
         private int seed = GlobalSeed.DefaultSeed;
 
         public int Seed => seed;
 
-        public override string Title => "Seed Settings";
-        public override string Category => "Generators";
+        public override string Title => "Налаштування сіду";
+        public override string Category => "Генерація";
 
         public override PortDefinition[] Inputs => Array.Empty<PortDefinition>();
 

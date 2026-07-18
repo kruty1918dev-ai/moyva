@@ -6,18 +6,18 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Object Scatter", "Object Placement", "Creates non-clustered scatter candidates from a placement mask.")]
+    [NodeInfo("Розкид об'єктів", "Розміщення об'єктів", "Створює неперекладені кандидати розкиду з маски розміщення.")]
     public sealed class ObjectScatterNode : NodeBase, IPreviewableNode
     {
         [SerializeField]
-        [Tooltip("General scatter rules used before the result is sent to an object layer.")]
+        [Tooltip("Загальні правила розкиду, використовуються перед передачею результату до шару об'єктів.")]
         private ObjectPlacementRule _rule = new();
 
         [NonSerialized] private ScatterMask _lastMask;
         [NonSerialized] private List<ScatterCandidate> _lastCandidates;
 
-        public override string Title => "Object Scatter";
-        public override string Category => "Object Placement";
+        public override string Title => "Розкид об'єктів";
+        public override string Category => "Розміщення об'єктів";
 
         public override PortDefinition[] Inputs => new[]
         {

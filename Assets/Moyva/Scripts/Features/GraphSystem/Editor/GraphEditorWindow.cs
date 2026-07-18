@@ -168,7 +168,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             [TitleGroup("Editor Preview")]
             [LabelText("Preview Resolution")]
             [ValueDropdown(nameof(PreviewResolutionOptions))]
-            public int PreviewResolution = 1;
+            public int PreviewResolution = 2;
 
             private static IEnumerable<ValueDropdownItem<int>> PreviewResolutionOptions()
             {
@@ -461,7 +461,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         [SerializeField] private int _previewHeight = 64;
         [SerializeField] private bool _showInlinePreviews;
         [SerializeField] private bool _autoRunOnChange;
-        [SerializeField] private int _previewResolution = 1; // 0=64,1=128,2=full
+        [SerializeField] private int _previewResolution = 2; // 0=64,1=128,2=full (1 px = 1 tile)
         [SerializeField] private bool _previewHeatmap;
 
         private double _nextAutoRunAt;
@@ -1957,7 +1957,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 Mathf.Clamp(_previewResolution, 0, 2))
             {
                 label = "Preview",
-                tooltip = "Роздільність прев'ю для швидкого перегляду результатів."
+                tooltip = "64/128 масштабують лише текстуру. Full показує карту 1:1: один піксель дорівнює одному тайлу."
             };
             previewModeField.RegisterValueChangedCallback(_ =>
             {
@@ -2994,6 +2994,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var prevRandomState = UnityEngine.Random.state;
+            int previousGlobalSeed = GlobalSeed.Current;
 
             try
             {
@@ -3050,12 +3051,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 int mapH = mapSize.y;
                 _lastExecutionMapSize = mapSize;
 
-                int seed = GetSeedFromGraph();
-                GlobalSeed.Set(seed);
+                int seed = GlobalSeed.InitializeDeterministic(GetSeedFromGraph());
                 _statusLabel.text = $"Running graph... (seed {seed})";
-
-                // Save previous Unity random state and set deterministic seed for UnityEngine.Random
-                UnityEngine.Random.InitState(seed);
 
                 var layerDataList = new List<WorldLayerData>();
                 var layerMaskRegistry = new LayerMaskRegistry();
@@ -3141,12 +3138,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     ? GraphExecutionResult.Combine(layerResults)
                     : previewResult;
 
-                int previewSize = ResolvePreviewSize(mapW, mapH);
+                Vector2Int previewSize = ResolvePreviewSize(_previewResolution, mapW, mapH);
                 _graphView?.UpdateNodePreviews(
                     aggregateResult,
                     _previewSettings,
                     layerDataList,
-                    previewSize,
+                    previewSize.x,
+                    previewSize.y,
                     _previewHeatmap,
                     buildTextures: _showInlinePreviews);
                 _lastResult = aggregateResult;
@@ -3173,6 +3171,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             finally
             {
                 _progressBar.visible = false;
+                GlobalSeed.Set(previousGlobalSeed);
                 UnityEngine.Random.state = prevRandomState;
                 _isRunningGraph = false;
             }
@@ -3327,6 +3326,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private Vector2Int ResolveExecutionMapSize(RuntimeExecutionSettings runtimeSettings)
         {
+            if (TryGetLaunchWorldDimensions(out int launchWidth, out int launchHeight))
+                return ClampMapSize(new Vector2Int(launchWidth, launchHeight));
+
             var sharedSettings = _graphAsset?.SharedSettings;
             if (sharedSettings != null && sharedSettings.HasMapSize)
                 return ClampMapSize(sharedSettings.MapSize);
@@ -3701,7 +3703,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private int GetSeedFromGraph()
         {
             if (TryGetLaunchSeed(out int launchSeed))
-                return launchSeed == 0 ? 1 : launchSeed;
+                return GlobalSeed.Normalize(launchSeed);
 
             if (_graphAsset?.Nodes == null)
                 return GlobalSeed.DefaultSeed;
@@ -3709,7 +3711,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             foreach (var node in _graphAsset.Nodes)
             {
                 if (node is ISeedProvider seedProvider)
-                    return seedProvider.Seed == 0 ? 1 : seedProvider.Seed;
+                    return GlobalSeed.Normalize(seedProvider.Seed);
             }
 
             return GlobalSeed.DefaultSeed;
@@ -3729,6 +3731,26 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             seed = args[0] is int value ? value : 0;
             return seed != 0;
+        }
+
+        private static bool TryGetLaunchWorldDimensions(out int width, out int height)
+        {
+            width = 0;
+            height = 0;
+            var contextType = Type.GetType("Kruty1918.Moyva.SaveSystem.GameLaunchContext, Kruty1918.Moyva.SaveSystem");
+            var method = contextType?.GetMethod(
+                "TryGetWorldDimensions",
+                BindingFlags.Public | BindingFlags.Static);
+            if (method == null)
+                return false;
+
+            object[] args = { width, height };
+            if (method.Invoke(null, args) is not bool result || !result)
+                return false;
+
+            width = args[0] is int widthValue ? widthValue : 0;
+            height = args[1] is int heightValue ? heightValue : 0;
+            return width > 0 && height > 0;
         }
 
         private void HighlightExecutionResults(GraphExecutionResult result)
@@ -4308,12 +4330,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             int mapW = _lastExecutionMapSize.x > 0 ? _lastExecutionMapSize.x : 50;
             int mapH = _lastExecutionMapSize.y > 0 ? _lastExecutionMapSize.y : 50;
 
-            int previewSize = ResolvePreviewSize(mapW, mapH);
+            Vector2Int previewSize = ResolvePreviewSize(_previewResolution, mapW, mapH);
             _graphView.UpdateNodePreviews(
                 _lastResult,
                 _previewSettings,
                 _lastLayerData,
-                previewSize,
+                previewSize.x,
+                previewSize.y,
                 _previewHeatmap,
                 buildTextures: _showInlinePreviews);
         }
@@ -4364,14 +4387,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             RunGraph(true);
         }
 
-        private int ResolvePreviewSize(int mapW, int mapH)
+        internal static Vector2Int ResolvePreviewSize(int previewResolution, int mapW, int mapH)
         {
-            return _previewResolution switch
+            return previewResolution switch
             {
-                0 => 64,
-                1 => 128,
-                2 => Mathf.Clamp(Mathf.Max(mapW, mapH), 32, 256),
-                _ => 128
+                0 => new Vector2Int(64, 64),
+                1 => new Vector2Int(128, 128),
+                2 => new Vector2Int(Mathf.Max(1, mapW), Mathf.Max(1, mapH)),
+                _ => new Vector2Int(128, 128)
             };
         }
 

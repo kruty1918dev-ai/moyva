@@ -4,16 +4,16 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Float Value", "Values", "Повертає число з плаваючою крапкою (float) для параметричних входів інших нод.")]
+    [NodeInfo("Float Value", "Значення", "Повертає число з плаваючою крапкою (float) для параметричних входів інших нод.")]
     [HidePreview]
     public sealed class FloatValueNode : NodeBase
     {
         [SerializeField]
-        [InlineEditable("value")]
+        [InlineEditable("значення")]
         private float value;
 
         public override string Title => "Float Value";
-        public override string Category => "Values";
+        public override string Category => "Значення";
 
         public override PortDefinition[] Inputs => Array.Empty<PortDefinition>();
 

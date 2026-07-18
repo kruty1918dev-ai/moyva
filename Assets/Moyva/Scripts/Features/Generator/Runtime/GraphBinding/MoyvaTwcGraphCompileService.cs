@@ -33,7 +33,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (!TryPrepareCompile(context, normalizedSeed, emitLayerLog, out var report, out var skippedLayerIds))
                 return context.LastCompiledLayers;
 
-            var compiled = GraphToConfigurationCompiler.Compile(context.GraphAsset, context.Manager, normalizedSeed, skippedLayerIds);
+            Vector2Int mapSize = _resolver.ResolveMapSize(context);
+            var compiled = GraphToConfigurationCompiler.Compile(
+                context.GraphAsset,
+                context.Manager,
+                normalizedSeed,
+                skippedLayerIds,
+                mapSize);
             context.SetLastCompiledLayers(compiled);
             EmitLayerLog(context, report, skippedLayerIds, normalizedSeed, emitLayerLog);
             return compiled;

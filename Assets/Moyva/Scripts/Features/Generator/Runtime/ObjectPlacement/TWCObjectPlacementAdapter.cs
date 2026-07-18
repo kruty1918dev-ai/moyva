@@ -365,7 +365,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
             blueprint.AddCells(positions);
 
             var buildLayer = FindObjectBuildLayer(config, generatedName)
-                             ?? manager.AddNewBuildLayer<ObjectBuildLayer>(generatedName);
+                             ?? CreateBuildLayer<ObjectBuildLayer>(config, generatedName);
             if (buildLayer == null)
                 return;
 

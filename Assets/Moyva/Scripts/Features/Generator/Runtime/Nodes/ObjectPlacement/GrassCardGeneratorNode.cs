@@ -4,19 +4,19 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Grass Card Settings", "Object Placement", "Stores texture/material/prefab settings for crossed-plane grass cards.")]
+    [NodeInfo("Налаштування трави", "Розміщення об'єктів", "Зберігає налаштування текстури/матеріалу/префаба для перекривних плоских трав\'їнних карт.")]
     [HidePreview]
     public sealed class GrassCardGeneratorNode : NodeBase, ICustomEditorNode
     {
         [SerializeField]
-        [Tooltip("Texture used by the editor utility to generate a crossed-plane grass card material/prefab.")]
+        [Tooltip("Текстура, яку використовує редактор для генерації матеріалу/префаба перекривної плоскої трав\'їнної карти.")]
         private Texture2D _texture;
 
         [SerializeField]
         private Material _material;
 
         [SerializeField]
-        [Tooltip("Generated or hand-authored crossed-plane grass prefab.")]
+        [Tooltip("Згенерований або ручно створений перекривний плоский префаб трави.")]
         private GameObject _prefab;
 
         [SerializeField]
@@ -46,8 +46,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
         [SerializeField, Range(0f, 1f)]
         private float _colorVariation = 0.12f;
 
-        public override string Title => "Grass Card Settings";
-        public override string Category => "Object Placement";
+        public override string Title => "Налаштування трави";
+        public override string Category => "Розміщення об'єктів";
 
         public override PortDefinition[] Inputs => System.Array.Empty<PortDefinition>();
 

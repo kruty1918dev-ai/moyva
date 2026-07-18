@@ -43,8 +43,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             Configuration config = null;
             GameObject go = null;
             var layerState = CaptureLayerState(graph);
+            int previousGlobalSeed = GlobalSeed.Current;
+            var previousRandomState = UnityEngine.Random.state;
             try
             {
+                int effectiveSeed = GlobalSeed.InitializeDeterministic(seed);
+
                 config = CreateTransientPreviewConfiguration(graph);
 
                 go = EditorUtility.CreateGameObjectWithHideFlags(
@@ -59,7 +63,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var compiled = GraphToConfigurationCompiler.Compile(
                     graph,
                     manager,
-                    seed,
+                    effectiveSeed,
                     skippedLayerIds,
                     safeMapSize);
 
@@ -73,7 +77,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 GraphLogicalTileMapDiagnostics.EmitAndCompare(
                     "Preview mask",
                     graph,
-                    seed,
+                    effectiveSeed,
                     logicalMap);
                 matrices = logicalMap.BuildLayerMatrices();
                 BuildLayerPreviewColors(graph, manager, compiled, layerPreviewColors);
@@ -90,13 +94,73 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
             finally
             {
-                EditorUtility.ClearProgressBar();
-                RestoreLayerState(layerState);
-                if (go != null)
-                    Object.DestroyImmediate(go);
-                if (config != null)
-                    Object.DestroyImmediate(config);
+                try
+                {
+                    EditorUtility.ClearProgressBar();
+                    RestoreLayerState(layerState);
+                    if (go != null)
+                        Object.DestroyImmediate(go);
+                    if (config != null)
+                        DestroyTransientPreviewConfiguration(config);
+                }
+                finally
+                {
+                    GlobalSeed.Set(previousGlobalSeed);
+                    UnityEngine.Random.state = previousRandomState;
+                }
             }
+        }
+
+        private static void DestroyTransientPreviewConfiguration(Configuration config)
+        {
+            var destroyed = new HashSet<Object>();
+            if (config.blueprintLayerFolders != null)
+            {
+                foreach (BlueprintLayerFolder folder in config.blueprintLayerFolders)
+                {
+                    if (folder?.blueprintLayers == null)
+                        continue;
+
+                    foreach (BlueprintLayer layer in folder.blueprintLayers)
+                    {
+                        if (layer?.tileMapModifiers != null)
+                        {
+                            foreach (BlueprintModifier modifier in layer.tileMapModifiers)
+                                DestroyTransientObject(modifier, destroyed);
+                        }
+
+                        DestroyTransientObject(layer, destroyed);
+                    }
+                }
+            }
+
+            if (config.buildLayerFolders != null)
+            {
+                foreach (BuildLayerFolder folder in config.buildLayerFolders)
+                {
+                    if (folder?.buildLayers == null)
+                        continue;
+
+                    foreach (BuildLayer layer in folder.buildLayers)
+                        DestroyTransientObject(layer, destroyed);
+                }
+            }
+
+            Object.DestroyImmediate(config);
+        }
+
+        private static void DestroyTransientObject(Object instance, ISet<Object> destroyed)
+        {
+            if (instance == null
+                || destroyed == null
+                || destroyed.Contains(instance)
+                || AssetDatabase.Contains(instance))
+            {
+                return;
+            }
+
+            destroyed.Add(instance);
+            Object.DestroyImmediate(instance);
         }
 
         private static Configuration CreateTransientPreviewConfiguration(GraphAsset graph)

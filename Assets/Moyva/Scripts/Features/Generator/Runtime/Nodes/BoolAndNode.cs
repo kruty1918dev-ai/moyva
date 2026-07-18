@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Bool And", "Math", "Об'єднання двох масок із пріоритетом істини. Результат true там, де true хоча б в одній з масок (A або B).")]
+    [NodeInfo("Bool And", "Математика", "Об'єднання двох масок із пріоритетом істини. Результат true там, де true хоча б в одній з масок (A або B).")]
     public sealed class BoolAndNode : NodeBase, IPreviewableNode
     {
         [NonSerialized] private bool[,] _lastA;
@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [NonSerialized] private bool[,] _lastResult;
 
         public override string Title => "Bool And";
-        public override string Category => "Math";
+        public override string Category => "Математика";
 
         public override PortDefinition[] Inputs => new[]
         {
@@ -22,7 +22,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Mask")
+            PortDefinition.Output<bool[,]>("Маска")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)

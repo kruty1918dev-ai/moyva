@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         Other
     }
 
-    [NodeInfo("Output", "Core", "Фінальна нода шару, яка явно позначає результат: tiles, objects, masks, internal data або other. Кожен активний шар має мати один підключений Output Node.")]
+    [NodeInfo("Вивід", "Графік", "Фінальна нода шару, яка явно позначає результат: tiles, objects, masks, internal data або other. Кожен активний шар має мати один підключений Output Node.")]
     public sealed class OutputNode : NodeBase
     {
         public const int BiomeMapInputIndex = 0;
