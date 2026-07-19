@@ -118,12 +118,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     if (vertices.Length == 0)
                         return false;
 
-                    var originalRelativeY = new float[vertices.Length];
+                    // NativeArray declared by a using statement is readonly in C#.
+                    // Copy vertex data to a mutable managed array before deformation.
+                    Vector3[] mutableVertices = vertices.ToArray();
+                    var originalRelativeY = new float[mutableVertices.Length];
                     float minY = float.PositiveInfinity;
                     float maxY = float.NegativeInfinity;
-                    for (int i = 0; i < vertices.Length; i++)
+                    for (int i = 0; i < mutableVertices.Length; i++)
                     {
-                        float y = linearMatrix.MultiplyPoint3x4(vertices[i]).y;
+                        float y = linearMatrix.MultiplyPoint3x4(mutableVertices[i]).y;
                         originalRelativeY[i] = y;
                         minY = Mathf.Min(minY, y);
                         maxY = Mathf.Max(maxY, y);
@@ -138,7 +141,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                         result = CreateFlatMeshWithSkirt(
                             source.Mesh,
                             meshData,
-                            vertices,
+                            mutableVertices,
                             linearMatrix,
                             inverseLinear,
                             targetBottom);
@@ -168,13 +171,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                             relative.y = targetBottom;
                         }
 
-                        vertices[i] = inverseLinear.MultiplyPoint3x4(relative);
+                        mutableVertices[i] = inverseLinear.MultiplyPoint3x4(relative);
                     }
 
                     result = CopyMesh(
                         source.Mesh,
                         meshData,
-                        vertices,
+                        mutableVertices,
                         originalRelativeY,
                         clipHidden,
                         targetBottom);
@@ -186,7 +189,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private static Mesh CopyMesh(
             Mesh source,
             Mesh.MeshData meshData,
-            NativeArray<Vector3> vertices,
+            Vector3[] vertices,
             IReadOnlyList<float> originalRelativeY,
             bool clipHidden,
             float targetBottom)
@@ -197,7 +200,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 indexFormat = source.indexFormat
             };
 
-            mesh.vertices = vertices.ToArray();
+            mesh.vertices = vertices;
             CopyVertexChannels(source, meshData, mesh);
 
             mesh.subMeshCount = meshData.subMeshCount;
@@ -218,7 +221,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private static Mesh CreateFlatMeshWithSkirt(
             Mesh source,
             Mesh.MeshData meshData,
-            NativeArray<Vector3> vertices,
+            Vector3[] vertices,
             Matrix4x4 linearMatrix,
             Matrix4x4 inverseLinear,
             float targetBottom)
