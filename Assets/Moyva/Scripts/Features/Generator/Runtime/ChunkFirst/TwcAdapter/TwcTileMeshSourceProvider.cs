@@ -194,9 +194,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, scale);
             Material[] materials = template.ResolveMaterials(preset.GetMaterialOverride());
 
-            float visibleBottomY = composition.HasSupportHeight
-                ? Mathf.Min(placementHeight, composition.SupportHeight)
-                : float.NaN;
+            // Vertical terrain always terminates at the global world floor.
+            // The mesh utility deforms only hidden lower geometry, so the visible
+            // tile surface remains at its configured layer height.
+            float visibleBottomY = 0f;
             var meshSource = new TileMeshSource(
                 template.Mesh,
                 materials,

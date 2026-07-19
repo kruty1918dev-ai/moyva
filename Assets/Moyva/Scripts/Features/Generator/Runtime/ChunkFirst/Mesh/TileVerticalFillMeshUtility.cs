@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -87,11 +86,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     {
         private const float HeightEpsilon = 0.0001f;
         private const float FlatMeshEpsilon = 0.001f;
+        private const float EdgeWeldPrecision = 10000f;
 
         public static bool TryCreate(TileMeshSource source, out Mesh result)
         {
             result = null;
             if (!source.IsValid || !source.HasVisibleBottomY)
+                return false;
+
+            Vector3[] sourceVertices = source.Mesh.vertices;
+            if (sourceVertices == null || sourceVertices.Length == 0)
                 return false;
 
             Matrix4x4 linearMatrix = source.LocalMatrix;
@@ -106,112 +110,105 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Matrix4x4 inverseLinear = linearMatrix.inverse;
             float targetBottom = source.VisibleBottomY - translationY;
 
-            using (Mesh.MeshDataArray meshDataArray = Mesh.AcquireReadOnlyMeshData(source.Mesh))
+            var originalRelativeY = new float[sourceVertices.Length];
+            float minY = float.PositiveInfinity;
+            float maxY = float.NegativeInfinity;
+            for (int i = 0; i < sourceVertices.Length; i++)
             {
-                Mesh.MeshData meshData = meshDataArray[0];
-                using (var vertices = new NativeArray<Vector3>(
-                           meshData.vertexCount,
-                           Allocator.Temp,
-                           NativeArrayOptions.UninitializedMemory))
-                {
-                    meshData.GetVertices(vertices);
-                    if (vertices.Length == 0)
-                        return false;
-
-                    // NativeArray declared by a using statement is readonly in C#.
-                    // Copy vertex data to a mutable managed array before deformation.
-                    Vector3[] mutableVertices = vertices.ToArray();
-                    var originalRelativeY = new float[mutableVertices.Length];
-                    float minY = float.PositiveInfinity;
-                    float maxY = float.NegativeInfinity;
-                    for (int i = 0; i < mutableVertices.Length; i++)
-                    {
-                        float y = linearMatrix.MultiplyPoint3x4(mutableVertices[i]).y;
-                        originalRelativeY[i] = y;
-                        minY = Mathf.Min(minY, y);
-                        maxY = Mathf.Max(maxY, y);
-                    }
-
-                    float meshHeight = maxY - minY;
-                    if (meshHeight <= FlatMeshEpsilon)
-                    {
-                        if (targetBottom >= minY - HeightEpsilon)
-                            return false;
-
-                        result = CreateFlatMeshWithSkirt(
-                            source.Mesh,
-                            meshData,
-                            mutableVertices,
-                            linearMatrix,
-                            inverseLinear,
-                            targetBottom);
-                        return result != null;
-                    }
-
-                    targetBottom = Mathf.Min(targetBottom, maxY - HeightEpsilon);
-                    bool extendDown = targetBottom < minY - HeightEpsilon;
-                    bool clipHidden = targetBottom > minY + HeightEpsilon;
-                    if (!extendDown && !clipHidden)
-                        return false;
-
-                    float bottomBand = minY + Mathf.Max(
-                        HeightEpsilon * 10f,
-                        meshHeight * 0.02f);
-
-                    for (int i = 0; i < vertices.Length; i++)
-                    {
-                        Vector3 relative = linearMatrix.MultiplyPoint3x4(vertices[i]);
-                        if (extendDown)
-                        {
-                            if (relative.y <= bottomBand)
-                                relative.y = targetBottom;
-                        }
-                        else if (relative.y < targetBottom)
-                        {
-                            relative.y = targetBottom;
-                        }
-
-                        mutableVertices[i] = inverseLinear.MultiplyPoint3x4(relative);
-                    }
-
-                    result = CopyMesh(
-                        source.Mesh,
-                        meshData,
-                        mutableVertices,
-                        originalRelativeY,
-                        clipHidden,
-                        targetBottom);
-                    return result != null;
-                }
+                float y = linearMatrix.MultiplyPoint3x4(sourceVertices[i]).y;
+                originalRelativeY[i] = y;
+                minY = Mathf.Min(minY, y);
+                maxY = Mathf.Max(maxY, y);
             }
+
+            float meshHeight = maxY - minY;
+            if (meshHeight <= FlatMeshEpsilon)
+            {
+                if (targetBottom >= minY - HeightEpsilon)
+                    return false;
+
+                result = CreateFlatMeshWithSkirt(
+                    source.Mesh,
+                    sourceVertices,
+                    linearMatrix,
+                    inverseLinear,
+                    targetBottom);
+                return result != null;
+            }
+
+            if (targetBottom < minY - HeightEpsilon)
+            {
+                Vector3[] deformed = (Vector3[])sourceVertices.Clone();
+                float bottomBand = minY + Mathf.Max(
+                    HeightEpsilon * 10f,
+                    meshHeight * 0.02f);
+
+                for (int i = 0; i < deformed.Length; i++)
+                {
+                    Vector3 relative = linearMatrix.MultiplyPoint3x4(deformed[i]);
+                    if (relative.y <= bottomBand)
+                    {
+                        relative.y = targetBottom;
+                        deformed[i] = inverseLinear.MultiplyPoint3x4(relative);
+                    }
+                }
+
+                result = CopyMesh(
+                    source.Mesh,
+                    deformed,
+                    originalRelativeY,
+                    removeFullyHiddenTriangles: false,
+                    targetBottom);
+                return result != null;
+            }
+
+            if (targetBottom > minY + HeightEpsilon)
+            {
+                // Do not collapse crossing triangles onto the floor. That produced
+                // overlapping faces and bright white bloom artifacts. We only remove
+                // triangles that are completely hidden below global Y=0.
+                result = CopyMesh(
+                    source.Mesh,
+                    sourceVertices,
+                    originalRelativeY,
+                    removeFullyHiddenTriangles: true,
+                    targetBottom);
+                return result != null;
+            }
+
+            return false;
         }
 
         private static Mesh CopyMesh(
             Mesh source,
-            Mesh.MeshData meshData,
             Vector3[] vertices,
             IReadOnlyList<float> originalRelativeY,
-            bool clipHidden,
+            bool removeFullyHiddenTriangles,
             float targetBottom)
         {
             var mesh = new Mesh
             {
                 name = source.name + "_VerticalFill",
-                indexFormat = source.indexFormat
+                indexFormat = source.indexFormat,
+                vertices = vertices
             };
 
-            mesh.vertices = vertices;
-            CopyVertexChannels(source, meshData, mesh);
+            CopyVertexChannels(source, mesh);
 
-            mesh.subMeshCount = meshData.subMeshCount;
-            for (int subMesh = 0; subMesh < meshData.subMeshCount; subMesh++)
+            mesh.subMeshCount = source.subMeshCount;
+            for (int subMesh = 0; subMesh < source.subMeshCount; subMesh++)
             {
-                SubMeshDescriptor descriptor = meshData.GetSubMesh(subMesh);
-                int[] indices = ReadIndices(source, meshData, subMesh, descriptor.indexCount);
-                if (clipHidden && descriptor.topology == MeshTopology.Triangles)
-                    indices = RemoveFullyHiddenTriangles(indices, originalRelativeY, targetBottom);
+                MeshTopology topology = source.GetTopology(subMesh);
+                int[] indices = source.GetIndices(subMesh);
+                if (removeFullyHiddenTriangles && topology == MeshTopology.Triangles)
+                {
+                    indices = RemoveFullyHiddenTriangles(
+                        indices,
+                        originalRelativeY,
+                        targetBottom);
+                }
 
-                mesh.SetIndices(indices, descriptor.topology, subMesh, false);
+                mesh.SetIndices(indices, topology, subMesh, false);
             }
 
             mesh.RecalculateBounds();
@@ -220,15 +217,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         private static Mesh CreateFlatMeshWithSkirt(
             Mesh source,
-            Mesh.MeshData meshData,
-            Vector3[] vertices,
+            IReadOnlyList<Vector3> vertices,
             Matrix4x4 linearMatrix,
             Matrix4x4 inverseLinear,
             float targetBottom)
         {
-            Dictionary<EdgeKey, BoundaryEdge> edges = CollectBoundaryEdges(
-                source,
-                meshData);
+            Dictionary<GeometricEdgeKey, BoundaryEdge> edges =
+                CollectBoundaryEdges(source, vertices, linearMatrix);
 
             var skirtVertices = new List<Vector3>();
             var skirtUvs = new List<Vector2>();
@@ -244,32 +239,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 Vector3 bottomA = new Vector3(topA.x, targetBottom, topA.z);
                 Vector3 bottomB = new Vector3(topB.x, targetBottom, topB.z);
 
-                int start = skirtVertices.Count;
-                skirtVertices.Add(inverseLinear.MultiplyPoint3x4(topA));
-                skirtVertices.Add(inverseLinear.MultiplyPoint3x4(topB));
-                skirtVertices.Add(inverseLinear.MultiplyPoint3x4(bottomA));
-                skirtVertices.Add(inverseLinear.MultiplyPoint3x4(bottomB));
-
-                float height = Mathf.Max(0.0001f, Mathf.Abs(topA.y - targetBottom));
-                float width = Mathf.Max(0.0001f, Vector3.Distance(topA, topB));
-                skirtUvs.Add(new Vector2(0f, height));
-                skirtUvs.Add(new Vector2(width, height));
-                skirtUvs.Add(new Vector2(0f, 0f));
-                skirtUvs.Add(new Vector2(width, 0f));
-
-                skirtTriangles.Add(start);
-                skirtTriangles.Add(start + 2);
-                skirtTriangles.Add(start + 1);
-                skirtTriangles.Add(start + 1);
-                skirtTriangles.Add(start + 2);
-                skirtTriangles.Add(start + 3);
-
-                skirtTriangles.Add(start + 1);
-                skirtTriangles.Add(start + 2);
-                skirtTriangles.Add(start);
-                skirtTriangles.Add(start + 3);
-                skirtTriangles.Add(start + 2);
-                skirtTriangles.Add(start + 1);
+                AddTwoSidedQuad(
+                    skirtVertices,
+                    skirtUvs,
+                    skirtTriangles,
+                    inverseLinear.MultiplyPoint3x4(topA),
+                    inverseLinear.MultiplyPoint3x4(topB),
+                    inverseLinear.MultiplyPoint3x4(bottomA),
+                    inverseLinear.MultiplyPoint3x4(bottomB),
+                    Mathf.Max(0.0001f, Vector3.Distance(topA, topB)),
+                    Mathf.Max(0.0001f, Mathf.Abs(topA.y - targetBottom)));
             }
 
             if (skirtVertices.Count == 0)
@@ -324,23 +303,74 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return combined;
         }
 
-        private static Dictionary<EdgeKey, BoundaryEdge> CollectBoundaryEdges(
-            Mesh source,
-            Mesh.MeshData meshData)
+        private static void AddTwoSidedQuad(
+            List<Vector3> vertices,
+            List<Vector2> uvs,
+            List<int> triangles,
+            Vector3 topA,
+            Vector3 topB,
+            Vector3 bottomA,
+            Vector3 bottomB,
+            float width,
+            float height)
         {
-            var edges = new Dictionary<EdgeKey, BoundaryEdge>();
-            for (int subMesh = 0; subMesh < meshData.subMeshCount; subMesh++)
+            int front = vertices.Count;
+            vertices.Add(topA);
+            vertices.Add(topB);
+            vertices.Add(bottomA);
+            vertices.Add(bottomB);
+            AddQuadUvs(uvs, width, height);
+            triangles.Add(front);
+            triangles.Add(front + 2);
+            triangles.Add(front + 1);
+            triangles.Add(front + 1);
+            triangles.Add(front + 2);
+            triangles.Add(front + 3);
+
+            // Separate vertices for the back face prevent opposite normals from
+            // cancelling each other during RecalculateNormals.
+            int back = vertices.Count;
+            vertices.Add(topA);
+            vertices.Add(topB);
+            vertices.Add(bottomA);
+            vertices.Add(bottomB);
+            AddQuadUvs(uvs, width, height);
+            triangles.Add(back + 1);
+            triangles.Add(back + 2);
+            triangles.Add(back);
+            triangles.Add(back + 3);
+            triangles.Add(back + 2);
+            triangles.Add(back + 1);
+        }
+
+        private static void AddQuadUvs(
+            List<Vector2> uvs,
+            float width,
+            float height)
+        {
+            uvs.Add(new Vector2(0f, height));
+            uvs.Add(new Vector2(width, height));
+            uvs.Add(new Vector2(0f, 0f));
+            uvs.Add(new Vector2(width, 0f));
+        }
+
+        private static Dictionary<GeometricEdgeKey, BoundaryEdge> CollectBoundaryEdges(
+            Mesh source,
+            IReadOnlyList<Vector3> vertices,
+            Matrix4x4 linearMatrix)
+        {
+            var edges = new Dictionary<GeometricEdgeKey, BoundaryEdge>();
+            for (int subMesh = 0; subMesh < source.subMeshCount; subMesh++)
             {
-                SubMeshDescriptor descriptor = meshData.GetSubMesh(subMesh);
-                if (descriptor.topology != MeshTopology.Triangles)
+                if (source.GetTopology(subMesh) != MeshTopology.Triangles)
                     continue;
 
-                int[] indices = ReadIndices(source, meshData, subMesh, descriptor.indexCount);
+                int[] indices = source.GetIndices(subMesh);
                 for (int i = 0; i + 2 < indices.Length; i += 3)
                 {
-                    AddEdge(edges, indices[i], indices[i + 1]);
-                    AddEdge(edges, indices[i + 1], indices[i + 2]);
-                    AddEdge(edges, indices[i + 2], indices[i]);
+                    AddEdge(edges, vertices, linearMatrix, indices[i], indices[i + 1]);
+                    AddEdge(edges, vertices, linearMatrix, indices[i + 1], indices[i + 2]);
+                    AddEdge(edges, vertices, linearMatrix, indices[i + 2], indices[i]);
                 }
             }
 
@@ -348,11 +378,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         private static void AddEdge(
-            Dictionary<EdgeKey, BoundaryEdge> edges,
+            Dictionary<GeometricEdgeKey, BoundaryEdge> edges,
+            IReadOnlyList<Vector3> vertices,
+            Matrix4x4 linearMatrix,
             int a,
             int b)
         {
-            var key = new EdgeKey(a, b);
+            Vector3 positionA = linearMatrix.MultiplyPoint3x4(vertices[a]);
+            Vector3 positionB = linearMatrix.MultiplyPoint3x4(vertices[b]);
+            var key = new GeometricEdgeKey(positionA, positionB);
+
             if (edges.TryGetValue(key, out BoundaryEdge existing))
             {
                 existing.Count++;
@@ -389,118 +424,111 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return visible.ToArray();
         }
 
-        private static int[] ReadIndices(
-            Mesh source,
-            Mesh.MeshData meshData,
-            int subMesh,
-            int indexCount)
+        private static void CopyVertexChannels(Mesh source, Mesh destination)
         {
-            if (source.indexFormat == IndexFormat.UInt16)
-            {
-                using (var indices = new NativeArray<ushort>(
-                           indexCount,
-                           Allocator.Temp,
-                           NativeArrayOptions.UninitializedMemory))
-                {
-                    meshData.GetIndices(indices, subMesh, true);
-                    var result = new int[indexCount];
-                    for (int i = 0; i < indexCount; i++)
-                        result[i] = indices[i];
-                    return result;
-                }
-            }
+            Vector3[] normals = source.normals;
+            if (normals != null && normals.Length == source.vertexCount)
+                destination.normals = normals;
 
-            using (var indices = new NativeArray<int>(
-                       indexCount,
-                       Allocator.Temp,
-                       NativeArrayOptions.UninitializedMemory))
-            {
-                meshData.GetIndices(indices, subMesh, true);
-                return indices.ToArray();
-            }
-        }
+            Vector4[] tangents = source.tangents;
+            if (tangents != null && tangents.Length == source.vertexCount)
+                destination.tangents = tangents;
 
-        private static void CopyVertexChannels(
-            Mesh source,
-            Mesh.MeshData meshData,
-            Mesh destination)
-        {
-            if (source.HasVertexAttribute(VertexAttribute.Normal))
-            {
-                using (var normals = new NativeArray<Vector3>(
-                           meshData.vertexCount,
-                           Allocator.Temp,
-                           NativeArrayOptions.UninitializedMemory))
-                {
-                    meshData.GetNormals(normals);
-                    destination.normals = normals.ToArray();
-                }
-            }
+            Color32[] colors = source.colors32;
+            if (colors != null && colors.Length == source.vertexCount)
+                destination.colors32 = colors;
 
-            if (source.HasVertexAttribute(VertexAttribute.Tangent))
-            {
-                using (var tangents = new NativeArray<Vector4>(
-                           meshData.vertexCount,
-                           Allocator.Temp,
-                           NativeArrayOptions.UninitializedMemory))
-                {
-                    meshData.GetTangents(tangents);
-                    destination.tangents = tangents.ToArray();
-                }
-            }
+            BoneWeight[] boneWeights = source.boneWeights;
+            if (boneWeights != null && boneWeights.Length == source.vertexCount)
+                destination.boneWeights = boneWeights;
 
-            if (source.HasVertexAttribute(VertexAttribute.Color))
-            {
-                using (var colors = new NativeArray<Color32>(
-                           meshData.vertexCount,
-                           Allocator.Temp,
-                           NativeArrayOptions.UninitializedMemory))
-                {
-                    meshData.GetColors(colors);
-                    destination.colors32 = colors.ToArray();
-                }
-            }
+            Matrix4x4[] bindposes = source.bindposes;
+            if (bindposes != null && bindposes.Length > 0)
+                destination.bindposes = bindposes;
 
             for (int channel = 0; channel < 8; channel++)
             {
-                VertexAttribute attribute =
-                    (VertexAttribute)((int)VertexAttribute.TexCoord0 + channel);
-                if (!source.HasVertexAttribute(attribute))
-                    continue;
-
-                using (var uvs = new NativeArray<Vector4>(
-                           meshData.vertexCount,
-                           Allocator.Temp,
-                           NativeArrayOptions.UninitializedMemory))
-                {
-                    meshData.GetUVs(channel, uvs);
-                    destination.SetUVs(channel, new List<Vector4>(uvs.ToArray()));
-                }
+                var uvs = new List<Vector4>(source.vertexCount);
+                source.GetUVs(channel, uvs);
+                if (uvs.Count == source.vertexCount)
+                    destination.SetUVs(channel, uvs);
             }
         }
 
-        private readonly struct EdgeKey : IEquatable<EdgeKey>
+        private readonly struct QuantizedPoint : IEquatable<QuantizedPoint>,
+            IComparable<QuantizedPoint>
         {
-            private readonly int _min;
-            private readonly int _max;
+            private readonly int _x;
+            private readonly int _y;
+            private readonly int _z;
 
-            public EdgeKey(int a, int b)
+            public QuantizedPoint(Vector3 value)
             {
-                _min = Mathf.Min(a, b);
-                _max = Mathf.Max(a, b);
+                _x = Mathf.RoundToInt(value.x * EdgeWeldPrecision);
+                _y = Mathf.RoundToInt(value.y * EdgeWeldPrecision);
+                _z = Mathf.RoundToInt(value.z * EdgeWeldPrecision);
             }
 
-            public bool Equals(EdgeKey other)
-                => _min == other._min && _max == other._max;
+            public int CompareTo(QuantizedPoint other)
+            {
+                int result = _x.CompareTo(other._x);
+                if (result != 0)
+                    return result;
+
+                result = _y.CompareTo(other._y);
+                return result != 0 ? result : _z.CompareTo(other._z);
+            }
+
+            public bool Equals(QuantizedPoint other)
+                => _x == other._x && _y == other._y && _z == other._z;
 
             public override bool Equals(object obj)
-                => obj is EdgeKey other && Equals(other);
+                => obj is QuantizedPoint other && Equals(other);
 
             public override int GetHashCode()
             {
                 unchecked
                 {
-                    return (_min * 397) ^ _max;
+                    int hash = _x;
+                    hash = hash * 397 ^ _y;
+                    hash = hash * 397 ^ _z;
+                    return hash;
+                }
+            }
+        }
+
+        private readonly struct GeometricEdgeKey : IEquatable<GeometricEdgeKey>
+        {
+            private readonly QuantizedPoint _min;
+            private readonly QuantizedPoint _max;
+
+            public GeometricEdgeKey(Vector3 a, Vector3 b)
+            {
+                var pointA = new QuantizedPoint(a);
+                var pointB = new QuantizedPoint(b);
+                if (pointA.CompareTo(pointB) <= 0)
+                {
+                    _min = pointA;
+                    _max = pointB;
+                }
+                else
+                {
+                    _min = pointB;
+                    _max = pointA;
+                }
+            }
+
+            public bool Equals(GeometricEdgeKey other)
+                => _min.Equals(other._min) && _max.Equals(other._max);
+
+            public override bool Equals(object obj)
+                => obj is GeometricEdgeKey other && Equals(other);
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (_min.GetHashCode() * 397) ^ _max.GetHashCode();
                 }
             }
         }
