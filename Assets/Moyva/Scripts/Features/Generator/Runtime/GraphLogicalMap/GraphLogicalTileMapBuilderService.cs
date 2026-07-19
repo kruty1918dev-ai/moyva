@@ -53,12 +53,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (blueprint == null)
                 return;
 
+            // GraphAsset is the source of truth for the layer base height.
+            // Preserve build-layer/prefab surface offsets even if the companion
+            // BlueprintLayer has not yet been synchronized by the editor.
+            float layerHeight = graphLayer.DefaultHeight;
+            float surfaceHeight = ResolveAuthoritativeSurfaceHeight(
+                layerHeight,
+                blueprint.defaultLayerHeight,
+                _twcLookup.ResolveSurfaceHeight(blueprint, buildLayer));
+
             var data = CreateLayerData(
                 graph,
                 layerMap,
                 graphLayer.Name,
-                blueprint.defaultLayerHeight,
-                _twcLookup.ResolveSurfaceHeight(blueprint, buildLayer),
+                layerHeight,
+                surfaceHeight,
                 buildLayer,
                 layerKind);
             if (buildLayer != null && buildLayer.generateFlatSurface)
@@ -97,6 +106,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
             graphLayer = graph.GetLayerById(layerMap.GraphLayerId);
             return graphLayer != null && graphLayer.Enabled;
         }
+
+        private static float ResolveAuthoritativeSurfaceHeight(
+            float graphLayerHeight,
+            float blueprintLayerHeight,
+            float projectedSurfaceHeight)
+            => graphLayerHeight + (projectedSurfaceHeight - blueprintLayerHeight);
 
         private static GraphLogicalTileLayerData CreateLayerData(
             GraphAsset graph,

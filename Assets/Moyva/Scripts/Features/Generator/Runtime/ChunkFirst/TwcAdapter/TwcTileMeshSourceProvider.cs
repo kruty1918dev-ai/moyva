@@ -187,7 +187,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             Vector3 position = new Vector3(
                 tilePosition.x * cellSize,
-                sample.Height + buildLayer.layerYOffset,
+                ResolvePlacementHeight(sample, buildLayer),
                 tilePosition.y * cellSize);
             Quaternion rotation = Quaternion.Euler(xRotationOffset, yRotation + yRotationOffset, 0f);
             Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, scale);
@@ -202,6 +202,25 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             results.Add(meshSource);
             return true;
+        }
+
+        private static float ResolvePlacementHeight(
+            GraphTileLayerSample sample,
+            TilesBuildLayer buildLayer)
+        {
+            float height = sample.Height;
+            if (buildLayer == null)
+                return height;
+
+            height += buildLayer.layerYOffset;
+            if (buildLayer.tileLayers != null
+                && buildLayer.tileLayers.Count > 0
+                && buildLayer.tileLayers[0] != null)
+            {
+                height += buildLayer.tileLayers[0].heightOffset;
+            }
+
+            return height;
         }
 
         private bool TryGetMeshTemplate(GameObject prefab, out PrefabMeshTemplate template)
