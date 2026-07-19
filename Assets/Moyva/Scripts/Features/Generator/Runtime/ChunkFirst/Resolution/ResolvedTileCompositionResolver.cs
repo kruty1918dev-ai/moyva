@@ -5,7 +5,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     internal sealed class ResolvedTileCompositionResolver : IResolvedTileCompositionResolver
     {
         private const string TerrainWinnerReason =
-            "Main terrain won by LayerKind/TerrainPriority/CompositionRuleTable/SortingOrder fallback.";
+            "Main terrain won by visual elevation, then LayerKind/TerrainPriority/CompositionRuleTable/SortingOrder.";
 
         private readonly ICompositionRuleTable _rules;
 
@@ -147,9 +147,34 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return hasSample;
         }
 
+        private static int CompareTerrainElevation(
+            GraphTileLayerSample current,
+            GraphTileLayerSample candidate)
+        {
+            const float epsilon = 0.0001f;
+
+            float currentTop = Mathf.Max(current.Height, current.SurfaceHeight);
+            float candidateTop = Mathf.Max(candidate.Height, candidate.SurfaceHeight);
+            float topDelta = currentTop - candidateTop;
+            if (Mathf.Abs(topDelta) > epsilon)
+                return topDelta < 0f ? -1 : 1;
+
+            float baseDelta = current.Height - candidate.Height;
+            if (Mathf.Abs(baseDelta) > epsilon)
+                return baseDelta < 0f ? -1 : 1;
+
+            return 0;
+        }
+
         private int Compare(GraphTileLayerSample current, GraphTileLayerSample candidate, TileNeighborhood neighborhood)
         {
-            int result = current.LayerKindRank.CompareTo(candidate.LayerKindRank);
+            // The visually highest terrain owns the cell. Without this check,
+            // lower BaseTerrain wins by kind rank and hides elevated cliffs.
+            int result = CompareTerrainElevation(current, candidate);
+            if (result != 0)
+                return result;
+
+            result = current.LayerKindRank.CompareTo(candidate.LayerKindRank);
             if (result != 0)
                 return result;
 

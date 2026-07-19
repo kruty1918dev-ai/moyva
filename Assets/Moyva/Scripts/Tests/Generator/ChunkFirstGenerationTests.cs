@@ -73,6 +73,58 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public void Resolver_HigherTerrainWinsOverLowerBaseTerrain()
+        {
+            var cell = new TileStackCell();
+            cell.Add(new GraphTileLayerSample(
+                "ground",
+                "Ground",
+                "ground-blueprint",
+                "ground-build",
+                "Grass",
+                "Grass",
+                LayerKind.BaseTerrain,
+                sortingOrder: 500,
+                graphLayerOrder: 500,
+                terrainPriority: 1000,
+                height: 0f,
+                surfaceHeight: 1f,
+                sourceNodeId: "ground-node"));
+            cell.Add(new GraphTileLayerSample(
+                "plateau",
+                "Plateau",
+                "plateau-blueprint",
+                "plateau-build",
+                "Cliff",
+                "Cliff",
+                LayerKind.Cliff,
+                sortingOrder: 0,
+                graphLayerOrder: 0,
+                terrainPriority: 1,
+                height: 3f,
+                surfaceHeight: 4f,
+                sourceNodeId: "plateau-node"));
+
+            var neighborhood = new TileNeighborhood(
+                cell,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null);
+
+            var resolved = new ResolvedTileCompositionResolver()
+                .Resolve(new Vector2Int(1, 1), neighborhood);
+
+            Assert.IsTrue(resolved.HasMainTerrain);
+            Assert.AreEqual("Cliff", resolved.MainTerrain.TileId);
+            Assert.AreEqual(3f, resolved.MainTerrain.Height, 0.0001f);
+        }
+
+        [Test]
         public void Resolver_ReportsMatchingTerrainNeighborsForTileVariantSelection()
         {
             var center = new TileStackCell();
