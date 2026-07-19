@@ -185,18 +185,23 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 scale.y * buildLayer.scaleOffset.y * scaleSign.y,
                 scale.z * buildLayer.scaleOffset.z * scaleSign.z);
 
+            float placementHeight = ResolvePlacementHeight(sample, buildLayer);
             Vector3 position = new Vector3(
                 tilePosition.x * cellSize,
-                ResolvePlacementHeight(sample, buildLayer),
+                placementHeight,
                 tilePosition.y * cellSize);
             Quaternion rotation = Quaternion.Euler(xRotationOffset, yRotation + yRotationOffset, 0f);
             Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, scale);
             Material[] materials = template.ResolveMaterials(preset.GetMaterialOverride());
 
+            float visibleBottomY = composition.HasSupportHeight
+                ? Mathf.Min(placementHeight, composition.SupportHeight)
+                : float.NaN;
             var meshSource = new TileMeshSource(
                 template.Mesh,
                 materials,
-                rootMatrix * template.ChildMatrix);
+                rootMatrix * template.ChildMatrix,
+                visibleBottomY);
             if (!meshSource.IsValid)
                 return false;
 

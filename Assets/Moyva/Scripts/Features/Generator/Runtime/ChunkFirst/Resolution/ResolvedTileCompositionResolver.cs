@@ -14,7 +14,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _rules = rules ?? new DefaultCompositionRuleTable();
         }
 
-        public ResolvedTileComposition Resolve(Vector2Int cell, TileNeighborhood neighborhood)
+        public ResolvedTileComposition Resolve(
+            Vector2Int cell,
+            TileNeighborhood neighborhood,
+            float lowestLayerHeight = 0f)
         {
             if (neighborhood.Center == null || neighborhood.Center.IsEmpty)
                 return new ResolvedTileComposition(cell, default, default, false, false, "empty stack");
@@ -37,7 +40,43 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 MatchesMain(main, neighborhood.NorthEast),
                 MatchesMain(main, neighborhood.SouthEast),
                 MatchesMain(main, neighborhood.SouthWest),
-                MatchesMain(main, neighborhood.NorthWest));
+                MatchesMain(main, neighborhood.NorthWest),
+                supportHeight: hasMain
+                    ? ResolveSupportHeight(main, neighborhood.Center, lowestLayerHeight)
+                    : float.NaN);
+        }
+
+        private static float ResolveSupportHeight(
+            GraphTileLayerSample main,
+            TileStackCell cell,
+            float lowestLayerHeight)
+        {
+            float fallback = Mathf.Min(main.Height, lowestLayerHeight);
+            if (cell == null)
+                return fallback;
+
+            bool hasUnderlyingTerrain = false;
+            float supportHeight = fallback;
+            for (int i = 0; i < cell.Samples.Count; i++)
+            {
+                var candidate = cell.Samples[i];
+                if (!candidate.IsTerrainLike
+                    || candidate.LayerKind == LayerKind.OverlayTerrain
+                    || SameTerrainIdentity(main, candidate)
+                    || candidate.Height >= main.Height - 0.0001f)
+                {
+                    continue;
+                }
+
+                float candidateSurface = Mathf.Min(main.Height, candidate.SurfaceHeight);
+                if (!hasUnderlyingTerrain || candidateSurface > supportHeight)
+                {
+                    supportHeight = candidateSurface;
+                    hasUnderlyingTerrain = true;
+                }
+            }
+
+            return hasUnderlyingTerrain ? supportHeight : fallback;
         }
 
         private bool TryResolveMainTerrain(TileNeighborhood neighborhood, out GraphTileLayerSample sample)

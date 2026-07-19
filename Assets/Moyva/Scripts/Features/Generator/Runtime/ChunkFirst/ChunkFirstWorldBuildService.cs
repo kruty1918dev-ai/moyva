@@ -106,6 +106,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private void ResolveCompositions(GraphLogicalTileMap map, IReadOnlyList<ChunkBuildArea> areas)
         {
             _resolved.Clear();
+            float lowestLayerHeight = ResolveLowestTerrainHeight(map);
             for (int areaIndex = 0; areaIndex < areas.Count; areaIndex++)
             {
                 RectInt core = areas[areaIndex].CoreRect;
@@ -113,9 +114,40 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 for (int x = core.xMin; x < core.xMax; x++)
                 {
                     var cell = new Vector2Int(x, y);
-                    _resolved[cell] = _resolver.Resolve(cell, _neighborhoods.Create(map, cell));
+                    _resolved[cell] = _resolver.Resolve(
+                        cell,
+                        _neighborhoods.Create(map, cell),
+                        lowestLayerHeight);
                 }
             }
+        }
+
+        private static float ResolveLowestTerrainHeight(GraphLogicalTileMap map)
+        {
+            if (map == null)
+                return 0f;
+
+            bool hasTerrain = false;
+            float lowest = 0f;
+            for (int x = 0; x < map.Width; x++)
+            for (int y = 0; y < map.Height; y++)
+            {
+                TileStackCell stack = map.GetCellStack(x, y);
+                if (stack == null)
+                    continue;
+
+                for (int i = 0; i < stack.Samples.Count; i++)
+                {
+                    var sample = stack.Samples[i];
+                    if (!sample.IsTerrainLike || sample.LayerKind == LayerKind.OverlayTerrain)
+                        continue;
+
+                    lowest = hasTerrain ? Mathf.Min(lowest, sample.Height) : sample.Height;
+                    hasTerrain = true;
+                }
+            }
+
+            return hasTerrain ? lowest : 0f;
         }
 
         private int BuildTerrainMeshes(IReadOnlyList<ChunkBuildArea> areas)

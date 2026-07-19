@@ -18,7 +18,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             bool northEastMatches = false,
             bool southEastMatches = false,
             bool southWestMatches = false,
-            bool northWestMatches = false)
+            bool northWestMatches = false,
+            float supportHeight = float.NaN)
         {
             Cell = cell;
             MainTerrain = mainTerrain;
@@ -34,6 +35,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             SouthEastMatches = southEastMatches;
             SouthWestMatches = southWestMatches;
             NorthWestMatches = northWestMatches;
+            SupportHeight = supportHeight;
         }
 
         public Vector2Int Cell { get; }
@@ -50,5 +52,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         public bool SouthEastMatches { get; }
         public bool SouthWestMatches { get; }
         public bool NorthWestMatches { get; }
+        public float SupportHeight { get; }
+        public bool HasSupportHeight => !float.IsNaN(SupportHeight);
     }
 }

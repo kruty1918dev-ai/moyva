@@ -15,6 +15,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly List<CombineInstance> _finalCombine = new List<CombineInstance>(16);
         private readonly List<Material> _materials = new List<Material>(16);
         private readonly List<TileMeshSource> _cellSources = new List<TileMeshSource>(4);
+        private readonly Dictionary<TileVerticalFillMeshKey, Mesh> _verticalMeshCache =
+            new Dictionary<TileVerticalFillMeshKey, Mesh>();
 
         public ChunkTerrainMeshBuilder(
             ChunkFirstRuntimeMeshRegistry meshRegistry,
@@ -89,11 +91,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         private void AddSource(TileMeshSource source)
         {
-            if (source.Mesh.subMeshCount <= 0)
+            if (!source.IsValid || source.Mesh.subMeshCount <= 0)
+                return;
+
+            Mesh mesh = ResolveVisibleMesh(source);
+            if (mesh == null || mesh.subMeshCount <= 0)
                 return;
 
             Material[] materials = source.Materials;
-            int subMeshCount = source.Mesh.subMeshCount;
+            int subMeshCount = mesh.subMeshCount;
             for (int subMesh = 0; subMesh < subMeshCount; subMesh++)
             {
                 Material material = ResolveMaterial(materials, subMesh);
@@ -110,11 +116,28 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
                 combines.Add(new CombineInstance
                 {
-                    mesh = source.Mesh,
-                    subMeshIndex = Mathf.Min(subMesh, source.Mesh.subMeshCount - 1),
+                    mesh = mesh,
+                    subMeshIndex = Mathf.Min(subMesh, mesh.subMeshCount - 1),
                     transform = source.LocalMatrix
                 });
             }
+        }
+
+        private Mesh ResolveVisibleMesh(TileMeshSource source)
+        {
+            if (!source.HasVisibleBottomY)
+                return source.Mesh;
+
+            TileVerticalFillMeshKey key = TileVerticalFillMeshKey.Create(source);
+            if (_verticalMeshCache.TryGetValue(key, out Mesh cached) && cached != null)
+                return cached;
+
+            if (!TileVerticalFillMeshUtility.TryCreate(source, out Mesh processed) || processed == null)
+                return source.Mesh;
+
+            _verticalMeshCache[key] = processed;
+            _meshRegistry.Register(processed);
+            return processed;
         }
 
         private Mesh CombineByMaterial(string meshName, ChunkBuildArea area)
