@@ -194,10 +194,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, scale);
             Material[] materials = template.ResolveMaterials(preset.GetMaterialOverride());
 
-            // Vertical terrain always terminates at the global world floor.
-            // The mesh utility deforms only hidden lower geometry, so the visible
-            // tile surface remains at its configured layer height.
-            float visibleBottomY = 0f;
+            // Water stays a flat surface. Only solid terrain receives vertical
+            // geometry down to the global world floor.
+            float visibleBottomY = ShouldUseVerticalFill(
+                sample,
+                prefab,
+                materials)
+                ? 0f
+                : float.NaN;
             var meshSource = new TileMeshSource(
                 template.Mesh,
                 materials,
@@ -208,6 +212,77 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             results.Add(meshSource);
             return true;
+        }
+
+        private static bool ShouldUseVerticalFill(
+            GraphTileLayerSample sample,
+            GameObject prefab,
+            Material[] materials)
+        {
+            // Graph metadata is the strongest signal: a water layer must never
+            // become a solid column.
+            if (IsWaterLike(sample.GraphLayerName)
+                || IsWaterLike(sample.TileId)
+                || IsWaterLike(sample.PresetId))
+            {
+                return false;
+            }
+
+            int waterMaterialCount = 0;
+            int solidMaterialCount = 0;
+            if (materials != null)
+            {
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    Material material = materials[i];
+                    if (material == null)
+                        continue;
+
+                    bool waterMaterial = IsWaterLike(material.name)
+                        || IsWaterLike(material.shader != null
+                            ? material.shader.name
+                            : null);
+                    if (waterMaterial)
+                        waterMaterialCount++;
+                    else
+                        solidMaterialCount++;
+                }
+            }
+
+            // Pure water meshes are excluded. Mixed shoreline meshes retain
+            // vertical filling for their solid terrain part.
+            if (waterMaterialCount > 0 && solidMaterialCount == 0)
+                return false;
+
+            // Fallback for water prefabs without assigned materials.
+            if (waterMaterialCount == 0
+                && solidMaterialCount == 0
+                && IsWaterLike(prefab != null ? prefab.name : null))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsWaterLike(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return false;
+
+            string normalized = value.Trim().ToLowerInvariant();
+            return normalized.Contains("water")
+                || normalized.Contains("ocean")
+                || normalized.Contains("river")
+                || normalized.Contains("lake")
+                || normalized.Contains("liquid")
+                || normalized.Contains("wasser")
+                || normalized.Contains("вода")
+                || normalized.Contains("водн")
+                || normalized.Contains("озеро")
+                || normalized.Contains("річк")
+                || normalized.Contains("море")
+                || normalized.Contains("океан");
         }
 
         private static float ResolvePlacementHeight(
