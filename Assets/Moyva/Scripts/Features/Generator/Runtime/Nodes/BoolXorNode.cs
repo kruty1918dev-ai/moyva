@@ -2,21 +2,27 @@ using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Bool Xor", "Математика", "Симетрична різниця масок. Результат true тільки там, де значення A і B різні.")]
+    [NodeInfo(
+        "Bool Xor",
+        "Math",
+        "Симетрична різниця масок. Результат true тільки там, де значення A і B різні.",
+        StableId = "moyva.math.bool-xor",
+        Order = 40,
+        PreviewOutput = "out.mask")]
     public sealed class BoolXorNode : NodeBase
     {
         public override string Title => "Bool Xor";
-        public override string Category => "Математика";
+        public override string Category => "Math";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<bool[,]>("A"),
-            PortDefinition.Input<bool[,]>("B")
+            PortDefinition.Input<bool[,]>("A", "in.a"),
+            PortDefinition.Input<bool[,]>("B", "in.b")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Маска")
+            PortDefinition.Output<bool[,]>("Mask", "out.mask")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)

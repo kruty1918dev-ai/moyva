@@ -295,12 +295,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             Vector2 position,
             GraphPresetApplyResult result)
         {
-            var node = graph.AddNode(nodeType, false, layerId);
-            if (node == null)
+            if (!GraphNodeFactory.TryCreate(
+                    graph,
+                    nodeType,
+                    layerId,
+                    position,
+                    out var node,
+                    out string error))
+            {
+                result.Warnings.Add(
+                    $"Не вдалося створити {nodeType?.Name ?? "<null>"}: {error}");
                 return null;
+            }
 
-            node.LayerId = layerId;
-            node.EditorPosition = position;
             result.CreatedNodes.Add(node);
             return node;
         }
@@ -319,8 +326,29 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return null;
             }
 
-            var node = AddNode<TwcModifierNode>(graph, layerId, position, result);
-            node?.ConfigureModifier(modifierType);
+            if (!GraphNodeCatalog.TryGetTwcModifier(modifierType, out var entry))
+            {
+                result.Warnings.Add(
+                    $"TWC modifier is not available in the validated catalog: {modifierTypeName}");
+                return null;
+            }
+
+            if (!GraphNodeFactory.TryCreate(
+                    graph,
+                    entry,
+                    layerId,
+                    position,
+                    out var created,
+                    out string error))
+            {
+                result.Warnings.Add(
+                    $"Не вдалося створити TWC modifier '{entry.Descriptor.Title}': {error}");
+                return null;
+            }
+
+            var node = created as TwcModifierNode;
+            if (node != null)
+                result.CreatedNodes.Add(node);
             return node;
         }
 

@@ -41,25 +41,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 GlobalSeed.Set(seed);
                 UnityEngine.Random.InitState(seed);
 
-                var context = new NodeContext(seed)
-                {
-                    MapSize = mapSize
-                };
-
                 var layerDataList = new List<WorldLayerData>();
-                context.RegisterService(layerDataList);
-
-                RegisterContextData(context, graphAsset);
-                var layerMaskRegistry = new LayerMaskRegistry();
-                context.RegisterService(layerMaskRegistry);
-                LayerMaskPrewarmUtility.PrewarmAllLayerMasks(
+                var snapshot = GraphEvaluationPipeline.Evaluate(
                     graphAsset,
                     seed,
                     mapSize,
-                    layerMaskRegistry,
-                    prewarmContext => RegisterContextData(prewarmContext, graphAsset));
-
-                var result = new GraphRunner().Execute(graphAsset, context);
+                    configureContext: context =>
+                    {
+                        RegisterContextData(context, graphAsset);
+                        context.RegisterService(layerDataList);
+                    });
+                var result = snapshot.ExecutionResult;
+                if (result == null)
+                {
+                    errorMessage = snapshot.Diagnostics ?? "Graph execution produced no result.";
+                    return false;
+                }
                 if (!result.Success)
                 {
                     errorMessage = string.IsNullOrWhiteSpace(result.ErrorMessage)
@@ -78,17 +75,19 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     return false;
                 }
 
-                object[] outputs = result.GetOutputs(outputNode.NodeId);
-                if (outputs == null || outputs.Length == 0)
+                var output =
+                    snapshot.GetNodeArtifact<LayerOutputSnapshot>(
+                        outputNode.NodeId);
+                if (output == null)
                 {
                     errorMessage = "Graph did not produce any output maps.";
                     return false;
                 }
 
-                var biomeMap = NormalizeStringMap(outputs.Length > 0 ? outputs[0] as string[,] : null, mapSize.x, mapSize.y);
-                var objectMap = NormalizeStringMap(outputs.Length > 1 ? outputs[1] as string[,] : null, mapSize.x, mapSize.y);
-                var heightMap = NormalizeFloatMap(outputs.Length > 2 ? outputs[2] as float[,] : null, mapSize.x, mapSize.y);
-                var buildingMap = NormalizeStringMap(outputs.Length > 3 ? outputs[3] as string[,] : null, mapSize.x, mapSize.y);
+                var biomeMap = NormalizeStringMap(output.BiomeMap, mapSize.x, mapSize.y);
+                var objectMap = NormalizeStringMap(output.ObjectMap, mapSize.x, mapSize.y);
+                var heightMap = NormalizeFloatMap(output.HeightMap, mapSize.x, mapSize.y);
+                var buildingMap = NormalizeStringMap(output.BuildingMap, mapSize.x, mapSize.y);
 
                 if (layerDataList.Count > 0)
                 {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Editor.Shared;
+using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
@@ -9,8 +10,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 {
     internal static class NodePreviewTextureFactory
     {
-        private const int DefaultSize = 128;
-
         /// <summary>
         /// Кеш усередненого кольору спрайта за tile ID (fallback коли текстура нечитаєма).
         /// </summary>
@@ -40,6 +39,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return null;
             }
 
+            string scalarStatus = null;
             for (int i = 0; i < outputs.Length; i++)
             {
                 var output = outputs[i];
@@ -52,28 +52,47 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     return tex;
                 }
 
+                if (output is ScatterMask scatterMask)
+                {
+                    status =
+                        $"Scatter mask • {scatterMask.Width}x{scatterMask.Height} • " +
+                        $"{CountAllowed(scatterMask)} active • 1 px/tile";
+                    ownsTexture = true;
+                    return BuildScatterMaskTexture(scatterMask);
+                }
+
+                if (output is IReadOnlyList<ScatterCandidate> candidates)
+                {
+                    int width = Mathf.Max(1, requestedWidth);
+                    int height = Mathf.Max(1, requestedHeight);
+                    status =
+                        $"Candidates • {width}x{height} • {candidates.Count} placed • 1 px/tile";
+                    ownsTexture = true;
+                    return BuildCandidateTexture(candidates, width, height);
+                }
+
+                if (output is ObjectPlacementLayer objectLayer)
+                {
+                    int width = Mathf.Max(1, requestedWidth);
+                    int height = Mathf.Max(1, requestedHeight);
+                    status =
+                        $"Object layer • {width}x{height} • {objectLayer.Candidates.Count} placed • 1 px/tile";
+                    ownsTexture = true;
+                    return BuildCandidateTexture(objectLayer.Candidates, width, height);
+                }
+
                 if (output is float[,] floatMap)
                 {
-                    status = "Height/float map";
+                    status = BuildLogicalStatus("Height/float map", floatMap);
                     ownsTexture = true;
-                    if (ProjectedMapPreviewRenderer.ShouldProject(sharedSettings))
-                        return BuildProjectedFloatTexture(floatMap, requestedWidth, requestedHeight, heatmap, sharedSettings);
-
                     return BuildFloatTexture(floatMap, requestedWidth, requestedHeight, heatmap);
                 }
 
                 if (output is string[,] tileMap)
                 {
                     bool hasSprites = tileRegistry != null;
-                    status = hasSprites ? "Tile map (sprites)" : "Tile/biome map";
+                    status = BuildLogicalStatus(hasSprites ? "Tile map (colors)" : "Tile/biome map", tileMap);
                     ownsTexture = true;
-                    if (ProjectedMapPreviewRenderer.ShouldProject(sharedSettings))
-                    {
-                        return hasSprites
-                            ? BuildProjectedSpriteColorTexture(tileMap, requestedWidth, requestedHeight, tileRegistry, sharedSettings)
-                            : BuildProjectedStringTexture(tileMap, requestedWidth, requestedHeight, sharedSettings);
-                    }
-
                     return hasSprites
                         ? BuildSpriteColorTexture(tileMap, requestedWidth, requestedHeight, tileRegistry)
                         : BuildStringTexture(tileMap, requestedWidth, requestedHeight);
@@ -81,26 +100,22 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                 if (output is bool[,] maskMap)
                 {
-                    status = "Mask map";
+                    status = BuildLogicalStatus("Mask map", maskMap);
                     ownsTexture = true;
-                    if (ProjectedMapPreviewRenderer.ShouldProject(sharedSettings))
-                        return BuildProjectedBoolTexture(maskMap, requestedWidth, requestedHeight, heatmap, sharedSettings);
-
                     return BuildBoolTexture(maskMap, requestedWidth, requestedHeight, heatmap);
                 }
 
                 if (output is int[,] intMap)
                 {
-                    status = "Int map";
+                    status = BuildLogicalStatus("Int map", intMap);
                     ownsTexture = true;
-                    if (ProjectedMapPreviewRenderer.ShouldProject(sharedSettings))
-                        return BuildProjectedIntTexture(intMap, requestedWidth, requestedHeight, heatmap, sharedSettings);
-
                     return BuildIntTexture(intMap, requestedWidth, requestedHeight, heatmap);
                 }
+
+                scalarStatus ??= TryDescribeScalar(output);
             }
 
-            status = "Unsupported output type";
+            status = scalarStatus ?? "Unsupported output type";
             return null;
         }
 
@@ -290,43 +305,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             EnsureSpriteColorCache(registry);
 
-            GetSize(source, requestedWidth, requestedHeight, out var tw, out var th, out var sw, out var sh);
+            GetSize(source, requestedWidth, requestedHeight, out var tw, out var th, out _, out _);
 
             var tex = CreateTexture(tw, th);
             for (int y = 0; y < th; y++)
             {
-                // Floating-point tile coordinate in source space
-                float tileYf = (float)y * sh / th;
-                int sy = Mathf.Clamp((int)tileYf, 0, sh - 1);
-                // UV within the tile (0..1)
-                float vWithin = tileYf - sy;
-
                 for (int x = 0; x < tw; x++)
                 {
-                    float tileXf = (float)x * sw / tw;
-                    int sx = Mathf.Clamp((int)tileXf, 0, sw - 1);
-                    float uWithin = tileXf - sx;
-
-                    var tileId = source[sx, sy];
+                    var tileId = source[x, y];
 
                     Color c;
                     if (string.IsNullOrEmpty(tileId))
                     {
                         c = Color.black;
                     }
-                    else if (_spritePxCache != null && _spritePxCache.TryGetValue(tileId, out var pd))
-                    {
-                        // Sample actual sprite pixel using within-tile UV
-                        int spx = Mathf.Clamp((int)(uWithin * pd.w), 0, pd.w - 1);
-                        int spy = Mathf.Clamp((int)(vWithin * pd.h), 0, pd.h - 1);
-                        c = pd.px[spy * pd.w + spx];
-                        // Blend transparent sprite pixels with averaged fallback color
-                        if (c.a < 0.05f && _spriteColorCache.TryGetValue(tileId, out var avg))
-                            c = avg;
-                    }
                     else if (_spriteColorCache != null && _spriteColorCache.TryGetValue(tileId, out c))
                     {
-                        // Fallback: averaged color (texture not readable)
+                        // One logical pixel represents the tile, so use its averaged color.
                     }
                     else
                     {
@@ -339,6 +334,52 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             tex.Apply(false, false);
             return tex;
+        }
+
+        private static Texture2D BuildScatterMaskTexture(ScatterMask mask)
+        {
+            int width = Mathf.Max(1, mask?.Width ?? 0);
+            int height = Mathf.Max(1, mask?.Height ?? 0);
+            var texture = CreateTexture(width, height);
+            var off = new Color(0.035f, 0.04f, 0.055f, 1f);
+            var on = new Color(0.70f, 0.92f, 0.48f, 1f);
+
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                float weight = mask?.GetWeight(x, y) ?? 0f;
+                texture.SetPixel(x, y, Color.Lerp(off, on, weight));
+            }
+
+            texture.Apply(false, false);
+            return texture;
+        }
+
+        private static Texture2D BuildCandidateTexture(
+            IReadOnlyList<ScatterCandidate> candidates,
+            int width,
+            int height)
+        {
+            var texture = CreateTexture(width, height);
+            var background = new Color(0.035f, 0.04f, 0.055f, 1f);
+            var point = new Color(0.78f, 0.95f, 0.45f, 1f);
+            var pixels = new Color[width * height];
+            for (int i = 0; i < pixels.Length; i++)
+                pixels[i] = background;
+
+            if (candidates != null)
+            {
+                for (int i = 0; i < candidates.Count; i++)
+                {
+                    var cell = candidates[i].Cell;
+                    if (cell.x >= 0 && cell.x < width && cell.y >= 0 && cell.y < height)
+                        pixels[cell.y * width + cell.x] = point;
+                }
+            }
+
+            texture.SetPixels(pixels);
+            texture.Apply(false, false);
+            return texture;
         }
 
         private static void EnsureSpriteColorCache(TileRegistrySO registry)
@@ -400,10 +441,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private static Texture2D CreateTexture(int width, int height)
         {
-            var settings = AdaptivePrefabPreviewUtility.ProjectSettings;
             var tex = new Texture2D(width, height, TextureFormat.RGBA32, false)
             {
-                filterMode = AdaptivePrefabPreviewUtility.Uses3DPreview(settings) ? settings.PreviewFilterMode : FilterMode.Point,
+                filterMode = FilterMode.Point,
                 wrapMode = TextureWrapMode.Clamp,
                 hideFlags = HideFlags.HideAndDontSave
             };
@@ -426,8 +466,82 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             sourceWidth = source.GetLength(0);
             sourceHeight = source.GetLength(1);
 
-            targetWidth = Mathf.Max(1, requestedWidth > 0 ? requestedWidth : DefaultSize);
-            targetHeight = Mathf.Max(1, requestedHeight > 0 ? requestedHeight : DefaultSize);
+            // Logical node previews are never resampled: one texture pixel is one map cell.
+            targetWidth = Mathf.Max(1, sourceWidth);
+            targetHeight = Mathf.Max(1, sourceHeight);
+        }
+
+        private static string BuildLogicalStatus(string label, Array source)
+        {
+            return source == null || source.Rank != 2
+                ? label
+                : $"{label} • {source.GetLength(0)}x{source.GetLength(1)} • " +
+                  $"{CountActive(source)} active • 1 px/tile";
+        }
+
+        private static int CountActive(Array source)
+        {
+            if (source == null || source.Rank != 2)
+                return 0;
+
+            int count = 0;
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+            {
+                object value = source.GetValue(x, y);
+                bool active = value switch
+                {
+                    bool boolean => boolean,
+                    float number => !float.IsNaN(number) && !float.IsInfinity(number)
+                                    && !Mathf.Approximately(number, 0f),
+                    int number => number != 0,
+                    string text => !string.IsNullOrEmpty(text),
+                    _ => value != null
+                };
+                if (active)
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static int CountAllowed(ScatterMask mask)
+        {
+            if (mask == null)
+                return 0;
+
+            int count = 0;
+            for (int x = 0; x < mask.Width; x++)
+            for (int y = 0; y < mask.Height; y++)
+            {
+                if (mask.IsAllowed(x, y))
+                    count++;
+            }
+
+            return count;
+        }
+
+        private static string TryDescribeScalar(object value)
+        {
+            return value switch
+            {
+                bool boolean => $"Value • {boolean}",
+                byte or sbyte or short or ushort or int or uint or long or ulong =>
+                    $"Value • {value}",
+                float number => $"Value • {number:0.###}",
+                double number => $"Value • {number:0.###}",
+                decimal number => $"Value • {number:0.###}",
+                string text => $"Value • {text}",
+                Enum enumValue => $"Value • {enumValue}",
+                Vector2 vector => $"Value • ({vector.x:0.###}, {vector.y:0.###})",
+                Vector3 vector =>
+                    $"Value • ({vector.x:0.###}, {vector.y:0.###}, {vector.z:0.###})",
+                Vector2Int vector => $"Value • ({vector.x}, {vector.y})",
+                Vector3Int vector => $"Value • ({vector.x}, {vector.y}, {vector.z})",
+                _ => null
+            };
         }
 
         private static Color StringToColor(string value)

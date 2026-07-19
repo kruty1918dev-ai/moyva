@@ -66,8 +66,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
     [NodeInfo(
         "Tile Settings",
         "Tiles",
-        "Налаштування tileset/build-шару всередині graph layer. Один Tile Settings node описує build-параметри шару та список TilePreset варіантів для weighted random вибору; старе окреме build-layer вікно більше не є основним джерелом налаштувань.")]
-    public sealed class TileSettingsNode : NodeBase, IPreviewableNode
+        "Налаштовує tileset і build-параметри шару та список TilePreset-варіантів для зваженого вибору.",
+        StableId = "moyva.tiles.settings",
+        Order = 10,
+        PreviewOutput = "out.mask")]
+    public sealed class TileSettingsNode : NodeBase
     {
         [Header("Tile Preset Variants")]
         [SerializeField]
@@ -154,8 +157,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [SerializeField]
         private bool _invertCollisionWalls;
 
-        [NonSerialized] private bool[,] _lastMask;
-
         public IReadOnlyList<TilePresetVariant> TileVariants => GetConfiguredPresetVariants();
         public TilePreset TilePreset => ResolvePrimaryVariant()?.Preset ?? _tilePreset;
         public TilePresetSlot Slot => ResolvePrimaryVariant()?.Slot ?? _slot;
@@ -199,50 +200,33 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<bool[,]>("Mask")
+            PortDefinition.OptionalInput<bool[,]>("Mask", "in.mask")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Mask"),
-            PortDefinition.Output<GraphTileSettings>("Settings")
+            PortDefinition.Output<bool[,]>("Mask", "out.mask"),
+            PortDefinition.Output<GraphTileSettings>("Settings", "out.settings")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
         {
-            _lastMask = inputs != null && inputs.Length > 0 ? inputs[0] as bool[,] : null;
-            return NodeOutput.Success(_lastMask, CreateSnapshot());
-        }
-
-        public Texture2D GeneratePreview(int width, int height)
-        {
-            if (_lastMask == null)
-                return null;
-
-            var texture = new Texture2D(
-                Mathf.Max(1, _lastMask.GetLength(0)),
-                Mathf.Max(1, _lastMask.GetLength(1)),
-                TextureFormat.RGBA32,
-                false)
+            var mask = inputs != null && inputs.Length > 0 ? inputs[0] as bool[,] : null;
+            if (mask == null)
             {
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp,
-                name = "Tile Settings Preview"
-            };
+                if (!_generateFlatSurface)
+                    return NodeOutput.Error(
+                        "Mask input is required unless Generate Flat Surface is enabled.");
 
-            var active = HasRenderableTileOutput
-                ? Color.white
-                : (_generateFlatSurface ? new Color(0.7f, 0.7f, 0.7f, 1f) : Color.yellow);
-            var inactive = new Color(0f, 0f, 0f, 0f);
-
-            for (int y = 0; y < texture.height; y++)
-            {
-                for (int x = 0; x < texture.width; x++)
-                    texture.SetPixel(x, y, _lastMask[x, y] ? active : inactive);
+                int width = Mathf.Max(1, context?.MapSize.x ?? 0);
+                int height = Mathf.Max(1, context?.MapSize.y ?? 0);
+                mask = new bool[width, height];
+                for (int x = 0; x < width; x++)
+                for (int y = 0; y < height; y++)
+                    mask[x, y] = true;
             }
 
-            texture.Apply(false, false);
-            return texture;
+            return NodeOutput.Success(mask, CreateSnapshot());
         }
 
         public GraphTileSettings CreateSnapshot()

@@ -1,28 +1,31 @@
-using System;
 using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Маска розміщення", "Розміщення об'єктів", "Комбінує маску розміщення та необов'язкову маску виключення у маску розкиду об'єктів.")]
-    public sealed class PlacementMaskNode : NodeBase, IPreviewableNode
+    [NodeInfo(
+        "Placement Mask",
+        "Objects",
+        "Комбінує маску розміщення та необов'язкову маску виключення у маску розкиду об'єктів.",
+        StableId = "moyva.objects.placement-mask",
+        Order = 10,
+        PreviewOutput = "out.allowed_mask")]
+    public sealed class PlacementMaskNode : NodeBase
     {
-        [NonSerialized] private ScatterMask _lastMask;
-
-        public override string Title => "Маска розміщення";
-        public override string Category => "Розміщення об'єктів";
+        public override string Title => "Placement Mask";
+        public override string Category => "Objects";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<bool[,]>("Маска розміщення"),
-            PortDefinition.Input<bool[,]>("Маска виключення")
+            PortDefinition.OptionalInput<bool[,]>("Placement Mask", "in.placement_mask"),
+            PortDefinition.OptionalInput<bool[,]>("Exclusion Mask", "in.exclusion_mask")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<ScatterMask>("Маска розкиду"),
-            PortDefinition.Output<bool[,]>("Дозволена маска")
+            PortDefinition.Output<ScatterMask>("Scatter Mask", "out.scatter_mask"),
+            PortDefinition.Output<bool[,]>("Allowed Mask", "out.allowed_mask")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
@@ -62,18 +65,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
                 return NodeOutput.Error("Маски розміщення та виключення мають різний розмір.");
             }
 
-            _lastMask = new ScatterMask(placement, exclude);
-            return NodeOutput.Success(_lastMask, _lastMask.BuildAllowedMask());
-        }
-
-        public Texture2D GeneratePreview(int width, int height)
-        {
-            return _lastMask == null
-                ? null
-                : ObjectPlacementPreviewUtility.BuildMaskTexture(
-                    _lastMask.BuildAllowedMask(),
-                    new Color(0.45f, 0.85f, 0.35f, 1f),
-                    new Color(0.06f, 0.07f, 0.09f, 1f));
+            var scatterMask = new ScatterMask(placement, exclude);
+            return NodeOutput.Success(scatterMask, scatterMask.BuildAllowedMask());
         }
     }
 }

@@ -57,6 +57,17 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
     /// </summary>
     public static class TwcModifierCatalog
     {
+        private static readonly HashSet<string> HiddenMenuNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "add",
+            "subtract",
+            "boolean",
+            "pathfinding",
+            "pushtopaintpositions",
+            "selectbasedonneighbour",
+            "heighttexture"
+        };
+
         private static List<TwcModifierEntry> _entries;
         private static Dictionary<string, TwcModifierEntry> _byTypeName;
         private static List<TwcModifierMenuItem> _menuItems;
@@ -85,11 +96,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
                 EnsureBuilt();
                 if (_menuItems == null)
                 {
-                    _menuItems = _entries.Select(e => new TwcModifierMenuItem(
-                        e.Type,
-                        e.DisplayName,
-                        e.IsGenerator ? "TileWorldCreator/Generators" : "TileWorldCreator/Modifiers",
-                        e.IsGenerator)).ToList();
+                    _menuItems = _entries
+                        .Where(IsSafeForMoyvaMenu)
+                        .Select(e => new TwcModifierMenuItem(
+                            e.Type,
+                            e.DisplayName,
+                            e.IsGenerator
+                                ? "Advanced/TileWorldCreator/Generators"
+                                : "Advanced/TileWorldCreator/Modifiers",
+                            e.IsGenerator))
+                        .ToList();
                 }
                 return _menuItems;
             }
@@ -168,6 +184,30 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
                     ? byCategory
                     : string.Compare(a.DisplayName, b.DisplayName, StringComparison.Ordinal);
             });
+        }
+
+        private static bool IsSafeForMoyvaMenu(TwcModifierEntry entry)
+        {
+            string typeName = CanonicalName(entry.Type?.Name);
+            string displayName = CanonicalName(entry.DisplayName);
+            return !HiddenMenuNames.Contains(typeName) && !HiddenMenuNames.Contains(displayName);
+        }
+
+        private static string CanonicalName(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return string.Empty;
+
+            var chars = new char[value.Length];
+            int count = 0;
+            for (int i = 0; i < value.Length; i++)
+            {
+                char character = value[i];
+                if (char.IsLetterOrDigit(character))
+                    chars[count++] = char.ToLowerInvariant(character);
+            }
+
+            return new string(chars, 0, count);
         }
     }
 }

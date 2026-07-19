@@ -6,8 +6,14 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Шар об'єктів", "Розміщення об'єктів", "Конвертує кандидати розкиду, варіанти префабів та налаштування появи у згенерований TWC object layer.")]
-    public sealed class ObjectLayerNode : NodeBase, IPreviewableNode
+    [NodeInfo(
+        "Object Layer",
+        "Objects",
+        "Перетворює кандидатів, варіанти prefab та правила появи на згенерований TWC object layer.",
+        StableId = "moyva.objects.layer",
+        Order = 40,
+        PreviewOutput = "out.object_layer")]
+    public sealed class ObjectLayerNode : NodeBase
     {
         [SerializeField, InlineEditable("шар")]
         [Tooltip("Назва згенерованого TWC blueprint/build object layer.")]
@@ -29,22 +35,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
         [Tooltip("Зберігається разом з вихідним шаром для редактора/дебагу. Генерація кластерів зазвичай відбувається в Cluster Scatter.")]
         private ClusterSettings _cluster = new();
 
-        [NonSerialized] private ScatterMask _lastMask;
-        [NonSerialized] private List<ScatterCandidate> _lastCandidates;
-
-        public override string Title => "Шар об'єктів";
-        public override string Category => "Розміщення об'єктів";
+        public override string Title => "Object Layer";
+        public override string Category => "Objects";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<List<ScatterCandidate>>("Кандидати"),
-            PortDefinition.Input<bool[,]>("Маска виключення"),
-            PortDefinition.Input<GrassCardSettings>("Трава")
+            PortDefinition.Input<List<ScatterCandidate>>("Candidates", "in.candidates"),
+            PortDefinition.OptionalInput<bool[,]>("Exclusion Mask", "in.exclusion_mask"),
+            PortDefinition.OptionalInput<GrassCardSettings>("Grass", "in.grass")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<ObjectPlacementLayer>("Шар об'єктів")
+            PortDefinition.Output<ObjectPlacementLayer>("Object Layer", "out.object_layer")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
@@ -69,9 +72,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
             AssignPrefabIndices(filtered, layer.Prefabs, context?.Seed ?? 1);
             layer.Candidates.AddRange(filtered);
 
-            _lastCandidates = filtered;
-            _lastMask = BuildPreviewMask(context, filtered);
-
             if (layer.Prefabs.Count == 0)
             {
                 string grassHint = grassConnectedWithoutPrefab
@@ -86,13 +86,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
                     layer);
 
             return NodeOutput.Success(layer);
-        }
-
-        public Texture2D GeneratePreview(int width, int height)
-        {
-            return _lastMask == null
-                ? null
-                : ObjectPlacementPreviewUtility.BuildScatterTexture(_lastMask, _lastCandidates);
         }
 
         private string ResolveTargetGraphLayerId()
@@ -209,27 +202,5 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
             }
         }
 
-        private static ScatterMask BuildPreviewMask(NodeContext context, List<ScatterCandidate> candidates)
-        {
-            int w = Mathf.Max(1, context?.MapSize.x ?? 0);
-            int h = Mathf.Max(1, context?.MapSize.y ?? 0);
-            if (candidates != null)
-            {
-                for (int i = 0; i < candidates.Count; i++)
-                {
-                    w = Mathf.Max(w, candidates[i].Cell.x + 1);
-                    h = Mathf.Max(h, candidates[i].Cell.y + 1);
-                }
-            }
-
-            var placement = new bool[w, h];
-            for (int x = 0; x < w; x++)
-            {
-                for (int y = 0; y < h; y++)
-                    placement[x, y] = true;
-            }
-
-            return new ScatterMask(placement);
-        }
     }
 }

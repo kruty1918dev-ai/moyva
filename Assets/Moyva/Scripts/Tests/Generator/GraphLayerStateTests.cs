@@ -498,6 +498,13 @@ namespace Kruty1918.Moyva.Tests.Generator
 
             var source = graph.AddNode(typeof(ConstantCellMaskNode), false, lowerLayerId) as ConstantCellMaskNode;
             source.Cell = new Vector2Int(1, 2);
+            var lowerOutput = graph.AddNode(typeof(OutputNode), false, lowerLayerId) as OutputNode;
+            lowerOutput.OutputKind = LayerOutputKind.Masks;
+            graph.AddConnection(
+                source.NodeId,
+                0,
+                lowerOutput.NodeId,
+                OutputNode.MaskInputIndex);
 
             var reference = graph.AddNode(typeof(LayerMaskReferenceNode), false, upperLayer.Id) as LayerMaskReferenceNode;
             reference.SetSourceLayerId(lowerLayerId);

@@ -32,7 +32,30 @@ namespace Kruty1918.Moyva.Generator.Runtime
             ISet<string> skippedLayerIds,
             Vector2Int? mapSizeOverride)
         {
-            return CreateDefaultService().Compile(graph, manager, seed, skippedLayerIds, mapSizeOverride);
+            return Compile(
+                graph,
+                manager,
+                seed,
+                skippedLayerIds,
+                mapSizeOverride,
+                null);
+        }
+
+        public static List<CompiledLayerMap> Compile(
+            GraphAsset graph,
+            TileWorldCreatorManager manager,
+            int seed,
+            ISet<string> skippedLayerIds,
+            Vector2Int? mapSizeOverride,
+            GraphEvaluationSnapshot evaluationSnapshot)
+        {
+            return CreateDefaultService().Compile(
+                graph,
+                manager,
+                seed,
+                skippedLayerIds,
+                mapSizeOverride,
+                evaluationSnapshot);
         }
     }
 }

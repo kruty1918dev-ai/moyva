@@ -7,7 +7,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
     [Serializable]
     public sealed class GraphPreset
     {
-        [SerializeField] public int version = 2;
+        [SerializeField] public int version = 3;
         [SerializeField] public List<NodePresetEntry> nodes = new();
         [SerializeField] public List<ConnectionEntry> connections = new();
         [SerializeField] public List<ScriptableObjectEntry> scriptableObjects = new();
@@ -20,6 +20,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
         [SerializeField] public string originalNodeId;
         [SerializeField] public Vector2 position;
         [SerializeField] public string jsonData;
+        [SerializeField] public string twcModifierTypeAssemblyQualifiedName;
+        [SerializeField] public string twcModifierJsonData;
     }
 
     [Serializable]

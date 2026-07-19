@@ -1,12 +1,17 @@
-using System;
 using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Маска краю", "Розміщення об'єктів", "Створює м’яку зважену смугу біля краю острова або маски рельєфу.")]
-    public sealed class EdgeMaskNode : NodeBase, IPreviewableNode
+    [NodeInfo(
+        "Edge Mask",
+        "Masks",
+        "Створює м’яку зважену смугу біля краю острова або маски рельєфу.",
+        StableId = "moyva.masks.edge",
+        Order = 10,
+        PreviewOutput = "out.scatter_mask")]
+    public sealed class EdgeMaskNode : NodeBase
     {
         [SerializeField, Min(0)]
         [InlineEditable("Відстань")]
@@ -22,21 +27,18 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
         [Tooltip("Виводить інтерір біля краю замість смуги краю.")]
         private bool _invert;
 
-        [NonSerialized] private bool[,] _lastMask;
-        [NonSerialized] private float[,] _lastWeights;
-
-        public override string Title => "Маска краю";
-        public override string Category => "Розміщення об'єктів";
+        public override string Title => "Edge Mask";
+        public override string Category => "Masks";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<bool[,]>("Джерело")
+            PortDefinition.Input<bool[,]>("Source", "in.source")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Маска"),
-            PortDefinition.Output<ScatterMask>("Маска розкиду")
+            PortDefinition.Output<bool[,]>("Mask", "out.mask"),
+            PortDefinition.Output<ScatterMask>("Scatter Mask", "out.scatter_mask")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
@@ -83,39 +85,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
                 }
             }
 
-            _lastMask = mask;
-            _lastWeights = weights;
             return NodeOutput.Success(mask, new ScatterMask(mask, null, weights));
-        }
-
-        public Texture2D GeneratePreview(int width, int height)
-        {
-            if (_lastMask == null)
-                return null;
-
-            int w = _lastMask.GetLength(0);
-            int h = _lastMask.GetLength(1);
-            var texture = new Texture2D(w, h, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp,
-                hideFlags = HideFlags.HideAndDontSave
-            };
-
-            for (int y = 0; y < h; y++)
-            {
-                for (int x = 0; x < w; x++)
-                {
-                    float t = _lastWeights != null ? _lastWeights[x, y] : (_lastMask[x, y] ? 1f : 0f);
-                    texture.SetPixel(x, y, Color.Lerp(
-                        new Color(0.04f, 0.05f, 0.07f, 1f),
-                        new Color(0.70f, 0.92f, 0.48f, 1f),
-                        t));
-                }
-            }
-
-            texture.Apply(false, false);
-            return texture;
         }
     }
 }

@@ -4,8 +4,13 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("String Value", "Значення", "Повертає рядок (string) для текстових входів, зокрема формул у функціональних нодах.")]
-    [HidePreview]
+    [NodeInfo(
+        "String Value",
+        "Values",
+        "Повертає рядок для текстових входів, зокрема формул у функціональних вузлах.",
+        StableId = "moyva.values.string",
+        Order = 40,
+        PreviewOutput = "out.value")]
     public sealed class StringValueNode : NodeBase
     {
         [SerializeField]
@@ -13,13 +18,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         private string value = string.Empty;
 
         public override string Title => "String Value";
-        public override string Category => "Значення";
+        public override string Category => "Values";
 
         public override PortDefinition[] Inputs => Array.Empty<PortDefinition>();
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<string>("Value")
+            PortDefinition.Output<string>("Value", "out.value")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)

@@ -28,6 +28,31 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             out int height,
             out string status)
         {
+            return TryBuildLayerMatrices(
+                graph,
+                seed,
+                mapSize,
+                skippedLayerIds,
+                null,
+                out matrices,
+                out layerPreviewColors,
+                out width,
+                out height,
+                out status);
+        }
+
+        public static bool TryBuildLayerMatrices(
+            GraphAsset graph,
+            int seed,
+            Vector2Int mapSize,
+            ISet<string> skippedLayerIds,
+            GraphEvaluationSnapshot evaluationSnapshot,
+            out Dictionary<string, bool[,]> matrices,
+            out Dictionary<string, Color> layerPreviewColors,
+            out int width,
+            out int height,
+            out string status)
+        {
             matrices = new Dictionary<string, bool[,]>();
             layerPreviewColors = new Dictionary<string, Color>();
             width = Mathf.Max(1, mapSize.x);
@@ -65,7 +90,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     manager,
                     effectiveSeed,
                     skippedLayerIds,
-                    safeMapSize);
+                    safeMapSize,
+                    evaluationSnapshot);
 
                 TileWorldCreatorLayerOcclusionOptimizer.GenerateBlueprintMap(manager);
                 var logicalMap = GraphLogicalTileMapBuilder.Build(

@@ -356,30 +356,47 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             if (scope == null)
                 return;
 
-            ValidateCycles(scope, report);
-            ValidateConnections(scope, report);
-            ValidateRequiredInputs(scope, report);
-            ValidateTwcModifierNodes(scope, report);
-            ValidateObjectPlacementNodes(scope, report);
+            var connectedToOutput = BuildOutputReachability(scope);
+            ValidateCycles(scope, connectedToOutput, report);
+            ValidateConnections(scope, connectedToOutput, report);
+            ValidateRequiredInputs(scope, connectedToOutput, report);
+            ValidateTwcModifierNodes(scope, connectedToOutput, report);
+            ValidateObjectPlacementNodes(scope, connectedToOutput, report);
+            ValidateSubgraphNodes(scope, connectedToOutput, report);
         }
 
-        private void ValidateCycles(GraphExecutionScope scope, GraphValidationReport report)
+        private void ValidateCycles(
+            GraphExecutionScope scope,
+            ISet<string> connectedToOutput,
+            GraphValidationReport report)
         {
             var plan = TopologicalSorter.BuildPlan(scope);
             if (!plan.Success)
             {
                 bool hasCycle = plan.CycleNodeIds.Count > 0;
+                bool authoritative = !hasCycle
+                    || plan.CycleNodeIds.Any(nodeId =>
+                        connectedToOutput == null
+                        || connectedToOutput.Contains(nodeId));
+                var severity = authoritative
+                    ? ValidationSeverity.Error
+                    : ValidationSeverity.Warning;
                 report.Add(new GraphValidationIssue(
                     hasCycle ? "GRAPH_CYCLE" : "GRAPH_EXECUTION_PLAN_INVALID",
-                    ValidationSeverity.Error,
-                    plan.ErrorMessage ?? "Graph execution plan is invalid.",
+                    severity,
+                    AppendDetachedMessage(
+                        plan.ErrorMessage ?? "Graph execution plan is invalid.",
+                        severity),
                     layerId: scope.LayerId,
                     graphId: scope.GraphId,
                     nodeId: hasCycle ? plan.CycleNodeIds.FirstOrDefault() : null));
             }
         }
 
-        private void ValidateConnections(GraphExecutionScope scope, GraphValidationReport report)
+        private void ValidateConnections(
+            GraphExecutionScope scope,
+            ISet<string> connectedToOutput,
+            GraphValidationReport report)
         {
             foreach (var conn in scope.Connections)
             {
@@ -395,15 +412,24 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     continue;
                 }
 
-                var source = scope.Graph.GetNodeById(conn.SourceNodeId);
-                var target = scope.Graph.GetNodeById(conn.TargetNodeId);
+                var source = scope.GetNodeById(conn.SourceNodeId);
+                var target = scope.GetNodeById(conn.TargetNodeId);
+                var severity = IsAuthoritativeConnection(
+                        scope,
+                        connectedToOutput,
+                        conn,
+                        target)
+                    ? ValidationSeverity.Error
+                    : ValidationSeverity.Warning;
 
                 if (source == null)
                 {
                     report.Add(new GraphValidationIssue(
                         "CONNECTION_SOURCE_MISSING",
-                        ValidationSeverity.Error,
-                        $"Connection references missing source node '{conn.SourceNodeId}'.",
+                        severity,
+                        AppendDetachedMessage(
+                            $"Connection references missing source node '{conn.SourceNodeId}'.",
+                            severity),
                         layerId: scope.LayerId,
                         graphId: scope.GraphId,
                         connectionId: conn.ConnectionId,
@@ -414,8 +440,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 {
                     report.Add(new GraphValidationIssue(
                         "CONNECTION_TARGET_MISSING",
-                        ValidationSeverity.Error,
-                        $"Connection references missing target node '{conn.TargetNodeId}'.",
+                        severity,
+                        AppendDetachedMessage(
+                            $"Connection references missing target node '{conn.TargetNodeId}'.",
+                            severity),
                         layerId: scope.LayerId,
                         graphId: scope.GraphId,
                         connectionId: conn.ConnectionId,
@@ -423,7 +451,13 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     continue;
                 }
 
-                ValidateCrossLayerConnection(scope, conn, source, target, report);
+                ValidateCrossLayerConnection(
+                    scope,
+                    conn,
+                    source,
+                    target,
+                    severity,
+                    report);
 
                 var sourceOutputs = source.Outputs;
                 var targetInputs = target.Inputs;
@@ -432,8 +466,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 {
                     report.Add(new GraphValidationIssue(
                         "CONNECTION_SOURCE_PORT_INVALID",
-                        ValidationSeverity.Error,
-                        $"Output port index {conn.SourcePortIndex} out of range on '{source.Title}'.",
+                        severity,
+                        AppendDetachedMessage(
+                            $"Output port index {conn.SourcePortIndex} out of range on '{source.Title}'.",
+                            severity),
                         layerId: scope.LayerId,
                         graphId: scope.GraphId,
                         nodeId: source.NodeId,
@@ -445,8 +481,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 {
                     report.Add(new GraphValidationIssue(
                         "CONNECTION_TARGET_PORT_INVALID",
-                        ValidationSeverity.Error,
-                        $"Input port index {conn.TargetPortIndex} out of range on '{target.Title}'.",
+                        severity,
+                        AppendDetachedMessage(
+                            $"Input port index {conn.TargetPortIndex} out of range on '{target.Title}'.",
+                            severity),
                         layerId: scope.LayerId,
                         graphId: scope.GraphId,
                         nodeId: target.NodeId,
@@ -458,13 +496,15 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 var sourcePort = sourceOutputs[conn.SourcePortIndex];
                 var targetPort = targetInputs[conn.TargetPortIndex];
 
-                if (!PortDefinition.AreValueTypesCompatible(sourcePort.ValueType, targetPort.ValueType)
+                if (!sourcePort.IsCompatibleWith(targetPort)
                     && !IsLegacyMaskOutputConnection(sourcePort, target, conn))
                 {
                     report.Add(new GraphValidationIssue(
                         "CONNECTION_TYPE_MISMATCH",
-                        ValidationSeverity.Error,
-                        $"Type mismatch: '{source.Title}'.{sourcePort.Name} ({sourcePort.ValueType.Name}) -> '{target.Title}'.{targetPort.Name} ({targetPort.ValueType.Name}).",
+                        severity,
+                        AppendDetachedMessage(
+                            $"Type mismatch: '{source.Title}'.{sourcePort.Name} ({sourcePort.ValueType.Name}) -> '{target.Title}'.{targetPort.Name} ({targetPort.ValueType.Name}).",
+                            severity),
                         layerId: scope.LayerId,
                         graphId: scope.GraphId,
                         nodeId: target.NodeId,
@@ -512,6 +552,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             Connection connection,
             NodeBase source,
             NodeBase target,
+            ValidationSeverity severity,
             GraphValidationReport report)
         {
             if (GraphAsset.IsGlobalNode(source) || GraphAsset.IsGlobalNode(target))
@@ -528,8 +569,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
 
             report.Add(new GraphValidationIssue(
                 "CONNECTION_CROSS_LAYER",
-                ValidationSeverity.Error,
-                $"Connection crosses layers: '{source.Title}' ({source.LayerId}) -> '{target.Title}' ({target.LayerId}).",
+                severity,
+                AppendDetachedMessage(
+                    $"Connection crosses layers: '{source.Title}' ({source.LayerId}) -> '{target.Title}' ({target.LayerId}).",
+                    severity),
                 layerId: scope.LayerId,
                 graphId: scope.GraphId,
                 nodeId: target.NodeId,
@@ -537,39 +580,43 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 canAutoFix: true));
         }
 
-        private void ValidateRequiredInputs(GraphExecutionScope scope, GraphValidationReport report)
+        private void ValidateRequiredInputs(
+            GraphExecutionScope scope,
+            ISet<string> connectedToOutput,
+            GraphValidationReport report)
         {
             var connectedInputs = new HashSet<string>();
-            var connectedNodeIds = new HashSet<string>();
             foreach (var conn in scope.Connections)
             {
+                if (conn == null)
+                    continue;
+
                 connectedInputs.Add($"{conn.TargetNodeId}:{conn.TargetPortIndex}");
-                connectedNodeIds.Add(conn.SourceNodeId);
-                connectedNodeIds.Add(conn.TargetNodeId);
             }
 
             foreach (var node in scope.Nodes)
             {
                 if (node == null) continue;
 
-                // Isolated node (no incoming and no outgoing connections) is treated as unused,
-                // not as an invalid graph state.
-                if (!connectedNodeIds.Contains(node.NodeId))
-                    continue;
-
                 var inputs = node.Inputs;
                 for (int i = 0; i < inputs.Length; i++)
                 {
-                    if (IsOptionalInput(node, inputs[i].Name))
+                    if (inputs[i] == null || !inputs[i].IsRequired)
                         continue;
 
                     string key = $"{node.NodeId}:{i}";
                     if (!connectedInputs.Contains(key))
                     {
+                        var severity = connectedToOutput == null
+                            || connectedToOutput.Contains(node.NodeId)
+                                ? ValidationSeverity.Error
+                                : ValidationSeverity.Warning;
                         report.Add(new GraphValidationIssue(
                             "INPUT_REQUIRED_UNCONNECTED",
-                            ValidationSeverity.Error,
-                            $"Input port '{inputs[i].Name}' on '{node.Title}' is not connected.",
+                            severity,
+                            AppendDetachedMessage(
+                                $"Input port '{inputs[i].Name}' on '{node.Title}' is not connected.",
+                                severity),
                             layerId: scope.LayerId,
                             graphId: scope.GraphId,
                             nodeId: node.NodeId));
@@ -578,7 +625,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             }
         }
 
-        private void ValidateObjectPlacementNodes(GraphExecutionScope scope, GraphValidationReport report)
+        private void ValidateObjectPlacementNodes(
+            GraphExecutionScope scope,
+            ISet<string> connectedToOutput,
+            GraphValidationReport report)
         {
             if (scope?.Nodes == null)
                 return;
@@ -608,17 +658,26 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 if (grassConnected || HasConfiguredPrefab(node))
                     continue;
 
+                var severity = connectedToOutput == null
+                    || connectedToOutput.Contains(node.NodeId)
+                        ? ValidationSeverity.Error
+                        : ValidationSeverity.Warning;
                 report.Add(new GraphValidationIssue(
                     "OBJECT_PREFABS_MISSING",
-                    ValidationSeverity.Error,
-                    $"Object Layer '{node.Title}' не має prefab variants і не має підключеного Grass input. Додай prefab variant або підключи Grass input, інакше об'єкти не будуть створені.",
+                    severity,
+                    AppendDetachedMessage(
+                        $"Object Layer '{node.Title}' не має prefab variants і не має підключеного Grass input. Додай prefab variant або підключи Grass input, інакше об'єкти не будуть створені.",
+                        severity),
                     layerId: scope.LayerId,
                     graphId: scope.GraphId,
                     nodeId: node.NodeId));
             }
         }
 
-        private void ValidateTwcModifierNodes(GraphExecutionScope scope, GraphValidationReport report)
+        private void ValidateTwcModifierNodes(
+            GraphExecutionScope scope,
+            ISet<string> connectedToOutput,
+            GraphValidationReport report)
         {
             if (scope?.Nodes == null)
                 return;
@@ -630,12 +689,18 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
 
                 string modifierTypeName = ReadStringProperty(node, "ModifierTypeName");
                 object modifier = ReadPropertyValue(node, "Modifier");
+                var severity = connectedToOutput == null
+                    || connectedToOutput.Contains(node.NodeId)
+                        ? ValidationSeverity.Error
+                        : ValidationSeverity.Warning;
                 if (string.IsNullOrWhiteSpace(modifierTypeName))
                 {
                     report.Add(new GraphValidationIssue(
                         "TWC_MODIFIER_TYPE_MISSING",
-                        ValidationSeverity.Error,
-                        $"TWC node '{node.Title}' не має типу modifier. Видали ноду або створи її заново з каталогу TileWorldCreator.",
+                        severity,
+                        AppendDetachedMessage(
+                            $"TWC node '{node.Title}' не має типу modifier. Видали ноду або створи її заново з каталогу TileWorldCreator.",
+                            severity),
                         layerId: scope.LayerId,
                         graphId: scope.GraphId,
                         nodeId: node.NodeId));
@@ -646,13 +711,193 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 {
                     report.Add(new GraphValidationIssue(
                         "TWC_MODIFIER_INSTANCE_MISSING",
-                        ValidationSeverity.Error,
-                        $"TWC node '{node.Title}' має тип '{modifierTypeName}', але serialized modifier asset відсутній. Відкрий ноду в inspector або створи її заново.",
+                        severity,
+                        AppendDetachedMessage(
+                            $"TWC node '{node.Title}' має тип '{modifierTypeName}', але serialized modifier asset відсутній. Відкрий ноду в inspector або створи її заново.",
+                            severity),
                         layerId: scope.LayerId,
                         graphId: scope.GraphId,
                         nodeId: node.NodeId));
                 }
             }
+        }
+
+        private void ValidateSubgraphNodes(
+            GraphExecutionScope scope,
+            ISet<string> connectedToOutput,
+            GraphValidationReport report)
+        {
+            if (scope?.Nodes == null)
+                return;
+
+            foreach (var node in scope.Nodes)
+            {
+                if (node == null || node.GetType().Name != "SubgraphNode")
+                    continue;
+
+                var subgraph = ReadPropertyValue(node, "Subgraph") as GraphAsset;
+                if (subgraph == null)
+                    continue;
+
+                var severity = connectedToOutput == null
+                    || connectedToOutput.Contains(node.NodeId)
+                        ? ValidationSeverity.Error
+                        : ValidationSeverity.Warning;
+                if (ReferenceEquals(scope.Graph, subgraph))
+                {
+                    report.Add(new GraphValidationIssue(
+                        "SUBGRAPH_SELF_REFERENCE",
+                        severity,
+                        AppendDetachedMessage(
+                            "Subgraph node cannot execute the graph that contains it.",
+                            severity),
+                        layerId: scope.LayerId,
+                        graphId: scope.GraphId,
+                        nodeId: node.NodeId));
+                    continue;
+                }
+
+                subgraph.EnsureLayerGraphStates();
+                var outputNodes = subgraph.Nodes
+                    .Where(candidate =>
+                        candidate != null
+                        && candidate.GetType().Name == "OutputNode")
+                    .ToList();
+                string outputLayerId = ReadStringProperty(node, "OutputLayerId");
+                if (string.IsNullOrEmpty(outputLayerId))
+                {
+                    if (outputNodes.Count == 1)
+                        continue;
+
+                    report.Add(new GraphValidationIssue(
+                        "SUBGRAPH_OUTPUT_AMBIGUOUS",
+                        severity,
+                        AppendDetachedMessage(
+                            $"Subgraph has {outputNodes.Count} Output nodes. Select a concrete Output Layer ID.",
+                            severity),
+                        layerId: scope.LayerId,
+                        graphId: scope.GraphId,
+                        nodeId: node.NodeId));
+                    continue;
+                }
+
+                int matchingOutputs = outputNodes.Count(output =>
+                    output.LayerId == outputLayerId);
+                if (matchingOutputs == 1)
+                    continue;
+
+                report.Add(new GraphValidationIssue(
+                    matchingOutputs == 0
+                        ? "SUBGRAPH_OUTPUT_LAYER_MISSING"
+                        : "SUBGRAPH_OUTPUT_LAYER_MULTIPLE",
+                    severity,
+                    AppendDetachedMessage(
+                        matchingOutputs == 0
+                            ? $"Subgraph has no Output in layer '{outputLayerId}'."
+                            : $"Subgraph has multiple Outputs in layer '{outputLayerId}'.",
+                        severity),
+                    layerId: scope.LayerId,
+                    graphId: scope.GraphId,
+                    nodeId: node.NodeId));
+            }
+        }
+
+        private static HashSet<string> BuildOutputReachability(
+            GraphExecutionScope scope)
+        {
+            var reachable = new HashSet<string>();
+            if (scope?.Nodes == null)
+                return reachable;
+
+            var nodesById = scope.Nodes
+                .Where(node =>
+                    node != null
+                    && !string.IsNullOrEmpty(node.NodeId))
+                .GroupBy(node => node.NodeId)
+                .ToDictionary(group => group.Key, group => group.First());
+            var stack = new Stack<string>();
+            foreach (var node in nodesById.Values)
+            {
+                if (node is IGraphOutputNode)
+                    stack.Push(node.NodeId);
+            }
+
+            if (stack.Count == 0)
+            {
+                reachable.UnionWith(nodesById.Keys);
+                return reachable;
+            }
+
+            var incomingByTarget = new Dictionary<string, List<string>>();
+            var connections = scope.Connections ?? System.Array.Empty<Connection>();
+            for (int i = 0; i < connections.Count; i++)
+            {
+                var connection = connections[i];
+                if (connection == null
+                    || !nodesById.ContainsKey(connection.SourceNodeId)
+                    || !nodesById.ContainsKey(connection.TargetNodeId))
+                {
+                    continue;
+                }
+
+                if (!incomingByTarget.TryGetValue(
+                        connection.TargetNodeId,
+                        out var sources))
+                {
+                    sources = new List<string>();
+                    incomingByTarget[connection.TargetNodeId] = sources;
+                }
+
+                sources.Add(connection.SourceNodeId);
+            }
+
+            while (stack.Count > 0)
+            {
+                string nodeId = stack.Pop();
+                if (!reachable.Add(nodeId)
+                    || !incomingByTarget.TryGetValue(nodeId, out var sources))
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < sources.Count; i++)
+                {
+                    if (!reachable.Contains(sources[i]))
+                        stack.Push(sources[i]);
+                }
+            }
+
+            return reachable;
+        }
+
+        private static bool IsAuthoritativeConnection(
+            GraphExecutionScope scope,
+            ISet<string> connectedToOutput,
+            Connection connection,
+            NodeBase target)
+        {
+            if (scope?.Nodes == null
+                || !scope.Nodes.Any(node => node is IGraphOutputNode))
+            {
+                return true;
+            }
+
+            string targetNodeId = target?.NodeId ?? connection?.TargetNodeId;
+            return !string.IsNullOrEmpty(targetNodeId)
+                && connectedToOutput != null
+                && connectedToOutput.Contains(targetNodeId);
+        }
+
+        private static string AppendDetachedMessage(
+            string message,
+            ValidationSeverity severity)
+        {
+            if (severity != ValidationSeverity.Warning)
+                return message;
+            if (string.IsNullOrWhiteSpace(message))
+                return "Not connected to Output.";
+
+            return message.TrimEnd() + " Not connected to Output.";
         }
 
         private static int FindInputIndex(NodeBase node, string inputName)
@@ -963,28 +1208,5 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 || inputName.StartsWith(expectedName + " ", System.StringComparison.Ordinal);
         }
 
-        private static bool IsOptionalInput(NodeBase node, string portName)
-        {
-            if (string.IsNullOrWhiteSpace(portName))
-                return false;
-
-            string nodeTypeName = node?.GetType().Name;
-            if (nodeTypeName == "OutputNode")
-                return true;
-
-            if (nodeTypeName == "TileSettingsNode" && portName == "Mask")
-                return true;
-
-            if (nodeTypeName == "PlacementMaskNode"
-                && (portName == "Placement" || portName == "Exclude"))
-                return true;
-
-            if (nodeTypeName == "ObjectLayerNode"
-                && (portName == "Exclude" || portName == "Grass"))
-                return true;
-
-            return portName.IndexOf("optional", System.StringComparison.OrdinalIgnoreCase) >= 0
-                || portName.IndexOf("опцій", System.StringComparison.OrdinalIgnoreCase) >= 0;
-        }
     }
 }

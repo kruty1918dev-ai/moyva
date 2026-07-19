@@ -25,8 +25,10 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private readonly List<Label> _outputValueLabels = new();
         private readonly VisualElement _outputValuesContainer;
         private readonly VisualElement _previewContainer;
+        private readonly ScrollView _previewScrollView;
         private readonly Image _previewImage;
         private readonly Label _previewLabel;
+        private Label _executionStatusLabel;
 
         private Texture2D _previewTexture;
         private bool _ownsPreviewTexture;
@@ -156,6 +158,23 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 extensionContainer.Add(outputHint);
             }
 
+            _executionStatusLabel = new Label
+            {
+                style =
+                {
+                    display = DisplayStyle.None,
+                    marginTop = 4,
+                    marginBottom = 2,
+                    paddingLeft = 6,
+                    paddingRight = 6,
+                    paddingTop = 3,
+                    paddingBottom = 3,
+                    whiteSpace = WhiteSpace.Normal,
+                    unityFontStyleAndWeight = FontStyle.Bold
+                }
+            };
+            extensionContainer.Add(_executionStatusLabel);
+
             // Custom editor button
             if (nodeData is ICustomEditorNode)
             {
@@ -197,10 +216,11 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             _previewImage = new Image
             {
-                scaleMode = UnityEngine.ScaleMode.ScaleToFit,
+                scaleMode = UnityEngine.ScaleMode.StretchToFill,
                 style =
                 {
-                    height = previewHeight,
+                    width = 1,
+                    height = 1,
                     backgroundColor = new Color(0.1f, 0.1f, 0.1f),
                     borderBottomWidth = 1,
                     borderTopWidth = 1,
@@ -212,10 +232,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     borderRightColor = new Color(0.25f, 0.25f, 0.25f)
                 }
             };
-            _previewImage.tooltip = "Інлайн-прев'ю ноди. Double-click: відкрити окреме Preview Window. Wheel/drag доступні у окремому вікні.";
+            _previewImage.tooltip = "Логічне прев'ю 1:1: один піксель текстури дорівнює одному тайлу. Double-click відкриває Preview Window.";
 
+            _previewScrollView = new ScrollView(ScrollViewMode.VerticalAndHorizontal)
+            {
+                style =
+                {
+                    height = previewHeight,
+                    backgroundColor = new Color(0.1f, 0.1f, 0.1f)
+                }
+            };
             _previewContainer.Add(_previewLabel);
-            _previewContainer.Add(_previewImage);
+            _previewScrollView.Add(_previewImage);
+            _previewContainer.Add(_previewScrollView);
             extensionContainer.Add(_previewContainer);
 
             // Container for simple output values shown under the node
@@ -255,6 +284,43 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (evt.button == 0)
                     Selection.activeObject = nodeData;
             });
+        }
+
+        public void SetExecutionStatus(NodeExecutionLog log)
+        {
+            if (_executionStatusLabel == null)
+                return;
+
+            if (log == null)
+            {
+                _executionStatusLabel.style.display = DisplayStyle.None;
+                return;
+            }
+
+            if (!log.IsConnectedToOutput)
+            {
+                _executionStatusLabel.text = "Not connected to Output";
+                _executionStatusLabel.style.display = DisplayStyle.Flex;
+                _executionStatusLabel.style.color = new Color(1f, 0.78f, 0.28f);
+                _executionStatusLabel.style.backgroundColor =
+                    new Color(0.28f, 0.19f, 0.04f, 0.9f);
+                return;
+            }
+
+            if (log.Status == NodeStatus.Error)
+            {
+                _executionStatusLabel.text =
+                    string.IsNullOrWhiteSpace(log.Message)
+                        ? "Execution error"
+                        : log.Message;
+                _executionStatusLabel.style.display = DisplayStyle.Flex;
+                _executionStatusLabel.style.color = new Color(1f, 0.58f, 0.58f);
+                _executionStatusLabel.style.backgroundColor =
+                    new Color(0.3f, 0.05f, 0.05f, 0.9f);
+                return;
+            }
+
+            _executionStatusLabel.style.display = DisplayStyle.None;
         }
 
         private void CreatePorts(PortDefinition[] defs, PortDirection direction,
@@ -374,16 +440,42 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _ownsPreviewTexture = ownsTexture;
 
             if (_previewImage != null)
+            {
                 _previewImage.image = texture;
+                int width = texture != null ? Mathf.Max(1, texture.width) : 1;
+                int height = texture != null ? Mathf.Max(1, texture.height) : 1;
+                _previewImage.style.width = width;
+                _previewImage.style.minWidth = width;
+                _previewImage.style.maxWidth = width;
+                _previewImage.style.height = height;
+                _previewImage.style.minHeight = height;
+                _previewImage.style.maxHeight = height;
+            }
             if (_previewLabel != null)
                 _previewLabel.text = string.IsNullOrEmpty(statusText)
                     ? (texture != null ? "Preview" : "No preview")
                     : statusText;
+            if (_previewContainer != null)
+                _previewContainer.style.opacity = 1f;
         }
 
         public void ClearPreview(string statusText = "No preview")
         {
             SetPreview(null, statusText, false);
+        }
+
+        public void MarkPreviewOutOfDate(string error)
+        {
+            if (_previewContainer == null)
+                return;
+
+            _previewContainer.style.opacity = 0.45f;
+            if (_previewLabel != null)
+            {
+                _previewLabel.text = string.IsNullOrWhiteSpace(error)
+                    ? "Out of date"
+                    : $"Out of date — {error}";
+            }
         }
 
         public void SetPreviewVisible(bool visible)
@@ -427,6 +519,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     {
                         so.ApplyModifiedProperties();
                         EditorUtility.SetDirty(nodeData);
+                        GetFirstAncestorOfType<GeneratorGraphView>()?.NotifyNodeValueChanged();
                     }
                 })
                 {

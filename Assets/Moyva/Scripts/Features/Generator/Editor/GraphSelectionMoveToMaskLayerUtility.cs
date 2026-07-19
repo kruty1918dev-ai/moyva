@@ -149,12 +149,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             }
 
             Vector2 terminalPosition = terminal.Node.EditorPosition;
-            var outputNode = graph.AddNode(typeof(OutputNode), false, newLayer.Id) as OutputNode;
+            GraphNodeFactory.TryCreate(
+                graph,
+                typeof(OutputNode),
+                newLayer.Id,
+                terminalPosition + new Vector2(340f, 0f),
+                out var createdOutput,
+                out string outputFactoryError);
+            var outputNode = createdOutput as OutputNode;
             if (outputNode == null)
-                return Fail(result, "Не вдалося створити OutputNode у helper mask layer.");
+                return Fail(
+                    result,
+                    $"Не вдалося створити OutputNode у helper mask layer: {outputFactoryError}");
 
-            outputNode.LayerId = newLayer.Id;
-            outputNode.EditorPosition = terminalPosition + new Vector2(340f, 0f);
             SetOutputNodeKindToMasks(outputNode);
             result.NewOutputNode = outputNode;
 
@@ -173,12 +180,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     result.RemovedConnections.Add(oldConnection);
             }
 
-            var layerRef = graph.AddNode(typeof(LayerMaskReferenceNode), false, sourceLayer.Id) as LayerMaskReferenceNode;
+            GraphNodeFactory.TryCreate(
+                graph,
+                typeof(LayerMaskReferenceNode),
+                sourceLayer.Id,
+                terminalPosition,
+                out var createdLayerRef,
+                out string layerRefFactoryError);
+            var layerRef = createdLayerRef as LayerMaskReferenceNode;
             if (layerRef == null)
-                return Fail(result, "Не вдалося створити LayerMaskReferenceNode у source layer.");
+                return Fail(
+                    result,
+                    $"Не вдалося створити LayerMaskReferenceNode у source layer: {layerRefFactoryError}");
 
-            layerRef.LayerId = sourceLayer.Id;
-            layerRef.EditorPosition = terminalPosition;
             layerRef.SetSourceLayerId(newLayer.Id);
             result.ReplacementLayerRef = layerRef;
 

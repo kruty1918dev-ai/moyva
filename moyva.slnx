@@ -25,6 +25,7 @@
   <Project Path="Kruty1918.Moyva.SaveSystem.csproj" />
   <Project Path="Kruty1918.Moyva.EditorShared.csproj" />
   <Project Path="Kruty1918.Moyva.FogOfWar.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Generator.csproj" />
   <Project Path="Kruty1918.Moyva.InfoPanel.csproj" />
   <Project Path="Kruty1918.Moyva.Diagnostics.csproj" />
   <Project Path="Kruty1918.Moyva.Construction.UI.csproj" />
@@ -56,7 +57,6 @@
   <Project Path="Kruty1918.Moyva.GraphSystem.csproj" />
   <Project Path="ExternAttributes.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.BotAI.csproj" />
-  <Project Path="Kruty1918.Moyva.Tests.Generator.csproj" />
   <Project Path="Kruty1918.Moyva.Units.csproj" />
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />

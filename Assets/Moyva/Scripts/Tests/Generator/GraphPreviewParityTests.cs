@@ -60,22 +60,19 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
-        public void CompilerEntryPoint_NormalizesZeroAndInitializesBothRandomSources()
+        public void CompilerEntryPoint_RestoresGlobalAndUnityRandomState()
         {
-            Random.InitState(1);
-            float expectedFirstValue = Random.value;
-
             GlobalSeed.Set(444);
             Random.InitState(445);
+            Random.State expectedRandomState = Random.state;
 
             IReadOnlyList<CompiledLayerMap> result =
                 GraphToConfigurationCompiler.Compile(null, null, 0);
-            float actualFirstValue = Random.value;
 
             Assert.NotNull(result);
             Assert.AreEqual(0, result.Count);
-            Assert.AreEqual(1, GlobalSeed.Current);
-            Assert.AreEqual(expectedFirstValue, actualFirstValue);
+            Assert.AreEqual(444, GlobalSeed.Current);
+            Assert.AreEqual(expectedRandomState, Random.state);
         }
 
         [Test]

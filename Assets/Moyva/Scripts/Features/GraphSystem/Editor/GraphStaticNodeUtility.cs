@@ -36,11 +36,17 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (exists)
                     continue;
 
-                var node = graphAsset.AddNode(nodeType, allowStaticGraphNode: true);
-                if (node == null)
+                if (!GraphNodeFactory.TryCreateManagedStaticNode(
+                        graphAsset,
+                        nodeType,
+                        new Vector2(50f, -360f - i * 120f),
+                        out var node,
+                        out string error))
+                {
+                    Debug.LogWarning($"[GraphStaticNodeUtility] {error}");
                     continue;
+                }
 
-                node.EditorPosition = new Vector2(50f, -360f - i * 120f);
                 changed = true;
             }
 

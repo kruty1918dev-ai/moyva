@@ -9,6 +9,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
     public static class GraphPresetIO
     {
         private const string FileExtension = "graphpreset";
+        internal const int CurrentVersion = 3;
 
         // JsonUtility requires a root object — cannot serialize a plain class at top level
         [Serializable]
@@ -35,6 +36,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (preset == null) throw new ArgumentNullException(nameof(preset));
             if (string.IsNullOrEmpty(path)) throw new ArgumentException("Path must not be empty.", nameof(path));
 
+            preset.version = CurrentVersion;
             var wrapper = new PresetWrapper { preset = preset };
             var json = JsonUtility.ToJson(wrapper, prettyPrint: true);
             File.WriteAllText(path, json, System.Text.Encoding.UTF8);
@@ -52,9 +54,18 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (wrapper.preset == null)
                 throw new InvalidDataException("File does not contain a valid GraphPreset.");
 
-            if (wrapper.preset.version > 2)
-                Debug.LogWarning($"[GraphPresetIO] Preset version {wrapper.preset.version} is newer than supported (2). " +
+            int sourceVersion = Mathf.Max(1, wrapper.preset.version);
+            if (sourceVersion > CurrentVersion)
+            {
+                Debug.LogWarning($"[GraphPresetIO] Preset version {sourceVersion} is newer than supported ({CurrentVersion}). " +
                                  "Some data may not load correctly.");
+            }
+            else
+            {
+                // v1/v2 omit explicit TWC modifier fields. Import code retains
+                // its serialized-json fallback, so migration is lossless.
+                wrapper.preset.version = CurrentVersion;
+            }
 
             return wrapper.preset;
         }

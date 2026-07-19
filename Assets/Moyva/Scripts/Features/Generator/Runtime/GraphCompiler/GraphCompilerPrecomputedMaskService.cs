@@ -11,7 +11,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal interface IGraphCompilerPrecomputedMaskService
     {
-        Dictionary<string, bool[,]> Build(GraphAsset graph, int seed, Vector2Int mapSize, ISet<string> skippedLayerIds);
+        Dictionary<string, bool[,]> Build(
+            GraphAsset graph,
+            int seed,
+            Vector2Int mapSize,
+            ISet<string> skippedLayerIds,
+            GraphEvaluationSnapshot evaluationSnapshot = null);
     }
 
     internal sealed class GraphCompilerPrecomputedMaskService : IGraphCompilerPrecomputedMaskService
@@ -31,7 +36,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             GraphAsset graph,
             int seed,
             Vector2Int mapSize,
-            ISet<string> skippedLayerIds)
+            ISet<string> skippedLayerIds,
+            GraphEvaluationSnapshot evaluationSnapshot = null)
         {
             var masksByLayerId = new Dictionary<string, bool[,]>(StringComparer.Ordinal);
             if (graph == null || graph.Nodes == null)
@@ -48,63 +54,75 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
             int safeSeed = seed == 0 ? 1 : seed;
             var safeMapSize = new Vector2Int(Mathf.Max(1, mapSize.x), Mathf.Max(1, mapSize.y));
-            var layerMaskRegistry = CreateLayerMaskRegistry(graph, safeSeed, safeMapSize, skippedLayerIds);
-            var runner = new GraphRunner();
+            if (evaluationSnapshot == null
+                || !evaluationSnapshot.IsCompatibleWith(
+                    graph,
+                    safeSeed,
+                    safeMapSize))
+            {
+                evaluationSnapshot = GraphEvaluationPipeline.Evaluate(
+                    graph,
+                    safeSeed,
+                    safeMapSize,
+                    configureContext: context =>
+                        _contextFactory.RegisterServices(context, graph),
+                    skippedLayerIds: skippedLayerIds);
+            }
+
+            if (!evaluationSnapshot.Success)
+                return masksByLayerId;
 
             foreach (var layer in orderedLayers)
-                TryBuildLayerMask(graph, runner, layer, safeSeed, safeMapSize, layerMaskRegistry, masksByLayerId);
+                TryBuildLayerMask(
+                    graph,
+                    layer,
+                    safeMapSize,
+                    evaluationSnapshot,
+                    masksByLayerId);
 
             return masksByLayerId;
         }
 
-        private LayerMaskRegistry CreateLayerMaskRegistry(
+        private void TryBuildLayerMask(
             GraphAsset graph,
-            int seed,
+            GeneratorLayerDefinition layer,
             Vector2Int mapSize,
-            ISet<string> skippedLayerIds)
-        {
-            var registry = new LayerMaskRegistry();
-            LayerMaskPrewarmUtility.PrewarmAllLayerMasks(
-                graph,
-                seed,
-                mapSize,
-                registry,
-                context => _contextFactory.RegisterServices(context, graph),
-                skippedLayerIds);
-            return registry;
-        }
-
-        private void TryBuildLayerMask(GraphAsset graph, GraphRunner runner, GeneratorLayerDefinition layer,
-            int seed, Vector2Int mapSize, LayerMaskRegistry registry, Dictionary<string, bool[,]> masksByLayerId)
+            GraphEvaluationSnapshot evaluationSnapshot,
+            Dictionary<string, bool[,]> masksByLayerId)
         {
             var outputNode = GraphLayerRuntimeSemantics.GetLayerOutputNode(graph, layer.Id);
             if (outputNode == null || !ShouldPrecompute(outputNode.OutputKind))
                 return;
 
-            var context = _contextFactory.Create(graph, seed, mapSize, registry);
-            var result = runner.Execute(graph.CreateExecutionScope(layer.Id), context);
-            if (result == null || !result.Success)
+            if (evaluationSnapshot == null)
             {
-                Debug.LogWarning($"[GraphToConfigurationCompiler] Layer '{layer.Name}' graph-output mask was not precomputed: {result?.ErrorMessage ?? "unknown graph execution error"}");
+                Debug.LogWarning(
+                    $"[GraphToConfigurationCompiler] Layer '{layer.Name}' graph-output mask was not precomputed: " +
+                    "evaluation snapshot is missing.");
                 return;
             }
 
-            var mask = ExtractBestMask(graph, layer.Id, outputNode, result, mapSize, registry);
+            var mask = ExtractBestMask(
+                outputNode,
+                evaluationSnapshot,
+                mapSize);
             if (mask != null)
                 masksByLayerId[layer.Id] = mask;
         }
 
-        private bool[,] ExtractBestMask(GraphAsset graph, string layerId, OutputNode outputNode,
-            GraphExecutionResult result, Vector2Int mapSize, LayerMaskRegistry registry)
+        private bool[,] ExtractBestMask(
+            OutputNode outputNode,
+            GraphEvaluationSnapshot evaluationSnapshot,
+            Vector2Int mapSize)
         {
-            var outputs = result.GetOutputs(outputNode.NodeId);
-            var mask = _maskUtility.ExtractOutputMask(outputs, outputNode.OutputKind, mapSize.x, mapSize.y)
-                       ?? _maskUtility.ExtractConnectedMask(graph, outputNode, result, mapSize.x, mapSize.y);
-            if (mask == null && outputNode.OutputKind == LayerOutputKind.Tiles)
-                mask = _maskUtility.ExtractTileSettingsMask(graph, layerId, result, mapSize.x, mapSize.y);
-            if (mask == null && registry.TryGetLatestMask(layerId, out var registeredMask))
-                mask = _maskUtility.Normalize(registeredMask, mapSize.x, mapSize.y);
-            return mask;
+            var snapshot =
+                evaluationSnapshot.GetNodeArtifact<LayerOutputSnapshot>(
+                    outputNode.NodeId);
+            return _maskUtility.ExtractOutputMask(
+                snapshot,
+                outputNode.OutputKind,
+                mapSize.x,
+                mapSize.y);
         }
 
         private static bool ShouldPrecompute(LayerOutputKind outputKind)

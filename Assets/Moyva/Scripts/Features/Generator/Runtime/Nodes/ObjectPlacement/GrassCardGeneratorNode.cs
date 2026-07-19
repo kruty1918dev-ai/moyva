@@ -4,8 +4,13 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Налаштування трави", "Розміщення об'єктів", "Зберігає налаштування текстури/матеріалу/префаба для перекривних плоских трав\'їнних карт.")]
-    [HidePreview]
+    [NodeInfo(
+        "Grass Card Settings",
+        "Objects",
+        "Зберігає налаштування текстури, матеріалу й prefab для пласких карт трави.",
+        StableId = "moyva.objects.grass-card-settings",
+        Order = 50,
+        PreviewOutput = "out.grass")]
     public sealed class GrassCardGeneratorNode : NodeBase, ICustomEditorNode
     {
         [SerializeField]
@@ -46,14 +51,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
         [SerializeField, Range(0f, 1f)]
         private float _colorVariation = 0.12f;
 
-        public override string Title => "Налаштування трави";
-        public override string Category => "Розміщення об'єктів";
+        public override string Title => "Grass Card Settings";
+        public override string Category => "Objects";
 
         public override PortDefinition[] Inputs => System.Array.Empty<PortDefinition>();
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<GrassCardSettings>("Grass")
+            PortDefinition.Output<GrassCardSettings>("Grass", "out.grass")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)

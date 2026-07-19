@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public IReadOnlyList<string> ExecutionOrderNodeIds => _executionOrderNodeIds;
 
         private readonly Dictionary<string, object[]> _nodeOutputs;
+        private readonly Dictionary<string, object> _nodeArtifacts;
         private readonly List<NodeExecutionLog> _logs;
         private readonly IReadOnlyList<string> _executionOrderNodeIds;
 
@@ -22,10 +23,12 @@ namespace Kruty1918.Moyva.GraphSystem.API
             List<NodeExecutionLog> logs,
             string layerId = null,
             string graphId = null,
-            IReadOnlyList<string> executionOrderNodeIds = null)
+            IReadOnlyList<string> executionOrderNodeIds = null,
+            Dictionary<string, object> nodeArtifacts = null)
         {
-            _nodeOutputs = nodeOutputs;
-            _logs = logs;
+            _nodeOutputs = nodeOutputs ?? new Dictionary<string, object[]>();
+            _nodeArtifacts = nodeArtifacts ?? new Dictionary<string, object>();
+            _logs = logs ?? new List<NodeExecutionLog>();
             LayerId = layerId;
             GraphId = graphId;
             _executionOrderNodeIds = executionOrderNodeIds ?? System.Array.Empty<string>();
@@ -37,12 +40,16 @@ namespace Kruty1918.Moyva.GraphSystem.API
             Dictionary<string, object[]> partialNodeOutputs = null,
             string layerId = null,
             string graphId = null,
-            IReadOnlyList<string> executionOrderNodeIds = null)
+            IReadOnlyList<string> executionOrderNodeIds = null,
+            Dictionary<string, object> partialNodeArtifacts = null)
         {
             _nodeOutputs = partialNodeOutputs != null
                 ? new Dictionary<string, object[]>(partialNodeOutputs)
                 : new Dictionary<string, object[]>();
-            _logs = logs;
+            _nodeArtifacts = partialNodeArtifacts != null
+                ? new Dictionary<string, object>(partialNodeArtifacts)
+                : new Dictionary<string, object>();
+            _logs = logs ?? new List<NodeExecutionLog>();
             LayerId = layerId;
             GraphId = graphId;
             _executionOrderNodeIds = executionOrderNodeIds ?? System.Array.Empty<string>();
@@ -57,9 +64,32 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public T GetOutput<T>(string nodeId, int portIndex = 0)
         {
             var outputs = GetOutputs(nodeId);
-            if (outputs == null || portIndex >= outputs.Length) return default;
-            return (T)outputs[portIndex];
+            if (outputs == null || portIndex < 0 || portIndex >= outputs.Length)
+                return default;
+            return outputs[portIndex] is T value ? value : default;
         }
+
+        public object GetArtifact(string nodeId) =>
+            !string.IsNullOrEmpty(nodeId) && _nodeArtifacts.TryGetValue(nodeId, out var artifact)
+                ? artifact
+                : null;
+
+        public T GetArtifact<T>(string nodeId) where T : class =>
+            GetArtifact(nodeId) as T;
+
+        public static GraphExecutionResult Failure(
+            string errorMessage,
+            string errorNodeId = null,
+            string layerId = null,
+            string graphId = null) =>
+            new(
+                errorNodeId,
+                string.IsNullOrWhiteSpace(errorMessage)
+                    ? "Graph evaluation failed."
+                    : errorMessage,
+                new List<NodeExecutionLog>(),
+                layerId: layerId,
+                graphId: graphId);
 
         /// <summary>
         /// Об'єднує результати кількох layer-scope виконань в один результат графа.
@@ -72,6 +102,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
             string graphId = null)
         {
             var combinedOutputs = new Dictionary<string, object[]>();
+            var combinedArtifacts = new Dictionary<string, object>();
             var combinedLogs = new List<NodeExecutionLog>();
             var combinedExecutionOrder = new List<string>();
             GraphExecutionResult firstFailure = null;
@@ -100,6 +131,10 @@ namespace Kruty1918.Moyva.GraphSystem.API
                             var outputs = result.GetOutputs(nodeId);
                             if (outputs != null)
                                 combinedOutputs[nodeId] = outputs;
+
+                            var artifact = result.GetArtifact(nodeId);
+                            if (artifact != null)
+                                combinedArtifacts[nodeId] = artifact;
                         }
                     }
 
@@ -117,7 +152,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
                     combinedOutputs,
                     firstFailure.LayerId ?? layerId,
                     firstFailure.GraphId ?? graphId,
-                    combinedExecutionOrder);
+                    combinedExecutionOrder,
+                    combinedArtifacts);
             }
 
             return new GraphExecutionResult(
@@ -125,7 +161,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 combinedLogs,
                 layerId,
                 graphId,
-                combinedExecutionOrder);
+                combinedExecutionOrder,
+                combinedArtifacts);
         }
     }
 
@@ -142,6 +179,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public string GraphId { get; }
         public int OrderIndex { get; }
         public int InputDependencyCount { get; }
+        public bool IsConnectedToOutput { get; }
 
         public NodeExecutionLog(string nodeId, string nodeTitle,
             NodeStatus status, string message, float durationMs,
@@ -150,7 +188,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
             string layerId = null,
             string graphId = null,
             int orderIndex = -1,
-            int inputDependencyCount = 0)
+            int inputDependencyCount = 0,
+            bool isConnectedToOutput = true)
         {
             NodeId = nodeId;
             NodeTitle = nodeTitle;
@@ -163,6 +202,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
             GraphId = graphId;
             OrderIndex = orderIndex;
             InputDependencyCount = inputDependencyCount;
+            IsConnectedToOutput = isConnectedToOutput;
         }
     }
 }

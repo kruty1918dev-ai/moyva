@@ -15,7 +15,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal interface IGraphCompilerObjectPlacementService
     {
-        IReadOnlyList<ObjectPlacementLayer> Collect(GraphAsset graph, int seed, Vector2Int mapSize, ISet<string> skippedLayerIds);
+        IReadOnlyList<ObjectPlacementLayer> Collect(
+            GraphAsset graph,
+            int seed,
+            Vector2Int mapSize,
+            ISet<string> skippedLayerIds,
+            GraphEvaluationSnapshot evaluationSnapshot = null);
         void Apply(Configuration config, TileWorldCreatorManager manager,
             IReadOnlyList<ObjectPlacementLayer> objectLayers, IReadOnlyList<CompiledLayerMap> compiledLayers);
     }
@@ -33,70 +38,88 @@ namespace Kruty1918.Moyva.Generator.Runtime
             GraphAsset graph,
             int seed,
             Vector2Int mapSize,
-            ISet<string> skippedLayerIds)
+            ISet<string> skippedLayerIds,
+            GraphEvaluationSnapshot evaluationSnapshot = null)
         {
             if (graph == null || graph.Nodes == null || !graph.Nodes.Any(node => node is ObjectOutputToTWCNode))
                 return Array.Empty<ObjectPlacementLayer>();
 
             graph.EnsureLayerGraphStates();
             var safeMapSize = new Vector2Int(Mathf.Max(1, mapSize.x), Mathf.Max(1, mapSize.y));
-            var layerMaskRegistry = CreateLayerMaskRegistry(graph, seed, safeMapSize, skippedLayerIds);
-            var runner = new GraphRunner();
+            int safeSeed = seed == 0 ? 1 : seed;
+            if (evaluationSnapshot == null
+                || !evaluationSnapshot.IsCompatibleWith(
+                    graph,
+                    safeSeed,
+                    safeMapSize))
+            {
+                evaluationSnapshot = GraphEvaluationPipeline.Evaluate(
+                    graph,
+                    safeSeed,
+                    safeMapSize,
+                    configureContext: context =>
+                        _contextFactory.RegisterServices(context, graph),
+                    skippedLayerIds: skippedLayerIds);
+            }
+
+            if (!evaluationSnapshot.Success)
+                return Array.Empty<ObjectPlacementLayer>();
+
             var result = new List<ObjectPlacementLayer>();
+            var seen = new HashSet<ObjectPlacementLayer>();
 
             foreach (var layerDef in GetOrderedEnabledLayers(graph, skippedLayerIds))
-                CollectLayer(graph, runner, layerDef, seed, safeMapSize, layerMaskRegistry, result);
+            {
+                var outputNodes = graph.GetNodesForLayer(layerDef.Id)
+                    .OfType<ObjectOutputToTWCNode>()
+                    .ToArray();
+                int before = result.Count;
+                for (int i = 0; i < outputNodes.Length; i++)
+                {
+                    var layer = GetNodeOutput<ObjectPlacementLayer>(
+                        evaluationSnapshot,
+                        outputNodes[i].NodeId);
+                    if (layer == null || !seen.Add(layer))
+                        continue;
+
+                    if (string.IsNullOrWhiteSpace(layer.TargetGraphLayerId))
+                        layer.TargetGraphLayerId = layerDef.Id;
+                    result.Add(layer);
+                }
+
+                if (outputNodes.Length > 0 && result.Count == before)
+                {
+                    Debug.LogWarning(
+                        $"[MoyvaObjectPlacement] Layer '{layerDef.Name ?? layerDef.Id}' has Object Output nodes, " +
+                        "but the shared evaluation snapshot contains no ObjectPlacementLayer.");
+                }
+            }
 
             return result;
+        }
+
+        private static T GetNodeOutput<T>(
+            GraphEvaluationSnapshot snapshot,
+            string nodeId,
+            int portIndex = 0)
+        {
+            var outputs = snapshot?.GetNodeOutputs(nodeId);
+            if (outputs == null
+                || portIndex < 0
+                || portIndex >= outputs.Length)
+            {
+                return default;
+            }
+
+            return outputs[portIndex] is T value
+                ? value
+                : default;
         }
 
         public void Apply(Configuration config, TileWorldCreatorManager manager,
             IReadOnlyList<ObjectPlacementLayer> objectLayers, IReadOnlyList<CompiledLayerMap> compiledLayers)
         {
             TWCObjectPlacementAdapter.Apply(config, manager, objectLayers, compiledLayers);
-        }
-
-        private LayerMaskRegistry CreateLayerMaskRegistry(GraphAsset graph, int seed, Vector2Int mapSize, ISet<string> skippedLayerIds)
-        {
-            var registry = new LayerMaskRegistry();
-            LayerMaskPrewarmUtility.PrewarmAllLayerMasks(
-                graph,
-                seed == 0 ? 1 : seed,
-                mapSize,
-                registry,
-                context => _contextFactory.RegisterServices(context, graph),
-                skippedLayerIds);
-            return registry;
-        }
-
-        private void CollectLayer(GraphAsset graph, GraphRunner runner, GeneratorLayerDefinition layerDef,
-            int seed, Vector2Int mapSize, LayerMaskRegistry registry, List<ObjectPlacementLayer> result)
-        {
-            var scope = graph.CreateExecutionScope(layerDef.Id);
-            bool collectsObjects = scope.Nodes.Any(node => node is ObjectOutputToTWCNode);
-            var context = _contextFactory.Create(graph, seed == 0 ? 1 : seed, mapSize, registry);
-            var placementRegistry = new ObjectPlacementRegistry();
-            context.RegisterService(placementRegistry);
-
-            var execution = runner.Execute(scope, context);
-            if (execution == null || !execution.Success)
-            {
-                Debug.LogWarning($"[MoyvaObjectPlacement] Layer '{layerDef.Name ?? scope.LayerId}' was not executed for object placement masks: {execution?.ErrorMessage ?? "unknown graph execution error"}");
-                return;
-            }
-
-            if (!collectsObjects)
-                return;
-            if (placementRegistry.Layers.Count == 0)
-                Debug.LogWarning($"[MoyvaObjectPlacement] Layer '{layerDef.Name ?? scope.LayerId}' has Object Output nodes, but no ObjectPlacementLayer was registered.");
-
-            foreach (var layer in placementRegistry.Layers)
-            {
-                if (layer != null && string.IsNullOrWhiteSpace(layer.TargetGraphLayerId))
-                    layer.TargetGraphLayerId = scope.LayerId;
-                if (layer != null)
-                    result.Add(layer);
-            }
         }
 
         private static IEnumerable<GeneratorLayerDefinition> GetOrderedEnabledLayers(

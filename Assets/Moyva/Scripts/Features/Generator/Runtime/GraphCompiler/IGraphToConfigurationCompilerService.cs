@@ -12,6 +12,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             TileWorldCreatorManager manager,
             int seed,
             ISet<string> skippedLayerIds = null,
-            Vector2Int? mapSizeOverride = null);
+            Vector2Int? mapSizeOverride = null,
+            GraphEvaluationSnapshot evaluationSnapshot = null);
     }
 }

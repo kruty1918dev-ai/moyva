@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading;
+using System.Threading.Tasks;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
@@ -162,7 +162,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             public bool PreviewHeatmap;
 
             [TitleGroup("Editor Preview")]
-            [LabelText("Auto Run")]
+            [LabelText("Live Preview")]
             public bool AutoRunOnChange;
 
             [TitleGroup("Editor Preview")]
@@ -172,9 +172,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             private static IEnumerable<ValueDropdownItem<int>> PreviewResolutionOptions()
             {
-                yield return new ValueDropdownItem<int>("64", 0);
-                yield return new ValueDropdownItem<int>("128", 1);
-                yield return new ValueDropdownItem<int>("Full", 2);
+                yield return new ValueDropdownItem<int>("1:1 (Full)", 2);
             }
 
             public GraphEditorWindowOdinSettings(GraphEditorWindow window)
@@ -202,12 +200,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     return;
 
                 bool previewSettingsChanged = _window._previewSettings != PreviewSettings;
-                bool textureSettingsChanged =
+                bool evaluationSettingsChanged =
                     _window._previewWidth != Mathf.Max(4, PreviewWidth)
                     || _window._previewHeight != Mathf.Max(4, PreviewHeight)
-                    || _window._previewHeatmap != PreviewHeatmap
                     || _window._previewResolution != Mathf.Clamp(PreviewResolution, 0, 2);
+                bool heatmapChanged =
+                    _window._previewHeatmap != PreviewHeatmap;
                 bool inlineVisibilityChanged = _window._showInlinePreviews != ShowInlinePreviews;
+                bool livePreviewChanged = _window._autoRunOnChange != AutoRunOnChange;
 
                 _window._previewSettings = PreviewSettings;
                 if (_window._previewSettings != null)
@@ -227,17 +227,27 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 _window._autoRunOnChange = AutoRunOnChange;
                 _window._previewResolution = Mathf.Clamp(PreviewResolution, 0, 2);
 
-                if (previewSettingsChanged)
+                if (previewSettingsChanged
+                    || evaluationSettingsChanged
+                    || heatmapChanged
+                    || inlineVisibilityChanged
+                    || livePreviewChanged)
+                {
                     _window.SaveWindowSettings();
+                }
 
-                if (inlineVisibilityChanged)
+                if (inlineVisibilityChanged || heatmapChanged)
                 {
                     _window._graphView?.SetInlinePreviewsVisible(_window._showInlinePreviews);
                     _window.RefreshNodePreviewsFromLastResult();
                 }
 
-                if (textureSettingsChanged)
+                if (previewSettingsChanged || evaluationSettingsChanged)
                     _window.RequestAutoRun();
+                else if (livePreviewChanged && _window._autoRunOnChange)
+                    _window.RequestAutoRun(false);
+                else if (livePreviewChanged)
+                    _window._revisionScheduler.CancelPendingSchedule();
             }
         }
 
@@ -388,7 +398,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private Image _compositePreviewImage;
         [SerializeField] private string _selectedLayerId;
         private bool _focusSelectedLayerRowAfterRebuild;
-        private GraphExecutionResult _lastResult;
+        private GraphEvaluationSnapshot _lastSnapshot;
         private Vector2Int _lastExecutionMapSize = new Vector2Int(50, 50);
         private Texture2D _layerCompositeTexture;
         private readonly List<Texture2D> _layerThumbnails = new List<Texture2D>();
@@ -402,7 +412,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         [SerializeField] private bool _isInspectorVisible = true;
       
         private VisualElement _nodeInspectorSection;
-        private VisualElement _nodeInspectorDivider;
+        private VisualElement _nodeInspectorDivider = null;
 
         private Label _statusLabel;
         private ProgressBar _progressBar;
@@ -427,15 +437,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private GraphValidationOdinActions _validationActions;
         private GraphEditorWindowOdinSettings _odinWindowSettings;
         private PropertyTree _odinWindowSettingsTree;
-        private List<WorldLayerData> _lastLayerData;
 
         private enum InspectorTab { Settings = 0, Preview = 1 }
         [SerializeField] private InspectorTab _activeInspectorTab = InspectorTab.Settings;
         private VisualElement _inspectorTabsHeader;
         private VisualElement _tabSettingsContent;
         private VisualElement _tabPreviewContent;
-        private VisualElement _tabBuildLayersContent;
-        private VisualElement _buildLayersHost;
+        private VisualElement _tabBuildLayersContent = null;
+        private VisualElement _buildLayersHost = null;
         private Button _tabSettingsButton;
         private Button _tabPreviewButton;
         private Button _tabBuildLayersButton;
@@ -460,12 +469,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         [SerializeField] private int _previewWidth = 64;
         [SerializeField] private int _previewHeight = 64;
         [SerializeField] private bool _showInlinePreviews;
-        [SerializeField] private bool _autoRunOnChange;
+        [SerializeField] private bool _autoRunOnChange = true;
         [SerializeField] private int _previewResolution = 2; // 0=64,1=128,2=full (1 px = 1 tile)
         [SerializeField] private bool _previewHeatmap;
 
-        private double _nextAutoRunAt;
-        private bool _isRunningGraph;
+        private readonly GraphPreviewRevisionScheduler _revisionScheduler = new();
+        private Hash128 _observedGraphDependencyHash;
+        private bool _hasObservedGraphDependencyHash;
+        private bool _suppressAutoRunRequests;
 
         private sealed class CopiedLayerData
         {
@@ -489,15 +500,25 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         {
             public readonly string OriginalNodeId;
             public readonly Type NodeType;
+            public readonly Type TwcModifierType;
             public readonly Vector2 Position;
             public readonly string JsonData;
+            public readonly string TwcModifierJsonData;
 
-            public CopiedLayerNodeData(string originalNodeId, Type nodeType, Vector2 position, string jsonData)
+            public CopiedLayerNodeData(
+                string originalNodeId,
+                Type nodeType,
+                Type twcModifierType,
+                Vector2 position,
+                string jsonData,
+                string twcModifierJsonData)
             {
                 OriginalNodeId = originalNodeId;
                 NodeType = nodeType;
+                TwcModifierType = twcModifierType;
                 Position = position;
                 JsonData = jsonData;
+                TwcModifierJsonData = twcModifierJsonData;
             }
         }
 
@@ -552,14 +573,20 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             rootVisualElement.schedule.Execute(PollAutoRun).Every(120);
 
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
+            EditorApplication.projectChanged += OnProjectChanged;
             Undo.undoRedoPerformed += OnUndoRedoPerformed;
+            Undo.postprocessModifications += OnPostprocessModifications;
+            CaptureGraphDependencyHash();
+            RequestAutoRun(false);
         }
 
         private void OnDisable()
         {
             SaveWindowSettings();
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.postprocessModifications -= OnPostprocessModifications;
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            EditorApplication.projectChanged -= OnProjectChanged;
 
             DisposeOdinPropertyTrees();
 
@@ -590,7 +617,86 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 RebuildLayerList();
                 RefreshInspectorPanel();
                 UpdateStatusBar();
+                RequestAutoRun();
             }
+        }
+
+        private UndoPropertyModification[] OnPostprocessModifications(
+            UndoPropertyModification[] modifications)
+        {
+            if (_graphAsset == null
+                || _suppressAutoRunRequests
+                || modifications == null
+                || modifications.Length == 0)
+                return modifications;
+
+            string graphPath = AssetDatabase.GetAssetPath(_graphAsset);
+            for (int i = 0; i < modifications.Length; i++)
+            {
+                var target = modifications[i].currentValue?.target;
+                if (target == null)
+                    continue;
+                if (target == _graphAsset
+                    || (!string.IsNullOrEmpty(graphPath)
+                        && string.Equals(
+                            AssetDatabase.GetAssetPath(target),
+                            graphPath,
+                            StringComparison.Ordinal)))
+                {
+                    RequestAutoRun();
+                    break;
+                }
+            }
+
+            return modifications;
+        }
+
+        private void OnProjectChanged()
+        {
+            if (_graphAsset == null || _suppressAutoRunRequests)
+                return;
+
+            if (!TryGetGraphDependencyHash(out var currentHash))
+                return;
+
+            if (!_hasObservedGraphDependencyHash)
+            {
+                _observedGraphDependencyHash = currentHash;
+                _hasObservedGraphDependencyHash = true;
+                return;
+            }
+
+            if (_observedGraphDependencyHash == currentHash)
+                return;
+
+            _observedGraphDependencyHash = currentHash;
+            RequestAutoRun();
+        }
+
+        private void CaptureGraphDependencyHash()
+        {
+            if (!TryGetGraphDependencyHash(out var hash))
+            {
+                _hasObservedGraphDependencyHash = false;
+                return;
+            }
+
+            _observedGraphDependencyHash = hash;
+            _hasObservedGraphDependencyHash = true;
+        }
+
+        private bool TryGetGraphDependencyHash(out Hash128 hash)
+        {
+            hash = default;
+            if (_graphAsset == null)
+                return false;
+
+            string path = AssetDatabase.GetAssetPath(_graphAsset);
+            if (string.IsNullOrEmpty(path))
+                return false;
+
+            hash = AssetDatabase.GetAssetDependencyHash(path);
+            return hash.isValid;
         }
 
         private void RestoreGraphAsset()
@@ -744,6 +850,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 RestoreGraphAsset();
                 _graphView?.SetReadOnly(false);
                 UpdateStatusBar();
+                RequestAutoRun(false);
             }
         }
 
@@ -1137,65 +1244,141 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         }
 
         /// <summary>
-        /// Перераховує матриці шарів, мініатюри та фінальне сценове превʼю
-        /// через той самий TWC compile/generate шлях, що й scene generation.
+        /// Перебудовує thumbnails і загальне logical preview виключно з поточного
+        /// GraphEvaluationSnapshot. Жоден editor presentation-крок не запускає
+        /// граф повторно і не підміняє його фінальні маски.
         /// </summary>
-        private void RebuildLayerPreviews(int seed, int mapW, int mapH, ISet<string> skippedLayerIds)
+        private bool RebuildLayerPreviews(
+            int mapW,
+            int mapH,
+            GraphEvaluationSnapshot evaluationSnapshot)
         {
-            DisposeLayerPreviewTextures();
-
             if (_graphAsset == null)
             {
+                DisposeLayerPreviewTextures();
                 _layerMatrices = null;
                 _layerPreviewColors = null;
                 _sceneParityTileMap = null;
                 RebuildLayerList();
-                return;
+                return false;
             }
 
-            int w;
-            int h;
-            if (!SceneParityLayerPreviewBuilder.TryBuildLayerMatrices(
-                    _graphAsset,
-                    seed,
-                    new Vector2Int(mapW, mapH),
-                    skippedLayerIds,
-                    out _layerMatrices,
-                    out _layerPreviewColors,
-                    out w,
-                    out h,
-                    out string sceneParityStatus))
+            var expectedSize = new Vector2Int(
+                Mathf.Max(1, mapW),
+                Mathf.Max(1, mapH));
+            if (evaluationSnapshot == null
+                || !evaluationSnapshot.Success
+                || evaluationSnapshot.MapSize != expectedSize)
             {
+                string reason = evaluationSnapshot?.Diagnostics
+                                ?? evaluationSnapshot?.ExecutionResult?.ErrorMessage
+                                ?? "Current graph evaluation snapshot is unavailable.";
                 Debug.LogWarning(
-                    $"[GraphEditorWindow] Scene-parity layer preview failed; falling back to graph execution preview. Reason: {sceneParityStatus}");
-
-                if (_lastResult == null)
-                {
-                    _layerMatrices = null;
-                    _layerPreviewColors = null;
-                    _sceneParityTileMap = null;
-                    RebuildLayerList();
-                    return;
-                }
-
-                _layerMatrices = GeneratorLayerPreviewBuilder.ComputeLayerMatrices(
-                    _graphAsset, _lastResult, out w, out h);
-                _layerPreviewColors = null;
+                    $"[GraphEditorWindow] Logical layer preview failed. Last valid preview is retained. Reason: {reason}");
+                if (_statusLabel != null)
+                    _statusLabel.text = $"Preview out of date: {reason}";
+                MarkCurrentPreviewOutOfDate(reason);
+                RebuildLayerList();
+                GraphPreviewWindow.RequestRepaint();
+                return false;
             }
 
+            var nextMatrices = evaluationSnapshot.CompiledLayerMatrices
+                .Where(pair =>
+                    !string.IsNullOrEmpty(pair.Key)
+                    && pair.Value != null)
+                .ToDictionary(
+                    pair => pair.Key,
+                    pair => pair.Value,
+                    StringComparer.Ordinal);
+            var nextPreviewColors = _graphAsset.Layers
+                .Where(layer => layer != null)
+                .GroupBy(layer => layer.Id, StringComparer.Ordinal)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First().Color,
+                    StringComparer.Ordinal);
+            var compositeMatrices = nextMatrices
+                .Where(pair =>
+                    GraphLayerRuntimeSemantics.HasRenderableTileOutput(
+                        _graphAsset,
+                        pair.Key))
+                .ToDictionary(
+                    pair => pair.Key,
+                    pair => pair.Value,
+                    StringComparer.Ordinal);
+            string compositeTooltip =
+                "Logical snapshot preview: фінальні Output-матриці, 1 pixel = 1 tile.";
+
+            if (SceneParityLayerPreviewBuilder.TryBuildLayerMatrices(
+                    _graphAsset,
+                    evaluationSnapshot.Seed,
+                    expectedSize,
+                    skippedLayerIds: null,
+                    evaluationSnapshot,
+                    out var sceneParityMatrices,
+                    out var sceneParityColors,
+                    out int parityWidth,
+                    out int parityHeight,
+                    out string parityStatus))
+            {
+                if (sceneParityMatrices != null && sceneParityMatrices.Count > 0)
+                {
+                    compositeMatrices = sceneParityMatrices
+                        .Where(pair => pair.Value != null)
+                        .ToDictionary(
+                            pair => pair.Key,
+                            pair => pair.Value,
+                            StringComparer.Ordinal);
+
+                    if (sceneParityColors != null && sceneParityColors.Count > 0)
+                    {
+                        foreach (var pair in sceneParityColors)
+                            nextPreviewColors[pair.Key] = pair.Value;
+                    }
+
+                    if (parityWidth > 0 && parityHeight > 0)
+                        expectedSize = new Vector2Int(parityWidth, parityHeight);
+
+                    compositeTooltip = string.IsNullOrWhiteSpace(parityStatus)
+                        ? "Scene parity preview: той самий фінальний логічний результат, що використовується для побудови світу."
+                        : $"Scene parity preview: {parityStatus}";
+                }
+            }
+
+            DisposeLayerPreviewTextures();
+            _layerMatrices = nextMatrices;
+            _layerPreviewColors = nextPreviewColors;
             _layerCompositeTexture = GeneratorLayerPreviewBuilder.BuildTopDownComposite(
                 _graphAsset,
-                _layerMatrices,
-                w,
-                h,
+                compositeMatrices,
+                expectedSize.x,
+                expectedSize.y,
                 _layerPreviewColors,
                 out _sceneParityTileMap);
 
             if (_compositePreviewImage != null)
+            {
                 _compositePreviewImage.image = _layerCompositeTexture;
+                _compositePreviewImage.style.opacity = 1f;
+                _compositePreviewImage.tooltip = compositeTooltip;
+            }
 
             RebuildLayerList();
             GraphPreviewWindow.RequestRepaint();
+            return true;
+        }
+
+        private void MarkCurrentPreviewOutOfDate(string error)
+        {
+            _graphView?.MarkNodePreviewsOutOfDate(error);
+            if (_compositePreviewImage == null)
+                return;
+
+            _compositePreviewImage.style.opacity = 0.45f;
+            _compositePreviewImage.tooltip = string.IsNullOrWhiteSpace(error)
+                ? "Out of date"
+                : $"Out of date: {error}";
         }
 
         private Color ResolveLayerPreviewColor(GeneratorLayerDefinition layer)
@@ -1248,10 +1431,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _selectedLayerId = layerId;
             if (_graphView != null)
                 _graphView.ActiveLayerId = _selectedLayerId;
+            RefreshNodePreviewsFromLastResult();
             RebuildLayerList();
             RestoreCameraTransform();
             SetInspectorTab(InspectorTab.Settings);
             RefreshInspectorPanel();
+            RequestAutoRun(false);
         }
 
         private void AddLayer()
@@ -1353,8 +1538,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 copied.Nodes.Add(new CopiedLayerNodeData(
                     node.NodeId,
                     node.GetType(),
+                    (node as TwcModifierNode)?.ModifierAsset?.GetType(),
                     node.EditorPosition,
-                    SanitizeSerializedNodeJsonForPaste(EditorJsonUtility.ToJson(node))));
+                    SanitizeSerializedNodeJsonForPaste(EditorJsonUtility.ToJson(node)),
+                    node is TwcModifierNode twcNode && twcNode.ModifierAsset != null
+                        ? EditorJsonUtility.ToJson(twcNode.ModifierAsset)
+                        : null));
             }
 
             foreach (var connection in _graphAsset.GetConnectionsForLayer(layerId, false))
@@ -1405,17 +1594,51 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             var idMap = new Dictionary<string, string>();
             foreach (var data in _copiedLayer.Nodes)
             {
-                var node = _graphAsset.AddNode(data.NodeType, false, layer.Id);
-                if (node == null)
+                NodeCatalogEntry catalogEntry = null;
+                bool hasCatalogEntry = data.NodeType == typeof(TwcModifierNode)
+                    ? GraphNodeCatalog.TryGetTwcModifier(data.TwcModifierType, out catalogEntry)
+                    : GraphNodeCatalog.TryGet(data.NodeType, out catalogEntry);
+                if (!hasCatalogEntry)
+                {
+                    Debug.LogWarning(
+                        $"[GraphEditorWindow] Layer paste skipped node type '{data.NodeType?.FullName}': it is not available in the validated catalog.");
                     continue;
+                }
 
-                Undo.RegisterCreatedObjectUndo(node, "Paste Layer Node");
-                if (!string.IsNullOrWhiteSpace(data.JsonData))
-                    EditorJsonUtility.FromJsonOverwrite(SanitizeSerializedNodeJsonForPaste(data.JsonData), node);
+                if (!GraphNodeFactory.TryCreate(
+                        _graphAsset,
+                        catalogEntry,
+                        layer.Id,
+                        data.Position,
+                        candidate =>
+                        {
+                            if (candidate is TwcModifierNode twcCandidate)
+                            {
+                                if (!string.IsNullOrWhiteSpace(data.TwcModifierJsonData)
+                                    && twcCandidate.ModifierAsset != null)
+                                {
+                                    EditorJsonUtility.FromJsonOverwrite(
+                                        data.TwcModifierJsonData,
+                                        twcCandidate.ModifierAsset);
+                                }
+                                return;
+                            }
 
-                node.NodeId = Guid.NewGuid().ToString();
-                node.LayerId = layer.Id;
-                node.EditorPosition = data.Position;
+                            if (!string.IsNullOrWhiteSpace(data.JsonData))
+                            {
+                                EditorJsonUtility.FromJsonOverwrite(
+                                    SanitizeSerializedNodeJsonForPaste(data.JsonData),
+                                    candidate);
+                            }
+                        },
+                        out var node,
+                        out string factoryError))
+                {
+                    Debug.LogWarning(
+                        $"[GraphEditorWindow] Layer paste skipped '{catalogEntry.Descriptor.Title}': {factoryError}");
+                    continue;
+                }
+
                 RemapSerializedLayerReferences(node, _copiedLayer.SourceLayerId, layer.Id);
                 EditorUtility.SetDirty(node);
 
@@ -1821,6 +2044,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                     _previewSettingsGuid = null;
                 }
                 SaveWindowSettings();
+                RequestAutoRun();
             });
             toolbar.Add(settingsField);
 
@@ -1832,7 +2056,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 tooltip = "Ширина карти для preview/run, якщо її не перевизначено в налаштуваннях графа."
             };
             widthField.RegisterValueChangedCallback(evt =>
-                _previewWidth = Mathf.Max(4, evt.newValue));
+            {
+                int nextWidth = Mathf.Max(4, evt.newValue);
+                if (_previewWidth == nextWidth)
+                    return;
+
+                _previewWidth = nextWidth;
+                RequestAutoRun();
+            });
             toolbar.Add(widthField);
 
             var heightField = new IntegerField("H")
@@ -1842,7 +2073,14 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 tooltip = "Висота карти для preview/run, якщо її не перевизначено в налаштуваннях графа."
             };
             heightField.RegisterValueChangedCallback(evt =>
-                _previewHeight = Mathf.Max(4, evt.newValue));
+            {
+                int nextHeight = Mathf.Max(4, evt.newValue);
+                if (_previewHeight == nextHeight)
+                    return;
+
+                _previewHeight = nextHeight;
+                RequestAutoRun();
+            });
             toolbar.Add(heightField);
 
             toolbar.Add(new ToolbarSpacer());
@@ -1945,24 +2183,32 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             var autoRunToggle = new ToolbarToggle
             {
-                text = "Auto Run",
+                text = "Live Preview",
                 value = _autoRunOnChange,
-                tooltip = "Автоматично перезапускати граф після змін."
+                tooltip = "Автоматично перебудовувати точне preview через 200 мс після завершеної зміни."
             };
-            autoRunToggle.RegisterValueChangedCallback(evt => _autoRunOnChange = evt.newValue);
+            autoRunToggle.RegisterValueChangedCallback(evt =>
+            {
+                _autoRunOnChange = evt.newValue;
+                if (_autoRunOnChange)
+                    RequestAutoRun(false);
+                else
+                    _revisionScheduler.CancelPendingSchedule();
+                SaveWindowSettings();
+            });
             toolbar.Add(autoRunToggle);
 
             var previewModeField = new PopupField<string>(
-                new List<string> { "64", "128", "Full" },
-                Mathf.Clamp(_previewResolution, 0, 2))
+                new List<string> { "1:1" },
+                0)
             {
                 label = "Preview",
-                tooltip = "64/128 масштабують лише текстуру. Full показує карту 1:1: один піксель дорівнює одному тайлу."
+                tooltip = "Логічна карта завжди 1:1: один піксель дорівнює одному тайлу."
             };
             previewModeField.RegisterValueChangedCallback(_ =>
             {
-                _previewResolution = previewModeField.index;
-                RequestAutoRun();
+                _previewResolution = 2;
+                RefreshNodePreviewsFromLastResult();
             });
             toolbar.Add(previewModeField);
 
@@ -1975,7 +2221,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             heatmapToggle.RegisterValueChangedCallback(evt =>
             {
                 _previewHeatmap = evt.newValue;
-                RequestAutoRun();
+                RefreshNodePreviewsFromLastResult();
+                SaveWindowSettings();
             });
             toolbar.Add(heatmapToggle);
 
@@ -2055,6 +2302,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         public void LoadGraph(GraphAsset asset)
         {
             DisposeGraphOdinTrees();
+            if (_graphAsset != asset)
+                ResetPreviewStateForNewGraph();
             _graphAsset = asset;
 
             // Persist GUID for domain reload
@@ -2067,6 +2316,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             {
                 _graphAssetGuid = null;
             }
+            CaptureGraphDependencyHash();
 
             MigrateLegacySharedSettingsNode(_graphAsset);
             GraphStaticNodeUtility.EnsureStaticNodes(_graphAsset);
@@ -2081,6 +2331,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             RefreshInspectorPanel();
             RebuildLayerList();
             UpdateStatusBar();
+            RequestAutoRun();
+        }
+
+        private void ResetPreviewStateForNewGraph()
+        {
+            DisposeLayerPreviewTextures();
+            _layerMatrices = null;
+            _layerPreviewColors = null;
+            _sceneParityTileMap = null;
+            _lastSnapshot = null;
+            _lastExecutionMapSize = default;
+            _revisionScheduler.InvalidateAppliedRevision();
+            GraphPreviewWindow.RequestRepaint();
         }
 
         public GraphAsset GraphAsset => _graphAsset;
@@ -2673,13 +2936,22 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (hasObjectLayerNode && !hasObjectOutputNode)
                 {
                     var objectLayer = nodes.OfType<ObjectLayerNode>().FirstOrDefault();
-                    var output = _graphAsset.AddNode(typeof(ObjectOutputToTWCNode), false, layer.Id);
-                    if (output != null)
+                    if (GraphNodeFactory.TryCreate(
+                            _graphAsset,
+                            typeof(ObjectOutputToTWCNode),
+                            layer.Id,
+                            (objectLayer?.EditorPosition ?? Vector2.zero) + new Vector2(280f, 0f),
+                            out var output,
+                            out string factoryError))
                     {
-                        output.EditorPosition = (objectLayer?.EditorPosition ?? Vector2.zero) + new Vector2(280f, 0f);
                         if (objectLayer != null)
                             _graphAsset.AddConnection(objectLayer.NodeId, 0, output.NodeId, 0);
                         changed++;
+                    }
+                    else
+                    {
+                        Debug.LogWarning(
+                            $"[GraphEditorWindow] Auto-fix could not create Object Output: {factoryError}");
                     }
                 }
 
@@ -2691,11 +2963,21 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 var layerOutput = outputNodes.FirstOrDefault();
                 if (layerOutput == null)
                 {
-                    layerOutput = _graphAsset.AddNode(typeof(OutputNode), false, layer.Id) as OutputNode;
-                    if (layerOutput != null)
+                    if (GraphNodeFactory.TryCreate(
+                            _graphAsset,
+                            typeof(OutputNode),
+                            layer.Id,
+                            ResolveNewLayerOutputPosition(nodes),
+                            out var createdOutput,
+                            out string factoryError))
                     {
-                        layerOutput.EditorPosition = ResolveNewLayerOutputPosition(nodes);
+                        layerOutput = createdOutput as OutputNode;
                         changed++;
+                    }
+                    else
+                    {
+                        Debug.LogWarning(
+                            $"[GraphEditorWindow] Auto-fix could not create layer Output: {factoryError}");
                     }
                 }
 
@@ -2977,29 +3259,61 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
         private void RunGraph(bool isAutoRun = false)
         {
-            if (_isRunningGraph) return;
-            _isRunningGraph = true;
+            _ = RunGraphAsync(isAutoRun);
+        }
 
+        private async Task RunGraphAsync(bool isAutoRun)
+        {
             if (_graphAsset == null)
             {
-                EditorUtility.DisplayDialog("Run Graph",
-                    "No graph loaded.", "OK");
-                _isRunningGraph = false;
+                _revisionScheduler.CancelPendingSchedule();
+                if (!isAutoRun)
+                {
+                    EditorUtility.DisplayDialog(
+                        "Run Graph",
+                        "No graph loaded.",
+                        "OK");
+                }
                 return;
             }
 
+            double runStartedAt = EditorApplication.timeSinceStartup;
+            bool schedulingEnabled =
+                _autoRunOnChange && !EditorApplication.isPlaying;
+            if (!_revisionScheduler.TryBegin(
+                    runStartedAt,
+                    schedulingEnabled,
+                    force: !isAutoRun,
+                    out long runningRevision))
+            {
+                return;
+            }
+
+            GraphAsset graphAtStart = _graphAsset;
             _progressBar.visible = true;
             _progressBar.value = 0;
             _statusLabel.text = "Running graph...";
+            if (_lastSnapshot != null)
+            {
+                MarkCurrentPreviewOutOfDate(
+                    $"Running revision {runningRevision}...");
+            }
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
-            var prevRandomState = UnityEngine.Random.state;
-            int previousGlobalSeed = GlobalSeed.Current;
+            bool appliedSuccessfully = false;
 
             try
             {
-                SanitizeGraphAsset(true);
-                TrySyncCompanionBlueprintLayers(false);
+                _suppressAutoRunRequests = true;
+                try
+                {
+                    SanitizeGraphAsset(true);
+                    TrySyncCompanionBlueprintLayers(false);
+                }
+                finally
+                {
+                    _suppressAutoRunRequests = false;
+                }
 
                 // Validate first. Global errors stop the run; layer errors are skipped by the run policy.
                 var validator = new GraphValidator();
@@ -3019,6 +3333,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (globalErrorCount > 0)
                 {
                     _statusLabel.text = $"✗ Cannot run: {globalErrorCount} global validation error(s).";
+                    MarkCurrentPreviewOutOfDate(
+                        $"{globalErrorCount} global validation error(s).");
 
                     if (!isAutoRun)
                     {
@@ -3045,39 +3361,41 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
                 var runtimeSettings = ResolveRuntimeExecutionSettings();
 
-                var sharedSettings = _graphAsset.SharedSettings;
                 var mapSize = ResolveExecutionMapSize(runtimeSettings);
                 int mapW = mapSize.x;
                 int mapH = mapSize.y;
                 _lastExecutionMapSize = mapSize;
 
-                int seed = GlobalSeed.InitializeDeterministic(GetSeedFromGraph());
+                int seed = GlobalSeed.Normalize(GetSeedFromGraph());
                 _statusLabel.text = $"Running graph... (seed {seed})";
 
                 var layerDataList = new List<WorldLayerData>();
-                var layerMaskRegistry = new LayerMaskRegistry();
-                LayerMaskPrewarmUtility.PrewarmAllLayerMasks(
-                    _graphAsset,
+                var evaluationSnapshot = await GraphEvaluationPipeline.EvaluateAsync(
+                    graphAtStart,
                     seed,
                     new Vector2Int(mapW, mapH),
-                    layerMaskRegistry,
-                    context => RegisterEditorServices(context, runtimeSettings, false),
+                    runningRevision,
+                    context =>
+                    {
+                        RegisterEditorServices(context, runtimeSettings, false);
+                        context.RegisterService(layerDataList);
+                    },
                     invalidLayerIds);
+                if (this == null)
+                    return;
 
-                var runner = new GraphRunner();
-                var scopes = _graphAsset.CreateEnabledLayerExecutionScopes();
+                var aggregateResult = evaluationSnapshot.ExecutionResult;
+                var scopes = graphAtStart.CreateEnabledLayerExecutionScopes();
                 var runReport = new GraphRunReport(
                     seed,
                     mapW,
                     mapH,
                     LayerRunFailurePolicy.SkipInvalidLayersAndContinueFailures);
-                var layerResults = new List<GraphExecutionResult>();
-                GraphExecutionResult previewResult = null;
 
                 for (int i = 0; i < scopes.Count; i++)
                 {
                     var scope = scopes[i];
-                    var layer = _graphAsset.GetLayerById(scope.LayerId);
+                    var layer = graphAtStart.GetLayerById(scope.LayerId);
                     string layerName = layer?.Name ?? scope.LayerId ?? "Global";
                     var record = new LayerRunRecord
                     {
@@ -3097,59 +3415,70 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                         continue;
                     }
 
-                    try
+                    var layerLogs = aggregateResult?.Logs
+                        ?.Where(log =>
+                            string.Equals(
+                                log.LayerId,
+                                scope.LayerId,
+                                StringComparison.Ordinal))
+                        .ToList()
+                        ?? new List<NodeExecutionLog>();
+                    record.Status = LayerRunStatus.Prepared;
+                    record.GraphId = layerLogs.FirstOrDefault()?.GraphId
+                                     ?? scope.GraphId;
+                    record.NodeCount = layerLogs.Count;
+                    record.NodeTimeMs = layerLogs.Sum(log => log.DurationMs);
+                    var errorLog = layerLogs.FirstOrDefault(log =>
+                        log.Status == NodeStatus.Error);
+                    if (errorLog == null)
                     {
-                        record.Status = LayerRunStatus.Prepared;
-                        var context = CreateEditorNodeContext(seed, mapW, mapH, sharedSettings, runtimeSettings, layerDataList, layerMaskRegistry);
-                        var result = runner.Execute(scope, context);
-                        layerResults.Add(result);
-                        record.GraphId = result.GraphId;
-                        record.NodeCount = result.Logs.Count;
-                        record.NodeTimeMs = 0f;
-                        foreach (var log in result.Logs)
-                            record.NodeTimeMs += log.DurationMs;
-
-                        if (previewResult == null || scope.LayerId == _selectedLayerId)
-                            previewResult = result;
-
-                        if (result.Success)
-                        {
-                            record.Status = LayerRunStatus.Generated;
-                            record.Message = "Generated.";
-                        }
-                        else
-                        {
-                            record.Status = LayerRunStatus.Failed;
-                            record.Message = result.ErrorMessage;
-                            record.ErrorNodeId = result.ErrorNodeId;
-                        }
+                        record.Status = LayerRunStatus.Generated;
+                        record.Message = "Generated.";
                     }
-                    catch (Exception ex)
+                    else
                     {
                         record.Status = LayerRunStatus.Failed;
-                        record.Message = ex.Message;
-                        Debug.LogException(ex);
+                        record.Message = errorLog.Message;
+                        record.ErrorNodeId = errorLog.NodeId;
                     }
 
                     _progressBar.value = scopes.Count == 0 ? 1f : (float)(i + 1) / scopes.Count;
                 }
 
-                var aggregateResult = layerResults.Count > 0
-                    ? GraphExecutionResult.Combine(layerResults)
-                    : previewResult;
+                if (!_revisionScheduler.IsCurrent(runningRevision))
+                {
+                    _statusLabel.text = "Graph changed while running; scheduling latest preview...";
+                    return;
+                }
+
+                if (aggregateResult == null || !aggregateResult.Success)
+                {
+                    string failure = aggregateResult?.ErrorMessage
+                                     ?? evaluationSnapshot.Diagnostics
+                                     ?? "Graph evaluation failed.";
+                    MarkCurrentPreviewOutOfDate(failure);
+                    _statusLabel.text = $"Preview out of date: {failure}";
+                    if (aggregateResult != null)
+                        HighlightExecutionResults(aggregateResult);
+                    sw.Stop();
+                    if (!isAutoRun)
+                        Debug.LogWarning($"[GraphRunner] {failure}");
+                    return;
+                }
 
                 Vector2Int previewSize = ResolvePreviewSize(_previewResolution, mapW, mapH);
                 _graphView?.UpdateNodePreviews(
-                    aggregateResult,
+                    evaluationSnapshot,
                     _previewSettings,
-                    layerDataList,
                     previewSize.x,
                     previewSize.y,
                     _previewHeatmap,
                     buildTextures: _showInlinePreviews);
-                _lastResult = aggregateResult;
-                _lastLayerData = layerDataList;
-                RebuildLayerPreviews(seed, mapW, mapH, invalidLayerIds);
+                _lastSnapshot = evaluationSnapshot;
+                RebuildLayerPreviews(
+                    mapW,
+                    mapH,
+                    evaluationSnapshot);
                 GraphPreviewWindow.RequestRepaint();
 
                 sw.Stop();
@@ -3161,30 +3490,37 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (aggregateResult != null)
                     HighlightExecutionResults(aggregateResult);
 
+                appliedSuccessfully = true;
+                CaptureGraphDependencyHash();
             }
             catch (Exception ex)
             {
                 sw.Stop();
                 _statusLabel.text = $"✗ Run failed: {ex.Message}";
+                MarkCurrentPreviewOutOfDate(ex.Message);
                 Debug.LogException(ex);
             }
             finally
             {
-                _progressBar.visible = false;
-                GlobalSeed.Set(previousGlobalSeed);
-                UnityEngine.Random.state = prevRandomState;
-                _isRunningGraph = false;
+                _suppressAutoRunRequests = false;
+                if (_progressBar != null)
+                    _progressBar.visible = false;
+                _revisionScheduler.Complete(
+                    runningRevision,
+                    appliedSuccessfully,
+                    EditorApplication.timeSinceStartup,
+                    _autoRunOnChange && !EditorApplication.isPlaying);
             }
         }
 
         internal bool TryGetBestPreview(out Texture2D previewTexture, out string status)
         {
-            // Фінальне превʼю має відповідати scene generation, тому scene-parity
-            // TWC composite має пріоритет над diagnostic preview окремої ноди.
+            // Загальне превʼю побудоване з тих самих фінальних Output-матриць,
+            // що й layer/node snapshot records.
             if (_layerCompositeTexture != null)
             {
                 previewTexture = _layerCompositeTexture;
-                status = $"Scene parity TWC preview ({_layerCompositeTexture.width}x{_layerCompositeTexture.height} tiles)";
+                status = $"Logical snapshot preview ({_layerCompositeTexture.width}x{_layerCompositeTexture.height} tiles)";
                 return true;
             }
 
@@ -3218,36 +3554,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         /// Кожен сервіс реєструється опціонально — якщо ScriptableObject не задано,
         /// лог попереджує, але Run не зупиняється (вузли самі отримають помилку при GetService).
         /// </summary>
-        private NodeContext CreateEditorNodeContext(
-            int seed,
-            int mapW,
-            int mapH,
-            GraphSharedSettings sharedSettings,
-            RuntimeExecutionSettings runtimeSettings,
-            List<WorldLayerData> layerDataList,
-            LayerMaskRegistry layerMaskRegistry)
-        {
-            var context = new NodeContext(seed, CancellationToken.None)
-            {
-                MapSize = new Vector2Int(mapW, mapH)
-            };
-
-            if (sharedSettings != null)
-            {
-                context.ApplySharedSettings(sharedSettings);
-                context.RegisterService(sharedSettings);
-            }
-
-            RegisterEditorServices(context, runtimeSettings);
-
-            if (layerDataList != null)
-                context.RegisterService(layerDataList);
-            if (layerMaskRegistry != null)
-                context.RegisterService(layerMaskRegistry);
-
-            return context;
-        }
-
         private void RegisterEditorServices(
             NodeContext context,
             RuntimeExecutionSettings runtimeSettings,
@@ -3553,7 +3859,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             _previewHeight = Mathf.Max(4, settings.previewHeight);
             _showInlinePreviews = settings.showInlinePreviews;
             _autoRunOnChange = settings.autoRunOnChange;
-            _previewResolution = Mathf.Clamp(settings.previewResolution, 0, 2);
+            _previewResolution = 2;
             _previewHeatmap = settings.previewHeatmap;
             _isInspectorVisible = settings.isInspectorVisible;
             _activeInspectorTab = (InspectorTab)Mathf.Clamp(settings.inspectorTabIndex, 0, 2);
@@ -4332,9 +4638,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
 
             Vector2Int previewSize = ResolvePreviewSize(_previewResolution, mapW, mapH);
             _graphView.UpdateNodePreviews(
-                _lastResult,
+                _lastSnapshot,
                 _previewSettings,
-                _lastLayerData,
                 previewSize.x,
                 previewSize.y,
                 _previewHeatmap,
@@ -4366,36 +4671,36 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             CaptureCameraTransform();
         }
 
-        private void RequestAutoRun()
+        private void RequestAutoRun(bool markPreviewOutOfDate = true)
         {
-            if (!_autoRunOnChange || EditorApplication.isPlaying)
-                return;
-
-            _nextAutoRunAt = EditorApplication.timeSinceStartup + 0.35d;
+            long requestedRevision = _revisionScheduler.Request(
+                EditorApplication.timeSinceStartup,
+                _autoRunOnChange && !EditorApplication.isPlaying);
+            if (markPreviewOutOfDate && _lastSnapshot != null)
+            {
+                MarkCurrentPreviewOutOfDate(
+                    $"Graph revision {requestedRevision} is pending.");
+            }
         }
 
         private void PollAutoRun()
         {
-            if (!_autoRunOnChange || _isRunningGraph)
+            if (!_autoRunOnChange
+                || EditorApplication.isPlaying
+                || _revisionScheduler.IsRunning)
                 return;
-            if (_nextAutoRunAt <= 0d)
+            if (_revisionScheduler.NextRunAt <= 0d)
                 return;
-            if (EditorApplication.timeSinceStartup < _nextAutoRunAt)
+            if (EditorApplication.timeSinceStartup
+                < _revisionScheduler.NextRunAt)
                 return;
 
-            _nextAutoRunAt = 0d;
             RunGraph(true);
         }
 
         internal static Vector2Int ResolvePreviewSize(int previewResolution, int mapW, int mapH)
         {
-            return previewResolution switch
-            {
-                0 => new Vector2Int(64, 64),
-                1 => new Vector2Int(128, 128),
-                2 => new Vector2Int(Mathf.Max(1, mapW), Mathf.Max(1, mapH)),
-                _ => new Vector2Int(128, 128)
-            };
+            return new Vector2Int(Mathf.Max(1, mapW), Mathf.Max(1, mapH));
         }
 
         private void SetInspectorVisible(bool visible)
@@ -4652,7 +4957,12 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             int normalized = _graphAsset.NormalizeGraphIds();
             int repaired = _graphAsset.RepairMissingNodeConnections();
             int invalidConnections = _graphAsset.RemoveInvalidConnections();
-            bool changed = repaired > 0 || removed > 0 || normalized > 0 || invalidConnections > 0;
+            int migratedSubgraphs = MigrateUnambiguousSubgraphOutputs();
+            bool changed = repaired > 0
+                           || removed > 0
+                           || normalized > 0
+                           || invalidConnections > 0
+                           || migratedSubgraphs > 0;
 
             if (!changed)
                 return false;
@@ -4662,6 +4972,44 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 RefreshGraphViewFromAsset();
 
             return true;
+        }
+
+        private int MigrateUnambiguousSubgraphOutputs()
+        {
+            if (_graphAsset == null)
+                return 0;
+
+            int migrated = 0;
+            foreach (var subgraphNode in _graphAsset.Nodes.OfType<SubgraphNode>())
+            {
+                var subgraph = subgraphNode?.Subgraph;
+                if (subgraph == null || subgraph == _graphAsset)
+                    continue;
+
+                subgraph.EnsureLayerGraphStates();
+                var outputs = subgraph.Nodes
+                    .OfType<OutputNode>()
+                    .ToArray();
+                if (outputs.Length != 1)
+                    continue;
+
+                string outputLayerId = outputs[0].LayerId;
+                if (string.IsNullOrEmpty(outputLayerId)
+                    || string.Equals(
+                        subgraphNode.OutputLayerId,
+                        outputLayerId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                Undo.RecordObject(subgraphNode, "Migrate Subgraph Output Layer");
+                subgraphNode.OutputLayerId = outputLayerId;
+                EditorUtility.SetDirty(subgraphNode);
+                migrated++;
+            }
+
+            return migrated;
         }
 
         private static void MigrateLegacySharedSettingsNode(GraphAsset asset)

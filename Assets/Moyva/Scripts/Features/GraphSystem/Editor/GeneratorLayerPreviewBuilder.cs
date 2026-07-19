@@ -15,17 +15,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private const int MaxCompositeSize = 768;
 
         /// <summary>
-        /// Обчислює бінарну матрицю кожного шару з результату виконання графа.
-        /// Матриця шару = OR усіх його термінальних вузлів (тих, чий вихід Mask
-        /// не споживається іншим вузлом того ж шару).
+        /// Reads finalized layer output artifacts. It never guesses a layer by
+        /// combining terminal nodes, because that can disagree with runtime.
         /// </summary>
         public static Dictionary<string, bool[,]> ComputeLayerMatrices(
-            GraphAsset graph, GraphExecutionResult result, out int width, out int height)
+            GraphAsset graph,
+            GraphEvaluationSnapshot snapshot,
+            out int width,
+            out int height)
         {
             width = 0;
             height = 0;
             var matrices = new Dictionary<string, bool[,]>();
-            if (graph == null || result == null)
+            if (graph == null || snapshot == null || !snapshot.Success)
                 return matrices;
 
             foreach (var layer in graph.Layers)
@@ -35,61 +37,31 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (!layer.Enabled || !GraphLayerRuntimeSemantics.HasRenderableTileOutput(graph, layer.Id))
                     continue;
 
-                var layerNodes = graph.Nodes
-                    .Where(n => n != null && n.LayerId == layer.Id)
-                    .ToList();
-                if (layerNodes.Count == 0)
-                    continue;
-
-                var layerNodeIds = new HashSet<string>(layerNodes.Select(n => n.NodeId));
-
-                // Вузол термінальний, якщо його вихід не йде в інший вузол того ж шару.
-                var consumed = new HashSet<string>();
-                foreach (var c in graph.Connections)
+                if (!snapshot.CompiledLayerMatrices.TryGetValue(
+                        layer.Id,
+                        out var layerMatrix)
+                    || layerMatrix == null)
                 {
-                    if (c != null
-                        && layerNodeIds.Contains(c.SourceNodeId)
-                        && layerNodeIds.Contains(c.TargetNodeId))
-                    {
-                        consumed.Add(c.SourceNodeId);
-                    }
+                    continue;
                 }
 
-                bool[,] layerMatrix = null;
-                foreach (var node in layerNodes)
-                {
-                    if (consumed.Contains(node.NodeId))
-                        continue;
-
-                    var mask = ExtractLayerOccupancyMatrix(result.GetOutputs(node.NodeId));
-                    if (mask == null)
-                        continue;
-
-                    int w = mask.GetLength(0);
-                    int h = mask.GetLength(1);
-                    if (layerMatrix == null)
-                    {
-                        layerMatrix = new bool[w, h];
-                    }
-
-                    int cw = Mathf.Min(w, layerMatrix.GetLength(0));
-                    int ch = Mathf.Min(h, layerMatrix.GetLength(1));
-                    for (int x = 0; x < cw; x++)
-                        for (int y = 0; y < ch; y++)
-                            if (mask[x, y])
-                                layerMatrix[x, y] = true;
-                }
-
-                if (layerMatrix == null)
-                    continue;
-
-                layerMatrix = ApplyLayerVisualPadding(layerMatrix, layer);
-                matrices[layer.Id] = layerMatrix;
+                matrices[layer.Id] = Clone(layerMatrix);
                 width = Mathf.Max(width, layerMatrix.GetLength(0));
                 height = Mathf.Max(height, layerMatrix.GetLength(1));
             }
 
             return matrices;
+        }
+
+        private static bool[,] Clone(bool[,] source)
+        {
+            int width = source.GetLength(0);
+            int height = source.GetLength(1);
+            var clone = new bool[width, height];
+            for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                clone[x, y] = source[x, y];
+            return clone;
         }
 
         /// <summary>
@@ -462,61 +434,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 height = 1f;
 
             return Mathf.Clamp(Mathf.CeilToInt(height), 1, 128);
-        }
-
-        private static bool[,] ExtractLayerOccupancyMatrix(object[] outputs)
-        {
-            if (outputs == null)
-                return null;
-
-            foreach (var o in outputs)
-                if (o is bool[,] b)
-                    return b;
-
-            foreach (var o in outputs)
-            {
-                if (o is string[,] stringMap)
-                    return BuildOccupancyFromStringMap(stringMap);
-
-                if (o is float[,] floatMap)
-                    return BuildOccupancyFromFloatMap(floatMap);
-            }
-
-            return null;
-        }
-
-        private static bool[,] BuildOccupancyFromStringMap(string[,] source)
-        {
-            if (source == null)
-                return null;
-
-            int width = source.GetLength(0);
-            int height = source.GetLength(1);
-            var occupancy = new bool[width, height];
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                    occupancy[x, y] = !string.IsNullOrEmpty(source[x, y]);
-            }
-
-            return occupancy;
-        }
-
-        private static bool[,] BuildOccupancyFromFloatMap(float[,] source)
-        {
-            if (source == null)
-                return null;
-
-            int width = source.GetLength(0);
-            int height = source.GetLength(1);
-            var occupancy = new bool[width, height];
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                    occupancy[x, y] = !float.IsNaN(source[x, y]) && !float.IsInfinity(source[x, y]);
-            }
-
-            return occupancy;
         }
 
         private static Texture2D NewTexture(int w, int h)

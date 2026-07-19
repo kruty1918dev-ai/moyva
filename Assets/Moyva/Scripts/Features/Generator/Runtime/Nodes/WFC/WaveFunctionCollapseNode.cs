@@ -5,9 +5,15 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
 {
-    [NodeInfo("Wave Function Collapse", "WFC", "Генерує нову карту за зразком, зберігаючи локальні патерни та сумісність сусідів. Це інструмент для полірування тайлів, створення орнаментів, кварталів або складніших структур із контрольованим хаосом.")]
+    [NodeInfo(
+        "Wave Function Collapse",
+        "Generators",
+        "Генерує карту точного розміру графа за локальними патернами вхідного зразка.",
+        StableId = "moyva.generators.wave-function-collapse",
+        Order = 30,
+        PreviewOutput = "out.generated_map")]
     public sealed class WaveFunctionCollapseNode : NodeBase,
-        IAsyncNode, IPreviewableNode, ICustomEditorNode
+        IAsyncNode, ICustomEditorNode
     {
         [Header("WFC Settings")]
         [Tooltip("Розмір патерна, який WFC аналізує у вхідному зразку. Більший розмір краще зберігає складні мотиви, але значно збільшує складність генерації.")]
@@ -19,26 +25,25 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
         [Tooltip("Максимальна кількість спроб побудувати валідний результат до визнання генерації невдалою. Більше значення підвищує шанс успіху на складних патернах.")]
         [SerializeField, Range(1, 50)] private int _maxAttempts = 10;
 
-        [Header("Output Size (0 = same as input)")]
-        [Tooltip("Ширина фінальної карти WFC. Значення 0 означає використати розмір карти з контексту або вхідного зразка за замовчуванням.")]
-        [SerializeField] private int _outputWidth;
-        [Tooltip("Висота фінальної карти WFC. Значення 0 означає використати розмір карти з контексту або зразка без примусового перевизначення.")]
-        [SerializeField] private int _outputHeight;
+        // Legacy serialized fields are retained so existing assets deserialize safely.
+        // WFC output now always follows NodeContext.MapSize.
+        [HideInInspector, SerializeField] private int _outputWidth;
+        [HideInInspector, SerializeField] private int _outputHeight;
 
-        [HideInInspector, SerializeField] private Texture2D _lastPreview;
-        [HideInInspector, SerializeField] private string[,] _lastResult;
-
-        public override string Title => "WFC Generator";
-        public override string Category => "WFC";
+        public override string Title => "Wave Function Collapse";
+        public override string Category => "Generators";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<string[,]>("Sample")
+            PortDefinition.Input<string[,]>(
+                "Sample",
+                "in.sample",
+                PortMapSizePolicy.Variable)
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<string[,]>("GeneratedMap")
+            PortDefinition.Output<string[,]>("Generated Map", "out.generated_map")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
@@ -52,8 +57,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
             if (sample == null)
                 return Task.FromResult(NodeOutput.Error("Sample input is required."));
 
-            int outW = _outputWidth > 0 ? _outputWidth : context.MapSize.x;
-            int outH = _outputHeight > 0 ? _outputHeight : context.MapSize.y;
+            int outW = Mathf.Max(1, context?.MapSize.x ?? 0);
+            int outH = Mathf.Max(1, context?.MapSize.y ?? 0);
             int seed = context.Seed;
 
             var settings = new WFCAlgorithm.WFCSettings
@@ -74,43 +79,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.WFC
                 return Task.FromResult(
                     NodeOutput.Error("WFC failed to produce a valid result."));
 
-            _lastResult = result;
             return Task.FromResult(NodeOutput.Success(result));
-        }
-
-        public Texture2D GeneratePreview(int width, int height)
-        {
-            if (_lastResult == null) return null;
-
-            int rw = _lastResult.GetLength(0);
-            int rh = _lastResult.GetLength(1);
-            var tex = new Texture2D(rw, rh, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Point
-            };
-
-            for (int x = 0; x < rw; x++)
-            {
-                for (int y = 0; y < rh; y++)
-                {
-                    string id = _lastResult[x, y] ?? "";
-                    tex.SetPixel(x, y, StringToColor(id));
-                }
-            }
-            tex.Apply();
-
-            _lastPreview = tex;
-            return tex;
-        }
-
-        private static Color StringToColor(string id)
-        {
-            if (string.IsNullOrEmpty(id)) return Color.black;
-            int hash = id.GetHashCode();
-            float r = ((hash & 0xFF0000) >> 16) / 255f;
-            float g = ((hash & 0x00FF00) >> 8) / 255f;
-            float b = (hash & 0x0000FF) / 255f;
-            return new Color(r, g, b);
         }
 
 #if UNITY_EDITOR

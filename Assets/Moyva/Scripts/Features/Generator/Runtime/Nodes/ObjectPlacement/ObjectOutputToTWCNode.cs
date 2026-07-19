@@ -3,21 +3,27 @@ using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
-    [NodeInfo("Об'єкт Output To TWC", "Розміщення об'єктів", "Реєструє шар розміщення об'єктів, щоб компілятор графа створив TWC Object Build Layer.")]
+    [NodeInfo(
+        "Object Output To TWC",
+        "Objects",
+        "Реєструє шар розміщення об'єктів, щоб компілятор створив TWC Object Build Layer.",
+        StableId = "moyva.objects.output-to-twc",
+        Order = 60,
+        PreviewOutput = "out.object_layer")]
     [HidePreview]
     public sealed class ObjectOutputToTWCNode : NodeBase
     {
-        public override string Title => "Об'єкт Output To TWC";
-        public override string Category => "Розміщення об'єктів";
+        public override string Title => "Object Output To TWC";
+        public override string Category => "Objects";
 
         public override PortDefinition[] Inputs => new[]
         {
-            PortDefinition.Input<ObjectPlacementLayer>("Шар об'єктів")
+            PortDefinition.Input<ObjectPlacementLayer>("Object Layer", "in.object_layer")
         };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<ObjectPlacementLayer>("Шар об'єктів")
+            PortDefinition.Output<ObjectPlacementLayer>("Object Layer", "out.object_layer")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)

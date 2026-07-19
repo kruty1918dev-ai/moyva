@@ -12,9 +12,15 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
     internal sealed class GraphCompilerConfigurationService : IGraphCompilerConfigurationService
     {
+        private static readonly Vector2Int DefaultMapSize = new Vector2Int(50, 50);
+
         public Vector2Int ResolveRequestedSize(GraphAsset graph, Vector2Int? mapSizeOverride)
         {
-            return mapSizeOverride ?? graph?.SharedSettings?.MapSize ?? new Vector2Int(50, 50);
+            if (mapSizeOverride.HasValue)
+                return Normalize(mapSizeOverride.Value);
+
+            var sharedSize = graph?.SharedSettings?.MapSize ?? DefaultMapSize;
+            return Normalize(sharedSize);
         }
 
         public void Apply(GraphAsset graph, Configuration config, int seed, Vector2Int? mapSizeOverride)
@@ -23,11 +29,18 @@ namespace Kruty1918.Moyva.Generator.Runtime
             graph.EnsureDefaultLayer();
 
             Vector2Int size = ResolveRequestedSize(graph, mapSizeOverride);
-            config.width = size.x > 0 ? size.x : 50;
-            config.height = size.y > 0 ? size.y : 50;
+            config.width = size.x;
+            config.height = size.y;
             config.useGlobalRandomSeed = true;
             config.globalRandomSeed = seed == 0 ? 1 : seed;
             GraphCompilerLayerAssetUtility.EnsureBlueprintRootFolder(config);
+        }
+
+        private static Vector2Int Normalize(Vector2Int size)
+        {
+            return new Vector2Int(
+                size.x > 0 ? size.x : DefaultMapSize.x,
+                size.y > 0 ? size.y : DefaultMapSize.y);
         }
     }
 }

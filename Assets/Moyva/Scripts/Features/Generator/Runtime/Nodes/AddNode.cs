@@ -24,8 +24,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
     /// Power = степінь (A^B)
     /// Modulo = остача від ділення
     /// </summary>
-    [NodeInfo("Додати", "Математика", "Універсальний типізований нод додавання/злиття з режимами: додати, застосувати маску, відняти маску, накладати, мінімум, максимум, віднімання, множення, ділення, степінь, остача.")]
-    public sealed class AddNode : NodeBase, IPreviewableNode
+    [NodeInfo(
+        "Add",
+        "Math",
+        "Універсальний типізований вузол додавання та злиття з режимами маски, накладання й числових операцій.",
+        StableId = "moyva.math.add",
+        Order = 10,
+        PreviewOutput = "out.result")]
+    public sealed class AddNode : NodeBase
     {
         public enum AddValueKind
         {
@@ -126,9 +132,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [SerializeField, HideInInspector]
         private AddValueKind _valueKind = AddValueKind.Any;
 
-        [NonSerialized]
-        private object _lastResult;
-
         public AddMode Mode => _mode;
         public AddValueKind ValueKind => _valueKind;
         public bool IsTypeResolved => _valueKind != AddValueKind.Any;
@@ -168,8 +171,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
                 return new[]
                 {
-                    new PortDefinition(BuildInputName("A Base", baseType), baseType, PortDirection.Input),
-                    new PortDefinition(UsesMaskOnPortB ? "B Mask (bool[,])" : BuildInputName("B", bType), bType, PortDirection.Input)
+                    CreateInputPort(BuildInputName("A Base", baseType), baseType, "in.a"),
+                    CreateInputPort(
+                        UsesMaskOnPortB ? "B Mask (bool[,])" : BuildInputName("B", bType),
+                        bType,
+                        "in.b")
                 };
             }
         }
@@ -181,7 +187,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 Type type = ResolvedValueType ?? typeof(object);
                 return new[]
                 {
-                    new PortDefinition(BuildOutputName(type), type, PortDirection.Output)
+                    CreateOutputPort(BuildOutputName(type), type, "out.result")
                 };
             }
         }
@@ -310,47 +316,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
                 return NodeOutput.Error($"Add node failed. Mode='{_mode}', Type='{FormatKind(kind)}': {ex.Message}");
             }
 
-            _lastResult = result;
             return NodeOutput.Success(result);
-        }
-
-        public Texture2D GeneratePreview(int width, int height)
-        {
-            int tw = Mathf.Max(16, width);
-            int th = Mathf.Max(16, height);
-            var tex = new Texture2D(tw, th, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp,
-                hideFlags = HideFlags.HideAndDontSave
-            };
-
-            if (_lastResult is bool[,] boolMask)
-            {
-                DrawBoolMask(tex, boolMask, tw, th);
-                return tex;
-            }
-
-            if (_lastResult is float[,] floatMap)
-            {
-                DrawFloatMap(tex, floatMap, tw, th);
-                return tex;
-            }
-
-            if (_lastResult is int[,] intMap)
-            {
-                DrawIntMap(tex, intMap, tw, th);
-                return tex;
-            }
-
-            if (_lastResult is string[,] stringMap)
-            {
-                DrawStringMap(tex, stringMap, tw, th);
-                return tex;
-            }
-
-            DrawNoData(tex, tw, th);
-            return tex;
         }
 
         public static bool TryGetSupportedKind(Type type, out AddValueKind kind)
@@ -786,8 +752,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         {
             return kind switch
             {
-                AddValueKind.Int => DivideIntMaps((int[,])a, (int[,])b),
-                AddValueKind.Float => DivideFloatMaps((float[,])a, (float[,])b),
+                AddValueKind.Int => (int)b != 0 ? (int)a / (int)b : 0,
+                AddValueKind.Float => !Mathf.Approximately((float)b, 0f)
+                    ? (float)a / (float)b
+                    : float.NaN,
                 AddValueKind.IntMap => DivideIntMaps((int[,])a, (int[,])b),
                 AddValueKind.FloatMap => DivideFloatMaps((float[,])a, (float[,])b),
                 _ => throw new NotSupportedException($"Divide supports only numeric types. Got '{FormatKind(kind)}'.")
@@ -810,8 +778,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         {
             return kind switch
             {
-                AddValueKind.Int => ((int)a) % ((int)b),
-                AddValueKind.Float => Mathf.Repeat((float)a, (float)b),
+                AddValueKind.Int => (int)b != 0 ? (int)a % (int)b : 0,
+                AddValueKind.Float => !Mathf.Approximately((float)b, 0f)
+                    ? Mathf.Repeat((float)a, (float)b)
+                    : float.NaN,
                 AddValueKind.IntMap => ModuloIntMaps((int[,])a, (int[,])b),
                 AddValueKind.FloatMap => ModuloFloatMaps((float[,])a, (float[,])b),
                 _ => throw new NotSupportedException($"Modulo supports only numeric types. Got '{FormatKind(kind)}'.")
@@ -1005,140 +975,26 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
-        private static void DrawBoolMask(Texture2D tex, bool[,] mask, int width, int height)
-        {
-            int sw = mask.GetLength(0);
-            int sh = mask.GetLength(1);
-            for (int y = 0; y < height; y++)
-            {
-                int sy = y * sh / height;
-                for (int x = 0; x < width; x++)
-                {
-                    int sx = x * sw / width;
-                    tex.SetPixel(x, y, mask[sx, sy] ? Color.white : Color.black);
-                }
-            }
-            tex.Apply(false, false);
-        }
+        private static PortDefinition CreateInputPort(string name, Type type, string stableId) =>
+            new(
+                name,
+                type,
+                PortDirection.Input,
+                stableId,
+                isRequired: true,
+                allowNull: false,
+                acceptsAnyValue: type == typeof(object),
+                mapSizePolicy: PortMapSizePolicy.None);
 
-        private static void DrawFloatMap(Texture2D tex, float[,] map, int width, int height)
-        {
-            int sw = map.GetLength(0);
-            int sh = map.GetLength(1);
-            FindFloatRange(map, out float min, out float max);
-            float range = Mathf.Max(0.0001f, max - min);
-
-            for (int y = 0; y < height; y++)
-            {
-                int sy = y * sh / height;
-                for (int x = 0; x < width; x++)
-                {
-                    int sx = x * sw / width;
-                    float value = map[sx, sy];
-                    if (!IsFinite(value))
-                    {
-                        tex.SetPixel(x, y, Color.black);
-                        continue;
-                    }
-
-                    float t = Mathf.Clamp01((value - min) / range);
-                    tex.SetPixel(x, y, new Color(t, t, t, 1f));
-                }
-            }
-            tex.Apply(false, false);
-        }
-
-        private static void DrawIntMap(Texture2D tex, int[,] map, int width, int height)
-        {
-            int sw = map.GetLength(0);
-            int sh = map.GetLength(1);
-            FindIntRange(map, out int min, out int max);
-            float range = Mathf.Max(1f, max - min);
-
-            for (int y = 0; y < height; y++)
-            {
-                int sy = y * sh / height;
-                for (int x = 0; x < width; x++)
-                {
-                    int sx = x * sw / width;
-                    float t = Mathf.Clamp01((map[sx, sy] - min) / range);
-                    tex.SetPixel(x, y, new Color(t, t, t, 1f));
-                }
-            }
-            tex.Apply(false, false);
-        }
-
-        private static void DrawStringMap(Texture2D tex, string[,] map, int width, int height)
-        {
-            int sw = map.GetLength(0);
-            int sh = map.GetLength(1);
-            for (int y = 0; y < height; y++)
-            {
-                int sy = y * sh / height;
-                for (int x = 0; x < width; x++)
-                {
-                    int sx = x * sw / width;
-                    string value = map[sx, sy];
-                    tex.SetPixel(x, y, string.IsNullOrEmpty(value)
-                        ? Color.black
-                        : Color.HSVToRGB(Mathf.Abs(value.GetHashCode() % 1024) / 1024f, 0.72f, 0.92f));
-                }
-            }
-            tex.Apply(false, false);
-        }
-
-        private static void DrawNoData(Texture2D tex, int width, int height)
-        {
-            for (int y = 0; y < height; y++)
-            for (int x = 0; x < width; x++)
-            {
-                bool stripe = ((x / 8) + (y / 8)) % 2 == 0;
-                tex.SetPixel(x, y, stripe
-                    ? new Color(0.12f, 0.14f, 0.20f, 1f)
-                    : new Color(0.22f, 0.18f, 0.12f, 1f));
-            }
-            tex.Apply(false, false);
-        }
-
-        private static void FindFloatRange(float[,] map, out float min, out float max)
-        {
-            min = float.PositiveInfinity;
-            max = float.NegativeInfinity;
-            for (int x = 0; x < map.GetLength(0); x++)
-            for (int y = 0; y < map.GetLength(1); y++)
-            {
-                float v = map[x, y];
-                if (!IsFinite(v))
-                    continue;
-
-                if (v < min) min = v;
-                if (v > max) max = v;
-            }
-
-            if (float.IsInfinity(min) || float.IsInfinity(max))
-            {
-                min = 0f;
-                max = 1f;
-            }
-        }
-
-        private static void FindIntRange(int[,] map, out int min, out int max)
-        {
-            min = int.MaxValue;
-            max = int.MinValue;
-            for (int x = 0; x < map.GetLength(0); x++)
-            for (int y = 0; y < map.GetLength(1); y++)
-            {
-                int v = map[x, y];
-                if (v < min) min = v;
-                if (v > max) max = v;
-            }
-
-            if (min == int.MaxValue || max == int.MinValue)
-            {
-                min = 0;
-                max = 1;
-            }
-        }
+        private static PortDefinition CreateOutputPort(string name, Type type, string stableId) =>
+            new(
+                name,
+                type,
+                PortDirection.Output,
+                stableId,
+                isRequired: false,
+                allowNull: false,
+                acceptsAnyValue: type == typeof(object),
+                mapSizePolicy: PortMapSizePolicy.None);
     }
 }

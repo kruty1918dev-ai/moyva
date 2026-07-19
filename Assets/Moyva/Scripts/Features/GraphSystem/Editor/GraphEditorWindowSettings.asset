@@ -20,11 +20,11 @@ MonoBehaviour:
   previewHeight: 64
   showInlinePreviews: 1
   autoRunOnChange: 1
-  previewResolution: 1
+  previewResolution: 2
   previewHeatmap: 0
   inspectorTabIndex: 0
   isInspectorVisible: 1
-  selectedLayerId: b47a1390-a46d-4999-9780-f5e2769e8668
+  selectedLayerId: f904bc0b-b8b6-4fdc-b371-76921129c59b
   selectedNodeId: 
-  cameraPosition: {x: -387, y: 220, z: 0}
-  cameraScale: {x: 1, y: 1, z: 1}
+  cameraPosition: {x: -149, y: 254, z: 0}
+  cameraScale: {x: 0.7561437, y: 0.7561437, z: 1}

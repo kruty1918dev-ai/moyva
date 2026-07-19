@@ -50,6 +50,20 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 }
             }
 
+            if (GUILayout.Button("Dry Run Subasset Audit"))
+            {
+                var report = GraphSubassetAuditUtility.Audit(
+                    graphAsset,
+                    writeReport: true);
+                EditorUtility.DisplayDialog(
+                    "Graph subasset audit",
+                    $"Reachable: {report.Reachable.Count}\n" +
+                    $"Proven orphan candidates: {report.Orphaned.Count}\n" +
+                    $"Cleanup safe: {report.CleanupSafe}\n\n" +
+                    $"Звіт: {report.ReportPath}",
+                    "OK");
+            }
+
             EditorGUILayout.Space();
             base.OnInspectorGUI();
 

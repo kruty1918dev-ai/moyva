@@ -18,6 +18,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
     /// Генератори (Category.Generators) не мають вхідного порту й створюють матрицю з нуля.
     /// Модифікатори (Category.Modifiers) приймають вхідну матрицю та трансформують її.
     /// </summary>
+    [NodeInfo(
+        "TileWorldCreator Modifier",
+        "Advanced/TileWorldCreator",
+        "Внутрішня обгортка зовнішнього модифікатора TileWorldCreator; створюється лише через перевірені пункти каталогу.",
+        StableId = "moyva.advanced.twc-modifier-wrapper",
+        Order = 1000,
+        Lifecycle = NodeLifecycle.Hidden,
+        Capabilities = NodeCapabilities.ExternalDependency)]
     public sealed class TwcModifierNode : NodeBase
     {
         [HideInInspector, SerializeField] private string _modifierTypeName;
@@ -50,11 +58,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
         public override PortDefinition[] Inputs =>
             IsGenerator
                 ? System.Array.Empty<PortDefinition>()
-                : new[] { PortDefinition.Input<bool[,]>("Source") };
+                : new[] { PortDefinition.Input<bool[,]>("Source", "in.source") };
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Mask")
+            PortDefinition.Output<bool[,]>("Mask", "out.mask")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
@@ -65,18 +73,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
 
             int width = Mathf.Max(1, context?.MapSize.x ?? 0);
             int height = Mathf.Max(1, context?.MapSize.y ?? 0);
-            if (width <= 1 && height <= 1)
-            {
-                width = 50;
-                height = 50;
-            }
 
-            uint seed = NonZeroSeed(context);
+            uint seed = NonZeroSeed(context, NodeId);
 
             var config = ScriptableObject.CreateInstance<Configuration>();
             var layer = ScriptableObject.CreateInstance<BlueprintLayer>();
+            var previousRandomState = UnityEngine.Random.state;
             try
             {
+                UnityEngine.Random.InitState(unchecked((int)seed));
                 config.width = width;
                 config.height = height;
                 config.useGlobalRandomSeed = true;
@@ -102,15 +107,18 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
             }
             finally
             {
+                UnityEngine.Random.state = previousRandomState;
                 Object.DestroyImmediate(layer);
                 Object.DestroyImmediate(config);
             }
         }
 
-        private static uint NonZeroSeed(NodeContext context)
+        private static uint NonZeroSeed(NodeContext context, string nodeId)
         {
             // Unity.Mathematics.Random не приймає 0 як seed.
-            long raw = context?.Seed ?? 1;
+            long raw = GlobalSeed.Combine(
+                context?.Seed ?? 1,
+                GlobalSeed.StableHash(nodeId ?? string.Empty));
             uint seed = unchecked((uint)raw);
             return seed == 0u ? 1u : seed;
         }

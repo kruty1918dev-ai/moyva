@@ -269,7 +269,7 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             panel.Add(new HelpBox(
                 $"Готово до генерації. Шарів: {layerCount}, вузлів: {nodeCount}. " +
-                "Сховище TWC створюється автоматично.",
+                "Сховище TWC створюється автоматично. Результат повної генерації з'являється як chunk-first меші у scene root 'MapVisualChunks', а не як класичні TWC layer objects.",
                 HelpBoxMessageType.Info));
         }
 
@@ -294,6 +294,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             RecordUndo(manager, binding, "Generate map from Moyva graph");
             binding.GenerateFromGraph();
             MarkDirty(manager, binding);
+            PingGeneratedChunkRoot();
             ActiveEditorTracker.sharedTracker.ForceRebuild();
         }
 
@@ -349,6 +350,18 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (manager != null && manager.configuration != null)
                 EditorUtility.SetDirty(manager.configuration);
             EditorUtility.SetDirty(binding);
+        }
+
+        private static void PingGeneratedChunkRoot()
+        {
+            var root = GameObject.Find("MapVisualChunks");
+            if (root == null)
+                return;
+
+            EditorGUIUtility.PingObject(root);
+            Selection.activeGameObject = root;
+            Debug.Log(
+                "[Moyva Graph Generator] Generation completed. Chunk-first meshes were built under scene root 'MapVisualChunks'.");
         }
 
         /// <summary>

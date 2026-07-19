@@ -1,4 +1,3 @@
-using System;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Generator.Runtime.Noise;
 using UnityEngine;
@@ -6,10 +5,13 @@ using UnityEngine;
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
     [NodeInfo(
-        "Шум Пerlін Mask",
-        "Генерація",
-        "Створює булеву маску на основі перлінового шуму. Поріг визначає, які клітини будуть марковані як 'true' (дають участь у результаті). Корисний для створення випадкових ділянок, континентів, островів або інших природних структур.")]
-    public sealed class PerlinNoiseMaskNode : NodeBase, IPreviewableNode
+        "Perlin Noise Mask",
+        "Generators",
+        "Створює булеву маску на основі перлінового шуму. Поріг визначає, які клітини беруть участь у результаті.",
+        StableId = "moyva.generators.perlin-noise-mask",
+        Order = 20,
+        PreviewOutput = "out.mask")]
+    public sealed class PerlinNoiseMaskNode : NodeBase
     {
         [SerializeField, Min(0.0001f)]
         [InlineEditable("масштаб")]
@@ -41,18 +43,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
         [Tooltip("Поріг для перетворення значення шуму у булеву маску. 0.5 — середнє значення. Нижче порігу буде тайл, выше — ні. Тести: 0.3 — більше та, 0.7 — менше та.")]
         private float _threshold = 0.5f;
 
-        [NonSerialized] private bool[,] _lastMask;
-        [NonSerialized] private float[,] _lastNoiseValues;
+        public override string Title => "Perlin Noise Mask";
+        public override string Category => "Generators";
 
-        public override string Title => "Шум Пerlін Mask";
-        public override string Category => "Генерація";
-
-        public override PortDefinition[] Inputs => Array.Empty<PortDefinition>();
+        public override PortDefinition[] Inputs => System.Array.Empty<PortDefinition>();
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<bool[,]>("Маска"),
-            PortDefinition.Output<float[,]>("Значення шуму")
+            PortDefinition.Output<bool[,]>("Mask", "out.mask"),
+            PortDefinition.Output<float[,]>("Noise", "out.noise")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
@@ -60,70 +59,35 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
             int w = Mathf.Max(1, context?.MapSize.x ?? 0);
             int h = Mathf.Max(1, context?.MapSize.y ?? 0);
 
-            _lastNoiseValues = new float[w, h];
-            _lastMask = new bool[w, h];
+            var noiseValues = new float[w, h];
+            var mask = new bool[w, h];
 
             int seed = GlobalSeed.Combine(
                 context?.Seed ?? GlobalSeed.DefaultSeed,
                 GlobalSeed.StableHash(NodeId));
+            float seedX = ProceduralNoiseUtility.Hash01(seed, 17, seed) * 8192f;
+            float seedY = ProceduralNoiseUtility.Hash01(31, seed, seed ^ 0x51ed270b) * 8192f;
+            float scale = Mathf.Max(0.0001f, _scale);
 
             for (int y = 0; y < h; y++)
             {
                 for (int x = 0; x < w; x++)
                 {
-                    float nx = (x + _offset.x) / w / _scale;
-                    float ny = (y + _offset.y) / h / _scale;
+                    float nx = (x + _offset.x) / scale + seedX;
+                    float ny = (y + _offset.y) / scale + seedY;
 
                     float noise = ProceduralNoiseUtility.SampleFbm(
                         nx, ny,
                         _octaves, _lacunarity, _persistence,
                         seed, false);
 
-                    _lastNoiseValues[x, y] = noise;
-                    _lastMask[x, y] = noise >= _threshold;
+                    noiseValues[x, y] = noise;
+                    mask[x, y] = noise >= _threshold;
                 }
             }
 
-            return NodeOutput.Success(_lastMask, _lastNoiseValues);
-        }
-
-        public Texture2D GeneratePreview(int width, int height)
-        {
-            if (_lastMask == null || _lastNoiseValues == null)
-                return null;
-
-            int w = _lastMask.GetLength(0);
-            int h = _lastMask.GetLength(1);
-
-            var texture = new Texture2D(w, h, TextureFormat.RGBA32, false)
-            {
-                filterMode = FilterMode.Point,
-                wrapMode = TextureWrapMode.Clamp,
-                hideFlags = HideFlags.HideAndDontSave
-            };
-
-            float min = float.MaxValue;
-            float max = float.MinValue;
-            for (int x = 0; x < w; x++)
-            for (int y = 0; y < h; y++)
-            {
-                float v = _lastNoiseValues[x, y];
-                if (v < min) min = v;
-                if (v > max) max = v;
-            }
-            float range = Mathf.Max(0.0001f, max - min);
-
-            for (int y = 0; y < h; y++)
-            {
-                for (int x = 0; x < w; x++)
-                {
-                    float t = (_lastNoiseValues[x, y] - min) / range;
-                    texture.SetPixel(x, y, new Color(t, t, t, 1f));
-                }
-            }
-
-            texture.Apply(false, false);
-            return texture;
+            context?.CountIteration(w * h);
+            return NodeOutput.Success(mask, noiseValues);
         }
     }
 }

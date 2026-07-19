@@ -24,7 +24,6 @@ namespace Kruty1918.Moyva.GraphSystem.API
             IProgress<float> progress = null)
         {
             Seed = GlobalSeed.Normalize(seed);
-            GlobalSeed.Set(Seed);
             Cancellation = cancellation;
             Progress = progress;
         }

@@ -5,7 +5,13 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 {
-    [NodeInfo("Base Noise Settings", "Generators", "Базові налаштування для генерації шуму.")]
+    [NodeInfo(
+        "Base Noise Settings",
+        "Generators",
+        "Застарілий контейнер параметрів шуму; нові графи мають використовувати Noise Map.",
+        StableId = "moyva.legacy.base-noise-settings",
+        Order = 1000,
+        Lifecycle = NodeLifecycle.Deprecated)]
     [HidePreview]
     public sealed class BaseNoiseSettings : NodeBase
     {
@@ -45,7 +51,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
 
         public override PortDefinition[] Outputs => new[]
         {
-            PortDefinition.Output<NoiseSettings>("NoiseSettings")
+            PortDefinition.Output<NoiseSettings>("Noise Settings", "out.settings")
         };
 
         public override NodeOutput Execute(object[] inputs, NodeContext context)
