@@ -22,9 +22,9 @@ MonoBehaviour:
   autoRunOnChange: 1
   previewResolution: 2
   previewHeatmap: 0
-  inspectorTabIndex: 0
+  inspectorTabIndex: 1
   isInspectorVisible: 1
   selectedLayerId: f904bc0b-b8b6-4fdc-b371-76921129c59b
   selectedNodeId: 
-  cameraPosition: {x: -149, y: 254, z: 0}
-  cameraScale: {x: 0.7561437, y: 0.7561437, z: 1}
+  cameraPosition: {x: -26, y: 372, z: 0}
+  cameraScale: {x: 0.375937, y: 0.375937, z: 1}

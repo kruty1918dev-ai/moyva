@@ -125,8 +125,13 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (layerNodes == null)
                 return false;
             foreach (var node in layerNodes)
-                if (node is TwcModifierNode || node is LayerMaskReferenceNode)
+            {
+                // LayerMaskReferenceNode is already resolved by GraphEvaluationPipeline
+                // and included in the authoritative OutputNode mask. Only actual native
+                // TWC modifiers should switch the layer to the native blueprint stack.
+                if (node is TwcModifierNode)
                     return true;
+            }
             return false;
         }
 
