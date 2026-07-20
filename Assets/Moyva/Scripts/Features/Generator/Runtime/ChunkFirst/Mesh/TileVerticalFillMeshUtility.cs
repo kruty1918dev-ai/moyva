@@ -20,6 +20,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly int _m21;
         private readonly int _m22;
         private readonly int _relativeBottom;
+        private readonly int _occludedSides;
+        private readonly int _tileHalfExtent;
 
         private TileVerticalFillMeshKey(TileMeshSource source)
         {
@@ -35,6 +37,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _m21 = Quantize(matrix.m21);
             _m22 = Quantize(matrix.m22);
             _relativeBottom = Quantize(source.VisibleBottomY - matrix.m13);
+            _occludedSides = (int)source.OccludedSides;
+            _tileHalfExtent = Quantize(source.TileHalfExtent);
         }
 
         public static TileVerticalFillMeshKey Create(TileMeshSource source)
@@ -52,7 +56,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 && _m20 == other._m20
                 && _m21 == other._m21
                 && _m22 == other._m22
-                && _relativeBottom == other._relativeBottom;
+                && _relativeBottom == other._relativeBottom
+                && _occludedSides == other._occludedSides
+                && _tileHalfExtent == other._tileHalfExtent;
         }
 
         public override bool Equals(object obj)
@@ -74,6 +80,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 hash = hash * 31 + _m21;
                 hash = hash * 31 + _m22;
                 hash = hash * 31 + _relativeBottom;
+                hash = hash * 31 + _occludedSides;
+                hash = hash * 31 + _tileHalfExtent;
                 return hash;
             }
         }
@@ -128,6 +136,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     return false;
 
                 result = CreateFlatMeshWithSkirt(
+                    source,
                     source.Mesh,
                     sourceVertices,
                     linearMatrix,
@@ -216,6 +225,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         private static Mesh CreateFlatMeshWithSkirt(
+            TileMeshSource tileSource,
             Mesh source,
             IReadOnlyList<Vector3> vertices,
             Matrix4x4 linearMatrix,
@@ -232,6 +242,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             foreach (BoundaryEdge edge in edges.Values)
             {
                 if (edge.Count != 1)
+                    continue;
+
+                Vector3 worldA = tileSource.LocalMatrix.MultiplyPoint3x4(
+                    vertices[edge.A]);
+                Vector3 worldB = tileSource.LocalMatrix.MultiplyPoint3x4(
+                    vertices[edge.B]);
+                if (IsBoundaryEdgeOccluded(tileSource, worldA, worldB))
                     continue;
 
                 Vector3 topA = linearMatrix.MultiplyPoint3x4(vertices[edge.A]);
@@ -302,6 +319,53 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             return combined;
         }
+
+        internal static bool IsBoundaryEdgeOccluded(
+            TileMeshSource source,
+            Vector3 worldA,
+            Vector3 worldB)
+        {
+            if (!source.HasTileFootprint
+                || source.OccludedSides == TileMeshOccludedSides.None)
+            {
+                return false;
+            }
+
+            float half = source.TileHalfExtent;
+            float tolerance = Mathf.Max(0.001f, half * 0.02f);
+            float west = source.TileCenterXZ.x - half;
+            float east = source.TileCenterXZ.x + half;
+            float south = source.TileCenterXZ.y - half;
+            float north = source.TileCenterXZ.y + half;
+
+            if ((source.OccludedSides & TileMeshOccludedSides.North) != 0
+                && IsNear(worldA.z, north, tolerance)
+                && IsNear(worldB.z, north, tolerance))
+            {
+                return true;
+            }
+
+            if ((source.OccludedSides & TileMeshOccludedSides.East) != 0
+                && IsNear(worldA.x, east, tolerance)
+                && IsNear(worldB.x, east, tolerance))
+            {
+                return true;
+            }
+
+            if ((source.OccludedSides & TileMeshOccludedSides.South) != 0
+                && IsNear(worldA.z, south, tolerance)
+                && IsNear(worldB.z, south, tolerance))
+            {
+                return true;
+            }
+
+            return (source.OccludedSides & TileMeshOccludedSides.West) != 0
+                && IsNear(worldA.x, west, tolerance)
+                && IsNear(worldB.x, west, tolerance);
+        }
+
+        private static bool IsNear(float value, float target, float tolerance)
+            => Mathf.Abs(value - target) <= tolerance;
 
         private static void AddTwoSidedQuad(
             List<Vector3> vertices,
