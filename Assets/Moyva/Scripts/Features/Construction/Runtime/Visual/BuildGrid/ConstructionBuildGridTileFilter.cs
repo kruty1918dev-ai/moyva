@@ -73,12 +73,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            // The selected grid is the placement contract shown to the player.
+            // It must include pending previews exactly like pointer-click validation,
+            // otherwise a green cell can still reject the click.
             var request = new ConstructionPlacementQueryRequest(
                 buildingId,
                 position,
                 ignoredPendingPosition,
                 includeResources: true,
-                includePendingPlacements: false);
+                includePendingPlacements: true);
             return _placementQuery.EvaluatePlacement(request).IsValid;
         }
 
