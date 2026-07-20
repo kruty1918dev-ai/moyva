@@ -17,53 +17,105 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public ConstructionPlacementQueryResult EvaluatePlacement(ConstructionPlacementQueryRequest request)
         {
+            string placementOwnerId = string.IsNullOrWhiteSpace(request.OwnerId)
+                ? _activeOwnerId
+                : request.OwnerId.Trim();
+            request = ResolveEffectivePlacementRequest(request, placementOwnerId);
+            BuildingPerPlayerLimitEvaluation limitEvaluation =
+                BuildingPerPlayerLimitEvaluation.Disabled;
+
             if (string.IsNullOrWhiteSpace(request.BuildingId))
-                return InvalidPlacementQueryResult("Building id is empty.", request, BuildingPlacementBlockerKind.Configuration);
+            {
+                return InvalidPlacementQueryResult(
+                    "Building id is empty.",
+                    "building-id-empty",
+                    request,
+                    placementOwnerId,
+                    limitEvaluation,
+                    BuildingPlacementBlockerKind.Configuration);
+            }
 
-            if (_gridService != null && !_gridService.TryGetTileData(request.Position, out _))
-                return InvalidPlacementQueryResult("Tile does not exist.", request, BuildingPlacementBlockerKind.Terrain);
+            if (_gridService != null
+                && !_gridService.TryGetTileData(request.Position, out _))
+            {
+                return InvalidPlacementQueryResult(
+                    "Tile does not exist.",
+                    "tile-missing",
+                    request,
+                    placementOwnerId,
+                    limitEvaluation,
+                    BuildingPlacementBlockerKind.Terrain);
+            }
 
-            bool isGate = _wallTopologyService != null && _wallTopologyService.IsGate(request.BuildingId);
+            bool isGate = _wallTopologyService != null
+                && _wallTopologyService.IsGate(request.BuildingId);
             bool gateReplacement = TryResolveGateReplacement(
                 request.Position,
                 request.BuildingId,
                 out Vector2Int replacedWallOriginValue,
                 out string replacedWallId);
             if (isGate && !gateReplacement)
-                return InvalidPlacementQueryResult("Gate must replace a valid wall.", request, BuildingPlacementBlockerKind.Configuration);
+            {
+                return InvalidPlacementQueryResult(
+                    "Gate must replace a valid wall.",
+                    "gate-requires-wall",
+                    request,
+                    placementOwnerId,
+                    limitEvaluation,
+                    BuildingPlacementBlockerKind.Configuration);
+            }
 
             Vector2Int? ignoredOccupiedPosition = ResolveIgnoredOccupiedPosition(request);
             Vector2Int? replacedWallOrigin = gateReplacement
                 ? replacedWallOriginValue
                 : null;
-            string placementOwnerId = string.IsNullOrWhiteSpace(request.OwnerId)
-                ? _activeOwnerId
-                : request.OwnerId.Trim();
-            if (!TryValidatePerPlayerBuildingLimit(request, placementOwnerId, out string perPlayerLimitReason))
+            if (!TryValidatePerPlayerBuildingLimit(
+                    request,
+                    placementOwnerId,
+                    out limitEvaluation))
             {
                 return InvalidPlacementQueryResult(
-                    perPlayerLimitReason,
+                    limitEvaluation.Reason,
+                    "per-player-limit",
                     request,
+                    placementOwnerId,
+                    limitEvaluation,
                     BuildingPlacementBlockerKind.Configuration);
             }
+
             if (gateReplacement
                 && replacedWallOrigin.HasValue
-                && _factionPlacedBuildings.TryGetValue(replacedWallOrigin.Value, out var replacedFactionEntry)
-                && !string.Equals(replacedFactionEntry.FactionId, placementOwnerId, StringComparison.Ordinal))
+                && _factionPlacedBuildings.TryGetValue(
+                    replacedWallOrigin.Value,
+                    out var replacedFactionEntry)
+                && !string.Equals(
+                    replacedFactionEntry.FactionId,
+                    placementOwnerId,
+                    StringComparison.Ordinal))
             {
                 return InvalidPlacementQueryResult(
                     "Gate cannot replace a wall owned by another faction.",
+                    "gate-foreign-faction-wall",
                     request,
+                    placementOwnerId,
+                    limitEvaluation,
                     BuildingPlacementBlockerKind.Configuration);
             }
+
             if (gateReplacement
                 && replacedWallOrigin.HasValue
                 && _playerPlacedBuildings.ContainsKey(replacedWallOrigin.Value)
-                && !string.Equals(_activeOwnerId, placementOwnerId, StringComparison.Ordinal))
+                && !string.Equals(
+                    _activeOwnerId,
+                    placementOwnerId,
+                    StringComparison.Ordinal))
             {
                 return InvalidPlacementQueryResult(
                     "Gate cannot replace a player wall owned by another faction.",
+                    "gate-foreign-player-wall",
                     request,
+                    placementOwnerId,
+                    limitEvaluation,
                     BuildingPlacementBlockerKind.Configuration);
             }
 
@@ -77,24 +129,41 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 out evaluationResult);
             if (!spatiallyValid)
             {
-                string reason = ResolveEvaluationReason(evaluationResult) ?? "Placement rules blocked this tile.";
-                return new ConstructionPlacementQueryResult(false, false, gateReplacement, reason, evaluationResult);
+                string reason = ResolveEvaluationReason(evaluationResult)
+                    ?? "Placement rules blocked this tile.";
+                return CreatePlacementQueryResult(
+                    isSpatiallyValid: false,
+                    resourcesValid: false,
+                    gateReplacement,
+                    reason,
+                    evaluationResult,
+                    request,
+                    placementOwnerId,
+                    limitEvaluation);
             }
 
             bool resourcesValid = true;
             string resourceReason = null;
             if (request.IncludeResources && !IsRelocationQuery(request))
             {
-                resourcesValid = TryValidateConstructionResourcesCached(request, placementOwnerId, out resourceReason);
+                resourcesValid = TryValidateConstructionResourcesCached(
+                    request,
+                    placementOwnerId,
+                    out resourceReason);
             }
 
-            return new ConstructionPlacementQueryResult(
+            return CreatePlacementQueryResult(
                 isSpatiallyValid: true,
                 resourcesValid,
                 gateReplacement,
                 resourceReason,
-                evaluationResult);
+                evaluationResult,
+                request,
+                placementOwnerId,
+                limitEvaluation,
+                resourcesValid ? null : "resources");
         }
+
 
         private bool EvaluateSpatialRules(
             ConstructionPlacementQueryRequest request,
@@ -313,28 +382,46 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 : null;
         }
 
-        private static ConstructionPlacementQueryResult InvalidPlacementQueryResult(
+        private ConstructionPlacementQueryResult InvalidPlacementQueryResult(
             string reason,
+            string reasonCode,
             ConstructionPlacementQueryRequest request,
+            string ownerId,
+            BuildingPerPlayerLimitEvaluation limitEvaluation,
             BuildingPlacementBlockerKind blockerKind)
         {
-            if (!request.IncludeDetails)
-                return new ConstructionPlacementQueryResult(false, false, false, reason);
+            BuildingPlacementEvaluationResult evaluationResult = null;
+            if (request.IncludeDetails)
+            {
+                evaluationResult = new BuildingPlacementEvaluationResult
+                {
+                    ConfigurationBlocked =
+                        blockerKind == BuildingPlacementBlockerKind.Configuration,
+                    TerrainBlocked =
+                        blockerKind == BuildingPlacementBlockerKind.Terrain,
+                };
+                evaluationResult.AddBlocker(
+                    new BuildingPlacementBlocker
+                    {
+                        Kind = blockerKind,
+                        Message = reason,
+                        Position = request.Position,
+                        BuildingId = request.BuildingId,
+                    });
+            }
 
-            var evaluationResult = new BuildingPlacementEvaluationResult
-            {
-                ConfigurationBlocked = blockerKind == BuildingPlacementBlockerKind.Configuration,
-                TerrainBlocked = blockerKind == BuildingPlacementBlockerKind.Terrain,
-            };
-            evaluationResult.AddBlocker(new BuildingPlacementBlocker
-            {
-                Kind = blockerKind,
-                Message = reason,
-                Position = request.Position,
-                BuildingId = request.BuildingId,
-            });
-            return new ConstructionPlacementQueryResult(false, false, false, reason, evaluationResult);
+            return CreatePlacementQueryResult(
+                isSpatiallyValid: false,
+                resourcesValid: false,
+                isGateReplacement: false,
+                reason,
+                evaluationResult,
+                request,
+                ownerId,
+                limitEvaluation,
+                reasonCode);
         }
+
 
         private readonly struct ResourceValidationCacheKey : IEquatable<ResourceValidationCacheKey>
         {

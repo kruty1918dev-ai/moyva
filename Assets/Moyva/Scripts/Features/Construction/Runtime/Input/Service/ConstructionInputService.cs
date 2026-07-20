@@ -275,7 +275,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 new ConstructionPlacementQueryRequest(
                     buildingId,
                     tile,
-                    includeResources: true));
+                    includeResources: true,
+                    attemptSource:
+                        ConstructionPlacementAttemptSource.PointerHover,
+                    allowUniquePreviewRelocation: true));
             ConstructionBuildGridTileVisualState visualState = summary.IsValid
                 ? ConstructionBuildGridTileVisualState.Valid
                 : ConstructionBuildGridTileVisualState.Invalid;
@@ -287,7 +290,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     buildingId,
                     tile,
                     includeResources: true,
-                    includeDetails: true));
+                    includeDetails: true,
+                    attemptSource:
+                        ConstructionPlacementAttemptSource.PointerHover,
+                    allowUniquePreviewRelocation: true));
             BuildHoverFootprintArrays(
                 tile,
                 detailed,
@@ -481,11 +487,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (_placementQuery == null || string.IsNullOrWhiteSpace(buildingId))
                 return false;
 
-            return _placementQuery.EvaluatePlacement(new ConstructionPlacementQueryRequest(
-                buildingId,
-                position,
-                ignoredPendingPosition,
-                includeResources: true)).IsValid;
+            return _placementQuery.EvaluatePlacement(
+                new ConstructionPlacementQueryRequest(
+                    buildingId,
+                    position,
+                    ignoredPendingPosition,
+                    includeResources: true,
+                    attemptSource:
+                        ConstructionPlacementAttemptSource.DragValidation,
+                    allowUniquePreviewRelocation: true)).IsValid;
         }
 
         private void PublishPendingPlacementDragVisual(Vector2 screenPosition, Vector2Int tilePosition, bool snapToGrid)

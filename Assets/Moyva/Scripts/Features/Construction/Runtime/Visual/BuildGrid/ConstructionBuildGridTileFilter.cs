@@ -81,7 +81,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 position,
                 ignoredPendingPosition,
                 includeResources: true,
-                includePendingPlacements: true);
+                includePendingPlacements: true,
+                attemptSource:
+                    ConstructionPlacementAttemptSource.GridTileFilter,
+                allowUniquePreviewRelocation: true);
             return _placementQuery.EvaluatePlacement(request).IsValid;
         }
 

@@ -78,7 +78,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ignoredPendingPosition,
                 ignoredOccupiedPosition,
                 includeResources: false,
-                includeDetails: true);
+                includeDetails: true,
+                ownerId: _activeOwnerId,
+                attemptSource:
+                    ConstructionPlacementAttemptSource.Confirm,
+                allowUniquePreviewRelocation: false);
             ConstructionPlacementQueryResult result = EvaluatePlacement(query);
 
             BuildingPlacementEvaluationResult evaluation = result.EvaluationResult;
@@ -89,6 +93,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             influenceZoneBlocked = evaluation?.InfluenceZoneBlocked ?? false;
             terrainBlocked = evaluation?.TerrainBlocked
                 ?? (!result.IsSpatiallyValid && IsBlockedByTerrain(position, out _));
+
+            LogPlacementAttempt(
+                result,
+                emitRejectedAction: !result.IsSpatiallyValid);
             return result.IsSpatiallyValid;
         }
 

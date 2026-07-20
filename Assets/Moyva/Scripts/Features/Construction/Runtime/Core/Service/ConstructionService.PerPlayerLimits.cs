@@ -4,19 +4,47 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
+    internal readonly struct BuildingPerPlayerLimitEvaluation
+    {
+        public BuildingPerPlayerLimitEvaluation(
+            int limit,
+            int existingCount,
+            int pendingCount,
+            string reason)
+        {
+            Limit = Mathf.Max(0, limit);
+            ExistingCount = Mathf.Max(0, existingCount);
+            PendingCount = Mathf.Max(0, pendingCount);
+            Reason = reason;
+        }
+
+        public int Limit { get; }
+        public int ExistingCount { get; }
+        public int PendingCount { get; }
+        public int TotalCount => ExistingCount + PendingCount;
+        public string Reason { get; }
+        public bool IsEnabled => Limit > 0;
+        public bool IsValid => !IsEnabled || TotalCount < Limit;
+
+        public static BuildingPerPlayerLimitEvaluation Disabled
+            => new BuildingPerPlayerLimitEvaluation(0, 0, 0, null);
+    }
+
     internal sealed partial class ConstructionService
     {
         private bool TryValidatePerPlayerBuildingLimit(
             ConstructionPlacementQueryRequest request,
             string ownerId,
-            out string reason)
+            out BuildingPerPlayerLimitEvaluation evaluation)
         {
-            reason = null;
-
-            BuildingDefinition definition = _placementBuildingRegistry?.GetById(request.BuildingId);
+            BuildingDefinition definition =
+                _placementBuildingRegistry?.GetById(request.BuildingId);
             int limit = BuildingDefinitionCapabilities.GetMaxBuildingsPerPlayer(definition);
             if (limit <= 0)
+            {
+                evaluation = BuildingPerPlayerLimitEvaluation.Disabled;
                 return true;
+            }
 
             string normalizedOwnerId = NormalizeOwnerId(ownerId);
             Vector2Int? ignoredPlacedOrigin = ResolveIgnoredOccupiedPosition(request);
@@ -28,11 +56,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ? CountPendingBuildingsForOwner(request, normalizedOwnerId)
                 : 0;
             int total = existingCount + pendingCount;
-            if (total < limit)
-                return true;
+            string reason = total < limit
+                ? null
+                : $"Досягнуто ліміту будівель для гравця: {total}/{limit}.";
 
-            reason = $"Досягнуто ліміту будівель для гравця: {total}/{limit}.";
-            return false;
+            evaluation = new BuildingPerPlayerLimitEvaluation(
+                limit,
+                existingCount,
+                pendingCount,
+                reason);
+            return evaluation.IsValid;
         }
 
         private int CountPlacedBuildingsForOwner(
@@ -46,8 +79,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (ignoredOrigin.HasValue && pair.Key == ignoredOrigin.Value)
                     continue;
 
-                if (string.Equals(pair.Value.BuildingId, buildingId, StringComparison.Ordinal)
-                    && string.Equals(pair.Value.FactionId, ownerId, StringComparison.Ordinal))
+                if (string.Equals(
+                        pair.Value.BuildingId,
+                        buildingId,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        pair.Value.FactionId,
+                        ownerId,
+                        StringComparison.Ordinal))
                 {
                     count++;
                 }
@@ -55,8 +94,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             // Legacy/local placements do not store an owner separately. They belong to the
             // currently active owner and are used only outside faction-authoritative placement.
-            if (!string.Equals(ownerId, NormalizeOwnerId(_activeOwnerId), StringComparison.Ordinal))
+            if (!string.Equals(
+                    ownerId,
+                    NormalizeOwnerId(_activeOwnerId),
+                    StringComparison.Ordinal))
+            {
                 return count;
+            }
 
             foreach (var pair in _playerPlacedBuildings)
             {
@@ -76,21 +120,31 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             // Pending placements are local to the active construction owner. Network commands
             // use TryDirectPlace and therefore have no local pending state to count.
-            if (!string.Equals(ownerId, NormalizeOwnerId(_activeOwnerId), StringComparison.Ordinal))
+            if (!string.Equals(
+                    ownerId,
+                    NormalizeOwnerId(_activeOwnerId),
+                    StringComparison.Ordinal))
+            {
                 return 0;
+            }
 
             int count = 0;
             for (int index = 0; index < _pendingPlacements.Count; index++)
             {
-                var placement = _pendingPlacements[index];
+                PendingPlacement placement = _pendingPlacements[index];
                 if (request.IgnoredPendingPosition.HasValue
                     && placement.Position == request.IgnoredPendingPosition.Value)
                 {
                     continue;
                 }
 
-                if (string.Equals(placement.BuildingId, request.BuildingId, StringComparison.Ordinal))
+                if (string.Equals(
+                        placement.BuildingId,
+                        request.BuildingId,
+                        StringComparison.Ordinal))
+                {
                     count++;
+                }
             }
 
             return count;

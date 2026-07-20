@@ -24,8 +24,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
-            if (TryHandleSingletonPreview(position))
-                return true;
+            if (TryHandleUniqueBuildingPreview(
+                    position,
+                    out bool uniquePlacementSucceeded))
+            {
+                return uniquePlacementSucceeded;
+            }
 
             bool selectedIsGate = _wallTopologyService != null && _wallTopologyService.IsGate(_selectedBuildingId);
             if (_pendingPositions.Contains(position))
@@ -36,6 +40,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (selectedIsGate && TryReplacePendingWallWithGate(position, _selectedBuildingId))
                     return true;
 
+                _lastActionMessage =
+                    $"На клітинці {position} вже є непідтверджене розміщення.";
+                LogSyntheticPlacementRejection(
+                    ConstructionPlacementAttemptSource.PointerClick,
+                    _selectedBuildingId,
+                    position,
+                    _activeOwnerId,
+                    "pending-position-occupied",
+                    _lastActionMessage);
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
                     Position = position,
@@ -50,7 +63,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _selectedBuildingId,
                     position,
                     includeResources: true,
-                    includeDetails: true));
+                    includeDetails: true,
+                    ownerId: _activeOwnerId,
+                    attemptSource:
+                        ConstructionPlacementAttemptSource.PointerClick,
+                    allowUniquePreviewRelocation: true));
             if (!placementResult.IsValid)
             {
                 _lastActionMessage = placementResult.Reason;
@@ -60,13 +77,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     BuildingId = _selectedBuildingId,
                     PreviewState = BuildingPreviewState.Blocked
                 });
-
-                if (VerboseLogs)
-                    Debug.Log($"[MoyvaBuildGridDiag] preview-blocked building='{_selectedBuildingId}' origin={position} reason='{placementResult.Reason}'");
-
+                LogPlacementAttempt(
+                    placementResult,
+                    emitRejectedAction: true);
                 return false;
             }
 
+            LogPlacementAttempt(
+                placementResult,
+                emitRejectedAction: false);
             if (VerboseLogs)
                 Debug.Log($"[Construction] TryPreviewAt({position}) -> VALID для {_selectedBuildingId}");
 
@@ -135,16 +154,23 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     fromPosition,
                     ignoredOccupiedPosition,
                     includeResources: true,
-                    includeDetails: true));
+                    includeDetails: true,
+                    ownerId: _activeOwnerId,
+                    attemptSource:
+                        ConstructionPlacementAttemptSource.PreviewMove,
+                    allowUniquePreviewRelocation: false));
             if (!moveResult.IsValid)
             {
                 _lastActionMessage = moveResult.Reason;
-                if (VerboseLogs)
-                    Debug.Log($"[MoyvaBuildGridDiag] preview-move-blocked building='{placement.BuildingId}' from={fromPosition} to={toPosition} reason='{moveResult.Reason}'");
-
+                LogPlacementAttempt(
+                    moveResult,
+                    emitRejectedAction: true);
                 return false;
             }
 
+            LogPlacementAttempt(
+                moveResult,
+                emitRejectedAction: false);
             SaveSnapshotForUndo(clearRedoHistory: true);
 
             _pendingPositions.Remove(fromPosition);

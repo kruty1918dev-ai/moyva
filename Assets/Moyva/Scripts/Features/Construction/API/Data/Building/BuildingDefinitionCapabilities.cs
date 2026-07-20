@@ -229,6 +229,36 @@ namespace Kruty1918.Moyva.Construction.API
             return false;
         }
 
+        /// <summary>
+        /// Resolves whether selecting the same unique building should move the existing
+        /// preview/placement instead of trying to create another copy.
+        /// A generic one-per-player cap remains a hard cap; only settlement centers are
+        /// treated as movable per-owner uniques.
+        /// </summary>
+        public static BuildingPlacementUniquenessScope GetPlacementUniquenessScope(
+            BuildingDefinition definition)
+        {
+            if (definition == null)
+                return BuildingPlacementUniquenessScope.None;
+
+            if (IsGlobalSingleton(definition))
+                return BuildingPlacementUniquenessScope.Global;
+
+            bool isSettlementCenter =
+                IsCastle(definition) || IsTownHall(definition);
+            return isSettlementCenter
+                   && GetMaxBuildingsPerPlayer(definition) == 1
+                ? BuildingPlacementUniquenessScope.PerOwner
+                : BuildingPlacementUniquenessScope.None;
+        }
+
+        public static bool SupportsUniqueRelocation(
+            BuildingDefinition definition)
+        {
+            return GetPlacementUniquenessScope(definition)
+                   != BuildingPlacementUniquenessScope.None;
+        }
+
         public static bool TryGetEnabledModule<TModule>(BuildingDefinition definition, out TModule module)
             where TModule : BuildingModuleDefinition
         {

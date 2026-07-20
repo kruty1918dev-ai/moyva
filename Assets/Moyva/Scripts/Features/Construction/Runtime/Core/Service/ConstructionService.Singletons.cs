@@ -6,79 +6,151 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal sealed partial class ConstructionService
     {
-        private bool TryHandleSingletonPreview(Vector2Int targetPosition)
+        private bool TryHandleUniqueBuildingPreview(
+            Vector2Int targetPosition,
+            out bool placementSucceeded)
         {
-            if (!TryGetSelectedDefinition(out BuildingDefinition definition)
-                || !BuildingDefinitionCapabilities.IsGlobalSingleton(definition))
-            {
+            placementSucceeded = false;
+            if (!TryGetSelectedDefinition(out BuildingDefinition definition))
                 return false;
-            }
+
+            BuildingPlacementUniquenessScope scope =
+                BuildingDefinitionCapabilities.GetPlacementUniquenessScope(definition);
+            if (scope == BuildingPlacementUniquenessScope.None)
+                return false;
 
             if (TryFindPendingPlacementByBuildingId(_selectedBuildingId, out int pendingIndex))
             {
                 Vector2Int currentPosition = _pendingPlacements[pendingIndex].Position;
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] Global singleton '{_selectedBuildingId}' already has pending preview at {currentPosition}. Redirecting move to {targetPosition}.");
-                return currentPosition == targetPosition || TryMovePendingPlacement(currentPosition, targetPosition);
+                {
+                    Debug.Log(
+                        $"[Construction] Unique placement '{_selectedBuildingId}' scope={scope} already has " +
+                        $"pending preview at {currentPosition}. Redirecting move to {targetPosition}.");
+                }
+
+                placementSucceeded = currentPosition == targetPosition
+                    || TryMovePendingPlacement(currentPosition, targetPosition);
+                return true;
             }
 
-            if (!TryFindPlacedBuildingPosition(_selectedBuildingId, out Vector2Int originalPosition))
+            if (!TryFindPlacedBuildingPosition(
+                    _selectedBuildingId,
+                    _activeOwnerId,
+                    scope,
+                    out Vector2Int originalPosition))
+            {
                 return false;
+            }
 
             if (originalPosition == targetPosition)
             {
-                if (VerboseLogs)
-                    Debug.Log($"[Construction] Global singleton '{_selectedBuildingId}' already placed at {targetPosition}. Waiting for a different relocation target.");
-                return false;
+                _lastActionMessage =
+                    $"Будівля '{_selectedBuildingId}' вже розміщена на клітинці {targetPosition}.";
+                LogSyntheticPlacementRejection(
+                    ConstructionPlacementAttemptSource.PointerClick,
+                    _selectedBuildingId,
+                    targetPosition,
+                    _activeOwnerId,
+                    "unique-building-already-at-target",
+                    _lastActionMessage);
+                return true;
             }
 
-            if (!CanPlaceAt(targetPosition, null, _selectedBuildingId, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked, ignoredOccupiedPosition: originalPosition))
+            ConstructionPlacementQueryResult relocationResult = EvaluatePlacement(
+                new ConstructionPlacementQueryRequest(
+                    _selectedBuildingId,
+                    targetPosition,
+                    ignoredOccupiedPosition: originalPosition,
+                    includeResources: false,
+                    includeDetails: true,
+                    ownerId: _activeOwnerId,
+                    attemptSource: ConstructionPlacementAttemptSource.PointerClick,
+                    allowUniquePreviewRelocation: false));
+            if (!relocationResult.IsValid)
             {
-                if (VerboseLogs)
-                {
-                    Debug.Log(
-                        $"[Construction] Singleton relocation '{_selectedBuildingId}' {originalPosition} -> {targetPosition} blocked. " +
-                        $"occupied={tileOccupied}, spacing={spacingBlocked}, fog={fogBlocked}, influence={influenceZoneBlocked}, terrain={terrainBlocked}");
-                }
-                return false;
+                _lastActionMessage = relocationResult.Reason;
+                LogPlacementAttempt(relocationResult, emitRejectedAction: true);
+                return true;
             }
 
-            if (!AddPendingPlacement(targetPosition, _selectedBuildingId, clearRedoHistory: true, originalPosition))
-                return false;
+            if (!AddPendingPlacement(
+                    targetPosition,
+                    _selectedBuildingId,
+                    clearRedoHistory: true,
+                    originalPosition))
+            {
+                return true;
+            }
 
+            placementSucceeded = true;
+            LogPlacementAttempt(relocationResult, emitRejectedAction: false);
             if (VerboseLogs)
-                Debug.Log($"[Construction] Global singleton '{_selectedBuildingId}' entered relocation preview {originalPosition} -> {targetPosition}.");
+            {
+                Debug.Log(
+                    $"[Construction] Unique placement '{_selectedBuildingId}' scope={scope} entered " +
+                    $"relocation preview {originalPosition} -> {targetPosition}.");
+            }
+
             return true;
         }
 
         private bool TryGetSelectedDefinition(out BuildingDefinition definition)
         {
-            definition = string.IsNullOrWhiteSpace(_selectedBuildingId) ? null : _buildingRegistry?.GetById(_selectedBuildingId);
+            definition = string.IsNullOrWhiteSpace(_selectedBuildingId)
+                ? null
+                : _buildingRegistry?.GetById(_selectedBuildingId);
             return definition != null;
         }
 
-        private bool TryFindPlacedBuildingPosition(string buildingId, out Vector2Int position)
+        private bool TryFindPlacedBuildingPosition(
+            string buildingId,
+            string ownerId,
+            BuildingPlacementUniquenessScope scope,
+            out Vector2Int position)
         {
             position = default;
-            if (string.IsNullOrWhiteSpace(buildingId))
+            if (string.IsNullOrWhiteSpace(buildingId)
+                || scope == BuildingPlacementUniquenessScope.None)
+            {
                 return false;
+            }
 
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
             foreach (var pair in _factionPlacedBuildings)
             {
-                if (string.Equals(pair.Value.BuildingId, buildingId, StringComparison.Ordinal))
+                if (!string.Equals(pair.Value.BuildingId, buildingId, StringComparison.Ordinal))
+                    continue;
+
+                if (scope == BuildingPlacementUniquenessScope.PerOwner
+                    && !string.Equals(
+                        pair.Value.FactionId,
+                        normalizedOwnerId,
+                        StringComparison.Ordinal))
                 {
-                    position = pair.Key;
-                    return true;
+                    continue;
                 }
+
+                position = pair.Key;
+                return true;
+            }
+
+            if (scope == BuildingPlacementUniquenessScope.PerOwner
+                && !string.Equals(
+                    normalizedOwnerId,
+                    NormalizeOwnerId(_activeOwnerId),
+                    StringComparison.Ordinal))
+            {
+                return false;
             }
 
             foreach (var pair in _playerPlacedBuildings)
             {
-                if (string.Equals(pair.Value, buildingId, StringComparison.Ordinal))
-                {
-                    position = pair.Key;
-                    return true;
-                }
+                if (!string.Equals(pair.Value, buildingId, StringComparison.Ordinal))
+                    continue;
+
+                position = pair.Key;
+                return true;
             }
 
             return false;
@@ -92,8 +164,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             for (int i = 0; i < _pendingPlacements.Count; i++)
             {
-                if (!string.Equals(_pendingPlacements[i].BuildingId, buildingId, StringComparison.Ordinal))
+                if (!string.Equals(
+                        _pendingPlacements[i].BuildingId,
+                        buildingId,
+                        StringComparison.Ordinal))
+                {
                     continue;
+                }
 
                 index = i;
                 return true;
@@ -103,7 +180,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         private static bool IsRelocation(in PendingPlacement placement)
-            => placement.OriginalPosition.HasValue && placement.OriginalPosition.Value != placement.Position;
+            => placement.OriginalPosition.HasValue
+                && placement.OriginalPosition.Value != placement.Position;
 
         private void RemovePlacedRecordAt(Vector2Int position)
         {

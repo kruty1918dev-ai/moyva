@@ -46,11 +46,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     position,
                     includeResources: true,
                     includeDetails: true,
-                    ownerId: ownerId));
+                    ownerId: ownerId,
+                    attemptSource:
+                        ConstructionPlacementAttemptSource.DirectPlace,
+                    allowUniquePreviewRelocation: false));
             if (!placement.IsValid)
             {
-                if (VerboseLogs)
-                    Debug.Log($"[MoyvaBuildGridDiag] direct-placement-blocked building='{buildingId}' origin={position} reason='{placement.Reason}'");
+                LogPlacementAttempt(
+                    placement,
+                    emitRejectedAction: true);
                 return false;
             }
 
@@ -112,6 +116,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 SourceFactionId = ownerId,
             });
             ApplyBuildingFogReveal(buildingId, position);
+            LogPlacementAttempt(
+                placement,
+                emitRejectedAction: false);
             if (VerboseLogs)
                 Debug.Log($"[Construction] TryDirectPlace: розміщено '{buildingId}' на {position} від '{ownerId}'.");
             return true;
