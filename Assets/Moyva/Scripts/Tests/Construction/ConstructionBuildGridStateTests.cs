@@ -69,9 +69,9 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.AreEqual(ConstructionBuildGridTileVisualState.Valid, filter.ResolveVisualState(valid));
             Assert.AreEqual(ConstructionBuildGridTileVisualState.Invalid, filter.ResolveVisualState(invalid));
             Assert.AreEqual(2, query.CallCount);
-            Assert.IsFalse(
+            Assert.IsTrue(
                 query.LastRequest.IncludePendingPlacements,
-                "Base grid must evaluate persistent rules without temporary preview placements.");
+                "Selected grid must use the same pending-preview rules as click validation.");
 
             Assert.IsTrue(state.SetSelection(null, isDemolishMode: false));
             Assert.AreEqual(BuildModeGridState.General, state.State);
