@@ -17,6 +17,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly List<TileMeshSource> _cellSources = new List<TileMeshSource>(4);
         private readonly Dictionary<TileVerticalFillMeshKey, Mesh> _verticalMeshCache =
             new Dictionary<TileVerticalFillMeshKey, Mesh>();
+        private readonly HashSet<TileVerticalFillMeshKey> _verticalMeshPassthroughCache =
+            new HashSet<TileVerticalFillMeshKey>();
 
         public ChunkTerrainMeshBuilder(
             ChunkFirstRuntimeMeshRegistry meshRegistry,
@@ -129,11 +131,18 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return source.Mesh;
 
             TileVerticalFillMeshKey key = TileVerticalFillMeshKey.Create(source);
+            if (_verticalMeshPassthroughCache.Contains(key))
+                return source.Mesh;
+
             if (_verticalMeshCache.TryGetValue(key, out Mesh cached) && cached != null)
                 return cached;
 
-            if (!TileVerticalFillMeshUtility.TryCreate(source, out Mesh processed) || processed == null)
+            if (!TileVerticalFillMeshUtility.TryCreate(source, out Mesh processed)
+                || processed == null)
+            {
+                _verticalMeshPassthroughCache.Add(key);
                 return source.Mesh;
+            }
 
             _verticalMeshCache[key] = processed;
             _meshRegistry.Register(processed);

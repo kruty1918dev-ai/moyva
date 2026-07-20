@@ -57,6 +57,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 new Vector2(composition.Cell.x, composition.Cell.y),
                 yRotation,
                 scaleSign,
+                ResolveOccludedSides(composition),
                 results)
                 ? 1
                 : 0;
@@ -152,6 +153,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 tileData.tilePosition,
                 yRotation,
                 Vector3.one,
+                TileMeshOccludedSides.None,
                 results);
         }
 
@@ -163,6 +165,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector2 tilePosition,
             int yRotation,
             Vector3 scaleSign,
+            TileMeshOccludedSides occludedSides,
             List<TileMeshSource> results)
         {
             var sample = composition.MainTerrain;
@@ -215,13 +218,16 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 sample,
                 prefab,
                 materials)
-                ? 0f
+                ? ResolveVisibleBottomY(composition)
                 : float.NaN;
             var meshSource = new TileMeshSource(
                 template.Mesh,
                 materials,
                 rootMatrix * template.ChildMatrix,
-                visibleBottomY);
+                visibleBottomY,
+                occludedSides,
+                new Vector2(position.x, position.z),
+                cellSize * 0.5f);
             if (!meshSource.IsValid)
                 return false;
 
@@ -298,6 +304,34 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 || normalized.Contains("річк")
                 || normalized.Contains("море")
                 || normalized.Contains("океан");
+        }
+
+        internal static TileMeshOccludedSides ResolveOccludedSides(
+            ResolvedTileComposition composition)
+        {
+            TileMeshOccludedSides sides = TileMeshOccludedSides.None;
+            if (composition.NorthMatches)
+                sides |= TileMeshOccludedSides.North;
+            if (composition.EastMatches)
+                sides |= TileMeshOccludedSides.East;
+            if (composition.SouthMatches)
+                sides |= TileMeshOccludedSides.South;
+            if (composition.WestMatches)
+                sides |= TileMeshOccludedSides.West;
+
+            return sides;
+        }
+
+        internal static float ResolveVisibleBottomY(
+            ResolvedTileComposition composition)
+        {
+            if (composition.HasSupportHeight
+                && IsFinite(composition.SupportHeight))
+            {
+                return composition.SupportHeight;
+            }
+
+            return 0f;
         }
 
         private static float ResolvePlacementHeight(

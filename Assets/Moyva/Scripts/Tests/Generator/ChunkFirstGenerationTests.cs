@@ -303,6 +303,123 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public void TwcOccludedSides_UsesMatchingCardinalNeighbors()
+        {
+            var composition = new ResolvedTileComposition(
+                Vector2Int.zero,
+                default,
+                default,
+                true,
+                false,
+                string.Empty,
+                northMatches: true,
+                eastMatches: true,
+                southMatches: false,
+                westMatches: false);
+
+            TileMeshOccludedSides sides =
+                TwcTileMeshSourceProvider.ResolveOccludedSides(composition);
+
+            Assert.IsTrue((sides & TileMeshOccludedSides.North) != 0);
+            Assert.IsTrue((sides & TileMeshOccludedSides.East) != 0);
+            Assert.IsFalse((sides & TileMeshOccludedSides.South) != 0);
+            Assert.IsFalse((sides & TileMeshOccludedSides.West) != 0);
+        }
+
+        [Test]
+        public void TwcVisibleBottom_UsesResolvedSupportHeight()
+        {
+            var composition = new ResolvedTileComposition(
+                Vector2Int.zero,
+                default,
+                default,
+                true,
+                false,
+                string.Empty,
+                supportHeight: 0.75f);
+
+            Assert.AreEqual(
+                0.75f,
+                TwcTileMeshSourceProvider.ResolveVisibleBottomY(composition),
+                0.0001f);
+        }
+
+        [Test]
+        public void VerticalFill_CullsOnlyMatchedCardinalBoundary()
+        {
+            var source = new TileMeshSource(
+                null,
+                null,
+                Matrix4x4.identity,
+                visibleBottomY: 0f,
+                occludedSides: TileMeshOccludedSides.North,
+                tileCenterXZ: Vector2.zero,
+                tileHalfExtent: 0.5f);
+
+            bool northHidden = TileVerticalFillMeshUtility.IsBoundaryEdgeOccluded(
+                source,
+                new Vector3(-0.5f, 1f, 0.5f),
+                new Vector3(0.5f, 1f, 0.5f));
+            bool westVisible = TileVerticalFillMeshUtility.IsBoundaryEdgeOccluded(
+                source,
+                new Vector3(-0.5f, 1f, -0.5f),
+                new Vector3(-0.5f, 1f, 0.5f));
+
+            Assert.IsTrue(northHidden);
+            Assert.IsFalse(westVisible);
+        }
+
+        [Test]
+        public void VerticalFill_FullySurroundedFlatTileAddsNoInternalSkirts()
+        {
+            Mesh mesh = CreateFlatQuadMesh();
+            var source = new TileMeshSource(
+                mesh,
+                null,
+                Matrix4x4.identity,
+                visibleBottomY: 0f,
+                occludedSides: TileMeshOccludedSides.North
+                    | TileMeshOccludedSides.East
+                    | TileMeshOccludedSides.South
+                    | TileMeshOccludedSides.West,
+                tileCenterXZ: Vector2.zero,
+                tileHalfExtent: 0.5f);
+
+            bool created = TileVerticalFillMeshUtility.TryCreate(
+                source,
+                out Mesh result);
+
+            Assert.IsFalse(created);
+            Assert.IsNull(result);
+        }
+
+        [Test]
+        public void VerticalFill_BoundaryTileAddsSkirtOnlyOnExposedSide()
+        {
+            Mesh mesh = CreateFlatQuadMesh();
+            var source = new TileMeshSource(
+                mesh,
+                null,
+                Matrix4x4.identity,
+                visibleBottomY: 0f,
+                occludedSides: TileMeshOccludedSides.North
+                    | TileMeshOccludedSides.South
+                    | TileMeshOccludedSides.West,
+                tileCenterXZ: Vector2.zero,
+                tileHalfExtent: 0.5f);
+
+            bool created = TileVerticalFillMeshUtility.TryCreate(
+                source,
+                out Mesh result);
+            if (result != null)
+                _created.Add(result);
+
+            Assert.IsTrue(created);
+            Assert.IsNotNull(result);
+            Assert.AreEqual(18, result.triangles.Length);
+        }
+
+        [Test]
         public void ChunkFirstPolicy_RoutesLegacySerializedNameToChunkFirst()
         {
             var policy = new TileWorldCreatorTerrainBuildPolicyResult(
@@ -325,6 +442,26 @@ namespace Kruty1918.Moyva.Tests.Generator
             registry.Clear();
 
             Assert.IsTrue(mesh == null);
+        }
+
+        private Mesh CreateFlatQuadMesh()
+        {
+            var mesh = new Mesh
+            {
+                name = "Flat Tile Test",
+                vertices = new[]
+                {
+                    new Vector3(-0.5f, 1f, -0.5f),
+                    new Vector3(0.5f, 1f, -0.5f),
+                    new Vector3(0.5f, 1f, 0.5f),
+                    new Vector3(-0.5f, 1f, 0.5f)
+                },
+                triangles = new[] { 0, 2, 1, 0, 3, 2 }
+            };
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            _created.Add(mesh);
+            return mesh;
         }
 
         private static GraphTileLayerSample Sample(
