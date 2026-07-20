@@ -92,18 +92,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             out float topOffset)
         {
             topOffset = 0f;
-            TilePreset.TileType fillType = buildLayer.useDualGrid
-                ? TilePreset.TileType.DUALGRD_fill
-                : TilePreset.TileType.NRMGRD_fill;
+            TilePreset.TileType fillType = ResolveFillTileType(preset);
             GameObject prefab = preset.GetTile(fillType, out float xRotationOffset, out float yRotationOffset);
-            if (prefab == null)
-            {
-                fillType = preset.gridtype == TilePreset.GridType.dual
-                    ? TilePreset.TileType.DUALGRD_fill
-                    : TilePreset.TileType.NRMGRD_fill;
-                prefab = preset.GetTile(fillType, out xRotationOffset, out yRotationOffset);
-            }
-
             if (prefab == null)
                 return false;
 
@@ -111,6 +101,11 @@ namespace Kruty1918.Moyva.Generator.Runtime
             Vector3 scale = ResolvePlacedScale(buildLayer, prefab);
             return TryResolveMeshTopOffset(prefab, rotation, scale, out topOffset);
         }
+
+        internal static TilePreset.TileType ResolveFillTileType(TilePreset preset)
+            => preset != null && preset.gridtype == TilePreset.GridType.dual
+                ? TilePreset.TileType.DUALGRD_fill
+                : TilePreset.TileType.NRMGRD_fill;
 
         private static Vector3 ResolvePlacedScale(TilesBuildLayer buildLayer, GameObject prefab)
         {

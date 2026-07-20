@@ -57,10 +57,20 @@ namespace Kruty1918.Moyva.Generator.Runtime
             // Preserve build-layer/prefab surface offsets even if the companion
             // BlueprintLayer has not yet been synchronized by the editor.
             float layerHeight = graphLayer.DefaultHeight;
+            float projectedSurfaceHeight = _twcLookup.ResolveSurfaceHeight(blueprint, buildLayer);
             float surfaceHeight = ResolveAuthoritativeSurfaceHeight(
                 layerHeight,
                 blueprint.defaultLayerHeight,
-                _twcLookup.ResolveSurfaceHeight(blueprint, buildLayer));
+                projectedSurfaceHeight);
+
+            Debug.Log(
+                $"[MoyvaTileHeightDiag] LogicalLayer name='{graphLayer.Name}' " +
+                $"layerId='{layerMap.GraphLayerId}' sorting={layerMap.SortingOrder} " +
+                $"graphHeight={layerHeight:0.###} blueprintHeight={blueprint.defaultLayerHeight:0.###} " +
+                $"projectedSurface={projectedSurfaceHeight:0.###} " +
+                $"authoritativeSurface={surfaceHeight:0.###} " +
+                $"activeCells={blueprint.allPositions?.Count ?? 0} " +
+                $"buildLayerGuid='{buildLayer?.guid ?? "<none>"}' presetId='{layerMap.PresetId ?? "<none>"}'");
 
             var data = CreateLayerData(
                 graph,
@@ -107,7 +117,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return graphLayer != null && graphLayer.Enabled;
         }
 
-        private static float ResolveAuthoritativeSurfaceHeight(
+        internal static float ResolveAuthoritativeSurfaceHeight(
             float graphLayerHeight,
             float blueprintLayerHeight,
             float projectedSurfaceHeight)
