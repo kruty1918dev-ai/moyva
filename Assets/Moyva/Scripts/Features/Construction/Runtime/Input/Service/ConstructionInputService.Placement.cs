@@ -1,5 +1,6 @@
 using System;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.Signals;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.Runtime
