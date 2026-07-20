@@ -7,9 +7,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
     internal sealed class TwcTileMeshSourceProvider : IResolvedTileMeshSource
     {
+        private const string HeightDiagnosticsTag = "[MoyvaTileHeightDiag]";
+
         private readonly ITileWorldCreatorBuildEnvironment _environment;
         private readonly Dictionary<string, TilesBuildLayer> _buildLayerByGuid = new Dictionary<string, TilesBuildLayer>(System.StringComparer.Ordinal);
         private readonly Dictionary<GameObject, PrefabMeshTemplate> _meshTemplateByPrefab = new Dictionary<GameObject, PrefabMeshTemplate>();
+        private readonly HashSet<string> _heightDiagnosticKeys = new HashSet<string>(System.StringComparer.Ordinal);
 
         public TwcTileMeshSourceProvider(ITileWorldCreatorBuildEnvironment environment)
         {
@@ -180,14 +183,31 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 scale.y * buildLayer.scaleOffset.y * scaleSign.y,
                 scale.z * buildLayer.scaleOffset.z * scaleSign.z);
 
-            float placementHeight = ResolvePlacementHeight(sample, buildLayer);
+            Quaternion rotation = Quaternion.Euler(xRotationOffset, yRotation + yRotationOffset, 0f);
+            float fallbackPlacementHeight = ResolvePlacementHeight(sample, buildLayer);
+            float prefabTopOffset = ResolveTransformedBoundsTop(
+                template.Mesh.bounds,
+                Matrix4x4.TRS(Vector3.zero, rotation, scale) * template.ChildMatrix);
+            float placementHeight = ResolveSurfaceAlignedPlacementHeight(
+                sample.SurfaceHeight,
+                fallbackPlacementHeight,
+                prefabTopOffset);
             Vector3 position = new Vector3(
                 tilePosition.x * cellSize,
                 placementHeight,
                 tilePosition.y * cellSize);
-            Quaternion rotation = Quaternion.Euler(xRotationOffset, yRotation + yRotationOffset, 0f);
             Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, scale);
             Material[] materials = template.ResolveMaterials(preset.GetMaterialOverride());
+
+            LogHeightPlacementOnce(
+                composition,
+                buildLayer,
+                preset,
+                tileType,
+                prefab,
+                fallbackPlacementHeight,
+                prefabTopOffset,
+                placementHeight);
 
             // Water stays a flat surface. Only solid terrain receives vertical
             // geometry down to the global world floor.
@@ -298,6 +318,68 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             return height;
         }
+
+        internal static float ResolveSurfaceAlignedPlacementHeight(
+            float expectedSurfaceHeight,
+            float fallbackPlacementHeight,
+            float prefabTopOffset)
+        {
+            if (!IsFinite(expectedSurfaceHeight) || !IsFinite(prefabTopOffset))
+                return fallbackPlacementHeight;
+
+            return expectedSurfaceHeight - prefabTopOffset;
+        }
+
+        internal static float ResolveTransformedBoundsTop(Bounds bounds, Matrix4x4 matrix)
+        {
+            Vector3 center = matrix.MultiplyPoint3x4(bounds.center);
+            Vector3 extents = bounds.extents;
+            Vector3 axisX = matrix.MultiplyVector(new Vector3(extents.x, 0f, 0f));
+            Vector3 axisY = matrix.MultiplyVector(new Vector3(0f, extents.y, 0f));
+            Vector3 axisZ = matrix.MultiplyVector(new Vector3(0f, 0f, extents.z));
+            float extentY = Mathf.Abs(axisX.y) + Mathf.Abs(axisY.y) + Mathf.Abs(axisZ.y);
+            return center.y + extentY;
+        }
+
+        private void LogHeightPlacementOnce(
+            ResolvedTileComposition composition,
+            TilesBuildLayer buildLayer,
+            TilePreset preset,
+            TilePreset.TileType tileType,
+            GameObject prefab,
+            float fallbackPlacementHeight,
+            float prefabTopOffset,
+            float placementHeight)
+        {
+            GraphTileLayerSample sample = composition.MainTerrain;
+            string key =
+                $"{sample.GraphLayerId}|{preset.GetInstanceID()}|{tileType}|{prefab.GetInstanceID()}";
+            if (!_heightDiagnosticKeys.Add(key))
+                return;
+
+            float tileLayerOffset = buildLayer.tileLayers != null
+                                    && buildLayer.tileLayers.Count > 0
+                                    && buildLayer.tileLayers[0] != null
+                ? buildLayer.tileLayers[0].heightOffset
+                : 0f;
+            float actualSurfaceHeight = placementHeight + prefabTopOffset;
+            string mode = IsFinite(sample.SurfaceHeight) && IsFinite(prefabTopOffset)
+                ? "surface-aligned"
+                : "fallback";
+
+            Debug.Log(
+                $"{HeightDiagnosticsTag} Placement mode={mode} layer='{sample.GraphLayerName}' " +
+                $"layerId='{sample.GraphLayerId}' cell={composition.Cell} tileType={tileType} " +
+                $"preset='{preset.name}' prefab='{prefab.name}' layerHeight={sample.Height:0.###} " +
+                $"expectedSurface={sample.SurfaceHeight:0.###} buildYOffset={buildLayer.layerYOffset:0.###} " +
+                $"tileLayerOffset={tileLayerOffset:0.###} fallbackRootY={fallbackPlacementHeight:0.###} " +
+                $"prefabTopOffset={prefabTopOffset:0.###} correctedRootY={placementHeight:0.###} " +
+                $"actualSurface={actualSurfaceHeight:0.###} " +
+                $"surfaceDelta={(actualSurfaceHeight - sample.SurfaceHeight):0.#####}");
+        }
+
+        private static bool IsFinite(float value)
+            => !float.IsNaN(value) && !float.IsInfinity(value);
 
         private bool TryGetMeshTemplate(GameObject prefab, out PrefabMeshTemplate template)
         {

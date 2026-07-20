@@ -239,6 +239,70 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public void TwcSurfaceAlignedPlacement_NormalizesVariantTopOffsets()
+        {
+            const float expectedSurface = 1f;
+
+            float regularRoot = TwcTileMeshSourceProvider.ResolveSurfaceAlignedPlacementHeight(
+                expectedSurface,
+                fallbackPlacementHeight: 1f,
+                prefabTopOffset: 0f);
+            float loweredPivotRoot = TwcTileMeshSourceProvider.ResolveSurfaceAlignedPlacementHeight(
+                expectedSurface,
+                fallbackPlacementHeight: 1f,
+                prefabTopOffset: -1f);
+
+            Assert.AreEqual(expectedSurface, regularRoot + 0f, 0.0001f);
+            Assert.AreEqual(expectedSurface, loweredPivotRoot - 1f, 0.0001f);
+            Assert.AreEqual(2f, loweredPivotRoot, 0.0001f);
+        }
+
+        [Test]
+        public void TwcSurfaceAlignedPlacement_FallsBackForInvalidSurfaceData()
+        {
+            float resolved = TwcTileMeshSourceProvider.ResolveSurfaceAlignedPlacementHeight(
+                float.NaN,
+                fallbackPlacementHeight: 3f,
+                prefabTopOffset: -1f);
+
+            Assert.AreEqual(3f, resolved, 0.0001f);
+        }
+
+        [Test]
+        public void GraphLogicalLayerHeight_PreservesGraphHeightAndTwcSurfaceOffset()
+        {
+            float noOffset = GraphLogicalTileMapBuilderService.ResolveAuthoritativeSurfaceHeight(
+                graphLayerHeight: 1f,
+                blueprintLayerHeight: 0.05f,
+                projectedSurfaceHeight: 0.05f);
+            float withOffset = GraphLogicalTileMapBuilderService.ResolveAuthoritativeSurfaceHeight(
+                graphLayerHeight: 1f,
+                blueprintLayerHeight: 0.05f,
+                projectedSurfaceHeight: 0.30f);
+
+            Assert.AreEqual(1f, noOffset, 0.0001f);
+            Assert.AreEqual(1.25f, withOffset, 0.0001f);
+        }
+
+        [Test]
+        public void TwcFillSurfaceHeight_UsesPresetGridType()
+        {
+            var standard = ScriptableObject.CreateInstance<TilePreset>();
+            var dual = ScriptableObject.CreateInstance<TilePreset>();
+            _created.Add(standard);
+            _created.Add(dual);
+            standard.gridtype = TilePreset.GridType.standard;
+            dual.gridtype = TilePreset.GridType.dual;
+
+            Assert.AreEqual(
+                TilePreset.TileType.NRMGRD_fill,
+                TileWorldCreatorFillTileSurfaceHeightUtility.ResolveFillTileType(standard));
+            Assert.AreEqual(
+                TilePreset.TileType.DUALGRD_fill,
+                TileWorldCreatorFillTileSurfaceHeightUtility.ResolveFillTileType(dual));
+        }
+
+        [Test]
         public void ChunkFirstPolicy_RoutesLegacySerializedNameToChunkFirst()
         {
             var policy = new TileWorldCreatorTerrainBuildPolicyResult(
