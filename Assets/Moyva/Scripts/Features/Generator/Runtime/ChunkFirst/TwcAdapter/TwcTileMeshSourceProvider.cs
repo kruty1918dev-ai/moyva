@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (buildLayer == null || preset == null)
                 return 0;
 
-            return buildLayer.useDualGrid
+            return preset.gridtype == TilePreset.GridType.dual
                 ? CollectDualGridSources(composition, buildLayer, preset, results)
                 : CollectNormalGridSource(composition, buildLayer, preset, results);
         }
@@ -39,12 +39,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             List<TileMeshSource> results)
         {
             int configuration = BuildNormalConfiguration(composition);
-            var tileData = new BuildLayer.TileData
-            {
-                configuration = configuration,
-                tilePosition = composition.Cell
-            };
-            var tileType = buildLayer.GetTileType(configuration, tileData, out int yRotation);
+            var tileType = ResolveTileType(preset.gridtype, configuration, out int yRotation);
             if (tileType == TilePreset.TileType.none)
                 tileType = TilePreset.TileType.NRMGRD_fill;
 
@@ -142,7 +137,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 configuration = configuration,
                 tilePosition = new Vector2(composition.Cell.x + offset.x, composition.Cell.y + offset.y)
             };
-            var tileType = buildLayer.GetTileType(configuration, tileData, out int yRotation);
+            var tileType = ResolveTileType(preset.gridtype, configuration, out int yRotation);
             if (tileType == TilePreset.TileType.none)
                 return;
 
@@ -346,6 +341,203 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                | (topRight ? 1 << 1 : 0)
                | (bottomLeft ? 1 << 2 : 0)
                | (bottomRight ? 1 << 3 : 0);
+
+        internal static TilePreset.TileType ResolveTileType(
+            TilePreset.GridType gridType,
+            int configuration,
+            out int rotation)
+        {
+            rotation = ResolveRotation(gridType, configuration);
+
+            return gridType == TilePreset.GridType.dual
+                ? ResolveDualTileType(configuration)
+                : ResolveNormalTileType(configuration);
+        }
+
+        private static TilePreset.TileType ResolveNormalTileType(int configuration)
+        {
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_cornerWay_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_cornerWay;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_cornerFill_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_cornerFill;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_edgeWay_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_edgeWay;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_edgeFill_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_edgeFill;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_fill_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_fill;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_single_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_single;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_threeWay_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_threeWay;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_threeWayFill_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_threeWayFill;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_threeCorner_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_threeCorner;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_deadEndWay_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_deadEnd;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_fourWay_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_fourWay;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_edgeCornerFill_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_edgeCornerFill;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_doubleCorner_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_doubleCorner;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.NRMGRD_interiorCorner_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.NRMGRD_interiorCorner;
+            }
+
+            return TilePreset.TileType.none;
+        }
+
+        private static TilePreset.TileType ResolveDualTileType(int configuration)
+        {
+            if (ContainsConfiguration(
+                    TileConfigurations.DUALGRD_corner_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.DUALGRD_corner;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.DUALGRD_edge_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.DUALGRD_edge;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.DUALGRD_fill_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.DUALGRD_fill;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.DUALGRD_interiorCorner_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.DUALGRD_interiorCorner;
+            }
+
+            if (ContainsConfiguration(
+                    TileConfigurations.DUALGRD_doubleInteriorCorner_configurations,
+                    configuration))
+            {
+                return TilePreset.TileType.DUALGRD_doubleInteriorCorner;
+            }
+
+            return TilePreset.TileType.none;
+        }
+
+        private static int ResolveRotation(
+            TilePreset.GridType gridType,
+            int configuration)
+        {
+            if (gridType == TilePreset.GridType.dual)
+            {
+                if (ContainsConfiguration(TileConfigurations.rotation90Configurations, configuration))
+                    return 90;
+                if (ContainsConfiguration(TileConfigurations.rotation180Configurations, configuration))
+                    return 180;
+                if (ContainsConfiguration(TileConfigurations.rotation270Configurations, configuration))
+                    return 270;
+
+                return 0;
+            }
+
+            if (ContainsConfiguration(TileConfigurations.NRMGRD_rotation90_configurations, configuration))
+                return 90;
+            if (ContainsConfiguration(TileConfigurations.NRMGRD_rotation180_configurations, configuration))
+                return 180;
+            if (ContainsConfiguration(TileConfigurations.NRMGRD_rotation270_configurations, configuration))
+                return 270;
+
+            return 0;
+        }
+
+        private static bool ContainsConfiguration(
+            IEnumerable<int> configurations,
+            int configuration)
+        {
+            if (configurations == null)
+                return false;
+
+            foreach (int candidate in configurations)
+            {
+                if (candidate == configuration)
+                    return true;
+            }
+
+            return false;
+        }
 
         private static bool ShouldCurrentOwnDualFragment(bool west, bool south, bool southWest)
             => !west && !south && !southWest;
