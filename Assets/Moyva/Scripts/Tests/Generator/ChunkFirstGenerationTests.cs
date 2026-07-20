@@ -202,6 +202,43 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public void TwcTileTypeResolution_UsesPresetGridType()
+        {
+            int normalConfiguration =
+                TileConfigurations.NRMGRD_edgeFill_configurations[0];
+            int dualConfiguration =
+                TileConfigurations.DUALGRD_edge_configurations[0];
+
+            TilePreset.TileType normalType =
+                TwcTileMeshSourceProvider.ResolveTileType(
+                    TilePreset.GridType.standard,
+                    normalConfiguration,
+                    out _);
+
+            TilePreset.TileType dualType =
+                TwcTileMeshSourceProvider.ResolveTileType(
+                    TilePreset.GridType.dual,
+                    dualConfiguration,
+                    out _);
+
+            TilePreset.TileType normalConfigurationAsDual =
+                TwcTileMeshSourceProvider.ResolveTileType(
+                    TilePreset.GridType.dual,
+                    normalConfiguration,
+                    out _);
+
+            Assert.AreEqual(
+                TilePreset.TileType.NRMGRD_edgeFill,
+                normalType);
+            Assert.AreEqual(
+                TilePreset.TileType.DUALGRD_edge,
+                dualType);
+            Assert.AreEqual(
+                TilePreset.TileType.none,
+                normalConfigurationAsDual);
+        }
+
+        [Test]
         public void ChunkFirstPolicy_RoutesLegacySerializedNameToChunkFirst()
         {
             var policy = new TileWorldCreatorTerrainBuildPolicyResult(
