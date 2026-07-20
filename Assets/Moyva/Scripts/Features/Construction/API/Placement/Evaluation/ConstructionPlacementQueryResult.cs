@@ -7,13 +7,15 @@ namespace Kruty1918.Moyva.Construction.API
             bool resourcesValid,
             bool isGateReplacement,
             string reason = null,
-            BuildingPlacementEvaluationResult evaluationResult = null)
+            BuildingPlacementEvaluationResult evaluationResult = null,
+            ConstructionPlacementDiagnostic diagnostic = null)
         {
             IsSpatiallyValid = isSpatiallyValid;
             ResourcesValid = resourcesValid;
             IsGateReplacement = isGateReplacement;
             Reason = reason;
             EvaluationResult = evaluationResult;
+            Diagnostic = diagnostic;
         }
 
         public bool IsSpatiallyValid { get; }
@@ -21,6 +23,7 @@ namespace Kruty1918.Moyva.Construction.API
         public bool IsGateReplacement { get; }
         public string Reason { get; }
         public BuildingPlacementEvaluationResult EvaluationResult { get; }
+        public ConstructionPlacementDiagnostic Diagnostic { get; }
         public bool IsValid => IsSpatiallyValid && ResourcesValid;
     }
 }

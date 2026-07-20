@@ -88,12 +88,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     && _wallTopologyService.IsGate(selectedBuildingId);
                 if (gateMode)
                 {
-                    if (!IsBuildGridPlacementAllowed(tilePos, selectedBuildingId))
-                    {
-                        if (VerboseLogs)
-                            Debug.Log($"{LogTag} Gate placement rejected by build grid at {tilePos}");
+                    if (!IsPointerPlacementAllowed(tilePos, selectedBuildingId))
                         return;
-                    }
 
                     bool placed = _constructionService.TryPreviewAt(tilePos);
                     if (VerboseLogs)
@@ -113,12 +109,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (wallMode)
             {
-                if (!IsBuildGridPlacementAllowed(tilePos, selectedBuildingId))
-                {
-                    if (VerboseLogs)
-                        Debug.Log($"{LogTag} Wall placement rejected by build grid at {tilePos}");
+                if (!IsPointerPlacementAllowed(tilePos, selectedBuildingId))
                     return;
-                }
 
                 bool placed = _constructionService.TryPreviewAt(tilePos);
                 if (placed && allowDragStart)
@@ -136,13 +128,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            if (!IsBuildGridPlacementAllowed(tilePos, selectedBuildingId))
-            {
-                if (VerboseLogs)
-                    Debug.Log($"{LogTag} Placement rejected by build grid at {tilePos}");
-                return;
-            }
-
             bool result = _constructionService.TryPreviewAt(tilePos);
             if (VerboseLogs)
                 Debug.Log($"{LogTag} TryPreviewAt({tilePos}) => {result}");
@@ -153,6 +138,40 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _draggedPlacementPosition = tilePos;
                 ClearPendingPlacementSnapTarget();
             }
+        }
+
+        private bool IsPointerPlacementAllowed(
+            Vector2Int position,
+            string buildingId)
+        {
+            if (_placementQuery == null || string.IsNullOrWhiteSpace(buildingId))
+                return false;
+
+            ConstructionPlacementQueryResult result =
+                _placementQuery.EvaluatePlacement(
+                    new ConstructionPlacementQueryRequest(
+                        buildingId,
+                        position,
+                        includeResources: true,
+                        includeDetails: true,
+                        ownerId: _constructionService.GetActiveOwner(),
+                        attemptSource:
+                            ConstructionPlacementAttemptSource.PointerClick,
+                        allowUniquePreviewRelocation: true));
+            if (result.IsValid)
+                return true;
+
+            Debug.LogWarning(
+                ConstructionPlacementDiagnosticFormatter.FormatSingleLine(
+                    result.Diagnostic));
+            _signalBus.Fire(
+                new BuildingPreviewChangedSignal
+                {
+                    Position = position,
+                    BuildingId = buildingId,
+                    PreviewState = BuildingPreviewState.Blocked,
+                });
+            return false;
         }
     }
 }
