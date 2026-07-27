@@ -10,7 +10,8 @@ namespace Kruty1918.Moyva.Signals
     {
         None,    // Підсвітка знята (preview видалено або сесія завершена)
         Valid,   // Тайл вільний — будівля може бути розміщена
-        Blocked  // Тайл зайнятий — будівля не може бути розміщена, підсвітити червоним
+        Blocked, // Тайл зайнятий — будівля не може бути розміщена, підсвітити червоним
+        Unaffordable // Місце валідне, але ресурсів для підтвердження ще недостатньо
     }
 
     /// <summary>
@@ -35,7 +36,7 @@ namespace Kruty1918.Moyva.Signals
 
     /// <summary>
     /// Надсилається ConstructionService при зміні стану preview на тайлі.
-    /// Отримується: TileView (змінює відображення тайлу: None/Valid/Blocked).
+    /// Отримується: TileView (None/Valid/Blocked/Unaffordable).
     /// </summary>
     public struct BuildingPreviewChangedSignal
     {
@@ -90,6 +91,7 @@ namespace Kruty1918.Moyva.Signals
         public Vector2Int Position;
         public string BuildingId;
         public bool IsPlacementValid;
+        public bool IsAffordable;
         public Vector2Int[] FootprintPositions;
         public Vector2Int[] InvalidFootprintPositions;
     }

@@ -22,6 +22,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static readonly int MinUpNormalYPropertyId = Shader.PropertyToID("_MinUpNormalY");
 
         private readonly IConstructionGridGeometryService _gridGeometry;
+        private readonly IConstructionVisualSettingsProvider _settingsProvider;
 
         private GameObject _overlayGo;
         private Material _material;
@@ -30,6 +31,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private Color _generalFillColor;
         private Color _validLineColor;
         private Color _validFillColor;
+        private Color _unaffordableLineColor;
+        private Color _unaffordableFillColor;
         private Color _invalidLineColor;
         private Color _invalidFillColor;
 
@@ -37,9 +40,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         [Inject]
         public ConstructionBuildGridOverlayRenderer(
-            [InjectOptional] IConstructionGridGeometryService gridGeometry = null)
+            [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
+            [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null)
         {
             _gridGeometry = gridGeometry;
+            _settingsProvider = settingsProvider;
         }
 
         public void Initialize(Transform parent, string shaderName)
@@ -76,10 +81,30 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ApplySharedGridProperties();
             _generalLineColor = lineColor;
             _generalFillColor = fillColor;
-            _validLineColor = new Color(0.28f, 1f, 0.42f, lineColor.a);
-            _validFillColor = new Color(0.20f, 0.82f, 0.32f, fillColor.a);
-            _invalidLineColor = new Color(1f, 0.26f, 0.22f, lineColor.a);
-            _invalidFillColor = new Color(0.92f, 0.12f, 0.10f, fillColor.a);
+            _validLineColor = ResolveLineColor(
+                _settingsProvider?.BuildGridValidLineColor
+                    ?? new Color(0.28f, 1f, 0.42f, 1f),
+                lineColor.a);
+            _validFillColor = ResolveFillColor(
+                _settingsProvider?.BuildGridValidFillColor
+                    ?? new Color(0.20f, 0.82f, 0.32f, 1f),
+                fillColor.a);
+            _unaffordableLineColor = ResolveLineColor(
+                _settingsProvider?.BuildGridUnaffordableLineColor
+                    ?? new Color(1f, 0.68f, 0.12f, 1f),
+                lineColor.a);
+            _unaffordableFillColor = ResolveFillColor(
+                _settingsProvider?.BuildGridUnaffordableFillColor
+                    ?? new Color(0.95f, 0.48f, 0.08f, 1f),
+                fillColor.a);
+            _invalidLineColor = ResolveLineColor(
+                _settingsProvider?.BuildGridInvalidLineColor
+                    ?? new Color(1f, 0.26f, 0.22f, 1f),
+                lineColor.a);
+            _invalidFillColor = ResolveFillColor(
+                _settingsProvider?.BuildGridInvalidFillColor
+                    ?? new Color(0.92f, 0.12f, 0.10f, 1f),
+                fillColor.a);
 
             _material.SetColor(LineColorPropertyId, _generalLineColor);
             _material.SetColor(FillColorPropertyId, _generalFillColor);
@@ -151,11 +176,29 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     lineColor = _invalidLineColor;
                     fillColor = _invalidFillColor;
                     return;
+                case ConstructionBuildGridTileVisualState.Unaffordable:
+                    lineColor = _unaffordableLineColor;
+                    fillColor = _unaffordableFillColor;
+                    return;
                 default:
                     lineColor = _generalLineColor;
                     fillColor = _generalFillColor;
                     return;
             }
+        }
+
+        private static Color ResolveLineColor(Color configured, float fallbackAlpha)
+        {
+            if (configured.a <= 0f)
+                configured.a = fallbackAlpha;
+            return configured;
+        }
+
+        private static Color ResolveFillColor(Color configured, float fallbackAlpha)
+        {
+            if (configured.a <= 0f)
+                configured.a = fallbackAlpha;
+            return configured;
         }
 
         private void ApplySharedGridProperties()

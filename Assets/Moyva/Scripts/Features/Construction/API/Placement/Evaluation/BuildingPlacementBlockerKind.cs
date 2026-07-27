@@ -9,5 +9,7 @@ namespace Kruty1918.Moyva.Construction.API
         InfluenceOverlap = 4,
         Configuration = 5,
         Terrain = 6,
+        Adjacency = 7,
+        Prerequisite = 8,
     }
 }

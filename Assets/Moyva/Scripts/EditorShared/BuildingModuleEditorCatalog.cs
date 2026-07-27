@@ -132,6 +132,30 @@ namespace Kruty1918.Moyva.Editor.Shared
                 "Дозволяє будівництво лише за наявності потрібних типів місцевості.",
                 "tile requirement", "тайли", "місцевість"),
 
+            Option<TerrainPlacementRuleModule>(
+                "Правила", "Правила terrain",
+                "Успадковує, замінює або вимикає terrain-правила для конкретної будівлі.",
+                "terrain", "земля", "рівень", "placement"),
+            Option<FogPlacementRuleModule>(
+                "Правила", "Правила туману",
+                "Налаштовує потрібний стан Fog of War для розміщення.",
+                "fog", "туман", "visibility"),
+            Option<SettlementInfluenceRequirementBuildingModule>(
+                "Правила", "Вимога впливу поселення",
+                "Налаштовує залежність від зони поселення без перевірки типу будівлі.",
+                "influence", "вплив", "поселення"),
+            Option<SpacingPlacementRuleModule>(
+                "Правила", "Відступ при розміщенні",
+                "Перевизначає глобальний мінімальний відступ для цієї будівлі.",
+                "spacing", "відступ", "distance"),
+            Option<ReplacementPlacementRuleModule>(
+                "Правила", "Заміна будівлі",
+                "Дозволяє ставити будівлю лише як заміну налаштованих ID або тегів.",
+                "replacement", "replace", "заміна"),
+            Option<BuildingPrerequisiteModule>(
+                "Правила", "Передумови будівлі",
+                "Вимагає побудовані будівлі з налаштованими ID або тегами.",
+                "prerequisite", "unlock", "передумова"),
             Option<BuildingPerPlayerLimitModule>(
                 "Правила", "Ліміт будівель на гравця",
                 "Обмежує кількість копій цієї будівлі для кожного власника. Значення 0 вимикає ліміт.",

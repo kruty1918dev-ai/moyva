@@ -159,7 +159,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         attemptSource:
                             ConstructionPlacementAttemptSource.PointerClick,
                         allowUniquePreviewRelocation: true));
-            if (result.IsValid)
+            if (result.CanPreview)
                 return true;
 
             Debug.LogWarning(

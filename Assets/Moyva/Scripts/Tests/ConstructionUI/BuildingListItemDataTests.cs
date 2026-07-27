@@ -42,5 +42,21 @@ namespace Kruty1918.Moyva.Tests.ConstructionUI
             var data = new BuildingListItemData("forge", "Кузня", BuildingCategory.Industrial);
             Assert.AreEqual(BuildingCategory.Industrial, data.Category);
         }
+
+        [Test]
+        public void DisabledItem_ShouldExposeAvailabilityReason()
+        {
+            var data = new BuildingListItemData(
+                "house",
+                "Будинок",
+                BuildingCategory.Civilian,
+                isInteractable: false,
+                unavailableReason: "Потрібен центр поселення.");
+
+            Assert.IsFalse(data.IsInteractable);
+            Assert.AreEqual(
+                "Потрібен центр поселення.",
+                data.UnavailableReason);
+        }
     }
 }

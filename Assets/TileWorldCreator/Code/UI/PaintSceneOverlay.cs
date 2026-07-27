@@ -14,7 +14,9 @@
 */
 
 #if UNITY_EDITOR
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.Overlays;
 using UnityEditor.SceneManagement;
@@ -32,6 +34,10 @@ namespace GiantGrey.TileWorldCreator
     [InitializeOnLoad]
     public class PaintSceneOverlay : Overlay
     {
+        private const string MoyvaBindingTypeName =
+            "Kruty1918.Moyva.Generator.Runtime.MoyvaTileWorldCreatorGraphBinding";
+        private const string MoyvaOverlayBridgeTypeName =
+            "Kruty1918.Moyva.Generator.Editor.MoyvaTileWorldCreatorManagerInspectorBridge, Kruty1918.Moyva.Generator.Editor";
         private VisualElement root;
         private List<TileWorldCreatorManager> managers = new();
         private static int selectedManager = 0;
@@ -156,7 +162,13 @@ namespace GiantGrey.TileWorldCreator
                         var managers = GameObject.FindObjectsByType<TileWorldCreatorManager>(
                             FindObjectsInactive.Include, FindObjectsSortMode.InstanceID);
                         if (selectedManager < managers.Length)
-                            managers[selectedManager].GenerateCompleteMap();
+                        {
+                            TileWorldCreatorManager manager = managers[selectedManager];
+                            if (IsMoyvaGraphManaged(manager))
+                                ExecuteMoyvaMap(manager);
+                            else
+                                manager.GenerateCompleteMap();
+                        }
                     }
                 }
             }
@@ -368,6 +380,31 @@ namespace GiantGrey.TileWorldCreator
             }
 
             var manager = managers[selectedManager];
+            if (IsMoyvaGraphManaged(manager))
+            {
+                SceneView.duringSceneGui -= OnSceneGUI;
+                if (manager.configuration != null)
+                {
+                    manager.configuration.showPaintGrid = false;
+                    manager.configuration.showGizmos = false;
+                    manager.configuration.selectedPaintLayerGuid = string.Empty;
+                }
+
+                var managedInfo = new HelpBox(
+                    "This manager is controlled by a Moyva GraphAsset. Painting and native TWC build actions are disabled here so the graph, authoritative heights and chunk-first mesh output cannot become desynchronized.",
+                    HelpBoxMessageType.Info);
+                managedInfo.style.marginTop = 6;
+                root.Add(managedInfo);
+
+                var generateMoyva = new Button(() => ExecuteMoyvaMap(manager))
+                {
+                    text = "Generate Moyva Map",
+                    style = { height = 35, marginTop = 10 }
+                };
+                root.Add(generateMoyva);
+                return;
+            }
+
             if (manager.configuration == null)
             {
                 _managersContainer.Add(new Label("Selected manager does not have a configuration."));
@@ -481,6 +518,71 @@ namespace GiantGrey.TileWorldCreator
             // -----------------------------------------------------------------
             BuildBlueprintLayersUI(manager, paintContainer);
             BuildBuildLayersUI(manager, gizmoContainer);
+        }
+
+        private static bool IsMoyvaGraphManaged(TileWorldCreatorManager manager)
+        {
+            if (manager == null)
+                return false;
+
+            MonoBehaviour[] components = manager.GetComponents<MonoBehaviour>();
+            for (int i = 0; i < components.Length; i++)
+            {
+                MonoBehaviour component = components[i];
+                if (component != null
+                    && string.Equals(
+                        component.GetType().FullName,
+                        MoyvaBindingTypeName,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void ExecuteMoyvaMap(TileWorldCreatorManager manager)
+        {
+            try
+            {
+                Type bridgeType = Type.GetType(MoyvaOverlayBridgeTypeName, false);
+                MethodInfo method = bridgeType?.GetMethod(
+                    "TryGenerateFromOverlay",
+                    BindingFlags.Public | BindingFlags.Static);
+                if (method == null)
+                {
+                    ShowMoyvaBridgeError(
+                        "The Moyva Generator.Editor bridge is unavailable. Native TWC generation was not started.");
+                    return;
+                }
+
+                object result = method.Invoke(null, new object[] { manager });
+                if (result is bool handled && handled)
+                    return;
+
+                ShowMoyvaBridgeError(
+                    "Moyva generation did not complete. Check the GraphAsset validation messages; native TWC generation was not started.");
+            }
+            catch (TargetInvocationException exception)
+            {
+                Exception cause = exception.InnerException ?? exception;
+                Debug.LogException(cause);
+                ShowMoyvaBridgeError(
+                    "Moyva generation failed. See the Console for details; native TWC generation was not started.");
+            }
+            catch (Exception exception)
+            {
+                Debug.LogException(exception);
+                ShowMoyvaBridgeError(
+                    "Moyva generation failed. See the Console for details; native TWC generation was not started.");
+            }
+        }
+
+        private static void ShowMoyvaBridgeError(string message)
+        {
+            Debug.LogError("[TileWorldCreator] " + message);
+            EditorUtility.DisplayDialog("Generate Moyva Map", message, "OK");
         }
 
         private void BuildBlueprintLayersUI(TileWorldCreatorManager manager, VisualElement parent)

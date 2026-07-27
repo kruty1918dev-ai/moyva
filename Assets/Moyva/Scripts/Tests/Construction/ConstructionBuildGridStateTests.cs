@@ -34,6 +34,8 @@ namespace Kruty1918.Moyva.Tests.Construction
         private sealed class TestPlacementQuery : IConstructionPlacementQuery
         {
             public readonly HashSet<Vector2Int> ValidPositions = new();
+            public readonly HashSet<Vector2Int> UnaffordablePositions = new();
+            public readonly HashSet<Vector2Int> UnavailablePositions = new();
             public int CallCount { get; private set; }
             public ConstructionPlacementQueryRequest LastRequest { get; private set; }
 
@@ -41,8 +43,16 @@ namespace Kruty1918.Moyva.Tests.Construction
             {
                 CallCount++;
                 LastRequest = request;
-                bool valid = ValidPositions.Contains(request.Position);
-                return new ConstructionPlacementQueryResult(valid, true, false);
+                bool availabilityValid = !UnavailablePositions.Contains(request.Position);
+                bool spatialValid = ValidPositions.Contains(request.Position)
+                    || UnaffordablePositions.Contains(request.Position);
+                bool resourcesValid = !UnaffordablePositions.Contains(request.Position);
+                return new ConstructionPlacementQueryResult(
+                    availabilityValid,
+                    spatialValid,
+                    resourcesValid,
+                    authorityValid: true,
+                    isGateReplacement: false);
             }
         }
 
@@ -100,6 +110,69 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.IsTrue(state.SetConstructionModeActive(false));
             Assert.IsFalse(state.HoverPosition.HasValue);
             Assert.AreEqual(ConstructionBuildGridTileVisualState.Missing, state.HoverVisualState);
+        }
+
+        [Test]
+        public void SelectedGrid_DistinguishesUnavailableSpatialAndResourceFailures()
+        {
+            var state = new BuildModeGridStateController();
+            var query = new TestPlacementQuery();
+            var filter = new ConstructionBuildGridTileFilter(
+                new TestGridService(),
+                query,
+                state);
+            Vector2Int valid = Vector2Int.zero;
+            Vector2Int unaffordable = Vector2Int.up;
+            Vector2Int spatiallyBlocked = Vector2Int.right;
+            Vector2Int unavailable = Vector2Int.one;
+            query.ValidPositions.Add(valid);
+            query.UnaffordablePositions.Add(unaffordable);
+            query.UnavailablePositions.Add(unavailable);
+
+            state.SetConstructionModeActive(true);
+            state.SetSelection("house", isDemolishMode: false);
+
+            Assert.AreEqual(
+                ConstructionBuildGridTileVisualState.Valid,
+                filter.ResolveVisualState(valid));
+            Assert.AreEqual(
+                ConstructionBuildGridTileVisualState.Unaffordable,
+                filter.ResolveVisualState(unaffordable));
+            Assert.AreEqual(
+                ConstructionBuildGridTileVisualState.Invalid,
+                filter.ResolveVisualState(spatiallyBlocked));
+            Assert.AreEqual(
+                ConstructionBuildGridTileVisualState.General,
+                filter.ResolveVisualState(unavailable));
+            Assert.IsTrue(filter.ShouldRenderForPlacement(unaffordable, "house"));
+            Assert.IsFalse(filter.ShouldRenderForPlacement(spatiallyBlocked, "house"));
+        }
+
+        [Test]
+        public void QueryResult_SeparatesSelectionPreviewAndCommitCapabilities()
+        {
+            var unaffordable = new ConstructionPlacementQueryResult(
+                availabilityValid: true,
+                spatialValid: true,
+                resourcesValid: false,
+                authorityValid: true,
+                isGateReplacement: false,
+                reason: "stone deficit");
+
+            Assert.IsTrue(unaffordable.CanSelect);
+            Assert.IsTrue(unaffordable.CanPreview);
+            Assert.IsFalse(unaffordable.CanCommit);
+            Assert.IsFalse(unaffordable.IsValid);
+
+            var unavailable = new ConstructionPlacementQueryResult(
+                availabilityValid: false,
+                spatialValid: true,
+                resourcesValid: true,
+                authorityValid: true,
+                isGateReplacement: false);
+            Assert.IsFalse(unavailable.CanSelect);
+            Assert.IsFalse(unavailable.CanPreview);
+            Assert.IsFalse(unavailable.CanCommit);
         }
     }
 }

@@ -151,6 +151,8 @@ namespace Kruty1918.Moyva.Multiplayer.Core
             _config = MultiplayerConfigLifecycle.LoadValidateFreeze(_configStore, _logger);
             var opts = NormalizeOptions(options);
             _localPlayerId = opts.LocalIdentity.PlayerId;
+            if (_network is INetworkPeerIdentityConfigurator identityConfigurator)
+                identityConfigurator.SetLocalPeerId(_localPlayerId);
             _diagnostics?.CompleteStep(flow, MultiplayerSessionDiagnosticSteps.TransportSelected, $"provider={_config.ProviderType}, player={_localPlayerId}");
 
             // Missing join target: fall back to local solo instead of attempting online join.

@@ -39,7 +39,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// <summary>
     /// Unity Relay backend — cloud NAT traversal via UGS Relay + Unity Transport.
     /// </summary>
-    public sealed class RelayNetworkProvider : INetworkProvider, IDisposable
+    public sealed class RelayNetworkProvider :
+        INetworkProvider,
+        INetworkPeerIdentityConfigurator,
+        IDisposable
     {
         public static bool IsRuntimeAvailable
         {
@@ -71,6 +74,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private readonly RelayProviderSettings _settings;
         private readonly IMultiplayerLogger _logger;
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
+        private string _configuredLocalPeerId;
 
     #pragma warning disable CS0067
         public event Action<string> PeerConnected;
@@ -82,6 +86,13 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             _settings = settings ?? RelayProviderSettings.Default();
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        public void SetLocalPeerId(string playerId)
+        {
+            _configuredLocalPeerId = string.IsNullOrWhiteSpace(playerId)
+                ? null
+                : playerId.Trim();
         }
 
         public async Task<SessionResult> HostSessionAsync(string sessionId, CancellationToken ct = default)
@@ -139,7 +150,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             try
             {
                 await EnsureRelayReadyAsync();
-                _localPeerId = AuthenticationService.Instance.PlayerId ?? $"local-{Guid.NewGuid():N}";
+                _localPeerId = ResolveLocalPeerId(
+                    AuthenticationService.Instance.PlayerId);
                 _hostPeerId = _localPeerId;
 
                 await ShutdownTransportAsync();
@@ -196,7 +208,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     return SessionResult.Fail($"Relay join code '{normalizedJoinCode}' is invalid. Expected 6-12 chars from '6789BCDFGHJKLMNPQRTW'.");
 
                 await EnsureRelayReadyAsync();
-                _localPeerId = AuthenticationService.Instance.PlayerId ?? $"local-{Guid.NewGuid():N}";
+                _localPeerId = ResolveLocalPeerId(
+                    AuthenticationService.Instance.PlayerId);
 
                 await ShutdownTransportAsync();
 
@@ -618,6 +631,32 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 return;
             }
 
+            if (isHostSide)
+            {
+                int connectionKey = source.GetHashCode();
+                if (!_connectionPlayerIds.TryGetValue(
+                        connectionKey,
+                        out string authoritativeSenderId)
+                    || string.IsNullOrWhiteSpace(
+                        authoritativeSenderId))
+                {
+                    _logger.Warn(
+                        "[Relay] UserData arrived before an authenticated peer identity; dropping.");
+                    return;
+                }
+
+                if (!string.Equals(
+                        senderId,
+                        authoritativeSenderId,
+                        StringComparison.Ordinal))
+                {
+                    _logger.Warn(
+                        $"[Relay] Replaced spoofed sender '{senderId}' with transport identity '{authoritativeSenderId}'.");
+                }
+
+                senderId = authoritativeSenderId;
+            }
+
             DispatchUserMessage(senderId, payload);
             if (!isHostSide) return;
 
@@ -635,6 +674,15 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             {
                 SendFrame(dest, wireFrame);
             }
+        }
+
+        private string ResolveLocalPeerId(string authenticatedPlayerId)
+        {
+            if (!string.IsNullOrWhiteSpace(authenticatedPlayerId))
+                return authenticatedPlayerId.Trim();
+            if (!string.IsNullOrWhiteSpace(_configuredLocalPeerId))
+                return _configuredLocalPeerId;
+            return $"local-{Guid.NewGuid():N}";
         }
 
         private void SendFrame(NetworkConnection connection, byte[] frame)

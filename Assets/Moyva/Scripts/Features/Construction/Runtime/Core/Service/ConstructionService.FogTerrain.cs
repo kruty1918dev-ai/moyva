@@ -81,7 +81,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _generatedTerrainLevelQuery,
                 _tileSettings,
                 _placementRulesProvider,
-                _worldDefaults,
                 out reason);
         }
 

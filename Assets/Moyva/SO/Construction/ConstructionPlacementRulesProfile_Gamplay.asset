@@ -18,7 +18,7 @@ MonoBehaviour:
   _enableTerrainRules: 1
   _allowBuildingOnWater: 0
   _allowBuildingOnHills: 1
-  _blockEdgeTerrainTiles: 1
+  _blockEdgeTerrainTiles: 0
   _enableFogRules: 1
   _requireVisibleFogTile: 1
   _blockedTileIds: []

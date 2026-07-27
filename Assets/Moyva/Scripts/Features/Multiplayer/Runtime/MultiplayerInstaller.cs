@@ -426,6 +426,14 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle()
                     .NonLazy();
 
+                if (!container.HasBinding(
+                        typeof(IConstructionPlacementAuthorityPolicy)))
+                {
+                    container.Bind<IConstructionPlacementAuthorityPolicy>()
+                        .To<MultiplayerConstructionPlacementAuthorityPolicy>()
+                        .AsSingle();
+                }
+
                 container.Bind<IConstructionConfirmRequestExecutor>()
                     .FromMethod(ctx => ctx.Container.Resolve<MultiplayerAuthorityService>() as IConstructionConfirmRequestExecutor)
                     .AsSingle();

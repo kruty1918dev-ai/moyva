@@ -12,7 +12,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// the wrapper automatically promotes the fallback and retries the same operation.
     /// Subsequent calls go directly to the fallback until <see cref="Reset"/> is called.
     /// </summary>
-    public sealed class FallbackNetworkProvider : INetworkProvider, IDisposable
+    public sealed class FallbackNetworkProvider :
+        INetworkProvider,
+        INetworkPeerIdentityConfigurator,
+        IDisposable
     {
         private readonly INetworkProvider _primary;
         private readonly INetworkProvider _fallback;
@@ -62,6 +65,14 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         public Task SendMessageAsync(string targetPeerId, byte[] payload, CancellationToken ct = default)
             => Active.SendMessageAsync(targetPeerId, payload, ct);
+
+        public void SetLocalPeerId(string playerId)
+        {
+            if (_primary is INetworkPeerIdentityConfigurator primary)
+                primary.SetLocalPeerId(playerId);
+            if (_fallback is INetworkPeerIdentityConfigurator fallback)
+                fallback.SetLocalPeerId(playerId);
+        }
 
         // ── Fallback logic ─────────────────────────────────────────────────────────
 

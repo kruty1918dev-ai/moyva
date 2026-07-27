@@ -11,7 +11,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         private readonly ITileWorldCreatorBuildEnvironment _environment;
         private readonly Dictionary<string, TilesBuildLayer> _buildLayerByGuid = new Dictionary<string, TilesBuildLayer>(System.StringComparer.Ordinal);
-        private readonly Dictionary<GameObject, PrefabMeshTemplate> _meshTemplateByPrefab = new Dictionary<GameObject, PrefabMeshTemplate>();
+        private readonly Dictionary<GameObject, PrefabMeshTemplate[]> _meshTemplatesByPrefab =
+            new Dictionary<GameObject, PrefabMeshTemplate[]>();
         private readonly HashSet<string> _heightDiagnosticKeys = new HashSet<string>(System.StringComparer.Ordinal);
 
         public TwcTileMeshSourceProvider(ITileWorldCreatorBuildEnvironment environment)
@@ -49,7 +50,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             var scaleSign = TileConfigurations.NRMGRD_minusXScale_configurations.Contains(configuration)
                 ? new Vector3(-1f, 1f, 1f)
                 : Vector3.one;
-            return TryAddMeshSource(
+            return TryAddMeshSources(
                 composition,
                 buildLayer,
                 preset,
@@ -58,9 +59,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 yRotation,
                 scaleSign,
                 ResolveOccludedSides(composition),
-                results)
-                ? 1
-                : 0;
+                ResolveEdgeBottoms(composition),
+                results);
         }
 
         private int CollectDualGridSources(
@@ -82,7 +82,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 true,
                 composition.SouthWestMatches,
                 composition.SouthMatches,
-                ShouldCurrentOwnDualFragment(composition.WestMatches, composition.SouthMatches, composition.SouthWestMatches),
+                composition.WestSurfaceHeight,
+                composition.MainTerrain.SurfaceHeight,
+                composition.SouthWestSurfaceHeight,
+                composition.SouthSurfaceHeight,
+                ShouldCurrentOwnDualFragment(
+                    composition.WestMatches,
+                    composition.SouthMatches,
+                    composition.SouthWestMatches),
                 results);
             TryAddDualGridSource(
                 composition,
@@ -93,7 +100,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 composition.EastMatches,
                 composition.SouthMatches,
                 composition.SouthEastMatches,
-                ShouldCurrentOwnDualFragment(false, composition.SouthMatches, composition.SouthEastMatches),
+                composition.MainTerrain.SurfaceHeight,
+                composition.EastSurfaceHeight,
+                composition.SouthSurfaceHeight,
+                composition.SouthEastSurfaceHeight,
+                ShouldCurrentOwnDualFragment(
+                    false,
+                    composition.SouthMatches,
+                    composition.SouthEastMatches),
                 results);
             TryAddDualGridSource(
                 composition,
@@ -104,6 +118,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 composition.NorthMatches,
                 composition.WestMatches,
                 true,
+                composition.NorthWestSurfaceHeight,
+                composition.NorthSurfaceHeight,
+                composition.WestSurfaceHeight,
+                composition.MainTerrain.SurfaceHeight,
                 !composition.WestMatches,
                 results);
             TryAddDualGridSource(
@@ -115,6 +133,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 composition.NorthEastMatches,
                 true,
                 composition.EastMatches,
+                composition.NorthSurfaceHeight,
+                composition.NorthEastSurfaceHeight,
+                composition.MainTerrain.SurfaceHeight,
+                composition.EastSurfaceHeight,
                 true,
                 results);
             return results.Count - before;
@@ -129,6 +151,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             bool topRight,
             bool bottomLeft,
             bool bottomRight,
+            float topLeftSurface,
+            float topRightSurface,
+            float bottomLeftSurface,
+            float bottomRightSurface,
             bool ownedByCurrentCell,
             List<TileMeshSource> results)
         {
@@ -145,7 +171,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (tileType == TilePreset.TileType.none)
                 return;
 
-            TryAddMeshSource(
+            TryAddMeshSources(
                 composition,
                 buildLayer,
                 preset,
@@ -153,11 +179,22 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 tileData.tilePosition,
                 yRotation,
                 Vector3.one,
-                TileMeshOccludedSides.None,
+                ResolveDualOccludedSides(
+                    composition.MainTerrain.SurfaceHeight,
+                    topLeftSurface,
+                    topRightSurface,
+                    bottomLeftSurface,
+                    bottomRightSurface),
+                ResolveDualEdgeBottoms(
+                    composition,
+                    topLeftSurface,
+                    topRightSurface,
+                    bottomLeftSurface,
+                    bottomRightSurface),
                 results);
         }
 
-        private bool TryAddMeshSource(
+        private int TryAddMeshSources(
             ResolvedTileComposition composition,
             TilesBuildLayer buildLayer,
             TilePreset preset,
@@ -166,18 +203,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             int yRotation,
             Vector3 scaleSign,
             TileMeshOccludedSides occludedSides,
+            TileMeshEdgeBottoms edgeBottoms,
             List<TileMeshSource> results)
         {
             var sample = composition.MainTerrain;
             GameObject prefab = preset.GetTile(tileType, out float xRotationOffset, out float yRotationOffset);
             if (prefab == null)
-                return false;
+                return 0;
 
-            if (!TryGetMeshTemplate(prefab, out PrefabMeshTemplate template))
-                return false;
+            if (!TryGetMeshTemplates(prefab, out PrefabMeshTemplate[] templates))
+                return 0;
 
             float cellSize = ResolveCellSize();
-            Vector3 scale = template.PrefabScale;
+            Vector3 scale = prefab.transform.localScale;
             if (buildLayer.scaleTileToCellSize)
                 scale *= cellSize;
 
@@ -188,9 +226,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             Quaternion rotation = Quaternion.Euler(xRotationOffset, yRotation + yRotationOffset, 0f);
             float fallbackPlacementHeight = ResolvePlacementHeight(sample, buildLayer);
-            float prefabTopOffset = ResolveTransformedBoundsTop(
-                template.Mesh.bounds,
-                Matrix4x4.TRS(Vector3.zero, rotation, scale) * template.ChildMatrix);
+            Matrix4x4 unplacedRootMatrix = Matrix4x4.TRS(Vector3.zero, rotation, scale);
+            float prefabTopOffset = ResolveAggregateTransformedBoundsTop(
+                templates,
+                unplacedRootMatrix);
             float placementHeight = ResolveSurfaceAlignedPlacementHeight(
                 sample.SurfaceHeight,
                 fallbackPlacementHeight,
@@ -200,7 +239,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 placementHeight,
                 tilePosition.y * cellSize);
             Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, scale);
-            Material[] materials = template.ResolveMaterials(preset.GetMaterialOverride());
 
             LogHeightPlacementOnce(
                 composition,
@@ -212,114 +250,148 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 prefabTopOffset,
                 placementHeight);
 
-            // Water stays a flat surface. Only solid terrain receives vertical
-            // geometry down to the global world floor.
-            float visibleBottomY = ShouldUseVerticalFill(
-                sample,
-                prefab,
-                materials)
+            float visibleBottomY = sample.TileGeometryMode == TileGeometryMode.SolidTerrain
                 ? ResolveVisibleBottomY(composition)
                 : float.NaN;
-            var meshSource = new TileMeshSource(
-                template.Mesh,
-                materials,
-                rootMatrix * template.ChildMatrix,
-                visibleBottomY,
-                occludedSides,
-                new Vector2(position.x, position.z),
-                cellSize * 0.5f);
-            if (!meshSource.IsValid)
-                return false;
-
-            results.Add(meshSource);
-            return true;
-        }
-
-        private static bool ShouldUseVerticalFill(
-            GraphTileLayerSample sample,
-            GameObject prefab,
-            Material[] materials)
-        {
-            // Graph metadata is the strongest signal: a water layer must never
-            // become a solid column.
-            if (IsWaterLike(sample.GraphLayerName)
-                || IsWaterLike(sample.TileId)
-                || IsWaterLike(sample.PresetId))
+            int added = 0;
+            Material materialOverride = preset.GetMaterialOverride();
+            for (int i = 0; i < templates.Length; i++)
             {
-                return false;
+                PrefabMeshTemplate template = templates[i];
+                var meshSource = new TileMeshSource(
+                    template.Mesh,
+                    template.ResolveMaterials(materialOverride),
+                    rootMatrix * template.ChildMatrix,
+                    visibleBottomY,
+                    occludedSides,
+                    new Vector2(position.x, position.z),
+                    cellSize * 0.5f,
+                    sample.AuthoredClosurePolicy,
+                    edgeBottoms,
+                    sample.TileGeometryMode);
+                if (!meshSource.IsValid)
+                    continue;
+
+                results.Add(meshSource);
+                added++;
             }
 
-            int waterMaterialCount = 0;
-            int solidMaterialCount = 0;
-            if (materials != null)
-            {
-                for (int i = 0; i < materials.Length; i++)
-                {
-                    Material material = materials[i];
-                    if (material == null)
-                        continue;
-
-                    bool waterMaterial = IsWaterLike(material.name)
-                        || IsWaterLike(material.shader != null
-                            ? material.shader.name
-                            : null);
-                    if (waterMaterial)
-                        waterMaterialCount++;
-                    else
-                        solidMaterialCount++;
-                }
-            }
-
-            // Pure water meshes are excluded. Mixed shoreline meshes retain
-            // vertical filling for their solid terrain part.
-            if (waterMaterialCount > 0 && solidMaterialCount == 0)
-                return false;
-
-            // Fallback for water prefabs without assigned materials.
-            if (waterMaterialCount == 0
-                && solidMaterialCount == 0
-                && IsWaterLike(prefab != null ? prefab.name : null))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private static bool IsWaterLike(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-                return false;
-
-            string normalized = value.Trim().ToLowerInvariant();
-            return normalized.Contains("water")
-                || normalized.Contains("ocean")
-                || normalized.Contains("river")
-                || normalized.Contains("lake")
-                || normalized.Contains("liquid")
-                || normalized.Contains("wasser")
-                || normalized.Contains("вода")
-                || normalized.Contains("водн")
-                || normalized.Contains("озеро")
-                || normalized.Contains("річк")
-                || normalized.Contains("море")
-                || normalized.Contains("океан");
+            return added;
         }
 
         internal static TileMeshOccludedSides ResolveOccludedSides(
             ResolvedTileComposition composition)
         {
             TileMeshOccludedSides sides = TileMeshOccludedSides.None;
-            if (composition.NorthMatches)
+            float surface = composition.MainTerrain.SurfaceHeight;
+            if (ShouldOccludeSide(surface, composition.NorthSurfaceHeight, composition.NorthMatches))
                 sides |= TileMeshOccludedSides.North;
-            if (composition.EastMatches)
+            if (ShouldOccludeSide(surface, composition.EastSurfaceHeight, composition.EastMatches))
                 sides |= TileMeshOccludedSides.East;
-            if (composition.SouthMatches)
+            if (ShouldOccludeSide(surface, composition.SouthSurfaceHeight, composition.SouthMatches))
                 sides |= TileMeshOccludedSides.South;
-            if (composition.WestMatches)
+            if (ShouldOccludeSide(surface, composition.WestSurfaceHeight, composition.WestMatches))
                 sides |= TileMeshOccludedSides.West;
 
             return sides;
+        }
+
+        internal static TileMeshEdgeBottoms ResolveEdgeBottoms(
+            ResolvedTileComposition composition)
+        {
+            float fallback = ResolveVisibleBottomY(composition);
+            return new TileMeshEdgeBottoms(
+                ResolveFiniteOrFallback(composition.NorthSurfaceHeight, fallback),
+                ResolveFiniteOrFallback(composition.EastSurfaceHeight, fallback),
+                ResolveFiniteOrFallback(composition.SouthSurfaceHeight, fallback),
+                ResolveFiniteOrFallback(composition.WestSurfaceHeight, fallback));
+        }
+
+        internal static TileMeshOccludedSides ResolveDualOccludedSides(
+            bool topLeft,
+            bool topRight,
+            bool bottomLeft,
+            bool bottomRight)
+        {
+            TileMeshOccludedSides sides = TileMeshOccludedSides.None;
+            if (topLeft && topRight)
+                sides |= TileMeshOccludedSides.North;
+            if (topRight && bottomRight)
+                sides |= TileMeshOccludedSides.East;
+            if (bottomLeft && bottomRight)
+                sides |= TileMeshOccludedSides.South;
+            if (topLeft && bottomLeft)
+                sides |= TileMeshOccludedSides.West;
+            return sides;
+        }
+
+        internal static TileMeshOccludedSides ResolveDualOccludedSides(
+            float surfaceHeight,
+            float topLeftSurface,
+            float topRightSurface,
+            float bottomLeftSurface,
+            float bottomRightSurface)
+        {
+            TileMeshOccludedSides sides = TileMeshOccludedSides.None;
+            if (BothCover(surfaceHeight, topLeftSurface, topRightSurface))
+                sides |= TileMeshOccludedSides.North;
+            if (BothCover(surfaceHeight, topRightSurface, bottomRightSurface))
+                sides |= TileMeshOccludedSides.East;
+            if (BothCover(surfaceHeight, bottomLeftSurface, bottomRightSurface))
+                sides |= TileMeshOccludedSides.South;
+            if (BothCover(surfaceHeight, topLeftSurface, bottomLeftSurface))
+                sides |= TileMeshOccludedSides.West;
+            return sides;
+        }
+
+        private static TileMeshEdgeBottoms ResolveDualEdgeBottoms(
+            ResolvedTileComposition composition,
+            float topLeftSurface,
+            float topRightSurface,
+            float bottomLeftSurface,
+            float bottomRightSurface)
+        {
+            float fallback = ResolveVisibleBottomY(composition);
+            return new TileMeshEdgeBottoms(
+                ResolveLowestFinite(fallback, topLeftSurface, topRightSurface),
+                ResolveLowestFinite(fallback, topRightSurface, bottomRightSurface),
+                ResolveLowestFinite(fallback, bottomLeftSurface, bottomRightSurface),
+                ResolveLowestFinite(fallback, topLeftSurface, bottomLeftSurface));
+        }
+
+        private static bool BothCover(float surfaceHeight, float first, float second)
+            => IsFinite(surfaceHeight)
+               && IsFinite(first)
+               && IsFinite(second)
+               && first >= surfaceHeight - 0.0001f
+               && second >= surfaceHeight - 0.0001f;
+
+        private static bool ShouldOccludeSide(
+            float surfaceHeight,
+            float neighborSurfaceHeight,
+            bool identityFallback)
+        {
+            if (!IsFinite(surfaceHeight) || !IsFinite(neighborSurfaceHeight))
+                return identityFallback;
+
+            // Equal surfaces suppress both faces. At a height transition only
+            // the higher tile emits the delta wall; the lower tile is covered by
+            // its neighbor and therefore emits nothing.
+            return neighborSurfaceHeight >= surfaceHeight - 0.0001f;
+        }
+
+        private static float ResolveFiniteOrFallback(float value, float fallback)
+            => IsFinite(value) ? value : fallback;
+
+        private static float ResolveLowestFinite(float fallback, float first, float second)
+        {
+            bool hasFirst = IsFinite(first);
+            bool hasSecond = IsFinite(second);
+            if (hasFirst && hasSecond)
+                return Mathf.Min(first, second);
+            if (hasFirst)
+                return first;
+            return hasSecond ? second : fallback;
         }
 
         internal static float ResolveVisibleBottomY(
@@ -415,28 +487,70 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private static bool IsFinite(float value)
             => !float.IsNaN(value) && !float.IsInfinity(value);
 
-        private bool TryGetMeshTemplate(GameObject prefab, out PrefabMeshTemplate template)
+        private bool TryGetMeshTemplates(GameObject prefab, out PrefabMeshTemplate[] templates)
         {
-            if (_meshTemplateByPrefab.TryGetValue(prefab, out template) && template.Mesh != null)
-                return true;
-
-            MeshFilter meshFilter = prefab.GetComponentInChildren<MeshFilter>(true);
-            MeshRenderer renderer = meshFilter != null
-                ? meshFilter.GetComponent<MeshRenderer>() ?? meshFilter.GetComponentInParent<MeshRenderer>(true)
-                : null;
-            if (meshFilter == null || meshFilter.sharedMesh == null || renderer == null)
+            if (_meshTemplatesByPrefab.TryGetValue(prefab, out templates)
+                && templates != null
+                && templates.Length > 0)
             {
-                template = null;
+                return true;
+            }
+
+            MeshFilter[] meshFilters = prefab.GetComponentsInChildren<MeshFilter>(true);
+            if (meshFilters == null || meshFilters.Length == 0)
+            {
+                templates = null;
                 return false;
             }
 
-            template = new PrefabMeshTemplate(
-                meshFilter.sharedMesh,
-                prefab.transform.worldToLocalMatrix * meshFilter.transform.localToWorldMatrix,
-                prefab.transform.localScale,
-                renderer.sharedMaterials);
-            _meshTemplateByPrefab[prefab] = template;
+            var collected = new List<PrefabMeshTemplate>(meshFilters.Length);
+            for (int i = 0; i < meshFilters.Length; i++)
+            {
+                MeshFilter meshFilter = meshFilters[i];
+                if (meshFilter == null || meshFilter.sharedMesh == null)
+                    continue;
+
+                MeshRenderer renderer = meshFilter.GetComponent<MeshRenderer>()
+                    ?? meshFilter.GetComponentInParent<MeshRenderer>(true);
+                if (renderer == null)
+                    continue;
+
+                collected.Add(new PrefabMeshTemplate(
+                    meshFilter.sharedMesh,
+                    prefab.transform.worldToLocalMatrix * meshFilter.transform.localToWorldMatrix,
+                    renderer.sharedMaterials));
+            }
+
+            templates = collected.ToArray();
+            if (templates.Length == 0)
+                return false;
+
+            _meshTemplatesByPrefab[prefab] = templates;
             return true;
+        }
+
+        internal static float ResolveAggregateTransformedBoundsTop(
+            IReadOnlyList<PrefabMeshTemplate> templates,
+            Matrix4x4 rootMatrix)
+        {
+            float top = float.NegativeInfinity;
+            if (templates == null)
+                return top;
+
+            for (int i = 0; i < templates.Count; i++)
+            {
+                PrefabMeshTemplate template = templates[i];
+                if (template?.Mesh == null)
+                    continue;
+
+                top = Mathf.Max(
+                    top,
+                    ResolveTransformedBoundsTop(
+                        template.Mesh.bounds,
+                        rootMatrix * template.ChildMatrix));
+            }
+
+            return top;
         }
 
         internal static int BuildNormalConfiguration(ResolvedTileComposition composition)
@@ -655,8 +769,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return false;
         }
 
-        private static bool ShouldCurrentOwnDualFragment(bool west, bool south, bool southWest)
-            => !west && !south && !southWest;
+        internal static bool ShouldCurrentOwnDualFragment(
+            bool westMatchesIdentity,
+            bool southMatchesIdentity,
+            bool southWestMatchesIdentity)
+            => !westMatchesIdentity
+               && !southMatchesIdentity
+               && !southWestMatchesIdentity;
 
         private TilesBuildLayer ResolveBuildLayer(GraphTileLayerSample sample)
         {
@@ -797,7 +916,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return configuration != null && configuration.cellSize > 0.0001f ? configuration.cellSize : 1f;
         }
 
-        private sealed class PrefabMeshTemplate
+        internal sealed class PrefabMeshTemplate
         {
             private readonly Material[] _baseMaterials;
             private readonly Dictionary<Material, Material[]> _overrideMaterials = new Dictionary<Material, Material[]>();
@@ -805,18 +924,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             public PrefabMeshTemplate(
                 Mesh mesh,
                 Matrix4x4 childMatrix,
-                Vector3 prefabScale,
                 Material[] baseMaterials)
             {
                 Mesh = mesh;
                 ChildMatrix = childMatrix;
-                PrefabScale = prefabScale;
                 _baseMaterials = baseMaterials;
             }
 
             public Mesh Mesh { get; }
             public Matrix4x4 ChildMatrix { get; }
-            public Vector3 PrefabScale { get; }
 
             public Material[] ResolveMaterials(Material overrideMaterial)
             {

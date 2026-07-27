@@ -43,7 +43,28 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 MatchesMain(main, neighborhood.NorthWest),
                 supportHeight: hasMain
                     ? ResolveSupportHeight(main, neighborhood.Center, lowestLayerHeight)
-                    : float.NaN);
+                    : float.NaN,
+                northSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.North),
+                eastSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.East),
+                southSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.South),
+                westSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.West),
+                northEastSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.NorthEast),
+                southEastSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.SouthEast),
+                southWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.SouthWest),
+                northWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.NorthWest));
+        }
+
+        private float ResolveNeighborSurfaceHeight(TileStackCell cell)
+        {
+            if (!TryResolveMainTerrain(
+                    cell,
+                    new TileNeighborhood(cell, null, null, null, null, null, null, null, null),
+                    out GraphTileLayerSample sample))
+            {
+                return float.NaN;
+            }
+
+            return sample.SurfaceHeight;
         }
 
         private static float ResolveSupportHeight(
@@ -147,30 +168,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return hasSample;
         }
 
-        private static int CompareTerrainElevation(
-            GraphTileLayerSample current,
-            GraphTileLayerSample candidate)
-        {
-            const float epsilon = 0.0001f;
-
-            float currentTop = Mathf.Max(current.Height, current.SurfaceHeight);
-            float candidateTop = Mathf.Max(candidate.Height, candidate.SurfaceHeight);
-            float topDelta = currentTop - candidateTop;
-            if (Mathf.Abs(topDelta) > epsilon)
-                return topDelta < 0f ? -1 : 1;
-
-            float baseDelta = current.Height - candidate.Height;
-            if (Mathf.Abs(baseDelta) > epsilon)
-                return baseDelta < 0f ? -1 : 1;
-
-            return 0;
-        }
-
         private int Compare(GraphTileLayerSample current, GraphTileLayerSample candidate, TileNeighborhood neighborhood)
         {
             // The visually highest terrain owns the cell. Without this check,
             // lower BaseTerrain wins by kind rank and hides elevated cliffs.
-            int result = CompareTerrainElevation(current, candidate);
+            int result = GraphTileLayerSample.CompareVisualElevation(current, candidate);
             if (result != 0)
                 return result;
 

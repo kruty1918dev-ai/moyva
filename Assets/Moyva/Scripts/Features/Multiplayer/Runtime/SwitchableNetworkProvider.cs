@@ -11,7 +11,10 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// Wrapper that stays DI-bound and can switch the underlying INetworkProvider at runtime.
     /// Preserves subscriber lists and forwards events/messages.
     /// </summary>
-    public sealed class SwitchableNetworkProvider : INetworkProvider, IDisposable
+    public sealed class SwitchableNetworkProvider :
+        INetworkProvider,
+        INetworkPeerIdentityConfigurator,
+        IDisposable
     {
         private readonly MultiplayerConfig _config;
         private readonly IMultiplayerLogger _logger;
@@ -22,6 +25,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private IDisposable _activeSub;
         private readonly SemaphoreSlim _switchLock = new SemaphoreSlim(1, 1);
         private NetworkProviderType _requestedType;
+        private string _localPeerId;
 
         public event Action<string> PeerConnected;
         public event Action<string> PeerDisconnected;
@@ -87,6 +91,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 UnhookInner(_inner);
                 var next = NetworkProviderFactory.CreateByType(type, _config, _logger, _qosMonitor);
                 _inner = next;
+                ApplyConfiguredIdentity(_inner);
                 _requestedType = type;
                 CurrentType = ResolveEffectiveType(_inner, type);
                 HookInner(_inner);
@@ -113,6 +118,20 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         public Task SendMessageAsync(string targetPeerId, byte[] payload, CancellationToken ct = default)
             => _inner.SendMessageAsync(targetPeerId, payload, ct);
+
+        public void SetLocalPeerId(string playerId)
+        {
+            _localPeerId = string.IsNullOrWhiteSpace(playerId)
+                ? null
+                : playerId.Trim();
+            ApplyConfiguredIdentity(_inner);
+        }
+
+        private void ApplyConfiguredIdentity(INetworkProvider provider)
+        {
+            if (provider is INetworkPeerIdentityConfigurator configurator)
+                configurator.SetLocalPeerId(_localPeerId);
+        }
 
         public void Dispose()
         {

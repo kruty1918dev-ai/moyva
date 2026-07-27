@@ -1,9 +1,14 @@
+using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
+using Kruty1918.Moyva.Multiplayer.Runtime;
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using UnityEngine;
 
 namespace Kruty1918.Moyva.Tests.Multiplayer
 {
@@ -735,5 +740,171 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
 
         [Test]
         public void Has3Values() => Assert.AreEqual(3, System.Enum.GetValues(typeof(ConsistencyCheckResult)).Length);
+    }
+
+    [TestFixture]
+    public sealed class AuthoritativeConstructionTransportTests
+    {
+        [Test]
+        public void WebSocketFrame_RoundTripsCompleteUtf8PlayerId()
+        {
+            const string playerId =
+                "ugs-player-0123456789abcdef-україна";
+            byte[] expectedPayload =
+            {
+                0,
+                1,
+                2,
+                255,
+            };
+
+            byte[] frame =
+                WebSocketNetworkProvider.BuildDataFrame(
+                    playerId,
+                    expectedPayload);
+
+            Assert.IsTrue(
+                WebSocketNetworkProvider.TryParseDataFrame(
+                    frame,
+                    frame.Length,
+                    out string parsedPlayerId,
+                    out byte[] parsedPayload));
+            Assert.AreEqual(playerId, parsedPlayerId);
+            CollectionAssert.AreEqual(
+                expectedPayload,
+                parsedPayload);
+        }
+
+        [Test]
+        public void WebSocketFrame_ParsesLegacySenderPrefix()
+        {
+            const string legacyPlayerId = "legacy-player-01";
+            byte[] payload = { 7, 8, 9 };
+            byte[] sender =
+                Encoding.ASCII.GetBytes(legacyPlayerId);
+            var frame = new byte[16 + payload.Length];
+            System.Array.Copy(
+                sender,
+                frame,
+                sender.Length);
+            System.Array.Copy(
+                payload,
+                0,
+                frame,
+                16,
+                payload.Length);
+
+            Assert.IsTrue(
+                WebSocketNetworkProvider.TryParseDataFrame(
+                    frame,
+                    frame.Length,
+                    out string parsedPlayerId,
+                    out byte[] parsedPayload));
+            Assert.AreEqual(
+                legacyPlayerId,
+                parsedPlayerId);
+            CollectionAssert.AreEqual(payload, parsedPayload);
+        }
+
+        [Test]
+        public void WebSocketFrame_RejectsOutOfBoundsSenderLength()
+        {
+            byte[] frame =
+                WebSocketNetworkProvider.BuildDataFrame(
+                    "valid-player",
+                    new byte[] { 1 });
+            frame[5] = 0xFF;
+            frame[6] = 0x7F;
+
+            Assert.IsFalse(
+                WebSocketNetworkProvider.TryParseDataFrame(
+                    frame,
+                    frame.Length,
+                    out _,
+                    out _));
+        }
+
+        [Test]
+        public void BuildingPlacePayload_RoundTripsRelocationIntent()
+        {
+            var expected = new BuildingPlacePayload(
+                GameActionMessageKind.Request,
+                "castle-01",
+                new Vector2Int(8, 9),
+                "owner-a",
+                "owner-a",
+                hasRelocationSource: true,
+                relocationSourcePosition:
+                    new Vector2Int(2, 3),
+                satisfiedReplacementBuildingId:
+                    "stone-wall");
+
+            BuildingPlacePayload actual =
+                BuildingPlacePayload.FromBytes(
+                    expected.ToBytes());
+
+            Assert.IsTrue(actual.HasRelocationSource);
+            Assert.AreEqual(
+                new Vector2Int(2, 3),
+                actual.RelocationSourcePosition);
+            Assert.AreEqual(
+                "stone-wall",
+                actual.SatisfiedReplacementBuildingId);
+            Assert.AreEqual(
+                new Vector2Int(2, 3),
+                actual.ToCommitIntent()
+                    .RelocationSourcePosition);
+        }
+
+        [Test]
+        public void BuildingPlacePayload_ParsesLegacyPayloadWithoutIntent()
+        {
+            byte[] legacyPayload;
+            using (var stream = new MemoryStream())
+            using (var writer = new BinaryWriter(stream))
+            {
+                writer.Write(
+                    (byte)GameActionMessageKind.Request);
+                writer.Write("house-01");
+                writer.Write(4);
+                writer.Write(5);
+                writer.Write("owner-a");
+                writer.Write("owner-a");
+                legacyPayload = stream.ToArray();
+            }
+
+            BuildingPlacePayload actual =
+                BuildingPlacePayload.FromBytes(
+                    legacyPayload);
+
+            Assert.IsFalse(actual.HasRelocationSource);
+            Assert.IsFalse(
+                actual.ToCommitIntent()
+                    .HasRelocationSource);
+            Assert.IsNull(
+                actual.SatisfiedReplacementBuildingId);
+        }
+
+        [Test]
+        public void ClientPreflight_DoesNotReserveOtherPendingPlacements()
+        {
+            ConstructionPlacementQueryRequest request =
+                MultiplayerAuthorityService
+                    .CreateClientPlacementPreflightRequest(
+                        "house-01",
+                        new Vector2Int(3, 4),
+                        "owner-a");
+
+            Assert.IsTrue(request.IncludeResources);
+            Assert.IsFalse(
+                request.IncludePendingPlacements);
+            Assert.AreEqual(
+                new Vector2Int(3, 4),
+                request.IgnoredPendingPosition);
+            Assert.AreEqual(
+                ConstructionPlacementAttemptSource
+                    .NetworkRequest,
+                request.AttemptSource);
+        }
     }
 }

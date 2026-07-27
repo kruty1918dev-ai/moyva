@@ -30,6 +30,12 @@ MonoBehaviour:
   _buildGridSurfacePlaneUseBuildableFilter: 1
   _buildGridFillAlpha: 0.045
   _buildGridLineAlpha: 0.22
+  _buildGridValidLineColor: {r: 0.28, g: 1, b: 0.42, a: 0.9}
+  _buildGridValidFillColor: {r: 0.2, g: 0.82, b: 0.32, a: 0.16}
+  _buildGridUnaffordableLineColor: {r: 1, g: 0.68, b: 0.12, a: 0.9}
+  _buildGridUnaffordableFillColor: {r: 0.95, g: 0.48, b: 0.08, a: 0.16}
+  _buildGridInvalidLineColor: {r: 1, g: 0.26, b: 0.22, a: 0.9}
+  _buildGridInvalidFillColor: {r: 0.92, g: 0.12, b: 0.1, a: 0.16}
   _buildGridLineWidthNormalized: 0.035
   _buildGridSurfaceOffsetY: 0.1
   _buildGridTileInsetNormalized: 0

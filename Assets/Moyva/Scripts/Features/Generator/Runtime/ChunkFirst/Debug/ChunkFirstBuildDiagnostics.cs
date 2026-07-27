@@ -17,9 +17,23 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Debug.Log($"{LogTag} PLAN chunks={chunkCount}, stackSamples={stackSamples}, resolvedTerrain={resolvedTerrain}, objectCandidates={objectCandidates}.");
         }
 
-        public void LogChunkMesh(string chunkName, int vertices, int indices)
+        public void LogChunkMesh(
+            string chunkName,
+            int sourceVertices,
+            int sourceIndices,
+            int processedVertices,
+            int processedIndices,
+            int emittedVertices,
+            int emittedIndices)
         {
-            Debug.Log($"{LogTag} CHUNK mesh='{chunkName}', vertices={vertices}, indices={indices}.");
+            int culledFaces = Mathf.Max(0, (sourceIndices - processedIndices) / 3);
+            int removedVertices = Mathf.Max(0, sourceVertices - processedVertices);
+            Debug.Log(
+                $"{LogTag} CHUNK mesh='{chunkName}', sourceVertices={sourceVertices}, " +
+                $"sourceIndices={sourceIndices}, processedVertices={processedVertices}, " +
+                $"processedIndices={processedIndices}, emittedVertices={emittedVertices}, " +
+                $"emittedIndices={emittedIndices}, culledFaces={culledFaces}, " +
+                $"unreferencedVerticesRemoved={removedVertices}.");
         }
 
         public void LogLegacyAttempt(string caller)

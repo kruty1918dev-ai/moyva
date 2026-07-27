@@ -31,24 +31,25 @@ namespace Kruty1918.Moyva.Generator.Runtime
             _twcVisualCleanup = twcVisualCleanup ?? new ChunkFirstTwcVisualCleanupService(new ChunkFirstBuildDiagnostics());
         }
 
-        public void GenerateFromGraph(IMoyvaTwcGraphBindingContext context)
+        public bool GenerateFromGraph(IMoyvaTwcGraphBindingContext context)
         {
-            GenerateFromGraph(context, _resolver.ResolveSeed(context));
+            return GenerateFromGraph(context, _resolver.ResolveSeed(context));
         }
 
-        public void GenerateFromGraph(IMoyvaTwcGraphBindingContext context, int seed)
+        public bool GenerateFromGraph(IMoyvaTwcGraphBindingContext context, int seed)
         {
             if (!TryEnterGeneration(context, "Генерація вже виконується, повторний запуск пропущено."))
-                return;
+                return false;
 
             int normalizedSeed = _resolver.NormalizeSeed(seed);
             try
             {
-                GenerateInternal(context, normalizedSeed);
+                return GenerateInternal(context, normalizedSeed);
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[Moyva TWC Graph Binding] Помилка генерації мапи: {ex}", context.LogContext);
+                return false;
             }
             finally
             {
@@ -57,7 +58,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
         }
 
-        private void GenerateInternal(IMoyvaTwcGraphBindingContext context, int seed)
+        private bool GenerateInternal(IMoyvaTwcGraphBindingContext context, int seed)
         {
             seed = GlobalSeed.InitializeDeterministic(seed);
 
@@ -67,17 +68,22 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (context.Manager == null || context.Manager.configuration == null)
             {
                 EmitGenerateLog(context, null, null, seed);
-                return;
+                return false;
             }
 
+            bool succeeded;
             if (context.GenerateBuildLayersAfterCompile)
-                GenerateChunkFirstMap(context, seed);
+                succeeded = GenerateChunkFirstMap(context, seed);
             else
+            {
                 TileWorldCreatorLayerOcclusionOptimizer.GenerateBlueprintMap(context.Manager);
+                succeeded = true;
+            }
 
             EmitLogicalMapDiagnostics(context, seed);
             var report = _validation.Validate(context.GraphAsset);
             EmitGenerateLog(context, report, _validation.GetInvalidLayerIds(report), seed);
+            return succeeded;
         }
 
         private void EmitLogicalMapDiagnostics(IMoyvaTwcGraphBindingContext context, int seed)
@@ -98,7 +104,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 context.LogContext);
         }
 
-        private void GenerateChunkFirstMap(IMoyvaTwcGraphBindingContext context, int seed)
+        private bool GenerateChunkFirstMap(IMoyvaTwcGraphBindingContext context, int seed)
         {
             var manager = context.Manager;
             _twcVisualCleanup.ClearVisualBuildOutput(manager);
@@ -114,18 +120,21 @@ namespace Kruty1918.Moyva.Generator.Runtime
             if (logicalMap == null)
             {
                 Debug.LogError("[Moyva TWC Graph Binding] Chunk-first generation failed: logical tile stack map is missing.", context.LogContext);
-                return;
+                return false;
             }
 
             if (_worldBuild == null)
             {
-                BuildStandaloneChunkFirst(manager, CreateWorldData(context, seed, logicalMap, mapSize));
+                TileWorldCreatorWorldBuildResult result =
+                    BuildStandaloneChunkFirst(manager, CreateWorldData(context, seed, logicalMap, mapSize));
                 _twcVisualCleanup.ClearVisualBuildOutput(manager);
-                return;
+                return result.Succeeded;
             }
 
-            _worldBuild.Build(CreateWorldData(context, seed, logicalMap, mapSize));
+            TileWorldCreatorWorldBuildResult worldBuildResult =
+                _worldBuild.Build(CreateWorldData(context, seed, logicalMap, mapSize));
             _twcVisualCleanup.ClearVisualBuildOutput(manager);
+            return worldBuildResult.Succeeded;
         }
 
         private GeneratedWorldData CreateWorldData(
@@ -161,7 +170,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             };
         }
 
-        private void BuildStandaloneChunkFirst(GiantGrey.TileWorldCreator.TileWorldCreatorManager manager, GeneratedWorldData worldData)
+        private TileWorldCreatorWorldBuildResult BuildStandaloneChunkFirst(
+            GiantGrey.TileWorldCreator.TileWorldCreatorManager manager,
+            GeneratedWorldData worldData)
         {
             var mapping = ScriptableObject.CreateInstance<TileWorldCreatorIdMappingSO>();
             mapping.name = "RuntimeEmptyTileWorldCreatorIdMapping";
@@ -191,7 +202,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                     new ChunkFirstObjectSpawner(environment, layout, roots),
                     meshRegistry,
                     diagnostics);
-                builder.Build(
+                return builder.Build(
                     worldData,
                     manager.configuration,
                     new TileWorldCreatorTerrainBuildPolicyResult(

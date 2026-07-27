@@ -12,6 +12,10 @@ namespace Kruty1918.Moyva.Construction.API
         [NonSerialized] private IReadOnlyList<BuildingValidationIssue> _editorValidationCache;
         [NonSerialized] private string _editorPreviewSummaryCache;
 
+        [SerializeField]
+        [HideInInspector]
+        private int _placementModuleMigrationVersion;
+
         [TabGroup("Основне")]
         [InlineProperty]
         [HideLabel]
@@ -90,6 +94,7 @@ namespace Kruty1918.Moyva.Construction.API
         public string Id => Identity != null ? Identity.Id : string.Empty;
         public string DisplayName => Identity != null ? Identity.DisplayName : name;
         public BuildingCategory Category => Identity != null ? Identity.Category : BuildingCategory.Civilian;
+        public int PlacementModuleMigrationVersion => _placementModuleMigrationVersion;
 
         [TabGroup("Перевірка")]
         [Button("Нормалізувати дані", ButtonSizes.Medium)]
@@ -123,6 +128,14 @@ namespace Kruty1918.Moyva.Construction.API
                 Id = Identity.Id,
                 DisplayName = Identity.DisplayName,
                 Category = Identity.Category,
+                Role = Identity.Role,
+                Description = Identity.Description,
+                Tags = Identity.Tags != null
+                    ? new List<string>(Identity.Tags)
+                    : new List<string>(),
+                RuntimeTags = RuntimeStats.RuntimeTags != null
+                    ? new List<string>(RuntimeStats.RuntimeTags)
+                    : new List<string>(),
                 Icon = Presentation.Icon,
                 RuntimePreview = Presentation.RuntimePreview,
                 Prefab = Presentation.Prefab,
@@ -131,6 +144,9 @@ namespace Kruty1918.Moyva.Construction.API
                 ConstructionCost = CloneCost(Construction.Cost),
                 Modules = CloneModuleList(Modules),
                 MaxHp = Mathf.Max(1, RuntimeStats.MaxHp),
+                Armor = Mathf.Max(0, RuntimeStats.Armor),
+                RuntimeFlags = RuntimeStats.Flags,
+                PlacementRules = ClonePlacement(Placement),
                 CanPlaceInFog = Placement.CanPlaceInFog,
                 RequiredTerrainIds = Placement.RequiredTerrainIds != null
                     ? (string[])Placement.RequiredTerrainIds.Clone()
@@ -251,6 +267,62 @@ namespace Kruty1918.Moyva.Construction.API
             };
         }
 
+        private static BuildingPlacementRules ClonePlacement(
+            BuildingPlacementRules source)
+        {
+            source ??= new BuildingPlacementRules();
+            return new BuildingPlacementRules
+            {
+                CanPlaceInFog = source.CanPlaceInFog,
+                RequiresSettlementInfluence =
+                    source.RequiresSettlementInfluence,
+                CreatesSettlementInfluence =
+                    source.CreatesSettlementInfluence,
+                BlockIfSettlementCenterInRange =
+                    source.BlockIfSettlementCenterInRange,
+                InfluenceRadius = source.InfluenceRadius,
+                MinDistanceFromSettlementCenters =
+                    source.MinDistanceFromSettlementCenters,
+                RequiredTerrainIds = source.RequiredTerrainIds != null
+                    ? (string[])source.RequiredTerrainIds.Clone()
+                    : Array.Empty<string>(),
+                RequiredNeighborOffsets =
+                    source.RequiredNeighborOffsets != null
+                        ? (Vector2Int[])source.RequiredNeighborOffsets.Clone()
+                        : Array.Empty<Vector2Int>(),
+                RequiresWaterNearby = source.RequiresWaterNearby,
+                RequiresForestNearby = source.RequiresForestNearby,
+                RequiresMountainNearby = source.RequiresMountainNearby,
+                RequiresRoadNearby = source.RequiresRoadNearby,
+                NearbyTileRequirements =
+                    CloneTileRequirements(source.NearbyTileRequirements),
+            };
+        }
+
+        private static TileRequirementDefinition[] CloneTileRequirements(
+            IReadOnlyList<TileRequirementDefinition> source)
+        {
+            if (source == null || source.Count == 0)
+                return Array.Empty<TileRequirementDefinition>();
+
+            var result = new TileRequirementDefinition[source.Count];
+            for (int index = 0; index < source.Count; index++)
+            {
+                TileRequirementDefinition requirement = source[index];
+                result[index] = requirement == null
+                    ? null
+                    : new TileRequirementDefinition
+                    {
+                        TileId = requirement.TileId,
+                        TerrainTag = requirement.TerrainTag,
+                        Radius = requirement.Radius,
+                        MinimumTileCount = requirement.MinimumTileCount,
+                    };
+            }
+
+            return result;
+        }
+
         private static List<BuildingModuleDefinition> CloneModuleList(IReadOnlyList<BuildingModuleDefinition> source)
         {
             var result = new List<BuildingModuleDefinition>();
@@ -259,8 +331,15 @@ namespace Kruty1918.Moyva.Construction.API
 
             for (int i = 0; i < source.Count; i++)
             {
-                if (source[i] != null)
-                    result.Add(source[i]);
+                BuildingModuleDefinition module = source[i];
+                if (module == null)
+                    continue;
+
+                string json = JsonUtility.ToJson(module);
+                var clone = JsonUtility.FromJson(
+                    json,
+                    module.GetType()) as BuildingModuleDefinition;
+                result.Add(clone ?? module);
             }
 
             return result;

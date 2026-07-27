@@ -167,5 +167,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public object Artifact { get; }
         public NodeExecutionLog Log { get; }
         public bool IsConnectedToOutput => Log?.IsConnectedToOutput ?? false;
+        public GraphNodeParticipation Participation =>
+            Log?.Participation ?? GraphNodeParticipation.Detached;
+        public bool IsAuthoritative => Log?.IsAuthoritative ?? false;
     }
 }

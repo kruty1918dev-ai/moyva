@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56a0a73b43b94045b28dec05ad231549, type: 3}
   m_Name: windmill-01
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.BuildingDefinitionAsset
+  _placementModuleMigrationVersion: 1
   Identity: {Id: windmill-01, DisplayName: Windmill, Category: 2, Role: 2, Description: "", Tags: []}
   Presentation:
     Prefab: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
@@ -33,6 +34,7 @@ MonoBehaviour:
   Modules:
   - rid: 1201
   - rid: 1202
+  - rid: 1203
   references:
     version: 2
     RefIds:
@@ -42,3 +44,6 @@ MonoBehaviour:
     - rid: 1202
       type: {class: FogRevealBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
       data: {IsEnabled: 1, SingletonScope: 1, RevealRadius: 3, Shape: 0, RevealOnBuilt: 1, RevealWhileActive: 1, OnlyAfterConstructionComplete: 1}
+    - rid: 1203
+      type: {class: SettlementInfluenceRequirementBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data: {IsEnabled: 1, SingletonScope: 1, MergeMode: 1, RequiresInfluence: 1, BlockOverlappingCenters: 0, MaximumDistanceToCenter: 0}

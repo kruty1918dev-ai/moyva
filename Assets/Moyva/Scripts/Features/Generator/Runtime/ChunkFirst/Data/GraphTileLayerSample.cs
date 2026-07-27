@@ -1,4 +1,5 @@
 using System;
+using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
@@ -17,7 +18,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             int terrainPriority,
             float height,
             float surfaceHeight,
-            string sourceNodeId)
+            string sourceNodeId,
+            TileGeometryMode tileGeometryMode = TileGeometryMode.SolidTerrain,
+            AuthoredClosurePolicy authoredClosurePolicy = AuthoredClosurePolicy.PreserveAuthored)
         {
             GraphLayerId = graphLayerId;
             GraphLayerName = graphLayerName;
@@ -32,6 +35,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Height = height;
             SurfaceHeight = surfaceHeight;
             SourceNodeId = sourceNodeId;
+            TileGeometryMode = tileGeometryMode;
+            AuthoredClosurePolicy = authoredClosurePolicy;
         }
 
         public string GraphLayerId { get; }
@@ -47,6 +52,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         public float Height { get; }
         public float SurfaceHeight { get; }
         public string SourceNodeId { get; }
+        public TileGeometryMode TileGeometryMode { get; }
+        public AuthoredClosurePolicy AuthoredClosurePolicy { get; }
 
         public string StableTieBreakKey
         {
@@ -70,7 +77,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         public int CompareTo(GraphTileLayerSample other)
         {
-            int result = LayerKindRank.CompareTo(other.LayerKindRank);
+            int result = CompareVisualElevation(this, other);
+            if (result != 0)
+                return result;
+
+            result = LayerKindRank.CompareTo(other.LayerKindRank);
             if (result != 0)
                 return result;
 
@@ -87,6 +98,30 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return result;
 
             return string.Compare(StableTieBreakKey, other.StableTieBreakKey, StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// Compares the authored surface that is actually rendered. This is shared
+        /// by the resolved visual composition and the compatibility projection so
+        /// terrain queries can never publish a lower, hidden layer at an overlap.
+        /// </summary>
+        public static int CompareVisualElevation(
+            GraphTileLayerSample current,
+            GraphTileLayerSample candidate)
+        {
+            const float epsilon = 0.0001f;
+
+            float currentTop = Math.Max(current.Height, current.SurfaceHeight);
+            float candidateTop = Math.Max(candidate.Height, candidate.SurfaceHeight);
+            float topDelta = currentTop - candidateTop;
+            if (Math.Abs(topDelta) > epsilon)
+                return topDelta < 0f ? -1 : 1;
+
+            float baseDelta = current.Height - candidate.Height;
+            if (Math.Abs(baseDelta) > epsilon)
+                return baseDelta < 0f ? -1 : 1;
+
+            return 0;
         }
 
         private static int GetKindRank(LayerKind kind)

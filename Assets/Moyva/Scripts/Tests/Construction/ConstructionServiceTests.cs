@@ -729,8 +729,26 @@ namespace Kruty1918.Moyva.Tests.Construction
         {
             _buildingRegistry.Buildings = new[]
             {
-                CreateBuilding("townhall", new TownHallBuildingModule { BuildRadius = 2 }),
-                CreateBuilding("castle", new CastleBuildingModule { ExclusionRadius = 3 }),
+                CreateBuilding(
+                    "townhall",
+                    new TownHallBuildingModule
+                    {
+                        BuildRadius = 2,
+                    },
+                    new SettlementCenterBuildingModule
+                    {
+                        InfluenceRadius = 2,
+                    }),
+                CreateBuilding(
+                    "castle",
+                    new CastleBuildingModule
+                    {
+                        ExclusionRadius = 3,
+                    },
+                    new SettlementCenterBuildingModule
+                    {
+                        InfluenceRadius = 3,
+                    }),
                 CreateBuilding("house"),
             };
         }

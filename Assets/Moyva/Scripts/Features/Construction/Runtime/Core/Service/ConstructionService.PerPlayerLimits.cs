@@ -32,6 +32,171 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
     internal sealed partial class ConstructionService
     {
+        private bool TryValidateBuildingPrerequisites(
+            BuildingDefinition candidate,
+            string ownerId,
+            out string reason)
+        {
+            reason = null;
+            if (!BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    candidate,
+                    out BuildingPrerequisiteModule module))
+            {
+                return true;
+            }
+
+            if (module.MergeMode != PlacementRuleMergeMode.Override)
+                return true;
+
+            int minimum = Mathf.Max(1, module.MinimumCount);
+            var criteria = new System.Collections.Generic.List<string>();
+            if (module.BuildingIds != null)
+            {
+                for (int index = 0;
+                     index < module.BuildingIds.Length;
+                     index++)
+                {
+                    string id = module.BuildingIds[index]?.Trim();
+                    if (!string.IsNullOrWhiteSpace(id))
+                        criteria.Add($"id:{id}");
+                }
+            }
+
+            if (module.BuildingTags != null)
+            {
+                for (int index = 0;
+                     index < module.BuildingTags.Length;
+                     index++)
+                {
+                    string tag = module.BuildingTags[index]?.Trim();
+                    if (!string.IsNullOrWhiteSpace(tag))
+                        criteria.Add($"tag:{tag}");
+                }
+            }
+
+            if (criteria.Count == 0)
+                return true;
+
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            bool anySatisfied = false;
+            for (int index = 0; index < criteria.Count; index++)
+            {
+                int count = CountOwnedBuildingsMatchingCriterion(
+                    normalizedOwnerId,
+                    criteria[index]);
+                bool satisfied = count >= minimum;
+                anySatisfied |= satisfied;
+                if (module.MatchMode
+                        == BuildingPrerequisiteMatchMode.All
+                    && !satisfied)
+                {
+                    reason =
+                        $"Потрібна побудована споруда '{criteria[index]}' у кількості {minimum}; знайдено {count}.";
+                    return false;
+                }
+            }
+
+            if (module.MatchMode == BuildingPrerequisiteMatchMode.Any
+                && !anySatisfied)
+            {
+                reason =
+                    $"Не виконано жодної передумови будівлі (потрібно щонайменше {minimum}).";
+                return false;
+            }
+
+            return true;
+        }
+
+        private int CountOwnedBuildingsMatchingCriterion(
+            string ownerId,
+            string criterion)
+        {
+            bool isTag = criterion.StartsWith(
+                "tag:",
+                StringComparison.Ordinal);
+            string value = criterion.Substring(
+                criterion.IndexOf(':') + 1);
+            int count = 0;
+
+            foreach (var pair in _factionPlacedBuildings)
+            {
+                if (!string.Equals(
+                        pair.Value.FactionId,
+                        ownerId,
+                        StringComparison.Ordinal)
+                    || !BuildingMatchesCriterion(
+                        pair.Value.BuildingId,
+                        value,
+                        isTag))
+                {
+                    continue;
+                }
+
+                count++;
+            }
+
+            if (!string.Equals(
+                    ownerId,
+                    NormalizeOwnerId(_activeOwnerId),
+                    StringComparison.Ordinal))
+            {
+                return count;
+            }
+
+            foreach (var pair in _playerPlacedBuildings)
+            {
+                if (BuildingMatchesCriterion(
+                        pair.Value,
+                        value,
+                        isTag))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private bool BuildingMatchesCriterion(
+            string buildingId,
+            string value,
+            bool isTag)
+        {
+            if (!isTag)
+            {
+                return string.Equals(
+                    buildingId,
+                    value,
+                    StringComparison.Ordinal);
+            }
+
+            BuildingDefinition definition =
+                _placementBuildingRegistry?.GetById(buildingId);
+            return ContainsTag(definition?.Tags, value)
+                || ContainsTag(definition?.RuntimeTags, value);
+        }
+
+        private static bool ContainsTag(
+            System.Collections.Generic.IReadOnlyList<string> tags,
+            string value)
+        {
+            if (tags == null || string.IsNullOrWhiteSpace(value))
+                return false;
+
+            for (int index = 0; index < tags.Count; index++)
+            {
+                if (string.Equals(
+                        tags[index]?.Trim(),
+                        value.Trim(),
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private bool TryValidatePerPlayerBuildingLimit(
             ConstructionPlacementQueryRequest request,
             string ownerId,
@@ -48,17 +213,33 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             string normalizedOwnerId = NormalizeOwnerId(ownerId);
             Vector2Int? ignoredPlacedOrigin = ResolveIgnoredOccupiedPosition(request);
-            int existingCount = CountPlacedBuildingsForOwner(
-                request.BuildingId,
-                normalizedOwnerId,
-                ignoredPlacedOrigin);
+            BuildingLimitScope scope =
+                BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out BuildingPerPlayerLimitModule limitModule)
+                    ? limitModule.LimitScope
+                    : BuildingLimitScope.PerOwner;
+            int existingCount = scope == BuildingLimitScope.Global
+                ? CountPlacedBuildingsGlobally(
+                    request.BuildingId,
+                    ignoredPlacedOrigin)
+                : CountPlacedBuildingsForOwner(
+                    request.BuildingId,
+                    normalizedOwnerId,
+                    ignoredPlacedOrigin);
             int pendingCount = request.IncludePendingPlacements
-                ? CountPendingBuildingsForOwner(request, normalizedOwnerId)
+                ? scope == BuildingLimitScope.Global
+                    ? CountPendingBuildings(request)
+                    : CountPendingBuildingsForOwner(
+                        request,
+                        normalizedOwnerId)
                 : 0;
             int total = existingCount + pendingCount;
             string reason = total < limit
                 ? null
-                : $"Досягнуто ліміту будівель для гравця: {total}/{limit}.";
+                : scope == BuildingLimitScope.Global
+                    ? $"Досягнуто глобального ліміту будівель: {total}/{limit}."
+                    : $"Досягнуто ліміту будівель для гравця: {total}/{limit}.";
 
             evaluation = new BuildingPerPlayerLimitEvaluation(
                 limit,
@@ -114,6 +295,48 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return count;
         }
 
+        private int CountPlacedBuildingsGlobally(
+            string buildingId,
+            Vector2Int? ignoredOrigin)
+        {
+            int count = 0;
+            foreach (var pair in _factionPlacedBuildings)
+            {
+                if (ignoredOrigin.HasValue
+                    && pair.Key == ignoredOrigin.Value)
+                {
+                    continue;
+                }
+
+                if (string.Equals(
+                        pair.Value.BuildingId,
+                        buildingId,
+                        StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+
+            foreach (var pair in _playerPlacedBuildings)
+            {
+                if (ignoredOrigin.HasValue
+                    && pair.Key == ignoredOrigin.Value)
+                {
+                    continue;
+                }
+
+                if (string.Equals(
+                        pair.Value,
+                        buildingId,
+                        StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
         private int CountPendingBuildingsForOwner(
             ConstructionPlacementQueryRequest request,
             string ownerId)
@@ -134,6 +357,32 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 PendingPlacement placement = _pendingPlacements[index];
                 if (request.IgnoredPendingPosition.HasValue
                     && placement.Position == request.IgnoredPendingPosition.Value)
+                {
+                    continue;
+                }
+
+                if (string.Equals(
+                        placement.BuildingId,
+                        request.BuildingId,
+                        StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private int CountPendingBuildings(
+            ConstructionPlacementQueryRequest request)
+        {
+            int count = 0;
+            for (int index = 0; index < _pendingPlacements.Count; index++)
+            {
+                PendingPlacement placement = _pendingPlacements[index];
+                if (request.IgnoredPendingPosition.HasValue
+                    && placement.Position
+                        == request.IgnoredPendingPosition.Value)
                 {
                     continue;
                 }

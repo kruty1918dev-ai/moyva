@@ -4,6 +4,28 @@ using UnityEngine;
 namespace Kruty1918.Moyva.GraphSystem.API
 {
     /// <summary>
+    /// Defines whether chunk-first generation should create vertical closure
+    /// geometry for a graph layer. This is explicit so runtime generation never
+    /// has to infer water/liquid behaviour from asset names or materials.
+    /// </summary>
+    public enum TileGeometryMode
+    {
+        SolidTerrain = 0,
+        SurfaceOnly = 1
+    }
+
+    /// <summary>
+    /// Controls how authored tile meshes may be changed while producing the
+    /// runtime terrain mesh.
+    /// </summary>
+    public enum AuthoredClosurePolicy
+    {
+        PreserveAuthored = 0,
+        GeneratedClosure = 1,
+        TopOnlyTemplate = 2
+    }
+
+    /// <summary>
     /// Опис одного шару генератора всередині графа.
     /// Кожен шар має власний міні-підграф вузлів і компілюється в окремий
     /// blueprint-шар TileWorldCreator. Шари можуть посилатися один на одного
@@ -28,6 +50,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
         [SerializeField] private bool _generateFlatSurface;
         [Sirenix.OdinInspector.ShowIf(nameof(_generateFlatSurface))]
         [SerializeField] private Material _flatSurfaceMaterial;
+        [SerializeField] private TileGeometryMode _tileGeometryMode = TileGeometryMode.SolidTerrain;
+        [SerializeField] private AuthoredClosurePolicy _authoredClosurePolicy = AuthoredClosurePolicy.PreserveAuthored;
 
         /// <summary>
         /// Опціональний TilePreset/біулд-маркер для зв'язку шару з візуалом TWC.
@@ -122,6 +146,18 @@ namespace Kruty1918.Moyva.GraphSystem.API
         {
             get => _flatSurfaceMaterial;
             set => _flatSurfaceMaterial = value;
+        }
+
+        public TileGeometryMode TileGeometryMode
+        {
+            get => _tileGeometryMode;
+            set => _tileGeometryMode = value;
+        }
+
+        public AuthoredClosurePolicy AuthoredClosurePolicy
+        {
+            get => _authoredClosurePolicy;
+            set => _authoredClosurePolicy = value;
         }
 
         public string BuildLayerKey

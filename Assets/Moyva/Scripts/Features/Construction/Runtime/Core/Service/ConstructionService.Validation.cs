@@ -70,7 +70,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out bool fogBlocked,
             out bool influenceZoneBlocked,
             out bool terrainBlocked,
-            Vector2Int? ignoredOccupiedPosition = null)
+            Vector2Int? ignoredOccupiedPosition = null,
+            string satisfiedReplacementBuildingId = null)
         {
             var query = new ConstructionPlacementQueryRequest(
                 buildingId,
@@ -82,7 +83,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ownerId: _activeOwnerId,
                 attemptSource:
                     ConstructionPlacementAttemptSource.Confirm,
-                allowUniquePreviewRelocation: false);
+                allowUniquePreviewRelocation: false,
+                satisfiedReplacementBuildingId:
+                    satisfiedReplacementBuildingId);
             ConstructionPlacementQueryResult result = EvaluatePlacement(query);
 
             BuildingPlacementEvaluationResult evaluation = result.EvaluationResult;
@@ -96,8 +99,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             LogPlacementAttempt(
                 result,
-                emitRejectedAction: !result.IsSpatiallyValid);
-            return result.IsSpatiallyValid;
+                emitRejectedAction: !result.CanCommit);
+            return result.AvailabilityValid
+                && result.SpatialValid
+                && result.AuthorityValid;
         }
 
         private string GetObjectOccupantId(Vector2Int position, Vector2Int? ignoredOccupiedPosition = null)
@@ -120,7 +125,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             for (int index = 0; index < _pendingPlacements.Count; index++)
             {
                 var placement = _pendingPlacements[index];
-                _placementSimulationSnapshot.Add(new BuildingPlacementSimulationEntry(placement.Position, placement.BuildingId));
+                _placementSimulationSnapshot.Add(
+                    new BuildingPlacementSimulationEntry(
+                        placement.Position,
+                        placement.BuildingId,
+                        NormalizeOwnerId(_activeOwnerId)));
             }
 
             return _placementSimulationSnapshot;

@@ -46,6 +46,47 @@ namespace Kruty1918.Moyva.Construction.API
         Global = 3,
     }
 
+    public enum PlacementRuleMergeMode
+    {
+        [InspectorName("Успадкувати глобальне правило")]
+        Inherit = 0,
+        [InspectorName("Замінити для цієї будівлі")]
+        Override = 1,
+        [InspectorName("Вимкнути для цієї будівлі")]
+        Disabled = 2,
+    }
+
+    public enum FogPlacementVisibility
+    {
+        [InspectorName("Лише видимі")]
+        Visible = 0,
+        [InspectorName("Досліджені або видимі")]
+        ExploredOrVisible = 1,
+        [InspectorName("Будь-які")]
+        Any = 2,
+    }
+
+    public enum BuildingLimitScope
+    {
+        PerOwner = 0,
+        Global = 1,
+    }
+
+    public enum BuildingLimitOverflowPolicy
+    {
+        [InspectorName("Legacy compatibility")]
+        Legacy = 0,
+        Block = 1,
+        MovePending = 2,
+        RelocateExisting = 3,
+    }
+
+    public enum BuildingPrerequisiteMatchMode
+    {
+        All = 0,
+        Any = 1,
+    }
+
     [Serializable]
     public abstract class BuildingModuleDefinition
     {
@@ -268,11 +309,128 @@ namespace Kruty1918.Moyva.Construction.API
     }
 
     [Serializable]
+    public sealed class TerrainPlacementRuleModule : BuildingModuleDefinition
+    {
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode = PlacementRuleMergeMode.Override;
+
+        [LabelText("Дозволені terrain ID")]
+        public string[] AllowedTerrainIds = Array.Empty<string>();
+
+        [LabelText("Заборонені terrain ID")]
+        public string[] BlockedTerrainIds = Array.Empty<string>();
+
+        [LabelText("Дозволені terrain-теги")]
+        public string[] AllowedTerrainTags = Array.Empty<string>();
+
+        [LabelText("Заборонені terrain-теги")]
+        public string[] BlockedTerrainTags = Array.Empty<string>();
+
+        [LabelText("Дозволені рівні terrain")]
+        public int[] AllowedTerrainLevels = Array.Empty<int>();
+
+        [LabelText("Заборонені рівні terrain")]
+        public int[] BlockedTerrainLevels = Array.Empty<int>();
+
+        [LabelText("Обов'язкові сусідні позиції")]
+        public Vector2Int[] RequiredNeighborOffsets =
+            Array.Empty<Vector2Int>();
+
+        [LabelText("Дозволити пагорби")]
+        public bool AllowHills = true;
+
+        [LabelText("Блокувати край перепаду")]
+        public bool BlockEdgeTerrainTiles;
+
+        [LabelText("Потребує рівної основи")]
+        public bool RequiresFlatGround;
+    }
+
+    [Serializable]
+    public sealed class FogPlacementRuleModule : BuildingModuleDefinition
+    {
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode = PlacementRuleMergeMode.Override;
+
+        [LabelText("Потрібний стан туману")]
+        public FogPlacementVisibility Visibility = FogPlacementVisibility.Visible;
+    }
+
+    [Serializable]
+    public sealed class SettlementInfluenceRequirementBuildingModule : BuildingModuleDefinition
+    {
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode = PlacementRuleMergeMode.Override;
+
+        [LabelText("Потребує впливу")]
+        public bool RequiresInfluence = true;
+
+        [LabelText("Блокувати накладання центрів")]
+        public bool BlockOverlappingCenters;
+
+        [Min(0)]
+        [LabelText("Максимальна відстань до центру")]
+        public int MaximumDistanceToCenter;
+    }
+
+    [Serializable]
+    public sealed class SpacingPlacementRuleModule : BuildingModuleDefinition
+    {
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode = PlacementRuleMergeMode.Override;
+
+        [Min(0)]
+        [LabelText("Мінімальний відступ")]
+        public int MinimumSpacing;
+    }
+
+    [Serializable]
+    public sealed class ReplacementPlacementRuleModule : BuildingModuleDefinition
+    {
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode = PlacementRuleMergeMode.Override;
+
+        [LabelText("Замінювані building ID")]
+        public string[] ReplaceableBuildingIds = Array.Empty<string>();
+
+        [LabelText("Замінювані building-теги")]
+        public string[] ReplaceableBuildingTags = Array.Empty<string>();
+
+        [LabelText("Лише той самий власник")]
+        public bool RequireSameOwner = true;
+    }
+
+    [Serializable]
+    public sealed class BuildingPrerequisiteModule : BuildingModuleDefinition
+    {
+        [LabelText("Режим співставлення")]
+        public BuildingPrerequisiteMatchMode MatchMode = BuildingPrerequisiteMatchMode.All;
+
+        [LabelText("Building ID")]
+        public string[] BuildingIds = Array.Empty<string>();
+
+        [LabelText("Building-теги")]
+        public string[] BuildingTags = Array.Empty<string>();
+
+        [Min(1)]
+        [LabelText("Мінімальна кількість")]
+        public int MinimumCount = 1;
+
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode =
+            PlacementRuleMergeMode.Override;
+    }
+
+    [Serializable]
     public sealed class TileRequirementBuildingModule : BuildingModuleDefinition
     {
         [Tooltip("Набір умов по тайлах навколо будівлі.\nМодуль потрібен для споруд, ефективність або сама робота яких залежить від біому чи місцевості.\nНаприклад: ліс для лісоруба, вода для криниці або мосту.")]
         [LabelText("Вимоги")]
         public TileRequirementDefinition[] Requirements = Array.Empty<TileRequirementDefinition>();
+
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode =
+            PlacementRuleMergeMode.Override;
     }
 
     [Serializable]
@@ -282,6 +440,13 @@ namespace Kruty1918.Moyva.Construction.API
         [Min(0)]
         [LabelText("Максимум на гравця")]
         public int MaxBuildingsPerPlayer;
+
+        [LabelText("Область ліміту")]
+        public BuildingLimitScope LimitScope = BuildingLimitScope.PerOwner;
+
+        [LabelText("При перевищенні")]
+        public BuildingLimitOverflowPolicy OverflowPolicy =
+            BuildingLimitOverflowPolicy.Legacy;
     }
 
     [Serializable]

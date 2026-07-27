@@ -66,6 +66,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             public EconomySettlementContext? SettlementContext;
             public bool HasAnyWarehouse;
             public int OwnerPoolConsumeCalls;
+            public int OwnerPoolSuccessfulConsumeCalls;
             public int SettlementConsumeCalls;
 
             private readonly Dictionary<string, float> _ownerPoolResources = new(StringComparer.Ordinal);
@@ -129,7 +130,14 @@ namespace Kruty1918.Moyva.Tests.Construction
             public bool TryConsumeOwnerPoolResources(string ownerId, IReadOnlyDictionary<string, float> resourceCosts, out string errorMessage)
             {
                 OwnerPoolConsumeCalls++;
-                return TryConsume(_ownerPoolResources, resourceCosts, out errorMessage, "стартовому запасі");
+                bool consumed = TryConsume(
+                    _ownerPoolResources,
+                    resourceCosts,
+                    out errorMessage,
+                    "стартовому запасі");
+                if (consumed)
+                    OwnerPoolSuccessfulConsumeCalls++;
+                return consumed;
             }
 
             public bool OwnerHasAnyWarehouse(string ownerId)
@@ -400,6 +408,241 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.AreEqual(1, _economyInfoMediator.OwnerPoolConsumeCalls);
             Assert.AreEqual(0, _economyInfoMediator.SettlementConsumeCalls);
             Assert.AreEqual(0f, _economyInfoMediator.GetOwnerPoolResource("wood"), 0.01f);
+        }
+
+        [Test]
+        public void UnaffordablePreview_RemainsPendingUntilResourcesExist_ThenConsumesOnce()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding(
+                    "house",
+                    null,
+                    ("stone", 10)),
+            };
+            Vector2Int position = new Vector2Int(9, 9);
+            _service.SelectBuilding("house");
+
+            Assert.IsTrue(
+                _service.TryPreviewAt(position),
+                "A spatially valid but unaffordable building must still create a pending preview.");
+            Assert.AreEqual(
+                BuildingPreviewState.Unaffordable,
+                _lastPreview.PreviewState);
+            Assert.IsTrue(
+                _service.TryGetPendingPlacementStatus(
+                    position,
+                    out ConstructionPendingPlacementStatus status));
+            Assert.IsFalse(status.IsAffordable);
+            StringAssert.Contains("stone", status.ErrorMessage);
+
+            _service.Confirm();
+
+            Assert.IsTrue(_service.HasPendingPlacementAt(position));
+            Assert.AreEqual(0, _placedCount);
+            Assert.AreEqual(
+                0,
+                _economyInfoMediator.OwnerPoolSuccessfulConsumeCalls);
+
+            _economyInfoMediator.SetOwnerPoolResource("stone", 10f);
+            _service.Confirm();
+
+            Assert.IsFalse(_service.HasPendingPlacementAt(position));
+            Assert.AreEqual(1, _placedCount);
+            Assert.AreEqual(
+                1,
+                _economyInfoMediator.OwnerPoolSuccessfulConsumeCalls,
+                "Only the host-side successful commit may deduct resources.");
+            Assert.AreEqual(
+                0f,
+                _economyInfoMediator.GetOwnerPoolResource("stone"),
+                0.01f);
+        }
+
+        [Test]
+        public void ConfirmedReplicaPlacement_IsIdempotentAndNeverConsumesResources()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding(
+                    "house",
+                    null,
+                    ("stone", 10)),
+            };
+            var applier =
+                _service as IConfirmedConstructionPlacementApplier;
+            Assert.NotNull(applier);
+            Vector2Int position = new Vector2Int(10, 10);
+
+            Assert.IsTrue(
+                applier.TryApplyConfirmedPlacement(
+                    "house",
+                    position,
+                    "player-2"));
+            Assert.IsTrue(
+                applier.TryApplyConfirmedPlacement(
+                    "house",
+                    position,
+                    "player-2"),
+                "Retransmitted confirmation must be idempotent.");
+
+            Assert.AreEqual(1, _placedCount);
+            Assert.AreEqual(
+                0,
+                _economyInfoMediator.OwnerPoolConsumeCalls);
+            Assert.AreEqual(
+                0,
+                _economyInfoMediator.OwnerPoolSuccessfulConsumeCalls);
+            Assert.IsTrue(
+                _service.HasPlacedBuilding(
+                    "house",
+                    "player-2"));
+        }
+
+        [Test]
+        public void PendingReplacement_UsesReplacementModuleWithoutGateServices()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding("foundation", null),
+                CreateBuilding(
+                    "upgrade",
+                    new ReplacementPlacementRuleModule
+                    {
+                        MergeMode =
+                            PlacementRuleMergeMode.Override,
+                        ReplaceableBuildingIds =
+                            new[] { "foundation" },
+                        RequireSameOwner = true,
+                    }),
+            };
+            Vector2Int position = new Vector2Int(11, 11);
+
+            _service.SelectBuilding("foundation");
+            Assert.IsTrue(_service.TryPreviewAt(position));
+            _service.SelectBuilding("upgrade");
+            Assert.IsTrue(_service.TryPreviewAt(position));
+            Assert.IsTrue(
+                _service.TryGetPendingBuildingIdAt(
+                    position,
+                    out string pendingBuildingId));
+            Assert.AreEqual("upgrade", pendingBuildingId);
+
+            _service.Confirm();
+
+            Assert.IsFalse(_service.HasPendingPlacementAt(position));
+            Assert.IsTrue(
+                _objectsMap.TryGetOccupant(
+                    position,
+                    out string occupantId));
+            Assert.AreEqual("upgrade", occupantId);
+            Assert.AreEqual(1, _placedCount);
+        }
+
+        [Test]
+        public void ForeignOwnerReplacement_KeepsActiveOwnerWhenAllowed()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding("foundation", null),
+                CreateBuilding(
+                    "upgrade",
+                    new ReplacementPlacementRuleModule
+                    {
+                        MergeMode =
+                            PlacementRuleMergeMode.Override,
+                        ReplaceableBuildingIds =
+                            new[] { "foundation" },
+                        RequireSameOwner = false,
+                    }),
+            };
+            Vector2Int position = new Vector2Int(11, 12);
+            Assert.IsTrue(
+                _service.TryDirectPlace(
+                    "foundation",
+                    position,
+                    "owner-a"));
+
+            _service.SetActiveOwner("owner-b");
+            _service.SelectBuilding("upgrade");
+            Assert.IsTrue(_service.TryPreviewAt(position));
+            _service.Confirm();
+
+            Assert.IsTrue(
+                _service.HasPlacedBuilding(
+                    "upgrade",
+                    "owner-b"));
+            Assert.IsFalse(
+                _service.HasPlacedBuilding(
+                    "upgrade",
+                    "owner-a"));
+            Assert.AreEqual("owner-b", _lastPlacedSignal.OwnerId);
+        }
+
+        [Test]
+        public void DisabledPrerequisiteModule_SuppressesRuleWhileOverrideBlocks()
+        {
+            var prerequisite =
+                new BuildingPrerequisiteModule
+                {
+                    MergeMode =
+                        PlacementRuleMergeMode.Disabled,
+                    BuildingIds = new[] { "missing-center" },
+                    MinimumCount = 1,
+                };
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding("dependent", prerequisite),
+            };
+
+            Assert.IsTrue(
+                _service.TryDirectPlace(
+                    "dependent",
+                    new Vector2Int(12, 12),
+                    "player-1"));
+
+            prerequisite.MergeMode =
+                PlacementRuleMergeMode.Override;
+            Assert.IsFalse(
+                _service.TryDirectPlace(
+                    "dependent",
+                    new Vector2Int(13, 12),
+                    "player-1"));
+        }
+
+        [Test]
+        public void MovePendingLimitPolicy_NeverRelocatesCommittedBuilding()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding(
+                    "unique",
+                    new BuildingPerPlayerLimitModule
+                    {
+                        MaxBuildingsPerPlayer = 1,
+                        LimitScope =
+                            BuildingLimitScope.PerOwner,
+                        OverflowPolicy =
+                            BuildingLimitOverflowPolicy.MovePending,
+                    }),
+            };
+            Vector2Int first = new Vector2Int(14, 12);
+            Vector2Int movedPending = new Vector2Int(15, 12);
+            Vector2Int afterCommit = new Vector2Int(16, 12);
+            _service.SelectBuilding("unique");
+
+            Assert.IsTrue(_service.TryPreviewAt(first));
+            Assert.IsTrue(_service.TryPreviewAt(movedPending));
+            Assert.IsFalse(_service.HasPendingPlacementAt(first));
+            Assert.IsTrue(
+                _service.HasPendingPlacementAt(movedPending));
+
+            _service.Confirm();
+            _service.SelectBuilding("unique");
+
+            Assert.IsFalse(_service.TryPreviewAt(afterCommit));
+            Assert.IsTrue(_objectsMap.IsOccupied(movedPending));
+            Assert.IsFalse(_objectsMap.IsOccupied(afterCommit));
         }
 
         // --- TryDemolishAt ---

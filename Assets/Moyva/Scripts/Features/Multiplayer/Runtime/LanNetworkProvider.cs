@@ -20,10 +20,13 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// or a UDP transport. This provider uses Unity Transport primitives and assumes
     /// the necessary Unity Transport / Netcode packages are installed in the project.
     /// </summary>
-    public sealed class LanNetworkProvider : INetworkProvider
+    public sealed class LanNetworkProvider :
+        INetworkProvider,
+        INetworkPeerIdentityConfigurator
     {
         private readonly MultiplayerConfig _config;
         private readonly IMultiplayerLogger _logger;
+        private string _configuredLocalPeerId;
 
         // Observers subscribed to this provider's Messages
         private readonly List<IObserver<NetworkMessage>> _observers = new List<IObserver<NetworkMessage>>();
@@ -73,6 +76,13 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             return SendViaLanAsync(targetPeerId, payload, ct);
         }
 
+        public void SetLocalPeerId(string playerId)
+        {
+            _configuredLocalPeerId = string.IsNullOrWhiteSpace(playerId)
+                ? null
+                : playerId.Trim();
+        }
+
     // LAN transport implementation using Unity Transport (NetworkDriver).
                 private const byte FrameHello = 1;
                 private const byte FrameIdentity = 2;
@@ -98,7 +108,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 {
                     try
                     {
-                        _localPeerId = BuildLocalPeerId();
+                        _localPeerId = ResolveLocalPeerId();
 
                         await ShutdownTransportAsync();
 
@@ -141,7 +151,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         var ip = parts[1];
                         if (!ushort.TryParse(parts[2], out var port)) return SessionResult.Fail("Invalid LAN port.");
 
-                        _localPeerId = BuildLocalPeerId();
+                        _localPeerId = ResolveLocalPeerId();
 
                         await ShutdownTransportAsync();
 
@@ -358,6 +368,32 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                         return;
                     }
 
+                    if (isHostSide)
+                    {
+                        int connectionKey = source.GetHashCode();
+                        if (!_connectionPlayerIds.TryGetValue(
+                                connectionKey,
+                                out string authoritativeSenderId)
+                            || string.IsNullOrWhiteSpace(
+                                authoritativeSenderId))
+                        {
+                            _logger.Warn(
+                                "[Lan] UserData arrived before peer identity; dropping.");
+                            return;
+                        }
+
+                        if (!string.Equals(
+                                senderId,
+                                authoritativeSenderId,
+                                StringComparison.Ordinal))
+                        {
+                            _logger.Warn(
+                                $"[Lan] Replaced spoofed sender '{senderId}' with transport identity '{authoritativeSenderId}'.");
+                        }
+
+                        senderId = authoritativeSenderId;
+                    }
+
                     DispatchUserMessage(senderId, payload);
                     if (!isHostSide) return;
 
@@ -466,6 +502,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     var machineName = string.IsNullOrWhiteSpace(Environment.MachineName) ? "local" : Environment.MachineName;
                     return MultiplayerClientScope.IsDefault ? machineName : $"{machineName}-{MultiplayerClientScope.ScopeId}";
                 }
+
+                private string ResolveLocalPeerId()
+                    => string.IsNullOrWhiteSpace(_configuredLocalPeerId)
+                        ? BuildLocalPeerId()
+                        : _configuredLocalPeerId;
 
                 private static byte[] BuildIdentityFrame(string peerId)
                 {

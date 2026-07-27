@@ -23,7 +23,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IGeneratedTerrainLevelQuery generatedTerrainLevelQuery,
             ITileSettingsService tileSettings,
             IConstructionPlacementRulesProvider placementRulesProvider,
-            WorldCreationDefaultsSO worldDefaults,
             out string reason)
         {
             reason = null;
@@ -50,13 +49,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     return true;
                 }
 
-                if (worldDefaults?.BlockedBuildingHillLevelRanges != null
-                    && worldDefaults.BlockedBuildingHillLevelRanges.Count > 0
-                    && IsTerrainLevelBlocked(worldDefaults.BlockedBuildingHillLevelRanges, terrainLevel))
-                {
-                    reason = $"blocked hill level {terrainLevel}";
-                    return true;
-                }
             }
 
             if (gridService == null)
@@ -68,7 +60,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return true;
             }
 
-            if (IsBlockedBuildingTile(tileTypeId, placementRulesProvider?.BlockedTileIds, worldDefaults?.BlockedBuildingTileIds))
+            if (IsBlockedBuildingTile(tileTypeId, placementRulesProvider?.BlockedTileIds))
             {
                 reason = $"blocked tile '{tileTypeId}'";
                 return true;
@@ -134,16 +126,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private static bool IsBlockedBuildingTile(
             string tileTypeId,
-            string[] profileBlockedTileIds,
-            IReadOnlyList<string> worldBlockedTileIds)
+            string[] profileBlockedTileIds)
         {
             if (string.IsNullOrWhiteSpace(tileTypeId))
                 return false;
 
-            if (ContainsTileId(profileBlockedTileIds, tileTypeId))
-                return true;
-
-            return ContainsTileId(worldBlockedTileIds, tileTypeId);
+            return ContainsTileId(profileBlockedTileIds, tileTypeId);
         }
 
         private static bool IsAllowedBuildingTile(string tileTypeId, IReadOnlyList<string> allowedTileIds)

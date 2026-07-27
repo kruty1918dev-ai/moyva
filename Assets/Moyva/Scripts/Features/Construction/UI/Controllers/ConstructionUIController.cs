@@ -60,6 +60,7 @@ namespace Kruty1918.Moyva.Construction.UI
         private IConstructionService _constructionService;
         private IBuildingRegistry _buildingRegistry;
         private IEconomyInfoMediator _economyInfoMediator;
+        private IConstructionPlacementQuery _placementQuery;
         private SignalBus _signalBus;
 
         // --- Внутрішній стан ---
@@ -75,6 +76,9 @@ namespace Kruty1918.Moyva.Construction.UI
         private bool _isPreviewInfoPinned;
         private Vector2Int _pinnedPreviewPosition;
         private string _pinnedPreviewBuildingId;
+        private readonly Dictionary<string, string>
+            _buildingUnavailableReasons =
+                new Dictionary<string, string>(StringComparer.Ordinal);
 
         /// <summary>Точка ін'єкції Zenject. Не викликати вручну.</summary>
         [Inject]
@@ -82,12 +86,14 @@ namespace Kruty1918.Moyva.Construction.UI
             IConstructionService constructionService,
             IBuildingRegistry buildingRegistry,
             SignalBus signalBus,
-            [InjectOptional] IEconomyInfoMediator economyInfoMediator = null)
+            [InjectOptional] IEconomyInfoMediator economyInfoMediator = null,
+            [InjectOptional] IConstructionPlacementQuery placementQuery = null)
         {
             _constructionService = constructionService;
             _buildingRegistry = buildingRegistry;
             _signalBus = signalBus;
             _economyInfoMediator = economyInfoMediator;
+            _placementQuery = placementQuery;
         }
 
         /// <summary>Викликається Zenject після ін'єкції. Підписується на сигнали та заповнює UI.</summary>
@@ -100,6 +106,8 @@ namespace Kruty1918.Moyva.Construction.UI
             }
 
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+            _signalBus.Subscribe<BuildingDemolishedSignal>(
+                OnBuildingDemolished);
             _signalBus.Subscribe<BuildingCancelledSignal>(OnBuildingCancelled);
             _signalBus.Subscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
             _signalBus.Subscribe<BuildingSelectionChangedSignal>(OnBuildingSelectionChanged);
@@ -141,6 +149,8 @@ namespace Kruty1918.Moyva.Construction.UI
             if (_signalBus != null)
             {
                 _signalBus.TryUnsubscribe<BuildingPlacedSignal>(OnBuildingPlaced);
+                _signalBus.TryUnsubscribe<BuildingDemolishedSignal>(
+                    OnBuildingDemolished);
                 _signalBus.TryUnsubscribe<BuildingCancelledSignal>(OnBuildingCancelled);
                 _signalBus.TryUnsubscribe<BuildingPreviewChangedSignal>(OnBuildingPreviewChanged);
                 _signalBus.TryUnsubscribe<BuildingSelectionChangedSignal>(OnBuildingSelectionChanged);
@@ -190,9 +200,6 @@ namespace Kruty1918.Moyva.Construction.UI
         public void OnConfirmClicked()
         {
             _signalBus.Fire(new PlaceBuildingConfirmRequestSignal());
-
-            if (_constructionService.State == BuildingPlacementState.Placing || _constructionService.IsDemolishMode)
-                _constructionService.Confirm();
         }
 
         /// <summary>
@@ -269,6 +276,13 @@ namespace Kruty1918.Moyva.Construction.UI
             RefreshUI();
         }
 
+        private void OnBuildingDemolished(
+            BuildingDemolishedSignal signal)
+        {
+            PopulateBuildingList();
+            RefreshUI();
+        }
+
         private void OnBuildingCancelled(BuildingCancelledSignal signal)
         {
             _selectedBuildingId = null;
@@ -292,6 +306,16 @@ namespace Kruty1918.Moyva.Construction.UI
             {
                 _pinnedPreviewPosition = signal.Position;
                 ShowPreviewInfoPanel(signal.BuildingId, signal.Position, pinToPreviewObject: true);
+            }
+            else if (signal.PreviewState
+                         == BuildingPreviewState.Unaffordable
+                     && _constructionService.HasPendingPlacementAt(
+                         signal.Position))
+            {
+                ShowPreviewInfoPanel(
+                    signal.BuildingId,
+                    signal.Position,
+                    pinToPreviewObject: false);
             }
 
             RefreshUI();
@@ -360,43 +384,66 @@ namespace Kruty1918.Moyva.Construction.UI
                 return;
 
             var buildings = _buildingRegistry.GetAll();
-            bool ownerHasCastle = OwnerHasAnyCastle();
+            _buildingUnavailableReasons.Clear();
             var items = _menuFactory.BuildMenuItems(
                 buildings,
                 _buildingRegistry,
                 this,
-                definition => ownerHasCastle || (definition != null && BuildingDefinitionCapabilities.IsCastle(definition)),
-                definition => !ownerHasCastle || definition == null || !BuildingDefinitionCapabilities.IsCastle(definition));
+                IsBuildingAvailable,
+                includeSelector: null,
+                unavailableReasonSelector:
+                    GetBuildingUnavailableReason);
 
             Debug.Log($"[Construction UI] Ініціалізовано меню будівель. Знайдено елементів: {items.Count}.", this);
 
             selectionPanel.Populate(items);
         }
 
-        private bool OwnerHasAnyCastle()
+        private bool IsBuildingAvailable(BuildingDefinition definition)
         {
-            if (_constructionService == null || _buildingRegistry == null)
-                return false;
-
-            string ownerId = _constructionService.GetActiveOwner();
-            var all = _buildingRegistry.GetAll();
-            if (all == null || all.Length == 0)
-                return false;
-
-            for (int i = 0; i < all.Length; i++)
+            if (definition == null
+                || string.IsNullOrWhiteSpace(definition.Id))
             {
-                var def = all[i];
-                if (def == null || string.IsNullOrWhiteSpace(def.Id))
-                    continue;
-
-                if (!BuildingDefinitionCapabilities.IsCastle(def))
-                    continue;
-
-                if (_constructionService.HasPlacedBuilding(def.Id, ownerId))
-                    return true;
+                return false;
             }
 
-            return false;
+            if (_placementQuery == null)
+                return true;
+
+            ConstructionPlacementQueryResult result =
+                _placementQuery.EvaluatePlacement(
+                    new ConstructionPlacementQueryRequest(
+                        definition.Id,
+                        _lastPreviewPosition,
+                        includeResources: false,
+                        ownerId:
+                            _constructionService?.GetActiveOwner(),
+                        attemptSource:
+                            ConstructionPlacementAttemptSource.Unknown,
+                        allowUniquePreviewRelocation: true));
+            _buildingUnavailableReasons[definition.Id] =
+                result.CanSelect
+                    ? null
+                    : string.IsNullOrWhiteSpace(result.Reason)
+                        ? "Не виконано глобальні умови."
+                        : result.Reason;
+            return result.CanSelect;
+        }
+
+        private string GetBuildingUnavailableReason(
+            BuildingDefinition definition)
+        {
+            if (definition == null
+                || string.IsNullOrWhiteSpace(definition.Id))
+            {
+                return "Некоректна конфігурація будівлі.";
+            }
+
+            return _buildingUnavailableReasons.TryGetValue(
+                definition.Id,
+                out string reason)
+                ? reason
+                : null;
         }
 
         private void RefreshUI()
@@ -590,8 +637,28 @@ namespace Kruty1918.Moyva.Construction.UI
             }
 
             AppendConstructionCostBlock(sb, definition);
+            AppendPendingDeficitBlock(sb, position);
             AppendOwnerResourcesBlock(sb);
             return sb.ToString().TrimEnd();
+        }
+
+        private void AppendPendingDeficitBlock(
+            StringBuilder sb,
+            Vector2Int position)
+        {
+            if (_constructionService == null
+                || !_constructionService.TryGetPendingPlacementStatus(
+                    position,
+                    out ConstructionPendingPlacementStatus status)
+                || status.IsAffordable
+                || string.IsNullOrWhiteSpace(status.ErrorMessage))
+            {
+                return;
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("Не можна підтвердити:");
+            sb.AppendLine($"• {status.ErrorMessage}");
         }
 
         private void AppendConstructionCostBlock(StringBuilder sb, BuildingDefinition definition)

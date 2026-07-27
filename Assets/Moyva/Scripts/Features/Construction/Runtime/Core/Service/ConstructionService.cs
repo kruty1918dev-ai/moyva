@@ -7,28 +7,42 @@ using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
-using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
 {
-    internal sealed partial class ConstructionService : IConstructionService, IConstructionPlacementQuery, IInitializable, IDisposable
+    internal sealed partial class ConstructionService :
+        IConstructionService,
+        IConfirmedConstructionPlacementApplier,
+        IConfirmedConstructionPlacementIntentApplier,
+        IConstructionPendingPlacementIntentSource,
+        IAuthoritativeConstructionPlacementExecutor,
+        IConstructionPlacementQuery,
+        IInitializable,
+        IDisposable
     {
         private const string DefaultOwnerId = "player_0";
 
         private readonly struct PendingPlacement
         {
-            public PendingPlacement(Vector2Int position, string buildingId, Vector2Int? originalPosition = null)
+            public PendingPlacement(
+                Vector2Int position,
+                string buildingId,
+                Vector2Int? originalPosition = null,
+                string replacedPendingBuildingId = null)
             {
                 Position = position;
                 BuildingId = buildingId;
                 OriginalPosition = originalPosition;
+                ReplacedPendingBuildingId =
+                    replacedPendingBuildingId;
             }
 
             public Vector2Int Position { get; }
             public string BuildingId { get; }
             public Vector2Int? OriginalPosition { get; }
+            public string ReplacedPendingBuildingId { get; }
         }
 
         private readonly struct PendingDemolition
@@ -55,12 +69,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IEconomyInfoMediator _economyInfoMediator;
         private readonly IGridService _gridService;
         private readonly IGeneratedTerrainLevelQuery _generatedTerrainLevelQuery;
-        private readonly WorldCreationDefaultsSO _worldDefaults;
         private readonly ITileSettingsService _tileSettings;
         private readonly IConstructionPlacementRulesProvider _placementRulesProvider;
         private readonly IConstructionDiagnosticsSettingsProvider _diagnosticsSettingsProvider;
         private readonly IConstructionDiagnostics _diagnostics;
         private readonly IConstructionDiagnosticsSession _diagnosticsSession;
+        private readonly IConstructionPlacementAuthorityPolicy
+            _placementAuthorityPolicy;
+        private readonly IReadOnlyList<IBuildingPlacementRuleEvaluator>
+            _placementRuleEvaluators;
         private bool _initialized;
         private bool _disposed;
 
@@ -98,12 +115,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IEconomyInfoMediator economyInfoMediator,
             [InjectOptional] IGridService gridService,
             [InjectOptional] IGeneratedTerrainLevelQuery generatedTerrainLevelQuery,
-            [InjectOptional] WorldCreationDefaultsSO worldDefaults = null,
             [InjectOptional] ITileSettingsService tileSettings = null,
             [InjectOptional] IConstructionPlacementRulesProvider placementRulesProvider = null,
             [InjectOptional] IConstructionDiagnosticsSettingsProvider diagnosticsSettingsProvider = null,
             [InjectOptional] IConstructionDiagnostics diagnostics = null,
-            [InjectOptional] IConstructionDiagnosticsSession diagnosticsSession = null)
+            [InjectOptional] IConstructionDiagnosticsSession diagnosticsSession = null,
+            [InjectOptional] IConstructionPlacementAuthorityPolicy
+                placementAuthorityPolicy = null,
+            [InjectOptional] List<IBuildingPlacementRuleEvaluator>
+                placementRuleEvaluators = null)
         {
             _objectsMapService = objectsMapService;
             _buildingRegistry = buildingRegistry;
@@ -117,12 +137,15 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _economyInfoMediator = economyInfoMediator;
             _gridService = gridService;
             _generatedTerrainLevelQuery = generatedTerrainLevelQuery;
-            _worldDefaults = worldDefaults;
             _tileSettings = tileSettings;
             _placementRulesProvider = placementRulesProvider;
             _diagnosticsSettingsProvider = diagnosticsSettingsProvider;
             _diagnostics = diagnostics;
             _diagnosticsSession = diagnosticsSession;
+            _placementAuthorityPolicy = placementAuthorityPolicy;
+            _placementRuleEvaluators = placementRuleEvaluators
+                ?? (IReadOnlyList<IBuildingPlacementRuleEvaluator>)
+                    Array.Empty<IBuildingPlacementRuleEvaluator>();
         }
 
         public void Initialize()

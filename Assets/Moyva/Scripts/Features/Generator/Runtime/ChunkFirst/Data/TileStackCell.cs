@@ -26,11 +26,28 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (_samples.Count == 0)
                 return false;
 
-            int bestIndex = 0;
-            for (int i = 1; i < _samples.Count; i++)
+            int bestIndex = -1;
+            for (int i = 0; i < _samples.Count; i++)
             {
-                if (_samples[bestIndex].CompareTo(_samples[i]) <= 0)
+                GraphTileLayerSample candidate = _samples[i];
+                if (!candidate.IsTerrainLike
+                    || candidate.LayerKind == LayerKind.OverlayTerrain)
+                    continue;
+
+                if (bestIndex < 0 || _samples[bestIndex].CompareTo(candidate) <= 0)
                     bestIndex = i;
+            }
+
+            // Compatibility maps can also represent object-only graphs. Preserve
+            // the historical fallback when there is no main-terrain candidate.
+            if (bestIndex < 0)
+            {
+                bestIndex = 0;
+                for (int i = 1; i < _samples.Count; i++)
+                {
+                    if (_samples[bestIndex].CompareTo(_samples[i]) <= 0)
+                        bestIndex = i;
+                }
             }
 
             sample = _samples[bestIndex];

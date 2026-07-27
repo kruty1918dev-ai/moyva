@@ -263,6 +263,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     tile,
                     null,
                     true,
+                    true,
                     new[] { tile },
                     Array.Empty<Vector2Int>());
                 return;
@@ -279,9 +280,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     attemptSource:
                         ConstructionPlacementAttemptSource.PointerHover,
                     allowUniquePreviewRelocation: true));
-            ConstructionBuildGridTileVisualState visualState = summary.IsValid
-                ? ConstructionBuildGridTileVisualState.Valid
-                : ConstructionBuildGridTileVisualState.Invalid;
+            ConstructionBuildGridTileVisualState visualState =
+                ResolvePlacementVisualState(summary);
             if (!_buildGridState.SetHover(tile, visualState))
                 return;
 
@@ -302,7 +302,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             PublishBuildGridHover(
                 tile,
                 buildingId,
-                detailed.IsValid,
+                detailed.CanPreview,
+                detailed.ResourcesValid,
                 footprintPositions,
                 invalidPositions);
         }
@@ -336,6 +337,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Vector2Int tile,
             string buildingId,
             bool isPlacementValid,
+            bool isAffordable,
             Vector2Int[] footprintPositions,
             Vector2Int[] invalidPositions)
         {
@@ -345,6 +347,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 Position = tile,
                 BuildingId = buildingId,
                 IsPlacementValid = isPlacementValid,
+                IsAffordable = isAffordable,
                 FootprintPositions = footprintPositions,
                 InvalidFootprintPositions = invalidPositions,
             });
@@ -364,7 +367,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (evaluation == null || evaluation.FootprintPositions.Count == 0)
             {
                 footprintPositions = new[] { origin };
-                invalidPositions = result.IsValid
+                invalidPositions = result.SpatialValid
                     ? Array.Empty<Vector2Int>()
                     : new[] { origin };
                 return;
@@ -374,7 +377,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             for (int index = 0; index < footprintPositions.Length; index++)
                 footprintPositions[index] = evaluation.FootprintPositions[index];
 
-            if (!result.IsValid)
+            if (!result.SpatialValid)
             {
                 invalidPositions = (Vector2Int[])footprintPositions.Clone();
                 return;
@@ -495,7 +498,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     includeResources: true,
                     attemptSource:
                         ConstructionPlacementAttemptSource.DragValidation,
-                    allowUniquePreviewRelocation: true)).IsValid;
+                    allowUniquePreviewRelocation: true)).CanPreview;
+        }
+
+        private static ConstructionBuildGridTileVisualState ResolvePlacementVisualState(
+            ConstructionPlacementQueryResult result)
+        {
+            if (!result.CanSelect)
+                return ConstructionBuildGridTileVisualState.General;
+            if (!result.SpatialValid)
+                return ConstructionBuildGridTileVisualState.Invalid;
+            return result.ResourcesValid
+                ? ConstructionBuildGridTileVisualState.Valid
+                : ConstructionBuildGridTileVisualState.Unaffordable;
         }
 
         private void PublishPendingPlacementDragVisual(Vector2 screenPosition, Vector2Int tilePosition, bool snapToGrid)

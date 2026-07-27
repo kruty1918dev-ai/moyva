@@ -131,6 +131,11 @@ namespace Kruty1918.Moyva.Construction.API
             var snapshot = context.Snapshot;
             if (!snapshot.HasTileRequirement || snapshot.TileRequirement == null)
                 return;
+            if (snapshot.TileRequirement.MergeMode
+                != PlacementRuleMergeMode.Override)
+            {
+                return;
+            }
 
             var requirements = snapshot.TileRequirement.Requirements ?? Array.Empty<TileRequirementDefinition>();
             if (requirements.Length == 0)
@@ -146,13 +151,15 @@ namespace Kruty1918.Moyva.Construction.API
                 if (requirement == null)
                     continue;
 
-                if (!string.IsNullOrWhiteSpace(requirement.TileId) && requirement.MinimumTileCount >= 1)
+                if ((!string.IsNullOrWhiteSpace(requirement.TileId)
+                     || !string.IsNullOrWhiteSpace(requirement.TerrainTag))
+                    && requirement.MinimumTileCount >= 1)
                     validCount++;
             }
 
             if (validCount == 0)
             {
-                context.Collector.AddError("INV_TILE_REQUIREMENTS_INVALID", "Модуль вимог не містить коректного ID тайла з мінімальною кількістю від 1.");
+                context.Collector.AddError("INV_TILE_REQUIREMENTS_INVALID", "Модуль вимог не містить коректного ID тайла/terrain-тега з мінімальною кількістю від 1.");
             }
         }
     }

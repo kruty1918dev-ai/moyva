@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56a0a73b43b94045b28dec05ad231549, type: 3}
   m_Name: bridge-wood-01
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.BuildingDefinitionAsset
+  _placementModuleMigrationVersion: 1
   Identity: {Id: bridge-wood-01, DisplayName: Wood Bridge, Category: 1, Role: 9, Description: "", Tags: []}
   Presentation:
     Prefab: {fileID: 8030073889366943068, guid: f9fff611f2465687b966cf0e0cfdda74, type: 3}
@@ -32,6 +33,8 @@ MonoBehaviour:
   Modules:
   - rid: 1101
   - rid: 1102
+  - rid: 1103
+  - rid: 1104
   references:
     version: 2
     RefIds:
@@ -41,3 +44,17 @@ MonoBehaviour:
     - rid: 1102
       type: {class: FogRevealBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
       data: {IsEnabled: 1, SingletonScope: 1, RevealRadius: 1, Shape: 0, RevealOnBuilt: 1, RevealWhileActive: 1, OnlyAfterConstructionComplete: 1}
+    - rid: 1103
+      type: {class: SettlementInfluenceRequirementBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data: {IsEnabled: 1, SingletonScope: 1, MergeMode: 1, RequiresInfluence: 1, BlockOverlappingCenters: 0, MaximumDistanceToCenter: 0}
+    - rid: 1104
+      type: {class: TileRequirementBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
+        Requirements:
+        - TileId:
+          TerrainTag: water
+          Radius: 1
+          MinimumTileCount: 1
+        MergeMode: 1

@@ -20,7 +20,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             false,
             1f,
             false,
-            default);
+            default,
+            false);
 
         public TileWorldCreatorWorldBuildResult(
             HashSet<string> terrainIds,
@@ -32,7 +33,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             bool suppressMoyvaLayerData,
             float cellSize,
             bool hasBaseMapWorldBounds,
-            Bounds baseMapWorldBounds)
+            Bounds baseMapWorldBounds,
+            bool succeeded = true)
         {
             _terrainIds = terrainIds;
             _objectIds = objectIds;
@@ -44,6 +46,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             CellSize = cellSize > 0.0001f ? cellSize : 1f;
             HasBaseMapWorldBounds = hasBaseMapWorldBounds;
             BaseMapWorldBounds = baseMapWorldBounds;
+            Succeeded = succeeded;
         }
 
         public bool ReplaceMappedTerrainVisuals { get; }
@@ -53,6 +56,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public float CellSize { get; }
         public bool HasBaseMapWorldBounds { get; }
         public Bounds BaseMapWorldBounds { get; }
+        public bool Succeeded { get; }
 
         public bool ShouldReplaceTerrainVisual(string id)
             => ReplaceMappedTerrainVisuals && Contains(_terrainIds, id);

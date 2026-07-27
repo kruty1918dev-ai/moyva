@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -22,6 +23,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly int _relativeBottom;
         private readonly int _occludedSides;
         private readonly int _tileHalfExtent;
+        private readonly int _authoredClosurePolicy;
+        private readonly int _northBottom;
+        private readonly int _eastBottom;
+        private readonly int _southBottom;
+        private readonly int _westBottom;
 
         private TileVerticalFillMeshKey(TileMeshSource source)
         {
@@ -39,6 +45,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _relativeBottom = Quantize(source.VisibleBottomY - matrix.m13);
             _occludedSides = (int)source.OccludedSides;
             _tileHalfExtent = Quantize(source.TileHalfExtent);
+            _authoredClosurePolicy = (int)source.AuthoredClosurePolicy;
+            _northBottom = Quantize(source.EdgeBottoms.Resolve(
+                TileMeshOccludedSides.North,
+                source.VisibleBottomY) - matrix.m13);
+            _eastBottom = Quantize(source.EdgeBottoms.Resolve(
+                TileMeshOccludedSides.East,
+                source.VisibleBottomY) - matrix.m13);
+            _southBottom = Quantize(source.EdgeBottoms.Resolve(
+                TileMeshOccludedSides.South,
+                source.VisibleBottomY) - matrix.m13);
+            _westBottom = Quantize(source.EdgeBottoms.Resolve(
+                TileMeshOccludedSides.West,
+                source.VisibleBottomY) - matrix.m13);
         }
 
         public static TileVerticalFillMeshKey Create(TileMeshSource source)
@@ -58,7 +77,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 && _m22 == other._m22
                 && _relativeBottom == other._relativeBottom
                 && _occludedSides == other._occludedSides
-                && _tileHalfExtent == other._tileHalfExtent;
+                && _tileHalfExtent == other._tileHalfExtent
+                && _authoredClosurePolicy == other._authoredClosurePolicy
+                && _northBottom == other._northBottom
+                && _eastBottom == other._eastBottom
+                && _southBottom == other._southBottom
+                && _westBottom == other._westBottom;
         }
 
         public override bool Equals(object obj)
@@ -82,6 +106,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 hash = hash * 31 + _relativeBottom;
                 hash = hash * 31 + _occludedSides;
                 hash = hash * 31 + _tileHalfExtent;
+                hash = hash * 31 + _authoredClosurePolicy;
+                hash = hash * 31 + _northBottom;
+                hash = hash * 31 + _eastBottom;
+                hash = hash * 31 + _southBottom;
+                hash = hash * 31 + _westBottom;
                 return hash;
             }
         }
@@ -145,6 +174,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return result != null;
             }
 
+            // Non-flat prefabs may contain authored cliffs, decoration or
+            // deliberately closed geometry. PreserveAuthored is the safe default:
+            // generated skirts are still allowed for flat tops, but authored
+            // volume meshes are never deformed or clipped implicitly.
+            if (source.AuthoredClosurePolicy == AuthoredClosurePolicy.PreserveAuthored)
+                return false;
+
             if (targetBottom < minY - HeightEpsilon)
             {
                 Vector3[] deformed = (Vector3[])sourceVertices.Clone();
@@ -195,6 +231,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             bool removeFullyHiddenTriangles,
             float targetBottom)
         {
+            if (removeFullyHiddenTriangles)
+                return CopyMeshCompacted(source, vertices, originalRelativeY, targetBottom);
+
             var mesh = new Mesh
             {
                 name = source.name + "_VerticalFill",
@@ -209,7 +248,30 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             {
                 MeshTopology topology = source.GetTopology(subMesh);
                 int[] indices = source.GetIndices(subMesh);
-                if (removeFullyHiddenTriangles && topology == MeshTopology.Triangles)
+                mesh.SetIndices(indices, topology, subMesh, false);
+            }
+
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private static Mesh CopyMeshCompacted(
+            Mesh source,
+            IReadOnlyList<Vector3> vertices,
+            IReadOnlyList<float> originalRelativeY,
+            float targetBottom)
+        {
+            var indicesBySubMesh = new int[source.subMeshCount][];
+            var topologyBySubMesh = new MeshTopology[source.subMeshCount];
+            var referenced = new bool[source.vertexCount];
+            int referencedCount = 0;
+
+            for (int subMesh = 0; subMesh < source.subMeshCount; subMesh++)
+            {
+                MeshTopology topology = source.GetTopology(subMesh);
+                topologyBySubMesh[subMesh] = topology;
+                int[] indices = source.GetIndices(subMesh);
+                if (topology == MeshTopology.Triangles)
                 {
                     indices = RemoveFullyHiddenTriangles(
                         indices,
@@ -217,7 +279,53 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                         targetBottom);
                 }
 
-                mesh.SetIndices(indices, topology, subMesh, false);
+                indicesBySubMesh[subMesh] = indices;
+                for (int i = 0; i < indices.Length; i++)
+                {
+                    int index = indices[i];
+                    if (index < 0 || index >= referenced.Length || referenced[index])
+                        continue;
+
+                    referenced[index] = true;
+                    referencedCount++;
+                }
+            }
+
+            if (referencedCount == 0)
+                return null;
+
+            var remap = new int[source.vertexCount];
+            var compactVertices = new Vector3[referencedCount];
+            int next = 0;
+            for (int i = 0; i < referenced.Length; i++)
+            {
+                remap[i] = -1;
+                if (!referenced[i])
+                    continue;
+
+                remap[i] = next;
+                compactVertices[next] = vertices[i];
+                next++;
+            }
+
+            var mesh = new Mesh
+            {
+                name = source.name + "_VerticalFill",
+                indexFormat = referencedCount > 65535
+                    ? IndexFormat.UInt32
+                    : IndexFormat.UInt16,
+                vertices = compactVertices
+            };
+
+            CopyVertexChannelsCompacted(source, mesh, referenced, referencedCount);
+            mesh.subMeshCount = source.subMeshCount;
+            for (int subMesh = 0; subMesh < source.subMeshCount; subMesh++)
+            {
+                int[] indices = indicesBySubMesh[subMesh];
+                for (int i = 0; i < indices.Length; i++)
+                    indices[i] = remap[indices[i]];
+
+                mesh.SetIndices(indices, topologyBySubMesh[subMesh], subMesh, false);
             }
 
             mesh.RecalculateBounds();
@@ -248,15 +356,22 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     vertices[edge.A]);
                 Vector3 worldB = tileSource.LocalMatrix.MultiplyPoint3x4(
                     vertices[edge.B]);
-                if (IsBoundaryEdgeOccluded(tileSource, worldA, worldB))
+                if (!TryResolveBoundarySide(tileSource, worldA, worldB, out TileMeshOccludedSides side)
+                    || (tileSource.OccludedSides & side) != 0)
                     continue;
 
                 Vector3 topA = linearMatrix.MultiplyPoint3x4(vertices[edge.A]);
                 Vector3 topB = linearMatrix.MultiplyPoint3x4(vertices[edge.B]);
-                Vector3 bottomA = new Vector3(topA.x, targetBottom, topA.z);
-                Vector3 bottomB = new Vector3(topB.x, targetBottom, topB.z);
+                float edgeBottom = tileSource.EdgeBottoms.Resolve(
+                    side,
+                    tileSource.VisibleBottomY) - tileSource.LocalMatrix.m13;
+                if (edgeBottom >= Mathf.Min(topA.y, topB.y) - HeightEpsilon)
+                    continue;
 
-                AddTwoSidedQuad(
+                Vector3 bottomA = new Vector3(topA.x, edgeBottom, topA.z);
+                Vector3 bottomB = new Vector3(topB.x, edgeBottom, topB.z);
+
+                AddOneSidedQuad(
                     skirtVertices,
                     skirtUvs,
                     skirtTriangles,
@@ -265,7 +380,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     inverseLinear.MultiplyPoint3x4(bottomA),
                     inverseLinear.MultiplyPoint3x4(bottomB),
                     Mathf.Max(0.0001f, Vector3.Distance(topA, topB)),
-                    Mathf.Max(0.0001f, Mathf.Abs(topA.y - targetBottom)));
+                    Mathf.Max(0.0001f, Mathf.Abs(topA.y - edgeBottom)));
             }
 
             if (skirtVertices.Count == 0)
@@ -325,11 +440,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector3 worldA,
             Vector3 worldB)
         {
-            if (!source.HasTileFootprint
-                || source.OccludedSides == TileMeshOccludedSides.None)
-            {
+            return TryResolveBoundarySide(source, worldA, worldB, out TileMeshOccludedSides side)
+                && (source.OccludedSides & side) != 0;
+        }
+
+        private static bool TryResolveBoundarySide(
+            TileMeshSource source,
+            Vector3 worldA,
+            Vector3 worldB,
+            out TileMeshOccludedSides side)
+        {
+            side = TileMeshOccludedSides.None;
+            if (!source.HasTileFootprint)
                 return false;
-            }
 
             float half = source.TileHalfExtent;
             float tolerance = Mathf.Max(0.001f, half * 0.02f);
@@ -338,36 +461,41 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             float south = source.TileCenterXZ.y - half;
             float north = source.TileCenterXZ.y + half;
 
-            if ((source.OccludedSides & TileMeshOccludedSides.North) != 0
-                && IsNear(worldA.z, north, tolerance)
+            if (IsNear(worldA.z, north, tolerance)
                 && IsNear(worldB.z, north, tolerance))
             {
+                side = TileMeshOccludedSides.North;
                 return true;
             }
 
-            if ((source.OccludedSides & TileMeshOccludedSides.East) != 0
-                && IsNear(worldA.x, east, tolerance)
+            if (IsNear(worldA.x, east, tolerance)
                 && IsNear(worldB.x, east, tolerance))
             {
+                side = TileMeshOccludedSides.East;
                 return true;
             }
 
-            if ((source.OccludedSides & TileMeshOccludedSides.South) != 0
-                && IsNear(worldA.z, south, tolerance)
+            if (IsNear(worldA.z, south, tolerance)
                 && IsNear(worldB.z, south, tolerance))
             {
+                side = TileMeshOccludedSides.South;
                 return true;
             }
 
-            return (source.OccludedSides & TileMeshOccludedSides.West) != 0
-                && IsNear(worldA.x, west, tolerance)
-                && IsNear(worldB.x, west, tolerance);
+            if (IsNear(worldA.x, west, tolerance)
+                && IsNear(worldB.x, west, tolerance))
+            {
+                side = TileMeshOccludedSides.West;
+                return true;
+            }
+
+            return false;
         }
 
         private static bool IsNear(float value, float target, float tolerance)
             => Mathf.Abs(value - target) <= tolerance;
 
-        private static void AddTwoSidedQuad(
+        private static void AddOneSidedQuad(
             List<Vector3> vertices,
             List<Vector2> uvs,
             List<int> triangles,
@@ -390,21 +518,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             triangles.Add(front + 1);
             triangles.Add(front + 2);
             triangles.Add(front + 3);
-
-            // Separate vertices for the back face prevent opposite normals from
-            // cancelling each other during RecalculateNormals.
-            int back = vertices.Count;
-            vertices.Add(topA);
-            vertices.Add(topB);
-            vertices.Add(bottomA);
-            vertices.Add(bottomB);
-            AddQuadUvs(uvs, width, height);
-            triangles.Add(back + 1);
-            triangles.Add(back + 2);
-            triangles.Add(back);
-            triangles.Add(back + 3);
-            triangles.Add(back + 2);
-            triangles.Add(back + 1);
         }
 
         private static void AddQuadUvs(
@@ -516,6 +629,79 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 source.GetUVs(channel, uvs);
                 if (uvs.Count == source.vertexCount)
                     destination.SetUVs(channel, uvs);
+            }
+        }
+
+        private static void CopyVertexChannelsCompacted(
+            Mesh source,
+            Mesh destination,
+            IReadOnlyList<bool> referenced,
+            int referencedCount)
+        {
+            Vector3[] normals = source.normals;
+            if (normals != null && normals.Length == source.vertexCount)
+            {
+                var compact = new Vector3[referencedCount];
+                CopyReferenced(normals, compact, referenced);
+                destination.normals = compact;
+            }
+
+            Vector4[] tangents = source.tangents;
+            if (tangents != null && tangents.Length == source.vertexCount)
+            {
+                var compact = new Vector4[referencedCount];
+                CopyReferenced(tangents, compact, referenced);
+                destination.tangents = compact;
+            }
+
+            Color32[] colors = source.colors32;
+            if (colors != null && colors.Length == source.vertexCount)
+            {
+                var compact = new Color32[referencedCount];
+                CopyReferenced(colors, compact, referenced);
+                destination.colors32 = compact;
+            }
+
+            BoneWeight[] boneWeights = source.boneWeights;
+            if (boneWeights != null && boneWeights.Length == source.vertexCount)
+            {
+                var compact = new BoneWeight[referencedCount];
+                CopyReferenced(boneWeights, compact, referenced);
+                destination.boneWeights = compact;
+            }
+
+            Matrix4x4[] bindposes = source.bindposes;
+            if (bindposes != null && bindposes.Length > 0)
+                destination.bindposes = bindposes;
+
+            for (int channel = 0; channel < 8; channel++)
+            {
+                var sourceUvs = new List<Vector4>(source.vertexCount);
+                source.GetUVs(channel, sourceUvs);
+                if (sourceUvs.Count != source.vertexCount)
+                    continue;
+
+                var compactUvs = new List<Vector4>(referencedCount);
+                for (int i = 0; i < sourceUvs.Count; i++)
+                {
+                    if (referenced[i])
+                        compactUvs.Add(sourceUvs[i]);
+                }
+
+                destination.SetUVs(channel, compactUvs);
+            }
+        }
+
+        private static void CopyReferenced<T>(
+            IReadOnlyList<T> source,
+            T[] destination,
+            IReadOnlyList<bool> referenced)
+        {
+            int next = 0;
+            for (int i = 0; i < source.Count; i++)
+            {
+                if (referenced[i])
+                    destination[next++] = source[i];
             }
         }
 

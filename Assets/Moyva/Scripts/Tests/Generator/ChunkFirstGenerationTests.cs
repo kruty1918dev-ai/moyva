@@ -3,10 +3,12 @@ using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
+using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.MapChunks.API;
 using Kruty1918.Moyva.MapChunks.Runtime;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Kruty1918.Moyva.Tests.Generator
 {
@@ -122,6 +124,51 @@ namespace Kruty1918.Moyva.Tests.Generator
             Assert.IsTrue(resolved.HasMainTerrain);
             Assert.AreEqual("Cliff", resolved.MainTerrain.TileId);
             Assert.AreEqual(3f, resolved.MainTerrain.Height, 0.0001f);
+        }
+
+        [Test]
+        public void GraphLogicalTileMap_PublishesSurfaceOfRenderedElevatedWinner()
+        {
+            var map = new GraphLogicalTileMap(1, 1);
+            map.AddSample(
+                0,
+                0,
+                new GraphTileLayerSample(
+                    "lower",
+                    "Lower",
+                    "lower-blueprint",
+                    "lower-build",
+                    "Grass",
+                    "Grass",
+                    LayerKind.BaseTerrain,
+                    sortingOrder: 500,
+                    graphLayerOrder: 500,
+                    terrainPriority: 1000,
+                    height: 0f,
+                    surfaceHeight: 1f,
+                    sourceNodeId: "lower-node"));
+            map.AddSample(
+                0,
+                0,
+                new GraphTileLayerSample(
+                    "raised",
+                    "Raised",
+                    "raised-blueprint",
+                    "raised-build",
+                    "Cliff",
+                    "Cliff",
+                    LayerKind.Cliff,
+                    sortingOrder: 0,
+                    graphLayerOrder: 0,
+                    terrainPriority: 1,
+                    height: 2f,
+                    surfaceHeight: 3f,
+                    sourceNodeId: "raised-node"));
+
+            Assert.AreEqual("Cliff", map.TileIds[0, 0]);
+            Assert.AreEqual("raised", map.GraphLayerIds[0, 0]);
+            Assert.AreEqual(2f, map.LayerHeights[0, 0], 0.0001f);
+            Assert.AreEqual(3f, map.SurfaceHeights[0, 0], 0.0001f);
         }
 
         [Test]
@@ -269,6 +316,30 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public void TwcPrefabAlignment_UsesTopOfAllChildMeshes()
+        {
+            Mesh lower = CreateFlatQuadMesh(1f);
+            Mesh upper = CreateFlatQuadMesh(1f);
+            var templates = new[]
+            {
+                new TwcTileMeshSourceProvider.PrefabMeshTemplate(
+                    lower,
+                    Matrix4x4.identity,
+                    null),
+                new TwcTileMeshSourceProvider.PrefabMeshTemplate(
+                    upper,
+                    Matrix4x4.Translate(new Vector3(0f, 3f, 0f)),
+                    null)
+            };
+
+            float top = TwcTileMeshSourceProvider.ResolveAggregateTransformedBoundsTop(
+                templates,
+                Matrix4x4.identity);
+
+            Assert.AreEqual(4f, top, 0.0001f);
+        }
+
+        [Test]
         public void GraphLogicalLayerHeight_PreservesGraphHeightAndTwcSurfaceOffset()
         {
             float noOffset = GraphLogicalTileMapBuilderService.ResolveAuthoritativeSurfaceHeight(
@@ -282,6 +353,26 @@ namespace Kruty1918.Moyva.Tests.Generator
 
             Assert.AreEqual(1f, noOffset, 0.0001f);
             Assert.AreEqual(1.25f, withOffset, 0.0001f);
+        }
+
+        [Test]
+        public void GraphLogicalLayer_PreservesExplicitGeometryPolicy()
+        {
+            var data = new GraphLogicalTileLayerData(
+                "water",
+                "Water",
+                "water",
+                layerHeight: 0f,
+                surfaceHeight: 0.2f,
+                tileGeometryMode: TileGeometryMode.SurfaceOnly,
+                authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored);
+
+            GraphTileLayerSample sample = data.ToSample();
+
+            Assert.AreEqual(TileGeometryMode.SurfaceOnly, sample.TileGeometryMode);
+            Assert.AreEqual(
+                AuthoredClosurePolicy.PreserveAuthored,
+                sample.AuthoredClosurePolicy);
         }
 
         [Test]
@@ -324,6 +415,168 @@ namespace Kruty1918.Moyva.Tests.Generator
             Assert.IsTrue((sides & TileMeshOccludedSides.East) != 0);
             Assert.IsFalse((sides & TileMeshOccludedSides.South) != 0);
             Assert.IsFalse((sides & TileMeshOccludedSides.West) != 0);
+        }
+
+        [Test]
+        public void TwcDualOccludedSides_UsesOccupiedQuadrantPairs()
+        {
+            TileMeshOccludedSides sides =
+                TwcTileMeshSourceProvider.ResolveDualOccludedSides(
+                    topLeft: true,
+                    topRight: true,
+                    bottomLeft: true,
+                    bottomRight: false);
+
+            Assert.IsTrue((sides & TileMeshOccludedSides.North) != 0);
+            Assert.IsTrue((sides & TileMeshOccludedSides.West) != 0);
+            Assert.IsFalse((sides & TileMeshOccludedSides.East) != 0);
+            Assert.IsFalse((sides & TileMeshOccludedSides.South) != 0);
+        }
+
+        [Test]
+        public void TwcDualOwnership_DeduplicatesOnlyMatchingTerrainIdentity()
+        {
+            bool differentIdentityOwnsComplementaryFragment =
+                TwcTileMeshSourceProvider.ShouldCurrentOwnDualFragment(
+                    westMatchesIdentity: false,
+                    southMatchesIdentity: false,
+                    southWestMatchesIdentity: false);
+            bool matchingIdentityDuplicatesFragment =
+                TwcTileMeshSourceProvider.ShouldCurrentOwnDualFragment(
+                    westMatchesIdentity: true,
+                    southMatchesIdentity: false,
+                    southWestMatchesIdentity: false);
+
+            Assert.IsTrue(differentIdentityOwnsComplementaryFragment);
+            Assert.IsFalse(matchingIdentityDuplicatesFragment);
+        }
+
+        [Test]
+        public void TwcDualGrid_DifferentTerrainLayersBothEmitSharedSeamFragments()
+        {
+            TwcTileMeshSourceProvider provider =
+                CreateDualGridProvider("terrain-a", "terrain-b");
+            var westSources = new List<TileMeshSource>();
+            var eastSources = new List<TileMeshSource>();
+            GraphTileLayerSample westSample =
+                CreateHeightSample("terrain-a", 0f);
+            GraphTileLayerSample eastSample =
+                CreateHeightSample("terrain-b", 0f);
+            var west = new ResolvedTileComposition(
+                Vector2Int.zero,
+                westSample,
+                default,
+                true,
+                false,
+                string.Empty,
+                eastMatches: false,
+                eastSurfaceHeight: 0f);
+            var east = new ResolvedTileComposition(
+                Vector2Int.right,
+                eastSample,
+                default,
+                true,
+                false,
+                string.Empty,
+                westMatches: false,
+                westSurfaceHeight: 0f);
+
+            provider.CollectMeshSources(west, westSources);
+            provider.CollectMeshSources(east, eastSources);
+
+            Assert.AreEqual(4, westSources.Count);
+            Assert.AreEqual(4, eastSources.Count);
+            Assert.AreEqual(2, CountSourcesAtX(westSources, 0.5f));
+            Assert.AreEqual(2, CountSourcesAtX(eastSources, 0.5f));
+        }
+
+        [Test]
+        public void TwcDualGrid_SameTerrainLayerEmitsSharedSeamFragmentsOnce()
+        {
+            TwcTileMeshSourceProvider provider =
+                CreateDualGridProvider("terrain-a");
+            var westSources = new List<TileMeshSource>();
+            var eastSources = new List<TileMeshSource>();
+            GraphTileLayerSample sample =
+                CreateHeightSample("terrain-a", 0f);
+            var west = new ResolvedTileComposition(
+                Vector2Int.zero,
+                sample,
+                default,
+                true,
+                false,
+                string.Empty,
+                eastMatches: true,
+                eastSurfaceHeight: 0f);
+            var east = new ResolvedTileComposition(
+                Vector2Int.right,
+                sample,
+                default,
+                true,
+                false,
+                string.Empty,
+                westMatches: true,
+                westSurfaceHeight: 0f);
+
+            provider.CollectMeshSources(west, westSources);
+            provider.CollectMeshSources(east, eastSources);
+
+            Assert.AreEqual(2, CountSourcesAtX(westSources, 0.5f));
+            Assert.AreEqual(0, CountSourcesAtX(eastSources, 0.5f));
+        }
+
+        [Test]
+        public void TwcOccludedSides_UsesNeighborSurfaceInsteadOfLayerIdentity()
+        {
+            GraphTileLayerSample main = CreateHeightSample("high", 2f);
+            var composition = new ResolvedTileComposition(
+                Vector2Int.zero,
+                main,
+                default,
+                true,
+                false,
+                string.Empty,
+                northSurfaceHeight: 2f,
+                eastSurfaceHeight: 3f,
+                southSurfaceHeight: 1f);
+
+            TileMeshOccludedSides sides =
+                TwcTileMeshSourceProvider.ResolveOccludedSides(composition);
+
+            Assert.IsTrue((sides & TileMeshOccludedSides.North) != 0);
+            Assert.IsTrue((sides & TileMeshOccludedSides.East) != 0);
+            Assert.IsFalse((sides & TileMeshOccludedSides.South) != 0);
+        }
+
+        [Test]
+        public void TwcHeightTransition_HasExactlyOneDeterministicWallOwner()
+        {
+            var high = new ResolvedTileComposition(
+                Vector2Int.zero,
+                CreateHeightSample("high", 2f),
+                default,
+                true,
+                false,
+                string.Empty,
+                eastSurfaceHeight: 1f);
+            var low = new ResolvedTileComposition(
+                Vector2Int.right,
+                CreateHeightSample("low", 1f),
+                default,
+                true,
+                false,
+                string.Empty,
+                westSurfaceHeight: 2f);
+
+            bool highEmitsEast =
+                (TwcTileMeshSourceProvider.ResolveOccludedSides(high)
+                 & TileMeshOccludedSides.East) == 0;
+            bool lowEmitsWest =
+                (TwcTileMeshSourceProvider.ResolveOccludedSides(low)
+                 & TileMeshOccludedSides.West) == 0;
+
+            Assert.IsTrue(highEmitsEast);
+            Assert.IsFalse(lowEmitsWest);
         }
 
         [Test]
@@ -416,7 +669,113 @@ namespace Kruty1918.Moyva.Tests.Generator
 
             Assert.IsTrue(created);
             Assert.IsNotNull(result);
-            Assert.AreEqual(18, result.triangles.Length);
+            Assert.AreEqual(12, result.triangles.Length);
+            Assert.AreEqual(8, result.vertexCount);
+        }
+
+        [Test]
+        public void VerticalFill_PreserveAuthoredDoesNotDeformVolumeMesh()
+        {
+            Mesh mesh = CreateTwoLevelTriangleMesh();
+            var source = new TileMeshSource(
+                mesh,
+                null,
+                Matrix4x4.identity,
+                visibleBottomY: 0f,
+                authoredClosurePolicy: AuthoredClosurePolicy.PreserveAuthored);
+
+            bool created = TileVerticalFillMeshUtility.TryCreate(source, out Mesh result);
+
+            Assert.IsFalse(created);
+            Assert.IsNull(result);
+        }
+
+        [Test]
+        public void VerticalFill_RemovesUnreferencedVerticesAfterTriangleCulling()
+        {
+            Mesh mesh = CreateTwoLevelTriangleMesh();
+            var source = new TileMeshSource(
+                mesh,
+                null,
+                Matrix4x4.identity,
+                visibleBottomY: 0f,
+                authoredClosurePolicy: AuthoredClosurePolicy.GeneratedClosure);
+
+            bool created = TileVerticalFillMeshUtility.TryCreate(source, out Mesh result);
+            if (result != null)
+                _created.Add(result);
+
+            Assert.IsTrue(created);
+            Assert.IsNotNull(result);
+            Assert.AreEqual(3, result.vertexCount);
+            Assert.AreEqual(3, result.triangles.Length);
+        }
+
+        [Test]
+        public void VerticalFill_HeightTransitionCreatesOnlyDeltaWall()
+        {
+            Mesh mesh = CreateFlatQuadMesh(2f);
+            var source = new TileMeshSource(
+                mesh,
+                null,
+                Matrix4x4.identity,
+                visibleBottomY: 0f,
+                occludedSides: TileMeshOccludedSides.North
+                    | TileMeshOccludedSides.South
+                    | TileMeshOccludedSides.West,
+                tileCenterXZ: Vector2.zero,
+                tileHalfExtent: 0.5f,
+                edgeBottoms: new TileMeshEdgeBottoms(
+                    north: 2f,
+                    east: 1f,
+                    south: 2f,
+                    west: 2f));
+
+            bool created = TileVerticalFillMeshUtility.TryCreate(source, out Mesh result);
+            if (result != null)
+                _created.Add(result);
+
+            Assert.IsTrue(created);
+            Assert.AreEqual(12, result.triangles.Length);
+            Assert.AreEqual(1f, result.bounds.min.y, 0.0001f);
+            Assert.AreEqual(2f, result.bounds.max.y, 0.0001f);
+        }
+
+        [Test]
+        public void SurfaceOnly_RemovesAuthoredSidesAndBottomAndPreservesStreams()
+        {
+            Mesh mesh = CreateClosedTileMeshWithChannels();
+            var source = new TileMeshSource(
+                mesh,
+                null,
+                Matrix4x4.Scale(new Vector3(-1f, 1f, 1f)),
+                tileGeometryMode: TileGeometryMode.SurfaceOnly);
+
+            SurfaceOnlyMeshBuildStatus status =
+                TileSurfaceOnlyMeshUtility.Create(source, out Mesh result);
+            if (result != null)
+                _created.Add(result);
+
+            Assert.AreEqual(SurfaceOnlyMeshBuildStatus.Created, status);
+            Assert.IsNotNull(result);
+            Assert.AreEqual(4, result.vertexCount);
+            Assert.AreEqual(2, result.subMeshCount);
+            Assert.AreEqual(6, result.GetIndices(0).Length);
+            Assert.AreEqual(0, result.GetIndices(1).Length);
+            Assert.AreEqual(1f, result.bounds.min.y, 0.0001f);
+            Assert.AreEqual(1f, result.bounds.max.y, 0.0001f);
+            Assert.AreEqual(4, result.normals.Length);
+            Assert.AreEqual(4, result.tangents.Length);
+            Assert.AreEqual(4, result.colors32.Length);
+            for (int channel = 0; channel < 8; channel++)
+            {
+                var uvs = new List<Vector4>();
+                result.GetUVs(channel, uvs);
+                Assert.AreEqual(
+                    4,
+                    uvs.Count,
+                    $"UV{channel} must survive SurfaceOnly compaction.");
+            }
         }
 
         [Test]
@@ -444,19 +803,733 @@ namespace Kruty1918.Moyva.Tests.Generator
             Assert.IsTrue(mesh == null);
         }
 
-        private Mesh CreateFlatQuadMesh()
+        [Test]
+        public void ChunkTerrainMeshBuilder_UsesFinalOptimizedMeshForCollider()
+        {
+            Mesh sourceMesh = CreateFlatQuadMesh();
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit")
+                ?? Shader.Find("Standard");
+            Assert.IsNotNull(shader, "A built-in test shader is required.");
+            var material = new Material(shader);
+            var chunkObject = new GameObject("Chunk Collider Test");
+            _created.Add(material);
+            _created.Add(chunkObject);
+
+            var registry = new ChunkFirstRuntimeMeshRegistry();
+            var builder = new ChunkTerrainMeshBuilder(
+                registry,
+                new ChunkFirstBuildDiagnostics());
+            var resolved = new Dictionary<Vector2Int, ResolvedTileComposition>
+            {
+                [Vector2Int.zero] = new ResolvedTileComposition(
+                    Vector2Int.zero,
+                    CreateHeightSample("ground", 1f),
+                    default,
+                    true,
+                    false,
+                    string.Empty)
+            };
+            var source = new SingleMeshSource(sourceMesh, material);
+            var area = new ChunkBuildArea(
+                default,
+                new RectInt(0, 0, 1, 1),
+                new RectInt(0, 0, 1, 1));
+
+            int built = builder.Build(chunkObject.transform, area, resolved, source);
+
+            Transform terrain = chunkObject.transform.Find("TerrainMesh");
+            Assert.AreEqual(1, built);
+            Assert.IsNotNull(terrain);
+            Mesh rendered = terrain.GetComponent<MeshFilter>().sharedMesh;
+            Mesh collided = terrain.GetComponent<MeshCollider>().sharedMesh;
+            Assert.AreSame(rendered, collided);
+            Assert.LessOrEqual(rendered.bounds.min.x, -0.5f);
+            Assert.GreaterOrEqual(rendered.bounds.max.x, 0.5f);
+            Assert.LessOrEqual(rendered.bounds.min.z, -0.5f);
+            Assert.GreaterOrEqual(rendered.bounds.max.z, 0.5f);
+
+            registry.Clear();
+        }
+
+        [Test]
+        public void ChunkTerrainMeshBuilder_SurfaceOnlyEmitsNoVolumeFaces()
+        {
+            Mesh sourceMesh = CreateClosedTileMeshWithChannels();
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit")
+                ?? Shader.Find("Standard");
+            Assert.IsNotNull(shader, "A built-in test shader is required.");
+            var material = new Material(shader);
+            var chunkObject = new GameObject("SurfaceOnly Chunk Test");
+            _created.Add(material);
+            _created.Add(chunkObject);
+
+            var registry = new ChunkFirstRuntimeMeshRegistry();
+            var builder = new ChunkTerrainMeshBuilder(
+                registry,
+                new ChunkFirstBuildDiagnostics());
+            var resolved = new Dictionary<Vector2Int, ResolvedTileComposition>
+            {
+                [Vector2Int.zero] = new ResolvedTileComposition(
+                    Vector2Int.zero,
+                    CreateHeightSample("water", 1f),
+                    default,
+                    true,
+                    false,
+                    string.Empty)
+            };
+            var source = new SingleMeshSource(
+                sourceMesh,
+                material,
+                TileGeometryMode.SurfaceOnly);
+            var area = new ChunkBuildArea(
+                default,
+                new RectInt(0, 0, 1, 1),
+                new RectInt(0, 0, 1, 1));
+
+            int built = builder.Build(
+                chunkObject.transform,
+                area,
+                resolved,
+                source);
+
+            Transform terrain = chunkObject.transform.Find("TerrainMesh");
+            Assert.AreEqual(1, built);
+            Assert.IsNotNull(terrain);
+            Mesh rendered = terrain.GetComponent<MeshFilter>().sharedMesh;
+            Assert.IsNotNull(rendered);
+            Assert.AreEqual(6, rendered.triangles.Length);
+            foreach (Vector3 vertex in rendered.vertices)
+                Assert.AreEqual(1f, vertex.y, 0.0001f);
+
+            registry.Clear();
+        }
+
+        [Test]
+        public void ExactVertexWeld_MergesOnlyFullyIdenticalVertexPayloads()
+        {
+            Mesh source = CreateDuplicateVertexMesh(
+                duplicateUv: new Vector2(0f, 0f));
+
+            bool created =
+                ExactVertexWeldMeshUtility.TryCreate(source, out Mesh welded);
+            _created.Add(welded);
+
+            Assert.IsTrue(created);
+            Assert.IsNotNull(welded);
+            Assert.AreEqual(3, welded.vertexCount);
+            Assert.AreEqual(2, welded.subMeshCount);
+            CollectionAssert.AreEqual(
+                new[] { 0, 1, 2 },
+                welded.GetIndices(0));
+            CollectionAssert.AreEqual(
+                new[] { 0, 2, 1 },
+                welded.GetIndices(1));
+            CollectionAssert.AreEqual(
+                new[] { 0, 1, 2, 0, 2, 1 },
+                welded.triangles);
+            Assert.AreEqual(3, welded.normals.Length);
+            Assert.AreEqual(3, welded.tangents.Length);
+            Assert.AreEqual(3, welded.colors32.Length);
+            for (int channel = 0; channel < 8; channel++)
+            {
+                var uvs = new List<Vector4>();
+                welded.GetUVs(channel, uvs);
+                Assert.AreEqual(
+                    3,
+                    uvs.Count,
+                    $"UV{channel} must survive exact welding.");
+            }
+        }
+
+        [Test]
+        public void ExactVertexWeld_PreservesUvSeamAtSamePosition()
+        {
+            Mesh source = CreateDuplicateVertexMesh(
+                duplicateUv: new Vector2(1f, 1f));
+
+            bool created =
+                ExactVertexWeldMeshUtility.TryCreate(source, out Mesh welded);
+
+            Assert.IsFalse(created);
+            Assert.IsNull(welded);
+            Assert.AreEqual(4, source.vertexCount);
+        }
+
+        [Test]
+        public void ExactVertexWeld_RemovesUnreferencedVerticesWithoutDuplicates()
+        {
+            var source = new Mesh
+            {
+                name = "Unreferenced Vertex Test",
+                vertices = new[]
+                {
+                    Vector3.zero,
+                    Vector3.right,
+                    Vector3.up,
+                    Vector3.one,
+                },
+                triangles = new[] { 0, 1, 2 },
+            };
+            source.RecalculateBounds();
+            _created.Add(source);
+
+            bool created =
+                ExactVertexWeldMeshUtility.TryCreate(source, out Mesh compact);
+            _created.Add(compact);
+
+            Assert.IsTrue(created);
+            Assert.IsNotNull(compact);
+            Assert.AreEqual(3, compact.vertexCount);
+            CollectionAssert.AreEqual(
+                new[] { 0, 1, 2 },
+                compact.GetIndices(0));
+        }
+
+        [Test]
+        public void ExactVertexWeld_PreservesSubMeshMetadataAndMeshState()
+        {
+            var source = new Mesh
+            {
+                name = "SubMesh Metadata Test",
+                indexFormat = IndexFormat.UInt32,
+                vertices = new[]
+                {
+                    Vector3.zero,
+                    Vector3.right,
+                    Vector3.up,
+                    new Vector3(2f, 0f, 0f),
+                    new Vector3(3f, 0f, 0f),
+                    new Vector3(99f, 99f, 99f),
+                },
+                bindposes = new[]
+                {
+                    Matrix4x4.Translate(new Vector3(1f, 2f, 3f)),
+                },
+            };
+            source.subMeshCount = 2;
+            source.SetIndices(
+                new[] { 0, 1, 2 },
+                MeshTopology.Triangles,
+                0,
+                calculateBounds: false,
+                baseVertex: 0);
+            source.SetIndices(
+                new[] { 0, 1 },
+                MeshTopology.Lines,
+                1,
+                calculateBounds: false,
+                baseVertex: 3);
+
+            var meshBounds = new Bounds(
+                new Vector3(5f, 6f, 7f),
+                new Vector3(8f, 9f, 10f));
+            var firstBounds = new Bounds(
+                Vector3.one,
+                Vector3.one * 2f);
+            var secondBounds = new Bounds(
+                Vector3.right * 3f,
+                Vector3.one * 4f);
+            source.bounds = meshBounds;
+            SetSubMeshBounds(source, 0, firstBounds);
+            SetSubMeshBounds(source, 1, secondBounds);
+            _created.Add(source);
+
+            bool created =
+                ExactVertexWeldMeshUtility.TryCreate(source, out Mesh compact);
+            _created.Add(compact);
+
+            Assert.IsTrue(created);
+            Assert.AreEqual(5, compact.vertexCount);
+            Assert.AreEqual(IndexFormat.UInt32, compact.indexFormat);
+            Assert.AreEqual(2, compact.subMeshCount);
+            Assert.AreEqual(MeshTopology.Triangles, compact.GetTopology(0));
+            Assert.AreEqual(MeshTopology.Lines, compact.GetTopology(1));
+            Assert.AreEqual(0, compact.GetBaseVertex(0));
+            Assert.AreEqual(3, compact.GetBaseVertex(1));
+            CollectionAssert.AreEqual(
+                new[] { 0, 1, 2 },
+                compact.GetIndices(0, applyBaseVertex: false));
+            CollectionAssert.AreEqual(
+                new[] { 0, 1 },
+                compact.GetIndices(1, applyBaseVertex: false));
+            Assert.AreEqual(meshBounds, compact.bounds);
+            Assert.AreEqual(firstBounds, compact.GetSubMesh(0).bounds);
+            Assert.AreEqual(secondBounds, compact.GetSubMesh(1).bounds);
+            CollectionAssert.AreEqual(source.bindposes, compact.bindposes);
+        }
+
+        [Test]
+        public void ExactVertexWeld_CompactsPastEmptySubMeshPadding()
+        {
+            var source = new Mesh
+            {
+                name = "Empty SubMesh Padding Test",
+                indexFormat = IndexFormat.UInt32,
+                vertices = new[]
+                {
+                    Vector3.zero,
+                    Vector3.right,
+                    Vector3.up,
+                    Vector3.one,
+                    Vector3.one * 2f,
+                    Vector3.one * 3f,
+                },
+            };
+            source.subMeshCount = 2;
+            source.SetIndices(
+                new[] { 0, 1, 2 },
+                MeshTopology.Triangles,
+                0,
+                calculateBounds: false);
+            source.SetIndices(
+                System.Array.Empty<int>(),
+                MeshTopology.Lines,
+                1,
+                calculateBounds: false,
+                baseVertex: 5);
+            _created.Add(source);
+
+            bool created =
+                ExactVertexWeldMeshUtility.TryCreate(source, out Mesh compact);
+            _created.Add(compact);
+
+            Assert.IsTrue(created);
+            Assert.AreEqual(3, compact.vertexCount);
+            Assert.AreEqual(MeshTopology.Lines, compact.GetTopology(1));
+            Assert.AreEqual(0, compact.GetIndexCount(1));
+            Assert.AreEqual(0, compact.GetBaseVertex(1));
+        }
+
+        [Test]
+        public void ExactVertexWeld_ExaminesEveryRawVertexStream()
+        {
+            Mesh seamSource = CreateMultiStreamDuplicateMesh(
+                matchingUv7: false);
+
+            bool seamCreated =
+                ExactVertexWeldMeshUtility.TryCreate(
+                    seamSource,
+                    out Mesh seamResult);
+
+            Assert.IsFalse(seamCreated);
+            Assert.IsNull(seamResult);
+
+            Mesh matchingSource = CreateMultiStreamDuplicateMesh(
+                matchingUv7: true);
+            bool matchingCreated =
+                ExactVertexWeldMeshUtility.TryCreate(
+                    matchingSource,
+                    out Mesh matchingResult);
+            _created.Add(matchingResult);
+
+            Assert.IsTrue(matchingCreated);
+            Assert.IsNotNull(matchingResult);
+            Assert.AreEqual(3, matchingResult.vertexCount);
+            Assert.AreEqual(4, matchingResult.vertexBufferCount);
+            var uv7 = new List<Vector2>();
+            matchingResult.GetUVs(7, uv7);
+            Assert.AreEqual(3, uv7.Count);
+        }
+
+        private TwcTileMeshSourceProvider CreateDualGridProvider(
+            params string[] terrainIds)
+        {
+            var managerObject = new GameObject("Dual Grid Test Manager");
+            _created.Add(managerObject);
+            var manager =
+                managerObject.AddComponent<TileWorldCreatorManager>();
+            var configuration =
+                ScriptableObject.CreateInstance<Configuration>();
+            _created.Add(configuration);
+            configuration.cellSize = 1f;
+            manager.configuration = configuration;
+
+            var folder = new BuildLayerFolder("Dual Grid Test");
+            configuration.buildLayerFolders.Add(folder);
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit")
+                ?? Shader.Find("Standard");
+            Assert.IsNotNull(shader, "A built-in test shader is required.");
+
+            for (int index = 0; index < terrainIds.Length; index++)
+            {
+                string terrainId = terrainIds[index];
+                Mesh mesh = CreateFlatQuadMesh(0f);
+                var material = new Material(shader)
+                {
+                    name = terrainId + "-material"
+                };
+                _created.Add(material);
+                var prefab = new GameObject(terrainId + "-dual-tile");
+                _created.Add(prefab);
+                prefab.AddComponent<MeshFilter>().sharedMesh = mesh;
+                prefab.AddComponent<MeshRenderer>().sharedMaterial = material;
+
+                var preset = ScriptableObject.CreateInstance<TilePreset>();
+                _created.Add(preset);
+                preset.name = terrainId;
+                preset.tileId = terrainId;
+                preset.gridtype = TilePreset.GridType.dual;
+                preset.DUALGRD_cornerTile = prefab;
+                preset.DUALGRD_invertedCornerTile = prefab;
+                preset.DUALGRD_edgeTile = prefab;
+                preset.DUALGRD_fillTile = prefab;
+                preset.DUALGRD_doubleInteriorCornerTile = prefab;
+
+                var buildLayer =
+                    ScriptableObject.CreateInstance<TilesBuildLayer>();
+                _created.Add(buildLayer);
+                buildLayer.guid = terrainId + "-build";
+                buildLayer.assignedBlueprintLayerGuid =
+                    terrainId + "-blueprint";
+                buildLayer.scaleTileToCellSize = false;
+                buildLayer.scaleOffset = Vector3.one;
+                buildLayer.tilePresetsTop.Add(
+                    new TilesBuildLayer.TilePresetSelection
+                    {
+                        preset = preset,
+                        weight = 1f
+                    });
+                folder.buildLayers.Add(buildLayer);
+            }
+
+            var mapping =
+                ScriptableObject.CreateInstance<TileWorldCreatorIdMappingSO>();
+            _created.Add(mapping);
+            return new TwcTileMeshSourceProvider(
+                new TileWorldCreatorBuildEnvironment(
+                    manager,
+                    mapping,
+                    new TileWorldCreatorBuildOptions()));
+        }
+
+        private static int CountSourcesAtX(
+            IReadOnlyList<TileMeshSource> sources,
+            float expectedX)
+        {
+            int count = 0;
+            for (int index = 0; index < sources.Count; index++)
+            {
+                if (Mathf.Abs(
+                        sources[index].LocalMatrix.m03 - expectedX)
+                    <= 0.0001f)
+                {
+                    count++;
+                }
+            }
+
+            return count;
+        }
+
+        private static void SetSubMeshBounds(
+            Mesh mesh,
+            int subMesh,
+            Bounds bounds)
+        {
+            SubMeshDescriptor descriptor = mesh.GetSubMesh(subMesh);
+            descriptor.bounds = bounds;
+            mesh.SetSubMesh(
+                subMesh,
+                descriptor,
+                MeshUpdateFlags.DontRecalculateBounds
+                | MeshUpdateFlags.DontValidateIndices);
+        }
+
+        private Mesh CreateMultiStreamDuplicateMesh(bool matchingUv7)
+        {
+            var mesh = new Mesh { name = "Multi Stream Exact Weld Test" };
+            mesh.SetVertexBufferParams(
+                4,
+                new VertexAttributeDescriptor(
+                    VertexAttribute.Position,
+                    VertexAttributeFormat.Float32,
+                    3,
+                    stream: 0),
+                new VertexAttributeDescriptor(
+                    VertexAttribute.Normal,
+                    VertexAttributeFormat.Float32,
+                    3,
+                    stream: 1),
+                new VertexAttributeDescriptor(
+                    VertexAttribute.TexCoord0,
+                    VertexAttributeFormat.Float32,
+                    2,
+                    stream: 2),
+                new VertexAttributeDescriptor(
+                    VertexAttribute.TexCoord7,
+                    VertexAttributeFormat.Float32,
+                    2,
+                    stream: 3));
+            mesh.SetVertexBufferData(
+                new[]
+                {
+                    Vector3.zero,
+                    Vector3.right,
+                    Vector3.up,
+                    Vector3.zero,
+                },
+                0,
+                0,
+                4,
+                stream: 0);
+            mesh.SetVertexBufferData(
+                new[]
+                {
+                    Vector3.forward,
+                    Vector3.forward,
+                    Vector3.forward,
+                    Vector3.forward,
+                },
+                0,
+                0,
+                4,
+                stream: 1);
+            mesh.SetVertexBufferData(
+                new[]
+                {
+                    Vector2.zero,
+                    Vector2.right,
+                    Vector2.up,
+                    Vector2.zero,
+                },
+                0,
+                0,
+                4,
+                stream: 2);
+            mesh.SetVertexBufferData(
+                new[]
+                {
+                    Vector2.zero,
+                    Vector2.right,
+                    Vector2.up,
+                    matchingUv7 ? Vector2.zero : Vector2.one,
+                },
+                0,
+                0,
+                4,
+                stream: 3);
+            mesh.subMeshCount = 2;
+            mesh.SetIndices(
+                new[] { 0, 1, 2 },
+                MeshTopology.Triangles,
+                0,
+                calculateBounds: false);
+            mesh.SetIndices(
+                new[] { 3, 2, 1 },
+                MeshTopology.Triangles,
+                1,
+                calculateBounds: false);
+            mesh.RecalculateBounds();
+            _created.Add(mesh);
+            return mesh;
+        }
+
+        private Mesh CreateDuplicateVertexMesh(Vector2 duplicateUv)
+        {
+            var mesh = new Mesh
+            {
+                name = "Exact Weld Test",
+                vertices = new[]
+                {
+                    Vector3.zero,
+                    Vector3.right,
+                    Vector3.up,
+                    Vector3.zero,
+                },
+                normals = new[]
+                {
+                    Vector3.forward,
+                    Vector3.forward,
+                    Vector3.forward,
+                    Vector3.forward,
+                },
+                tangents = new[]
+                {
+                    new Vector4(1f, 0f, 0f, 1f),
+                    new Vector4(1f, 0f, 0f, 1f),
+                    new Vector4(1f, 0f, 0f, 1f),
+                    new Vector4(1f, 0f, 0f, 1f),
+                },
+                colors32 = new[]
+                {
+                    new Color32(255, 0, 0, 255),
+                    new Color32(0, 255, 0, 255),
+                    new Color32(0, 0, 255, 255),
+                    new Color32(255, 0, 0, 255),
+                },
+                uv = new[]
+                {
+                    Vector2.zero,
+                    Vector2.right,
+                    Vector2.up,
+                    duplicateUv,
+                }
+            };
+            for (int channel = 1; channel < 8; channel++)
+            {
+                float value = channel * 0.1f;
+                mesh.SetUVs(
+                    channel,
+                    new List<Vector4>
+                    {
+                        new Vector4(value, 0f, 0f, 1f),
+                        new Vector4(value, 1f, 0f, 1f),
+                        new Vector4(value, 0f, 1f, 1f),
+                        new Vector4(value, 0f, 0f, 1f),
+                    });
+            }
+
+            mesh.subMeshCount = 2;
+            mesh.SetTriangles(new[] { 0, 1, 2 }, 0, false);
+            mesh.SetTriangles(new[] { 3, 2, 1 }, 1, false);
+            mesh.RecalculateBounds();
+            _created.Add(mesh);
+            return mesh;
+        }
+
+        private Mesh CreateClosedTileMeshWithChannels()
+        {
+            var vertices = new[]
+            {
+                new Vector3(-0.5f, 0f, -0.5f),
+                new Vector3(0.5f, 0f, -0.5f),
+                new Vector3(0.5f, 0f, 0.5f),
+                new Vector3(-0.5f, 0f, 0.5f),
+                new Vector3(-0.5f, 1f, -0.5f),
+                new Vector3(0.5f, 1f, -0.5f),
+                new Vector3(0.5f, 1f, 0.5f),
+                new Vector3(-0.5f, 1f, 0.5f)
+            };
+            var mesh = new Mesh
+            {
+                name = "Closed SurfaceOnly Test",
+                vertices = vertices,
+                normals = new[]
+                {
+                    Vector3.down,
+                    Vector3.down,
+                    Vector3.down,
+                    Vector3.down,
+                    Vector3.up,
+                    Vector3.up,
+                    Vector3.up,
+                    Vector3.up
+                },
+                tangents = new[]
+                {
+                    new Vector4(1f, 0f, 0f, 1f),
+                    new Vector4(1f, 0f, 0f, 1f),
+                    new Vector4(1f, 0f, 0f, 1f),
+                    new Vector4(1f, 0f, 0f, 1f),
+                    new Vector4(1f, 0f, 0f, 1f),
+                    new Vector4(1f, 0f, 0f, 1f),
+                    new Vector4(1f, 0f, 0f, 1f),
+                    new Vector4(1f, 0f, 0f, 1f)
+                },
+                colors32 = new[]
+                {
+                    new Color32(10, 20, 30, 255),
+                    new Color32(20, 30, 40, 255),
+                    new Color32(30, 40, 50, 255),
+                    new Color32(40, 50, 60, 255),
+                    new Color32(50, 60, 70, 255),
+                    new Color32(60, 70, 80, 255),
+                    new Color32(70, 80, 90, 255),
+                    new Color32(80, 90, 100, 255)
+                }
+            };
+
+            for (int channel = 0; channel < 8; channel++)
+            {
+                float value = channel * 0.1f;
+                mesh.SetUVs(
+                    channel,
+                    new List<Vector4>
+                    {
+                        new Vector4(0f, 0f, value, 1f),
+                        new Vector4(1f, 0f, value, 1f),
+                        new Vector4(1f, 1f, value, 1f),
+                        new Vector4(0f, 1f, value, 1f),
+                        new Vector4(0f, 0f, value, 1f),
+                        new Vector4(1f, 0f, value, 1f),
+                        new Vector4(1f, 1f, value, 1f),
+                        new Vector4(0f, 1f, value, 1f)
+                    });
+            }
+
+            mesh.subMeshCount = 2;
+            mesh.SetTriangles(
+                new[] { 4, 6, 5, 4, 7, 6 },
+                0,
+                false);
+            mesh.SetTriangles(
+                new[]
+                {
+                    0, 1, 2, 0, 2, 3,
+                    0, 4, 5, 0, 5, 1,
+                    1, 5, 6, 1, 6, 2,
+                    2, 6, 7, 2, 7, 3,
+                    3, 7, 4, 3, 4, 0
+                },
+                1,
+                false);
+            mesh.RecalculateBounds();
+            _created.Add(mesh);
+            return mesh;
+        }
+
+        private Mesh CreateFlatQuadMesh(float height = 1f)
         {
             var mesh = new Mesh
             {
                 name = "Flat Tile Test",
                 vertices = new[]
                 {
-                    new Vector3(-0.5f, 1f, -0.5f),
-                    new Vector3(0.5f, 1f, -0.5f),
-                    new Vector3(0.5f, 1f, 0.5f),
-                    new Vector3(-0.5f, 1f, 0.5f)
+                    new Vector3(-0.5f, height, -0.5f),
+                    new Vector3(0.5f, height, -0.5f),
+                    new Vector3(0.5f, height, 0.5f),
+                    new Vector3(-0.5f, height, 0.5f)
                 },
                 triangles = new[] { 0, 2, 1, 0, 3, 2 }
+            };
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            _created.Add(mesh);
+            return mesh;
+        }
+
+        private static GraphTileLayerSample CreateHeightSample(string id, float surfaceHeight)
+        {
+            return new GraphTileLayerSample(
+                id,
+                id,
+                id + "-blueprint",
+                id + "-build",
+                id,
+                id,
+                LayerKind.BaseTerrain,
+                sortingOrder: 0,
+                graphLayerOrder: 0,
+                terrainPriority: 0,
+                height: surfaceHeight,
+                surfaceHeight: surfaceHeight,
+                sourceNodeId: id + "-node");
+        }
+
+        private Mesh CreateTwoLevelTriangleMesh()
+        {
+            var mesh = new Mesh
+            {
+                name = "Two Level Tile Test",
+                vertices = new[]
+                {
+                    new Vector3(-0.5f, 1f, -0.5f),
+                    new Vector3(0.5f, 1f, -0.5f),
+                    new Vector3(0f, 1f, 0.5f),
+                    new Vector3(-0.5f, -1f, -0.5f),
+                    new Vector3(0.5f, -1f, -0.5f),
+                    new Vector3(0f, -1f, 0.5f)
+                },
+                triangles = new[] { 0, 2, 1, 3, 4, 5 }
             };
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
@@ -485,6 +1558,36 @@ namespace Kruty1918.Moyva.Tests.Generator
                 0f,
                 0f,
                 id + "-node");
+        }
+
+        private sealed class SingleMeshSource : IResolvedTileMeshSource
+        {
+            private readonly Mesh _mesh;
+            private readonly Material _material;
+            private readonly TileGeometryMode _tileGeometryMode;
+
+            public SingleMeshSource(
+                Mesh mesh,
+                Material material,
+                TileGeometryMode tileGeometryMode =
+                    TileGeometryMode.SolidTerrain)
+            {
+                _mesh = mesh;
+                _material = material;
+                _tileGeometryMode = tileGeometryMode;
+            }
+
+            public int CollectMeshSources(
+                ResolvedTileComposition composition,
+                List<TileMeshSource> results)
+            {
+                results.Add(new TileMeshSource(
+                    _mesh,
+                    new[] { _material },
+                    Matrix4x4.identity,
+                    tileGeometryMode: _tileGeometryMode));
+                return 1;
+            }
         }
     }
 }

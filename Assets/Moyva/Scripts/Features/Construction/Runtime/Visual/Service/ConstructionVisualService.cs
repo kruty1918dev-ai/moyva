@@ -197,6 +197,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (selected == null)
                 return false;
 
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    selected,
+                    out SettlementInfluenceRequirementBuildingModule module))
+            {
+                if (module.MergeMode == PlacementRuleMergeMode.Disabled)
+                    return false;
+                if (module.MergeMode == PlacementRuleMergeMode.Override)
+                    return module.RequiresInfluence
+                        || module.BlockOverlappingCenters;
+            }
+
+            if (selected.PlacementRules != null)
+            {
+                return selected.PlacementRules
+                           .RequiresSettlementInfluence
+                    || selected.PlacementRules
+                        .BlockIfSettlementCenterInRange;
+            }
+
             if (selected.UseCustomTownHallRules)
                 return selected.RequireTownHallInRange || selected.BlockIfTownHallAlreadyInRange;
 

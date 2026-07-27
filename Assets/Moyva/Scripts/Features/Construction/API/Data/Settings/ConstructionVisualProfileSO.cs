@@ -71,6 +71,30 @@ namespace Kruty1918.Moyva.Construction.API
         [Range(0f, 1f)]
         [SerializeField] private float _buildGridLineAlpha = 0.22f;
 
+        [BoxGroup("Build Grid/Placement Colors")]
+        [SerializeField] private Color _buildGridValidLineColor =
+            new Color(0.28f, 1f, 0.42f, 0.9f);
+
+        [BoxGroup("Build Grid/Placement Colors")]
+        [SerializeField] private Color _buildGridValidFillColor =
+            new Color(0.20f, 0.82f, 0.32f, 0.16f);
+
+        [BoxGroup("Build Grid/Placement Colors")]
+        [SerializeField] private Color _buildGridUnaffordableLineColor =
+            new Color(1f, 0.68f, 0.12f, 0.9f);
+
+        [BoxGroup("Build Grid/Placement Colors")]
+        [SerializeField] private Color _buildGridUnaffordableFillColor =
+            new Color(0.95f, 0.48f, 0.08f, 0.16f);
+
+        [BoxGroup("Build Grid/Placement Colors")]
+        [SerializeField] private Color _buildGridInvalidLineColor =
+            new Color(1f, 0.26f, 0.22f, 0.9f);
+
+        [BoxGroup("Build Grid/Placement Colors")]
+        [SerializeField] private Color _buildGridInvalidFillColor =
+            new Color(0.92f, 0.12f, 0.10f, 0.16f);
+
         [BoxGroup("Build Grid")]
         [Range(0.005f, 0.49f)]
         [SerializeField] private float _buildGridLineWidthNormalized = 0.035f;
@@ -134,6 +158,12 @@ namespace Kruty1918.Moyva.Construction.API
         public bool BuildGridSurfacePlaneUseBuildableFilter => _buildGridSurfacePlaneUseBuildableFilter;
         public float BuildGridFillAlpha => Mathf.Clamp01(_buildGridFillAlpha);
         public float BuildGridLineAlpha => Mathf.Clamp01(_buildGridLineAlpha);
+        public Color BuildGridValidLineColor => _buildGridValidLineColor;
+        public Color BuildGridValidFillColor => _buildGridValidFillColor;
+        public Color BuildGridUnaffordableLineColor => _buildGridUnaffordableLineColor;
+        public Color BuildGridUnaffordableFillColor => _buildGridUnaffordableFillColor;
+        public Color BuildGridInvalidLineColor => _buildGridInvalidLineColor;
+        public Color BuildGridInvalidFillColor => _buildGridInvalidFillColor;
         public float BuildGridLineWidthNormalized => Mathf.Clamp(_buildGridLineWidthNormalized, 0.005f, 0.49f);
         public float BuildGridSurfaceOffsetY => Mathf.Max(0f, _buildGridSurfaceOffsetY);
         public float BuildGridTileInsetNormalized => Mathf.Clamp(_buildGridTileInsetNormalized, 0f, 0.45f);

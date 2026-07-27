@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Kruty1918.Moyva.FogOfWar.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
@@ -71,18 +72,41 @@ namespace Kruty1918.Moyva.Construction.API
                     result.AddFootprintPosition(BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index));
             }
 
+            bool footprintOutsideMap =
+                IsFootprintOutsideMap(request, definition, result);
+            if (result != null)
+                result.TerrainBlocked = footprintOutsideMap;
+            if (footprintOutsideMap)
+                return false;
+
             bool tileOccupied = IsFootprintOccupied(request, definition, result);
             if (result != null)
                 result.TileOccupied = tileOccupied;
             if (tileOccupied)
                 return false;
 
-            bool terrainBlocked = IsBlockedByTerrain(request, definition, result)
-                || IsBlockedByRequiredTerrain(request, definition, result)
+            bool terrainBlocked = IsBlockedByResolvedTerrain(
+                    request,
+                    definition,
+                    result)
                 || IsBlockedByFootprintSlope(request, definition, result);
             if (result != null)
                 result.TerrainBlocked = terrainBlocked;
             if (terrainBlocked)
+                return false;
+
+            bool adjacencyBlocked =
+                IsBlockedByRequiredNeighborOffsets(
+                    request,
+                    definition,
+                    result)
+                || IsBlockedByTileRequirements(
+                    request,
+                    definition,
+                    result);
+            if (result != null)
+                result.AdjacencyBlocked = adjacencyBlocked;
+            if (adjacencyBlocked)
                 return false;
 
             bool spacingBlocked = IsBlockedBySpacing(request, definition, result);
@@ -97,10 +121,17 @@ namespace Kruty1918.Moyva.Construction.API
             if (fogBlocked)
                 return false;
 
-            bool influenceBlocked = !request.SkipInfluenceRules && IsBlockedByInfluenceZone(request, result);
+            bool influenceBlocked =
+                IsBlockedByInfluenceZone(request, result);
             if (result != null)
                 result.InfluenceZoneBlocked = influenceBlocked;
-            return !influenceBlocked;
+            if (influenceBlocked)
+                return false;
+
+            return !IsBlockedByRegisteredEvaluators(
+                request,
+                definition,
+                result);
         }
 
         public static int ResolveInfluenceRadius(BuildingDefinition definition, int fallbackRadius)
@@ -115,8 +146,307 @@ namespace Kruty1918.Moyva.Construction.API
 
         public static bool IsInfluenceCenter(BuildingDefinition definition)
         {
-            return BuildingDefinitionCapabilities.IsTownHall(definition)
-                || BuildingDefinitionCapabilities.IsCastle(definition);
+            if (definition == null)
+                return false;
+
+            if (BuildingDefinitionCapabilities.HasEnabledModule<
+                    SettlementCenterBuildingModule>(definition))
+            {
+                return true;
+            }
+
+            if (definition.PlacementRules != null)
+                return definition.PlacementRules.CreatesSettlementInfluence;
+
+            return false;
+        }
+
+        private static bool IsBlockedByRegisteredEvaluators(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
+        {
+            IReadOnlyList<IBuildingPlacementRuleEvaluator> evaluators =
+                request.RuleEvaluators;
+            if (evaluators == null)
+                return false;
+
+            for (int index = 0; index < evaluators.Count; index++)
+            {
+                IBuildingPlacementRuleEvaluator evaluator =
+                    evaluators[index];
+                if (evaluator == null)
+                    continue;
+
+                BuildingPlacementBlocker blocker;
+                try
+                {
+                    blocker = evaluator.Evaluate(
+                        request,
+                        definition);
+                }
+                catch (Exception exception)
+                {
+                    blocker = new BuildingPlacementBlocker
+                    {
+                        Kind = BuildingPlacementBlockerKind.Configuration,
+                        Message =
+                            $"Placement evaluator '{evaluator.GetType().Name}' failed: {exception.Message}",
+                        Position = request.Position,
+                        BuildingId = request.BuildingId,
+                    };
+                }
+
+                if (blocker == null)
+                    continue;
+
+                MarkBlocked(result, blocker.Kind);
+                result?.AddBlocker(blocker);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static void MarkBlocked(
+            BuildingPlacementEvaluationResult result,
+            BuildingPlacementBlockerKind kind)
+        {
+            if (result == null)
+                return;
+
+            switch (kind)
+            {
+                case BuildingPlacementBlockerKind.OccupiedTile:
+                    result.TileOccupied = true;
+                    break;
+                case BuildingPlacementBlockerKind.Spacing:
+                    result.SpacingBlocked = true;
+                    break;
+                case BuildingPlacementBlockerKind.Fog:
+                    result.FogBlocked = true;
+                    break;
+                case BuildingPlacementBlockerKind.InfluenceRequired:
+                case BuildingPlacementBlockerKind.InfluenceOverlap:
+                    result.InfluenceZoneBlocked = true;
+                    break;
+                case BuildingPlacementBlockerKind.Terrain:
+                    result.TerrainBlocked = true;
+                    break;
+                case BuildingPlacementBlockerKind.Adjacency:
+                    result.AdjacencyBlocked = true;
+                    break;
+                case BuildingPlacementBlockerKind.Configuration:
+                case BuildingPlacementBlockerKind.Prerequisite:
+                default:
+                    result.ConfigurationBlocked = true;
+                    break;
+            }
+        }
+
+        private static bool IsFootprintOutsideMap(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
+        {
+            if (request.TileExists == null)
+                return false;
+
+            int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int index = 0; index < count; index++)
+            {
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index);
+                if (request.TileExists(position))
+                    continue;
+
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.Terrain,
+                    Message = "Footprint extends outside the generated map.",
+                    Position = position,
+                    BuildingId = request.BuildingId,
+                });
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsBlockedByResolvedTerrain(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
+        {
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out TerrainPlacementRuleModule module))
+            {
+                switch (module.MergeMode)
+                {
+                    case PlacementRuleMergeMode.Disabled:
+                        return false;
+                    case PlacementRuleMergeMode.Override:
+                        return IsBlockedByTerrainModule(
+                            request,
+                            definition,
+                            module,
+                            result);
+                }
+            }
+
+            return IsBlockedByTerrain(request, definition, result)
+                || IsBlockedByRequiredTerrain(
+                    request,
+                    definition,
+                    result);
+        }
+
+        private static bool IsBlockedByTerrainModule(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            TerrainPlacementRuleModule module,
+            BuildingPlacementEvaluationResult result)
+        {
+            int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int index = 0; index < count; index++)
+            {
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index);
+                string tileId = request.GetTileId?.Invoke(position);
+                int? level = request.GetTerrainLevel?.Invoke(position);
+
+                if (ContainsTileId(module.BlockedTerrainIds, tileId)
+                    || MatchesAnyTerrainTag(
+                        request,
+                        position,
+                        module.BlockedTerrainTags))
+                {
+                    return AddTerrainModuleBlocker(
+                        request,
+                        result,
+                        position,
+                        $"Terrain '{tileId}' is explicitly blocked for this building.");
+                }
+
+                bool hasAllowedIds = HasConfiguredValues(
+                    module.AllowedTerrainIds);
+                bool hasAllowedTags = HasConfiguredValues(
+                    module.AllowedTerrainTags);
+                if ((hasAllowedIds || hasAllowedTags)
+                    && !ContainsTileId(module.AllowedTerrainIds, tileId)
+                    && !MatchesAnyTerrainTag(
+                        request,
+                        position,
+                        module.AllowedTerrainTags))
+                {
+                    return AddTerrainModuleBlocker(
+                        request,
+                        result,
+                        position,
+                        $"Terrain '{tileId}' is not allowed for this building.");
+                }
+
+                if (!module.AllowHills && level.GetValueOrDefault() > 0)
+                {
+                    return AddTerrainModuleBlocker(
+                        request,
+                        result,
+                        position,
+                        $"Elevated terrain level {level.Value} is disabled for this building.");
+                }
+
+                if (level.HasValue
+                    && ContainsLevel(
+                        module.BlockedTerrainLevels,
+                        level.Value))
+                {
+                    return AddTerrainModuleBlocker(
+                        request,
+                        result,
+                        position,
+                        $"Terrain level {level.Value} is explicitly blocked for this building.");
+                }
+
+                if (level.HasValue
+                    && module.AllowedTerrainLevels != null
+                    && module.AllowedTerrainLevels.Length > 0
+                    && !ContainsLevel(
+                        module.AllowedTerrainLevels,
+                        level.Value))
+                {
+                    return AddTerrainModuleBlocker(
+                        request,
+                        result,
+                        position,
+                        $"Terrain level {level.Value} is not allowed for this building.");
+                }
+
+                if (module.BlockEdgeTerrainTiles
+                    && IsTerrainEdge(request, position))
+                {
+                    return AddTerrainModuleBlocker(
+                        request,
+                        result,
+                        position,
+                        "Terrain height edge is blocked for this building.");
+                }
+            }
+
+            return false;
+        }
+
+        private static bool AddTerrainModuleBlocker(
+            BuildingPlacementEvaluationRequest request,
+            BuildingPlacementEvaluationResult result,
+            Vector2Int position,
+            string message)
+        {
+            result?.AddBlocker(new BuildingPlacementBlocker
+            {
+                Kind = BuildingPlacementBlockerKind.Terrain,
+                Message = message,
+                Position = position,
+                BuildingId = request.BuildingId,
+            });
+            return true;
+        }
+
+        private static bool IsTerrainEdge(
+            BuildingPlacementEvaluationRequest request,
+            Vector2Int position)
+        {
+            if (request.GetTerrainLevel == null)
+                return false;
+
+            int current = request.GetTerrainLevel(position).GetValueOrDefault();
+            Vector2Int[] directions =
+            {
+                Vector2Int.up,
+                Vector2Int.right,
+                Vector2Int.down,
+                Vector2Int.left,
+            };
+            for (int index = 0; index < directions.Length; index++)
+            {
+                Vector2Int neighbor = position + directions[index];
+                if (request.TileExists != null
+                    && !request.TileExists(neighbor))
+                {
+                    continue;
+                }
+
+                int neighborLevel =
+                    request.GetTerrainLevel(neighbor).GetValueOrDefault();
+                if (neighborLevel != current)
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool IsBlockedByRequiredTerrain(
@@ -155,6 +485,296 @@ namespace Kruty1918.Moyva.Construction.API
             return false;
         }
 
+        private static bool IsBlockedByRequiredNeighborOffsets(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
+        {
+            Vector2Int[] offsets;
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out TerrainPlacementRuleModule module))
+            {
+                offsets = module.MergeMode switch
+                {
+                    PlacementRuleMergeMode.Disabled =>
+                        Array.Empty<Vector2Int>(),
+                    PlacementRuleMergeMode.Override =>
+                        module.RequiredNeighborOffsets,
+                    _ => definition?.PlacementRules
+                        ?.RequiredNeighborOffsets,
+                };
+            }
+            else
+            {
+                offsets = definition?.PlacementRules
+                    ?.RequiredNeighborOffsets;
+            }
+            if (offsets == null || offsets.Length == 0)
+                return false;
+
+            for (int index = 0; index < offsets.Length; index++)
+            {
+                Vector2Int requiredPosition =
+                    request.Position + offsets[index];
+                bool exists = request.TileExists != null
+                    ? request.TileExists(requiredPosition)
+                    : !string.IsNullOrWhiteSpace(
+                        request.GetTileId?.Invoke(requiredPosition));
+                if (exists)
+                    continue;
+
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.Adjacency,
+                    Message = $"Required neighboring cell at offset {offsets[index]} does not exist.",
+                    Position = requiredPosition,
+                    BuildingId = request.BuildingId,
+                });
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsBlockedByTileRequirements(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
+        {
+            TileRequirementDefinition[] requirements;
+            bool hasModule = BuildingDefinitionCapabilities
+                .TryGetEnabledModule(
+                    definition,
+                    out TileRequirementBuildingModule module);
+            bool moduleOverrides = hasModule
+                && module.MergeMode == PlacementRuleMergeMode.Override;
+            if (hasModule
+                && module.MergeMode == PlacementRuleMergeMode.Disabled)
+            {
+                return false;
+            }
+
+            if (moduleOverrides)
+            {
+                requirements = module.Requirements
+                    ?? Array.Empty<TileRequirementDefinition>();
+            }
+            else
+            {
+                requirements = definition?.PlacementRules
+                                   ?.NearbyTileRequirements
+                    ?? Array.Empty<TileRequirementDefinition>();
+            }
+
+            for (int index = 0; index < requirements.Length; index++)
+            {
+                TileRequirementDefinition requirement = requirements[index];
+                if (requirement == null)
+                    continue;
+
+                if (CountMatchingDistinctTiles(
+                        request,
+                        definition,
+                        requirement)
+                    >= Mathf.Max(1, requirement.MinimumTileCount))
+                {
+                    continue;
+                }
+
+                string identity = !string.IsNullOrWhiteSpace(
+                    requirement.TerrainTag)
+                    ? $"tag '{requirement.TerrainTag}'"
+                    : $"tile '{requirement.TileId}'";
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.Adjacency,
+                    Message =
+                        $"Requires at least {Mathf.Max(1, requirement.MinimumTileCount)} distinct cells matching {identity} within radius {Mathf.Max(0, requirement.Radius)}.",
+                    Position = request.Position,
+                    BuildingId = request.BuildingId,
+                    Radius = Mathf.Max(0, requirement.Radius),
+                });
+                return true;
+            }
+
+            if (moduleOverrides)
+                return false;
+
+            BuildingPlacementRules placement = definition?.PlacementRules;
+            return IsBlockedBySemanticRequirement(
+                       request,
+                       definition,
+                       placement?.RequiresWaterNearby == true,
+                       "water",
+                       result)
+                || IsBlockedBySemanticRequirement(
+                    request,
+                    definition,
+                    placement?.RequiresForestNearby == true,
+                    "forest",
+                    result)
+                || IsBlockedBySemanticRequirement(
+                    request,
+                    definition,
+                    placement?.RequiresMountainNearby == true,
+                    "mountain",
+                    result)
+                || IsBlockedBySemanticRequirement(
+                    request,
+                    definition,
+                    placement?.RequiresRoadNearby == true,
+                    "road",
+                    result);
+        }
+
+        private static bool IsBlockedBySemanticRequirement(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            bool enabled,
+            string tag,
+            BuildingPlacementEvaluationResult result)
+        {
+            if (!enabled)
+                return false;
+
+            var requirement = new TileRequirementDefinition
+            {
+                TerrainTag = tag,
+                Radius = 1,
+                MinimumTileCount = 1,
+            };
+            if (CountMatchingDistinctTiles(request, definition, requirement)
+                > 0)
+            {
+                return false;
+            }
+
+            result?.AddBlocker(new BuildingPlacementBlocker
+            {
+                Kind = BuildingPlacementBlockerKind.Adjacency,
+                Message =
+                    $"Requires terrain tag '{tag}' next to the footprint.",
+                Position = request.Position,
+                BuildingId = request.BuildingId,
+                Radius = 1,
+            });
+            return true;
+        }
+
+        private static int CountMatchingDistinctTiles(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            TileRequirementDefinition requirement)
+        {
+            int radius = Mathf.Max(0, requirement.Radius);
+            var matches = new HashSet<Vector2Int>();
+            int footprintCount =
+                BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int cellIndex = 0;
+                 cellIndex < footprintCount;
+                 cellIndex++)
+            {
+                Vector2Int center = BuildingFootprintUtility
+                    .GetOccupiedCell(
+                        definition,
+                        request.Position,
+                        cellIndex);
+                for (int offsetX = -radius;
+                     offsetX <= radius;
+                     offsetX++)
+                {
+                    for (int offsetY = -radius;
+                         offsetY <= radius;
+                         offsetY++)
+                    {
+                        Vector2Int position = center
+                            + new Vector2Int(offsetX, offsetY);
+                        if (matches.Contains(position)
+                            || (request.TileExists != null
+                                && !request.TileExists(position)))
+                        {
+                            continue;
+                        }
+
+                        if (MatchesTileRequirement(
+                                request,
+                                position,
+                                requirement))
+                        {
+                            matches.Add(position);
+                        }
+                    }
+                }
+            }
+
+            return matches.Count;
+        }
+
+        private static bool MatchesTileRequirement(
+            BuildingPlacementEvaluationRequest request,
+            Vector2Int position,
+            TileRequirementDefinition requirement)
+        {
+            if (!string.IsNullOrWhiteSpace(requirement.TerrainTag))
+            {
+                if (request.HasTerrainTag != null
+                    && request.HasTerrainTag(
+                        position,
+                        requirement.TerrainTag))
+                {
+                    return true;
+                }
+
+                return string.Equals(
+                    request.GetTileId?.Invoke(position)?.Trim(),
+                    requirement.TerrainTag.Trim(),
+                    StringComparison.OrdinalIgnoreCase);
+            }
+
+            return !string.IsNullOrWhiteSpace(requirement.TileId)
+                && string.Equals(
+                    request.GetTileId?.Invoke(position)?.Trim(),
+                    requirement.TileId.Trim(),
+                    StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool MatchesAnyTerrainTag(
+            BuildingPlacementEvaluationRequest request,
+            Vector2Int position,
+            IReadOnlyList<string> tags)
+        {
+            if (tags == null || request.HasTerrainTag == null)
+                return false;
+
+            for (int index = 0; index < tags.Count; index++)
+            {
+                string tag = tags[index];
+                if (!string.IsNullOrWhiteSpace(tag)
+                    && request.HasTerrainTag(position, tag))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasConfiguredValues(
+            IReadOnlyList<string> values)
+        {
+            if (values == null)
+                return false;
+
+            for (int index = 0; index < values.Count; index++)
+            {
+                if (!string.IsNullOrWhiteSpace(values[index]))
+                    return true;
+            }
+
+            return false;
+        }
+
         private static bool IsBlockedByTerrain(
             BuildingPlacementEvaluationRequest request,
             BuildingDefinition definition,
@@ -188,8 +808,22 @@ namespace Kruty1918.Moyva.Construction.API
             BuildingDefinition definition,
             BuildingPlacementEvaluationResult result)
         {
-            if (definition?.Footprint == null
-                || !definition.Footprint.RequiresFlatGround
+            bool requiresFlatGround =
+                definition?.Footprint?.RequiresFlatGround == true;
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out TerrainPlacementRuleModule terrainModule))
+            {
+                requiresFlatGround = terrainModule.MergeMode switch
+                {
+                    PlacementRuleMergeMode.Disabled => false,
+                    PlacementRuleMergeMode.Override =>
+                        terrainModule.RequiresFlatGround,
+                    _ => requiresFlatGround,
+                };
+            }
+
+            if (!requiresFlatGround
                 || request.GetTerrainLevel == null)
             {
                 return false;
@@ -244,6 +878,22 @@ namespace Kruty1918.Moyva.Construction.API
             return false;
         }
 
+        private static bool ContainsLevel(
+            IReadOnlyList<int> levels,
+            int expected)
+        {
+            if (levels == null)
+                return false;
+
+            for (int index = 0; index < levels.Count; index++)
+            {
+                if (levels[index] == expected)
+                    return true;
+            }
+
+            return false;
+        }
+
         private static bool IsFootprintOccupied(
             BuildingPlacementEvaluationRequest request,
             BuildingDefinition definition,
@@ -276,7 +926,7 @@ namespace Kruty1918.Moyva.Construction.API
             BuildingDefinition definition,
             BuildingPlacementEvaluationResult result)
         {
-            int spacing = Mathf.Max(0, request.MinSpacing);
+            int spacing = ResolveSpacing(request, definition);
             if (spacing <= 0)
                 return false;
 
@@ -316,12 +966,57 @@ namespace Kruty1918.Moyva.Construction.API
             return false;
         }
 
+        private static int ResolveSpacing(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition)
+        {
+            if (!BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out SpacingPlacementRuleModule module))
+            {
+                return Mathf.Max(0, request.MinSpacing);
+            }
+
+            return module.MergeMode switch
+            {
+                PlacementRuleMergeMode.Disabled => 0,
+                PlacementRuleMergeMode.Override =>
+                    Mathf.Max(0, module.MinimumSpacing),
+                _ => Mathf.Max(0, request.MinSpacing),
+            };
+        }
+
         private static bool IsBlockedByFog(
             BuildingPlacementEvaluationRequest request,
             BuildingDefinition definition,
             BuildingPlacementEvaluationResult result)
         {
-            if (definition != null && definition.CanPlaceInFog)
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out FogPlacementRuleModule module))
+            {
+                if (module.MergeMode == PlacementRuleMergeMode.Disabled
+                    || (module.MergeMode
+                            == PlacementRuleMergeMode.Override
+                        && module.Visibility
+                            == FogPlacementVisibility.Any))
+                {
+                    return false;
+                }
+
+                if (module.MergeMode == PlacementRuleMergeMode.Override)
+                {
+                    return IsBlockedByExplicitFogRule(
+                        request,
+                        definition,
+                        module.Visibility,
+                        result);
+                }
+            }
+
+            if (definition != null
+                && (definition.CanPlaceInFog
+                    || definition.PlacementRules?.CanPlaceInFog == true))
                 return false;
 
             if (request.IsFogBlocked == null)
@@ -339,6 +1034,82 @@ namespace Kruty1918.Moyva.Construction.API
                     Kind = BuildingPlacementBlockerKind.Fog,
                     Message = "Тайл не є видимим у Fog of War. Будівництво дозволене тільки на Visible.",
                     Position = position,
+                });
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsBlockedByExplicitFogRule(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            FogPlacementVisibility visibility,
+            BuildingPlacementEvaluationResult result)
+        {
+            int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int index = 0; index < count; index++)
+            {
+                Vector2Int position = BuildingFootprintUtility
+                    .GetOccupiedCell(
+                        definition,
+                        request.Position,
+                        index);
+                FogStateType? state = request.GetFogState?.Invoke(position);
+                bool allowed = !state.HasValue
+                    || state.Value == FogStateType.Visible
+                    || (visibility == FogPlacementVisibility.ExploredOrVisible
+                        && state.Value == FogStateType.Explored);
+                if (allowed)
+                    continue;
+
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.Fog,
+                    Message =
+                        $"Fog state '{state.Value}' does not satisfy '{visibility}'.",
+                    Position = position,
+                    BuildingId = request.BuildingId,
+                });
+                return true;
+            }
+
+            // A legacy reader can still enforce Visible when the explicit state
+            // reader is unavailable.
+            return request.GetFogState == null
+                   && visibility == FogPlacementVisibility.Visible
+                ? IsBlockedByLegacyFogCallback(
+                    request,
+                    definition,
+                    result)
+                : false;
+        }
+
+        private static bool IsBlockedByLegacyFogCallback(
+            BuildingPlacementEvaluationRequest request,
+            BuildingDefinition definition,
+            BuildingPlacementEvaluationResult result)
+        {
+            if (request.IsFogBlocked == null)
+                return false;
+
+            int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
+            for (int index = 0; index < count; index++)
+            {
+                Vector2Int position = BuildingFootprintUtility
+                    .GetOccupiedCell(
+                        definition,
+                        request.Position,
+                        index);
+                if (!request.IsFogBlocked(position))
+                    continue;
+
+                result?.AddBlocker(new BuildingPlacementBlocker
+                {
+                    Kind = BuildingPlacementBlockerKind.Fog,
+                    Message = "Tile does not satisfy the building fog rule.",
+                    Position = position,
+                    BuildingId = request.BuildingId,
                 });
                 return true;
             }
@@ -367,6 +1138,36 @@ namespace Kruty1918.Moyva.Construction.API
                 return false;
             }
 
+            bool hasInfluenceModule =
+                BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    candidate,
+                    out SettlementInfluenceRequirementBuildingModule
+                        influenceModule);
+            if (hasInfluenceModule
+                && influenceModule.MergeMode
+                    == PlacementRuleMergeMode.Disabled)
+            {
+                return false;
+            }
+            if (request.SkipInfluenceRules
+                && (!hasInfluenceModule
+                    || influenceModule.MergeMode
+                        == PlacementRuleMergeMode.Inherit))
+            {
+                return false;
+            }
+
+            ResolveInfluencePolicy(
+                candidate,
+                hasInfluenceModule ? influenceModule : null,
+                out bool requireInfluenceCenterInRange,
+                out bool blockWhenInfluenceCenterExists);
+            if (!requireInfluenceCenterInRange
+                && !blockWhenInfluenceCenterExists)
+            {
+                return false;
+            }
+
             if (!AnyInfluenceCenterDefined(request))
             {
                 result?.AddNote("У реєстрі немає ратуші або замку, тому правило зони поселення вимкнене.");
@@ -380,20 +1181,6 @@ namespace Kruty1918.Moyva.Construction.API
             {
                 result?.AddNote("Радіус influence-правила дорівнює 0, перевірку пропущено.");
                 return false;
-            }
-
-            bool requireInfluenceCenterInRange;
-            bool blockWhenInfluenceCenterExists;
-            if (candidate.UseCustomTownHallRules)
-            {
-                requireInfluenceCenterInRange = candidate.RequireTownHallInRange;
-                blockWhenInfluenceCenterExists = candidate.BlockIfTownHallAlreadyInRange;
-            }
-            else
-            {
-                bool candidateIsCenter = IsInfluenceCenter(candidate);
-                requireInfluenceCenterInRange = !candidateIsCenter;
-                blockWhenInfluenceCenterExists = candidateIsCenter;
             }
 
             bool hasInfluenceCenterInRange = HasInfluenceCenterCoveringPosition(request, request.Position, candidate, out var coveringCenter);
@@ -432,6 +1219,44 @@ namespace Kruty1918.Moyva.Construction.API
             return false;
         }
 
+        private static void ResolveInfluencePolicy(
+            BuildingDefinition candidate,
+            SettlementInfluenceRequirementBuildingModule module,
+            out bool requireInfluence,
+            out bool blockOverlap)
+        {
+            if (module != null
+                && module.MergeMode == PlacementRuleMergeMode.Override)
+            {
+                requireInfluence = module.RequiresInfluence;
+                blockOverlap = module.BlockOverlappingCenters;
+                return;
+            }
+
+            if (candidate?.PlacementRules != null)
+            {
+                requireInfluence = candidate.PlacementRules
+                    .RequiresSettlementInfluence;
+                blockOverlap = candidate.PlacementRules
+                    .BlockIfSettlementCenterInRange;
+                return;
+            }
+
+            if (candidate?.UseCustomTownHallRules == true)
+            {
+                requireInfluence = candidate.RequireTownHallInRange;
+                blockOverlap =
+                    candidate.BlockIfTownHallAlreadyInRange;
+                return;
+            }
+
+            // Compatibility for old runtime-only definitions. New assets always
+            // carry explicit placement data or an influence module.
+            bool candidateIsCenter = IsInfluenceCenter(candidate);
+            requireInfluence = !candidateIsCenter;
+            blockOverlap = candidateIsCenter;
+        }
+
         private static bool AnyInfluenceCenterDefined(BuildingPlacementEvaluationRequest request)
         {
             var definitions = request.BuildingRegistry.GetAll() ?? Array.Empty<BuildingDefinition>();
@@ -467,6 +1292,12 @@ namespace Kruty1918.Moyva.Construction.API
                         continue;
 
                     Vector2Int resolvedOrigin = ResolveOccupantOrigin(request, centerPosition);
+                    if (!IsOwnedByPlacementOwner(
+                            request,
+                            resolvedOrigin))
+                    {
+                        continue;
+                    }
 
                     var definition = request.BuildingRegistry.GetById(occupantId);
                     if (!IsInfluenceCenter(definition))
@@ -478,7 +1309,12 @@ namespace Kruty1918.Moyva.Construction.API
 
                     if (GetChebyshevDistance(resolvedOrigin, position) <= allowedRadius)
                     {
-                        coveringCenter = new BuildingPlacementSimulationEntry(resolvedOrigin, occupantId);
+                        coveringCenter =
+                            new BuildingPlacementSimulationEntry(
+                                resolvedOrigin,
+                                occupantId,
+                                request.GetOccupantOwnerId?.Invoke(
+                                    resolvedOrigin));
                         return true;
                     }
                 }
@@ -493,6 +1329,12 @@ namespace Kruty1918.Moyva.Construction.API
                 var pending = pendingPlacements[index];
                 if (pending.Position == request.IgnoredPendingPosition)
                     continue;
+                if (!IsSameOwnerOrUnknown(
+                        request.OwnerId,
+                        pending.OwnerId))
+                {
+                    continue;
+                }
 
                 var pendingDefinition = request.BuildingRegistry.GetById(pending.BuildingId);
                 if (!IsInfluenceCenter(pendingDefinition))
@@ -536,7 +1378,6 @@ namespace Kruty1918.Moyva.Construction.API
                         continue;
 
                     Vector2Int resolvedOrigin = ResolveOccupantOrigin(request, centerPosition);
-
                     var definition = request.BuildingRegistry.GetById(occupantId);
                     if (!IsInfluenceCenter(definition))
                         continue;
@@ -618,6 +1459,15 @@ namespace Kruty1918.Moyva.Construction.API
 
         private static int ResolveCandidateProximityLimit(BuildingDefinition candidate)
         {
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    candidate,
+                    out SettlementInfluenceRequirementBuildingModule module)
+                && module.MergeMode == PlacementRuleMergeMode.Override
+                && module.MaximumDistanceToCenter > 0)
+            {
+                return module.MaximumDistanceToCenter;
+            }
+
             return candidate != null && candidate.TownHallProximityRadiusOverride > 0
                 ? candidate.TownHallProximityRadiusOverride
                 : 0;
@@ -660,6 +1510,34 @@ namespace Kruty1918.Moyva.Construction.API
         {
             Vector2Int? origin = request.GetOccupantOrigin?.Invoke(position);
             return origin ?? position;
+        }
+
+        private static bool IsOwnedByPlacementOwner(
+            BuildingPlacementEvaluationRequest request,
+            Vector2Int origin)
+        {
+            if (request.GetOccupantOwnerId == null)
+                return true;
+
+            return IsSameOwnerOrUnknown(
+                request.OwnerId,
+                request.GetOccupantOwnerId(origin));
+        }
+
+        private static bool IsSameOwnerOrUnknown(
+            string placementOwnerId,
+            string existingOwnerId)
+        {
+            if (string.IsNullOrWhiteSpace(placementOwnerId)
+                || string.IsNullOrWhiteSpace(existingOwnerId))
+            {
+                return true;
+            }
+
+            return string.Equals(
+                placementOwnerId.Trim(),
+                existingOwnerId.Trim(),
+                StringComparison.Ordinal);
         }
 
         private readonly struct BuildingPlacementOverlap

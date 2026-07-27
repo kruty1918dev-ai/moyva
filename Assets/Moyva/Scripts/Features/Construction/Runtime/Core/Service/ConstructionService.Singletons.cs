@@ -14,6 +14,36 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!TryGetSelectedDefinition(out BuildingDefinition definition))
                 return false;
 
+            bool movePendingOnly =
+                BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out BuildingPerPlayerLimitModule limitModule)
+                && Mathf.Max(
+                    0,
+                    limitModule.MaxBuildingsPerPlayer) == 1
+                && limitModule.OverflowPolicy
+                    == BuildingLimitOverflowPolicy.MovePending;
+            if (movePendingOnly)
+            {
+                if (!TryFindPendingPlacementByBuildingId(
+                        _selectedBuildingId,
+                        out int movePendingIndex))
+                {
+                    // No pending item exists to move. Continue through the normal
+                    // placement query so an already committed item remains a limit
+                    // blocker rather than becoming a relocation.
+                    return false;
+                }
+
+                Vector2Int pendingPosition =
+                    _pendingPlacements[movePendingIndex].Position;
+                placementSucceeded = pendingPosition == targetPosition
+                    || TryMovePendingPlacement(
+                        pendingPosition,
+                        targetPosition);
+                return true;
+            }
+
             BuildingPlacementUniquenessScope scope =
                 BuildingDefinitionCapabilities.GetPlacementUniquenessScope(definition);
             if (scope == BuildingPlacementUniquenessScope.None)
@@ -67,7 +97,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ownerId: _activeOwnerId,
                     attemptSource: ConstructionPlacementAttemptSource.PointerClick,
                     allowUniquePreviewRelocation: false));
-            if (!relocationResult.IsValid)
+            if (!relocationResult.CanPreview)
             {
                 _lastActionMessage = relocationResult.Reason;
                 LogPlacementAttempt(relocationResult, emitRejectedAction: true);

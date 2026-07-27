@@ -31,13 +31,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return uniquePlacementSucceeded;
             }
 
-            bool selectedIsGate = _wallTopologyService != null && _wallTopologyService.IsGate(_selectedBuildingId);
             if (_pendingPositions.Contains(position))
             {
                 if (VerboseLogs)
                     Debug.Log($"[Construction] TryPreviewAt({position}): позиція вже у pending-списку");
 
-                if (selectedIsGate && TryReplacePendingWallWithGate(position, _selectedBuildingId))
+                if (TryReplacePendingPlacement(
+                        position,
+                        _selectedBuildingId))
                     return true;
 
                 _lastActionMessage =
@@ -68,7 +69,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     attemptSource:
                         ConstructionPlacementAttemptSource.PointerClick,
                     allowUniquePreviewRelocation: true));
-            if (!placementResult.IsValid)
+            if (!placementResult.CanPreview)
             {
                 _lastActionMessage = placementResult.Reason;
                 _signalBus.Fire(new BuildingPreviewChangedSignal
@@ -89,7 +90,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (VerboseLogs)
                 Debug.Log($"[Construction] TryPreviewAt({position}) -> VALID для {_selectedBuildingId}");
 
-            return AddPendingPlacement(position, _selectedBuildingId, clearRedoHistory: true);
+            return AddPendingPlacement(
+                position,
+                _selectedBuildingId,
+                clearRedoHistory: true,
+                isAffordable: placementResult.ResourcesValid);
         }
 
         public bool HasPendingPlacementAt(Vector2Int position)
@@ -125,6 +130,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return new ReadOnlyDictionary<Vector2Int, string>(snapshot);
         }
 
+        public bool TryGetPendingPlacementIntent(
+            Vector2Int position,
+            out ConstructionPlacementCommitIntent intent)
+        {
+            int index = FindPendingPlacementIndex(position);
+            if (index < 0)
+            {
+                intent = ConstructionPlacementCommitIntent.None;
+                return false;
+            }
+
+            PendingPlacement placement = _pendingPlacements[index];
+            intent = new ConstructionPlacementCommitIntent(
+                placement.OriginalPosition,
+                placement.ReplacedPendingBuildingId);
+            return true;
+        }
+
         public bool TryMovePendingPlacement(Vector2Int fromPosition, Vector2Int toPosition)
         {
             if (State != BuildingPlacementState.Placing)
@@ -146,6 +169,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return true;
 
             var placement = _pendingPlacements[index];
+            if (!string.IsNullOrWhiteSpace(
+                    placement.ReplacedPendingBuildingId))
+            {
+                _lastActionMessage =
+                    "A replacement preview must remain on the preview it replaces.";
+                return false;
+            }
+
             Vector2Int? ignoredOccupiedPosition = placement.OriginalPosition;
             ConstructionPlacementQueryResult moveResult = EvaluatePlacement(
                 new ConstructionPlacementQueryRequest(
@@ -159,7 +190,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     attemptSource:
                         ConstructionPlacementAttemptSource.PreviewMove,
                     allowUniquePreviewRelocation: false));
-            if (!moveResult.IsValid)
+            if (!moveResult.CanPreview)
             {
                 _lastActionMessage = moveResult.Reason;
                 LogPlacementAttempt(
@@ -175,7 +206,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _pendingPositions.Remove(fromPosition);
             _pendingPositions.Add(toPosition);
-            _pendingPlacements[index] = new PendingPlacement(toPosition, placement.BuildingId, placement.OriginalPosition);
+            _pendingPlacements[index] = new PendingPlacement(
+                toPosition,
+                placement.BuildingId,
+                placement.OriginalPosition,
+                placement.ReplacedPendingBuildingId);
             MarkPendingPlacementsChanged();
 
             _signalBus.Fire(new BuildingPreviewMovedSignal
@@ -196,7 +231,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 Position = toPosition,
                 BuildingId = placement.BuildingId,
-                PreviewState = BuildingPreviewState.Valid
+                PreviewState = ResolvePreviewState(
+                    moveResult.ResourcesValid)
             });
 
             SetPlacementSelection(placement.BuildingId, BuildingPlacementState.Placing);
@@ -236,7 +272,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return true;
         }
 
-        private bool AddPendingPlacement(Vector2Int position, string buildingId, bool clearRedoHistory, Vector2Int? originalPosition = null)
+        private bool AddPendingPlacement(
+            Vector2Int position,
+            string buildingId,
+            bool clearRedoHistory,
+            Vector2Int? originalPosition = null,
+            bool isAffordable = true)
         {
             if (string.IsNullOrWhiteSpace(buildingId))
             {
@@ -268,7 +309,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     Position = position,
                     BuildingId = buildingId,
-                    PreviewState = BuildingPreviewState.Valid
+                    PreviewState = ResolvePreviewState(isAffordable)
                 });
 
                 if (VerboseLogs)
@@ -315,28 +356,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
         }
 
-        private bool TryReplacePendingWallWithGate(Vector2Int position, string gateBuildingId)
+        private bool TryReplacePendingPlacement(
+            Vector2Int position,
+            string replacementBuildingId)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(gateBuildingId))
+                if (string.IsNullOrWhiteSpace(
+                        replacementBuildingId))
                 {
                     if (VerboseLogs)
-                        Debug.Log("[Construction] TryReplacePendingWallWithGate: gateBuildingId порожній");
-                    return false;
-                }
-
-                if (_wallTopologyService == null || _wallGateReplacementValidator == null)
-                {
-                    if (VerboseLogs)
-                        Debug.Log("[Construction] TryReplacePendingWallWithGate: wall gate dependencies are missing");
-                    return false;
-                }
-
-                if (!_wallTopologyService.IsGate(gateBuildingId))
-                {
-                    if (VerboseLogs)
-                        Debug.Log($"[Construction] TryReplacePendingWallWithGate: '{gateBuildingId}' не є воротами");
+                        Debug.Log("[Construction] Pending replacement building id is empty.");
                     return false;
                 }
 
@@ -344,56 +374,148 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (index < 0)
                 {
                     if (VerboseLogs)
-                        Debug.Log($"[Construction] TryReplacePendingWallWithGate({position}): pending placement не знайдена");
+                        Debug.Log($"[Construction] Pending replacement at {position} was not found.");
                     return false;
                 }
 
                 var current = _pendingPlacements[index];
-                if (!_wallGateReplacementValidator.CanReplaceWallWithGate(position, gateBuildingId, out _))
+                if (string.Equals(
+                        current.BuildingId,
+                        replacementBuildingId,
+                        StringComparison.Ordinal))
                 {
-                    if (VerboseLogs)
-                        Debug.Log($"[Construction] TryReplacePendingWallWithGate({position}): заміна недозволена");
-                    return false;
-                }
-
-                if (current.BuildingId == gateBuildingId)
-                {
-                    if (VerboseLogs)
-                        Debug.Log($"[Construction] TryReplacePendingWallWithGate({position}): вже ворота '{gateBuildingId}'");
                     return true;
                 }
 
-                if (!TryValidateConstructionResources(position, gateBuildingId, _activeOwnerId, position, out var resourceReason))
+                BuildingDefinition candidate =
+                    _placementBuildingRegistry?.GetById(
+                        replacementBuildingId);
+                bool hasReplacementModule =
+                    BuildingDefinitionCapabilities.TryGetEnabledModule(
+                        candidate,
+                        out ReplacementPlacementRuleModule
+                            replacementModule);
+                if (hasReplacementModule
+                    && replacementModule.MergeMode
+                        == PlacementRuleMergeMode.Disabled)
                 {
-                    _lastActionMessage = resourceReason;
-                    if (VerboseLogs)
-                        Debug.Log($"[Construction] TryReplacePendingWallWithGate({position}) -> BLOCKED. resourcesBlocked=True, reason={resourceReason}");
+                    return false;
+                }
+
+                if (hasReplacementModule
+                    && replacementModule.MergeMode
+                        == PlacementRuleMergeMode.Override)
+                {
+                    if (!CanReplaceBuilding(
+                            current.BuildingId,
+                            replacementModule)
+                        || !IsPendingReplacementOwnerAllowed(
+                            current,
+                            replacementModule))
+                    {
+                        return false;
+                    }
+                }
+                else if (_wallTopologyService == null
+                         || _wallGateReplacementValidator == null
+                         || !_wallTopologyService.IsGate(
+                             replacementBuildingId)
+                         || !_wallGateReplacementValidator
+                             .CanReplaceWallWithGate(
+                                 position,
+                                 replacementBuildingId,
+                                 out _))
+                {
+                    return false;
+                }
+
+                ConstructionPlacementQueryResult placement =
+                    EvaluatePlacement(
+                        new ConstructionPlacementQueryRequest(
+                            replacementBuildingId,
+                            position,
+                            ignoredPendingPosition: position,
+                            includeResources: true,
+                            includeDetails: true,
+                            ownerId: _activeOwnerId,
+                            attemptSource:
+                                ConstructionPlacementAttemptSource
+                                    .PointerClick,
+                            allowUniquePreviewRelocation: false,
+                            satisfiedReplacementBuildingId:
+                                current.BuildingId));
+                if (!placement.CanPreview)
+                {
+                    _lastActionMessage = placement.Reason;
+                    LogPlacementAttempt(
+                        placement,
+                        emitRejectedAction: true);
                     return false;
                 }
 
                 SaveSnapshotForUndo(clearRedoHistory: true);
 
-                _pendingPlacements[index] = new PendingPlacement(position, gateBuildingId, current.OriginalPosition);
+                _pendingPlacements[index] = new PendingPlacement(
+                    position,
+                    replacementBuildingId,
+                    current.OriginalPosition,
+                    current.BuildingId);
                 MarkPendingPlacementsChanged();
-                SetPlacementSelection(gateBuildingId, BuildingPlacementState.Placing);
+                SetPlacementSelection(
+                    replacementBuildingId,
+                    BuildingPlacementState.Placing);
 
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
                     Position = position,
-                    BuildingId = gateBuildingId,
-                    PreviewState = BuildingPreviewState.Valid
+                    BuildingId = replacementBuildingId,
+                    PreviewState = ResolvePreviewState(
+                        placement.ResourcesValid)
                 });
 
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] ✓ Pending wall at {position} replaced with gate '{gateBuildingId}'.");
+                {
+                    Debug.Log(
+                        $"[Construction] Pending '{current.BuildingId}' at {position} replaced with '{replacementBuildingId}'.");
+                }
 
                 return true;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[Construction] ПОМИЛКА в TryReplacePendingWallWithGate({position}, {gateBuildingId}): {ex.GetType().Name} - {ex.Message}");
+                Debug.LogError(
+                    $"[Construction] Pending replacement failed at {position} for '{replacementBuildingId}': {ex.GetType().Name} - {ex.Message}");
                 return false;
             }
         }
+
+        private bool IsPendingReplacementOwnerAllowed(
+            in PendingPlacement current,
+            ReplacementPlacementRuleModule module)
+        {
+            if (!RequiresSameOwner(module)
+                || !current.OriginalPosition.HasValue)
+            {
+                return true;
+            }
+
+            Vector2Int original = current.OriginalPosition.Value;
+            if (_factionPlacedBuildings.TryGetValue(
+                    original,
+                    out var factionPlacement))
+            {
+                return string.Equals(
+                    factionPlacement.FactionId,
+                    NormalizeOwnerId(_activeOwnerId),
+                    StringComparison.Ordinal);
+            }
+
+            return _playerPlacedBuildings.ContainsKey(original);
+        }
+
+        private static BuildingPreviewState ResolvePreviewState(bool isAffordable)
+            => isAffordable
+                ? BuildingPreviewState.Valid
+                : BuildingPreviewState.Unaffordable;
     }
 }

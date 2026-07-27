@@ -95,6 +95,124 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
+        public void ToRuntimeDefinition_CopiesIdentityPlacementAndDeepClonesManagedModules()
+        {
+            var asset = ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
+            try
+            {
+                asset.Identity.Id = "bridge";
+                asset.Identity.DisplayName = "Wooden Bridge";
+                asset.Identity.Role = BuildingRole.Support;
+                asset.Identity.Description = "Crosses water.";
+                asset.Identity.Tags.Add("infrastructure");
+                asset.RuntimeStats.RuntimeTags.Add("networked");
+                asset.Placement.CanPlaceInFog = true;
+                asset.Placement.RequiresSettlementInfluence = false;
+                asset.Placement.CreatesSettlementInfluence = true;
+                asset.Placement.BlockIfSettlementCenterInRange = true;
+                asset.Placement.InfluenceRadius = 4;
+                asset.Placement.MinDistanceFromSettlementCenters = 3;
+                asset.Placement.RequiredTerrainIds = new[] { "grass" };
+                asset.Placement.RequiredNeighborOffsets =
+                    new[] { Vector2Int.left };
+                asset.Placement.RequiresWaterNearby = true;
+                asset.Placement.NearbyTileRequirements = new[]
+                {
+                    new TileRequirementDefinition
+                    {
+                        TerrainTag = "road",
+                        Radius = 2,
+                        MinimumTileCount = 1,
+                    },
+                };
+                var authoredModule = new TileRequirementBuildingModule
+                {
+                    Requirements = new[]
+                    {
+                        new TileRequirementDefinition
+                        {
+                            TerrainTag = "water",
+                            Radius = 1,
+                            MinimumTileCount = 2,
+                        },
+                    },
+                };
+                asset.Modules.Add(authoredModule);
+
+                BuildingDefinition runtime = asset.ToRuntimeDefinition();
+
+                Assert.AreEqual(BuildingRole.Support, runtime.Role);
+                Assert.AreEqual("Crosses water.", runtime.Description);
+                CollectionAssert.AreEqual(
+                    new[] { "infrastructure" },
+                    runtime.Tags);
+                CollectionAssert.AreEqual(
+                    new[] { "networked" },
+                    runtime.RuntimeTags);
+                Assert.IsTrue(runtime.PlacementRules.CanPlaceInFog);
+                Assert.IsFalse(
+                    runtime.PlacementRules.RequiresSettlementInfluence);
+                Assert.IsTrue(
+                    runtime.PlacementRules.CreatesSettlementInfluence);
+                Assert.IsTrue(
+                    runtime.PlacementRules.BlockIfSettlementCenterInRange);
+                Assert.AreEqual(4, runtime.PlacementRules.InfluenceRadius);
+                Assert.AreEqual(
+                    3,
+                    runtime.PlacementRules
+                        .MinDistanceFromSettlementCenters);
+                CollectionAssert.AreEqual(
+                    new[] { "grass" },
+                    runtime.PlacementRules.RequiredTerrainIds);
+                CollectionAssert.AreEqual(
+                    new[] { Vector2Int.left },
+                    runtime.PlacementRules.RequiredNeighborOffsets);
+                Assert.IsTrue(runtime.PlacementRules.RequiresWaterNearby);
+                Assert.AreEqual(
+                    "road",
+                    runtime.PlacementRules.NearbyTileRequirements[0]
+                        .TerrainTag);
+
+                var runtimeModule =
+                    runtime.Modules[0] as TileRequirementBuildingModule;
+                Assert.NotNull(runtimeModule);
+                Assert.AreNotSame(authoredModule, runtimeModule);
+                Assert.AreNotSame(
+                    authoredModule.Requirements,
+                    runtimeModule.Requirements);
+                Assert.AreNotSame(
+                    authoredModule.Requirements[0],
+                    runtimeModule.Requirements[0]);
+
+                runtime.Tags[0] = "mutated";
+                runtime.RuntimeTags[0] = "mutated";
+                runtime.PlacementRules.RequiredTerrainIds[0] = "water";
+                runtime.PlacementRules.NearbyTileRequirements[0]
+                    .TerrainTag = "mountain";
+                runtimeModule.Requirements[0].TerrainTag = "forest";
+
+                Assert.AreEqual("infrastructure", asset.Identity.Tags[0]);
+                Assert.AreEqual(
+                    "networked",
+                    asset.RuntimeStats.RuntimeTags[0]);
+                Assert.AreEqual(
+                    "grass",
+                    asset.Placement.RequiredTerrainIds[0]);
+                Assert.AreEqual(
+                    "road",
+                    asset.Placement.NearbyTileRequirements[0]
+                        .TerrainTag);
+                Assert.AreEqual(
+                    "water",
+                    authoredModule.Requirements[0].TerrainTag);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(asset);
+            }
+        }
+
+        [Test]
         public void PerPlayerLimitModule_IsCopiedToRuntimeDefinition_AndValidated()
         {
             var asset = ScriptableObject.CreateInstance<BuildingDefinitionAsset>();

@@ -1,4 +1,5 @@
 using System.IO;
+using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
 
 namespace Kruty1918.Moyva.Multiplayer.Networking
@@ -17,21 +18,41 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// <summary>Payload для розміщення будівлі (BuildingPlace).</summary>
     public readonly struct BuildingPlacePayload
     {
+        private const byte IntentExtensionMarker = 0xA7;
+        private const byte IntentExtensionVersion = 1;
+
         public readonly GameActionMessageKind Kind;
         public readonly string BuildingId;
         public readonly Vector2Int Position;
         public readonly string OwnerId;
         public readonly string SourceFactionId;
+        public readonly bool HasRelocationSource;
+        public readonly Vector2Int RelocationSourcePosition;
+        public readonly string SatisfiedReplacementBuildingId;
 
         public BuildingPlacePayload(GameActionMessageKind kind, string buildingId, Vector2Int position,
-                                    string ownerId, string sourceFactionId)
+                                    string ownerId, string sourceFactionId,
+                                    bool hasRelocationSource = false,
+                                    Vector2Int relocationSourcePosition = default,
+                                    string satisfiedReplacementBuildingId = null)
         {
             Kind            = kind;
             BuildingId      = buildingId;
             Position        = position;
             OwnerId         = ownerId;
             SourceFactionId = sourceFactionId;
+            HasRelocationSource = hasRelocationSource;
+            RelocationSourcePosition = relocationSourcePosition;
+            SatisfiedReplacementBuildingId =
+                satisfiedReplacementBuildingId;
         }
+
+        public ConstructionPlacementCommitIntent ToCommitIntent()
+            => new ConstructionPlacementCommitIntent(
+                HasRelocationSource
+                    ? RelocationSourcePosition
+                    : (Vector2Int?)null,
+                SatisfiedReplacementBuildingId);
 
         public byte[] ToBytes()
         {
@@ -43,6 +64,14 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             w.Write(Position.y);
             w.Write(OwnerId         ?? "");
             w.Write(SourceFactionId ?? "");
+            // Appended extension keeps existing readers compatible: the legacy
+            // prefix is unchanged and old payloads simply end before this marker.
+            w.Write(IntentExtensionMarker);
+            w.Write(IntentExtensionVersion);
+            w.Write(HasRelocationSource);
+            w.Write(RelocationSourcePosition.x);
+            w.Write(RelocationSourcePosition.y);
+            w.Write(SatisfiedReplacementBuildingId ?? "");
             return ms.ToArray();
         }
 
@@ -50,12 +79,48 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         {
             using var ms = new MemoryStream(data);
             using var r  = new BinaryReader(ms);
+            GameActionMessageKind kind =
+                (GameActionMessageKind)r.ReadByte();
+            string buildingId = r.ReadString();
+            var position =
+                new Vector2Int(r.ReadInt32(), r.ReadInt32());
+            string ownerId = r.ReadString();
+            string sourceFactionId = r.ReadString();
+
+            bool hasRelocationSource = false;
+            Vector2Int relocationSourcePosition = default;
+            string satisfiedReplacementBuildingId = null;
+            if (ms.Position < ms.Length)
+            {
+                byte marker = r.ReadByte();
+                if (marker != IntentExtensionMarker)
+                {
+                    throw new InvalidDataException(
+                        $"Unknown BuildingPlace payload extension marker 0x{marker:X2}.");
+                }
+
+                byte version = r.ReadByte();
+                if (version != IntentExtensionVersion)
+                {
+                    throw new InvalidDataException(
+                        $"Unsupported BuildingPlace payload extension version {version}.");
+                }
+
+                hasRelocationSource = r.ReadBoolean();
+                relocationSourcePosition =
+                    new Vector2Int(r.ReadInt32(), r.ReadInt32());
+                satisfiedReplacementBuildingId = r.ReadString();
+            }
+
             return new BuildingPlacePayload(
-                (GameActionMessageKind)r.ReadByte(),
-                r.ReadString(),
-                new Vector2Int(r.ReadInt32(), r.ReadInt32()),
-                r.ReadString(),
-                r.ReadString());
+                kind,
+                buildingId,
+                position,
+                ownerId,
+                sourceFactionId,
+                hasRelocationSource,
+                relocationSourcePosition,
+                satisfiedReplacementBuildingId);
         }
     }
 

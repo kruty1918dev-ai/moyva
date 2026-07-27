@@ -5,6 +5,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     internal interface IConstructionVisualStyleService
     {
         void ApplyGhostStyle(GameObject rootObject, bool isValid);
+        void ApplyUnaffordableGhostStyle(GameObject rootObject);
         void ApplySolidStyle(GameObject rootObject);
         void EnsureBuildingSortingOrder(GameObject rootObject, int minOrder);
         void EnsureRenderersEnabled(GameObject rootObject);

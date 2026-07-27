@@ -278,8 +278,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private static bool IsInfluenceCenter(BuildingDefinition definition)
         {
-            return BuildingDefinitionCapabilities.IsTownHall(definition)
-                || BuildingDefinitionCapabilities.IsCastle(definition);
+            return BuildingDefinitionCapabilities.IsSettlementCenter(
+                definition);
         }
     }
 }

@@ -73,7 +73,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         out replacedOrigin,
                         out replacedBuildingId);
 
-                    if (!CanPlaceAt(pos, pos, id, out var tileOccupied, out var spacingBlocked, out var fogBlocked, out var influenceZoneBlocked, out var terrainBlocked, relocationSource))
+                    if (!CanPlaceAt(
+                            pos,
+                            pos,
+                            id,
+                            out var tileOccupied,
+                            out var spacingBlocked,
+                            out var fogBlocked,
+                            out var influenceZoneBlocked,
+                            out var terrainBlocked,
+                            relocationSource,
+                            placement.ReplacedPendingBuildingId))
                     {
                         skippedCount++;
                         _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.GridCellValidated, "placement-invalid", $"building={id}, pos={pos}");
@@ -93,10 +103,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     }
                     else if (!hasRelocationSource
                              && gateReplacementAllowed
-                             && _factionPlacedBuildings.TryGetValue(replacedOrigin, out var replacedFactionEntry))
+                             && _factionPlacedBuildings.ContainsKey(
+                                 replacedOrigin))
                     {
+                        // Replacement changes the occupant, not the actor. Keep
+                        // the active owner (especially when RequireSameOwner is
+                        // disabled) instead of inheriting the replaced object.
                         relocationWasFactionOwned = true;
-                        relocationOwnerId = replacedFactionEntry.FactionId;
                     }
 
                     if (gateReplacementAllowed)
@@ -127,6 +140,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     {
                         skippedCount++;
                         _lastActionMessage = resourceReason;
+                        _signalBus.Fire(
+                            new BuildingPreviewChangedSignal
+                            {
+                                Position = pos,
+                                BuildingId = id,
+                                PreviewState =
+                                    BuildingPreviewState.Unaffordable,
+                            });
                         _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, "resources-blocked", resourceReason);
                         Debug.LogWarning($"[MoyvaBuildGridDiag] placement-failed building='{id}' origin={pos} reason='{resourceReason}'");
                         continue;

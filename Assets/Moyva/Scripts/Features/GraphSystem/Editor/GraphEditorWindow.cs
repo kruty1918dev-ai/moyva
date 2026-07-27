@@ -7,6 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
@@ -269,7 +270,19 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             public Color Color = Color.white;
 
             [TitleGroup("Generation")]
+            [LabelText("Base Height (Y)")]
             public float DefaultHeight;
+
+            [ShowInInspector, ReadOnly]
+            [TitleGroup("Generation")]
+            [LabelText("Calculated Surface Y")]
+            public float CalculatedSurfaceY { get; private set; }
+
+            [TitleGroup("Geometry")]
+            public TileGeometryMode TileGeometryMode;
+
+            [TitleGroup("Geometry")]
+            public AuthoredClosurePolicy AuthoredClosurePolicy;
 
             [TitleGroup("Generation")]
             [LabelText("Zero Layer Padding (+16)")]
@@ -314,6 +327,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 Enabled = layer.Enabled;
                 Color = layer.Color;
                 DefaultHeight = layer.DefaultHeight;
+                CalculatedSurfaceY = _window.ResolveCalculatedSurfaceY(layer);
+                TileGeometryMode = layer.TileGeometryMode;
+                AuthoredClosurePolicy = layer.AuthoredClosurePolicy;
                 UseZeroLayerPadding = layer.UseZeroLayerPadding;
                 ExtraWidthCells = layer.ExtraWidthCells;
                 ExtraLengthCells = layer.ExtraLengthCells;
@@ -336,6 +352,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 layer.Enabled = Enabled;
                 layer.Color = Color;
                 layer.DefaultHeight = DefaultHeight;
+                layer.TileGeometryMode = TileGeometryMode;
+                layer.AuthoredClosurePolicy = AuthoredClosurePolicy;
                 layer.UseZeroLayerPadding = UseZeroLayerPadding;
                 layer.ExtraWidthCells = Mathf.Max(0, ExtraWidthCells);
                 layer.ExtraLengthCells = Mathf.Max(0, ExtraLengthCells);
@@ -486,6 +504,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             public int SortingOrder;
             public bool Enabled;
             public float DefaultHeight;
+            public TileGeometryMode TileGeometryMode;
+            public AuthoredClosurePolicy AuthoredClosurePolicy;
             public bool UseZeroLayerPadding;
             public int ExtraWidthCells;
             public int ExtraLengthCells;
@@ -1520,6 +1540,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 SortingOrder = layer.SortingOrder,
                 Enabled = layer.Enabled,
                 DefaultHeight = layer.DefaultHeight,
+                TileGeometryMode = layer.TileGeometryMode,
+                AuthoredClosurePolicy = layer.AuthoredClosurePolicy,
                 UseZeroLayerPadding = layer.UseZeroLayerPadding,
                 ExtraWidthCells = layer.ExtraWidthCells,
                 ExtraLengthCells = layer.ExtraLengthCells,
@@ -1584,6 +1606,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             layer.SortingOrder = sortingOrder;
             layer.Enabled = _copiedLayer.Enabled;
             layer.DefaultHeight = _copiedLayer.DefaultHeight;
+            layer.TileGeometryMode = _copiedLayer.TileGeometryMode;
+            layer.AuthoredClosurePolicy = _copiedLayer.AuthoredClosurePolicy;
             layer.UseZeroLayerPadding = _copiedLayer.UseZeroLayerPadding;
             layer.ExtraWidthCells = _copiedLayer.ExtraWidthCells;
             layer.ExtraLengthCells = _copiedLayer.ExtraLengthCells;
@@ -2604,6 +2628,45 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 if (!target.ContainsKey(issue.LayerId))
                     target.Add(issue.LayerId, issue);
             }
+        }
+
+        private float ResolveCalculatedSurfaceY(GeneratorLayerDefinition layer)
+        {
+            if (_graphAsset == null || layer == null)
+                return layer?.DefaultHeight ?? 0f;
+
+            string path = AssetDatabase.GetAssetPath(_graphAsset);
+            Configuration configuration = string.IsNullOrEmpty(path)
+                ? null
+                : AssetDatabase.LoadAllAssetsAtPath(path).OfType<Configuration>().FirstOrDefault();
+            BlueprintLayer blueprint = configuration?.GetBlueprintLayerByGuid(layer.BlueprintLayerGuid);
+            if (blueprint == null)
+                return layer.DefaultHeight;
+
+            TilesBuildLayer buildLayer = null;
+            if (configuration.buildLayerFolders != null)
+            {
+                buildLayer = configuration.buildLayerFolders
+                    .Where(folder => folder?.buildLayers != null)
+                    .SelectMany(folder => folder.buildLayers)
+                    .OfType<TilesBuildLayer>()
+                    .FirstOrDefault(candidate =>
+                        string.Equals(
+                            candidate.assignedBlueprintLayerGuid,
+                            layer.BlueprintLayerGuid,
+                            StringComparison.Ordinal)
+                        || string.Equals(
+                            candidate.currentBlueprintLayer?.guid,
+                            layer.BlueprintLayerGuid,
+                            StringComparison.Ordinal));
+            }
+
+            float projected = TileWorldCreatorFillTileSurfaceHeightUtility
+                .ResolveTilesBuildLayerTopHeight(blueprint, buildLayer);
+            return GraphLogicalTileMapBuilderService.ResolveAuthoritativeSurfaceHeight(
+                layer.DefaultHeight,
+                blueprint.defaultLayerHeight,
+                projected);
         }
 
         private void TrySyncCompanionBlueprintLayers(bool logWarnings)

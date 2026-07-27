@@ -9,10 +9,17 @@ namespace Kruty1918.Moyva.Construction.API
         private readonly List<string> _notes = new List<string>();
         private readonly List<Vector2Int> _footprintPositions = new List<Vector2Int>();
 
-        public bool IsValid => !ConfigurationBlocked && !TileOccupied && !TerrainBlocked && !SpacingBlocked && !FogBlocked && !InfluenceZoneBlocked;
+        public bool IsValid => !ConfigurationBlocked
+            && !TileOccupied
+            && !TerrainBlocked
+            && !AdjacencyBlocked
+            && !SpacingBlocked
+            && !FogBlocked
+            && !InfluenceZoneBlocked;
         public bool ConfigurationBlocked { get; internal set; }
         public bool TileOccupied { get; internal set; }
         public bool TerrainBlocked { get; internal set; }
+        public bool AdjacencyBlocked { get; internal set; }
         public bool SpacingBlocked { get; internal set; }
         public bool FogBlocked { get; internal set; }
         public bool InfluenceZoneBlocked { get; internal set; }
