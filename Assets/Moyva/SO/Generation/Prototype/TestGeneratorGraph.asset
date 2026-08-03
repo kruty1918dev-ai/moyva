@@ -181828,7 +181828,7 @@ MonoBehaviour:
   _editorPosition: {x: 2022, y: -189}
   _layerId: f904bc0b-b8b6-4fdc-b371-76921129c59b
   _tileVariants:
-  - Preset: {fileID: 11400000, guid: 55a8688c0a8ebd22e9f324454145f473, type: 2}
+  - Preset: {fileID: 11400000, guid: 05593a2d3b3281533bb6570af5a1c1b4, type: 2}
     Slot: 0
     Weight: 1
     TileHeight: 0
@@ -242928,7 +242928,7 @@ MonoBehaviour:
   generateFlatSurface: 0
   flatSurfaceMaterial: {fileID: 0}
   tilePresetsTop:
-  - preset: {fileID: 11400000, guid: 55a8688c0a8ebd22e9f324454145f473, type: 2}
+  - preset: {fileID: 11400000, guid: 05593a2d3b3281533bb6570af5a1c1b4, type: 2}
     tileHeight: 0
     weight: 1
   tilePresetsMiddle: []
