@@ -370,6 +370,28 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public void TwcSurfaceAlignedPlacement_PreservesSurfaceDeltaAcrossElevations()
+        {
+            float lowerRoot =
+                TwcTileMeshSourceProvider.ResolveSurfaceAlignedPlacementHeight(
+                    expectedSurfaceHeight: 1f,
+                    fallbackPlacementHeight: 1f,
+                    prefabTopOffset: -1f);
+            float higherRoot =
+                TwcTileMeshSourceProvider.ResolveSurfaceAlignedPlacementHeight(
+                    expectedSurfaceHeight: 3f,
+                    fallbackPlacementHeight: 3f,
+                    prefabTopOffset: -1f);
+
+            float lowerTop = lowerRoot - 1f;
+            float higherTop = higherRoot - 1f;
+
+            Assert.AreEqual(1f, lowerTop, 0.0001f);
+            Assert.AreEqual(3f, higherTop, 0.0001f);
+            Assert.AreEqual(2f, higherTop - lowerTop, 0.0001f);
+        }
+
+        [Test]
         public void TwcSurfaceAlignedPlacement_FallsBackForInvalidSurfaceData()
         {
             float resolved = TwcTileMeshSourceProvider.ResolveSurfaceAlignedPlacementHeight(
@@ -728,6 +750,58 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public void Resolver_SupportHeight_UsesRenderedSurfaceNotBaseHeight()
+        {
+            var cell = new TileStackCell();
+            cell.Add(new GraphTileLayerSample(
+                "lower",
+                "Lower",
+                "lower-blueprint",
+                "lower-build",
+                "Lower",
+                "Lower",
+                LayerKind.BaseTerrain,
+                sortingOrder: 0,
+                graphLayerOrder: 0,
+                terrainPriority: 0,
+                height: 2f,
+                surfaceHeight: 1f,
+                sourceNodeId: "lower-node"));
+            cell.Add(new GraphTileLayerSample(
+                "upper",
+                "Upper",
+                "upper-blueprint",
+                "upper-build",
+                "Upper",
+                "Upper",
+                LayerKind.Cliff,
+                sortingOrder: 1,
+                graphLayerOrder: 1,
+                terrainPriority: 1,
+                height: 2f,
+                surfaceHeight: 3f,
+                sourceNodeId: "upper-node"));
+
+            ResolvedTileComposition resolved =
+                new ResolvedTileCompositionResolver().Resolve(
+                    Vector2Int.zero,
+                    new TileNeighborhood(
+                        cell,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null));
+
+            Assert.IsTrue(resolved.HasMainTerrain);
+            Assert.AreEqual("upper", resolved.MainTerrain.GraphLayerId);
+            Assert.AreEqual(1f, resolved.SupportHeight, 0.0001f);
+        }
+
+        [Test]
         public void VerticalFill_CullsOnlyMatchedCardinalBoundary()
         {
             var source = new TileMeshSource(
@@ -1069,6 +1143,44 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public void VerticalFill_ElevatedTile_PreservesTopHeightAndExtendsOnlyBottom()
+        {
+            Mesh mesh = CreateFlatQuadMesh(1f);
+            Matrix4x4 placement = Matrix4x4.Translate(new Vector3(0f, 2f, 0f));
+            var source = new TileMeshSource(
+                mesh,
+                null,
+                placement,
+                visibleBottomY: 0f,
+                tileCenterXZ: Vector2.zero,
+                tileHalfExtent: 0.5f,
+                edgeBottoms: new TileMeshEdgeBottoms(
+                    north: 0f,
+                    east: 0f,
+                    south: 0f,
+                    west: 0f));
+
+            bool created = TileVerticalFillMeshUtility.TryCreate(source, out Mesh result);
+            if (result != null)
+                _created.Add(result);
+
+            Assert.IsTrue(created);
+            Assert.IsNotNull(result);
+            Assert.AreEqual(
+                0f,
+                TwcTileMeshSourceProvider.ResolveTransformedBoundsBottom(
+                    result.bounds,
+                    source.LocalMatrix),
+                0.0001f);
+            Assert.AreEqual(
+                3f,
+                TwcTileMeshSourceProvider.ResolveTransformedBoundsTop(
+                    result.bounds,
+                    source.LocalMatrix),
+                0.0001f);
+        }
+
+        [Test]
         public void SurfaceOnly_RemovesAuthoredSidesAndBottomAndPreservesStreams()
         {
             Mesh mesh = CreateClosedTileMeshWithChannels();
@@ -1232,6 +1344,58 @@ namespace Kruty1918.Moyva.Tests.Generator
             Assert.AreEqual(6, rendered.triangles.Length);
             foreach (Vector3 vertex in rendered.vertices)
                 Assert.AreEqual(1f, vertex.y, 0.0001f);
+
+            registry.Clear();
+        }
+
+        [Test]
+        public void ChunkTerrainMeshBuilder_PreservesLocalMatrixYDuringCombine()
+        {
+            Mesh sourceMesh = CreateFlatQuadMesh(1f);
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit")
+                ?? Shader.Find("Standard");
+            Assert.IsNotNull(shader, "A built-in test shader is required.");
+            var material = new Material(shader);
+            var chunkObject = new GameObject("Chunk Elevated Matrix Test");
+            _created.Add(material);
+            _created.Add(chunkObject);
+
+            var registry = new ChunkFirstRuntimeMeshRegistry();
+            var builder = new ChunkTerrainMeshBuilder(
+                registry,
+                new ChunkFirstBuildDiagnostics());
+            var resolved = new Dictionary<Vector2Int, ResolvedTileComposition>
+            {
+                [Vector2Int.zero] = new ResolvedTileComposition(
+                    Vector2Int.zero,
+                    CreateHeightSample("ground", 3f),
+                    default,
+                    true,
+                    false,
+                    string.Empty)
+            };
+            var source = new SingleMeshSource(
+                sourceMesh,
+                material,
+                Matrix4x4.Translate(new Vector3(0f, 2f, 0f)));
+            var area = new ChunkBuildArea(
+                default,
+                new RectInt(0, 0, 1, 1),
+                new RectInt(0, 0, 1, 1));
+
+            int built = builder.Build(
+                chunkObject.transform,
+                area,
+                resolved,
+                source);
+
+            Transform terrain = chunkObject.transform.Find("TerrainMesh");
+            Assert.AreEqual(1, built);
+            Assert.IsNotNull(terrain);
+            Mesh rendered = terrain.GetComponent<MeshFilter>().sharedMesh;
+            Assert.IsNotNull(rendered);
+            Assert.AreEqual(3f, rendered.bounds.min.y, 0.0001f);
+            Assert.AreEqual(3f, rendered.bounds.max.y, 0.0001f);
 
             registry.Clear();
         }
@@ -1898,16 +2062,19 @@ namespace Kruty1918.Moyva.Tests.Generator
         {
             private readonly Mesh _mesh;
             private readonly Material _material;
+            private readonly Matrix4x4 _localMatrix;
             private readonly TileGeometryMode _tileGeometryMode;
 
             public SingleMeshSource(
                 Mesh mesh,
                 Material material,
+                Matrix4x4? localMatrix = null,
                 TileGeometryMode tileGeometryMode =
                     TileGeometryMode.SolidTerrain)
             {
                 _mesh = mesh;
                 _material = material;
+                _localMatrix = localMatrix ?? Matrix4x4.identity;
                 _tileGeometryMode = tileGeometryMode;
             }
 
@@ -1918,7 +2085,7 @@ namespace Kruty1918.Moyva.Tests.Generator
                 results.Add(new TileMeshSource(
                     _mesh,
                     new[] { _material },
-                    Matrix4x4.identity,
+                    _localMatrix,
                     tileGeometryMode: _tileGeometryMode));
                 return 1;
             }

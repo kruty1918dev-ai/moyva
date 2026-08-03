@@ -63,15 +63,6 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 blueprint.defaultLayerHeight,
                 projectedSurfaceHeight);
 
-            Debug.Log(
-                $"[MoyvaTileHeightDiag] LogicalLayer name='{graphLayer.Name}' " +
-                $"layerId='{layerMap.GraphLayerId}' sorting={layerMap.SortingOrder} " +
-                $"graphHeight={layerHeight:0.###} blueprintHeight={blueprint.defaultLayerHeight:0.###} " +
-                $"projectedSurface={projectedSurfaceHeight:0.###} " +
-                $"authoritativeSurface={surfaceHeight:0.###} " +
-                $"activeCells={blueprint.allPositions?.Count ?? 0} " +
-                $"buildLayerGuid='{buildLayer?.guid ?? "<none>"}' presetId='{layerMap.PresetId ?? "<none>"}'");
-
             var data = CreateLayerData(
                 graph,
                 layerMap,

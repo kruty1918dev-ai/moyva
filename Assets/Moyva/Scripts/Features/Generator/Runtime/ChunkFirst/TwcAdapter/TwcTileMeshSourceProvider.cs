@@ -7,14 +7,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
     internal sealed class TwcTileMeshSourceProvider : IResolvedTileMeshSource
     {
-        private const string HeightDiagnosticsTag = "[MoyvaTileHeightDiag]";
         private const float FlatSurfaceBoundsHeightTolerance = 0.0001f;
 
         private readonly ITileWorldCreatorBuildEnvironment _environment;
         private readonly Dictionary<string, TilesBuildLayer> _buildLayerByGuid = new Dictionary<string, TilesBuildLayer>(System.StringComparer.Ordinal);
         private readonly Dictionary<GameObject, PrefabMeshTemplate[]> _meshTemplatesByPrefab =
             new Dictionary<GameObject, PrefabMeshTemplate[]>();
-        private readonly HashSet<string> _heightDiagnosticKeys = new HashSet<string>(System.StringComparer.Ordinal);
 
         public TwcTileMeshSourceProvider(ITileWorldCreatorBuildEnvironment environment)
         {
@@ -252,18 +250,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 ? ResolveVisibleBottomY(composition)
                 : float.NaN;
 
-            LogHeightPlacementOnce(
-                composition,
-                buildLayer,
-                preset,
-                tileType,
-                prefab,
-                fallbackPlacementHeight,
-                prefabTopOffset,
-                prefabBottomOffset,
-                placementHeight,
-                visibleBottomY);
-
             int missingClosureOwner =
                 sample.TileGeometryMode == TileGeometryMode.SolidTerrain
                 && sample.AuthoredClosurePolicy
@@ -492,51 +478,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Vector3 axisY = matrix.MultiplyVector(new Vector3(0f, extents.y, 0f));
             Vector3 axisZ = matrix.MultiplyVector(new Vector3(0f, 0f, extents.z));
             return Mathf.Abs(axisX.y) + Mathf.Abs(axisY.y) + Mathf.Abs(axisZ.y);
-        }
-
-        private void LogHeightPlacementOnce(
-            ResolvedTileComposition composition,
-            TilesBuildLayer buildLayer,
-            TilePreset preset,
-            TilePreset.TileType tileType,
-            GameObject prefab,
-            float fallbackPlacementHeight,
-            float prefabTopOffset,
-            float prefabBottomOffset,
-            float placementHeight,
-            float visibleBottomY)
-        {
-            GraphTileLayerSample sample = composition.MainTerrain;
-            string key =
-                $"{sample.GraphLayerId}|{preset.GetInstanceID()}|{tileType}|{prefab.GetInstanceID()}";
-            if (!_heightDiagnosticKeys.Add(key))
-                return;
-
-            float tileLayerOffset = buildLayer.tileLayers != null
-                                    && buildLayer.tileLayers.Count > 0
-                                    && buildLayer.tileLayers[0] != null
-                ? buildLayer.tileLayers[0].heightOffset
-                : 0f;
-            float actualSurfaceHeight = placementHeight + prefabTopOffset;
-            float authoredBottomHeight = placementHeight + prefabBottomOffset;
-            float unclosedGap = IsFinite(visibleBottomY)
-                ? Mathf.Max(0f, authoredBottomHeight - visibleBottomY)
-                : 0f;
-            string mode = IsFinite(sample.SurfaceHeight) && IsFinite(prefabTopOffset)
-                ? "surface-aligned"
-                : "fallback";
-
-            Debug.Log(
-                $"{HeightDiagnosticsTag} Placement mode={mode} layer='{sample.GraphLayerName}' " +
-                $"layerId='{sample.GraphLayerId}' cell={composition.Cell} tileType={tileType} " +
-                $"preset='{preset.name}' prefab='{prefab.name}' layerHeight={sample.Height:0.###} " +
-                $"expectedSurface={sample.SurfaceHeight:0.###} buildYOffset={buildLayer.layerYOffset:0.###} " +
-                $"tileLayerOffset={tileLayerOffset:0.###} fallbackRootY={fallbackPlacementHeight:0.###} " +
-                $"prefabTopOffset={prefabTopOffset:0.###} prefabBottomOffset={prefabBottomOffset:0.###} " +
-                $"correctedRootY={placementHeight:0.###} " +
-                $"actualSurface={actualSurfaceHeight:0.###} authoredBottom={authoredBottomHeight:0.###} " +
-                $"support={visibleBottomY:0.###} unclosedGap={unclosedGap:0.###} " +
-                $"surfaceDelta={(actualSurfaceHeight - sample.SurfaceHeight):0.#####}");
         }
 
         private static bool IsFinite(float value)

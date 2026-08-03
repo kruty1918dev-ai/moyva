@@ -200,7 +200,7 @@ MonoBehaviour:
   mergePreviewTextures: 0
   clusterCellSize: 8
   useGlobalRandomSeed: 1
-  globalRandomSeed: 659071469
+  globalRandomSeed: 1
   currentRandomSeed: 659071469
   layerChanged: 1
   showGizmos: 0

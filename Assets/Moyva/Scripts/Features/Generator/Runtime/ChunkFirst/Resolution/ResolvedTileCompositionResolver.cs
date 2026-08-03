@@ -4,6 +4,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
     internal sealed class ResolvedTileCompositionResolver : IResolvedTileCompositionResolver
     {
+        private const float HeightEpsilon = 0.0001f;
         private const string TerrainWinnerReason =
             "Main terrain won by visual elevation, then LayerKind/TerrainPriority/CompositionRuleTable/SortingOrder.";
 
@@ -64,7 +65,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return float.NaN;
             }
 
-            return sample.SurfaceHeight;
+            return ResolveAuthoritativeSurfaceHeight(sample);
         }
 
         private static float ResolveSupportHeight(
@@ -72,7 +73,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             TileStackCell cell,
             float lowestLayerHeight)
         {
-            float fallback = Mathf.Min(main.Height, lowestLayerHeight);
+            float mainSurfaceHeight = ResolveAuthoritativeSurfaceHeight(main);
+            float fallback = IsFinite(mainSurfaceHeight)
+                ? Mathf.Min(mainSurfaceHeight, lowestLayerHeight)
+                : Mathf.Min(main.Height, lowestLayerHeight);
             if (cell == null)
                 return fallback;
 
@@ -81,15 +85,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             for (int i = 0; i < cell.Samples.Count; i++)
             {
                 var candidate = cell.Samples[i];
+                float candidateSurfaceHeight =
+                    ResolveAuthoritativeSurfaceHeight(candidate);
                 if (!candidate.IsTerrainLike
                     || candidate.LayerKind == LayerKind.OverlayTerrain
                     || SameTerrainIdentity(main, candidate)
-                    || candidate.Height >= main.Height - 0.0001f)
+                    || !IsFinite(candidateSurfaceHeight)
+                    || candidateSurfaceHeight >= mainSurfaceHeight - HeightEpsilon)
                 {
                     continue;
                 }
 
-                float candidateSurface = Mathf.Min(main.Height, candidate.SurfaceHeight);
+                float candidateSurface = Mathf.Min(
+                    mainSurfaceHeight,
+                    candidateSurfaceHeight);
                 if (!hasUnderlyingTerrain || candidateSurface > supportHeight)
                 {
                     supportHeight = candidateSurface;
@@ -197,5 +206,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             return string.Compare(current.StableTieBreakKey, candidate.StableTieBreakKey, System.StringComparison.Ordinal);
         }
+
+        private static float ResolveAuthoritativeSurfaceHeight(
+            GraphTileLayerSample sample)
+        {
+            if (IsFinite(sample.SurfaceHeight))
+                return sample.SurfaceHeight;
+
+            return IsFinite(sample.Height)
+                ? sample.Height
+                : float.NaN;
+        }
+
+        private static bool IsFinite(float value)
+            => !float.IsNaN(value) && !float.IsInfinity(value);
     }
 }
