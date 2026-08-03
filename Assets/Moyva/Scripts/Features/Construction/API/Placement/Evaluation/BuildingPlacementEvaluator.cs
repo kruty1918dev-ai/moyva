@@ -1168,9 +1168,25 @@ namespace Kruty1918.Moyva.Construction.API
                 return false;
             }
 
+            bool hasAuthoritativeInfluenceRule =
+                hasInfluenceModule
+                && influenceModule.MergeMode
+                    == PlacementRuleMergeMode.Override;
             if (!AnyInfluenceCenterDefined(request))
             {
-                result?.AddNote("У реєстрі немає ратуші або замку, тому правило зони поселення вимкнене.");
+                if (hasAuthoritativeInfluenceRule
+                    && requireInfluenceCenterInRange)
+                {
+                    result?.AddBlocker(new BuildingPlacementBlocker
+                    {
+                        Kind = BuildingPlacementBlockerKind.InfluenceRequired,
+                        Message = "Будівля потребує зони поселення, але у реєстрі немає жодного SettlementCenterBuildingModule.",
+                        Position = request.Position,
+                    });
+                    return true;
+                }
+
+                result?.AddNote("У реєстрі немає центру поселення з SettlementCenterBuildingModule, тому legacy influence-правило вимкнене.");
                 return false;
             }
 
@@ -1179,6 +1195,18 @@ namespace Kruty1918.Moyva.Construction.API
                 : ResolveMaxInfluenceRadius(request);
             if (ruleRadius <= 0)
             {
+                if (hasAuthoritativeInfluenceRule
+                    && requireInfluenceCenterInRange)
+                {
+                    result?.AddBlocker(new BuildingPlacementBlocker
+                    {
+                        Kind = BuildingPlacementBlockerKind.InfluenceRequired,
+                        Message = "Будівля потребує зони поселення, але жоден SettlementCenterBuildingModule не має додатного радіуса influence.",
+                        Position = request.Position,
+                    });
+                    return true;
+                }
+
                 result?.AddNote("Радіус influence-правила дорівнює 0, перевірку пропущено.");
                 return false;
             }
@@ -1189,7 +1217,7 @@ namespace Kruty1918.Moyva.Construction.API
                 result?.AddBlocker(new BuildingPlacementBlocker
                 {
                     Kind = BuildingPlacementBlockerKind.InfluenceRequired,
-                    Message = $"Потрібна ратуша або замок у радіусі {ruleRadius}.",
+                    Message = $"Потрібен центр поселення у радіусі {ruleRadius}.",
                     Position = request.Position,
                     Radius = ruleRadius,
                 });
@@ -1250,11 +1278,27 @@ namespace Kruty1918.Moyva.Construction.API
                 return;
             }
 
-            // Compatibility for old runtime-only definitions. New assets always
-            // carry explicit placement data or an influence module.
+            // Compatibility adapter for old runtime-only definitions. A legacy
+            // center whose RequireTownHallInRange still has the field default
+            // (true) was never authored with a usable center policy: requiring
+            // another center would make the first one impossible to place.
+            // Preserve the old center defaults in that sentinel case, while a
+            // definition that explicitly turned the requirement off keeps its
+            // authored overlap flag. New assets and explicit influence modules
+            // returned above, so this branch cannot override authoritative data.
             bool candidateIsCenter = IsInfluenceCenter(candidate);
-            requireInfluence = !candidateIsCenter;
-            blockOverlap = candidateIsCenter;
+            if (candidateIsCenter)
+            {
+                requireInfluence = false;
+                blockOverlap =
+                    candidate?.RequireTownHallInRange == true
+                    || candidate?.BlockIfTownHallAlreadyInRange == true;
+                return;
+            }
+
+            requireInfluence = candidate?.RequireTownHallInRange == true;
+            blockOverlap =
+                candidate?.BlockIfTownHallAlreadyInRange == true;
         }
 
         private static bool AnyInfluenceCenterDefined(BuildingPlacementEvaluationRequest request)
@@ -1443,7 +1487,7 @@ namespace Kruty1918.Moyva.Construction.API
 
         private static int ResolveMaxInfluenceRadius(BuildingPlacementEvaluationRequest request)
         {
-            int maxRadius = Mathf.Max(0, request.TownHallBuildRadius);
+            int maxRadius = 0;
             var definitions = request.BuildingRegistry.GetAll() ?? Array.Empty<BuildingDefinition>();
             for (int index = 0; index < definitions.Length; index++)
             {

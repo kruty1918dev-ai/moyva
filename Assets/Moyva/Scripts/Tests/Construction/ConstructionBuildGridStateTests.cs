@@ -12,6 +12,13 @@ namespace Kruty1918.Moyva.Tests.Construction
     {
         private sealed class TestGridService : IGridService
         {
+            private readonly string _tileId;
+
+            public TestGridService(string tileId = "grass")
+            {
+                _tileId = tileId;
+            }
+
             public int GridWidth => 2;
             public int GridHeight => 2;
 
@@ -24,11 +31,54 @@ namespace Kruty1918.Moyva.Tests.Construction
                     && position.y >= 0
                     && position.x < GridWidth
                     && position.y < GridHeight;
-                tileTypeId = exists ? "grass" : null;
+                tileTypeId = exists ? _tileId : null;
                 return exists;
             }
 
             public void SetTileData(Vector2Int position, string tileTypeId) { }
+        }
+
+        private sealed class TestTileSettingsService :
+            ITileSettingsService,
+            ITerrainTagQuery
+        {
+            public string TaggedTileId { get; set; }
+            public bool BuildBlocked { get; set; }
+
+            public float GetTileWeight(string tileId) => 1f;
+            public bool IsBuildBlocked(string tileId) => BuildBlocked;
+            public float GetSurfaceOffset(string tileId) => 0f;
+
+            public bool HasTerrainTag(string tileId, string tag)
+            {
+                return string.Equals(
+                        tileId,
+                        TaggedTileId,
+                        System.StringComparison.Ordinal)
+                    && string.Equals(
+                        tag,
+                        "water",
+                        System.StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        private sealed class TestPlacementRulesProvider :
+            IConstructionPlacementRulesProvider
+        {
+            public int MinSpacing => 0;
+            public int TownHallBuildRadius => 0;
+            public bool EnableInfluenceZoneRules => false;
+            public bool EnableTerrainRules => true;
+            public bool EnableFogRules => false;
+            public bool RequireVisibleFogTile => false;
+            public bool AllowBuildingOnWater { get; set; }
+            public bool AllowBuildingOnHills => true;
+            public bool BlockEdgeTerrainTiles => false;
+            public string[] BlockedTileIds => System.Array.Empty<string>();
+            public string[] AllowedTileIds => System.Array.Empty<string>();
+            public Kruty1918.Moyva.WorldCreation.API.TerrainLevelRestrictionRange[]
+                BlockedTerrainLevelRanges
+                    => System.Array.Empty<Kruty1918.Moyva.WorldCreation.API.TerrainLevelRestrictionRange>();
         }
 
         private sealed class TestPlacementQuery : IConstructionPlacementQuery
@@ -173,6 +223,69 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.IsFalse(unavailable.CanSelect);
             Assert.IsFalse(unavailable.CanPreview);
             Assert.IsFalse(unavailable.CanCommit);
+        }
+
+        [Test]
+        public void TerrainBuildability_WaterTag_UsesAllowBuildingOnWater()
+        {
+            const string waterTileId = "lake-layer-guid";
+            var grid = new TestGridService(waterTileId);
+            var tileSettings = new TestTileSettingsService
+            {
+                TaggedTileId = waterTileId,
+                BuildBlocked = true,
+            };
+            var rules = new TestPlacementRulesProvider
+            {
+                AllowBuildingOnWater = false,
+            };
+
+            Assert.IsTrue(
+                ConstructionTerrainBuildabilityUtility.IsTerrainBlocked(
+                    Vector2Int.zero,
+                    grid,
+                    null,
+                    tileSettings,
+                    rules,
+                    out string blockedReason));
+            StringAssert.Contains("water terrain", blockedReason);
+
+            rules.AllowBuildingOnWater = true;
+            Assert.IsFalse(
+                ConstructionTerrainBuildabilityUtility.IsTerrainBlocked(
+                    Vector2Int.zero,
+                    grid,
+                    null,
+                    tileSettings,
+                    rules,
+                    out string allowedReason));
+            Assert.IsNull(allowedReason);
+        }
+
+        [Test]
+        public void TerrainBuildability_WaterOptIn_DoesNotBypassNonWaterBuildBlock()
+        {
+            const string rockTileId = "rock-layer-guid";
+            var grid = new TestGridService(rockTileId);
+            var tileSettings = new TestTileSettingsService
+            {
+                TaggedTileId = "different-water-layer",
+                BuildBlocked = true,
+            };
+            var rules = new TestPlacementRulesProvider
+            {
+                AllowBuildingOnWater = true,
+            };
+
+            Assert.IsTrue(
+                ConstructionTerrainBuildabilityUtility.IsTerrainBlocked(
+                    Vector2Int.zero,
+                    grid,
+                    null,
+                    tileSettings,
+                    rules,
+                    out string reason));
+            StringAssert.Contains("build-blocked layer", reason);
         }
     }
 }

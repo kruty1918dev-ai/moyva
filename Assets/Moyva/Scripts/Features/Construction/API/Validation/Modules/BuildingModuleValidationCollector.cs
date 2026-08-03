@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
 {
@@ -23,13 +22,11 @@ namespace Kruty1918.Moyva.Construction.API
         public void AddError(string code, string message)
         {
             AddIssue(BuildingValidationSeverity.Error, code, message);
-            Debug.LogError($"{LogTag} [{BuildingLabel}] {code}: {message}");
         }
 
         public void AddWarning(string code, string message)
         {
             AddIssue(BuildingValidationSeverity.Warning, code, message);
-            Debug.LogWarning($"{LogTag} [{BuildingLabel}] {code}: {message}");
         }
 
         public void LogSummary()
@@ -47,7 +44,7 @@ namespace Kruty1918.Moyva.Construction.API
                     warningCount++;
             }
 
-            Debug.Log($"{LogTag} Validation finished for '{BuildingLabel}'. issues={_issues.Count}, errors={errorCount}, warnings={warningCount}.");
+            UnityEngine.Debug.Log($"{LogTag} Validation finished for '{BuildingLabel}'. issues={_issues.Count}, errors={errorCount}, warnings={warningCount}.");
         }
 
         private void AddIssue(BuildingValidationSeverity severity, string code, string message)

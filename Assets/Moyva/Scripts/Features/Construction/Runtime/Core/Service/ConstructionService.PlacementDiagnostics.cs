@@ -22,6 +22,49 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             BuildingDefinition definition =
                 _placementBuildingRegistry?.GetById(request.BuildingId);
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out BuildingPerPlayerLimitModule limitModule)
+                && Mathf.Max(0, limitModule.MaxBuildingsPerPlayer) > 0
+                && limitModule.OverflowPolicy
+                    != BuildingLimitOverflowPolicy.Legacy)
+            {
+                if (limitModule.OverflowPolicy
+                        == BuildingLimitOverflowPolicy.Block
+                    || !IsBuildingLimitAtCapacity(
+                        request.BuildingId,
+                        ownerId,
+                        limitModule))
+                {
+                    return request;
+                }
+
+                if (TryFindPendingPlacementByBuildingId(
+                        request.BuildingId,
+                        out int overflowPendingIndex))
+                {
+                    PendingPlacement pending =
+                        _pendingPlacements[overflowPendingIndex];
+                    return request.WithIgnoredPositions(
+                        pending.Position,
+                        pending.OriginalPosition);
+                }
+
+                if (limitModule.OverflowPolicy
+                        == BuildingLimitOverflowPolicy.RelocateExisting
+                    && TryFindOwnedPlacedBuildingPosition(
+                        request.BuildingId,
+                        ownerId,
+                        out Vector2Int ownedOriginalPosition))
+                {
+                    return request.WithIgnoredPositions(
+                        null,
+                        ownedOriginalPosition);
+                }
+
+                return request;
+            }
+
             BuildingPlacementUniquenessScope scope =
                 BuildingDefinitionCapabilities.GetPlacementUniquenessScope(definition);
             if (scope == BuildingPlacementUniquenessScope.None)

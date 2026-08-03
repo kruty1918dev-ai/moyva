@@ -88,6 +88,21 @@ namespace Kruty1918.Moyva.Tests.Construction
             _registry.Buildings = new[]
             {
                 CreateCastleDefinition(),
+                CreateLimitedDefinition(
+                    "move-pending-2",
+                    2,
+                    BuildingLimitScope.PerOwner,
+                    BuildingLimitOverflowPolicy.MovePending),
+                CreateLimitedDefinition(
+                    "relocate-owner-2",
+                    2,
+                    BuildingLimitScope.PerOwner,
+                    BuildingLimitOverflowPolicy.RelocateExisting),
+                CreateLimitedDefinition(
+                    "relocate-global-2",
+                    2,
+                    BuildingLimitScope.Global,
+                    BuildingLimitOverflowPolicy.RelocateExisting),
             };
             Container.Bind<IBuildingRegistry>()
                 .FromInstance(_registry)
@@ -306,6 +321,122 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.IsTrue(_objectsMap.IsOccupied(foreignSource));
         }
 
+        [Test]
+        public void MovePending_WithLimitAboveOne_MovesPreviewOnlyAtCapacity()
+        {
+            Vector2Int first = new Vector2Int(70, 4);
+            Vector2Int second = new Vector2Int(72, 4);
+            Vector2Int third = new Vector2Int(74, 4);
+            _service.SetActiveOwner("faction-a");
+            _service.SelectBuilding("move-pending-2");
+
+            Assert.IsTrue(_service.TryPreviewAt(first));
+            Assert.IsTrue(_service.TryPreviewAt(second));
+            Assert.AreEqual(2, _service.GetPendingPlacements().Count);
+
+            Assert.IsTrue(_service.TryPreviewAt(third));
+            IReadOnlyDictionary<Vector2Int, string> pending =
+                _service.GetPendingPlacements();
+            Assert.AreEqual(2, pending.Count);
+            Assert.IsFalse(pending.ContainsKey(first));
+            Assert.IsTrue(pending.ContainsKey(second));
+            Assert.AreEqual("move-pending-2", pending[third]);
+        }
+
+        [Test]
+        public void RelocateExisting_WithLimitAboveOne_ReplacesOneOwnedInstance()
+        {
+            Vector2Int first = new Vector2Int(80, 4);
+            Vector2Int second = new Vector2Int(82, 4);
+            Vector2Int target = new Vector2Int(84, 4);
+            Assert.IsTrue(
+                _service.TryDirectPlace(
+                    "relocate-owner-2",
+                    first,
+                    "faction-a"));
+            Assert.IsTrue(
+                _service.TryDirectPlace(
+                    "relocate-owner-2",
+                    second,
+                    "faction-a"));
+
+            _service.SetActiveOwner("faction-a");
+            _service.SelectBuilding("relocate-owner-2");
+            Assert.IsTrue(_service.TryPreviewAt(target));
+            var intentSource =
+                _service as IConstructionPendingPlacementIntentSource;
+            Assert.NotNull(intentSource);
+            Assert.IsTrue(
+                intentSource.TryGetPendingPlacementIntent(
+                    target,
+                    out ConstructionPlacementCommitIntent intent));
+            Assert.IsTrue(intent.RelocationSourcePosition.HasValue);
+            CollectionAssert.Contains(
+                new[] { first, second },
+                intent.RelocationSourcePosition.Value);
+
+            _service.Confirm();
+
+            Assert.IsTrue(_objectsMap.IsOccupied(target));
+            Assert.AreEqual(
+                1,
+                (_objectsMap.IsOccupied(first) ? 1 : 0)
+                + (_objectsMap.IsOccupied(second) ? 1 : 0));
+        }
+
+        [Test]
+        public void GlobalRelocateExisting_DoesNotRelocateForeignInstance()
+        {
+            Vector2Int foreignFirst = new Vector2Int(90, 4);
+            Vector2Int foreignSecond = new Vector2Int(92, 4);
+            Vector2Int target = new Vector2Int(94, 4);
+            Assert.IsTrue(
+                _service.TryDirectPlace(
+                    "relocate-global-2",
+                    foreignFirst,
+                    "faction-b"));
+            Assert.IsTrue(
+                _service.TryDirectPlace(
+                    "relocate-global-2",
+                    foreignSecond,
+                    "faction-c"));
+
+            _service.SetActiveOwner("faction-a");
+            _service.SelectBuilding("relocate-global-2");
+
+            Assert.IsFalse(_service.TryPreviewAt(target));
+            Assert.IsTrue(_objectsMap.IsOccupied(foreignFirst));
+            Assert.IsTrue(_objectsMap.IsOccupied(foreignSecond));
+            Assert.IsFalse(_objectsMap.IsOccupied(target));
+        }
+
+        [Test]
+        public void GlobalRelocateExisting_RelocatesOnlyActiveOwnersInstance()
+        {
+            Vector2Int ownedSource = new Vector2Int(100, 4);
+            Vector2Int foreignSource = new Vector2Int(102, 4);
+            Vector2Int target = new Vector2Int(104, 4);
+            Assert.IsTrue(
+                _service.TryDirectPlace(
+                    "relocate-global-2",
+                    ownedSource,
+                    "faction-a"));
+            Assert.IsTrue(
+                _service.TryDirectPlace(
+                    "relocate-global-2",
+                    foreignSource,
+                    "faction-b"));
+
+            _service.SetActiveOwner("faction-a");
+            _service.SelectBuilding("relocate-global-2");
+            Assert.IsTrue(_service.TryPreviewAt(target));
+            _service.Confirm();
+
+            Assert.IsFalse(_objectsMap.IsOccupied(ownedSource));
+            Assert.IsTrue(_objectsMap.IsOccupied(foreignSource));
+            Assert.IsTrue(_objectsMap.IsOccupied(target));
+        }
+
         private static BuildingDefinition CreateCastleDefinition()
         {
             return new BuildingDefinition
@@ -351,6 +482,44 @@ namespace Kruty1918.Moyva.Tests.Construction
                         OverflowPolicy =
                             BuildingLimitOverflowPolicy
                                 .RelocateExisting,
+                    },
+                },
+            };
+        }
+
+        private static BuildingDefinition CreateLimitedDefinition(
+            string id,
+            int limit,
+            BuildingLimitScope scope,
+            BuildingLimitOverflowPolicy overflowPolicy)
+        {
+            return new BuildingDefinition
+            {
+                Id = id,
+                DisplayName = id,
+                Category = BuildingCategory.Civilian,
+                UseCustomTownHallRules = true,
+                RequireTownHallInRange = false,
+                BlockIfTownHallAlreadyInRange = false,
+                Footprint = new BuildingFootprint
+                {
+                    Size = Vector2Int.one,
+                    OccupiedCells = new[]
+                    {
+                        Vector2Int.zero,
+                    },
+                    RequiresFlatGround = true,
+                },
+                Modules = new List<BuildingModuleDefinition>
+                {
+                    new BuildingPerPlayerLimitModule
+                    {
+                        IsEnabled = true,
+                        SingletonScope =
+                            BuildingModuleScope.PerBuilding,
+                        MaxBuildingsPerPlayer = limit,
+                        LimitScope = scope,
+                        OverflowPolicy = overflowPolicy,
                     },
                 },
             };

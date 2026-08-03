@@ -210,7 +210,7 @@ namespace Kruty1918.Moyva.Editor.Shared
             {
                 BuildingModuleDefinition existing = currentModules[index];
                 if (existing != null && existing.GetType() == candidateType)
-                    return "Цей модуль уже додано до будівлі.";
+                    return "Цей модуль вже додано до будівлі.";
             }
 
             if (candidateType == typeof(TownHallBuildingModule) && hasHousing)

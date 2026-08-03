@@ -71,6 +71,7 @@ MonoBehaviour:
   - rid: 1002
   - rid: 1003
   - rid: 4346373088056442969
+  - rid: 6920774842624507993
   references:
     version: 2
     RefIds:
@@ -107,3 +108,19 @@ MonoBehaviour:
         MaxBuildingsPerPlayer: 1
         LimitScope: 0
         OverflowPolicy: 3
+    - rid: 6920774842624507993
+      type: {class: TerrainPlacementRuleModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
+        MergeMode: 1
+        AllowedTerrainIds: []
+        BlockedTerrainIds: []
+        AllowedTerrainTags: []
+        BlockedTerrainTags: []
+        AllowedTerrainLevels: 
+        BlockedTerrainLevels: 
+        RequiredNeighborOffsets: []
+        AllowHills: 1
+        BlockEdgeTerrainTiles: 0
+        RequiresFlatGround: 0

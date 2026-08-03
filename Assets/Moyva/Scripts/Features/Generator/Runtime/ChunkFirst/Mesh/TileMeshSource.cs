@@ -61,7 +61,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             float tileHalfExtent = 0f,
             AuthoredClosurePolicy authoredClosurePolicy = AuthoredClosurePolicy.PreserveAuthored,
             TileMeshEdgeBottoms edgeBottoms = default,
-            TileGeometryMode tileGeometryMode = TileGeometryMode.SolidTerrain)
+            TileGeometryMode tileGeometryMode = TileGeometryMode.SolidTerrain,
+            bool generateMissingClosure = false)
         {
             Mesh = mesh;
             Materials = materials;
@@ -73,6 +74,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             AuthoredClosurePolicy = authoredClosurePolicy;
             EdgeBottoms = edgeBottoms;
             TileGeometryMode = tileGeometryMode;
+            GenerateMissingClosure = generateMissingClosure;
         }
 
         public Mesh Mesh { get; }
@@ -85,6 +87,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         public AuthoredClosurePolicy AuthoredClosurePolicy { get; }
         public TileMeshEdgeBottoms EdgeBottoms { get; }
         public TileGeometryMode TileGeometryMode { get; }
+        /// <summary>
+        /// Adds only the missing band below an authored volume. The authored
+        /// vertices and triangles remain untouched; one designated child mesh
+        /// owns the generated closure so multi-part prefabs cannot duplicate it.
+        /// </summary>
+        public bool GenerateMissingClosure { get; }
         public bool HasVisibleBottomY => !float.IsNaN(VisibleBottomY);
         public bool HasTileFootprint => TileHalfExtent > 0.0001f;
         public bool IsValid => Mesh != null && Mesh.vertexCount > 0;

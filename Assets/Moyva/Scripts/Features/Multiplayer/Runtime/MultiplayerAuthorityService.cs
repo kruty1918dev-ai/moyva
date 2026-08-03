@@ -23,12 +23,16 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
     ///
     /// Офлайн / хост: дії виконуються безпосередньо, без мережевого round-trip.
     /// </summary>
-    internal sealed class MultiplayerAuthorityService : IInitializable, IDisposable, IConstructionConfirmRequestExecutor
+    internal sealed class MultiplayerAuthorityService :
+        IInitializable,
+        IDisposable,
+        IConstructionConfirmRequestExecutor,
+        IConstructionAuthorityEndpointRegistry
     {
         private readonly IGameCommandSyncService _syncService;
         private readonly ISessionManager         _sessionManager;
         private readonly SignalBus               _signalBus;
-        private readonly IConstructionService    _constructionService;
+        private IConstructionService             _constructionService;
         private readonly IUnitMovementService    _unitMovementService;
         private readonly IUnitFactory            _unitFactory;
 
@@ -54,6 +58,33 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         // ─── Lifecycle ───────────────────────────────────────────────────────────
 
         public int Priority => 100;
+
+        public void Attach(IConstructionService constructionService)
+        {
+            if (constructionService == null)
+                throw new ArgumentNullException(nameof(constructionService));
+
+            if (_constructionService != null
+                && !ReferenceEquals(
+                    _constructionService,
+                    constructionService))
+            {
+                Debug.LogWarning(
+                    "[MultiplayerAuthority] Replacing a stale construction scene endpoint.");
+            }
+
+            _constructionService = constructionService;
+        }
+
+        public void Detach(IConstructionService constructionService)
+        {
+            if (ReferenceEquals(
+                    _constructionService,
+                    constructionService))
+            {
+                _constructionService = null;
+            }
+        }
 
         public void Initialize()
         {
@@ -560,6 +591,22 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             string requestedSourceOwnerId,
             out string authorizedOwnerId,
             out string reason)
+            => TryResolveAuthorizedRequestOwner(
+                _sessionManager?.Participants,
+                senderId,
+                requestedOwnerId,
+                requestedSourceOwnerId,
+                out authorizedOwnerId,
+                out reason);
+
+        internal static bool TryResolveAuthorizedRequestOwner(
+            System.Collections.Generic.IReadOnlyList<Participant>
+                participants,
+            string senderId,
+            string requestedOwnerId,
+            string requestedSourceOwnerId,
+            out string authorizedOwnerId,
+            out string reason)
         {
             authorizedOwnerId = null;
             reason = null;
@@ -571,7 +618,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
 
             Participant authorizedParticipant = null;
-            var participants = _sessionManager?.Participants;
             if (participants != null)
             {
                 for (int index = 0;
@@ -618,12 +664,19 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         }
 
         private bool IsAuthorizedHostSender(string senderId)
+            => IsAuthorizedHostSender(
+                _sessionManager?.Participants,
+                senderId);
+
+        internal static bool IsAuthorizedHostSender(
+            System.Collections.Generic.IReadOnlyList<Participant>
+                participants,
+            string senderId)
         {
             string normalizedSender = senderId?.Trim();
             if (string.IsNullOrWhiteSpace(normalizedSender))
                 return false;
 
-            var participants = _sessionManager?.Participants;
             if (participants == null)
                 return false;
 

@@ -40,6 +40,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             ValidateDuplicateIds(graph, report);
             ValidateUniqueNodes(graph, report);
             ValidateLayerStates(graph, report);
+            ValidateConnectionLayers(graph, report);
             ValidateLayerReferences(graph, report);
 
             for (int i = 0; i < graph.Layers.Count; i++)
@@ -211,6 +212,46 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         nodeId: node.NodeId,
                         canAutoFix: true));
                 }
+            }
+        }
+
+        private static void ValidateConnectionLayers(
+            GraphAsset graph,
+            GraphValidationReport report)
+        {
+            if (graph?.Connections == null)
+                return;
+
+            foreach (var connection in graph.Connections)
+            {
+                if (connection == null)
+                    continue;
+
+                var source = graph.GetNodeById(connection.SourceNodeId);
+                var target = graph.GetNodeById(connection.TargetNodeId);
+                if (source == null
+                    || target == null
+                    || GraphAsset.IsGlobalNode(source)
+                    || GraphAsset.IsGlobalNode(target)
+                    || source.LayerId == target.LayerId)
+                {
+                    continue;
+                }
+
+                bool explicitLayerReference =
+                    target.GetType().Name == "LayerMaskReferenceNode"
+                    || source.GetType().Name == "LayerMaskReferenceNode";
+                if (explicitLayerReference)
+                    continue;
+
+                report.Add(new GraphValidationIssue(
+                    "CONNECTION_CROSS_LAYER",
+                    ValidationSeverity.Error,
+                    $"Connection crosses layers: '{source.Title}' ({source.LayerId}) -> '{target.Title}' ({target.LayerId}).",
+                    layerId: source.LayerId,
+                    nodeId: target.NodeId,
+                    connectionId: connection.ConnectionId,
+                    canAutoFix: true));
             }
         }
 

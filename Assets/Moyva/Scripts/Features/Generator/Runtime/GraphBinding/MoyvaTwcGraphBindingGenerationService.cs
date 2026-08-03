@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
 using Kruty1918.Moyva.GraphSystem.API;
@@ -63,7 +64,32 @@ namespace Kruty1918.Moyva.Generator.Runtime
             seed = GlobalSeed.InitializeDeterministic(seed);
 
             if (context.CompileBeforeGenerate)
-                _compiler.Compile(context, seed, false);
+            {
+                if (!CanCompileForGeneration(context))
+                    return false;
+
+                IReadOnlyList<CompiledLayerMap> compiled =
+                    _compiler.Compile(context, seed, false);
+                if (context.GenerateBuildLayersAfterCompile
+                    && !HasAuthoritativeRenderableLayer(context, compiled))
+                {
+                    Debug.LogError(
+                        "[Moyva TWC Graph Binding] Generation stopped: graph compilation produced no enabled authoritative renderable layer. Existing companion output was not built.",
+                        context.LogContext);
+                    return false;
+                }
+            }
+
+            if (context.GenerateBuildLayersAfterCompile
+                && !HasAuthoritativeRenderableLayer(
+                    context,
+                    context.LastCompiledLayers))
+            {
+                Debug.LogError(
+                    "[Moyva TWC Graph Binding] Generation stopped: no enabled authoritative renderable layer is available. Existing companion output was not built.",
+                    context.LogContext);
+                return false;
+            }
 
             if (context.Manager == null || context.Manager.configuration == null)
             {
@@ -84,6 +110,57 @@ namespace Kruty1918.Moyva.Generator.Runtime
             var report = _validation.Validate(context.GraphAsset);
             EmitGenerateLog(context, report, _validation.GetInvalidLayerIds(report), seed);
             return succeeded;
+        }
+
+        private bool CanCompileForGeneration(
+            IMoyvaTwcGraphBindingContext context)
+        {
+            if (!_validation.CanCompile(context, out string reason))
+            {
+                Debug.LogError(
+                    $"[Moyva TWC Graph Binding] Generation stopped before compilation: {reason}",
+                    context?.LogContext);
+                return false;
+            }
+
+            GraphValidationReport report =
+                _validation.Validate(context.GraphAsset);
+            System.Collections.Generic.List<GraphValidationIssue> globalErrors =
+                _validation.GetGlobalErrors(report);
+            if (globalErrors == null || globalErrors.Count == 0)
+                return true;
+
+            Debug.LogError(
+                $"[Moyva TWC Graph Binding] Generation stopped before compilation: graph validation contains {globalErrors.Count} global error(s). Native or stale companion output was not built.",
+                context.LogContext);
+            return false;
+        }
+
+        private static bool HasAuthoritativeRenderableLayer(
+            IMoyvaTwcGraphBindingContext context,
+            IReadOnlyList<CompiledLayerMap> compiled)
+        {
+            if (context?.GraphAsset == null || compiled == null)
+                return false;
+
+            for (int i = 0; i < compiled.Count; i++)
+            {
+                CompiledLayerMap layer = compiled[i];
+                if (layer == null
+                    || !layer.HasRenderableTileOutput
+                    || string.IsNullOrWhiteSpace(layer.GraphLayerId)
+                    || string.IsNullOrWhiteSpace(layer.BlueprintLayerGuid))
+                {
+                    continue;
+                }
+
+                GeneratorLayerDefinition definition =
+                    context.GraphAsset.GetLayerById(layer.GraphLayerId);
+                if (definition != null && definition.Enabled)
+                    return true;
+            }
+
+            return false;
         }
 
         private void EmitLogicalMapDiagnostics(IMoyvaTwcGraphBindingContext context, int seed)

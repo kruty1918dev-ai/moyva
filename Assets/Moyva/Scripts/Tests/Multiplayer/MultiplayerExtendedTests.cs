@@ -4,11 +4,16 @@ using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Multiplayer.Persistence;
 using Kruty1918.Moyva.Multiplayer.Runtime;
+using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
+using Zenject;
 
 namespace Kruty1918.Moyva.Tests.Multiplayer
 {
@@ -905,6 +910,325 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
                 ConstructionPlacementAttemptSource
                     .NetworkRequest,
                 request.AttemptSource);
+        }
+
+        [Test]
+        public void Authority_RejectsSpoofedOwnerAndAcceptsFullSenderId()
+        {
+            const string fullPlayerId =
+                "ugs-player-0123456789abcdef-україна";
+            var participants = new[]
+            {
+                new Participant(
+                    new ParticipantIdentity(
+                        fullPlayerId,
+                        "Client"),
+                    isBot: false,
+                    isHost: false),
+            };
+
+            Assert.IsTrue(
+                MultiplayerAuthorityService
+                    .TryResolveAuthorizedRequestOwner(
+                        participants,
+                        fullPlayerId,
+                        fullPlayerId,
+                        fullPlayerId,
+                        out string authorizedOwnerId,
+                        out _));
+            Assert.AreEqual(fullPlayerId, authorizedOwnerId);
+
+            Assert.IsFalse(
+                MultiplayerAuthorityService
+                    .TryResolveAuthorizedRequestOwner(
+                        participants,
+                        fullPlayerId,
+                        "another-player",
+                        fullPlayerId,
+                        out _,
+                        out string reason));
+            StringAssert.Contains("does not match", reason);
+        }
+
+        [Test]
+        public void Authority_AcceptsConfirmationOnlyFromCurrentHost()
+        {
+            var participants = new[]
+            {
+                new Participant(
+                    new ParticipantIdentity(
+                        "host-player",
+                        "Host"),
+                    isBot: false,
+                    isHost: true),
+                new Participant(
+                    new ParticipantIdentity(
+                        "client-player",
+                        "Client"),
+                    isBot: false,
+                    isHost: false),
+            };
+
+            Assert.IsTrue(
+                MultiplayerAuthorityService
+                    .IsAuthorizedHostSender(
+                        participants,
+                        "host-player"));
+            Assert.IsFalse(
+                MultiplayerAuthorityService
+                    .IsAuthorizedHostSender(
+                        participants,
+                        "client-player"));
+        }
+    }
+
+    [TestFixture]
+    public sealed class MultiplayerConstructionAuthorityHierarchyTests
+    {
+        private sealed class FakeSessionManager : ISessionManager
+        {
+            public IReadOnlyList<Participant> Participants { get; set; }
+            public string LocalPlayerId { get; set; }
+            public bool IsLocalPlayerHost { get; set; }
+
+            public Task<bool> CreateOrJoinSessionAsync(
+                SessionConnectOptions options,
+                CancellationToken ct = default)
+                => Task.FromResult(true);
+
+            public Task LeaveSessionAsync(
+                CancellationToken ct = default)
+                => Task.CompletedTask;
+        }
+
+        private sealed class CapturingCommandSyncService :
+            IGameCommandSyncService
+        {
+            public int SendCount { get; private set; }
+            public GameCommandType LastType { get; private set; }
+
+            public void SendCommand(
+                GameCommandType type,
+                byte[] payload)
+            {
+                SendCount++;
+                LastType = type;
+            }
+
+            public void SendCommandToPeer(
+                string peerId,
+                GameCommandType type,
+                byte[] payload)
+            {
+                SendCommand(type, payload);
+            }
+
+            public void RegisterHandler(
+                GameCommandType type,
+                Action<string, byte[]> handler)
+            {
+            }
+        }
+
+        private sealed class FakeConstructionService :
+            IConstructionService
+        {
+            private readonly Dictionary<Vector2Int, string> _pending =
+                new Dictionary<Vector2Int, string>
+                {
+                    [new Vector2Int(3, 4)] = "house-01",
+                };
+
+            public int ConfirmCalls { get; private set; }
+            public BuildingPlacementState State =>
+                BuildingPlacementState.Placing;
+            public bool IsDemolishMode => false;
+            public void SelectBuilding(string buildingId) { }
+            public string GetSelectedBuildingId() => "house-01";
+            public void SetActiveOwner(string ownerId) { }
+            public string GetActiveOwner() => "client-player";
+            public bool TryPreviewAt(Vector2Int position) => true;
+            public bool HasPendingPlacementAt(Vector2Int position) =>
+                _pending.ContainsKey(position);
+            public bool TryGetPendingBuildingIdAt(
+                Vector2Int position,
+                out string buildingId) =>
+                _pending.TryGetValue(position, out buildingId);
+            public IReadOnlyDictionary<Vector2Int, string>
+                GetPendingPlacements() => _pending;
+            public bool TryMovePendingPlacement(
+                Vector2Int fromPosition,
+                Vector2Int toPosition) => false;
+            public void Confirm() => ConfirmCalls++;
+            public void Cancel() { }
+            public void UndoLast() { }
+            public void RedoLast() { }
+            public void ToggleDemolishMode() { }
+            public bool TryDemolishAt(Vector2Int position) => false;
+            public IReadOnlyDictionary<Vector2Int, string>
+                GetPlayerPlacedBuildings() =>
+                    new Dictionary<Vector2Int, string>();
+            public void RestoreFromSave(
+                Vector2Int position,
+                string buildingId) { }
+            public bool RemovePendingAt(Vector2Int position) =>
+                _pending.Remove(position);
+            public bool TryDirectPlace(
+                string buildingId,
+                Vector2Int position,
+                string placedByFactionId) => false;
+            public bool TryGetPendingPlacementStatus(
+                Vector2Int position,
+                out ConstructionPendingPlacementStatus status)
+            {
+                status = default;
+                return false;
+            }
+            public ConstructionResourceProjection GetResourceProjection(
+                Vector2Int position) =>
+                    ConstructionResourceProjection.Empty;
+            public string GetLastActionMessage() => string.Empty;
+            public bool TryDemolishByFaction(
+                Vector2Int position,
+                string factionId) => false;
+            public bool HasPlacedBuilding(
+                string buildingId,
+                string ownerId = null) => false;
+        }
+
+        private sealed class LocalExecutor :
+            IConstructionConfirmRequestExecutor
+        {
+            private readonly IConstructionService _constructionService;
+
+            public LocalExecutor(
+                IConstructionService constructionService)
+            {
+                _constructionService = constructionService;
+            }
+
+            public int Priority => 0;
+
+            public bool TryHandleConfirmRequest()
+            {
+                _constructionService.Confirm();
+                return true;
+            }
+        }
+
+        [Test]
+        public void SceneRouter_UsesProjectAuthorityBeforeLocalExecutor()
+        {
+            var parent = new DiContainer();
+            Zenject.SignalBusInstaller.Install(parent);
+            parent.DeclareSignal<MoveUnitRequestSignal>()
+                .OptionalSubscriber();
+            parent.DeclareSignal<BuildingPlacedSignal>()
+                .OptionalSubscriber();
+            parent.DeclareSignal<BuildingDemolishedSignal>()
+                .OptionalSubscriber();
+            parent.DeclareSignal<UnitMovedSignal>()
+                .OptionalSubscriber();
+            parent.DeclareSignal<UnitCreatedSignal>()
+                .OptionalSubscriber();
+            parent.DeclareSignal<PlaceBuildingConfirmRequestSignal>()
+                .OptionalSubscriber();
+
+            var commandSync = new CapturingCommandSyncService();
+            var session = new FakeSessionManager
+            {
+                LocalPlayerId = "client-player",
+                IsLocalPlayerHost = false,
+                Participants = new[]
+                {
+                    new Participant(
+                        new ParticipantIdentity(
+                            "host-player",
+                            "Host"),
+                        isBot: false,
+                        isHost: true),
+                    new Participant(
+                        new ParticipantIdentity(
+                            "client-player",
+                            "Client"),
+                        isBot: false,
+                        isHost: false),
+                },
+            };
+            parent.Bind<IGameCommandSyncService>()
+                .FromInstance(commandSync);
+            parent.Bind<ISessionManager>()
+                .FromInstance(session);
+            parent.Bind<IConstructionPlacementAuthorityPolicy>()
+                .To<MultiplayerConstructionPlacementAuthorityPolicy>()
+                .AsSingle();
+            parent
+                .BindInterfacesAndSelfTo<
+                    MultiplayerAuthorityService>()
+                .AsSingle();
+
+            var authority =
+                parent.Resolve<MultiplayerAuthorityService>();
+            authority.Initialize();
+
+            var construction = new FakeConstructionService();
+            var child = new DiContainer(parent);
+            child.Bind<IConstructionService>()
+                .FromInstance(construction);
+            child.Bind<IConstructionConfirmRequestExecutor>()
+                .FromInstance(new LocalExecutor(construction));
+
+            Type constructionAssemblyMarker =
+                typeof(IConstructionService);
+            Type registrationType =
+                constructionAssemblyMarker.Assembly.GetType(
+                    "Kruty1918.Moyva.Construction.Runtime.ConstructionAuthorityEndpointRegistration",
+                    throwOnError: true);
+            Type routerType =
+                constructionAssemblyMarker.Assembly.GetType(
+                    "Kruty1918.Moyva.Construction.Runtime.ConstructionConfirmRequestRouter",
+                    throwOnError: true);
+            child.BindInterfacesAndSelfTo(registrationType)
+                .AsSingle();
+            child.BindInterfacesAndSelfTo(routerType)
+                .AsSingle();
+
+            object registration = child.Resolve(registrationType);
+            registrationType.GetMethod("Initialize")
+                ?.Invoke(registration, null);
+            var executors = child.Resolve<
+                List<IConstructionConfirmRequestExecutor>>();
+
+            Assert.AreEqual(2, executors.Count);
+            Assert.Contains(authority, executors);
+            Assert.AreSame(
+                parent.Resolve<
+                    IConstructionPlacementAuthorityPolicy>(),
+                child.Resolve<
+                    IConstructionPlacementAuthorityPolicy>());
+            Assert.AreSame(
+                authority,
+                child.Resolve<
+                    IConstructionAuthorityEndpointRegistry>());
+
+            object router = child.Resolve(routerType);
+            routerType.GetMethod("Initialize")
+                ?.Invoke(router, null);
+            parent.Resolve<SignalBus>().Fire(
+                new PlaceBuildingConfirmRequestSignal());
+
+            Assert.AreEqual(1, commandSync.SendCount);
+            Assert.AreEqual(
+                GameCommandType.BuildingPlace,
+                commandSync.LastType);
+            Assert.AreEqual(
+                0,
+                construction.ConfirmCalls,
+                "The scene-local executor must not bypass client authority.");
+
+            ((IDisposable)router).Dispose();
+            ((IDisposable)registration).Dispose();
+            authority.Dispose();
         }
     }
 }

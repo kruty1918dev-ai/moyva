@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.Construction.API
         public string TileId;
 
         [Tooltip("Альтернатива точному TileId: семантичний terrain-тег, наприклад water або forest.")]
+        [TerrainTag]
         [LabelText("Terrain-тег")]
         public string TerrainTag;
 

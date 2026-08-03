@@ -77,6 +77,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     .AsSingle();
             }
 
+            EnsureAuthorityCoreBindings(Container);
+
             if (!Container.HasBinding(typeof(StartingPositionSyncService)))
             {
                 Container.BindInterfacesTo<StartingPositionSyncService>()
@@ -137,6 +139,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
 
                 if (!container.HasBinding(typeof(IGameCommandSyncService)))
                     container.Bind<IGameCommandSyncService>().To<GameCommandSyncService>().AsSingle();
+
+                EnsureAuthorityCoreBindings(container);
 
                 if (!container.HasBinding(typeof(StartingPositionSyncService)))
                     container.BindInterfacesTo<StartingPositionSyncService>().AsSingle().NonLazy();
@@ -343,21 +347,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 Debug.LogWarning($"{Prefix} Failed to sync MultiplayerModeSelector provider: {ex.Message}");
             }
 
-            // Сховище знімків світу
-            container.Bind<IWorldSnapshotStore>()
-                .To<InMemoryWorldSnapshotStore>()
-                .AsSingle();
-
-            // Обробка відмов
-            container.Bind<IFailureHandlingPolicy>()
-                .To<SimpleFailureHandlingPolicy>()
-                .AsSingle();
-
-            // Основні сервіси
-            container.Bind<ISessionManager>()
-                .To<SessionManager>()
-                .AsSingle();
-
             // Автоматичний leave сесії при виході з гри (Application.quitting / wantsToQuit).
             container.BindInterfacesAndSelfTo<MultiplayerExitDisconnect>()
                 .AsSingle()
@@ -368,32 +357,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 .AsSingle()
                 .NonLazy();
 
-            container.Bind<IParticipantPolicyService>()
-                .To<ParticipantPolicyService>()
-                .AsSingle();
-
-            container.Bind<IWorldConsistencyService>()
-                .To<WorldConsistencyService>()
-                .AsSingle();
-
             // Міграція хоста та клонування світу
-            container.Bind<IHostMigrationService>()
-                .To<HostMigrationService>()
-                .AsSingle();
-
-            container.Bind<IHostMigrationCheckpointService>()
-                .To<HostMigrationCheckpointService>()
-                .AsSingle();
-
             container.Bind<IWorldCloneService>()
                 .To<WorldCloneService>()
                 .AsSingle();
 
             // Учасники та конфігурація
-            container.Bind<IParticipantFallbackService>()
-                .To<ParticipantFallbackService>()
-                .AsSingle();
-
             container.Bind<IRoomAccessPolicyService>()
                 .To<RoomAccessPolicyService>()
                 .AsSingle();
@@ -405,38 +374,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             container.Bind<IConfigSyncService>()
                 .To<ConfigSyncService>()
                 .AsSingle();
-
-            // Синхронізація ігрових команд
-            if (!container.HasBinding(typeof(IGameCommandSyncService)))
-            {
-                container.Bind<IGameCommandSyncService>()
-                    .To<GameCommandSyncService>()
-                    .AsSingle();
-            }
-                // Синхронізація ігрових команд
-                if (!container.HasBinding(typeof(IGameCommandSyncService)))
-                {
-                    container.Bind<IGameCommandSyncService>()
-                        .To<GameCommandSyncService>()
-                        .AsSingle();
-                }
-
-                // Авторитативний хост-роутер: маршрутизує дії гравця через хоста
-                container.Bind<MultiplayerAuthorityService>()
-                    .AsSingle()
-                    .NonLazy();
-
-                if (!container.HasBinding(
-                        typeof(IConstructionPlacementAuthorityPolicy)))
-                {
-                    container.Bind<IConstructionPlacementAuthorityPolicy>()
-                        .To<MultiplayerConstructionPlacementAuthorityPolicy>()
-                        .AsSingle();
-                }
-
-                container.Bind<IConstructionConfirmRequestExecutor>()
-                    .FromMethod(ctx => ctx.Container.Resolve<MultiplayerAuthorityService>() as IConstructionConfirmRequestExecutor)
-                    .AsSingle();
 
             // Identity-сервіс (UGS Auth коли доступно, інакше device id).
             container.Bind<IMultiplayerIdentityService>()
@@ -460,6 +397,91 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             container.Bind<NetworkModeController>()
                 .AsSingle();
         }
+
+        /// <summary>
+        /// Binds session and construction-authority services before any async
+        /// UGS/network probing. Scene installers must be able to resolve these
+        /// bindings deterministically during their own InstallBindings pass.
+        /// </summary>
+        internal static void EnsureAuthorityCoreBindings(
+            DiContainer container)
+        {
+            if (!container.HasBinding(typeof(IWorldSnapshotStore)))
+            {
+                container.Bind<IWorldSnapshotStore>()
+                    .To<InMemoryWorldSnapshotStore>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(typeof(IFailureHandlingPolicy)))
+            {
+                container.Bind<IFailureHandlingPolicy>()
+                    .To<SimpleFailureHandlingPolicy>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(typeof(IParticipantPolicyService)))
+            {
+                container.Bind<IParticipantPolicyService>()
+                    .To<ParticipantPolicyService>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(typeof(IWorldConsistencyService)))
+            {
+                container.Bind<IWorldConsistencyService>()
+                    .To<WorldConsistencyService>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(typeof(IHostMigrationService)))
+            {
+                container.Bind<IHostMigrationService>()
+                    .To<HostMigrationService>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(
+                    typeof(IHostMigrationCheckpointService)))
+            {
+                container.Bind<IHostMigrationCheckpointService>()
+                    .To<HostMigrationCheckpointService>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(typeof(IParticipantFallbackService)))
+            {
+                container.Bind<IParticipantFallbackService>()
+                    .To<ParticipantFallbackService>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(typeof(ISessionManager)))
+            {
+                container.Bind<ISessionManager>()
+                    .To<SessionManager>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(
+                    typeof(IConstructionPlacementAuthorityPolicy)))
+            {
+                container.Bind<IConstructionPlacementAuthorityPolicy>()
+                    .To<MultiplayerConstructionPlacementAuthorityPolicy>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(
+                    typeof(MultiplayerAuthorityService)))
+            {
+                container
+                    .BindInterfacesAndSelfTo<
+                        MultiplayerAuthorityService>()
+                    .AsSingle()
+                    .NonLazy();
+            }
+        }
+
         private static MultiplayerConfig ApplyRiskFeatureToggles(MultiplayerConfig config)
         {
             if (config.EnableRelayProvider)

@@ -27,10 +27,14 @@ namespace Kruty1918.Moyva.Construction.API
             if (definition == null)
                 return normalizedFallback;
 
-            if (TryGetEnabledModule(definition, out SettlementCenterBuildingModule settlementCenter)
-                && settlementCenter.InfluenceRadius > 0)
+            if (TryGetEnabledModule(
+                    definition,
+                    out SettlementCenterBuildingModule settlementCenter))
             {
-                return settlementCenter.InfluenceRadius;
+                // The marker module is authoritative even when its authored
+                // radius is zero. Falling back here would silently turn a
+                // disabled/misconfigured center into an active influence source.
+                return Math.Max(0, settlementCenter.InfluenceRadius);
             }
 
             if (definition.PlacementRules?.InfluenceRadius > 0)
@@ -264,7 +268,7 @@ namespace Kruty1918.Moyva.Construction.API
             if (!TryGetEnabledModule(
                     definition,
                     out BuildingPerPlayerLimitModule limit)
-                || Math.Max(0, limit.MaxBuildingsPerPlayer) != 1)
+                || Math.Max(0, limit.MaxBuildingsPerPlayer) <= 0)
             {
                 return BuildingPlacementUniquenessScope.None;
             }
@@ -276,6 +280,9 @@ namespace Kruty1918.Moyva.Construction.API
                     ? BuildingPlacementUniquenessScope.Global
                     : BuildingPlacementUniquenessScope.PerOwner;
             }
+
+            if (Math.Max(0, limit.MaxBuildingsPerPlayer) != 1)
+                return BuildingPlacementUniquenessScope.None;
 
             // Serialized assets created before OverflowPolicy existed deserialize
             // as Legacy. Preserve their behavior until the editor migration

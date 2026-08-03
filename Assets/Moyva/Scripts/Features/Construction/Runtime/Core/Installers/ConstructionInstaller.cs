@@ -102,6 +102,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 .AsSingle()
                 .NonLazy();
 
+            Container.BindInterfacesTo<ConstructionAuthorityEndpointRegistration>()
+                .AsSingle()
+                .NonLazy();
+
             Container.Bind<IConstructionConfirmRequestExecutor>()
                 .To<ConstructionLocalConfirmExecutor>()
                 .AsSingle();

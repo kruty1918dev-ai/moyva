@@ -8,6 +8,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
     internal sealed class TwcTileMeshSourceProvider : IResolvedTileMeshSource
     {
         private const string HeightDiagnosticsTag = "[MoyvaTileHeightDiag]";
+        private const float FlatSurfaceBoundsHeightTolerance = 0.0001f;
 
         private readonly ITileWorldCreatorBuildEnvironment _environment;
         private readonly Dictionary<string, TilesBuildLayer> _buildLayerByGuid = new Dictionary<string, TilesBuildLayer>(System.StringComparer.Ordinal);
@@ -227,9 +228,17 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Quaternion rotation = Quaternion.Euler(xRotationOffset, yRotation + yRotationOffset, 0f);
             float fallbackPlacementHeight = ResolvePlacementHeight(sample, buildLayer);
             Matrix4x4 unplacedRootMatrix = Matrix4x4.TRS(Vector3.zero, rotation, scale);
+            bool preferFlatSurfaceTemplates =
+                sample.TileGeometryMode == TileGeometryMode.SurfaceOnly
+                && HasFlatSurfaceTemplate(templates, unplacedRootMatrix);
             float prefabTopOffset = ResolveAggregateTransformedBoundsTop(
                 templates,
-                unplacedRootMatrix);
+                unplacedRootMatrix,
+                preferFlatSurfaceTemplates);
+            float prefabBottomOffset = ResolveAggregateTransformedBoundsBottom(
+                templates,
+                unplacedRootMatrix,
+                preferFlatSurfaceTemplates);
             float placementHeight = ResolveSurfaceAlignedPlacementHeight(
                 sample.SurfaceHeight,
                 fallbackPlacementHeight,
@@ -239,6 +248,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 placementHeight,
                 tilePosition.y * cellSize);
             Matrix4x4 rootMatrix = Matrix4x4.TRS(position, rotation, scale);
+            float visibleBottomY = sample.TileGeometryMode == TileGeometryMode.SolidTerrain
+                ? ResolveVisibleBottomY(composition)
+                : float.NaN;
 
             LogHeightPlacementOnce(
                 composition,
@@ -248,16 +260,34 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 prefab,
                 fallbackPlacementHeight,
                 prefabTopOffset,
-                placementHeight);
+                prefabBottomOffset,
+                placementHeight,
+                visibleBottomY);
 
-            float visibleBottomY = sample.TileGeometryMode == TileGeometryMode.SolidTerrain
-                ? ResolveVisibleBottomY(composition)
-                : float.NaN;
+            int missingClosureOwner =
+                sample.TileGeometryMode == TileGeometryMode.SolidTerrain
+                && sample.AuthoredClosurePolicy
+                    == AuthoredClosurePolicy.PreserveAuthored
+                    ? ResolveMissingClosureOwnerIndex(
+                        templates,
+                        unplacedRootMatrix,
+                        preferFlatSurfaceTemplates,
+                        prefabTopOffset)
+                    : -1;
             int added = 0;
             Material materialOverride = preset.GetMaterialOverride();
             for (int i = 0; i < templates.Length; i++)
             {
                 PrefabMeshTemplate template = templates[i];
+                if (!ShouldIncludeMeshTemplate(
+                        template,
+                        unplacedRootMatrix,
+                        preferFlatSurfaceTemplates,
+                        prefabTopOffset))
+                {
+                    continue;
+                }
+
                 var meshSource = new TileMeshSource(
                     template.Mesh,
                     template.ResolveMaterials(materialOverride),
@@ -268,7 +298,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     cellSize * 0.5f,
                     sample.AuthoredClosurePolicy,
                     edgeBottoms,
-                    sample.TileGeometryMode);
+                    sample.TileGeometryMode,
+                    generateMissingClosure: i == missingClosureOwner);
                 if (!meshSource.IsValid)
                     continue;
 
@@ -439,12 +470,28 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         internal static float ResolveTransformedBoundsTop(Bounds bounds, Matrix4x4 matrix)
         {
             Vector3 center = matrix.MultiplyPoint3x4(bounds.center);
+            float extentY = ResolveTransformedBoundsExtentY(bounds, matrix);
+            return center.y + extentY;
+        }
+
+        internal static float ResolveTransformedBoundsBottom(
+            Bounds bounds,
+            Matrix4x4 matrix)
+        {
+            Vector3 center = matrix.MultiplyPoint3x4(bounds.center);
+            float extentY = ResolveTransformedBoundsExtentY(bounds, matrix);
+            return center.y - extentY;
+        }
+
+        private static float ResolveTransformedBoundsExtentY(
+            Bounds bounds,
+            Matrix4x4 matrix)
+        {
             Vector3 extents = bounds.extents;
             Vector3 axisX = matrix.MultiplyVector(new Vector3(extents.x, 0f, 0f));
             Vector3 axisY = matrix.MultiplyVector(new Vector3(0f, extents.y, 0f));
             Vector3 axisZ = matrix.MultiplyVector(new Vector3(0f, 0f, extents.z));
-            float extentY = Mathf.Abs(axisX.y) + Mathf.Abs(axisY.y) + Mathf.Abs(axisZ.y);
-            return center.y + extentY;
+            return Mathf.Abs(axisX.y) + Mathf.Abs(axisY.y) + Mathf.Abs(axisZ.y);
         }
 
         private void LogHeightPlacementOnce(
@@ -455,7 +502,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             GameObject prefab,
             float fallbackPlacementHeight,
             float prefabTopOffset,
-            float placementHeight)
+            float prefabBottomOffset,
+            float placementHeight,
+            float visibleBottomY)
         {
             GraphTileLayerSample sample = composition.MainTerrain;
             string key =
@@ -469,6 +518,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 ? buildLayer.tileLayers[0].heightOffset
                 : 0f;
             float actualSurfaceHeight = placementHeight + prefabTopOffset;
+            float authoredBottomHeight = placementHeight + prefabBottomOffset;
+            float unclosedGap = IsFinite(visibleBottomY)
+                ? Mathf.Max(0f, authoredBottomHeight - visibleBottomY)
+                : 0f;
             string mode = IsFinite(sample.SurfaceHeight) && IsFinite(prefabTopOffset)
                 ? "surface-aligned"
                 : "fallback";
@@ -479,8 +532,10 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 $"preset='{preset.name}' prefab='{prefab.name}' layerHeight={sample.Height:0.###} " +
                 $"expectedSurface={sample.SurfaceHeight:0.###} buildYOffset={buildLayer.layerYOffset:0.###} " +
                 $"tileLayerOffset={tileLayerOffset:0.###} fallbackRootY={fallbackPlacementHeight:0.###} " +
-                $"prefabTopOffset={prefabTopOffset:0.###} correctedRootY={placementHeight:0.###} " +
-                $"actualSurface={actualSurfaceHeight:0.###} " +
+                $"prefabTopOffset={prefabTopOffset:0.###} prefabBottomOffset={prefabBottomOffset:0.###} " +
+                $"correctedRootY={placementHeight:0.###} " +
+                $"actualSurface={actualSurfaceHeight:0.###} authoredBottom={authoredBottomHeight:0.###} " +
+                $"support={visibleBottomY:0.###} unclosedGap={unclosedGap:0.###} " +
                 $"surfaceDelta={(actualSurfaceHeight - sample.SurfaceHeight):0.#####}");
         }
 
@@ -532,6 +587,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         internal static float ResolveAggregateTransformedBoundsTop(
             IReadOnlyList<PrefabMeshTemplate> templates,
             Matrix4x4 rootMatrix)
+            => ResolveAggregateTransformedBoundsTop(
+                templates,
+                rootMatrix,
+                flatSurfaceTemplatesOnly: false);
+
+        private static float ResolveAggregateTransformedBoundsTop(
+            IReadOnlyList<PrefabMeshTemplate> templates,
+            Matrix4x4 rootMatrix,
+            bool flatSurfaceTemplatesOnly)
         {
             float top = float.NegativeInfinity;
             if (templates == null)
@@ -542,6 +606,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 PrefabMeshTemplate template = templates[i];
                 if (template?.Mesh == null)
                     continue;
+                if (flatSurfaceTemplatesOnly
+                    && !IsFlatSurfaceTemplate(template, rootMatrix))
+                {
+                    continue;
+                }
 
                 top = Mathf.Max(
                     top,
@@ -551,6 +620,135 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
 
             return top;
+        }
+
+        internal static float ResolveAggregateTransformedBoundsBottom(
+            IReadOnlyList<PrefabMeshTemplate> templates,
+            Matrix4x4 rootMatrix)
+            => ResolveAggregateTransformedBoundsBottom(
+                templates,
+                rootMatrix,
+                flatSurfaceTemplatesOnly: false);
+
+        private static float ResolveAggregateTransformedBoundsBottom(
+            IReadOnlyList<PrefabMeshTemplate> templates,
+            Matrix4x4 rootMatrix,
+            bool flatSurfaceTemplatesOnly)
+        {
+            float bottom = float.PositiveInfinity;
+            if (templates == null)
+                return bottom;
+
+            for (int i = 0; i < templates.Count; i++)
+            {
+                PrefabMeshTemplate template = templates[i];
+                if (template?.Mesh == null)
+                    continue;
+                if (flatSurfaceTemplatesOnly
+                    && !IsFlatSurfaceTemplate(template, rootMatrix))
+                {
+                    continue;
+                }
+
+                bottom = Mathf.Min(
+                    bottom,
+                    ResolveTransformedBoundsBottom(
+                        template.Mesh.bounds,
+                        rootMatrix * template.ChildMatrix));
+            }
+
+            return bottom;
+        }
+
+        private static int ResolveMissingClosureOwnerIndex(
+            IReadOnlyList<PrefabMeshTemplate> templates,
+            Matrix4x4 rootMatrix,
+            bool flatSurfaceTemplatesOnly,
+            float selectedSurfaceTop)
+        {
+            int owner = -1;
+            float lowestBottom = float.PositiveInfinity;
+            if (templates == null)
+                return owner;
+
+            for (int i = 0; i < templates.Count; i++)
+            {
+                PrefabMeshTemplate template = templates[i];
+                if (!ShouldIncludeMeshTemplate(
+                        template,
+                        rootMatrix,
+                        flatSurfaceTemplatesOnly,
+                        selectedSurfaceTop))
+                {
+                    continue;
+                }
+
+                float bottom = ResolveTransformedBoundsBottom(
+                    template.Mesh.bounds,
+                    rootMatrix * template.ChildMatrix);
+                if (!IsFinite(bottom) || bottom >= lowestBottom)
+                    continue;
+
+                lowestBottom = bottom;
+                owner = i;
+            }
+
+            return owner;
+        }
+
+        internal static bool HasFlatSurfaceTemplate(
+            IReadOnlyList<PrefabMeshTemplate> templates,
+            Matrix4x4 rootMatrix)
+        {
+            if (templates == null)
+                return false;
+
+            for (int i = 0; i < templates.Count; i++)
+            {
+                if (IsFlatSurfaceTemplate(templates[i], rootMatrix))
+                    return true;
+            }
+
+            return false;
+        }
+
+        internal static bool IsFlatSurfaceTemplate(
+            PrefabMeshTemplate template,
+            Matrix4x4 rootMatrix)
+        {
+            if (template?.Mesh == null)
+                return false;
+
+            float height = ResolveTransformedBoundsExtentY(
+                               template.Mesh.bounds,
+                               rootMatrix * template.ChildMatrix)
+                           * 2f;
+            return IsFinite(height)
+                   && height <= FlatSurfaceBoundsHeightTolerance;
+        }
+
+        internal static bool ShouldIncludeMeshTemplate(
+            PrefabMeshTemplate template,
+            Matrix4x4 rootMatrix,
+            bool flatSurfaceTemplatesOnly,
+            float selectedSurfaceTop)
+        {
+            if (template?.Mesh == null)
+                return false;
+            if (!flatSurfaceTemplatesOnly)
+                return true;
+            if (!IsFlatSurfaceTemplate(template, rootMatrix)
+                || !IsFinite(selectedSurfaceTop))
+            {
+                return false;
+            }
+
+            float templateTop = ResolveTransformedBoundsTop(
+                template.Mesh.bounds,
+                rootMatrix * template.ChildMatrix);
+            return IsFinite(templateTop)
+                   && Mathf.Abs(templateTop - selectedSurfaceTop)
+                   <= FlatSurfaceBoundsHeightTolerance;
         }
 
         internal static int BuildNormalConfiguration(ResolvedTileComposition composition)

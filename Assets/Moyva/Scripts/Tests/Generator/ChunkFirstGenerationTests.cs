@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using GiantGrey.TileWorldCreator;
 using Kruty1918.Moyva.Generator.API;
 using Kruty1918.Moyva.Generator.Runtime;
@@ -9,6 +10,7 @@ using Kruty1918.Moyva.MapChunks.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.TestTools;
 
 namespace Kruty1918.Moyva.Tests.Generator
 {
@@ -169,6 +171,69 @@ namespace Kruty1918.Moyva.Tests.Generator
             Assert.AreEqual("raised", map.GraphLayerIds[0, 0]);
             Assert.AreEqual(2f, map.LayerHeights[0, 0], 0.0001f);
             Assert.AreEqual(3f, map.SurfaceHeights[0, 0], 0.0001f);
+        }
+
+        [Test]
+        public void GraphLogicalTileMap_OverlapWinnerIgnoresPrefabPivotBaseHeight()
+        {
+            var map = new GraphLogicalTileMap(1, 1);
+            map.AddSample(
+                0,
+                0,
+                new GraphTileLayerSample(
+                    "high-base-low-surface",
+                    "High Base Low Surface",
+                    "high-base-blueprint",
+                    "high-base-build",
+                    "Recessed",
+                    "Recessed",
+                    LayerKind.Cliff,
+                    sortingOrder: 100,
+                    graphLayerOrder: 100,
+                    terrainPriority: 100,
+                    height: 2f,
+                    surfaceHeight: 1f,
+                    sourceNodeId: "recessed-node"));
+            map.AddSample(
+                0,
+                0,
+                new GraphTileLayerSample(
+                    "low-base-high-surface",
+                    "Low Base High Surface",
+                    "low-base-blueprint",
+                    "low-base-build",
+                    "Visible",
+                    "Visible",
+                    LayerKind.BaseTerrain,
+                    sortingOrder: 0,
+                    graphLayerOrder: 0,
+                    terrainPriority: 0,
+                    height: 0f,
+                    surfaceHeight: 1.5f,
+                    sourceNodeId: "visible-node"));
+
+            Assert.AreEqual("Visible", map.TileIds[0, 0]);
+            Assert.AreEqual(
+                "low-base-high-surface",
+                map.GraphLayerIds[0, 0]);
+            Assert.AreEqual(1.5f, map.SurfaceHeights[0, 0], 0.0001f);
+
+            ResolvedTileComposition resolved =
+                new ResolvedTileCompositionResolver().Resolve(
+                    Vector2Int.zero,
+                    new TileNeighborhood(
+                        map.GetCellStack(0, 0),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null));
+            Assert.AreEqual(
+                "low-base-high-surface",
+                resolved.MainTerrain.GraphLayerId);
         }
 
         [Test]
@@ -337,6 +402,71 @@ namespace Kruty1918.Moyva.Tests.Generator
                 Matrix4x4.identity);
 
             Assert.AreEqual(4f, top, 0.0001f);
+        }
+
+        [Test]
+        public void TwcSurfaceOnly_PrefersDedicatedFlatTemplateOverVolumeTemplate()
+        {
+            Mesh volume = CreateClosedTileMeshWithChannels();
+            Mesh surface = CreateFlatQuadMesh(1f);
+            Mesh lowerSurface = CreateFlatQuadMesh(0f);
+            var volumeTemplate = new TwcTileMeshSourceProvider.PrefabMeshTemplate(
+                volume,
+                Matrix4x4.identity,
+                null);
+            var surfaceTemplate = new TwcTileMeshSourceProvider.PrefabMeshTemplate(
+                surface,
+                Matrix4x4.identity,
+                null);
+            var lowerSurfaceTemplate = new TwcTileMeshSourceProvider.PrefabMeshTemplate(
+                lowerSurface,
+                Matrix4x4.identity,
+                null);
+            var templates = new[]
+            {
+                volumeTemplate,
+                surfaceTemplate,
+                lowerSurfaceTemplate
+            };
+
+            Assert.IsTrue(
+                TwcTileMeshSourceProvider.HasFlatSurfaceTemplate(
+                    templates,
+                    Matrix4x4.identity));
+            Assert.IsFalse(
+                TwcTileMeshSourceProvider.IsFlatSurfaceTemplate(
+                    volumeTemplate,
+                    Matrix4x4.identity));
+            Assert.IsTrue(
+                TwcTileMeshSourceProvider.IsFlatSurfaceTemplate(
+                    surfaceTemplate,
+                    Matrix4x4.identity));
+            Assert.IsFalse(
+                TwcTileMeshSourceProvider.ShouldIncludeMeshTemplate(
+                    volumeTemplate,
+                    Matrix4x4.identity,
+                    flatSurfaceTemplatesOnly: true,
+                    selectedSurfaceTop: 1f));
+            Assert.IsTrue(
+                TwcTileMeshSourceProvider.ShouldIncludeMeshTemplate(
+                    surfaceTemplate,
+                    Matrix4x4.identity,
+                    flatSurfaceTemplatesOnly: true,
+                    selectedSurfaceTop: 1f));
+            Assert.IsFalse(
+                TwcTileMeshSourceProvider.ShouldIncludeMeshTemplate(
+                    lowerSurfaceTemplate,
+                    Matrix4x4.identity,
+                    flatSurfaceTemplatesOnly: true,
+                    selectedSurfaceTop: 1f),
+                "Lower decorative or bottom planes must not survive SurfaceOnly selection.");
+            Assert.IsTrue(
+                TwcTileMeshSourceProvider.ShouldIncludeMeshTemplate(
+                    volumeTemplate,
+                    Matrix4x4.identity,
+                    flatSurfaceTemplatesOnly: false,
+                    selectedSurfaceTop: float.NaN),
+                "A SurfaceOnly prefab without a dedicated plane must retain the volume-top fallback.");
         }
 
         [Test]
@@ -691,6 +821,203 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public void VerticalFill_PreserveAuthoredAddsOnlyMissingClosureBelowVolume()
+        {
+            Mesh mesh = CreateTwoLevelTriangleMesh(
+                topY: 0.515f,
+                bottomY: -0.535f);
+            Vector3[] authoredVertices = mesh.vertices;
+            Matrix4x4 placement = Matrix4x4.Translate(
+                new Vector3(0f, 2f, 0f));
+            var source = new TileMeshSource(
+                mesh,
+                null,
+                placement,
+                visibleBottomY: 0.515f,
+                occludedSides: TileMeshOccludedSides.North
+                    | TileMeshOccludedSides.South
+                    | TileMeshOccludedSides.West,
+                tileCenterXZ: Vector2.zero,
+                tileHalfExtent: 0.5f,
+                authoredClosurePolicy:
+                    AuthoredClosurePolicy.PreserveAuthored,
+                edgeBottoms: new TileMeshEdgeBottoms(
+                    north: 1f,
+                    east: 0.515f,
+                    south: 1f,
+                    west: 1f),
+                generateMissingClosure: true);
+
+            bool created = TileVerticalFillMeshUtility.TryCreate(
+                source,
+                out Mesh result);
+            if (result != null)
+                _created.Add(result);
+
+            Assert.IsTrue(created);
+            Assert.IsNotNull(result);
+            Assert.AreEqual(2, result.subMeshCount);
+            Assert.AreEqual(12, result.triangles.Length);
+            Assert.AreEqual(-1.485f, result.bounds.min.y, 0.0001f);
+            Assert.AreEqual(0.515f, result.bounds.max.y, 0.0001f);
+            Assert.AreEqual(
+                0.515f,
+                placement.MultiplyPoint3x4(result.bounds.min).y,
+                0.0001f);
+            Assert.AreEqual(
+                2.515f,
+                placement.MultiplyPoint3x4(result.bounds.max).y,
+                0.0001f);
+            Assert.That(mesh.vertices, Is.EqualTo(authoredVertices));
+        }
+
+        [Test]
+        public void VerticalFill_PreserveAuthoredFullyOccludedAddsNoClosure()
+        {
+            Mesh mesh = CreateTwoLevelTriangleMesh();
+            var source = new TileMeshSource(
+                mesh,
+                null,
+                Matrix4x4.Translate(new Vector3(0f, 2f, 0f)),
+                visibleBottomY: 0.515f,
+                occludedSides: TileMeshOccludedSides.North
+                    | TileMeshOccludedSides.East
+                    | TileMeshOccludedSides.South
+                    | TileMeshOccludedSides.West,
+                tileCenterXZ: Vector2.zero,
+                tileHalfExtent: 0.5f,
+                authoredClosurePolicy:
+                    AuthoredClosurePolicy.PreserveAuthored,
+                generateMissingClosure: true);
+
+            bool created = TileVerticalFillMeshUtility.TryCreate(
+                source,
+                out Mesh result);
+
+            Assert.IsFalse(created);
+            Assert.IsNull(result);
+        }
+
+        [Test]
+        public void TwcProvider_RaisedPreserveAuthoredCliffClosesToResolvedSupport()
+        {
+            var managerObject = new GameObject("Raised Cliff Test Manager");
+            _created.Add(managerObject);
+            var manager =
+                managerObject.AddComponent<TileWorldCreatorManager>();
+            var configuration =
+                ScriptableObject.CreateInstance<Configuration>();
+            _created.Add(configuration);
+            configuration.cellSize = 1f;
+            manager.configuration = configuration;
+
+            Mesh authoredMesh = CreateTwoLevelTriangleMesh(
+                topY: 0.515f,
+                bottomY: -0.535f);
+            Vector3[] authoredVertices = authoredMesh.vertices;
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit")
+                ?? Shader.Find("Standard");
+            Assert.IsNotNull(shader);
+            var material = new Material(shader);
+            _created.Add(material);
+            var prefab = new GameObject("Raised Authored Cliff");
+            _created.Add(prefab);
+            prefab.AddComponent<MeshFilter>().sharedMesh = authoredMesh;
+            prefab.AddComponent<MeshRenderer>().sharedMaterial = material;
+
+            var preset = ScriptableObject.CreateInstance<TilePreset>();
+            _created.Add(preset);
+            preset.name = "Raised Authored Cliff Preset";
+            preset.tileId = "raised-cliff";
+            preset.gridtype = TilePreset.GridType.standard;
+            preset.NRMGRD_singleTile = prefab;
+
+            var buildLayer =
+                ScriptableObject.CreateInstance<TilesBuildLayer>();
+            _created.Add(buildLayer);
+            buildLayer.guid = "raised-build";
+            buildLayer.assignedBlueprintLayerGuid = "raised-blueprint";
+            buildLayer.scaleTileToCellSize = false;
+            buildLayer.scaleOffset = Vector3.one;
+            buildLayer.tilePresetsTop.Add(
+                new TilesBuildLayer.TilePresetSelection
+                {
+                    preset = preset,
+                    weight = 1f
+                });
+            var folder = new BuildLayerFolder("Raised Cliff");
+            folder.buildLayers.Add(buildLayer);
+            configuration.buildLayerFolders.Add(folder);
+
+            var mapping =
+                ScriptableObject.CreateInstance<TileWorldCreatorIdMappingSO>();
+            _created.Add(mapping);
+            var provider = new TwcTileMeshSourceProvider(
+                new TileWorldCreatorBuildEnvironment(
+                    manager,
+                    mapping,
+                    new TileWorldCreatorBuildOptions()));
+            var sample = new GraphTileLayerSample(
+                "raised-layer",
+                "Raised Layer",
+                "raised-blueprint",
+                "raised-build",
+                "raised-cliff",
+                "raised-cliff",
+                LayerKind.BaseTerrain,
+                sortingOrder: 1,
+                graphLayerOrder: 1,
+                terrainPriority: 1,
+                height: 2f,
+                surfaceHeight: 2.515f,
+                sourceNodeId: "raised-node",
+                tileGeometryMode: TileGeometryMode.SolidTerrain,
+                authoredClosurePolicy:
+                    AuthoredClosurePolicy.PreserveAuthored);
+            var composition = new ResolvedTileComposition(
+                Vector2Int.zero,
+                sample,
+                default,
+                true,
+                false,
+                string.Empty,
+                supportHeight: 0.515f);
+            var sources = new List<TileMeshSource>();
+
+            int count = provider.CollectMeshSources(
+                composition,
+                sources);
+
+            Assert.AreEqual(1, count);
+            Assert.AreEqual(1, sources.Count);
+            TileMeshSource source = sources[0];
+            Assert.IsTrue(source.GenerateMissingClosure);
+            Assert.AreEqual(2f, source.LocalMatrix.m13, 0.0001f);
+
+            bool created = TileVerticalFillMeshUtility.TryCreate(
+                source,
+                out Mesh result);
+            if (result != null)
+                _created.Add(result);
+
+            Assert.IsTrue(created);
+            Assert.IsNotNull(result);
+            Assert.AreEqual(
+                0.515f,
+                TwcTileMeshSourceProvider.ResolveTransformedBoundsBottom(
+                    result.bounds,
+                    source.LocalMatrix),
+                0.0001f);
+            Assert.AreEqual(
+                2.515f,
+                TwcTileMeshSourceProvider.ResolveTransformedBoundsTop(
+                    result.bounds,
+                    source.LocalMatrix),
+                0.0001f);
+            Assert.That(authoredMesh.vertices, Is.EqualTo(authoredVertices));
+        }
+
+        [Test]
         public void VerticalFill_RemovesUnreferencedVerticesAfterTriangleCulling()
         {
             Mesh mesh = CreateTwoLevelTriangleMesh();
@@ -885,6 +1212,11 @@ namespace Kruty1918.Moyva.Tests.Generator
                 default,
                 new RectInt(0, 0, 1, 1),
                 new RectInt(0, 0, 1, 1));
+
+            LogAssert.Expect(
+                LogType.Log,
+                new Regex(
+                    @"^\[MoyvaChunkFirst\] CHUNK mesh='SurfaceOnly Chunk Test'.*sourceVertices=8, .*sourceTriangles=12, .*emittedVertices=4, .*emittedTriangles=2, culledFaces=10, unreferencedVerticesRemoved=[1-9][0-9]*, exactDuplicateVerticesRemoved=[0-9]+\.$"));
 
             int built = builder.Build(
                 chunkObject.transform,
@@ -1515,19 +1847,21 @@ namespace Kruty1918.Moyva.Tests.Generator
                 sourceNodeId: id + "-node");
         }
 
-        private Mesh CreateTwoLevelTriangleMesh()
+        private Mesh CreateTwoLevelTriangleMesh(
+            float topY = 1f,
+            float bottomY = -1f)
         {
             var mesh = new Mesh
             {
                 name = "Two Level Tile Test",
                 vertices = new[]
                 {
-                    new Vector3(-0.5f, 1f, -0.5f),
-                    new Vector3(0.5f, 1f, -0.5f),
-                    new Vector3(0f, 1f, 0.5f),
-                    new Vector3(-0.5f, -1f, -0.5f),
-                    new Vector3(0.5f, -1f, -0.5f),
-                    new Vector3(0f, -1f, 0.5f)
+                    new Vector3(-0.5f, topY, -0.5f),
+                    new Vector3(0.5f, topY, -0.5f),
+                    new Vector3(0f, topY, 0.5f),
+                    new Vector3(-0.5f, bottomY, -0.5f),
+                    new Vector3(0.5f, bottomY, -0.5f),
+                    new Vector3(0f, bottomY, 0.5f)
                 },
                 triangles = new[] { 0, 2, 1, 3, 4, 5 }
             };

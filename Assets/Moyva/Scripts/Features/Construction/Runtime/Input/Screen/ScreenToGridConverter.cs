@@ -41,7 +41,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IGeneratedTerrainLevelQuery terrainLevelQuery = null)
         {
             _camera = camera;
-            _gridProjection = gridProjection ?? new OrthogonalGridProjection();
+            // Construction grid geometry is defined on the gameplay XZ plane
+            // (Y is the authoritative terrain surface). When geometry is
+            // available but DI has no projection, an XY fallback disables the
+            // surface-aware ray path and rejects every elevated candidate.
+            _gridProjection = gridProjection
+                ?? (gridGeometry != null
+                    ? new Orthographic3DGridProjection()
+                    : new OrthogonalGridProjection());
             _gridGeometry = gridGeometry;
             _gridService = gridService;
             _terrainLevelQuery = terrainLevelQuery;

@@ -142,18 +142,48 @@ namespace Kruty1918.Moyva.Construction.Editor
             if (nextExpanded && elementProperty != null)
             {
                 EditorGUI.indentLevel++;
-                for (int childIndex = 0; childIndex < elementProperty.Children.Count; childIndex++)
+                if (module is TerrainPlacementRuleModule terrainModule)
                 {
-                    InspectorProperty child = elementProperty.Children[childIndex];
-                    if (string.Equals(child.Name, nameof(BuildingModuleDefinition.IsEnabled), StringComparison.Ordinal))
-                        continue;
-
-                    child.Draw(child.Label);
+                    TerrainPlacementRuleModuleEditorGUI.Draw(
+                        asset,
+                        terrainModule,
+                        elementProperty,
+                        ApplyModuleChange,
+                        RefreshPropertyTree);
+                }
+                else
+                {
+                    DrawDefaultModuleFields(elementProperty);
                 }
                 EditorGUI.indentLevel--;
             }
 
             EditorGUILayout.EndVertical();
+        }
+
+        private static void DrawDefaultModuleFields(InspectorProperty elementProperty)
+        {
+            for (int childIndex = 0; childIndex < elementProperty.Children.Count; childIndex++)
+            {
+                InspectorProperty child = elementProperty.Children[childIndex];
+                if (string.Equals(child.Name, nameof(BuildingModuleDefinition.IsEnabled), StringComparison.Ordinal))
+                    continue;
+
+                child.Draw(child.Label);
+            }
+        }
+
+        private void ApplyModuleChange(
+            BuildingDefinitionAsset asset,
+            string undoName,
+            Action mutation)
+        {
+            if (mutation == null)
+                return;
+
+            RecordChange(asset, undoName);
+            mutation();
+            CompleteChange(asset);
         }
 
         private void DrawMissingModule(

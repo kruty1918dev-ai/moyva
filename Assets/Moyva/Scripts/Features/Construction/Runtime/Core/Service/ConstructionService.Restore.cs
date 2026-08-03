@@ -113,7 +113,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     attemptSource: attemptSource,
                     allowUniquePreviewRelocation: false,
                     satisfiedReplacementBuildingId:
-                        intent.SatisfiedReplacementBuildingId));
+                        attemptSource
+                        == ConstructionPlacementAttemptSource
+                            .NetworkRequest
+                            ? null
+                            : intent
+                                .SatisfiedReplacementBuildingId));
             if (!placement.CanCommit)
             {
                 LogPlacementAttempt(

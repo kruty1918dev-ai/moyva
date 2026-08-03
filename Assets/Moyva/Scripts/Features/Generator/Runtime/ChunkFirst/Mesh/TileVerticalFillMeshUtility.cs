@@ -24,6 +24,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly int _occludedSides;
         private readonly int _tileHalfExtent;
         private readonly int _authoredClosurePolicy;
+        private readonly int _generateMissingClosure;
         private readonly int _northBottom;
         private readonly int _eastBottom;
         private readonly int _southBottom;
@@ -46,6 +47,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _occludedSides = (int)source.OccludedSides;
             _tileHalfExtent = Quantize(source.TileHalfExtent);
             _authoredClosurePolicy = (int)source.AuthoredClosurePolicy;
+            _generateMissingClosure = source.GenerateMissingClosure ? 1 : 0;
             _northBottom = Quantize(source.EdgeBottoms.Resolve(
                 TileMeshOccludedSides.North,
                 source.VisibleBottomY) - matrix.m13);
@@ -79,6 +81,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 && _occludedSides == other._occludedSides
                 && _tileHalfExtent == other._tileHalfExtent
                 && _authoredClosurePolicy == other._authoredClosurePolicy
+                && _generateMissingClosure == other._generateMissingClosure
                 && _northBottom == other._northBottom
                 && _eastBottom == other._eastBottom
                 && _southBottom == other._southBottom
@@ -107,6 +110,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 hash = hash * 31 + _occludedSides;
                 hash = hash * 31 + _tileHalfExtent;
                 hash = hash * 31 + _authoredClosurePolicy;
+                hash = hash * 31 + _generateMissingClosure;
                 hash = hash * 31 + _northBottom;
                 hash = hash * 31 + _eastBottom;
                 hash = hash * 31 + _southBottom;
@@ -176,10 +180,21 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             // Non-flat prefabs may contain authored cliffs, decoration or
             // deliberately closed geometry. PreserveAuthored is the safe default:
-            // generated skirts are still allowed for flat tops, but authored
-            // volume meshes are never deformed or clipped implicitly.
+            // authored volume meshes are never deformed or clipped implicitly.
+            // A designated child may still own a separate generated band below
+            // the authored bounds so an elevated short cliff cannot hover above
+            // its resolved support surface.
             if (source.AuthoredClosurePolicy == AuthoredClosurePolicy.PreserveAuthored)
-                return false;
+            {
+                if (!source.GenerateMissingClosure || !source.HasTileFootprint)
+                    return false;
+
+                result = CreatePreservedAuthoredMeshWithClosure(
+                    source,
+                    source.Mesh,
+                    translationY + minY);
+                return result != null;
+            }
 
             if (targetBottom < minY - HeightEpsilon)
             {
@@ -399,6 +414,142 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             skirt.RecalculateNormals();
             skirt.RecalculateBounds();
 
+            return CombineSourceWithSkirt(source, skirt);
+        }
+
+        private static Mesh CreatePreservedAuthoredMeshWithClosure(
+            TileMeshSource tileSource,
+            Mesh source,
+            float authoredBottomWorld)
+        {
+            Mesh skirt = CreateAxisAlignedClosureSkirt(
+                tileSource,
+                source,
+                authoredBottomWorld);
+            return skirt != null
+                ? CombineSourceWithSkirt(source, skirt)
+                : null;
+        }
+
+        private static Mesh CreateAxisAlignedClosureSkirt(
+            TileMeshSource source,
+            Mesh mesh,
+            float authoredBottomWorld)
+        {
+            if (!source.HasTileFootprint
+                || !IsFinite(authoredBottomWorld)
+                || !IsFinite(source.VisibleBottomY))
+            {
+                return null;
+            }
+
+            var vertices = new List<Vector3>(16);
+            var uvs = new List<Vector2>(16);
+            var triangles = new List<int>(24);
+            float half = source.TileHalfExtent;
+            float west = source.TileCenterXZ.x - half;
+            float east = source.TileCenterXZ.x + half;
+            float south = source.TileCenterXZ.y - half;
+            float north = source.TileCenterXZ.y + half;
+            Matrix4x4 worldToSource = source.LocalMatrix.inverse;
+
+            AddClosureSide(
+                source,
+                TileMeshOccludedSides.North,
+                new Vector3(west, authoredBottomWorld, north),
+                new Vector3(east, authoredBottomWorld, north),
+                worldToSource,
+                vertices,
+                uvs,
+                triangles);
+            AddClosureSide(
+                source,
+                TileMeshOccludedSides.East,
+                new Vector3(east, authoredBottomWorld, north),
+                new Vector3(east, authoredBottomWorld, south),
+                worldToSource,
+                vertices,
+                uvs,
+                triangles);
+            AddClosureSide(
+                source,
+                TileMeshOccludedSides.South,
+                new Vector3(east, authoredBottomWorld, south),
+                new Vector3(west, authoredBottomWorld, south),
+                worldToSource,
+                vertices,
+                uvs,
+                triangles);
+            AddClosureSide(
+                source,
+                TileMeshOccludedSides.West,
+                new Vector3(west, authoredBottomWorld, south),
+                new Vector3(west, authoredBottomWorld, north),
+                worldToSource,
+                vertices,
+                uvs,
+                triangles);
+
+            if (vertices.Count == 0)
+                return null;
+
+            var skirt = new Mesh
+            {
+                name = mesh.name + "_MissingClosure",
+                indexFormat = vertices.Count > 65535
+                    ? IndexFormat.UInt32
+                    : IndexFormat.UInt16
+            };
+            skirt.SetVertices(vertices);
+            skirt.SetUVs(0, uvs);
+            skirt.SetTriangles(triangles, 0, false);
+            skirt.RecalculateNormals();
+            skirt.RecalculateBounds();
+            return skirt;
+        }
+
+        private static void AddClosureSide(
+            TileMeshSource source,
+            TileMeshOccludedSides side,
+            Vector3 worldTopA,
+            Vector3 worldTopB,
+            Matrix4x4 worldToSource,
+            List<Vector3> vertices,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            if ((source.OccludedSides & side) != 0)
+                return;
+
+            float bottomY = source.EdgeBottoms.Resolve(
+                side,
+                source.VisibleBottomY);
+            if (!IsFinite(bottomY)
+                || bottomY >= worldTopA.y - HeightEpsilon)
+            {
+                return;
+            }
+
+            Vector3 worldBottomA = worldTopA;
+            Vector3 worldBottomB = worldTopB;
+            worldBottomA.y = bottomY;
+            worldBottomB.y = bottomY;
+            AddOneSidedQuad(
+                vertices,
+                uvs,
+                triangles,
+                worldToSource.MultiplyPoint3x4(worldTopA),
+                worldToSource.MultiplyPoint3x4(worldTopB),
+                worldToSource.MultiplyPoint3x4(worldBottomA),
+                worldToSource.MultiplyPoint3x4(worldBottomB),
+                Mathf.Max(
+                    0.0001f,
+                    Vector3.Distance(worldTopA, worldTopB)),
+                Mathf.Max(0.0001f, worldTopA.y - bottomY));
+        }
+
+        private static Mesh CombineSourceWithSkirt(Mesh source, Mesh skirt)
+        {
             var combines = new CombineInstance[source.subMeshCount + 1];
             for (int subMesh = 0; subMesh < source.subMeshCount; subMesh++)
             {
@@ -434,6 +585,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             return combined;
         }
+
+        private static bool IsFinite(float value)
+            => !float.IsNaN(value) && !float.IsInfinity(value);
 
         internal static bool IsBoundaryEdgeOccluded(
             TileMeshSource source,

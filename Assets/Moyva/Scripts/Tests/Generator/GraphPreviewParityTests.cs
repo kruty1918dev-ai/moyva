@@ -10,6 +10,7 @@ using Kruty1918.Moyva.SaveSystem;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace Kruty1918.Moyva.Tests.Generator
 {
@@ -192,6 +193,105 @@ namespace Kruty1918.Moyva.Tests.Generator
             }
         }
 
+        [Test]
+        public void GraphBindingGeneration_GlobalValidationErrorNeverCompilesOrBuildsCompanion()
+        {
+            var graph = ScriptableObject.CreateInstance<GraphAsset>();
+            graph.EnsureDefaultLayer();
+            var configuration = ScriptableObject.CreateInstance<Configuration>();
+            var managerObject = new GameObject("Graph Binding Validation Failure Test");
+            try
+            {
+                var manager =
+                    managerObject.AddComponent<TileWorldCreatorManager>();
+                manager.configuration = configuration;
+                var context = new TestGraphBindingContext(
+                    manager,
+                    graph,
+                    generateBuildLayersAfterCompile: true);
+                var compiler = new StubGraphCompileService();
+                var validation = new StubGraphValidationService(
+                    hasGlobalErrors: true);
+                var worldBuild = new CountingWorldBuildBridge();
+                var service = new MoyvaTwcGraphBindingGenerationService(
+                    new StubGraphBindingResolver(),
+                    compiler,
+                    validation,
+                    worldBuild);
+
+                LogAssert.Expect(
+                    LogType.Error,
+                    "[Moyva TWC Graph Binding] Generation stopped before compilation: graph validation contains 1 global error(s). Native or stale companion output was not built.");
+
+                bool generated = service.GenerateFromGraph(context, 17);
+
+                Assert.IsFalse(generated);
+                Assert.AreEqual(0, compiler.CompileCalls);
+                Assert.AreEqual(0, worldBuild.BuildCalls);
+                Assert.IsFalse(context.IsGenerating);
+            }
+            finally
+            {
+                Object.DestroyImmediate(managerObject);
+                Object.DestroyImmediate(configuration);
+                Object.DestroyImmediate(graph);
+            }
+        }
+
+        [Test]
+        public void GraphBindingGeneration_EmptyCompileResultNeverBuildsStaleCompanion()
+        {
+            var graph = ScriptableObject.CreateInstance<GraphAsset>();
+            string layerId = graph.EnsureDefaultLayer();
+            var configuration = ScriptableObject.CreateInstance<Configuration>();
+            var managerObject = new GameObject("Graph Binding Empty Compile Test");
+            try
+            {
+                var manager =
+                    managerObject.AddComponent<TileWorldCreatorManager>();
+                manager.configuration = configuration;
+                var context = new TestGraphBindingContext(
+                    manager,
+                    graph,
+                    generateBuildLayersAfterCompile: true);
+                context.SetLastCompiledLayers(new[]
+                {
+                    new CompiledLayerMap
+                    {
+                        GraphLayerId = layerId,
+                        BlueprintLayerGuid = "stale-blueprint",
+                        HasRenderableTileOutput = true
+                    }
+                });
+                var compiler = new StubGraphCompileService(
+                    System.Array.Empty<CompiledLayerMap>());
+                var worldBuild = new CountingWorldBuildBridge();
+                var service = new MoyvaTwcGraphBindingGenerationService(
+                    new StubGraphBindingResolver(),
+                    compiler,
+                    new StubGraphValidationService(),
+                    worldBuild);
+
+                LogAssert.Expect(
+                    LogType.Error,
+                    "[Moyva TWC Graph Binding] Generation stopped: graph compilation produced no enabled authoritative renderable layer. Existing companion output was not built.");
+
+                bool generated = service.GenerateFromGraph(context, 23);
+
+                Assert.IsFalse(generated);
+                Assert.AreEqual(1, compiler.CompileCalls);
+                Assert.AreEqual(0, worldBuild.BuildCalls);
+                Assert.IsEmpty(context.LastCompiledLayers);
+                Assert.IsFalse(context.IsGenerating);
+            }
+            finally
+            {
+                Object.DestroyImmediate(managerObject);
+                Object.DestroyImmediate(configuration);
+                Object.DestroyImmediate(graph);
+            }
+        }
+
         private static GraphAsset CreateRenderableGraph(out string layerId)
         {
             AssetDatabase.DeleteAsset(TestGraphPath);
@@ -242,20 +342,28 @@ namespace Kruty1918.Moyva.Tests.Generator
         private sealed class TestGraphBindingContext : IMoyvaTwcGraphBindingContext
         {
             private IReadOnlyList<CompiledLayerMap> _compiled = new List<CompiledLayerMap>();
+            private readonly bool _compileBeforeGenerate;
+            private readonly bool _generateBuildLayersAfterCompile;
 
             public TestGraphBindingContext(
                 TileWorldCreatorManager manager,
-                GraphAsset graph)
+                GraphAsset graph,
+                bool compileBeforeGenerate = true,
+                bool generateBuildLayersAfterCompile = false)
             {
                 Manager = manager;
                 GraphAsset = graph;
+                _compileBeforeGenerate = compileBeforeGenerate;
+                _generateBuildLayersAfterCompile =
+                    generateBuildLayersAfterCompile;
             }
 
             public TileWorldCreatorManager Manager { get; }
             public GraphAsset GraphAsset { get; }
             public int EditorSeed => 1;
-            public bool CompileBeforeGenerate => true;
-            public bool GenerateBuildLayersAfterCompile => false;
+            public bool CompileBeforeGenerate => _compileBeforeGenerate;
+            public bool GenerateBuildLayersAfterCompile =>
+                _generateBuildLayersAfterCompile;
             public bool IsGenerating { get; private set; }
             public IReadOnlyList<CompiledLayerMap> LastCompiledLayers => _compiled;
             public Object LogContext => Manager;
@@ -268,6 +376,91 @@ namespace Kruty1918.Moyva.Tests.Generator
             public void SetGenerating(bool value)
             {
                 IsGenerating = value;
+            }
+        }
+
+        private sealed class StubGraphBindingResolver :
+            IMoyvaTwcGraphBindingResolver
+        {
+            public int ResolveSeed(IMoyvaTwcGraphBindingContext context) => 1;
+
+            public Vector2Int ResolveMapSize(
+                IMoyvaTwcGraphBindingContext context) => Vector2Int.one;
+
+            public int NormalizeSeed(int seed) => GlobalSeed.Normalize(seed);
+        }
+
+        private sealed class StubGraphCompileService :
+            IMoyvaTwcGraphCompileService
+        {
+            private readonly IReadOnlyList<CompiledLayerMap> _result;
+
+            public StubGraphCompileService(
+                IReadOnlyList<CompiledLayerMap> result = null)
+            {
+                _result = result ?? System.Array.Empty<CompiledLayerMap>();
+            }
+
+            public int CompileCalls { get; private set; }
+
+            public IReadOnlyList<CompiledLayerMap> Compile(
+                IMoyvaTwcGraphBindingContext context) =>
+                Compile(context, 1, true);
+
+            public IReadOnlyList<CompiledLayerMap> Compile(
+                IMoyvaTwcGraphBindingContext context,
+                int seed) => Compile(context, seed, true);
+
+            public IReadOnlyList<CompiledLayerMap> Compile(
+                IMoyvaTwcGraphBindingContext context,
+                int seed,
+                bool emitLayerLog)
+            {
+                CompileCalls++;
+                context.SetLastCompiledLayers(_result);
+                return _result;
+            }
+        }
+
+        private sealed class StubGraphValidationService :
+            IMoyvaTwcGraphValidationService
+        {
+            private readonly bool _hasGlobalErrors;
+
+            public StubGraphValidationService(bool hasGlobalErrors = false)
+            {
+                _hasGlobalErrors = hasGlobalErrors;
+            }
+
+            public bool CanCompile(
+                IMoyvaTwcGraphBindingContext context,
+                out string reason)
+            {
+                reason = null;
+                return true;
+            }
+
+            public GraphValidationReport Validate(GraphAsset graph) => null;
+
+            public List<GraphValidationIssue> GetGlobalErrors(
+                GraphValidationReport report) => _hasGlobalErrors
+                ? new List<GraphValidationIssue> { null }
+                : new List<GraphValidationIssue>();
+
+            public HashSet<string> GetInvalidLayerIds(
+                GraphValidationReport report) => new HashSet<string>();
+        }
+
+        private sealed class CountingWorldBuildBridge :
+            ITileWorldCreatorWorldBuildBridge
+        {
+            public int BuildCalls { get; private set; }
+
+            public TileWorldCreatorWorldBuildResult Build(
+                GeneratedWorldData worldData)
+            {
+                BuildCalls++;
+                return TileWorldCreatorWorldBuildResult.Disabled;
             }
         }
 

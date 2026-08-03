@@ -111,17 +111,32 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         {
             const float epsilon = 0.0001f;
 
-            float currentTop = Math.Max(current.Height, current.SurfaceHeight);
-            float candidateTop = Math.Max(candidate.Height, candidate.SurfaceHeight);
+            // SurfaceHeight is the authoritative rendered top. Height is only
+            // the layer/root base and may legitimately sit above the mesh when
+            // an authored prefab has a negative top offset. Ranking by max(base,
+            // surface) would make prefab pivots change the overlap winner.
+            float currentTop = ResolveVisualSurface(current);
+            float candidateTop = ResolveVisualSurface(candidate);
             float topDelta = currentTop - candidateTop;
             if (Math.Abs(topDelta) > epsilon)
                 return topDelta < 0f ? -1 : 1;
 
-            float baseDelta = current.Height - candidate.Height;
-            if (Math.Abs(baseDelta) > epsilon)
-                return baseDelta < 0f ? -1 : 1;
-
             return 0;
+        }
+
+        private static float ResolveVisualSurface(
+            GraphTileLayerSample sample)
+        {
+            if (!float.IsNaN(sample.SurfaceHeight)
+                && !float.IsInfinity(sample.SurfaceHeight))
+            {
+                return sample.SurfaceHeight;
+            }
+
+            return !float.IsNaN(sample.Height)
+                   && !float.IsInfinity(sample.Height)
+                ? sample.Height
+                : float.NegativeInfinity;
         }
 
         private static int GetKindRank(LayerKind kind)

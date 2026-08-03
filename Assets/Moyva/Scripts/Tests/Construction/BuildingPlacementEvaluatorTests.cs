@@ -607,6 +607,79 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
+        public void Evaluate_AuthoritativeInfluenceRequirement_BlocksWhenRegistryHasNoCenter()
+        {
+            BuildingDefinition dependent = House("house");
+            dependent.Modules.Add(
+                new SettlementInfluenceRequirementBuildingModule
+                {
+                    MergeMode = PlacementRuleMergeMode.Override,
+                    RequiresInfluence = true,
+                });
+            var registry = new TestBuildingRegistry(dependent);
+
+            BuildingPlacementEvaluationResult result = Evaluate(
+                registry,
+                dependent.Id,
+                Vector2Int.zero,
+                new Dictionary<Vector2Int, string>());
+
+            Assert.IsFalse(result.IsValid);
+            Assert.IsTrue(result.InfluenceZoneBlocked);
+            Assert.AreEqual(
+                BuildingPlacementBlockerKind.InfluenceRequired,
+                result.Blockers[0].Kind);
+            StringAssert.Contains(
+                nameof(SettlementCenterBuildingModule),
+                result.Blockers[0].Message);
+        }
+
+        [Test]
+        public void Evaluate_AuthoritativeInfluenceRequirement_BlocksWhenCenterRadiusIsZero()
+        {
+            BuildingDefinition center = TownHall("town-hall", 0);
+            BuildingDefinition dependent = House("house");
+            dependent.Modules.Add(
+                new SettlementInfluenceRequirementBuildingModule
+                {
+                    MergeMode = PlacementRuleMergeMode.Override,
+                    RequiresInfluence = true,
+                });
+            var registry = new TestBuildingRegistry(center, dependent);
+
+            BuildingPlacementEvaluationResult result = Evaluate(
+                registry,
+                dependent.Id,
+                Vector2Int.right,
+                new Dictionary<Vector2Int, string>());
+
+            Assert.IsFalse(result.IsValid);
+            Assert.IsTrue(result.InfluenceZoneBlocked);
+            Assert.AreEqual(
+                BuildingPlacementBlockerKind.InfluenceRequired,
+                result.Blockers[0].Kind);
+            StringAssert.Contains(
+                "додатного радіуса",
+                result.Blockers[0].Message);
+        }
+
+        [Test]
+        public void Evaluate_LegacyInfluenceFallback_StillPassesWithoutCenter()
+        {
+            BuildingDefinition legacyDependent = House("legacy-house");
+            var registry = new TestBuildingRegistry(legacyDependent);
+
+            BuildingPlacementEvaluationResult result = Evaluate(
+                registry,
+                legacyDependent.Id,
+                Vector2Int.zero,
+                new Dictionary<Vector2Int, string>());
+
+            Assert.IsTrue(result.IsValid);
+            Assert.IsFalse(result.InfluenceZoneBlocked);
+        }
+
+        [Test]
         public void TownHallAndCastleTypeModules_DoNotCreateInfluenceWithoutMarker()
         {
             var townHall = House("legacy-town-hall-type");

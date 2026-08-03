@@ -540,6 +540,39 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
+        public void AuthoritativeNetworkPlacement_DoesNotTrustPendingReplacementMarker()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding("foundation", null),
+                CreateBuilding(
+                    "upgrade",
+                    new ReplacementPlacementRuleModule
+                    {
+                        MergeMode =
+                            PlacementRuleMergeMode.Override,
+                        ReplaceableBuildingIds =
+                            new[] { "foundation" },
+                        RequireSameOwner = true,
+                    }),
+            };
+            var executor =
+                _service
+                    as IAuthoritativeConstructionPlacementExecutor;
+            Assert.NotNull(executor);
+
+            Assert.IsFalse(
+                executor.TryPlaceAuthoritatively(
+                    "upgrade",
+                    new Vector2Int(11, 13),
+                    "owner-a",
+                    new ConstructionPlacementCommitIntent(
+                        satisfiedReplacementBuildingId:
+                            "foundation")),
+                "The host must observe and validate the replacement occupant; a client marker cannot authorize an empty tile.");
+        }
+
+        [Test]
         public void ForeignOwnerReplacement_KeepsActiveOwnerWhenAllowed()
         {
             _buildingRegistry.Buildings = new[]

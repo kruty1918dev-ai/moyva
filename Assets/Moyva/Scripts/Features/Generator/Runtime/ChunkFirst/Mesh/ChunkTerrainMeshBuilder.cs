@@ -32,8 +32,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 new HashSet<TileSurfaceOnlyMeshKey>();
         private int _sourceVertices;
         private int _sourceIndices;
+        private int _sourceTriangles;
         private int _processedVertices;
         private int _processedIndices;
+        private int _processedTriangles;
+        private int _visibilityUnreferencedVerticesRemoved;
+        private int _unreferencedVerticesRemoved;
+        private int _exactDuplicateVerticesRemoved;
 
         public ChunkTerrainMeshBuilder(
             ChunkFirstRuntimeMeshRegistry meshRegistry,
@@ -59,16 +64,27 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _materials.Clear();
             _sourceVertices = 0;
             _sourceIndices = 0;
+            _sourceTriangles = 0;
             _processedVertices = 0;
             _processedIndices = 0;
+            _processedTriangles = 0;
+            _visibilityUnreferencedVerticesRemoved = 0;
+            _unreferencedVerticesRemoved = 0;
+            _exactDuplicateVerticesRemoved = 0;
 
             int fragmentCount = CollectFragments(area.CoreRect, resolvedCells, meshSource);
             if (fragmentCount == 0)
+            {
+                LogChunkMetrics(chunkRoot, null);
                 return 0;
+            }
 
             Mesh combined = CombineByMaterial(terrainRoot.name, area);
             if (combined == null || combined.vertexCount == 0)
+            {
+                LogChunkMetrics(chunkRoot, null);
                 return 0;
+            }
 
             var filter = terrainRoot.GetComponent<MeshFilter>();
             if (filter == null)
@@ -89,15 +105,26 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             collider.sharedMesh = combined;
             _meshRegistry.Register(combined);
 
+            LogChunkMetrics(chunkRoot, combined);
+            return 1;
+        }
+
+        private void LogChunkMetrics(Transform chunkRoot, Mesh emittedMesh)
+        {
             _diagnostics.LogChunkMesh(
-                terrainRoot.name,
+                chunkRoot != null ? chunkRoot.name : TerrainObjectName,
                 _sourceVertices,
                 _sourceIndices,
+                _sourceTriangles,
                 _processedVertices,
                 _processedIndices,
-                combined.vertexCount,
-                CountIndices(combined));
-            return 1;
+                _processedTriangles,
+                emittedMesh != null ? emittedMesh.vertexCount : 0,
+                CountIndices(emittedMesh),
+                CountTriangles(emittedMesh),
+                _visibilityUnreferencedVerticesRemoved
+                + _unreferencedVerticesRemoved,
+                _exactDuplicateVerticesRemoved);
         }
 
         private int CollectFragments(
@@ -130,14 +157,24 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (!source.IsValid || source.Mesh.subMeshCount <= 0)
                 return;
 
-            Mesh mesh = ResolveVisibleMesh(source);
-            if (mesh == null || mesh.subMeshCount <= 0)
-                return;
-
             _sourceVertices += source.Mesh.vertexCount;
             _sourceIndices += CountIndices(source.Mesh);
+            _sourceTriangles += CountTriangles(source.Mesh);
+
+            Mesh mesh = ResolveVisibleMesh(source);
+            if (mesh == null || mesh.subMeshCount <= 0)
+            {
+                _visibilityUnreferencedVerticesRemoved +=
+                    source.Mesh.vertexCount;
+                return;
+            }
+
             _processedVertices += mesh.vertexCount;
             _processedIndices += CountIndices(mesh);
+            _processedTriangles += CountTriangles(mesh);
+            _visibilityUnreferencedVerticesRemoved += Mathf.Max(
+                0,
+                source.Mesh.vertexCount - mesh.vertexCount);
 
             Material[] materials = source.Materials;
             int subMeshCount = mesh.subMeshCount;
@@ -267,10 +304,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 indexFormat = vertexCount > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16
             };
             mesh.CombineMeshes(_finalCombine.ToArray(), false, false);
+            int referencedVerticesBeforeOptimization =
+                CountReferencedVertices(mesh);
             if (ExactVertexWeldMeshUtility.TryCreate(
                     mesh,
                     out Mesh welded))
             {
+                _unreferencedVerticesRemoved += Mathf.Max(
+                    0,
+                    mesh.vertexCount
+                    - referencedVerticesBeforeOptimization);
+                _exactDuplicateVerticesRemoved += Mathf.Max(
+                    0,
+                    referencedVerticesBeforeOptimization
+                    - welded.vertexCount);
                 if (Application.isPlaying)
                     UnityEngine.Object.Destroy(mesh);
                 else
@@ -298,11 +345,58 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
         private static int CountIndices(Mesh mesh)
         {
+            if (mesh == null)
+                return 0;
+
             long count = 0;
             for (int subMesh = 0; subMesh < mesh.subMeshCount; subMesh++)
                 count += (long)mesh.GetIndexCount(subMesh);
 
             return count > int.MaxValue ? int.MaxValue : (int)count;
+        }
+
+        private static int CountTriangles(Mesh mesh)
+        {
+            if (mesh == null)
+                return 0;
+
+            long count = 0;
+            for (int subMesh = 0; subMesh < mesh.subMeshCount; subMesh++)
+            {
+                if (mesh.GetTopology(subMesh) == MeshTopology.Triangles)
+                    count += (long)mesh.GetIndexCount(subMesh) / 3L;
+            }
+
+            return count > int.MaxValue ? int.MaxValue : (int)count;
+        }
+
+        private static int CountReferencedVertices(Mesh mesh)
+        {
+            if (mesh == null || mesh.vertexCount <= 0)
+                return 0;
+
+            var referenced = new bool[mesh.vertexCount];
+            int count = 0;
+            for (int subMesh = 0; subMesh < mesh.subMeshCount; subMesh++)
+            {
+                int[] indices = mesh.GetIndices(
+                    subMesh,
+                    applyBaseVertex: true);
+                for (int index = 0; index < indices.Length; index++)
+                {
+                    int vertex = indices[index];
+                    if ((uint)vertex >= (uint)referenced.Length
+                        || referenced[vertex])
+                    {
+                        continue;
+                    }
+
+                    referenced[vertex] = true;
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private static Bounds CreateStableChunkBounds(ChunkBuildArea area, Bounds actualBounds)

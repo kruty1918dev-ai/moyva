@@ -60,6 +60,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ObjectPlacement
                     ? BuildGeneratedLayerName(layer, terrainLayers, includeLayerSuffix: true)
                     : validLayers[i].BaseName;
 
+                if (ShouldSpawnDirectly(layer, terrainLayers))
+                {
+                    activeDirectNames.Add(generatedName);
+                    RemoveGeneratedLayerByName(config, generatedName);
+                    ApplyDirectLayer(config, manager, layer, generatedName, terrainLayers);
+                    continue;
+                }
+
                 activeGeneratedNames.Add(generatedName);
                 ApplyLayer(config, manager, layer, generatedName, terrainLayers);
             }
