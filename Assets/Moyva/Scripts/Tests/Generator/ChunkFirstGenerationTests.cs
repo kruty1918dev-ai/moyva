@@ -1319,6 +1319,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             var source = new SingleMeshSource(
                 sourceMesh,
                 material,
+            null,
                 TileGeometryMode.SurfaceOnly);
             var area = new ChunkBuildArea(
                 default,
