@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.FogOfWar.API;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -55,6 +56,32 @@ namespace Kruty1918.Moyva.Tests.Construction
             public WallCollectionDefinition GetWallCollectionByBuildingId(string buildingId)
             {
                 return null;
+            }
+        }
+
+        private sealed class RecordingRuleEvaluator :
+            IBuildingPlacementRuleEvaluator
+        {
+            private readonly string _name;
+            private readonly List<string> _calls;
+            private readonly BuildingPlacementBlocker _blocker;
+
+            public RecordingRuleEvaluator(
+                string name,
+                List<string> calls,
+                BuildingPlacementBlocker blocker = null)
+            {
+                _name = name;
+                _calls = calls;
+                _blocker = blocker;
+            }
+
+            public BuildingPlacementBlocker Evaluate(
+                BuildingPlacementEvaluationRequest request,
+                BuildingDefinition definition)
+            {
+                _calls.Add(_name);
+                return _blocker;
             }
         }
 
@@ -310,22 +337,528 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.AreEqual(BuildingPlacementBlockerKind.Configuration, result.Blockers[0].Kind);
         }
 
+        [Test]
+        public void Evaluate_TileRequirementModule_UsesAndSemanticsAndDistinctWholeFootprintTiles()
+        {
+            BuildingDefinition definition = WideBuilding(
+                "bridge",
+                new Vector2Int(2, 1));
+            definition.Modules.Add(new TileRequirementBuildingModule
+            {
+                Requirements = new[]
+                {
+                    new TileRequirementDefinition
+                    {
+                        TerrainTag = "water",
+                        Radius = 1,
+                        MinimumTileCount = 2,
+                    },
+                    new TileRequirementDefinition
+                    {
+                        TerrainTag = "road",
+                        Radius = 1,
+                        MinimumTileCount = 1,
+                    },
+                },
+            });
+            var registry = new TestBuildingRegistry(definition);
+            var water = new HashSet<Vector2Int>
+            {
+                // This cell is inside the Chebyshev neighborhood of both
+                // footprint cells and must only be counted once.
+                new Vector2Int(0, 1),
+            };
+            var roads = new HashSet<Vector2Int> { new Vector2Int(2, 0) };
+            BuildingPlacementEvaluationRequest request = new()
+            {
+                BuildingRegistry = registry,
+                BuildingId = definition.Id,
+                Position = Vector2Int.zero,
+                TileExists = _ => true,
+                IsOccupied = _ => false,
+                HasTerrainTag = (position, tag) =>
+                    (tag == "water" && water.Contains(position))
+                    || (tag == "road" && roads.Contains(position)),
+                SkipInfluenceRules = true,
+            };
+
+            BuildingPlacementEvaluationResult oneDistinctWater =
+                BuildingPlacementEvaluator.Evaluate(request);
+            Assert.IsFalse(oneDistinctWater.IsValid);
+            Assert.IsTrue(oneDistinctWater.AdjacencyBlocked);
+
+            water.Add(new Vector2Int(2, 1));
+            Assert.IsTrue(BuildingPlacementEvaluator.Evaluate(request).IsValid);
+
+            roads.Clear();
+            BuildingPlacementEvaluationResult missingSecondRequirement =
+                BuildingPlacementEvaluator.Evaluate(request);
+            Assert.IsFalse(missingSecondRequirement.IsValid);
+            Assert.AreEqual(
+                BuildingPlacementBlockerKind.Adjacency,
+                missingSecondRequirement.Blockers[0].Kind);
+        }
+
+        [Test]
+        public void Evaluate_DisabledTileRequirementModule_SuppressesLegacyRequirements()
+        {
+            BuildingDefinition definition = House("free-placement");
+            definition.PlacementRules = new BuildingPlacementRules
+            {
+                NearbyTileRequirements = new[]
+                {
+                    new TileRequirementDefinition
+                    {
+                        TerrainTag = "water",
+                        Radius = 1,
+                        MinimumTileCount = 1,
+                    },
+                },
+            };
+            definition.Modules.Add(new TileRequirementBuildingModule
+            {
+                MergeMode = PlacementRuleMergeMode.Disabled,
+            });
+            var registry = new TestBuildingRegistry(definition);
+
+            BuildingPlacementEvaluationResult result =
+                BuildingPlacementEvaluator.Evaluate(
+                    new BuildingPlacementEvaluationRequest
+                    {
+                        BuildingRegistry = registry,
+                        BuildingId = definition.Id,
+                        Position = Vector2Int.zero,
+                        TileExists = _ => true,
+                        IsOccupied = _ => false,
+                        HasTerrainTag = (_, _) => false,
+                        SkipInfluenceRules = true,
+                    });
+
+            Assert.IsTrue(result.IsValid);
+            Assert.IsFalse(result.AdjacencyBlocked);
+        }
+
+        [Test]
+        public void Evaluate_TerrainOverride_ReplacesGlobalTerrainPolicy()
+        {
+            BuildingDefinition definition = House("quarry");
+            definition.Modules.Add(new TerrainPlacementRuleModule
+            {
+                MergeMode = PlacementRuleMergeMode.Override,
+                AllowedTerrainTags = new[] { "land" },
+                AllowedTerrainLevels = new[] { 1 },
+                AllowHills = true,
+            });
+            var registry = new TestBuildingRegistry(definition);
+            int terrainLevel = 1;
+            BuildingPlacementEvaluationRequest request = new()
+            {
+                BuildingRegistry = registry,
+                BuildingId = definition.Id,
+                Position = Vector2Int.zero,
+                TileExists = _ => true,
+                IsOccupied = _ => false,
+                IsTerrainBlocked = _ => true,
+                GetTileId = _ => "raised-grass",
+                GetTerrainLevel = _ => terrainLevel,
+                HasTerrainTag = (_, tag) => tag == "land",
+                SkipInfluenceRules = true,
+            };
+
+            Assert.IsTrue(
+                BuildingPlacementEvaluator.Evaluate(request).IsValid,
+                "Override must replace the global terrain callback.");
+
+            terrainLevel = 2;
+            BuildingPlacementEvaluationResult blocked =
+                BuildingPlacementEvaluator.Evaluate(request);
+            Assert.IsFalse(blocked.IsValid);
+            Assert.IsTrue(blocked.TerrainBlocked);
+        }
+
+        [Test]
+        public void Evaluate_DisabledTerrainRule_DoesNotDisableTechnicalMapBounds()
+        {
+            BuildingDefinition definition = WideBuilding(
+                "edge-building",
+                new Vector2Int(2, 1));
+            definition.Modules.Add(new TerrainPlacementRuleModule
+            {
+                MergeMode = PlacementRuleMergeMode.Disabled,
+            });
+            var registry = new TestBuildingRegistry(definition);
+
+            BuildingPlacementEvaluationResult result =
+                BuildingPlacementEvaluator.Evaluate(
+                    new BuildingPlacementEvaluationRequest
+                    {
+                        BuildingRegistry = registry,
+                        BuildingId = definition.Id,
+                        Position = Vector2Int.zero,
+                        TileExists = position => position == Vector2Int.zero,
+                        IsOccupied = _ => false,
+                        IsTerrainBlocked = _ => true,
+                        SkipInfluenceRules = true,
+                    });
+
+            Assert.IsFalse(result.IsValid);
+            Assert.IsTrue(result.TerrainBlocked);
+            Assert.AreEqual(Vector2Int.right, result.Blockers[0].Position);
+        }
+
+        [Test]
+        public void Evaluate_FogModule_AllowsExploredButNotUnexplored()
+        {
+            BuildingDefinition definition = House("scout-post");
+            definition.Modules.Add(new FogPlacementRuleModule
+            {
+                MergeMode = PlacementRuleMergeMode.Override,
+                Visibility = FogPlacementVisibility.ExploredOrVisible,
+            });
+            var registry = new TestBuildingRegistry(definition);
+            FogStateType fogState = FogStateType.Explored;
+            BuildingPlacementEvaluationRequest request = new()
+            {
+                BuildingRegistry = registry,
+                BuildingId = definition.Id,
+                Position = Vector2Int.zero,
+                IsOccupied = _ => false,
+                GetFogState = _ => fogState,
+                SkipInfluenceRules = true,
+            };
+
+            Assert.IsTrue(BuildingPlacementEvaluator.Evaluate(request).IsValid);
+
+            fogState = FogStateType.Unexplored;
+            BuildingPlacementEvaluationResult blocked =
+                BuildingPlacementEvaluator.Evaluate(request);
+            Assert.IsFalse(blocked.IsValid);
+            Assert.IsTrue(blocked.FogBlocked);
+        }
+
+        [Test]
+        public void Evaluate_SpacingModule_DisabledAndOverrideAreAuthoritative()
+        {
+            BuildingDefinition definition = House("house");
+            var spacing = new SpacingPlacementRuleModule
+            {
+                MergeMode = PlacementRuleMergeMode.Disabled,
+                MinimumSpacing = 1,
+            };
+            definition.Modules.Add(spacing);
+            var registry = new TestBuildingRegistry(definition);
+            var occupied = new HashSet<Vector2Int> { Vector2Int.right };
+            BuildingPlacementEvaluationRequest request = new()
+            {
+                BuildingRegistry = registry,
+                BuildingId = definition.Id,
+                Position = Vector2Int.zero,
+                MinSpacing = 2,
+                IsOccupied = occupied.Contains,
+                GetOccupantId = position =>
+                    occupied.Contains(position) ? "neighbor" : null,
+                SkipInfluenceRules = true,
+            };
+
+            Assert.IsTrue(BuildingPlacementEvaluator.Evaluate(request).IsValid);
+
+            spacing.MergeMode = PlacementRuleMergeMode.Override;
+            BuildingPlacementEvaluationResult blocked =
+                BuildingPlacementEvaluator.Evaluate(request);
+            Assert.IsFalse(blocked.IsValid);
+            Assert.IsTrue(blocked.SpacingBlocked);
+        }
+
+        [Test]
+        public void Evaluate_InfluenceUsesSettlementCenterMarkerWithoutTypeChecks()
+        {
+            var center = House("village-anchor");
+            center.Modules.Add(new SettlementCenterBuildingModule
+            {
+                InfluenceRadius = 2,
+            });
+            var dependent = House("house");
+            dependent.Modules.Add(
+                new SettlementInfluenceRequirementBuildingModule
+                {
+                    MergeMode = PlacementRuleMergeMode.Override,
+                    RequiresInfluence = true,
+                });
+            var registry = new TestBuildingRegistry(center, dependent);
+            var occupants = new Dictionary<Vector2Int, string>
+            {
+                [Vector2Int.zero] = center.Id,
+            };
+
+            BuildingPlacementEvaluationResult inRange = Evaluate(
+                registry,
+                dependent.Id,
+                new Vector2Int(2, 0),
+                occupants);
+            BuildingPlacementEvaluationResult outOfRange = Evaluate(
+                registry,
+                dependent.Id,
+                new Vector2Int(3, 0),
+                occupants);
+
+            Assert.IsTrue(inRange.IsValid);
+            Assert.IsFalse(outOfRange.IsValid);
+            Assert.IsTrue(outOfRange.InfluenceZoneBlocked);
+        }
+
+        [Test]
+        public void Evaluate_AuthoritativeInfluenceRequirement_BlocksWhenRegistryHasNoCenter()
+        {
+            BuildingDefinition dependent = House("house");
+            dependent.Modules.Add(
+                new SettlementInfluenceRequirementBuildingModule
+                {
+                    MergeMode = PlacementRuleMergeMode.Override,
+                    RequiresInfluence = true,
+                });
+            var registry = new TestBuildingRegistry(dependent);
+
+            BuildingPlacementEvaluationResult result = Evaluate(
+                registry,
+                dependent.Id,
+                Vector2Int.zero,
+                new Dictionary<Vector2Int, string>());
+
+            Assert.IsFalse(result.IsValid);
+            Assert.IsTrue(result.InfluenceZoneBlocked);
+            Assert.AreEqual(
+                BuildingPlacementBlockerKind.InfluenceRequired,
+                result.Blockers[0].Kind);
+            StringAssert.Contains(
+                nameof(SettlementCenterBuildingModule),
+                result.Blockers[0].Message);
+        }
+
+        [Test]
+        public void Evaluate_AuthoritativeInfluenceRequirement_BlocksWhenCenterRadiusIsZero()
+        {
+            BuildingDefinition center = TownHall("town-hall", 0);
+            BuildingDefinition dependent = House("house");
+            dependent.Modules.Add(
+                new SettlementInfluenceRequirementBuildingModule
+                {
+                    MergeMode = PlacementRuleMergeMode.Override,
+                    RequiresInfluence = true,
+                });
+            var registry = new TestBuildingRegistry(center, dependent);
+
+            BuildingPlacementEvaluationResult result = Evaluate(
+                registry,
+                dependent.Id,
+                Vector2Int.right,
+                new Dictionary<Vector2Int, string>());
+
+            Assert.IsFalse(result.IsValid);
+            Assert.IsTrue(result.InfluenceZoneBlocked);
+            Assert.AreEqual(
+                BuildingPlacementBlockerKind.InfluenceRequired,
+                result.Blockers[0].Kind);
+            StringAssert.Contains(
+                "додатного радіуса",
+                result.Blockers[0].Message);
+        }
+
+        [Test]
+        public void Evaluate_LegacyInfluenceFallback_StillPassesWithoutCenter()
+        {
+            BuildingDefinition legacyDependent = House("legacy-house");
+            var registry = new TestBuildingRegistry(legacyDependent);
+
+            BuildingPlacementEvaluationResult result = Evaluate(
+                registry,
+                legacyDependent.Id,
+                Vector2Int.zero,
+                new Dictionary<Vector2Int, string>());
+
+            Assert.IsTrue(result.IsValid);
+            Assert.IsFalse(result.InfluenceZoneBlocked);
+        }
+
+        [Test]
+        public void TownHallAndCastleTypeModules_DoNotCreateInfluenceWithoutMarker()
+        {
+            var townHall = House("legacy-town-hall-type");
+            townHall.Modules.Add(
+                new TownHallBuildingModule
+                {
+                    BuildRadius = 5,
+                });
+            var castle = House("legacy-castle-type");
+            castle.Modules.Add(
+                new CastleBuildingModule
+                {
+                    ExclusionRadius = 5,
+                });
+
+            Assert.IsFalse(
+                BuildingPlacementEvaluator.IsInfluenceCenter(
+                    townHall));
+            Assert.IsFalse(
+                BuildingDefinitionCapabilities.IsSettlementCenter(
+                    townHall));
+            Assert.IsFalse(
+                BuildingPlacementEvaluator.IsInfluenceCenter(
+                    castle));
+            Assert.IsFalse(
+                BuildingDefinitionCapabilities.IsSettlementCenter(
+                    castle));
+        }
+
+        [Test]
+        public void Evaluate_InfluenceCoverage_IsScopedToPlacementOwner()
+        {
+            BuildingDefinition center = TownHall("town-hall", 3);
+            BuildingDefinition dependent = House("house");
+            dependent.Modules.Add(
+                new SettlementInfluenceRequirementBuildingModule
+                {
+                    MergeMode =
+                        PlacementRuleMergeMode.Override,
+                    RequiresInfluence = true,
+                });
+            var registry =
+                new TestBuildingRegistry(center, dependent);
+            var occupants =
+                new Dictionary<Vector2Int, string>
+                {
+                    [Vector2Int.zero] = center.Id,
+                };
+            var owners =
+                new Dictionary<Vector2Int, string>
+                {
+                    [Vector2Int.zero] = "owner-b",
+                };
+
+            BuildingPlacementEvaluationResult foreignCoverage =
+                Evaluate(
+                    registry,
+                    dependent.Id,
+                    Vector2Int.right,
+                    occupants,
+                    ownerId: "owner-a",
+                    occupantOwners: owners);
+            BuildingPlacementEvaluationResult ownedCoverage =
+                Evaluate(
+                    registry,
+                    dependent.Id,
+                    Vector2Int.right,
+                    occupants,
+                    ownerId: "owner-b",
+                    occupantOwners: owners);
+
+            Assert.IsFalse(foreignCoverage.IsValid);
+            Assert.IsTrue(
+                foreignCoverage.InfluenceZoneBlocked);
+            Assert.IsTrue(ownedCoverage.IsValid);
+        }
+
+        [Test]
+        public void Evaluate_InfluenceCenterOverlap_IsGlobalAcrossOwners()
+        {
+            BuildingDefinition center = TownHall("town-hall", 2);
+            var registry = new TestBuildingRegistry(center);
+            var occupants =
+                new Dictionary<Vector2Int, string>
+                {
+                    [Vector2Int.zero] = center.Id,
+                };
+            var owners =
+                new Dictionary<Vector2Int, string>
+                {
+                    [Vector2Int.zero] = "owner-b",
+                };
+
+            BuildingPlacementEvaluationResult result =
+                Evaluate(
+                    registry,
+                    center.Id,
+                    new Vector2Int(4, 0),
+                    occupants,
+                    ownerId: "owner-a",
+                    occupantOwners: owners);
+
+            Assert.IsFalse(result.IsValid);
+            Assert.IsTrue(result.InfluenceZoneBlocked);
+            Assert.AreEqual(
+                BuildingPlacementBlockerKind.InfluenceOverlap,
+                result.Blockers[0].Kind);
+        }
+
+        [Test]
+        public void Evaluate_RegisteredRuleEvaluators_RunInOrderAndStopAtFirstBlocker()
+        {
+            BuildingDefinition definition = House("custom");
+            var registry = new TestBuildingRegistry(definition);
+            var calls = new List<string>();
+            var request = new BuildingPlacementEvaluationRequest
+            {
+                BuildingRegistry = registry,
+                BuildingId = definition.Id,
+                Position = Vector2Int.zero,
+                IsOccupied = _ => false,
+                SkipInfluenceRules = true,
+                RuleEvaluators =
+                    new IBuildingPlacementRuleEvaluator[]
+                    {
+                        new RecordingRuleEvaluator("first", calls),
+                        new RecordingRuleEvaluator(
+                            "second",
+                            calls,
+                            new BuildingPlacementBlocker
+                            {
+                                Kind = BuildingPlacementBlockerKind.Fog,
+                                Message = "Custom fog policy.",
+                                Position = Vector2Int.zero,
+                                BuildingId = definition.Id,
+                            }),
+                        new RecordingRuleEvaluator("third", calls),
+                    },
+            };
+
+            BuildingPlacementEvaluationResult result =
+                BuildingPlacementEvaluator.Evaluate(request);
+
+            Assert.IsFalse(result.IsValid);
+            Assert.IsTrue(result.FogBlocked);
+            Assert.AreEqual("Custom fog policy.", result.Blockers[0].Message);
+            CollectionAssert.AreEqual(
+                new[] { "first", "second" },
+                calls);
+        }
+
         private static BuildingPlacementEvaluationResult Evaluate(
             IBuildingRegistry registry,
             string buildingId,
             Vector2Int position,
             Dictionary<Vector2Int, string> occupants,
-            IReadOnlyList<BuildingPlacementSimulationEntry> pendingPlacements = null)
+            IReadOnlyList<BuildingPlacementSimulationEntry> pendingPlacements = null,
+            string ownerId = null,
+            IReadOnlyDictionary<Vector2Int, string> occupantOwners = null)
         {
             return BuildingPlacementEvaluator.Evaluate(new BuildingPlacementEvaluationRequest
             {
                 BuildingRegistry = registry,
                 BuildingId = buildingId,
+                OwnerId = ownerId,
                 Position = position,
                 MinSpacing = 0,
                 TownHallBuildRadius = 2,
                 IsOccupied = occupants.ContainsKey,
                 GetOccupantId = tile => occupants.TryGetValue(tile, out var occupantId) ? occupantId : null,
+                GetOccupantOwnerId =
+                    occupantOwners == null
+                        ? null
+                        : tile =>
+                            occupantOwners.TryGetValue(
+                                tile,
+                                out string occupantOwnerId)
+                                ? occupantOwnerId
+                                : null,
                 PendingPlacements = pendingPlacements,
             });
         }
@@ -354,6 +887,10 @@ namespace Kruty1918.Moyva.Tests.Construction
                     new TownHallBuildingModule
                     {
                         BuildRadius = radius,
+                    },
+                    new SettlementCenterBuildingModule
+                    {
+                        InfluenceRadius = radius,
                     },
                 },
             };

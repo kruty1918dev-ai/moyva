@@ -1,0 +1,1135 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Moyva — просте налаштування правил будівництва</title>
+  <style>
+    :root {
+      --ink: #19251f;
+      --muted: #52615a;
+      --paper: #fffdf7;
+      --line: #d8dfd9;
+      --green: #2f7d4e;
+      --green-soft: #e8f6ec;
+      --blue: #1976a3;
+      --blue-soft: #e6f5fb;
+      --amber: #9a6810;
+      --amber-soft: #fff3d6;
+      --red: #b6413b;
+      --red-soft: #fde9e7;
+      --purple: #6651a8;
+      --purple-soft: #f0ecfb;
+      --shadow: 0 8px 28px rgba(31, 48, 39, .12);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      color: var(--ink);
+      background: #e8ece8;
+      font-family: "Noto Sans", "Ubuntu Sans", "DejaVu Sans", sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body { counter-reset: sheet; }
+
+    .page {
+      position: relative;
+      width: 210mm;
+      min-height: 297mm;
+      margin: 10mm auto;
+      padding: 14mm 15mm 13mm;
+      overflow: hidden;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      break-after: page;
+      page-break-after: always;
+      counter-increment: sheet;
+    }
+
+    .page:last-child {
+      break-after: auto;
+      page-break-after: auto;
+    }
+
+    .page::after {
+      content: counter(sheet);
+      position: absolute;
+      right: 15mm;
+      bottom: 7mm;
+      width: 8mm;
+      height: 8mm;
+      color: #fff;
+      background: var(--green);
+      border-radius: 50%;
+      font-size: 10pt;
+      font-weight: 800;
+      line-height: 8mm;
+      text-align: center;
+    }
+
+    .page::before {
+      content: "MOYVA  •  ПРАВИЛА БУДІВНИЦТВА";
+      position: absolute;
+      left: 15mm;
+      bottom: 8.2mm;
+      color: #718079;
+      font-size: 7.5pt;
+      font-weight: 800;
+      letter-spacing: .08em;
+    }
+
+    .cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding-top: 20mm;
+      background:
+        radial-gradient(circle at 90% 8%, #c8e9d4 0, #c8e9d4 22mm, transparent 22.3mm),
+        radial-gradient(circle at 6% 95%, #ccecf7 0, #ccecf7 28mm, transparent 28.3mm),
+        var(--paper);
+    }
+
+    .cover::before { color: var(--green); }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      max-width: 165mm;
+      margin-bottom: 7mm;
+      font-size: 30pt;
+      line-height: 1.06;
+      letter-spacing: -.04em;
+    }
+
+    h2 {
+      margin-bottom: 5mm;
+      font-size: 22pt;
+      line-height: 1.12;
+      letter-spacing: -.025em;
+    }
+
+    h3 {
+      margin-bottom: 2.5mm;
+      font-size: 13.5pt;
+      line-height: 1.2;
+    }
+
+    p, li, td, th {
+      font-size: 10.6pt;
+      line-height: 1.43;
+    }
+
+    p { margin-bottom: 3.2mm; }
+
+    code {
+      padding: .25em .48em;
+      color: #163b51;
+      background: #e9f2f5;
+      border-radius: 4px;
+      font-family: "DejaVu Sans Mono", monospace;
+      font-size: .92em;
+      font-weight: 700;
+    }
+
+    .eyebrow {
+      margin-bottom: 3mm;
+      color: var(--green);
+      font-size: 9pt;
+      font-weight: 900;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .lead {
+      max-width: 165mm;
+      color: var(--muted);
+      font-size: 14pt;
+      line-height: 1.42;
+    }
+
+    .sublead {
+      color: var(--muted);
+      font-size: 12pt;
+    }
+
+    .tiny {
+      color: var(--muted);
+      font-size: 8.8pt;
+      line-height: 1.42;
+    }
+
+    .hero-mark {
+      display: grid;
+      grid-template-columns: repeat(5, 20mm);
+      gap: 2mm;
+      align-self: flex-end;
+      transform: rotate(-3deg);
+    }
+
+    .hero-tile {
+      height: 20mm;
+      border: 2px solid rgba(255,255,255,.8);
+      border-radius: 5mm;
+      box-shadow: 0 4px 10px rgba(20, 40, 30, .15);
+    }
+
+    .hero-tile.land { background: #92c77f; }
+    .hero-tile.water { background: #4fb3db; }
+    .hero-tile.building {
+      position: relative;
+      background: #92c77f;
+    }
+    .hero-tile.building::after {
+      content: "⌂";
+      display: grid;
+      position: absolute;
+      inset: 3mm;
+      place-items: center;
+      color: white;
+      background: var(--green);
+      border-radius: 3mm;
+      font-size: 23pt;
+      font-weight: 900;
+    }
+
+    .page-head {
+      display: grid;
+      grid-template-columns: 14mm 1fr;
+      gap: 4mm;
+      align-items: start;
+      margin-bottom: 5mm;
+    }
+
+    .page-head .num,
+    .step-num {
+      display: grid;
+      width: 12mm;
+      height: 12mm;
+      place-items: center;
+      color: #fff;
+      background: var(--green);
+      border-radius: 50%;
+      font-size: 14pt;
+      font-weight: 900;
+    }
+
+    .page-head h2 { margin: 0; }
+
+    .quick-route {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4mm;
+      margin: 5mm 0;
+    }
+
+    .route-card,
+    .card,
+    .callout,
+    .recipe {
+      border: 1px solid var(--line);
+      border-radius: 4mm;
+      background: #fff;
+    }
+
+    .route-card {
+      position: relative;
+      padding: 5mm;
+    }
+
+    .route-card b {
+      display: block;
+      margin-bottom: 2mm;
+      color: var(--green);
+      font-size: 13pt;
+    }
+
+    .route-card:not(:last-child)::after {
+      content: "›";
+      position: absolute;
+      z-index: 2;
+      top: 50%;
+      right: -4.2mm;
+      width: 5mm;
+      height: 8mm;
+      color: var(--green);
+      background: var(--paper);
+      font-size: 23pt;
+      font-weight: 900;
+      line-height: 7mm;
+      text-align: center;
+      transform: translateY(-50%);
+    }
+
+    .card { padding: 4.5mm; }
+
+    .card p:last-child,
+    .callout p:last-child,
+    .recipe p:last-child { margin-bottom: 0; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4mm;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4mm;
+    }
+
+    .stack { display: grid; gap: 3mm; }
+
+    .callout {
+      margin: 4mm 0;
+      padding: 4mm 4.5mm;
+      border-left-width: 2mm;
+    }
+
+    .callout.info {
+      border-color: #76bddb;
+      background: var(--blue-soft);
+    }
+
+    .callout.good {
+      border-color: #76bc8b;
+      background: var(--green-soft);
+    }
+
+    .callout.warn {
+      border-color: #e3b550;
+      background: var(--amber-soft);
+    }
+
+    .callout.danger {
+      border-color: #df827d;
+      background: var(--red-soft);
+    }
+
+    .callout.purple {
+      border-color: #a493d9;
+      background: var(--purple-soft);
+    }
+
+    .ui-button {
+      display: inline-block;
+      margin: 1mm .8mm 1mm 0;
+      padding: 2.2mm 3.2mm;
+      color: #fff;
+      background: #43544b;
+      border: 1px solid #26352e;
+      border-radius: 2mm;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+      font-size: 9.6pt;
+      font-weight: 800;
+      line-height: 1.15;
+      white-space: nowrap;
+    }
+
+    .ui-button.green { background: var(--green); border-color: #205b38; }
+    .ui-button.blue { background: var(--blue); border-color: #105a7d; }
+    .ui-button.red { background: var(--red); border-color: #8f302c; }
+
+    .ui-panel {
+      padding: 4mm;
+      color: #e8efe9;
+      background: #29312d;
+      border: 1px solid #111713;
+      border-radius: 3mm;
+      box-shadow: 0 3px 10px rgba(0,0,0,.16);
+    }
+
+    .ui-panel h3 { color: #fff; }
+
+    .ui-panel .label {
+      display: block;
+      margin: 2mm 0 1mm;
+      color: #bac8c0;
+      font-size: 8pt;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .fake-field {
+      display: flex;
+      min-height: 8mm;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5mm 2.5mm;
+      color: #fff;
+      background: #171d1a;
+      border: 1px solid #59665f;
+      border-radius: 1.5mm;
+      font-size: 9.5pt;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      margin: 1mm 1mm 1mm 0;
+      padding: 1.2mm 2.4mm;
+      color: #153e52;
+      background: #d4effa;
+      border: 1px solid #7dc6e3;
+      border-radius: 99px;
+      font-family: "DejaVu Sans Mono", monospace;
+      font-size: 9pt;
+      font-weight: 800;
+    }
+
+    .tag.blocked {
+      color: #6b211e;
+      background: #f9d9d6;
+      border-color: #dd8d88;
+    }
+
+    .check {
+      display: flex;
+      gap: 3mm;
+      align-items: flex-start;
+      margin-bottom: 3mm;
+    }
+
+    .check .box {
+      display: grid;
+      flex: 0 0 auto;
+      width: 7mm;
+      height: 7mm;
+      place-items: center;
+      color: white;
+      background: var(--green);
+      border-radius: 1.5mm;
+      font-size: 12pt;
+      font-weight: 900;
+    }
+
+    .check .box.off {
+      color: transparent;
+      background: #fff;
+      border: 1.5px solid #7b8982;
+    }
+
+    .check p { margin: .2mm 0 0; }
+
+    .numbered {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: actions;
+    }
+
+    .numbered li {
+      position: relative;
+      min-height: 10mm;
+      margin-bottom: 2.5mm;
+      padding: 2mm 3mm 2mm 12mm;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 2.5mm;
+      counter-increment: actions;
+    }
+
+    .numbered li::before {
+      content: counter(actions);
+      position: absolute;
+      top: 1.7mm;
+      left: 2mm;
+      display: grid;
+      width: 7mm;
+      height: 7mm;
+      place-items: center;
+      color: white;
+      background: var(--green);
+      border-radius: 50%;
+      font-size: 9pt;
+      font-weight: 900;
+    }
+
+    .arrow-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2mm;
+      margin: 4mm 0;
+      padding: 4mm;
+      background: #f1f5f1;
+      border-radius: 3mm;
+    }
+
+    .flow-box {
+      min-width: 38mm;
+      padding: 3mm;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 2.5mm;
+      font-size: 9.3pt;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .arrow { color: var(--green); font-size: 18pt; font-weight: 900; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 3mm;
+    }
+
+    th, td {
+      padding: 2.8mm 3mm;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #fff;
+      background: #415149;
+      font-size: 9.3pt;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .mode.inherit { border-top: 2mm solid var(--green); }
+    .mode.override { border-top: 2mm solid var(--blue); }
+    .mode.disabled { border-top: 2mm solid var(--red); }
+
+    .mode-name {
+      display: inline-block;
+      margin-bottom: 2mm;
+      padding: 1mm 2.2mm;
+      color: white;
+      background: #415149;
+      border-radius: 1.5mm;
+      font-family: "DejaVu Sans Mono", monospace;
+      font-size: 9pt;
+      font-weight: 800;
+    }
+
+    .recipe {
+      padding: 4.5mm;
+      border-top: 2mm solid var(--green);
+    }
+
+    .recipe.water { border-top-color: var(--blue); }
+    .recipe.bridge { border-top-color: var(--purple); }
+
+    .recipe .result {
+      margin-top: 3mm;
+      padding: 2.5mm 3mm;
+      background: var(--green-soft);
+      border-radius: 2mm;
+      font-size: 9.4pt;
+      font-weight: 700;
+    }
+
+    .tile-demo {
+      display: grid;
+      grid-template-columns: repeat(5, 12mm);
+      grid-template-rows: repeat(4, 12mm);
+      gap: 1mm;
+      justify-content: center;
+      margin: 3mm auto;
+    }
+
+    .tile-demo span {
+      display: grid;
+      place-items: center;
+      color: white;
+      background: #87be78;
+      border: 1px solid rgba(0,0,0,.12);
+      border-radius: 2mm;
+      font-size: 13pt;
+      font-weight: 900;
+    }
+
+    .tile-demo .water { background: #49acd5; }
+    .tile-demo .build { background: var(--purple); }
+    .tile-demo .near { box-shadow: 0 0 0 1.2mm #d7c7ff inset; }
+
+    .traffic-card {
+      min-height: 48mm;
+      padding: 5mm;
+      color: #fff;
+      border-radius: 4mm;
+    }
+
+    .traffic-card.green { background: #328454; }
+    .traffic-card.amber { color: #4c3408; background: #f5c65d; }
+    .traffic-card.red { background: #bd4a44; }
+
+    .traffic-dot {
+      width: 15mm;
+      height: 15mm;
+      margin-bottom: 3mm;
+      background: currentColor;
+      border: 3px solid rgba(255,255,255,.72);
+      border-radius: 50%;
+      opacity: .9;
+    }
+
+    .traffic-card.amber .traffic-dot { border-color: rgba(75,50,0,.35); }
+
+    .decision {
+      display: grid;
+      grid-template-columns: 1fr 9mm 1fr;
+      gap: 2mm;
+      align-items: center;
+      margin: 4mm 0;
+    }
+
+    .decision .question,
+    .decision .answer {
+      padding: 4mm;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 3mm;
+    }
+
+    .decision .arrow { text-align: center; }
+
+    .footer-note {
+      position: absolute;
+      right: 27mm;
+      bottom: 8mm;
+      color: #718079;
+      font-size: 7.5pt;
+    }
+
+    @media print {
+      html, body { background: #fff; }
+      .page {
+        width: 210mm;
+        height: 297mm;
+        min-height: 297mm;
+        margin: 0;
+        box-shadow: none;
+      }
+    }
+
+    @media screen and (max-width: 850px) {
+      .page {
+        width: 100%;
+        min-height: auto;
+        margin: 0 0 14px;
+      }
+    }
+
+    @page { size: A4; margin: 0; }
+  </style>
+</head>
+<body>
+
+  <section class="page cover">
+    <div>
+      <div class="eyebrow">Moyva • дуже проста інструкція</div>
+      <h1>Як налаштувати, де можна ставити будівлю</h1>
+      <p class="lead">Покроково: як позначити воду тегом <code>water</code>, заборонити звичайним будівлям воду, дозволити спеціальній будівлі воду та зробити міст лише поруч із водою.</p>
+
+      <div class="callout good">
+        <h3>Головна думка</h3>
+        <p><strong>Terrain-профіль</strong> описує землю. <strong>Глобальні правила</strong> — звичайну поведінку всіх будівель. <strong>Модуль будівлі</strong> потрібен лише тоді, коли ця будівля має бути особливою.</p>
+      </div>
+    </div>
+
+    <div>
+      <div class="quick-route">
+        <div class="route-card"><b>1. Познач землю</b><span>Water отримує тег <code>water</code>.</span></div>
+        <div class="route-card"><b>2. Задай правило</b><span>Глобально або лише для однієї будівлі.</span></div>
+        <div class="route-card"><b>3. Перевір колір</b><span>Зелений, жовтий або червоний.</span></div>
+      </div>
+      <div class="hero-mark" aria-hidden="true">
+        <div class="hero-tile land"></div>
+        <div class="hero-tile land"></div>
+        <div class="hero-tile water"></div>
+        <div class="hero-tile water"></div>
+        <div class="hero-tile water"></div>
+        <div class="hero-tile land"></div>
+        <div class="hero-tile building"></div>
+        <div class="hero-tile land"></div>
+        <div class="hero-tile water"></div>
+        <div class="hero-tile water"></div>
+      </div>
+      <p class="tiny">Для Unity Editor. Назви кнопок у цій інструкції відповідають новому Inspector правил Moyva.</p>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="page-head">
+      <div class="num">0</div>
+      <h2>Спочатку — чотири прості слова</h2>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Terrain — вид землі</h3>
+        <p>Наприклад: вода, суша, ліс, гора або дорога. Один профіль описує один вид землі.</p>
+      </div>
+      <div class="card">
+        <h3>Тег — коротка наліпка</h3>
+        <p><code>water</code> означає “це вода”, а <code>land</code> — “це суша”. Правило читає наліпку, а не назву шару.</p>
+      </div>
+      <div class="card">
+        <h3>Глобальні правила — для всіх</h3>
+        <p>Це стандарт. Якщо будівля не має свого винятку, вона бере ці правила.</p>
+      </div>
+      <div class="card">
+        <h3>Модуль — правило однієї будівлі</h3>
+        <p>Наприклад, будинок не любить воду, а пристань повинна стояти саме на воді.</p>
+      </div>
+    </div>
+
+    <div class="arrow-flow">
+      <div class="flow-box">Terrain-профіль<br><code>water</code></div>
+      <div class="arrow">→</div>
+      <div class="flow-box">Глобальне<br>правило</div>
+      <div class="arrow">→</div>
+      <div class="flow-box">Модуль<br>будівлі</div>
+      <div class="arrow">→</div>
+      <div class="flow-box">Колір клітинки</div>
+    </div>
+
+    <div class="callout info">
+      <h3>Чому краще тег, а не ID?</h3>
+      <p>Шар може називатися <code>Water</code>, <code>Lake</code> або <code>Ocean-02</code>. Якщо всі вони мають тег <code>water</code>, одне правило працює для них усіх.</p>
+    </div>
+
+    <div class="callout warn">
+      <h3>Не друкуй <code>water</code> навмання</h3>
+      <p>Обирай тег зі списку. Так не буде помилок на кшталт <code>watre</code>. Якщо потрібного тега ще немає, спочатку створи його у профілі terrain, а потім обери в правилі.</p>
+    </div>
+
+    <h3>Маленький словник готових тегів</h3>
+    <table>
+      <thead><tr><th>Тег</th><th>Що означає</th><th>Приклад</th></tr></thead>
+      <tbody>
+        <tr><td><code>water</code></td><td>Будь-яка вода</td><td>озеро, річка, море</td></tr>
+        <tr><td><code>land</code></td><td>Звичайна суша</td><td>трава, піднята земля</td></tr>
+        <tr><td><code>forest</code></td><td>Лісова місцевість</td><td>лісопилка поруч із лісом</td></tr>
+        <tr><td><code>mountain</code></td><td>Гори або скелі</td><td>шахта поруч із горою</td></tr>
+        <tr><td><code>road</code></td><td>Дорога</td><td>будівля біля дороги</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="page">
+    <div class="page-head">
+      <div class="num">1</div>
+      <h2>Познач Water тегом <code>water</code></h2>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <ol class="numbered">
+          <li>Відкрий будь-яку будівлю у Project.</li>
+          <li>Знайди її модулі та відкрий <strong>Terrain Placement Rule</strong>.</li>
+          <li>Натисни <span class="ui-button blue">Відкрити профілі terrain</span></li>
+          <li>У відкритому asset знайди профіль <strong>Water</strong>.</li>
+          <li>У полі тегів натисни кнопку додавання та обери <code>water</code> зі списку.</li>
+          <li>Увімкни прапорець <strong>Build Blocked</strong>.</li>
+          <li>Перевір: у Water видно наліпку <span class="tag">water</span></li>
+        </ol>
+
+        <div class="callout good">
+          <p><strong>Готово.</strong> Тепер система точно знає, які тайли є водою. <strong>Build Blocked</strong> робить воду забороненою за замовчуванням.</p>
+        </div>
+      </div>
+
+      <div class="ui-panel">
+        <h3>Terrain Layer Profiles</h3>
+        <span class="label">Профіль</span>
+        <div class="fake-field"><strong>Water</strong><span>▾</span></div>
+        <span class="label">Terrain ID</span>
+        <div class="fake-field"><span>Water</span></div>
+        <span class="label">Теги</span>
+        <div><span class="tag">water</span></div>
+        <div class="ui-button blue">+ Додати тег зі списку</div>
+        <span class="label">Будівництво</span>
+        <div class="fake-field"><span>☑ Build Blocked</span></div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <h3>А що робити із сушею?</h3>
+      <p>Відкрий звичайні та підняті land-профілі так само. Додай їм тег <span class="tag">land</span> і залиш <strong>Build Blocked</strong> вимкненим.</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>Water</h3>
+        <div class="check"><div class="box">✓</div><p>має тег <code>water</code></p></div>
+        <div class="check"><div class="box">✓</div><p><strong>Build Blocked</strong> увімкнено</p></div>
+      </div>
+      <div class="card">
+        <h3>Land / Elevated Land</h3>
+        <div class="check"><div class="box">✓</div><p>має тег <code>land</code></p></div>
+        <div class="check"><div class="box off">✓</div><p><strong>Build Blocked</strong> вимкнено</p></div>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <p><strong>Важливо:</strong> назва профілю “Water” сама по собі не є правилом. Правило бачить саме тег <code>water</code>.</p>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="page-head">
+      <div class="num">2</div>
+      <h2>Налаштуй правило за замовчуванням</h2>
+    </div>
+
+    <p class="sublead">Глобальний профіль відповідає на запитання: “Що робити більшості будівель?” Його достатньо налаштувати один раз.</p>
+
+    <div class="grid-2">
+      <div>
+        <ol class="numbered">
+          <li>Відкрий будівлю та її <strong>Terrain Placement Rule</strong>.</li>
+          <li>Натисни <span class="ui-button green">Відкрити глобальні правила</span></li>
+          <li>У глобальному профілі залиш воду забороненою для звичайного будівництва.</li>
+          <li>Не додавай terrain level до заборонених, якщо хочеш будувати на піднятій суші.</li>
+          <li>Збережи asset. Unity зазвичай зберігає зміни автоматично, але <strong>Ctrl+S</strong> не завадить.</li>
+        </ol>
+      </div>
+
+      <div class="ui-panel">
+        <h3>Global Construction Rules</h3>
+        <span class="label">Terrain</span>
+        <div class="fake-field"><span>Вода</span><strong>заборонена</strong></div>
+        <div class="fake-field"><span>Пагорби</span><strong>дозволені</strong></div>
+        <div class="fake-field"><span>Край перепаду</span><strong>не блокується</strong></div>
+        <span class="label">Пояснення</span>
+        <p class="tiny" style="color:#cbd6d0">Це стандарт для будівель у режимі Inherit або без власного terrain-модуля.</p>
+      </div>
+    </div>
+
+    <div class="callout good">
+      <h3>Найпростіша схема для проєкту</h3>
+      <p><strong>Глобально:</strong> не будувати на <code>water</code>. <strong>Звичайні будівлі:</strong> режим <code>Inherit</code>. <strong>Особливі будівлі:</strong> режим <code>Override</code> і власні теги.</p>
+    </div>
+
+    <h3>Що глобальний профіль не повинен робити</h3>
+    <div class="grid-2">
+      <div class="card">
+        <h3>Не забороняй level 1 “про всяк випадок”</h3>
+        <p>Піднята суша теж може бути нормальною землею. Блокуй висоту лише там, де це справді потрібно.</p>
+      </div>
+      <div class="card">
+        <h3>Не вмикай край для всіх</h3>
+        <p>Заборону краю перепаду краще ввімкнути в модулі конкретної великої будівлі.</p>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <p>Кнопка <span class="ui-button green">Відкрити глобальні правила</span> лише переводить тебе до потрібного asset. Після змін повернися до будівлі кнопкою “назад” у Unity Inspector або знову обери її в Project.</p>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="page-head">
+      <div class="num">3</div>
+      <h2>Обери режим Terrain Placement Rule</h2>
+    </div>
+
+    <div class="grid-3">
+      <div class="card mode inherit">
+        <span class="mode-name">Inherit</span>
+        <h3>Взяти глобальні правила</h3>
+        <p>Обирай для більшості будівель: будинок, млин, стіна, казарма.</p>
+        <p><strong>Найбезпечніший вибір.</strong></p>
+      </div>
+      <div class="card mode override">
+        <span class="mode-name">Override</span>
+        <h3>Повністю замінити правила</h3>
+        <p>Обирай для винятків: пристань, міст, водна споруда.</p>
+        <p><strong>Заповни всі потрібні поля.</strong></p>
+      </div>
+      <div class="card mode disabled">
+        <span class="mode-name">Disabled</span>
+        <h3>Вимкнути terrain-перевірки</h3>
+        <p>Будівля ігнорує воду, висоту, край і нахил.</p>
+        <p><strong>Лише для тесту або особливого дизайну.</strong></p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <h3>Увага до <code>Override</code> і <code>Disabled</code></h3>
+      <p><code>Override</code> не “додає ще одне правило” — він <strong>замінює всю глобальну terrain-групу</strong>. <code>Disabled</code> вимикає цю групу. Межі мапи та зайнята клітинка все одно залишаються технічними заборонами.</p>
+    </div>
+
+    <h3>Швидкі кнопки</h3>
+    <div class="grid-3">
+      <div class="card">
+        <div class="ui-button red">Заборонити воду</div>
+        <p>Додає <code>water</code> до заборонених terrain-тегів для цієї будівлі.</p>
+      </div>
+      <div class="card">
+        <div class="ui-button green">Лише суша</div>
+        <p>Дозволяє тільки terrain із тегом <code>land</code>.</p>
+      </div>
+      <div class="card">
+        <div class="ui-button blue">Дозволити будь-який terrain</div>
+        <p>Прибирає фільтр за ID і тегами. Інші правила та технічні інваріанти не зникають.</p>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <h3>Як обрати тег без ручного введення</h3>
+      <p>У списку “Дозволені terrain-теги” або “Заборонені terrain-теги” натисни кнопку додавання. Обери готовий тег. Після вибору він з'явиться як маленька наліпка, наприклад <span class="tag blocked">water ×</span>.</p>
+    </div>
+
+    <div class="decision">
+      <div class="question"><strong>Ця будівля звичайна?</strong><br>Вона має поводитися так само, як більшість.</div>
+      <div class="arrow">→</div>
+      <div class="answer"><span class="mode-name">Inherit</span><br>Більше нічого для terrain не треба.</div>
+    </div>
+    <div class="decision">
+      <div class="question"><strong>Ця будівля особлива?</strong><br>Їй потрібна вода або інше унікальне місце.</div>
+      <div class="arrow">→</div>
+      <div class="answer"><span class="mode-name">Override</span><br>Обери дозволені та заборонені теги.</div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="page-head">
+      <div class="num">4</div>
+      <h2>Рецепт: звичайна будівля не стоїть на воді</h2>
+    </div>
+
+    <div class="recipe">
+      <h3>Рекомендований рецепт — через глобальне правило</h3>
+      <ol class="numbered">
+        <li>Перевір: профіль Water має тег <code>water</code> і <strong>Build Blocked</strong>.</li>
+        <li>У глобальних правилах вода заборонена.</li>
+        <li>У будівлі додай або відкрий <strong>Terrain Placement Rule</strong>.</li>
+        <li>Вибери режим <code>Inherit</code>.</li>
+      </ol>
+      <div class="result">Результат: будівля бере загальне правило — суша дозволена, вода червона.</div>
+    </div>
+
+    <div class="callout good">
+      <h3>Ще швидше</h3>
+      <p>Якщо глобальне правило вже правильне, для звичайної будівлі достатньо <code>Inherit</code>. Не треба копіювати <code>water</code> у кожну будівлю.</p>
+    </div>
+
+    <div class="recipe" style="border-top-color:#b6413b">
+      <h3>Окремий виняток — заборонити воду саме цій будівлі</h3>
+      <ol class="numbered">
+        <li>Встанови режим <code>Override</code>.</li>
+        <li>Натисни <span class="ui-button red">Заборонити воду</span></li>
+        <li>Перевір: у “Заборонені terrain-теги” є <span class="tag blocked">water ×</span>.</li>
+        <li>Перевір додаткові поля: пагорби, край перепаду та рівна основа.</li>
+      </ol>
+      <div class="result">Результат: правило цієї будівлі не залежить від майбутньої зміни глобального water-правила.</div>
+    </div>
+
+    <div class="callout warn">
+      <h3>Коли використати “Лише суша”?</h3>
+      <p>Якщо будівлю можна ставити тільки на terrain з тегом <code>land</code>, натисни <span class="ui-button green">Лише суша</span>. Це суворіше, ніж просто заборонити <code>water</code>: ліс або гора без тега <code>land</code> теж не пройдуть.</p>
+    </div>
+
+  </section>
+
+  <section class="page">
+    <div class="page-head">
+      <div class="num">5</div>
+      <h2>Рецепти: water-only та міст біля води</h2>
+    </div>
+
+    <div class="grid-2">
+      <div class="recipe water">
+        <h3>Пристань: тільки НА воді</h3>
+        <ol class="numbered">
+          <li>Відкрий <strong>Terrain Placement Rule</strong>.</li>
+          <li>Постав режим <code>Override</code>.</li>
+          <li>У “Дозволені terrain-теги” додай <code>water</code> зі списку.</li>
+          <li>“Заборонені terrain-теги” залиш порожнім.</li>
+          <li>Перевір інші поля Override.</li>
+        </ol>
+        <div class="result">Стоїть на water. На land — червона.</div>
+      </div>
+
+      <div class="recipe bridge">
+        <h3>Міст: на суші, але ПОРУЧ вода</h3>
+        <ol class="numbered">
+          <li>Terrain Placement Rule: <code>Override</code>.</li>
+          <li>Натисни <span class="ui-button red">Заборонити воду</span></li>
+          <li>Додай <strong>Tile Requirement</strong>.</li>
+          <li>У вимозі обери terrain-тег <code>water</code>.</li>
+          <li>Радіус: <strong>1</strong>. Мінімальна кількість: <strong>1</strong>.</li>
+        </ol>
+        <div class="result">Сам міст не на water, але хоча б одна water-клітинка має бути поруч.</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:5mm">
+      <div>
+        <h3>Як виглядає “поруч” для мосту</h3>
+        <div class="tile-demo" aria-label="Міст поруч із водою">
+          <span></span><span></span><span></span><span class="water">≈</span><span class="water">≈</span>
+          <span></span><span class="near"></span><span class="near"></span><span class="water near">≈</span><span class="water">≈</span>
+          <span></span><span class="near"></span><span class="build">⌂</span><span class="water near">≈</span><span class="water">≈</span>
+          <span></span><span class="near"></span><span class="near"></span><span class="near"></span><span></span>
+        </div>
+        <p class="tiny">Фіолетова клітинка — будівля. Сині клітинки — тег <code>water</code>. Радіус 1 охоплює сусідів навколо всього footprint.</p>
+      </div>
+
+      <div class="callout purple" style="margin:0">
+        <h3>Terrain Placement ≠ Tile Requirement</h3>
+        <p><strong>Terrain Placement Rule</strong> перевіряє клітинки <em>під будівлею</em>.</p>
+        <p><strong>Tile Requirement</strong> шукає потрібні клітинки <em>навколо footprint</em>.</p>
+        <p>Для мосту потрібні обидва модулі.</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <h3>Не натискай “Дозволити будь-який terrain” для звичайного будинку</h3>
+      <p><span class="ui-button blue">Дозволити будь-який terrain</span> потрібна лише для свідомого винятку. Вона прибирає tag/ID-фільтри цієї будівлі; ресурси, зайнятість і межа мапи все одно перевіряються.</p>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="page-head">
+      <div class="num">6</div>
+      <h2>Що означають зелений, жовтий і червоний</h2>
+    </div>
+
+    <div class="grid-3">
+      <div class="traffic-card green">
+        <div class="traffic-dot"></div>
+        <h3>Зелений</h3>
+        <p><strong>Місце правильне</strong> і ресурсів вистачає.</p>
+        <p>Можна підтверджувати.</p>
+      </div>
+      <div class="traffic-card amber">
+        <div class="traffic-dot"></div>
+        <h3>Жовтий</h3>
+        <p><strong>Місце правильне</strong>, але бракує ресурсів.</p>
+        <p>Preview можна залишити pending. У підказці видно deficit.</p>
+      </div>
+      <div class="traffic-card red">
+        <div class="traffic-dot"></div>
+        <h3>Червоний</h3>
+        <p><strong>Місце неправильне.</strong></p>
+        <p>Причина: terrain, fog, вплив, відстань, зайнятість або межа мапи.</p>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <h3>Жовтий — це не помилка terrain</h3>
+      <p>Якщо клітинка жовта, не змінюй тег води. Спочатку прочитай deficit і додай потрібні ресурси. Після цього те саме pending preview можна підтвердити.</p>
+    </div>
+
+    <h3>Як читати результат</h3>
+    <table>
+      <thead><tr><th>Що бачиш</th><th>Що це означає</th><th>Що робити</th></tr></thead>
+      <tbody>
+        <tr><td>Вода червона, суша зелена</td><td>Правило “без води” працює</td><td>Нічого — все правильно</td></tr>
+        <tr><td>Усе жовте</td><td>Місця правильні, але немає ресурсу</td><td>Подивись deficit</td></tr>
+        <tr><td>Уся мапа червона</td><td>Є глобальний spatial blocker або неправильно налаштований Override</td><td>Дивись сторінку 8</td></tr>
+        <tr><td>Кнопка будівлі недоступна</td><td>Global availability: prerequisite, unlock або limit</td><td>Прочитай причину біля кнопки; terrain тут ні до чого</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout good">
+      <h3>Перевірка за 20 секунд</h3>
+      <div class="check"><div class="box">1</div><p>Наведи звичайну будівлю на сушу: має бути зелена або жовта.</p></div>
+      <div class="check"><div class="box">2</div><p>Наведи її на воду: має бути червона.</p></div>
+      <div class="check"><div class="box">3</div><p>Наведи water-only будівлю на воду: має бути зелена або жовта.</p></div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="page-head">
+      <div class="num">7</div>
+      <h2>Якщо не працює — перевір по черзі</h2>
+    </div>
+
+    <div class="stack">
+      <div class="card">
+        <h3>1. Звичайна будівля дозволяється на воді</h3>
+        <p>Відкрий <span class="ui-button blue">Відкрити профілі terrain</span> → Water. Перевір тег <code>water</code> і <strong>Build Blocked</strong>. Потім перевір: модуль будівлі не має режиму <code>Disabled</code>.</p>
+      </div>
+
+      <div class="card">
+        <h3>2. Уся мапа червона</h3>
+        <p>Спочатку подивись точну причину. У Terrain Placement Rule тимчасово обери <code>Inherit</code>. Якщо суша стала доступною, проблема була в неповному <code>Override</code>. Також перевір fog, settlement influence, spacing і occupancy.</p>
+      </div>
+
+      <div class="card">
+        <h3>3. Тега <code>water</code> немає у списку</h3>
+        <p>Натисни <span class="ui-button blue">Відкрити профілі terrain</span>. Додай <code>water</code> до профілю Water. Повернися до будівлі — тег з'явиться у списку вибору.</p>
+      </div>
+
+      <div class="card">
+        <h3>4. Water-only будівля все одно червона на воді</h3>
+        <p>Перевір: режим <code>Override</code>; <code>water</code> є у <strong>дозволених</strong>, а не у заборонених тегах; footprint повністю на воді; клітинки не зайняті; fog та influence дозволяють будівництво.</p>
+      </div>
+
+      <div class="card">
+        <h3>5. Міст дозволяється далеко від води</h3>
+        <p>Перевір <strong>Tile Requirement</strong>: Terrain-тег = <code>water</code>, Радіус = 1, Мінімальна кількість = 1, режим = <code>Override</code>. Порожня вимога нічого не шукає.</p>
+      </div>
+
+      <div class="card">
+        <h3>6. Суша жовта, хоча terrain правильний</h3>
+        <p>Це ресурсний deficit. Не міняй terrain-правила. Додай ресурс або зміни вартість будівлі.</p>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <h3>Найчастіша помилка</h3>
+      <p><code>Disabled</code> означає не “вимкнути заборону”, а “вимкнути всю terrain-перевірку цієї будівлі”. Для звичайної будівлі використовуй <code>Inherit</code>.</p>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="page-head">
+      <div class="num">✓</div>
+      <h2>Фінальна шпаргалка</h2>
+    </div>
+
+    <div class="callout good">
+      <h3>Налаштування проєкту один раз</h3>
+      <div class="check"><div class="box">✓</div><p>Water має тег <code>water</code>.</p></div>
+      <div class="check"><div class="box">✓</div><p>Water має увімкнений <strong>Build Blocked</strong>.</p></div>
+      <div class="check"><div class="box">✓</div><p>Звичайна й піднята суша мають тег <code>land</code>.</p></div>
+      <div class="check"><div class="box">✓</div><p>Для land вимкнений <strong>Build Blocked</strong>.</p></div>
+      <div class="check"><div class="box">✓</div><p>Глобальні правила забороняють water, але не всю підняту сушу.</p></div>
+    </div>
+
+    <h3>Налаштування кожної будівлі</h3>
+    <table>
+      <thead><tr><th>Яку будівлю робимо?</th><th>Terrain Placement Rule</th><th>Додатково</th></tr></thead>
+      <tbody>
+        <tr><td>Звичайна, не на воді</td><td><code>Inherit</code></td><td>Нічого</td></tr>
+        <tr><td>Особлива, не на воді</td><td><code>Override</code> → <strong>Заборонити воду</strong></td><td>Перевір hills / edge / flat</td></tr>
+        <tr><td>Тільки на суші</td><td><code>Override</code> → <strong>Лише суша</strong></td><td>У land-профілі потрібен тег <code>land</code></td></tr>
+        <tr><td>Тільки на воді</td><td><code>Override</code> → дозволений тег <code>water</code></td><td>Footprint має бути на water</td></tr>
+        <tr><td>Міст на суші біля води</td><td><code>Override</code> → <strong>Заборонити воду</strong></td><td>Tile Requirement: <code>water</code>, radius 1, min 1</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout info">
+      <h3>Три кнопки, які варто запам'ятати</h3>
+      <p><span class="ui-button green">Відкрити глобальні правила</span> <span class="ui-button blue">Відкрити профілі terrain</span> <span class="ui-button red">Заборонити воду</span></p>
+    </div>
+
+    <div class="callout purple">
+      <h3>Остання перевірка в грі</h3>
+      <p><strong>Зелений</strong> — можна будувати. <strong>Жовтий</strong> — місце правильне, бракує ресурсів. <strong>Червоний</strong> — місце порушує spatial-правило.</p>
+    </div>
+
+    <p class="tiny"><strong>Підказка:</strong> якщо сумніваєшся, поверни звичайну будівлю в <code>Inherit</code>. Для свідомого винятку вибери <code>Override</code>, обери теги зі списку й перевір усі поля terrain-групи.</p>
+  </section>
+
+</body>
+</html>

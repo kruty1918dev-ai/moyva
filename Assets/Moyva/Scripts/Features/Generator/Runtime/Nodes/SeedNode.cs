@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes
     [NodeInfo(
         "Seed",
         "Core",
-        "Задає базовий seed графа. Фактичний seed передається через NodeContext і не змінює глобальний random state.",
+        "Задає базовий seed графа як глобальне налаштування. Підключення до Output не потрібне; фактичний seed передається через NodeContext і не змінює global random state.",
         StableId = "moyva.core.seed",
         Order = 0,
         Lifecycle = NodeLifecycle.Hidden)]

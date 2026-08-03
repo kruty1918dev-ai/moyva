@@ -58,4 +58,13 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         Task LeaveSessionAsync(CancellationToken ct = default);
         Task SendMessageAsync(string targetPeerId, byte[] payload, CancellationToken ct = default);
     }
+
+    /// <summary>
+    /// Optional capability used by the session layer to make transport sender
+    /// identities match authoritative participant/owner IDs.
+    /// </summary>
+    public interface INetworkPeerIdentityConfigurator
+    {
+        void SetLocalPeerId(string playerId);
+    }
 }

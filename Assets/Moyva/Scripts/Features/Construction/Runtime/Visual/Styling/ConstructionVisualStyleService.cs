@@ -25,6 +25,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ApplyRendererTint(rootObject, tint, isValid);
         }
 
+        public void ApplyUnaffordableGhostStyle(GameObject rootObject)
+        {
+            var tint = new Color(1f, 0.68f, 0.22f, _ghostAlpha);
+            var spriteRenderers = rootObject.GetComponentsInChildren<SpriteRenderer>(true);
+            for (int i = 0; i < spriteRenderers.Length; i++)
+                spriteRenderers[i].color = tint;
+
+            ApplyRendererTint(
+                rootObject,
+                tint,
+                isValid: true,
+                emissionColor: new Color(0.30f, 0.15f, 0.03f, 1f));
+        }
+
         public void ApplySolidStyle(GameObject rootObject)
         {
             var spriteRenderers = rootObject.GetComponentsInChildren<SpriteRenderer>(true);
@@ -72,7 +86,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 colliders2D[i].enabled = false;
         }
 
-        private static void ApplyRendererTint(GameObject rootObject, Color tint, bool isValid)
+        private static void ApplyRendererTint(
+            GameObject rootObject,
+            Color tint,
+            bool isValid,
+            Color? emissionColor = null)
         {
             var renderers = rootObject.GetComponentsInChildren<Renderer>(true);
             for (int i = 0; i < renderers.Length; i++)
@@ -85,7 +103,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 renderer.GetPropertyBlock(block);
                 block.SetColor("_Color", tint);
                 block.SetColor("_BaseColor", tint);
-                block.SetColor("_EmissionColor", isValid ? new Color(0.10f, 0.28f, 0.10f, 1f) : new Color(0.28f, 0.08f, 0.08f, 1f));
+                block.SetColor(
+                    "_EmissionColor",
+                    emissionColor
+                    ?? (isValid
+                        ? new Color(0.10f, 0.28f, 0.10f, 1f)
+                        : new Color(0.28f, 0.08f, 0.08f, 1f)));
                 renderer.SetPropertyBlock(block);
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 renderer.receiveShadows = false;

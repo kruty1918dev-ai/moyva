@@ -59,7 +59,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (TryGetReusablePreview(signal, out GameObject existing))
             {
-                _styleService.ApplyGhostStyle(existing, true);
+                ApplyPreviewStyle(existing, signal.PreviewState);
                 return existing;
             }
 
@@ -70,7 +70,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return null;
 
             _previewByPosition[signal.Position] = instance;
-            _styleService.ApplyGhostStyle(instance, true);
+            ApplyPreviewStyle(instance, signal.PreviewState);
             return instance;
         }
 
@@ -214,7 +214,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ApplyGridHoverStyle(
                     index,
                     hasBuildingSelection: !string.IsNullOrWhiteSpace(signal.BuildingId),
-                    isInvalid: ContainsPosition(signal.InvalidFootprintPositions, position));
+                    isInvalid: ContainsPosition(signal.InvalidFootprintPositions, position),
+                    isUnaffordable: signal.IsPlacementValid && !signal.IsAffordable);
                 highlight.SetActive(true);
             }
 
@@ -239,6 +240,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return _previewByPosition.TryGetValue(signal.Position, out existing)
                 && existing != null
                 && existing.name.Contains(signal.BuildingId);
+        }
+
+        private void ApplyPreviewStyle(
+            GameObject preview,
+            BuildingPreviewState previewState)
+        {
+            if (previewState == BuildingPreviewState.Unaffordable)
+                _styleService.ApplyUnaffordableGhostStyle(preview);
+            else
+                _styleService.ApplyGhostStyle(preview, true);
         }
 
         private GameObject ResolvePrefab(Vector2Int position, string buildingId, GameObject defaultPrefab)
@@ -403,7 +414,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
             highlight.transform.localScale = new Vector3(cellSize.x * scale, 1f, cellSize.y * scale);
         }
 
-        private void ApplyGridHoverStyle(int index, bool hasBuildingSelection, bool isInvalid)
+        private void ApplyGridHoverStyle(
+            int index,
+            bool hasBuildingSelection,
+            bool isInvalid,
+            bool isUnaffordable)
         {
             MeshRenderer renderer = index >= 0 && index < _gridHoverRenderers.Count
                 ? _gridHoverRenderers[index]
@@ -420,13 +435,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
             else if (isInvalid)
             {
-                lineColor = new Color(1f, 0.26f, 0.22f, 0.9f);
-                fillColor = new Color(0.92f, 0.12f, 0.10f, 0.16f);
+                lineColor = _settingsProvider?.BuildGridInvalidLineColor
+                    ?? new Color(1f, 0.26f, 0.22f, 0.9f);
+                fillColor = _settingsProvider?.BuildGridInvalidFillColor
+                    ?? new Color(0.92f, 0.12f, 0.10f, 0.16f);
+            }
+            else if (isUnaffordable)
+            {
+                lineColor = _settingsProvider?.BuildGridUnaffordableLineColor
+                    ?? new Color(1f, 0.68f, 0.12f, 0.9f);
+                fillColor = _settingsProvider?.BuildGridUnaffordableFillColor
+                    ?? new Color(0.95f, 0.48f, 0.08f, 0.16f);
             }
             else
             {
-                lineColor = new Color(0.28f, 1f, 0.42f, 0.9f);
-                fillColor = new Color(0.20f, 0.82f, 0.32f, 0.16f);
+                lineColor = _settingsProvider?.BuildGridValidLineColor
+                    ?? new Color(0.28f, 1f, 0.42f, 0.9f);
+                fillColor = _settingsProvider?.BuildGridValidFillColor
+                    ?? new Color(0.20f, 0.82f, 0.32f, 0.16f);
             }
 
             _gridHoverPropertyBlock ??= new MaterialPropertyBlock();

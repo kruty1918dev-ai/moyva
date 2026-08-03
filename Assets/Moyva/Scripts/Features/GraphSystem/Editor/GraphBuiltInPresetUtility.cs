@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Kruty1918.Moyva.Generator.Runtime.Nodes;
 using Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement;
 using Kruty1918.Moyva.Generator.Runtime.Nodes.Twc;
@@ -940,7 +941,9 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             if (target == null || string.IsNullOrEmpty(fieldName))
                 return;
 
-            var field = target.GetType().GetField(fieldName);
+            var field = target.GetType().GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (field == null)
                 return;
 

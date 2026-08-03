@@ -2,6 +2,20 @@ using UnityEngine;
 
 namespace Kruty1918.Moyva.Construction.API
 {
+    /// <summary>
+    /// Supplies the local commit-authority decision without coupling the
+    /// construction assembly to a concrete network implementation.
+    /// Spatial previews remain available when this policy returns false; only
+    /// the final commit is routed through the authoritative host.
+    /// </summary>
+    public interface IConstructionPlacementAuthorityPolicy
+    {
+        bool CanCommit(
+            string ownerId,
+            ConstructionPlacementAttemptSource attemptSource,
+            out string reason);
+    }
+
     public readonly struct ConstructionPlacementQueryRequest
     {
         public ConstructionPlacementQueryRequest(
@@ -14,7 +28,8 @@ namespace Kruty1918.Moyva.Construction.API
             string ownerId = null,
             bool includePendingPlacements = true,
             ConstructionPlacementAttemptSource attemptSource = ConstructionPlacementAttemptSource.Unknown,
-            bool allowUniquePreviewRelocation = false)
+            bool allowUniquePreviewRelocation = false,
+            string satisfiedReplacementBuildingId = null)
         {
             BuildingId = buildingId;
             Position = position;
@@ -26,6 +41,8 @@ namespace Kruty1918.Moyva.Construction.API
             IncludePendingPlacements = includePendingPlacements;
             AttemptSource = attemptSource;
             AllowUniquePreviewRelocation = allowUniquePreviewRelocation;
+            SatisfiedReplacementBuildingId =
+                satisfiedReplacementBuildingId;
         }
 
         public string BuildingId { get; }
@@ -55,6 +72,13 @@ namespace Kruty1918.Moyva.Construction.API
         /// </summary>
         public bool AllowUniquePreviewRelocation { get; }
 
+        /// <summary>
+        /// Identifies a pending preview that was transactionally replaced before
+        /// this query. It is only accepted when it matches the candidate's
+        /// replacement module (or the legacy gate adapter).
+        /// </summary>
+        public string SatisfiedReplacementBuildingId { get; }
+
         public ConstructionPlacementQueryRequest WithIgnoredPositions(
             Vector2Int? ignoredPendingPosition,
             Vector2Int? ignoredOccupiedPosition)
@@ -69,7 +93,8 @@ namespace Kruty1918.Moyva.Construction.API
                 OwnerId,
                 IncludePendingPlacements,
                 AttemptSource,
-                AllowUniquePreviewRelocation);
+                AllowUniquePreviewRelocation,
+                SatisfiedReplacementBuildingId);
         }
     }
 }

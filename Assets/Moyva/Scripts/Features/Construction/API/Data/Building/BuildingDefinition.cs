@@ -17,6 +17,11 @@ namespace Kruty1918.Moyva.Construction.API
         [LabelText("ID тайла")]
         public string TileId;
 
+        [Tooltip("Альтернатива точному TileId: семантичний terrain-тег, наприклад water або forest.")]
+        [TerrainTag]
+        [LabelText("Terrain-тег")]
+        public string TerrainTag;
+
         [Tooltip("Радіус пошуку тайла в клітинках.\nВизначає, наскільки далеко від будівлі дозволено шукати потрібну місцевість.\nЗбільшуйте значення для споруд, що використовують широку околицю, і зменшуйте для локальних залежностей.")]
         [Min(1)]
         [LabelText("Радіус пошуку")]
@@ -48,6 +53,10 @@ namespace Kruty1918.Moyva.Construction.API
         public string Id;               // Унікальний ідентифікатор, наприклад "barracks"
         public string DisplayName;      // Назва для UI, наприклад "Казарма"
         public BuildingCategory Category;
+        public BuildingRole Role;
+        public string Description;
+        public List<string> Tags = new List<string>();
+        public List<string> RuntimeTags = new List<string>();
         public Sprite Icon;             // Іконка будівлі для меню будівництва
         [Tooltip("Runtime-safe preview префаба будівлі. Генерується редактором і використовується toolbar UI у білді.")]
         public Sprite RuntimePreview;
@@ -74,8 +83,13 @@ namespace Kruty1918.Moyva.Construction.API
         [Tooltip("Максимальне HP будівлі. Використовується для ініціалізації компонента IHealth під час spawn.")]
         [Min(1)]
         public int MaxHp = 100;
+        public int Armor;
+        public BuildingRuntimeFlags RuntimeFlags;
 
         [Header("Правила розміщення")]
+        [Tooltip("Повна runtime-копія editor-authored placement settings. Нові модулі мають пріоритет над цією compatibility-моделлю.")]
+        public BuildingPlacementRules PlacementRules;
+
         [Tooltip("Дозволяє розміщення, навіть якщо клітинка ще не Visible у Fog of War.")]
         public bool CanPlaceInFog;
 

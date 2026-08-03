@@ -44,8 +44,6 @@ MonoBehaviour:
   PlacementRulesGraph: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
   TileRegistry: {fileID: 0}
   BlockedBuildingTileIds: []
-  BlockedBuildingHillLevelRanges:
-  - MinLevel: 1
-    MaxLevel: 1
+  BlockedBuildingHillLevelRanges: []
   BlockedUnitTileIds: []
   BlockedUnitHillLevelRanges: []

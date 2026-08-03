@@ -36,14 +36,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
             return _compiler.Compile(context, seed);
         }
 
-        public void GenerateFromGraph(IMoyvaTwcGraphBindingContext context)
+        public bool GenerateFromGraph(IMoyvaTwcGraphBindingContext context)
         {
-            _generation.GenerateFromGraph(context);
+            return _generation.GenerateFromGraph(context);
         }
 
-        public void GenerateFromGraph(IMoyvaTwcGraphBindingContext context, int seed)
+        public bool GenerateFromGraph(IMoyvaTwcGraphBindingContext context, int seed)
         {
-            _generation.GenerateFromGraph(context, seed);
+            return _generation.GenerateFromGraph(context, seed);
         }
 
         public IReadOnlyList<string> GetGraphLayerNames(IMoyvaTwcGraphBindingContext context)

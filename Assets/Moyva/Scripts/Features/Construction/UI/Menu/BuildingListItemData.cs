@@ -27,12 +27,35 @@ namespace Kruty1918.Moyva.Construction.UI
         /// <summary>True when this item is currently allowed to be clicked in the build menu.</summary>
         public bool IsInteractable { get; }
 
-        public BuildingListItemData(string id, string displayName, BuildingCategory category, Sprite icon = null, bool isInteractable = true)
-            : this(id, displayName, category, icon, null, isInteractable)
+        /// <summary>Concrete global availability reason shown for a disabled item.</summary>
+        public string UnavailableReason { get; }
+
+        public BuildingListItemData(
+            string id,
+            string displayName,
+            BuildingCategory category,
+            Sprite icon = null,
+            bool isInteractable = true,
+            string unavailableReason = null)
+            : this(
+                id,
+                displayName,
+                category,
+                icon,
+                null,
+                isInteractable,
+                unavailableReason)
         {
         }
 
-        public BuildingListItemData(string id, string displayName, BuildingCategory category, Sprite icon, Sprite previewSprite, bool isInteractable)
+        public BuildingListItemData(
+            string id,
+            string displayName,
+            BuildingCategory category,
+            Sprite icon,
+            Sprite previewSprite,
+            bool isInteractable,
+            string unavailableReason = null)
         {
             Id = id;
             DisplayName = string.IsNullOrWhiteSpace(displayName) ? id : displayName;
@@ -40,6 +63,10 @@ namespace Kruty1918.Moyva.Construction.UI
             Icon = icon;
             PreviewSprite = previewSprite;
             IsInteractable = isInteractable;
+            UnavailableReason = isInteractable
+                || string.IsNullOrWhiteSpace(unavailableReason)
+                ? null
+                : unavailableReason.Trim();
         }
     }
 }

@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
     /// <see cref="TileRegistrySO"/> з кешем <see cref="TileTypeDefinition"/> за TileId.
     /// Використовується системами руху/патфайндингу та будівництва.
     /// </summary>
-    internal sealed class TileSettingsService : ITileSettingsService
+    internal sealed class TileSettingsService : ITileSettingsService, ITerrainTagQuery
     {
         /// <summary>
         /// Локальний кеш визначень тайлів для O(1) доступу за TileId.
@@ -99,6 +99,18 @@ namespace Kruty1918.Moyva.Grid.Runtime
                 return 0f;
 
             return _layerProfiles.GetSurfaceOffset(tileTypeId);
+        }
+
+        public bool HasTerrainTag(string tileTypeId, string tag)
+        {
+            if (String.IsNullOrEmpty(tileTypeId)
+                || string.IsNullOrWhiteSpace(tag)
+                || _layerProfiles == null)
+            {
+                return false;
+            }
+
+            return _layerProfiles.HasTag(tileTypeId, tag);
         }
     }
 }

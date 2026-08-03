@@ -17,9 +17,32 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Debug.Log($"{LogTag} PLAN chunks={chunkCount}, stackSamples={stackSamples}, resolvedTerrain={resolvedTerrain}, objectCandidates={objectCandidates}.");
         }
 
-        public void LogChunkMesh(string chunkName, int vertices, int indices)
+        public void LogChunkMesh(
+            string chunkName,
+            int sourceVertices,
+            int sourceIndices,
+            int sourceTriangles,
+            int processedVertices,
+            int processedIndices,
+            int processedTriangles,
+            int emittedVertices,
+            int emittedIndices,
+            int emittedTriangles,
+            int unreferencedVerticesRemoved,
+            int exactDuplicateVerticesRemoved)
         {
-            Debug.Log($"{LogTag} CHUNK mesh='{chunkName}', vertices={vertices}, indices={indices}.");
+            int culledFaces = Mathf.Max(
+                0,
+                sourceTriangles - processedTriangles);
+            Debug.Log(
+                $"{LogTag} CHUNK mesh='{chunkName}', sourceVertices={sourceVertices}, " +
+                $"sourceIndices={sourceIndices}, sourceTriangles={sourceTriangles}, " +
+                $"processedVertices={processedVertices}, processedIndices={processedIndices}, " +
+                $"processedTriangles={processedTriangles}, emittedVertices={emittedVertices}, " +
+                $"emittedIndices={emittedIndices}, emittedTriangles={emittedTriangles}, " +
+                $"culledFaces={culledFaces}, " +
+                $"unreferencedVerticesRemoved={Mathf.Max(0, unreferencedVerticesRemoved)}, " +
+                $"exactDuplicateVerticesRemoved={Mathf.Max(0, exactDuplicateVerticesRemoved)}.");
         }
 
         public void LogLegacyAttempt(string caller)

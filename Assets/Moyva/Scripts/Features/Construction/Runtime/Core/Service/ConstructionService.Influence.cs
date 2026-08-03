@@ -39,7 +39,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!anyInfluenceCenterDefined)
             {
                 if (VerboseLogs)
-                    Debug.Log("[Construction] IsBlockedByInfluenceZone: RuleDisabled - немає ратуші або замку у реєстрі");
+                    Debug.Log("[Construction] IsBlockedByInfluenceZone: RuleDisabled - немає центру поселення з SettlementCenterBuildingModule у реєстрі");
                 return false;
             }
 
@@ -81,7 +81,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (requireInfluenceCenterInRange && !hasInfluenceCenterInRange)
             {
                 if (VerboseLogs)
-                    Debug.Log($"[Construction] IsBlockedByInfluenceZone: BLOCKED - потрібна ратуша або замок у радіусі {ruleRadius}");
+                    Debug.Log($"[Construction] IsBlockedByInfluenceZone: BLOCKED - потрібен центр поселення у радіусі {ruleRadius}");
                 return true;
             }
 
@@ -278,8 +278,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private static bool IsInfluenceCenter(BuildingDefinition definition)
         {
-            return BuildingDefinitionCapabilities.IsTownHall(definition)
-                || BuildingDefinitionCapabilities.IsCastle(definition);
+            return BuildingDefinitionCapabilities.IsSettlementCenter(
+                definition);
         }
     }
 }

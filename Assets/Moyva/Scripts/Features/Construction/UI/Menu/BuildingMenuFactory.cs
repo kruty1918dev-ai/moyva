@@ -17,7 +17,8 @@ namespace Kruty1918.Moyva.Construction.UI
 			IBuildingRegistry buildingRegistry,
 			UnityEngine.Object context,
 			Func<BuildingDefinition, bool> isInteractableSelector = null,
-			Func<BuildingDefinition, bool> includeSelector = null)
+			Func<BuildingDefinition, bool> includeSelector = null,
+			Func<BuildingDefinition, string> unavailableReasonSelector = null)
 		{
 			Debug.Log($"[BuildMenuItems] START: allBuildings.Length={(allBuildings?.Length ?? 0)}, registry={(buildingRegistry != null ? "ok" : "NULL")}");
 
@@ -50,13 +51,23 @@ namespace Kruty1918.Moyva.Construction.UI
 					var sprite = ExtractSpriteForMenu(building, buildingRegistry, context);
 					var previewSprite = building.RuntimePreview;
 					bool isInteractable = isInteractableSelector == null || isInteractableSelector(building);
+					string unavailableReason = isInteractable
+						? null
+						: unavailableReasonSelector?.Invoke(building);
 					Debug.Log(
 						$"[Construction UI] → id='{building.Id}' display='{building.DisplayName}' " +
 						$"category={building.Category} prefab={(building.Prefab != null ? building.Prefab.name : "NULL")} " +
 						$"icon={(building.Icon != null ? building.Icon.name : "NULL")} " +
 						$"extractedSprite={(sprite != null ? sprite.name : "NULL")}",
 						context);
-					result.Add(new BuildingListItemData(building.Id, GetDisplayName(building), building.Category, sprite, previewSprite, isInteractable));
+					result.Add(new BuildingListItemData(
+						building.Id,
+						GetDisplayName(building),
+						building.Category,
+						sprite,
+						previewSprite,
+						isInteractable,
+						unavailableReason));
 				}
 			}
 

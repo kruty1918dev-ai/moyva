@@ -98,7 +98,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         private bool HasInfluenceRadius(BuildingDefinition def)
-            => def != null && (BuildingDefinitionCapabilities.IsTownHall(def) || BuildingDefinitionCapabilities.IsCastle(def));
+            => BuildingDefinitionCapabilities.IsSettlementCenter(def);
 
         private int ResolveInfluenceRadius(BuildingDefinition def)
             => BuildingDefinitionCapabilities.GetInfluenceRadius(def, _townHallBuildRadius);

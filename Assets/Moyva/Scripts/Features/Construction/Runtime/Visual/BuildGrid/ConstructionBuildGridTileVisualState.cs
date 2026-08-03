@@ -6,5 +6,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         General = 1,
         Invalid = 2,
         Valid = 3,
+        Unaffordable = 4,
     }
 }

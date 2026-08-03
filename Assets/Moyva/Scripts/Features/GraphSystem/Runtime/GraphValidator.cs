@@ -38,7 +38,9 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             ValidateNullNodes(graph, report);
             ValidateNullConnections(graph, report);
             ValidateDuplicateIds(graph, report);
+            ValidateUniqueNodes(graph, report);
             ValidateLayerStates(graph, report);
+            ValidateConnectionLayers(graph, report);
             ValidateLayerReferences(graph, report);
 
             for (int i = 0; i < graph.Layers.Count; i++)
@@ -135,6 +137,48 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             }
         }
 
+        private static void ValidateUniqueNodes(
+            GraphAsset graph,
+            GraphValidationReport report)
+        {
+            if (graph?.Nodes == null)
+                return;
+
+            var participation = GraphNodeParticipationAnalyzer.Analyze(
+                graph.CreateExecutionScope(null));
+            var firstByType = new Dictionary<System.Type, NodeBase>();
+            for (int i = 0; i < graph.Nodes.Count; i++)
+            {
+                var node = graph.Nodes[i];
+                if (node == null)
+                    continue;
+
+                var nodeType = node.GetType();
+                if (!System.Attribute.IsDefined(
+                        nodeType,
+                        typeof(UniqueNodeAttribute))
+                    || !participation.IsAuthoritative(node.NodeId))
+                {
+                    continue;
+                }
+
+                if (!firstByType.TryGetValue(nodeType, out var first))
+                {
+                    firstByType[nodeType] = node;
+                    continue;
+                }
+
+                report.Add(new GraphValidationIssue(
+                    "NODE_UNIQUE_DUPLICATE",
+                    ValidationSeverity.Error,
+                    $"Graph contains multiple unique nodes of type " +
+                    $"'{nodeType.Name}'. Keep only one. First node: " +
+                    $"{first.NodeId}.",
+                    layerId: node.LayerId,
+                    nodeId: node.NodeId));
+            }
+        }
+
         private void ValidateLayerStates(GraphAsset graph, GraphValidationReport report)
         {
             var layerIds = new HashSet<string>();
@@ -168,6 +212,46 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         nodeId: node.NodeId,
                         canAutoFix: true));
                 }
+            }
+        }
+
+        private static void ValidateConnectionLayers(
+            GraphAsset graph,
+            GraphValidationReport report)
+        {
+            if (graph?.Connections == null)
+                return;
+
+            foreach (var connection in graph.Connections)
+            {
+                if (connection == null)
+                    continue;
+
+                var source = graph.GetNodeById(connection.SourceNodeId);
+                var target = graph.GetNodeById(connection.TargetNodeId);
+                if (source == null
+                    || target == null
+                    || GraphAsset.IsGlobalNode(source)
+                    || GraphAsset.IsGlobalNode(target)
+                    || source.LayerId == target.LayerId)
+                {
+                    continue;
+                }
+
+                bool explicitLayerReference =
+                    target.GetType().Name == "LayerMaskReferenceNode"
+                    || source.GetType().Name == "LayerMaskReferenceNode";
+                if (explicitLayerReference)
+                    continue;
+
+                report.Add(new GraphValidationIssue(
+                    "CONNECTION_CROSS_LAYER",
+                    ValidationSeverity.Error,
+                    $"Connection crosses layers: '{source.Title}' ({source.LayerId}) -> '{target.Title}' ({target.LayerId}).",
+                    layerId: source.LayerId,
+                    nodeId: target.NodeId,
+                    connectionId: connection.ConnectionId,
+                    canAutoFix: true));
             }
         }
 
@@ -356,13 +440,15 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             if (scope == null)
                 return;
 
-            var connectedToOutput = BuildOutputReachability(scope);
-            ValidateCycles(scope, connectedToOutput, report);
-            ValidateConnections(scope, connectedToOutput, report);
-            ValidateRequiredInputs(scope, connectedToOutput, report);
-            ValidateTwcModifierNodes(scope, connectedToOutput, report);
-            ValidateObjectPlacementNodes(scope, connectedToOutput, report);
-            ValidateSubgraphNodes(scope, connectedToOutput, report);
+            var participation = GraphNodeParticipationAnalyzer.Analyze(scope);
+            var authoritativeNodeIds = new HashSet<string>(
+                participation.AuthoritativeNodeIds);
+            ValidateCycles(scope, authoritativeNodeIds, report);
+            ValidateConnections(scope, authoritativeNodeIds, report);
+            ValidateRequiredInputs(scope, authoritativeNodeIds, report);
+            ValidateTwcModifierNodes(scope, authoritativeNodeIds, report);
+            ValidateObjectPlacementNodes(scope, authoritativeNodeIds, report);
+            ValidateSubgraphNodes(scope, authoritativeNodeIds, report);
         }
 
         private void ValidateCycles(
@@ -800,74 +886,6 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     graphId: scope.GraphId,
                     nodeId: node.NodeId));
             }
-        }
-
-        private static HashSet<string> BuildOutputReachability(
-            GraphExecutionScope scope)
-        {
-            var reachable = new HashSet<string>();
-            if (scope?.Nodes == null)
-                return reachable;
-
-            var nodesById = scope.Nodes
-                .Where(node =>
-                    node != null
-                    && !string.IsNullOrEmpty(node.NodeId))
-                .GroupBy(node => node.NodeId)
-                .ToDictionary(group => group.Key, group => group.First());
-            var stack = new Stack<string>();
-            foreach (var node in nodesById.Values)
-            {
-                if (node is IGraphOutputNode)
-                    stack.Push(node.NodeId);
-            }
-
-            if (stack.Count == 0)
-            {
-                reachable.UnionWith(nodesById.Keys);
-                return reachable;
-            }
-
-            var incomingByTarget = new Dictionary<string, List<string>>();
-            var connections = scope.Connections ?? System.Array.Empty<Connection>();
-            for (int i = 0; i < connections.Count; i++)
-            {
-                var connection = connections[i];
-                if (connection == null
-                    || !nodesById.ContainsKey(connection.SourceNodeId)
-                    || !nodesById.ContainsKey(connection.TargetNodeId))
-                {
-                    continue;
-                }
-
-                if (!incomingByTarget.TryGetValue(
-                        connection.TargetNodeId,
-                        out var sources))
-                {
-                    sources = new List<string>();
-                    incomingByTarget[connection.TargetNodeId] = sources;
-                }
-
-                sources.Add(connection.SourceNodeId);
-            }
-
-            while (stack.Count > 0)
-            {
-                string nodeId = stack.Pop();
-                if (!reachable.Add(nodeId)
-                    || !incomingByTarget.TryGetValue(nodeId, out var sources))
-                {
-                    continue;
-                }
-
-                for (int i = 0; i < sources.Count; i++)
-                {
-                    if (!reachable.Contains(sources[i]))
-                        stack.Push(sources[i]);
-                }
-            }
-
-            return reachable;
         }
 
         private static bool IsAuthoritativeConnection(

@@ -8,8 +8,10 @@
         "UnityEditor.TestRunner",
         "Kruty1918.Moyva.Signals",
         "Kruty1918.Moyva.Construction",
+        "Kruty1918.Moyva.Construction.Editor",
         "Kruty1918.Moyva.EditorShared",
         "Kruty1918.Moyva.Grid",
+        "Kruty1918.Moyva.WorldCreation.API",
         "Kruty1918.Moyva.ObjectsMap",
         "Kruty1918.Moyva.FogOfWar",
         "Sirenix.OdinInspector.Attributes"

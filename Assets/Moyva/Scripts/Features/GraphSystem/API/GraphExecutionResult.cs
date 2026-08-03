@@ -2,6 +2,19 @@ using System.Collections.Generic;
 
 namespace Kruty1918.Moyva.GraphSystem.API
 {
+    /// <summary>
+    /// Describes how a node participates in one graph execution scope.
+    /// OutputPath means the node is physically upstream of an Output node,
+    /// GlobalContext means it configures the whole graph without a connection,
+    /// and Detached means it belongs only to a non-authoritative preview branch.
+    /// </summary>
+    public enum GraphNodeParticipation
+    {
+        OutputPath = 0,
+        GlobalContext = 1,
+        Detached = 2
+    }
+
     public sealed class GraphExecutionResult
     {
         public bool Success { get; }
@@ -180,6 +193,8 @@ namespace Kruty1918.Moyva.GraphSystem.API
         public int OrderIndex { get; }
         public int InputDependencyCount { get; }
         public bool IsConnectedToOutput { get; }
+        public GraphNodeParticipation Participation { get; }
+        public bool IsAuthoritative { get; }
 
         public NodeExecutionLog(string nodeId, string nodeTitle,
             NodeStatus status, string message, float durationMs,
@@ -189,7 +204,9 @@ namespace Kruty1918.Moyva.GraphSystem.API
             string graphId = null,
             int orderIndex = -1,
             int inputDependencyCount = 0,
-            bool isConnectedToOutput = true)
+            bool isConnectedToOutput = true,
+            GraphNodeParticipation? participation = null,
+            bool? isAuthoritative = null)
         {
             NodeId = nodeId;
             NodeTitle = nodeTitle;
@@ -203,6 +220,12 @@ namespace Kruty1918.Moyva.GraphSystem.API
             OrderIndex = orderIndex;
             InputDependencyCount = inputDependencyCount;
             IsConnectedToOutput = isConnectedToOutput;
+            Participation = participation
+                ?? (isConnectedToOutput
+                    ? GraphNodeParticipation.OutputPath
+                    : GraphNodeParticipation.Detached);
+            IsAuthoritative = isAuthoritative
+                ?? Participation != GraphNodeParticipation.Detached;
         }
     }
 }

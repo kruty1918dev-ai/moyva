@@ -45,15 +45,18 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 return outputCardinalityError;
 
             var layerMaskRegistry = EnsureLayerMaskRegistry(context);
-            var connectedToOutput = BuildOutputReachability(scope);
+            var participation = GraphNodeParticipationAnalyzer.Analyze(scope);
 
-            var uniqueNodeError = ValidateUniqueNodes(scope, logs, connectedToOutput);
+            var uniqueNodeError = ValidateUniqueNodes(scope, logs, participation);
             if (uniqueNodeError != null)
                 return uniqueNodeError;
 
             using var randomScope = new GraphRandomScope(context.Seed);
 
-            var plan = BuildExecutionPlan(scope, connectedToOutput, logs);
+            var plan = BuildExecutionPlan(
+                scope,
+                participation.AuthoritativeNodeIds,
+                logs);
             if (!plan.Success)
                 return CreatePlanFailureResult(scope, plan, logs);
 
@@ -65,7 +68,12 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
             for (int orderIndex = 0; orderIndex < plan.NodesInExecutionOrder.Count; orderIndex++)
             {
                 var node = plan.NodesInExecutionOrder[orderIndex];
-                bool isConnectedToOutput = connectedToOutput.Contains(node.NodeId);
+                bool isConnectedToOutput =
+                    participation.IsConnectedToOutput(node.NodeId);
+                bool isAuthoritative =
+                    participation.IsAuthoritative(node.NodeId);
+                GraphNodeParticipation nodeParticipation =
+                    participation.GetParticipation(node.NodeId);
                 context.Cancellation.ThrowIfCancellationRequested();
 
                 int dependencyCount = plan.GetIncomingConnections(node.NodeId).Count;
@@ -78,20 +86,22 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         out var inputError))
                 {
                     string message = FormatNodeFailure(scope, node, inputError);
-                    if (!isConnectedToOutput)
+                    if (!isAuthoritative)
                         message = AppendMessage(message, "Not connected to Output.");
                     logs.Add(new NodeExecutionLog(
                         node.NodeId,
                         node.Title,
-                        isConnectedToOutput ? NodeStatus.Error : NodeStatus.Warning,
+                        isAuthoritative ? NodeStatus.Error : NodeStatus.Warning,
                         message,
                         0f,
                         layerId: scope?.LayerId,
                         graphId: scope?.GraphId,
                         orderIndex: orderIndex,
                         inputDependencyCount: dependencyCount,
-                        isConnectedToOutput: isConnectedToOutput));
-                    if (!isConnectedToOutput)
+                        isConnectedToOutput: isConnectedToOutput,
+                        participation: nodeParticipation,
+                        isAuthoritative: isAuthoritative));
+                    if (!isAuthoritative)
                         continue;
 
                     return new GraphExecutionResult(
@@ -123,10 +133,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     long allocOnError = GetThreadAllocatedBytes() - allocBefore;
                     long iterOnError = context.ConsumeNodeIterations();
                     string message = FormatNodeFailure(scope, node, ex.Message);
-                    if (!isConnectedToOutput)
+                    if (!isAuthoritative)
                         message = AppendMessage(message, "Not connected to Output.");
                     logs.Add(new NodeExecutionLog(node.NodeId, node.Title,
-                        isConnectedToOutput ? NodeStatus.Error : NodeStatus.Warning,
+                        isAuthoritative ? NodeStatus.Error : NodeStatus.Warning,
                         message, sw.ElapsedMilliseconds,
                         allocOnError,
                         iterOnError,
@@ -134,8 +144,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         scope?.GraphId,
                         orderIndex,
                         dependencyCount,
-                        isConnectedToOutput));
-                    if (!isConnectedToOutput)
+                        isConnectedToOutput,
+                        nodeParticipation,
+                        isAuthoritative));
+                    if (!isAuthoritative)
                         continue;
 
                     return new GraphExecutionResult(
@@ -168,9 +180,9 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     ? FormatNodeFailure(scope, node, output.Message)
                     : output.Message;
                 NodeStatus logStatus = output.Status;
-                if (!isConnectedToOutput)
+                if (!isAuthoritative)
                     logStatus = NodeStatus.Warning;
-                if (!isConnectedToOutput)
+                if (!isAuthoritative)
                     outputMessage = AppendMessage(outputMessage, "Not connected to Output.");
 
                 logs.Add(new NodeExecutionLog(node.NodeId, node.Title,
@@ -181,11 +193,13 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     scope?.GraphId,
                     orderIndex,
                     dependencyCount,
-                    isConnectedToOutput));
+                    isConnectedToOutput,
+                    nodeParticipation,
+                    isAuthoritative));
 
                 if (output.Status == NodeStatus.Error)
                 {
-                    if (!isConnectedToOutput)
+                    if (!isAuthoritative)
                         continue;
 
                     return new GraphExecutionResult(
@@ -286,15 +300,18 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 return outputCardinalityError;
 
             var layerMaskRegistry = EnsureLayerMaskRegistry(context);
-            var connectedToOutput = BuildOutputReachability(scope);
+            var participation = GraphNodeParticipationAnalyzer.Analyze(scope);
 
-            var uniqueNodeError = ValidateUniqueNodes(scope, logs, connectedToOutput);
+            var uniqueNodeError = ValidateUniqueNodes(scope, logs, participation);
             if (uniqueNodeError != null)
                 return uniqueNodeError;
 
             using var randomScope = new GraphRandomScope(context.Seed);
 
-            var plan = BuildExecutionPlan(scope, connectedToOutput, logs);
+            var plan = BuildExecutionPlan(
+                scope,
+                participation.AuthoritativeNodeIds,
+                logs);
             if (!plan.Success)
                 return CreatePlanFailureResult(scope, plan, logs);
 
@@ -308,7 +325,12 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 await YieldControlAsync(randomScope);
                 context.Cancellation.ThrowIfCancellationRequested();
                 var node = plan.NodesInExecutionOrder[i];
-                bool isConnectedToOutput = connectedToOutput.Contains(node.NodeId);
+                bool isConnectedToOutput =
+                    participation.IsConnectedToOutput(node.NodeId);
+                bool isAuthoritative =
+                    participation.IsAuthoritative(node.NodeId);
+                GraphNodeParticipation nodeParticipation =
+                    participation.GetParticipation(node.NodeId);
                 context.Progress?.Report((float)i / plan.NodesInExecutionOrder.Count);
 
                 int dependencyCount = plan.GetIncomingConnections(node.NodeId).Count;
@@ -321,20 +343,22 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         out var inputError))
                 {
                     string message = FormatNodeFailure(scope, node, inputError);
-                    if (!isConnectedToOutput)
+                    if (!isAuthoritative)
                         message = AppendMessage(message, "Not connected to Output.");
                     logs.Add(new NodeExecutionLog(
                         node.NodeId,
                         node.Title,
-                        isConnectedToOutput ? NodeStatus.Error : NodeStatus.Warning,
+                        isAuthoritative ? NodeStatus.Error : NodeStatus.Warning,
                         message,
                         0f,
                         layerId: scope?.LayerId,
                         graphId: scope?.GraphId,
                         orderIndex: i,
                         inputDependencyCount: dependencyCount,
-                        isConnectedToOutput: isConnectedToOutput));
-                    if (!isConnectedToOutput)
+                        isConnectedToOutput: isConnectedToOutput,
+                        participation: nodeParticipation,
+                        isAuthoritative: isAuthoritative));
+                    if (!isAuthoritative)
                         continue;
 
                     return new GraphExecutionResult(
@@ -371,10 +395,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     long allocOnError = GetThreadAllocatedBytes() - allocBefore;
                     long iterOnError = context.ConsumeNodeIterations();
                     string message = FormatNodeFailure(scope, node, ex.Message);
-                    if (!isConnectedToOutput)
+                    if (!isAuthoritative)
                         message = AppendMessage(message, "Not connected to Output.");
                     logs.Add(new NodeExecutionLog(node.NodeId, node.Title,
-                        isConnectedToOutput ? NodeStatus.Error : NodeStatus.Warning,
+                        isAuthoritative ? NodeStatus.Error : NodeStatus.Warning,
                         message, sw.ElapsedMilliseconds,
                         allocOnError,
                         iterOnError,
@@ -382,8 +406,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         scope?.GraphId,
                         i,
                         dependencyCount,
-                        isConnectedToOutput));
-                    if (!isConnectedToOutput)
+                        isConnectedToOutput,
+                        nodeParticipation,
+                        isAuthoritative));
+                    if (!isAuthoritative)
                         continue;
 
                     return new GraphExecutionResult(
@@ -416,9 +442,9 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     ? FormatNodeFailure(scope, node, output.Message)
                     : output.Message;
                 NodeStatus logStatus = output.Status;
-                if (!isConnectedToOutput)
+                if (!isAuthoritative)
                     logStatus = NodeStatus.Warning;
-                if (!isConnectedToOutput)
+                if (!isAuthoritative)
                     outputMessage = AppendMessage(outputMessage, "Not connected to Output.");
 
                 logs.Add(new NodeExecutionLog(node.NodeId, node.Title,
@@ -429,11 +455,13 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     scope?.GraphId,
                     i,
                     dependencyCount,
-                    isConnectedToOutput));
+                    isConnectedToOutput,
+                    nodeParticipation,
+                    isAuthoritative));
 
                 if (output.Status == NodeStatus.Error)
                 {
-                    if (!isConnectedToOutput)
+                    if (!isAuthoritative)
                         continue;
 
                     return new GraphExecutionResult(
@@ -823,17 +851,20 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
 
         private static GraphExecutionPlan BuildExecutionPlan(
             GraphExecutionScope scope,
-            HashSet<string> connectedToOutput,
+            IReadOnlyCollection<string> authoritativeNodeIds,
             List<NodeExecutionLog> logs)
         {
             if (scope?.Nodes == null)
                 return TopologicalSorter.BuildPlan(scope);
 
+            var authoritativeIds = authoritativeNodeIds as ISet<string>
+                ?? new HashSet<string>(
+                    authoritativeNodeIds ?? Array.Empty<string>(),
+                    StringComparer.Ordinal);
             var validNodes = scope.Nodes
                 .Where(node => node != null && !string.IsNullOrEmpty(node.NodeId))
                 .ToList();
-            if (connectedToOutput == null
-                || connectedToOutput.Count >= validNodes.Count)
+            if (authoritativeIds.Count >= validNodes.Count)
             {
                 return TopologicalSorter.BuildPlan(scope);
             }
@@ -842,10 +873,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 validNodes.Select(node => node.NodeId),
                 StringComparer.Ordinal);
             var authoritativeNodes = validNodes
-                .Where(node => connectedToOutput.Contains(node.NodeId))
+                .Where(node => authoritativeIds.Contains(node.NodeId))
                 .ToList();
             var detachedNodes = validNodes
-                .Where(node => !connectedToOutput.Contains(node.NodeId))
+                .Where(node => !authoritativeIds.Contains(node.NodeId))
                 .ToList();
 
             var authoritativeConnections = new List<Connection>();
@@ -863,8 +894,8 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 if (!sourceExists || !targetExists)
                 {
                     bool touchesAuthoritative =
-                        (sourceExists && connectedToOutput.Contains(connection.SourceNodeId))
-                        || (targetExists && connectedToOutput.Contains(connection.TargetNodeId));
+                        (sourceExists && authoritativeIds.Contains(connection.SourceNodeId))
+                        || (targetExists && authoritativeIds.Contains(connection.TargetNodeId));
                     if (touchesAuthoritative)
                         return TopologicalSorter.BuildPlan(scope);
 
@@ -878,8 +909,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 }
 
                 validConnections.Add(connection);
-                bool sourceAuthoritative = connectedToOutput.Contains(connection.SourceNodeId);
-                bool targetAuthoritative = connectedToOutput.Contains(connection.TargetNodeId);
+                bool sourceAuthoritative =
+                    authoritativeIds.Contains(connection.SourceNodeId);
+                bool targetAuthoritative =
+                    authoritativeIds.Contains(connection.TargetNodeId);
                 if (sourceAuthoritative && targetAuthoritative)
                     authoritativeConnections.Add(connection);
                 else if (!sourceAuthoritative && !targetAuthoritative)
@@ -942,71 +975,6 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 executionOrder,
                 incoming,
                 outgoing);
-        }
-
-        private static HashSet<string> BuildOutputReachability(GraphExecutionScope scope)
-        {
-            var reachable = new HashSet<string>(StringComparer.Ordinal);
-            if (scope?.Nodes == null)
-                return reachable;
-
-            var nodesById = scope.Nodes
-                .Where(node => node != null && !string.IsNullOrEmpty(node.NodeId))
-                .GroupBy(node => node.NodeId, StringComparer.Ordinal)
-                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
-            var stack = new Stack<string>();
-            foreach (var node in nodesById.Values)
-            {
-                if (node is IGraphOutputNode)
-                    stack.Push(node.NodeId);
-            }
-
-            // Standalone test/subgraph scopes without an explicit Output keep their
-            // historical behavior: every node is considered part of the result.
-            if (stack.Count == 0)
-            {
-                reachable.UnionWith(nodesById.Keys);
-                return reachable;
-            }
-
-            var incomingByTarget = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-            var connections = scope.Connections ?? Array.Empty<Connection>();
-            for (int i = 0; i < connections.Count; i++)
-            {
-                var connection = connections[i];
-                if (connection == null
-                    || !nodesById.ContainsKey(connection.SourceNodeId)
-                    || !nodesById.ContainsKey(connection.TargetNodeId))
-                {
-                    continue;
-                }
-
-                if (!incomingByTarget.TryGetValue(connection.TargetNodeId, out var sources))
-                {
-                    sources = new List<string>();
-                    incomingByTarget[connection.TargetNodeId] = sources;
-                }
-
-                sources.Add(connection.SourceNodeId);
-            }
-
-            while (stack.Count > 0)
-            {
-                string nodeId = stack.Pop();
-                if (!reachable.Add(nodeId))
-                    continue;
-
-                if (!incomingByTarget.TryGetValue(nodeId, out var sources))
-                    continue;
-                for (int i = 0; i < sources.Count; i++)
-                {
-                    string sourceId = sources[i];
-                    if (!string.IsNullOrEmpty(sourceId) && !reachable.Contains(sourceId))
-                        stack.Push(sourceId);
-                }
-            }
-
-            return reachable;
         }
 
         private static void BuildConnectionMaps(
@@ -1123,7 +1091,7 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
         private static GraphExecutionResult ValidateUniqueNodes(
             GraphExecutionScope scope,
             List<NodeExecutionLog> logs,
-            ISet<string> connectedToOutput)
+            GraphNodeParticipationAnalysis participation)
         {
             if (scope?.Nodes == null)
                 return null;
@@ -1137,8 +1105,13 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                 var nodeType = node.GetType();
                 if (!Attribute.IsDefined(nodeType, typeof(UniqueNodeAttribute)))
                     continue;
-                bool authoritative = connectedToOutput == null
-                    || connectedToOutput.Contains(node.NodeId);
+                bool isConnectedToOutput =
+                    participation?.IsConnectedToOutput(node.NodeId) ?? true;
+                bool authoritative =
+                    participation?.IsAuthoritative(node.NodeId) ?? true;
+                GraphNodeParticipation nodeParticipation =
+                    participation?.GetParticipation(node.NodeId)
+                    ?? GraphNodeParticipation.OutputPath;
                 if (!authoritative)
                 {
                     logs.Add(new NodeExecutionLog(
@@ -1149,7 +1122,9 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                         0f,
                         layerId: scope?.LayerId,
                         graphId: scope?.GraphId,
-                        isConnectedToOutput: false));
+                        isConnectedToOutput: isConnectedToOutput,
+                        participation: nodeParticipation,
+                        isAuthoritative: false));
                     continue;
                 }
 
@@ -1167,7 +1142,10 @@ namespace Kruty1918.Moyva.GraphSystem.Runtime
                     message,
                     0f,
                     layerId: scope?.LayerId,
-                    graphId: scope?.GraphId));
+                    graphId: scope?.GraphId,
+                    isConnectedToOutput: isConnectedToOutput,
+                    participation: nodeParticipation,
+                    isAuthoritative: true));
                 return new GraphExecutionResult(
                     node.NodeId,
                     message,

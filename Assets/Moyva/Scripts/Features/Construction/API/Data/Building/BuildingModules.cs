@@ -46,6 +46,47 @@ namespace Kruty1918.Moyva.Construction.API
         Global = 3,
     }
 
+    public enum PlacementRuleMergeMode
+    {
+        [InspectorName("Успадкувати глобальне правило")]
+        Inherit = 0,
+        [InspectorName("Замінити для цієї будівлі")]
+        Override = 1,
+        [InspectorName("Вимкнути для цієї будівлі")]
+        Disabled = 2,
+    }
+
+    public enum FogPlacementVisibility
+    {
+        [InspectorName("Лише видимі")]
+        Visible = 0,
+        [InspectorName("Досліджені або видимі")]
+        ExploredOrVisible = 1,
+        [InspectorName("Будь-які")]
+        Any = 2,
+    }
+
+    public enum BuildingLimitScope
+    {
+        PerOwner = 0,
+        Global = 1,
+    }
+
+    public enum BuildingLimitOverflowPolicy
+    {
+        [InspectorName("Legacy compatibility")]
+        Legacy = 0,
+        Block = 1,
+        MovePending = 2,
+        RelocateExisting = 3,
+    }
+
+    public enum BuildingPrerequisiteMatchMode
+    {
+        All = 0,
+        Any = 1,
+    }
+
     [Serializable]
     public abstract class BuildingModuleDefinition
     {
@@ -268,11 +309,157 @@ namespace Kruty1918.Moyva.Construction.API
     }
 
     [Serializable]
+    public sealed class TerrainPlacementRuleModule : BuildingModuleDefinition
+    {
+        [Tooltip("Визначає, чи модуль успадковує, замінює або вимикає глобальні terrain-правила для цієї будівлі.")]
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode = PlacementRuleMergeMode.Inherit;
+
+        [Tooltip("Якщо список непорожній, будівлю можна ставити лише на terrain із цими ID.")]
+        [LabelText("Дозволені terrain ID")]
+        public string[] AllowedTerrainIds = Array.Empty<string>();
+
+        [Tooltip("Забороняє розміщення будівлі на terrain із переліченими ID.")]
+        [LabelText("Заборонені terrain ID")]
+        public string[] BlockedTerrainIds = Array.Empty<string>();
+
+        [Tooltip("Якщо список непорожній, terrain повинен мати хоча б один із цих семантичних тегів.")]
+        [LabelText("Дозволені terrain-теги")]
+        public string[] AllowedTerrainTags = Array.Empty<string>();
+
+        [Tooltip("Забороняє terrain із будь-яким із цих семантичних тегів.")]
+        [LabelText("Заборонені terrain-теги")]
+        public string[] BlockedTerrainTags = Array.Empty<string>();
+
+        [Tooltip("Якщо список непорожній, дозволяє розміщення лише на перелічених рівнях terrain.")]
+        [LabelText("Дозволені рівні terrain")]
+        public int[] AllowedTerrainLevels = Array.Empty<int>();
+
+        [Tooltip("Забороняє розміщення на перелічених рівнях terrain.")]
+        [LabelText("Заборонені рівні terrain")]
+        public int[] BlockedTerrainLevels = Array.Empty<int>();
+
+        [Tooltip("Клітинки за цими зміщеннями від footprint повинні існувати у згенерованій мапі.")]
+        [LabelText("Обов'язкові сусідні позиції")]
+        public Vector2Int[] RequiredNeighborOffsets =
+            Array.Empty<Vector2Int>();
+
+        [Tooltip("Дозволяє будівництво на terrain із додатним рівнем висоти.")]
+        [LabelText("Дозволити пагорби")]
+        public bool AllowHills = true;
+
+        [Tooltip("Забороняє клітинки поруч із переходом між різними рівнями terrain.")]
+        [LabelText("Блокувати край перепаду")]
+        public bool BlockEdgeTerrainTiles;
+
+        [Tooltip("Вимагає однакової висоти поверхні для всіх клітинок footprint будівлі.")]
+        [LabelText("Потребує рівної основи")]
+        public bool RequiresFlatGround;
+    }
+
+    [Serializable]
+    public sealed class FogPlacementRuleModule : BuildingModuleDefinition
+    {
+        [Tooltip("Визначає, чи модуль успадковує, замінює або вимикає глобальні fog-правила для цієї будівлі.")]
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode = PlacementRuleMergeMode.Override;
+
+        [Tooltip("Задає мінімальний стан дослідження клітинки, потрібний для розміщення.")]
+        [LabelText("Потрібний стан туману")]
+        public FogPlacementVisibility Visibility = FogPlacementVisibility.Visible;
+    }
+
+    [Serializable]
+    public sealed class SettlementInfluenceRequirementBuildingModule : BuildingModuleDefinition
+    {
+        [Tooltip("Визначає, чи модуль успадковує, замінює або вимикає глобальні influence-правила для цієї будівлі.")]
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode = PlacementRuleMergeMode.Override;
+
+        [Tooltip("Вимагає, щоб увесь footprint покривався зоною центру поселення того самого власника.")]
+        [LabelText("Потребує впливу")]
+        public bool RequiresInfluence = true;
+
+        [Tooltip("Забороняє новому центру поселення перетинати зону іншого центру.")]
+        [LabelText("Блокувати накладання центрів")]
+        public bool BlockOverlappingCenters;
+
+        [Min(0)]
+        [Tooltip("Додатково обмежує допустиму відстань до центру; 0 використовує радіус самого центру.")]
+        [LabelText("Максимальна відстань до центру")]
+        public int MaximumDistanceToCenter;
+    }
+
+    [Serializable]
+    public sealed class SpacingPlacementRuleModule : BuildingModuleDefinition
+    {
+        [Tooltip("Визначає, чи модуль успадковує, замінює або вимикає глобальне правило відступу.")]
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode = PlacementRuleMergeMode.Override;
+
+        [Min(0)]
+        [Tooltip("Мінімальна кількість вільних клітинок між footprint цієї та сусідніх будівель.")]
+        [LabelText("Мінімальний відступ")]
+        public int MinimumSpacing;
+    }
+
+    [Serializable]
+    public sealed class ReplacementPlacementRuleModule : BuildingModuleDefinition
+    {
+        [Tooltip("Визначає, чи модуль успадковує, замінює або вимикає правила заміни для цієї будівлі.")]
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode = PlacementRuleMergeMode.Override;
+
+        [Tooltip("Перелік точних building ID, які ця будівля може транзакційно замінити.")]
+        [LabelText("Замінювані building ID")]
+        public string[] ReplaceableBuildingIds = Array.Empty<string>();
+
+        [Tooltip("Перелік building-тегів, за якими дозволено транзакційну заміну.")]
+        [LabelText("Замінювані building-теги")]
+        public string[] ReplaceableBuildingTags = Array.Empty<string>();
+
+        [Tooltip("Дозволяє заміну лише споруди, яка належить тому самому власнику.")]
+        [LabelText("Лише той самий власник")]
+        public bool RequireSameOwner = true;
+    }
+
+    [Serializable]
+    public sealed class BuildingPrerequisiteModule : BuildingModuleDefinition
+    {
+        [Tooltip("Визначає, чи потрібно виконати всі критерії передумов або достатньо будь-якого одного.")]
+        [LabelText("Режим співставлення")]
+        public BuildingPrerequisiteMatchMode MatchMode = BuildingPrerequisiteMatchMode.All;
+
+        [Tooltip("Точні ID уже побудованих споруд, які можуть бути передумовами.")]
+        [LabelText("Building ID")]
+        public string[] BuildingIds = Array.Empty<string>();
+
+        [Tooltip("Семантичні теги вже побудованих споруд, які можуть бути передумовами.")]
+        [LabelText("Building-теги")]
+        public string[] BuildingTags = Array.Empty<string>();
+
+        [Min(1)]
+        [Tooltip("Мінімальна кількість споруд, потрібна для кожного перевірюваного критерію.")]
+        [LabelText("Мінімальна кількість")]
+        public int MinimumCount = 1;
+
+        [Tooltip("Визначає, чи модуль успадковує, замінює або вимикає legacy-передумови.")]
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode =
+            PlacementRuleMergeMode.Override;
+    }
+
+    [Serializable]
     public sealed class TileRequirementBuildingModule : BuildingModuleDefinition
     {
         [Tooltip("Набір умов по тайлах навколо будівлі.\nМодуль потрібен для споруд, ефективність або сама робота яких залежить від біому чи місцевості.\nНаприклад: ліс для лісоруба, вода для криниці або мосту.")]
         [LabelText("Вимоги")]
         public TileRequirementDefinition[] Requirements = Array.Empty<TileRequirementDefinition>();
+
+        [Tooltip("Визначає, чи модуль успадковує, замінює або вимикає legacy-вимоги до навколишніх тайлів.")]
+        [LabelText("Режим")]
+        public PlacementRuleMergeMode MergeMode =
+            PlacementRuleMergeMode.Override;
     }
 
     [Serializable]
@@ -282,6 +469,15 @@ namespace Kruty1918.Moyva.Construction.API
         [Min(0)]
         [LabelText("Максимум на гравця")]
         public int MaxBuildingsPerPlayer;
+
+        [Tooltip("Визначає, чи рахується ліміт окремо для власника або спільно для всього світу.")]
+        [LabelText("Область ліміту")]
+        public BuildingLimitScope LimitScope = BuildingLimitScope.PerOwner;
+
+        [Tooltip("Визначає поведінку прев'ю після досягнення ліміту: блокування, рух pending або relocation власної споруди.")]
+        [LabelText("При перевищенні")]
+        public BuildingLimitOverflowPolicy OverflowPolicy =
+            BuildingLimitOverflowPolicy.Legacy;
     }
 
     [Serializable]

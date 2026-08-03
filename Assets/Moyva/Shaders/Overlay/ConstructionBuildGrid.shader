@@ -6,6 +6,8 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
         _FillColor ("Fill Color", Color) = (0.70, 0.95, 1.00, 0.045)
         _ValidLineColor ("Valid Line Color", Color) = (0.28, 1.00, 0.42, 0.22)
         _ValidFillColor ("Valid Fill Color", Color) = (0.20, 0.82, 0.32, 0.045)
+        _UnaffordableLineColor ("Unaffordable Line Color", Color) = (1.00, 0.68, 0.12, 0.22)
+        _UnaffordableFillColor ("Unaffordable Fill Color", Color) = (0.95, 0.48, 0.08, 0.045)
         _InvalidLineColor ("Invalid Line Color", Color) = (1.00, 0.26, 0.22, 0.22)
         _InvalidFillColor ("Invalid Fill Color", Color) = (0.92, 0.12, 0.10, 0.045)
         _LineWidth ("Line Width", Range(0.005, 0.49)) = 0.035
@@ -52,6 +54,8 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
                 float4 _FillColor;
                 float4 _ValidLineColor;
                 float4 _ValidFillColor;
+                float4 _UnaffordableLineColor;
+                float4 _UnaffordableFillColor;
                 float4 _InvalidLineColor;
                 float4 _InvalidFillColor;
                 float4 _EdgeMask;
@@ -124,11 +128,15 @@ Shader "Moyva/Overlay/ConstructionBuildGrid"
                     float mask = SAMPLE_TEXTURE2D(_CellMaskTex, sampler_CellMaskTex, maskUv).r;
                     clip(mask - 0.16);
 
-                    // R8 values: 1/3 = General, 2/3 = Invalid, 1 = Valid.
-                    float invalidWeight = step(0.50, mask) * (1.0 - step(0.84, mask));
-                    float validWeight = step(0.84, mask);
+                    // R8 values: ~1/3 = General, 1/2 = Invalid,
+                    // 3/4 = spatially valid but unaffordable, 1 = Valid.
+                    float invalidWeight = step(0.42, mask) * (1.0 - step(0.67, mask));
+                    float unaffordableWeight = step(0.67, mask) * (1.0 - step(0.90, mask));
+                    float validWeight = step(0.90, mask);
                     lineColor = lerp(lineColor, _InvalidLineColor, invalidWeight);
                     fillColor = lerp(fillColor, _InvalidFillColor, invalidWeight);
+                    lineColor = lerp(lineColor, _UnaffordableLineColor, unaffordableWeight);
+                    fillColor = lerp(fillColor, _UnaffordableFillColor, unaffordableWeight);
                     lineColor = lerp(lineColor, _ValidLineColor, validWeight);
                     fillColor = lerp(fillColor, _ValidFillColor, validWeight);
                 }

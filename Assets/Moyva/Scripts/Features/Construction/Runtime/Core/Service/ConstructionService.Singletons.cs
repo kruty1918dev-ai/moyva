@@ -14,6 +14,68 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!TryGetSelectedDefinition(out BuildingDefinition definition))
                 return false;
 
+            bool hasExplicitLimit =
+                BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out BuildingPerPlayerLimitModule limitModule)
+                && Mathf.Max(0, limitModule.MaxBuildingsPerPlayer) > 0
+                && limitModule.OverflowPolicy
+                    != BuildingLimitOverflowPolicy.Legacy;
+            if (hasExplicitLimit)
+            {
+                if (limitModule.OverflowPolicy
+                        == BuildingLimitOverflowPolicy.Block
+                    || !IsBuildingLimitAtCapacity(
+                        _selectedBuildingId,
+                        _activeOwnerId,
+                        limitModule))
+                {
+                    return false;
+                }
+
+                if (TryFindPendingPlacementByBuildingId(
+                        _selectedBuildingId,
+                        out int overflowPendingIndex))
+                {
+                    Vector2Int pendingPosition =
+                        _pendingPlacements[overflowPendingIndex].Position;
+                    placementSucceeded = pendingPosition == targetPosition
+                        || TryMovePendingPlacement(
+                            pendingPosition,
+                            targetPosition);
+                    return true;
+                }
+
+                if (limitModule.OverflowPolicy
+                    == BuildingLimitOverflowPolicy.MovePending)
+                {
+                    // An already committed item is not movable under MovePending.
+                    // Continue through the normal query so the limit is reported
+                    // as a global availability blocker.
+                    return false;
+                }
+
+                if (!TryFindOwnedPlacedBuildingPosition(
+                        _selectedBuildingId,
+                        _activeOwnerId,
+                        out Vector2Int ownedOriginalPosition))
+                {
+                    // A global limit may be consumed entirely by other owners.
+                    // RelocateExisting never grants ownership of their buildings.
+                    return false;
+                }
+
+                BuildingPlacementUniquenessScope explicitScope =
+                    limitModule.LimitScope == BuildingLimitScope.Global
+                        ? BuildingPlacementUniquenessScope.Global
+                        : BuildingPlacementUniquenessScope.PerOwner;
+                return TryStartPlacedBuildingRelocation(
+                    targetPosition,
+                    ownedOriginalPosition,
+                    explicitScope,
+                    out placementSucceeded);
+            }
+
             BuildingPlacementUniquenessScope scope =
                 BuildingDefinitionCapabilities.GetPlacementUniquenessScope(definition);
             if (scope == BuildingPlacementUniquenessScope.None)
@@ -43,6 +105,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return false;
             }
 
+            return TryStartPlacedBuildingRelocation(
+                targetPosition,
+                originalPosition,
+                scope,
+                out placementSucceeded);
+        }
+
+        private bool TryStartPlacedBuildingRelocation(
+            Vector2Int targetPosition,
+            Vector2Int originalPosition,
+            BuildingPlacementUniquenessScope scope,
+            out bool placementSucceeded)
+        {
+            placementSucceeded = false;
             if (originalPosition == targetPosition)
             {
                 _lastActionMessage =
@@ -67,7 +143,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ownerId: _activeOwnerId,
                     attemptSource: ConstructionPlacementAttemptSource.PointerClick,
                     allowUniquePreviewRelocation: false));
-            if (!relocationResult.IsValid)
+            if (!relocationResult.CanPreview)
             {
                 _lastActionMessage = relocationResult.Reason;
                 LogPlacementAttempt(relocationResult, emitRejectedAction: true);
@@ -93,6 +169,90 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             return true;
+        }
+
+        private bool IsBuildingLimitAtCapacity(
+            string buildingId,
+            string ownerId,
+            BuildingPerPlayerLimitModule limitModule)
+        {
+            int limit = Mathf.Max(
+                0,
+                limitModule?.MaxBuildingsPerPlayer ?? 0);
+            if (limit <= 0 || string.IsNullOrWhiteSpace(buildingId))
+                return false;
+
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            var request = new ConstructionPlacementQueryRequest(
+                buildingId,
+                default,
+                ownerId: normalizedOwnerId,
+                includePendingPlacements: true);
+            int existingCount = limitModule.LimitScope
+                == BuildingLimitScope.Global
+                    ? CountPlacedBuildingsGlobally(buildingId, null)
+                    : CountPlacedBuildingsForOwner(
+                        buildingId,
+                        normalizedOwnerId,
+                        null);
+            int pendingCount = limitModule.LimitScope
+                == BuildingLimitScope.Global
+                    ? CountPendingBuildings(request)
+                    : CountPendingBuildingsForOwner(
+                        request,
+                        normalizedOwnerId);
+            return existingCount + pendingCount >= limit;
+        }
+
+        private bool TryFindOwnedPlacedBuildingPosition(
+            string buildingId,
+            string ownerId,
+            out Vector2Int position)
+        {
+            position = default;
+            if (string.IsNullOrWhiteSpace(buildingId))
+                return false;
+
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            foreach (var pair in _factionPlacedBuildings)
+            {
+                if (string.Equals(
+                        pair.Value.BuildingId,
+                        buildingId,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        pair.Value.FactionId,
+                        normalizedOwnerId,
+                        StringComparison.Ordinal))
+                {
+                    position = pair.Key;
+                    return true;
+                }
+            }
+
+            if (!string.Equals(
+                    normalizedOwnerId,
+                    NormalizeOwnerId(_activeOwnerId),
+                    StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            foreach (var pair in _playerPlacedBuildings)
+            {
+                if (!string.Equals(
+                        pair.Value,
+                        buildingId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                position = pair.Key;
+                return true;
+            }
+
+            return false;
         }
 
         private bool TryGetSelectedDefinition(out BuildingDefinition definition)

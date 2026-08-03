@@ -26,4 +26,14 @@ namespace Kruty1918.Moyva.Grid.API
         /// <param name="tileId">Ідентифікатор типу тайла / шару.</param>
         float GetSurfaceOffset(string tileId);
     }
+
+    /// <summary>
+    /// Optional semantic terrain classification used by data-driven gameplay
+    /// rules. Kept separate from <see cref="ITileSettingsService"/> so existing
+    /// movement-only implementations remain source-compatible.
+    /// </summary>
+    public interface ITerrainTagQuery
+    {
+        bool HasTerrainTag(string tileId, string tag);
+    }
 }

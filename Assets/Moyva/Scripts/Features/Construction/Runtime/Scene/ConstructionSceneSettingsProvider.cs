@@ -68,6 +68,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public bool BuildGridSurfacePlaneUseBuildableFilter => _sceneContext?.ResolveVisualProfile()?.BuildGridSurfacePlaneUseBuildableFilter ?? false;
         public float BuildGridFillAlpha => _sceneContext?.ResolveVisualProfile()?.BuildGridFillAlpha ?? 0.045f;
         public float BuildGridLineAlpha => _sceneContext?.ResolveVisualProfile()?.BuildGridLineAlpha ?? 0.22f;
+        public Color BuildGridValidLineColor => _sceneContext?.ResolveVisualProfile()?.BuildGridValidLineColor ?? new Color(0.28f, 1f, 0.42f, 0.9f);
+        public Color BuildGridValidFillColor => _sceneContext?.ResolveVisualProfile()?.BuildGridValidFillColor ?? new Color(0.20f, 0.82f, 0.32f, 0.16f);
+        public Color BuildGridUnaffordableLineColor => _sceneContext?.ResolveVisualProfile()?.BuildGridUnaffordableLineColor ?? new Color(1f, 0.68f, 0.12f, 0.9f);
+        public Color BuildGridUnaffordableFillColor => _sceneContext?.ResolveVisualProfile()?.BuildGridUnaffordableFillColor ?? new Color(0.95f, 0.48f, 0.08f, 0.16f);
+        public Color BuildGridInvalidLineColor => _sceneContext?.ResolveVisualProfile()?.BuildGridInvalidLineColor ?? new Color(1f, 0.26f, 0.22f, 0.9f);
+        public Color BuildGridInvalidFillColor => _sceneContext?.ResolveVisualProfile()?.BuildGridInvalidFillColor ?? new Color(0.92f, 0.12f, 0.10f, 0.16f);
         public float BuildGridLineWidthNormalized => _sceneContext?.ResolveVisualProfile()?.BuildGridLineWidthNormalized ?? 0.035f;
         public float BuildGridSurfaceOffsetY => _sceneContext?.ResolveVisualProfile()?.BuildGridSurfaceOffsetY ?? 0.06f;
         public float BuildGridTileInsetNormalized => _sceneContext?.ResolveVisualProfile()?.BuildGridTileInsetNormalized ?? 0.08f;

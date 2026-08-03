@@ -62,6 +62,10 @@ namespace Kruty1918.Moyva.Construction.UI
                     case BuildingPreviewState.Blocked:
                         previewStateLabel.text = "X Заблоковано";
                         break;
+                    case BuildingPreviewState.Unaffordable:
+                        previewStateLabel.text =
+                            "! Бракує ресурсів";
+                        break;
                     default:
                         previewStateLabel.text = "--";
                         break;

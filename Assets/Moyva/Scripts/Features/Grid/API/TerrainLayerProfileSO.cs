@@ -29,12 +29,35 @@ namespace Kruty1918.Moyva.Grid.API
         [Tooltip("Зсув висоти поверхні для розміщення юнітів/будівель.")]
         [SerializeField] private float _surfaceOffset;
 
+        [Tooltip("Семантичні gameplay-теги шару, наприклад water, land, forest, mountain або road.")]
+        [SerializeField] private string[] _tags = System.Array.Empty<string>();
+
         public string LayerId => _layerId;
         public string DisplayName => _displayName;
         public bool Walkable => _walkable;
         public float MovementCost => _movementCost;
         public bool BuildBlocked => _buildBlocked;
         public float SurfaceOffset => _surfaceOffset;
+        public IReadOnlyList<string> Tags => _tags ?? System.Array.Empty<string>();
+
+        public bool HasTag(string tag)
+        {
+            if (string.IsNullOrWhiteSpace(tag) || _tags == null)
+                return false;
+
+            for (int index = 0; index < _tags.Length; index++)
+            {
+                if (string.Equals(
+                        _tags[index]?.Trim(),
+                        tag.Trim(),
+                        System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -94,6 +117,12 @@ namespace Kruty1918.Moyva.Grid.API
         {
             var profile = GetProfile(layerId);
             return profile != null ? profile.SurfaceOffset : 0f;
+        }
+
+        public bool HasTag(string layerId, string tag)
+        {
+            var profile = GetProfile(layerId);
+            return profile != null && profile.HasTag(tag);
         }
 
         private void EnsureLookup()

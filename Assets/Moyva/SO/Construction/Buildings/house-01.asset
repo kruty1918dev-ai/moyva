@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56a0a73b43b94045b28dec05ad231549, type: 3}
   m_Name: house-01
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.BuildingDefinitionAsset
+  _placementModuleMigrationVersion: 1
   Identity: {Id: house-01, DisplayName: House, Category: 1, Role: 1, Description: "", Tags: []}
   Presentation:
     Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
@@ -33,6 +34,7 @@ MonoBehaviour:
   Modules:
   - rid: 1301
   - rid: 1302
+  - rid: 1303
   references:
     version: 2
     RefIds:
@@ -42,3 +44,6 @@ MonoBehaviour:
     - rid: 1302
       type: {class: FogRevealBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
       data: {IsEnabled: 1, SingletonScope: 1, RevealRadius: 2, Shape: 0, RevealOnBuilt: 1, RevealWhileActive: 1, OnlyAfterConstructionComplete: 1}
+    - rid: 1303
+      type: {class: SettlementInfluenceRequirementBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data: {IsEnabled: 1, SingletonScope: 1, MergeMode: 1, RequiresInfluence: 1, BlockOverlappingCenters: 0, MaximumDistanceToCenter: 0}

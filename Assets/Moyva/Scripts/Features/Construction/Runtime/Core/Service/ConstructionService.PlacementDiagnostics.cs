@@ -22,6 +22,49 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             BuildingDefinition definition =
                 _placementBuildingRegistry?.GetById(request.BuildingId);
+            if (BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out BuildingPerPlayerLimitModule limitModule)
+                && Mathf.Max(0, limitModule.MaxBuildingsPerPlayer) > 0
+                && limitModule.OverflowPolicy
+                    != BuildingLimitOverflowPolicy.Legacy)
+            {
+                if (limitModule.OverflowPolicy
+                        == BuildingLimitOverflowPolicy.Block
+                    || !IsBuildingLimitAtCapacity(
+                        request.BuildingId,
+                        ownerId,
+                        limitModule))
+                {
+                    return request;
+                }
+
+                if (TryFindPendingPlacementByBuildingId(
+                        request.BuildingId,
+                        out int overflowPendingIndex))
+                {
+                    PendingPlacement pending =
+                        _pendingPlacements[overflowPendingIndex];
+                    return request.WithIgnoredPositions(
+                        pending.Position,
+                        pending.OriginalPosition);
+                }
+
+                if (limitModule.OverflowPolicy
+                        == BuildingLimitOverflowPolicy.RelocateExisting
+                    && TryFindOwnedPlacedBuildingPosition(
+                        request.BuildingId,
+                        ownerId,
+                        out Vector2Int ownedOriginalPosition))
+                {
+                    return request.WithIgnoredPositions(
+                        null,
+                        ownedOriginalPosition);
+                }
+
+                return request;
+            }
+
             BuildingPlacementUniquenessScope scope =
                 BuildingDefinitionCapabilities.GetPlacementUniquenessScope(definition);
             if (scope == BuildingPlacementUniquenessScope.None)
@@ -45,8 +88,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         private ConstructionPlacementQueryResult CreatePlacementQueryResult(
+            bool availabilityValid,
             bool isSpatiallyValid,
             bool resourcesValid,
+            bool authorityValid,
             bool isGateReplacement,
             string reason,
             BuildingPlacementEvaluationResult evaluationResult,
@@ -55,15 +100,38 @@ namespace Kruty1918.Moyva.Construction.Runtime
             BuildingPerPlayerLimitEvaluation limitEvaluation,
             string explicitReasonCode = null)
         {
+            string authorityReason = null;
+            if (authorityValid
+                && _placementAuthorityPolicy != null
+                && !_placementAuthorityPolicy.CanCommit(
+                    ownerId,
+                    request.AttemptSource,
+                    out authorityReason))
+            {
+                authorityValid = false;
+            }
+
+            if (!authorityValid && string.IsNullOrWhiteSpace(reason))
+                reason = authorityReason ?? "Placement requires host authority.";
+            if (!authorityValid
+                && isSpatiallyValid
+                && resourcesValid
+                && string.IsNullOrWhiteSpace(explicitReasonCode))
+            {
+                explicitReasonCode = "authority";
+            }
+
             if (!request.IncludeDetails
                 && !ShouldCaptureDiagnostic(request.AttemptSource))
             {
                 return new ConstructionPlacementQueryResult(
-                    isSpatiallyValid,
-                    resourcesValid,
-                    isGateReplacement,
-                    reason,
-                    evaluationResult);
+                    availabilityValid: availabilityValid,
+                    spatialValid: isSpatiallyValid,
+                    resourcesValid: resourcesValid,
+                    authorityValid: authorityValid,
+                    isGateReplacement: isGateReplacement,
+                    reason: reason,
+                    evaluationResult: evaluationResult);
             }
 
             Vector2Int contextPosition = request.Position;
@@ -127,12 +195,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 evaluationResult?.Blockers);
 
             return new ConstructionPlacementQueryResult(
-                isSpatiallyValid,
-                resourcesValid,
-                isGateReplacement,
-                reason,
-                evaluationResult,
-                diagnostic);
+                availabilityValid: availabilityValid,
+                spatialValid: isSpatiallyValid,
+                resourcesValid: resourcesValid,
+                authorityValid: authorityValid,
+                isGateReplacement: isGateReplacement,
+                reason: reason,
+                evaluationResult: evaluationResult,
+                diagnostic: diagnostic);
         }
 
         private void LogPlacementAttempt(

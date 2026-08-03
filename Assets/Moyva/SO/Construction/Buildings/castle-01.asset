@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56a0a73b43b94045b28dec05ad231549, type: 3}
   m_Name: castle-01
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.BuildingDefinitionAsset
+  _placementModuleMigrationVersion: 1
   Identity:
     Id: castle-01
     DisplayName: Castle
@@ -68,7 +69,9 @@ MonoBehaviour:
   Modules:
   - rid: 1001
   - rid: 1002
+  - rid: 1003
   - rid: 4346373088056442969
+  - rid: 6920774842624507993
   references:
     version: 2
     RefIds:
@@ -90,9 +93,34 @@ MonoBehaviour:
         RevealOnBuilt: 1
         RevealWhileActive: 1
         OnlyAfterConstructionComplete: 1
+    - rid: 1003
+      type: {class: SettlementCenterBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
+        InfluenceRadius: 5
+        MinimumDistanceFromOtherCenters: 0
     - rid: 4346373088056442969
       type: {class: BuildingPerPlayerLimitModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
       data:
         IsEnabled: 1
         SingletonScope: 1
         MaxBuildingsPerPlayer: 1
+        LimitScope: 0
+        OverflowPolicy: 3
+    - rid: 6920774842624507993
+      type: {class: TerrainPlacementRuleModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
+        MergeMode: 1
+        AllowedTerrainIds: []
+        BlockedTerrainIds: []
+        AllowedTerrainTags: []
+        BlockedTerrainTags: []
+        AllowedTerrainLevels: 
+        BlockedTerrainLevels: 
+        RequiredNeighborOffsets: []
+        AllowHills: 1
+        BlockEdgeTerrainTiles: 0
+        RequiresFlatGround: 0

@@ -24,6 +24,11 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (manager == null || root == null)
                 return false;
 
+            var binding =
+                manager.GetComponent<MoyvaTileWorldCreatorGraphBinding>();
+            if (binding == null)
+                return false;
+
             var panel = new VisualElement
             {
                 style =
@@ -55,17 +60,8 @@ namespace Kruty1918.Moyva.Generator.Editor
                 }
             });
 
-            var binding = manager.GetComponent<MoyvaTileWorldCreatorGraphBinding>();
-            if (binding == null)
-            {
-                DrawMissingBinding(manager, panel);
-                root.Add(panel);
-                return true;
-            }
-
             DrawGraphField(binding, panel);
             DrawActions(manager, binding, panel);
-            DrawLayerActions(manager, binding, panel);
             DrawQuickSettings(binding, panel);
             DrawConfigurationField(manager, panel);
             DrawStatus(binding, panel);
@@ -132,7 +128,7 @@ namespace Kruty1918.Moyva.Generator.Editor
 
             buttonRow.Add(new Button(() => GenerateFull(manager, binding))
             {
-                text = "Превʼю: вся мапа",
+                text = "Generate Moyva Map",
                 style = { flexGrow = 1, marginRight = 3, height = 26 }
             });
 
@@ -273,13 +269,29 @@ namespace Kruty1918.Moyva.Generator.Editor
                 HelpBoxMessageType.Info));
         }
 
-        private static void GenerateFull(TileWorldCreatorManager manager, MoyvaTileWorldCreatorGraphBinding binding)
+        /// <summary>
+        /// Entry point used by the third-party TWC scene overlay. A manager with a
+        /// Moyva binding must never fall back to the native TWC build path.
+        /// </summary>
+        public static bool TryGenerateFromOverlay(TileWorldCreatorManager manager)
+        {
+            if (manager == null)
+                return false;
+
+            var binding = manager.GetComponent<MoyvaTileWorldCreatorGraphBinding>();
+            if (binding == null)
+                return false;
+
+            return GenerateFull(manager, binding);
+        }
+
+        private static bool GenerateFull(TileWorldCreatorManager manager, MoyvaTileWorldCreatorGraphBinding binding)
         {
             if (binding == null)
-                return;
+                return false;
 
             if (!EnsureConfiguration(manager, binding))
-                return;
+                return false;
 
             if (!HasEnabledBuildLayers(manager.configuration))
             {
@@ -288,14 +300,48 @@ namespace Kruty1918.Moyva.Generator.Editor
                     "Немає увімкнених Build-шарів у конфігурації графа. " +
                     "Відкрийте граф і увімкніть хоча б один Build-шар у вкладці \"Build-шари\".",
                     "OK");
-                return;
+                return false;
+            }
+
+            if (!binding.CanCompile(out string reason))
+            {
+                EditorUtility.DisplayDialog(
+                    "Графовий генератор Moyva",
+                    string.IsNullOrWhiteSpace(reason)
+                        ? "Граф не пройшов перевірку й не може бути згенерований."
+                        : reason,
+                    "OK");
+                return false;
             }
 
             RecordUndo(manager, binding, "Generate map from Moyva graph");
-            binding.GenerateFromGraph();
+            bool previousCompile = binding.CompileBeforeGenerate;
+            bool previousBuild = binding.GenerateBuildLayersAfterCompile;
+            try
+            {
+                // Overlay execution is intentionally the complete authoritative
+                // path, regardless of preview toggles stored on the component.
+                binding.SetCompileBeforeGenerate(true);
+                binding.SetGenerateBuildLayersAfterCompile(true);
+                if (!binding.GenerateFromGraph())
+                {
+                    Debug.LogError(
+                        "[Moyva TWC Graph Binding] Generation did not complete. " +
+                        "Native TWC fallback remains disabled for graph-managed maps.",
+                        binding);
+                    return false;
+                }
+            }
+            finally
+            {
+                binding.SetCompileBeforeGenerate(previousCompile);
+                binding.SetGenerateBuildLayersAfterCompile(previousBuild);
+            }
+
             MarkDirty(manager, binding);
             PingGeneratedChunkRoot();
             ActiveEditorTracker.sharedTracker.ForceRebuild();
+            return true;
         }
 
         private static void GenerateLayer(TileWorldCreatorManager manager, MoyvaTileWorldCreatorGraphBinding binding, string layerName)
@@ -373,10 +419,20 @@ namespace Kruty1918.Moyva.Generator.Editor
             if (manager == null)
                 return false;
 
+            if (binding == null || binding.GraphAsset == null)
+            {
+                EditorUtility.DisplayDialog(
+                    "Графовий генератор Moyva",
+                    "Для graph-managed TileWorldCreatorManager потрібно призначити GraphAsset. " +
+                    "Native TWC fallback навмисно не запускається.",
+                    "OK");
+                return false;
+            }
+
             // Граф — джерело правди: конфігурація TWC береться з компаньйон-конфігу графа.
             // У ньому зберігаються build-шари з тайлами (налаштовуються у вкладці "Build-шари"
             // редактора графа) та blueprint-шари (форма), скомпільовані з графа.
-            if (binding != null && binding.GraphAsset != null)
+            if (binding.GraphAsset != null)
             {
                 var companion = GraphBuildLayerStore.Sync(binding.GraphAsset);
                 if (companion != null)
@@ -391,28 +447,11 @@ namespace Kruty1918.Moyva.Generator.Editor
                 }
             }
 
-            // Резерв: графа немає — створюємо/лишаємо власну конфігурацію менеджера.
-            if (manager.configuration != null)
-                return true;
-
-            const string folder = "Assets/Moyva/SO/Generation/TileWorldCreator";
-            EnsureFolder(folder);
-
-            string baseName = binding != null && binding.GraphAsset != null
-                ? binding.GraphAsset.name
-                : manager.gameObject.name;
-            string fileName = SanitizeFileName($"{baseName}_TWC");
-            string path = AssetDatabase.GenerateUniqueAssetPath($"{folder}/{fileName}.asset");
-
-            var configuration = ScriptableObject.CreateInstance<Configuration>();
-            configuration.name = fileName;
-            AssetDatabase.CreateAsset(configuration, path);
-            AssetDatabase.SaveAssets();
-
-            Undo.RecordObject(manager, "Assign Moyva configuration");
-            manager.configuration = configuration;
-            EditorUtility.SetDirty(manager);
-            return true;
+            EditorUtility.DisplayDialog(
+                "Графовий генератор Moyva",
+                "Не вдалося синхронізувати companion TWC Configuration. Генерацію зупинено.",
+                "OK");
+            return false;
         }
 
         private static void EnsureFolder(string folder)

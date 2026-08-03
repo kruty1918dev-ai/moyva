@@ -20,6 +20,8 @@ MonoBehaviour:
       Amount: 10
     - ResourceId: hardwood-materials-resources
       Amount: 30
+    - ResourceId: stone-materials-resources
+      Amount: 10
   _startingPositionSettings:
     minMarginFromBorder: 3
     relativeMarginFactor: 0.0853

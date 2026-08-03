@@ -456,6 +456,186 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
+        public async Task GlobalSeed_IsAuthoritativeWithoutOutputConnection()
+        {
+            GraphAsset graph = CreateGraph(GraphPath);
+            string layerId = graph.EnsureDefaultLayer();
+            var seed = graph.AddNode(
+                typeof(SeedNode),
+                allowStaticGraphNode: true) as SeedNode;
+            var source = graph.AddNode(
+                typeof(ShapeMaskNode),
+                false,
+                layerId);
+            var output = graph.AddNode(
+                typeof(OutputNode),
+                false,
+                layerId) as OutputNode;
+            var detached = graph.AddNode(
+                typeof(BoolValueNode),
+                false,
+                layerId);
+            output.OutputKind = LayerOutputKind.Masks;
+            graph.AddConnection(
+                source.NodeId,
+                0,
+                output.NodeId,
+                OutputNode.MaskInputIndex);
+
+            GraphExecutionScope scope =
+                graph.CreateExecutionScope(layerId);
+            GraphNodeParticipationAnalysis analysis =
+                GraphNodeParticipationAnalyzer.Analyze(scope);
+
+            Assert.NotNull(seed);
+            Assert.That(
+                analysis.GetParticipation(seed.NodeId),
+                Is.EqualTo(GraphNodeParticipation.GlobalContext));
+            Assert.That(
+                analysis.IsConnectedToOutput(seed.NodeId),
+                Is.False);
+            Assert.That(
+                analysis.IsAuthoritative(seed.NodeId),
+                Is.True);
+            Assert.That(
+                analysis.GetParticipation(detached.NodeId),
+                Is.EqualTo(GraphNodeParticipation.Detached));
+
+            var runner = new GraphRunner();
+            var size = new Vector2Int(8, 5);
+            GraphExecutionResult synchronous = runner.Execute(
+                scope,
+                new NodeContext(659071469) { MapSize = size });
+            GraphExecutionResult asynchronous = await runner.ExecuteAsync(
+                scope,
+                new NodeContext(659071469) { MapSize = size });
+
+            Assert.That(synchronous.Success, Is.True, synchronous.ErrorMessage);
+            Assert.That(asynchronous.Success, Is.True, asynchronous.ErrorMessage);
+            foreach (GraphExecutionResult result in new[]
+                     {
+                         synchronous,
+                         asynchronous
+                     })
+            {
+                NodeExecutionLog seedLog = result.Logs
+                    .Last(log => log.NodeId == seed.NodeId);
+                Assert.That(
+                    seedLog.Participation,
+                    Is.EqualTo(GraphNodeParticipation.GlobalContext));
+                Assert.That(seedLog.IsConnectedToOutput, Is.False);
+                Assert.That(seedLog.IsAuthoritative, Is.True);
+                Assert.That(seedLog.Status, Is.EqualTo(NodeStatus.Success));
+                Assert.That(
+                    seedLog.Message ?? string.Empty,
+                    Does.Not.Contain("Not connected to Output"));
+
+                NodeExecutionLog detachedLog = result.Logs
+                    .Last(log => log.NodeId == detached.NodeId);
+                Assert.That(
+                    detachedLog.Participation,
+                    Is.EqualTo(GraphNodeParticipation.Detached));
+                Assert.That(detachedLog.IsAuthoritative, Is.False);
+                Assert.That(detachedLog.Status, Is.EqualTo(NodeStatus.Warning));
+                Assert.That(
+                    detachedLog.Message,
+                    Does.Contain("Not connected to Output"));
+            }
+
+            var snapshot = new GraphEvaluationSnapshot(
+                synchronous,
+                659071469,
+                size,
+                revision: 1);
+            Assert.That(
+                snapshot.NodeRecords[seed.NodeId].Participation,
+                Is.EqualTo(GraphNodeParticipation.GlobalContext));
+            Assert.That(
+                snapshot.NodeRecords[seed.NodeId].IsConnectedToOutput,
+                Is.False);
+            Assert.That(
+                snapshot.NodeRecords[seed.NodeId].IsAuthoritative,
+                Is.True);
+
+            GraphValidationReport report =
+                new GraphValidator().ValidateDetailed(scope);
+            Assert.That(
+                report.Issues.Any(issue =>
+                    issue.NodeId == seed.NodeId
+                    && issue.Message.Contains("Not connected to Output")),
+                Is.False);
+        }
+
+        [Test]
+        public void OutputlessScope_PreservesLiteralConnectionState()
+        {
+            var seed = CreateTransient<SeedNode>();
+            seed.NodeId = "standalone-seed";
+            var regular = CreateTransient<BoolValueNode>();
+            regular.NodeId = "standalone-regular";
+            var scope = new GraphExecutionScope(
+                null,
+                "standalone-layer",
+                "standalone-graph",
+                new NodeBase[] { seed, regular },
+                Array.Empty<Connection>());
+
+            GraphNodeParticipationAnalysis analysis =
+                GraphNodeParticipationAnalyzer.Analyze(scope);
+
+            Assert.That(
+                analysis.IsConnectedToOutput(seed.NodeId),
+                Is.False);
+            Assert.That(
+                analysis.GetParticipation(seed.NodeId),
+                Is.EqualTo(GraphNodeParticipation.GlobalContext));
+            Assert.That(
+                analysis.IsConnectedToOutput(regular.NodeId),
+                Is.False);
+            Assert.That(
+                analysis.GetParticipation(regular.NodeId),
+                Is.EqualTo(GraphNodeParticipation.Detached));
+            Assert.That(
+                analysis.IsAuthoritative(regular.NodeId),
+                Is.True,
+                "Standalone scopes remain executable without fabricating an Output connection.");
+        }
+
+        [Test]
+        public void DuplicateGlobalSeed_IsAnAuthoritativeError()
+        {
+            var firstSeed = CreateTransient<SeedNode>();
+            firstSeed.NodeId = "seed-first";
+            var secondSeed = CreateTransient<SeedNode>();
+            secondSeed.NodeId = "seed-second";
+            var output = CreateTransient<OutputNode>();
+            output.NodeId = "output";
+            var scope = new GraphExecutionScope(
+                null,
+                "test-layer",
+                "test-graph",
+                new NodeBase[] { firstSeed, secondSeed, output },
+                Array.Empty<Connection>());
+
+            GraphExecutionResult result = new GraphRunner().Execute(
+                scope,
+                new NodeContext(1) { MapSize = new Vector2Int(4, 3) });
+
+            Assert.That(result.Success, Is.False);
+            Assert.That(
+                result.ErrorMessage,
+                Does.Contain("multiple unique nodes"));
+            NodeExecutionLog errorLog = result.Logs
+                .Last(log => log.NodeId == secondSeed.NodeId);
+            Assert.That(errorLog.Status, Is.EqualTo(NodeStatus.Error));
+            Assert.That(
+                errorLog.Participation,
+                Is.EqualTo(GraphNodeParticipation.GlobalContext));
+            Assert.That(errorLog.IsConnectedToOutput, Is.False);
+            Assert.That(errorLog.IsAuthoritative, Is.True);
+        }
+
+        [Test]
         public void Compiler_DoesNotBuildFromFailedEvaluationSnapshot()
         {
             GraphAsset graph = CreateGraph(GraphPath);

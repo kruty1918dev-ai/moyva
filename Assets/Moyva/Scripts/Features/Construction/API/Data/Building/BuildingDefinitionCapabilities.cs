@@ -27,14 +27,21 @@ namespace Kruty1918.Moyva.Construction.API
             if (definition == null)
                 return normalizedFallback;
 
+            if (TryGetEnabledModule(
+                    definition,
+                    out SettlementCenterBuildingModule settlementCenter))
+            {
+                // The marker module is authoritative even when its authored
+                // radius is zero. Falling back here would silently turn a
+                // disabled/misconfigured center into an active influence source.
+                return Math.Max(0, settlementCenter.InfluenceRadius);
+            }
+
+            if (definition.PlacementRules?.InfluenceRadius > 0)
+                return definition.PlacementRules.InfluenceRadius;
+
             if (definition.TownHallProximityRadiusOverride > 0)
                 return definition.TownHallProximityRadiusOverride;
-
-            if (TryGetEnabledModule(definition, out SettlementCenterBuildingModule settlementCenter)
-                && settlementCenter.InfluenceRadius > 0)
-            {
-                return settlementCenter.InfluenceRadius;
-            }
 
             if (TryGetEnabledModule(definition, out TownHallBuildingModule townHall)
                 && townHall.BuildRadius > 0)
@@ -49,6 +56,20 @@ namespace Kruty1918.Moyva.Construction.API
             }
 
             return normalizedFallback;
+        }
+
+        public static bool IsSettlementCenter(BuildingDefinition definition)
+        {
+            if (definition == null)
+                return false;
+
+            if (HasEnabledModule<SettlementCenterBuildingModule>(definition))
+                return true;
+
+            if (definition.PlacementRules != null)
+                return definition.PlacementRules.CreatesSettlementInfluence;
+
+            return false;
         }
 
         public static bool IsWarehouse(BuildingDefinition definition)
@@ -244,10 +265,31 @@ namespace Kruty1918.Moyva.Construction.API
             if (IsGlobalSingleton(definition))
                 return BuildingPlacementUniquenessScope.Global;
 
-            bool isSettlementCenter =
-                IsCastle(definition) || IsTownHall(definition);
-            return isSettlementCenter
-                   && GetMaxBuildingsPerPlayer(definition) == 1
+            if (!TryGetEnabledModule(
+                    definition,
+                    out BuildingPerPlayerLimitModule limit)
+                || Math.Max(0, limit.MaxBuildingsPerPlayer) <= 0)
+            {
+                return BuildingPlacementUniquenessScope.None;
+            }
+
+            if (limit.OverflowPolicy
+                == BuildingLimitOverflowPolicy.RelocateExisting)
+            {
+                return limit.LimitScope == BuildingLimitScope.Global
+                    ? BuildingPlacementUniquenessScope.Global
+                    : BuildingPlacementUniquenessScope.PerOwner;
+            }
+
+            if (Math.Max(0, limit.MaxBuildingsPerPlayer) != 1)
+                return BuildingPlacementUniquenessScope.None;
+
+            // Serialized assets created before OverflowPolicy existed deserialize
+            // as Legacy. Preserve their behavior until the editor migration
+            // writes an explicit policy.
+            return limit.OverflowPolicy
+                       == BuildingLimitOverflowPolicy.Legacy
+                   && IsSettlementCenter(definition)
                 ? BuildingPlacementUniquenessScope.PerOwner
                 : BuildingPlacementUniquenessScope.None;
         }

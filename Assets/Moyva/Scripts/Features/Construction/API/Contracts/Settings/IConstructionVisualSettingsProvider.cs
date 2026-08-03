@@ -26,6 +26,12 @@ namespace Kruty1918.Moyva.Construction.API
         bool BuildGridSurfacePlaneUseBuildableFilter { get; }
         float BuildGridFillAlpha { get; }
         float BuildGridLineAlpha { get; }
+        UnityEngine.Color BuildGridValidLineColor { get; }
+        UnityEngine.Color BuildGridValidFillColor { get; }
+        UnityEngine.Color BuildGridUnaffordableLineColor { get; }
+        UnityEngine.Color BuildGridUnaffordableFillColor { get; }
+        UnityEngine.Color BuildGridInvalidLineColor { get; }
+        UnityEngine.Color BuildGridInvalidFillColor { get; }
         float BuildGridLineWidthNormalized { get; }
         float BuildGridSurfaceOffsetY { get; }
         float BuildGridTileInsetNormalized { get; }

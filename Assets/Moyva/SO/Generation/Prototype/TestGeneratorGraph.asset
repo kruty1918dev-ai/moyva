@@ -200,7 +200,7 @@ MonoBehaviour:
   mergePreviewTextures: 0
   clusterCellSize: 8
   useGlobalRandomSeed: 1
-  globalRandomSeed: 1
+  globalRandomSeed: 659071469
   currentRandomSeed: 659071469
   layerChanged: 1
   showGizmos: 0
@@ -78515,7 +78515,7 @@ MonoBehaviour:
     _renderMode: 0
     _neighborhoodMode: 0
   _globalGraphState:
-    _graphId: 
+    _graphId: 150b897f-192f-4088-bc61-2c81fcce45f7
     _layerId: 
     _version: 1
     _nodeIds:
@@ -78533,6 +78533,8 @@ MonoBehaviour:
     _extraLengthCells: 0
     _generateFlatSurface: 0
     _flatSurfaceMaterial: {fileID: 0}
+    _tileGeometryMode: 1
+    _authoredClosurePolicy: 0
     _buildLayerKey: f28e2b44-548a-4c21-87d9-6de17bb7315c
     _blueprintLayerGuid: db42e331-8063-447e-9518-b6db61e8fca7
   - _id: b47a1390-a46d-4999-9780-f5e2769e8668
@@ -78546,6 +78548,8 @@ MonoBehaviour:
     _extraLengthCells: 0
     _generateFlatSurface: 0
     _flatSurfaceMaterial: {fileID: 0}
+    _tileGeometryMode: 0
+    _authoredClosurePolicy: 0
     _buildLayerKey: 
     _blueprintLayerGuid: 31ff07de-fb0b-4fb1-973f-f3e8f46415d7
   - _id: 78af69b7-740e-4a85-bad4-866f58c4c7c7
@@ -78559,6 +78563,8 @@ MonoBehaviour:
     _extraLengthCells: 0
     _generateFlatSurface: 0
     _flatSurfaceMaterial: {fileID: 0}
+    _tileGeometryMode: 0
+    _authoredClosurePolicy: 0
     _buildLayerKey: 4bec738d-ab50-4895-b02e-6cac49d38e05
     _blueprintLayerGuid: 4cbc36d5-1648-4070-ac92-b8f67f174251
   - _id: f904bc0b-b8b6-4fdc-b371-76921129c59b
@@ -78572,6 +78578,8 @@ MonoBehaviour:
     _extraLengthCells: 0
     _generateFlatSurface: 0
     _flatSurfaceMaterial: {fileID: 0}
+    _tileGeometryMode: 0
+    _authoredClosurePolicy: 0
     _buildLayerKey: 15deb0fc-f2dc-44d5-987b-aaca3b8a3b70
     _blueprintLayerGuid: 43c50666-90d9-4ea8-85a2-e11f7f000986
   _layerGraphStates:

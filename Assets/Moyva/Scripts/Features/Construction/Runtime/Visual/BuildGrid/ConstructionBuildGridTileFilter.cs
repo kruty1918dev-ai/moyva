@@ -51,9 +51,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     return ConstructionBuildGridTileVisualState.General;
 
                 case BuildModeGridState.BuildingSelected:
-                    return ShouldRenderForPlacement(position, _stateController.SelectedBuildingId)
-                        ? ConstructionBuildGridTileVisualState.Valid
-                        : ConstructionBuildGridTileVisualState.Invalid;
+                    return ResolvePlacementVisualState(
+                        position,
+                        _stateController.SelectedBuildingId);
 
                 default:
                     return ConstructionBuildGridTileVisualState.Missing;
@@ -85,7 +85,34 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 attemptSource:
                     ConstructionPlacementAttemptSource.GridTileFilter,
                 allowUniquePreviewRelocation: true);
-            return _placementQuery.EvaluatePlacement(request).IsValid;
+            return _placementQuery.EvaluatePlacement(request).CanPreview;
+        }
+
+        private ConstructionBuildGridTileVisualState ResolvePlacementVisualState(
+            Vector2Int position,
+            string buildingId)
+        {
+            if (_placementQuery == null || string.IsNullOrWhiteSpace(buildingId))
+                return ConstructionBuildGridTileVisualState.General;
+
+            var request = new ConstructionPlacementQueryRequest(
+                buildingId,
+                position,
+                includeResources: true,
+                includePendingPlacements: true,
+                attemptSource:
+                    ConstructionPlacementAttemptSource.GridTileFilter,
+                allowUniquePreviewRelocation: true);
+            ConstructionPlacementQueryResult result =
+                _placementQuery.EvaluatePlacement(request);
+
+            if (!result.CanSelect)
+                return ConstructionBuildGridTileVisualState.General;
+            if (!result.SpatialValid)
+                return ConstructionBuildGridTileVisualState.Invalid;
+            return result.ResourcesValid
+                ? ConstructionBuildGridTileVisualState.Valid
+                : ConstructionBuildGridTileVisualState.Unaffordable;
         }
 
         private bool UsesUnfilteredChunkSurface()

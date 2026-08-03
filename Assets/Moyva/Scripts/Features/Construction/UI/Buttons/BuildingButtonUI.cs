@@ -71,7 +71,12 @@ namespace Kruty1918.Moyva.Construction.UI
             _onClick = onClick;
 
             if (label != null)
-                label.text = data.DisplayName;
+            {
+                label.text = data.IsInteractable
+                    || string.IsNullOrWhiteSpace(data.UnavailableReason)
+                    ? data.DisplayName
+                    : $"{data.DisplayName}\n{data.UnavailableReason}";
+            }
 
             if (iconImage != null)
             {

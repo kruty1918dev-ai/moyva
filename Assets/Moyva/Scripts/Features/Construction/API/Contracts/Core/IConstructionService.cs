@@ -33,7 +33,8 @@ namespace Kruty1918.Moyva.Construction.API
         /// <summary>
         /// Спробувати розмістити preview будівлі на тайлі.
         /// Надсилає BuildingPreviewChangedSignal з актуальним BuildingPreviewState.
-        /// Повертає true якщо PreviewState = Valid, false якщо Blocked або State != Placing.
+        /// Повертає true для просторово валідних станів Valid та Unaffordable;
+        /// false — для Blocked або коли State != Placing.
         /// </summary>
         bool TryPreviewAt(Vector2Int position);
 
@@ -147,5 +148,83 @@ namespace Kruty1918.Moyva.Construction.API
         /// Якщо ownerId задано, перевірка виконується для конкретного власника.
         /// </summary>
         bool HasPlacedBuilding(string buildingId, string ownerId = null);
+    }
+
+    /// <summary>
+    /// Applies an already host-authorized placement to a replica.
+    /// This path never validates affordability or consumes resources and is
+    /// idempotent for the same building, owner and origin.
+    /// </summary>
+    public interface IConfirmedConstructionPlacementApplier
+    {
+        bool TryApplyConfirmedPlacement(
+            string buildingId,
+            Vector2Int position,
+            string ownerId);
+    }
+
+    /// <summary>
+    /// Immutable placement metadata that must survive an authoritative
+    /// client-host-client round trip. Relocation and transactional pending
+    /// replacement are placement intent, not properties that may be inferred
+    /// from the target cell.
+    /// </summary>
+    public readonly struct ConstructionPlacementCommitIntent
+    {
+        public ConstructionPlacementCommitIntent(
+            Vector2Int? relocationSourcePosition = null,
+            string satisfiedReplacementBuildingId = null)
+        {
+            RelocationSourcePosition = relocationSourcePosition;
+            SatisfiedReplacementBuildingId =
+                satisfiedReplacementBuildingId;
+        }
+
+        public Vector2Int? RelocationSourcePosition { get; }
+        public bool HasRelocationSource =>
+            RelocationSourcePosition.HasValue;
+        public string SatisfiedReplacementBuildingId { get; }
+
+        public static ConstructionPlacementCommitIntent None =>
+            new ConstructionPlacementCommitIntent();
+    }
+
+    /// <summary>
+    /// Exposes the authoritative intent attached to a local pending preview
+    /// without leaking ConstructionService's internal pending representation.
+    /// </summary>
+    public interface IConstructionPendingPlacementIntentSource
+    {
+        bool TryGetPendingPlacementIntent(
+            Vector2Int position,
+            out ConstructionPlacementCommitIntent intent);
+    }
+
+    /// <summary>
+    /// Executes a host-authoritative placement. Unlike direct AI placement,
+    /// this entry point accepts the exact intent supplied by the requesting
+    /// client and validates it against persistent host state.
+    /// </summary>
+    public interface IAuthoritativeConstructionPlacementExecutor
+    {
+        bool TryPlaceAuthoritatively(
+            string buildingId,
+            Vector2Int position,
+            string ownerId,
+            ConstructionPlacementCommitIntent intent);
+    }
+
+    /// <summary>
+    /// Applies a host-confirmed placement intent to a replica without charging
+    /// resources. The legacy three-argument applier remains available for
+    /// integrations that only support ordinary placements.
+    /// </summary>
+    public interface IConfirmedConstructionPlacementIntentApplier
+    {
+        bool TryApplyConfirmedPlacement(
+            string buildingId,
+            Vector2Int position,
+            string ownerId,
+            ConstructionPlacementCommitIntent intent);
     }
 }

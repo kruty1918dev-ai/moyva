@@ -27,8 +27,53 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (string.IsNullOrWhiteSpace(request.BuildingId))
             {
                 return InvalidPlacementQueryResult(
+                    availabilityValid: false,
                     "Building id is empty.",
                     "building-id-empty",
+                    request,
+                    placementOwnerId,
+                    limitEvaluation,
+                    BuildingPlacementBlockerKind.Configuration);
+            }
+
+            BuildingDefinition requestedDefinition =
+                _placementBuildingRegistry?.GetById(request.BuildingId);
+            if (requestedDefinition == null)
+            {
+                return InvalidPlacementQueryResult(
+                    availabilityValid: false,
+                    $"Building definition '{request.BuildingId}' is missing.",
+                    "building-definition-missing",
+                    request,
+                    placementOwnerId,
+                    limitEvaluation,
+                    BuildingPlacementBlockerKind.Configuration);
+            }
+
+            if (!TryValidateBuildingPrerequisites(
+                    requestedDefinition,
+                    placementOwnerId,
+                    out string prerequisiteReason))
+            {
+                return InvalidPlacementQueryResult(
+                    availabilityValid: false,
+                    prerequisiteReason,
+                    "building-prerequisite",
+                    request,
+                    placementOwnerId,
+                    limitEvaluation,
+                    BuildingPlacementBlockerKind.Prerequisite);
+            }
+
+            if (!TryValidatePerPlayerBuildingLimit(
+                    request,
+                    placementOwnerId,
+                    out limitEvaluation))
+            {
+                return InvalidPlacementQueryResult(
+                    availabilityValid: false,
+                    limitEvaluation.Reason,
+                    "per-player-limit",
                     request,
                     placementOwnerId,
                     limitEvaluation,
@@ -39,6 +84,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 && !_gridService.TryGetTileData(request.Position, out _))
             {
                 return InvalidPlacementQueryResult(
+                    availabilityValid: true,
                     "Tile does not exist.",
                     "tile-missing",
                     request,
@@ -47,18 +93,27 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     BuildingPlacementBlockerKind.Terrain);
             }
 
-            bool isGate = _wallTopologyService != null
-                && _wallTopologyService.IsGate(request.BuildingId);
+            bool requiresReplacement = RequiresReplacement(
+                request.BuildingId,
+                out ReplacementPlacementRuleModule replacementModule);
             bool gateReplacement = TryResolveGateReplacement(
                 request.Position,
                 request.BuildingId,
                 out Vector2Int replacedWallOriginValue,
                 out string replacedWallId);
-            if (isGate && !gateReplacement)
+            bool pendingReplacementSatisfied =
+                IsReplacementSatisfiedByPendingMarker(
+                    request.BuildingId,
+                    request.SatisfiedReplacementBuildingId,
+                    replacementModule);
+            if (requiresReplacement
+                && !gateReplacement
+                && !pendingReplacementSatisfied)
             {
                 return InvalidPlacementQueryResult(
-                    "Gate must replace a valid wall.",
-                    "gate-requires-wall",
+                    availabilityValid: true,
+                    "This building must replace a configured building type.",
+                    "replacement-required",
                     request,
                     placementOwnerId,
                     limitEvaluation,
@@ -69,21 +124,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Vector2Int? replacedWallOrigin = gateReplacement
                 ? replacedWallOriginValue
                 : null;
-            if (!TryValidatePerPlayerBuildingLimit(
-                    request,
-                    placementOwnerId,
-                    out limitEvaluation))
-            {
-                return InvalidPlacementQueryResult(
-                    limitEvaluation.Reason,
-                    "per-player-limit",
-                    request,
-                    placementOwnerId,
-                    limitEvaluation,
-                    BuildingPlacementBlockerKind.Configuration);
-            }
-
             if (gateReplacement
+                && RequiresSameOwner(replacementModule)
                 && replacedWallOrigin.HasValue
                 && _factionPlacedBuildings.TryGetValue(
                     replacedWallOrigin.Value,
@@ -94,6 +136,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     StringComparison.Ordinal))
             {
                 return InvalidPlacementQueryResult(
+                    availabilityValid: true,
                     "Gate cannot replace a wall owned by another faction.",
                     "gate-foreign-faction-wall",
                     request,
@@ -103,6 +146,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             if (gateReplacement
+                && RequiresSameOwner(replacementModule)
                 && replacedWallOrigin.HasValue
                 && _playerPlacedBuildings.ContainsKey(replacedWallOrigin.Value)
                 && !string.Equals(
@@ -111,6 +155,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     StringComparison.Ordinal))
             {
                 return InvalidPlacementQueryResult(
+                    availabilityValid: true,
                     "Gate cannot replace a player wall owned by another faction.",
                     "gate-foreign-player-wall",
                     request,
@@ -132,8 +177,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 string reason = ResolveEvaluationReason(evaluationResult)
                     ?? "Placement rules blocked this tile.";
                 return CreatePlacementQueryResult(
+                    availabilityValid:
+                        evaluationResult?.ConfigurationBlocked != true,
                     isSpatiallyValid: false,
                     resourcesValid: false,
+                    authorityValid: true,
                     gateReplacement,
                     reason,
                     evaluationResult,
@@ -153,8 +201,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             return CreatePlacementQueryResult(
+                availabilityValid: true,
                 isSpatiallyValid: true,
                 resourcesValid,
+                authorityValid: true,
                 gateReplacement,
                 resourceReason,
                 evaluationResult,
@@ -179,6 +229,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _placementQuerySecondaryIgnoredOccupiedPosition = secondaryIgnoredOccupiedPosition;
             _placementQuerySecondaryIgnoredOccupiedBuildingId = secondaryIgnoredOccupiedBuildingId;
             _placementQueryEvaluationRequest.BuildingId = request.BuildingId;
+            _placementQueryEvaluationRequest.OwnerId = string.IsNullOrWhiteSpace(
+                request.OwnerId)
+                ? _activeOwnerId
+                : request.OwnerId.Trim();
             _placementQueryEvaluationRequest.Position = request.Position;
             _placementQueryEvaluationRequest.IgnoredPendingPosition = request.IgnoredPendingPosition;
             _placementQueryEvaluationRequest.IgnoredOccupiedPosition = ignoredOccupiedPosition;
@@ -203,13 +257,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 MinSpacing = _minSpacing,
                 TownHallBuildRadius = _townHallBuildRadius,
                 IsOccupied = IsOccupiedForPlacementQuery,
+                TileExists = TileExistsForPlacementQuery,
                 GetOccupantId = GetOccupantForPlacementQuery,
                 GetOccupantOrigin = GetOccupantOriginForPlacementQuery,
+                GetOccupantOwnerId =
+                    GetOccupantOwnerForPlacementQuery,
                 IsFogBlocked = IsBlockedByFog,
+                GetFogState = GetFogStateForPlacementQuery,
                 IsTerrainBlocked = IsTerrainBlockedForPlacementQuery,
                 GetTerrainLevel = GetTerrainLevelForPlacementQuery,
                 GetTileId = GetTileId,
+                HasTerrainTag = HasTerrainTagForPlacementQuery,
                 PendingPlacements = _placementSimulationSnapshot,
+                RuleEvaluators = _placementRuleEvaluators,
                 SkipInfluenceRules = _placementRulesProvider != null
                     && !_placementRulesProvider.EnableInfluenceZoneRules,
             };
@@ -222,6 +282,25 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 && _objectsMapService.IsOccupied(position);
         }
 
+        private bool TileExistsForPlacementQuery(Vector2Int position)
+            => _gridService == null
+                || _gridService.TryGetTileData(position, out _);
+
+        private Kruty1918.Moyva.FogOfWar.API.FogStateType? GetFogStateForPlacementQuery(
+            Vector2Int position)
+            => _fogOfWarService != null
+                ? _fogOfWarService.GetFogState(position)
+                : null;
+
+        private bool HasTerrainTagForPlacementQuery(
+            Vector2Int position,
+            string tag)
+        {
+            string tileId = GetTileId(position);
+            return _tileSettings is Kruty1918.Moyva.Grid.API.ITerrainTagQuery tagQuery
+                && tagQuery.HasTerrainTag(tileId, tag);
+        }
+
         private string GetOccupantForPlacementQuery(Vector2Int position)
             => IsIgnoredOccupiedFootprintCell(position)
                 ? null
@@ -231,6 +310,26 @@ namespace Kruty1918.Moyva.Construction.Runtime
             => _placedOriginByOccupiedTile.TryGetValue(position, out Vector2Int origin)
                 ? origin
                 : null;
+
+        private string GetOccupantOwnerForPlacementQuery(
+            Vector2Int position)
+        {
+            Vector2Int origin = _placedOriginByOccupiedTile.TryGetValue(
+                position,
+                out Vector2Int resolvedOrigin)
+                ? resolvedOrigin
+                : position;
+            if (_factionPlacedBuildings.TryGetValue(
+                    origin,
+                    out var factionPlacement))
+            {
+                return NormalizeOwnerId(factionPlacement.FactionId);
+            }
+
+            return _playerPlacedBuildings.ContainsKey(origin)
+                ? NormalizeOwnerId(_activeOwnerId)
+                : null;
+        }
 
         private bool IsTerrainBlockedForPlacementQuery(Vector2Int position)
         {
@@ -383,6 +482,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
         private ConstructionPlacementQueryResult InvalidPlacementQueryResult(
+            bool availabilityValid,
             string reason,
             string reasonCode,
             ConstructionPlacementQueryRequest request,
@@ -411,8 +511,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             return CreatePlacementQueryResult(
+                availabilityValid,
                 isSpatiallyValid: false,
                 resourcesValid: false,
+                authorityValid: true,
                 isGateReplacement: false,
                 reason,
                 evaluationResult,

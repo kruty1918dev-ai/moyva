@@ -19,6 +19,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static readonly int FillColorPropertyId = Shader.PropertyToID("_FillColor");
         private static readonly int ValidLineColorPropertyId = Shader.PropertyToID("_ValidLineColor");
         private static readonly int ValidFillColorPropertyId = Shader.PropertyToID("_ValidFillColor");
+        private static readonly int UnaffordableLineColorPropertyId = Shader.PropertyToID("_UnaffordableLineColor");
+        private static readonly int UnaffordableFillColorPropertyId = Shader.PropertyToID("_UnaffordableFillColor");
         private static readonly int InvalidLineColorPropertyId = Shader.PropertyToID("_InvalidLineColor");
         private static readonly int InvalidFillColorPropertyId = Shader.PropertyToID("_InvalidFillColor");
         private static readonly int LineWidthPropertyId = Shader.PropertyToID("_LineWidth");
@@ -101,10 +103,42 @@ namespace Kruty1918.Moyva.Construction.Runtime
             ApplySharedMaterialProperties();
             _material.SetColor(LineColorPropertyId, lineColor);
             _material.SetColor(FillColorPropertyId, fillColor);
-            _material.SetColor(ValidLineColorPropertyId, new Color(0.28f, 1f, 0.42f, lineColor.a));
-            _material.SetColor(ValidFillColorPropertyId, new Color(0.20f, 0.82f, 0.32f, fillColor.a));
-            _material.SetColor(InvalidLineColorPropertyId, new Color(1f, 0.26f, 0.22f, lineColor.a));
-            _material.SetColor(InvalidFillColorPropertyId, new Color(0.92f, 0.12f, 0.10f, fillColor.a));
+            _material.SetColor(
+                ValidLineColorPropertyId,
+                ResolveConfiguredColor(
+                    _settingsProvider?.BuildGridValidLineColor
+                        ?? new Color(0.28f, 1f, 0.42f, 1f),
+                    lineColor.a));
+            _material.SetColor(
+                ValidFillColorPropertyId,
+                ResolveConfiguredColor(
+                    _settingsProvider?.BuildGridValidFillColor
+                        ?? new Color(0.20f, 0.82f, 0.32f, 1f),
+                    fillColor.a));
+            _material.SetColor(
+                UnaffordableLineColorPropertyId,
+                ResolveConfiguredColor(
+                    _settingsProvider?.BuildGridUnaffordableLineColor
+                        ?? new Color(1f, 0.68f, 0.12f, 1f),
+                    lineColor.a));
+            _material.SetColor(
+                UnaffordableFillColorPropertyId,
+                ResolveConfiguredColor(
+                    _settingsProvider?.BuildGridUnaffordableFillColor
+                        ?? new Color(0.95f, 0.48f, 0.08f, 1f),
+                    fillColor.a));
+            _material.SetColor(
+                InvalidLineColorPropertyId,
+                ResolveConfiguredColor(
+                    _settingsProvider?.BuildGridInvalidLineColor
+                        ?? new Color(1f, 0.26f, 0.22f, 1f),
+                    lineColor.a));
+            _material.SetColor(
+                InvalidFillColorPropertyId,
+                ResolveConfiguredColor(
+                    _settingsProvider?.BuildGridInvalidFillColor
+                        ?? new Color(0.92f, 0.12f, 0.10f, 1f),
+                    fillColor.a));
             _material.SetFloat(LineWidthPropertyId, lineWidth);
         }
 
@@ -477,7 +511,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return state switch
             {
                 ConstructionBuildGridTileVisualState.General => 85,
-                ConstructionBuildGridTileVisualState.Invalid => 170,
+                ConstructionBuildGridTileVisualState.Invalid => 128,
+                ConstructionBuildGridTileVisualState.Unaffordable => 192,
                 ConstructionBuildGridTileVisualState.Valid => byte.MaxValue,
                 _ => byte.MinValue,
             };
@@ -534,6 +569,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 case ConstructionBuildGridTileVisualState.Valid:
                     valid++;
                     break;
+                case ConstructionBuildGridTileVisualState.Unaffordable:
+                    valid++;
+                    break;
                 case ConstructionBuildGridTileVisualState.Invalid:
                     invalid++;
                     break;
@@ -541,6 +579,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     hidden++;
                     break;
             }
+        }
+
+        private static Color ResolveConfiguredColor(Color configured, float fallbackAlpha)
+        {
+            if (configured.a <= 0f)
+                configured.a = fallbackAlpha;
+            return configured;
         }
 
         private Material[] BuildMaterialArray(Mesh mesh)

@@ -9,8 +9,11 @@
 //     ← PEER_CONNECTED:<peerId>              — another peer joined
 //     ← PEER_DISCONNECTED:<peerId>           — a peer left
 //   Data messages (Binary frames):
-//     → [16-byte senderId (ASCII, zero/space-padded)] [payload bytes]
+//     → [magic:4] [version:1] [sender UTF-8 length:2 LE]
+//       [full senderId UTF-8 bytes] [payload bytes]
 //     ← same framing from server → client
+//   Receivers also accept the legacy 16-byte ASCII sender prefix so rolling
+//   upgrades do not corrupt or truncate already in-flight messages.
 //
 // The server-side relay implementation is intentionally outside this file.
 // Any WebSocket server that speaks this protocol will work.
@@ -32,10 +35,25 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     /// standalone, mobile, and server platforms; NOT supported on WebGL — use a
     /// JS-bridge plugin there).
     /// </summary>
-    public sealed class WebSocketNetworkProvider : INetworkProvider
+    public sealed class WebSocketNetworkProvider :
+        INetworkProvider,
+        INetworkPeerIdentityConfigurator
     {
-        /// <summary>Sender-ID field width in data frames (bytes).</summary>
-        private const int SenderIdWidth = 16;
+        private const int LegacySenderIdWidth = 16;
+        private const int DataFrameHeaderSize = 7;
+        private const byte DataFrameVersion = 1;
+        private const int MaxSenderIdByteCount = 4096;
+        private static readonly byte[] DataFrameMagic =
+        {
+            0xF3,
+            (byte)'M',
+            (byte)'Y',
+            (byte)'V',
+        };
+        private static readonly UTF8Encoding StrictUtf8 =
+            new UTF8Encoding(
+                encoderShouldEmitUTF8Identifier: false,
+                throwOnInvalidBytes: true);
 
         private readonly WebSocketProviderSettings _settings;
         private readonly IMultiplayerLogger _logger;
@@ -45,6 +63,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         private ClientWebSocket _socket;
         private CancellationTokenSource _receiveCts;
         private string _localPeerId;
+        private string _configuredLocalPeerId;
         private string _currentSessionId;
         private int _reconnectCount;
 
@@ -63,16 +82,23 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         public async Task<SessionResult> HostSessionAsync(string sessionId, CancellationToken ct = default)
         {
-            _localPeerId = GeneratePeerId();
+            _localPeerId = ResolveLocalPeerId();
             _currentSessionId = sessionId;
             return await ConnectAndHandshakeAsync($"HOST:{sessionId}:{_localPeerId}", sessionId, ct);
         }
 
         public async Task<SessionResult> JoinSessionAsync(string sessionId, CancellationToken ct = default)
         {
-            _localPeerId = GeneratePeerId();
+            _localPeerId = ResolveLocalPeerId();
             _currentSessionId = sessionId;
             return await ConnectAndHandshakeAsync($"JOIN:{sessionId}:{_localPeerId}", sessionId, ct);
+        }
+
+        public void SetLocalPeerId(string playerId)
+        {
+            _configuredLocalPeerId = string.IsNullOrWhiteSpace(playerId)
+                ? null
+                : playerId.Trim();
         }
 
         public async Task LeaveSessionAsync(CancellationToken ct = default)
@@ -104,7 +130,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
             try
             {
-                // Binary frame: [SenderIdWidth bytes for senderId][payload]
+                // Binary frame keeps the complete UTF-8 identity.
                 var frame = BuildDataFrame(_localPeerId ?? "unknown", payload);
                 await _socket.SendAsync(new ArraySegment<byte>(frame), WebSocketMessageType.Binary, true, ct);
             }
@@ -232,7 +258,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                     {
                         HandleControlFrame(Encoding.UTF8.GetString(buffer, 0, result.Count));
                     }
-                    else if (result.MessageType == WebSocketMessageType.Binary && result.Count > SenderIdWidth)
+                    else if (result.MessageType == WebSocketMessageType.Binary
+                             && result.Count > 0)
                     {
                         HandleDataFrame(buffer, result.Count);
                     }
@@ -273,10 +300,18 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         private void HandleDataFrame(byte[] buffer, int count)
         {
-            string senderId = Encoding.ASCII.GetString(buffer, 0, SenderIdWidth).TrimEnd('\0', ' ');
-            int payloadLength = count - SenderIdWidth;
-            var payload = new byte[payloadLength];
-            Array.Copy(buffer, SenderIdWidth, payload, 0, payloadLength);
+            if (!TryParseDataFrame(
+                    buffer,
+                    count,
+                    out string senderId,
+                    out byte[] payload))
+            {
+                _qosMonitor?.RecordPacketDropped(
+                    "websocket-malformed-data-frame");
+                _logger.Warn(
+                    $"[WebSocket] Dropped malformed binary frame ({count} bytes).");
+                return;
+            }
 
             var msg = new NetworkMessage(senderId, payload);
             foreach (var obs in _observers)
@@ -315,21 +350,177 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
 
         // ── Utilities ──────────────────────────────────────────────────────────────
 
-        private static byte[] BuildDataFrame(string senderId, byte[] payload)
+        internal static byte[] BuildDataFrame(
+            string senderId,
+            byte[] payload)
         {
-            var frame = new byte[SenderIdWidth + (payload?.Length ?? 0)];
-            var idBytes = Encoding.ASCII.GetBytes(senderId);
-            int idLen = Math.Min(idBytes.Length, SenderIdWidth);
-            Array.Copy(idBytes, 0, frame, 0, idLen);
-            if (payload != null)
-                Array.Copy(payload, 0, frame, SenderIdWidth, payload.Length);
+            if (string.IsNullOrWhiteSpace(senderId))
+            {
+                throw new ArgumentException(
+                    "Sender id cannot be empty.",
+                    nameof(senderId));
+            }
+
+            byte[] idBytes = StrictUtf8.GetBytes(senderId);
+            if (idBytes.Length == 0
+                || idBytes.Length > MaxSenderIdByteCount
+                || idBytes.Length > ushort.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(senderId),
+                    $"Sender id must contain between 1 and {MaxSenderIdByteCount} UTF-8 bytes.");
+            }
+
+            int payloadLength = payload?.Length ?? 0;
+            var frame =
+                new byte[
+                    DataFrameHeaderSize
+                    + idBytes.Length
+                    + payloadLength];
+            Array.Copy(
+                DataFrameMagic,
+                0,
+                frame,
+                0,
+                DataFrameMagic.Length);
+            frame[4] = DataFrameVersion;
+            frame[5] = (byte)(idBytes.Length & 0xFF);
+            frame[6] = (byte)((idBytes.Length >> 8) & 0xFF);
+            Array.Copy(
+                idBytes,
+                0,
+                frame,
+                DataFrameHeaderSize,
+                idBytes.Length);
+            if (payloadLength > 0)
+            {
+                Array.Copy(
+                    payload,
+                    0,
+                    frame,
+                    DataFrameHeaderSize + idBytes.Length,
+                    payloadLength);
+            }
+
             return frame;
+        }
+
+        internal static bool TryParseDataFrame(
+            byte[] buffer,
+            int count,
+            out string senderId,
+            out byte[] payload)
+        {
+            senderId = null;
+            payload = null;
+            if (buffer == null || count < 0 || count > buffer.Length)
+                return false;
+
+            if (HasDataFrameMagic(buffer, count))
+            {
+                if (count < DataFrameHeaderSize
+                    || buffer[4] != DataFrameVersion)
+                {
+                    return false;
+                }
+
+                int senderByteCount =
+                    buffer[5] | (buffer[6] << 8);
+                if (senderByteCount <= 0
+                    || senderByteCount > MaxSenderIdByteCount
+                    || senderByteCount
+                        > count - DataFrameHeaderSize)
+                {
+                    return false;
+                }
+
+                try
+                {
+                    senderId = StrictUtf8.GetString(
+                        buffer,
+                        DataFrameHeaderSize,
+                        senderByteCount);
+                }
+                catch (DecoderFallbackException)
+                {
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(senderId))
+                    return false;
+
+                int payloadOffset =
+                    DataFrameHeaderSize + senderByteCount;
+                int payloadLength = count - payloadOffset;
+                payload = new byte[payloadLength];
+                if (payloadLength > 0)
+                {
+                    Array.Copy(
+                        buffer,
+                        payloadOffset,
+                        payload,
+                        0,
+                        payloadLength);
+                }
+
+                return true;
+            }
+
+            if (count < LegacySenderIdWidth)
+                return false;
+
+            senderId = Encoding.ASCII
+                .GetString(
+                    buffer,
+                    0,
+                    LegacySenderIdWidth)
+                .TrimEnd('\0', ' ');
+            if (string.IsNullOrWhiteSpace(senderId))
+                return false;
+
+            int legacyPayloadLength =
+                count - LegacySenderIdWidth;
+            payload = new byte[legacyPayloadLength];
+            if (legacyPayloadLength > 0)
+            {
+                Array.Copy(
+                    buffer,
+                    LegacySenderIdWidth,
+                    payload,
+                    0,
+                    legacyPayloadLength);
+            }
+
+            return true;
+        }
+
+        private static bool HasDataFrameMagic(
+            byte[] buffer,
+            int count)
+        {
+            if (count < DataFrameMagic.Length)
+                return false;
+
+            for (int index = 0;
+                 index < DataFrameMagic.Length;
+                 index++)
+            {
+                if (buffer[index] != DataFrameMagic[index])
+                    return false;
+            }
+
+            return true;
         }
 
         private static string GeneratePeerId()
         {
             return Guid.NewGuid().ToString("N").Substring(0, 12);
         }
+
+        private string ResolveLocalPeerId()
+            => string.IsNullOrWhiteSpace(_configuredLocalPeerId)
+                ? GeneratePeerId()
+                : _configuredLocalPeerId;
 
         // ── Observable helpers (mirrors OfflineNetworkProvider pattern) ───────────
 

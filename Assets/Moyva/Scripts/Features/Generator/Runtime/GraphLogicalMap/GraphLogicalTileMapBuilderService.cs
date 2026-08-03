@@ -138,6 +138,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
             string layerName = !string.IsNullOrWhiteSpace(layerMap.LayerName)
                 ? layerMap.LayerName
                 : graphLayerName;
+            GeneratorLayerDefinition graphLayer = graph.GetLayerById(layerMap.GraphLayerId);
             return new GraphLogicalTileLayerData(
                 layerMap.GraphLayerId,
                 layerName,
@@ -153,7 +154,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 layerMap.TerrainPriority,
                 !string.IsNullOrWhiteSpace(layerMap.SourceNodeId)
                     ? layerMap.SourceNodeId
-                    : TileSettingsNode.GetNodesForLayer(graph, layerMap.GraphLayerId).Find(node => node != null)?.NodeId);
+                    : TileSettingsNode.GetNodesForLayer(graph, layerMap.GraphLayerId).Find(node => node != null)?.NodeId,
+                graphLayer?.TileGeometryMode ?? TileGeometryMode.SolidTerrain,
+                graphLayer?.AuthoredClosurePolicy ?? AuthoredClosurePolicy.PreserveAuthored);
         }
 
         private static string ResolvePresetId(TilesBuildLayer buildLayer, CompiledLayerMap layerMap)

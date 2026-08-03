@@ -297,16 +297,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 return;
             }
 
-            if (!log.IsConnectedToOutput)
-            {
-                _executionStatusLabel.text = "Not connected to Output";
-                _executionStatusLabel.style.display = DisplayStyle.Flex;
-                _executionStatusLabel.style.color = new Color(1f, 0.78f, 0.28f);
-                _executionStatusLabel.style.backgroundColor =
-                    new Color(0.28f, 0.19f, 0.04f, 0.9f);
-                return;
-            }
-
             if (log.Status == NodeStatus.Error)
             {
                 _executionStatusLabel.text =
@@ -317,6 +307,28 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
                 _executionStatusLabel.style.color = new Color(1f, 0.58f, 0.58f);
                 _executionStatusLabel.style.backgroundColor =
                     new Color(0.3f, 0.05f, 0.05f, 0.9f);
+                return;
+            }
+
+            if (log.Participation == GraphNodeParticipation.GlobalContext)
+            {
+                _executionStatusLabel.text =
+                    "Global setting — connection is not required";
+                _executionStatusLabel.style.display = DisplayStyle.Flex;
+                _executionStatusLabel.style.color =
+                    new Color(0.72f, 0.82f, 0.92f);
+                _executionStatusLabel.style.backgroundColor =
+                    new Color(0.08f, 0.13f, 0.2f, 0.9f);
+                return;
+            }
+
+            if (!log.IsConnectedToOutput)
+            {
+                _executionStatusLabel.text = "Not connected to Output";
+                _executionStatusLabel.style.display = DisplayStyle.Flex;
+                _executionStatusLabel.style.color = new Color(1f, 0.78f, 0.28f);
+                _executionStatusLabel.style.backgroundColor =
+                    new Color(0.28f, 0.19f, 0.04f, 0.9f);
                 return;
             }
 

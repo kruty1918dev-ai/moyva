@@ -1,4 +1,5 @@
 using Kruty1918.Moyva.Generator.Runtime.ChunkFirst;
+using Kruty1918.Moyva.GraphSystem.API;
 
 namespace Kruty1918.Moyva.Generator.Runtime
 {
@@ -17,7 +18,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
             int sortingOrder = 0,
             int graphLayerOrder = 0,
             int terrainPriority = 0,
-            string sourceNodeId = null)
+            string sourceNodeId = null,
+            TileGeometryMode tileGeometryMode = TileGeometryMode.SolidTerrain,
+            AuthoredClosurePolicy authoredClosurePolicy = AuthoredClosurePolicy.PreserveAuthored)
         {
             GraphLayerId = graphLayerId;
             LayerName = layerName;
@@ -32,6 +35,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
             GraphLayerOrder = graphLayerOrder;
             TerrainPriority = terrainPriority;
             SourceNodeId = sourceNodeId;
+            TileGeometryMode = tileGeometryMode;
+            AuthoredClosurePolicy = authoredClosurePolicy;
         }
 
         public string GraphLayerId { get; }
@@ -47,6 +52,8 @@ namespace Kruty1918.Moyva.Generator.Runtime
         public int GraphLayerOrder { get; }
         public int TerrainPriority { get; }
         public string SourceNodeId { get; }
+        public TileGeometryMode TileGeometryMode { get; }
+        public AuthoredClosurePolicy AuthoredClosurePolicy { get; }
 
         public GraphTileLayerSample ToSample()
         {
@@ -63,7 +70,9 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 TerrainPriority,
                 LayerHeight,
                 SurfaceHeight,
-                SourceNodeId);
+                SourceNodeId,
+                TileGeometryMode,
+                AuthoredClosurePolicy);
         }
     }
 }

@@ -77,14 +77,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
 			return ResolveService().CompileGraphToConfiguration(this, seed);
 		}
 
-		public void GenerateFromGraph()
+		public bool GenerateFromGraph()
 		{
-			ResolveService().GenerateFromGraph(this);
+			return ResolveService().GenerateFromGraph(this);
 		}
 
-		public void GenerateFromGraph(int seed)
+		public bool GenerateFromGraph(int seed)
 		{
-			ResolveService().GenerateFromGraph(this, seed);
+			return ResolveService().GenerateFromGraph(this, seed);
 		}
 
 		public IReadOnlyList<string> GetGraphLayerNames()

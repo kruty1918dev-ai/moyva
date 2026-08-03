@@ -9,6 +9,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 {
     internal static class ConstructionTerrainBuildabilityUtility
     {
+        private const string WaterTerrainTag = "water";
+
         private static readonly Vector2Int[] CardinalDirections =
         {
             Vector2Int.up,
@@ -23,7 +25,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             IGeneratedTerrainLevelQuery generatedTerrainLevelQuery,
             ITileSettingsService tileSettings,
             IConstructionPlacementRulesProvider placementRulesProvider,
-            WorldCreationDefaultsSO worldDefaults,
             out string reason)
         {
             reason = null;
@@ -50,13 +51,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     return true;
                 }
 
-                if (worldDefaults?.BlockedBuildingHillLevelRanges != null
-                    && worldDefaults.BlockedBuildingHillLevelRanges.Count > 0
-                    && IsTerrainLevelBlocked(worldDefaults.BlockedBuildingHillLevelRanges, terrainLevel))
-                {
-                    reason = $"blocked hill level {terrainLevel}";
-                    return true;
-                }
             }
 
             if (gridService == null)
@@ -68,7 +62,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return true;
             }
 
-            if (IsBlockedBuildingTile(tileTypeId, placementRulesProvider?.BlockedTileIds, worldDefaults?.BlockedBuildingTileIds))
+            if (IsBlockedBuildingTile(tileTypeId, placementRulesProvider?.BlockedTileIds))
             {
                 reason = $"blocked tile '{tileTypeId}'";
                 return true;
@@ -80,7 +74,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return true;
             }
 
-            if (tileSettings != null && tileSettings.IsBuildBlocked(tileTypeId))
+            bool isWater = tileSettings is ITerrainTagQuery terrainTagQuery
+                && terrainTagQuery.HasTerrainTag(
+                    tileTypeId,
+                    WaterTerrainTag);
+            bool allowBuildingOnWater =
+                placementRulesProvider?.AllowBuildingOnWater ?? false;
+            if (isWater && !allowBuildingOnWater)
+            {
+                reason = $"water terrain '{tileTypeId}' is not buildable";
+                return true;
+            }
+
+            // Terrain profiles normally mark water as build-blocked. The global
+            // construction profile can deliberately opt into water placement,
+            // but it must not bypass build-blocking on any non-water terrain.
+            if (tileSettings != null
+                && tileSettings.IsBuildBlocked(tileTypeId)
+                && !(isWater && allowBuildingOnWater))
             {
                 reason = $"build-blocked layer '{tileTypeId}'";
                 return true;
@@ -134,16 +145,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private static bool IsBlockedBuildingTile(
             string tileTypeId,
-            string[] profileBlockedTileIds,
-            IReadOnlyList<string> worldBlockedTileIds)
+            string[] profileBlockedTileIds)
         {
             if (string.IsNullOrWhiteSpace(tileTypeId))
                 return false;
 
-            if (ContainsTileId(profileBlockedTileIds, tileTypeId))
-                return true;
-
-            return ContainsTileId(worldBlockedTileIds, tileTypeId);
+            return ContainsTileId(profileBlockedTileIds, tileTypeId);
         }
 
         private static bool IsAllowedBuildingTile(string tileTypeId, IReadOnlyList<string> allowedTileIds)
