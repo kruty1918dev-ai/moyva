@@ -22,8 +22,8 @@ MonoBehaviour:
     Tags: []
   Presentation:
     Prefab: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
-    Icon: {fileID: -438762628, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
-    RuntimePreview: {fileID: -438762628, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Icon: {fileID: 700415024161382652, guid: 30d97717740313ad390b87a9b6eb3834, type: 3}
+    RuntimePreview: {fileID: 700415024161382652, guid: 30d97717740313ad390b87a9b6eb3834, type: 3}
     UiTint: {r: 1, g: 1, b: 1, a: 1}
     VisualYOffset: 0
     PreviewSettings:
@@ -113,11 +113,12 @@ MonoBehaviour:
       data:
         IsEnabled: 1
         SingletonScope: 1
-        MergeMode: 1
+        MergeMode: 0
         AllowedTerrainIds: []
         BlockedTerrainIds: []
         AllowedTerrainTags: []
-        BlockedTerrainTags: []
+        BlockedTerrainTags:
+        - water
         AllowedTerrainLevels: 
         BlockedTerrainLevels: 
         RequiredNeighborOffsets: []

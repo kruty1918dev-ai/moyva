@@ -61,6 +61,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Configuration configuration,
             TileWorldCreatorTerrainBuildPolicyResult terrainPolicy)
         {
+            ChunkFirstHeightAudit.Reset();
             _diagnostics.LogStart(terrainPolicy.Mode, worldData, _chunkSettings.ChunkSize);
             if (worldData?.LogicalTileMap == null)
             {

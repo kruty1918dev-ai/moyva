@@ -17,6 +17,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly List<CombineInstance> _finalCombine = new List<CombineInstance>(16);
         private readonly List<Material> _materials = new List<Material>(16);
         private readonly List<TileMeshSource> _cellSources = new List<TileMeshSource>(4);
+        private readonly HashSet<string> _chunkAuditLayerIds =
+            new HashSet<string>(System.StringComparer.Ordinal);
         private readonly Dictionary<TileVerticalFillMeshKey, Mesh> _verticalMeshCache =
             new Dictionary<TileVerticalFillMeshKey, Mesh>();
         private readonly HashSet<TileVerticalFillMeshKey> _verticalMeshPassthroughCache =
@@ -62,6 +64,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             RecycleCombineLists();
             _finalCombine.Clear();
             _materials.Clear();
+            _chunkAuditLayerIds.Clear();
             _sourceVertices = 0;
             _sourceIndices = 0;
             _sourceTriangles = 0;
@@ -175,6 +178,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _visibilityUnreferencedVerticesRemoved += Mathf.Max(
                 0,
                 source.Mesh.vertexCount - mesh.vertexCount);
+            if (!string.IsNullOrWhiteSpace(source.GraphLayerId))
+                _chunkAuditLayerIds.Add(source.GraphLayerId);
 
             Material[] materials = source.Materials;
             int subMeshCount = mesh.subMeshCount;
@@ -327,6 +332,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             mesh.RecalculateBounds();
             mesh.bounds = CreateStableChunkBounds(area, mesh.bounds);
+            foreach (string graphLayerId in _chunkAuditLayerIds)
+                ChunkFirstHeightAudit.RecordChunkBounds(graphLayerId, mesh.bounds);
             if (!mesh.HasVertexAttribute(VertexAttribute.Normal))
                 mesh.RecalculateNormals();
             return mesh;

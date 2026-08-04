@@ -55,6 +55,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Mesh mesh,
             Material[] materials,
             Matrix4x4 localMatrix,
+            string graphLayerId = null,
+            string graphLayerName = null,
             float visibleBottomY = float.NaN,
             TileMeshOccludedSides occludedSides = TileMeshOccludedSides.None,
             Vector2 tileCenterXZ = default,
@@ -67,6 +69,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Mesh = mesh;
             Materials = materials;
             LocalMatrix = localMatrix;
+            GraphLayerId = graphLayerId;
+            GraphLayerName = graphLayerName;
             VisibleBottomY = visibleBottomY;
             OccludedSides = occludedSides;
             TileCenterXZ = tileCenterXZ;
@@ -80,6 +84,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         public Mesh Mesh { get; }
         public Material[] Materials { get; }
         public Matrix4x4 LocalMatrix { get; }
+        public string GraphLayerId { get; }
+        public string GraphLayerName { get; }
         public float VisibleBottomY { get; }
         public TileMeshOccludedSides OccludedSides { get; }
         public Vector2 TileCenterXZ { get; }

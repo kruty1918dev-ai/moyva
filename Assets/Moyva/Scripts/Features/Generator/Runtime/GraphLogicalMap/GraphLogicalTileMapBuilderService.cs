@@ -62,6 +62,14 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 layerHeight,
                 blueprint.defaultLayerHeight,
                 projectedSurfaceHeight);
+            ChunkFirstHeightAudit.RecordLogicalLayer(
+                layerMap.GraphLayerId,
+                graphLayer.Name,
+                graphLayer.DefaultHeight,
+                blueprint.defaultLayerHeight,
+                projectedSurfaceHeight,
+                layerHeight,
+                surfaceHeight);
 
             var data = CreateLayerData(
                 graph,

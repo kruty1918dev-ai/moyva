@@ -1,0 +1,149 @@
+BUILDINGS UNITY SCALE FIX REPORT
+
+Cause: seven blue FBX files retained UnitScaleFactor=1 while normalized transforms were Scale=1.
+Fix: UnitScaleFactor and OriginalUnitScaleFactor changed to 100 without altering vertices, UVs, normals, materials, GUIDs, or object transforms.
+Unity import target: Scale Factor 1, Use File Scale/Convert Units enabled.
+
+FBX files checked: 129
+Patched: 7
+Errors: 0
+
+PATCHED FILES:
+  blue/building_archeryrange_blue.fbx
+  blue/building_barracks_blue.fbx
+  blue/building_blacksmith_blue.fbx
+  blue/building_castle_blue.fbx
+  blue/building_church_blue.fbx
+  blue/building_docks_blue.fbx
+  blue/building_home_A_blue.fbx
+
+VALIDATION:
+OK | blue/building_archeryrange_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.670634 x 1.791735 x 1.550816
+OK | blue/building_barracks_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.440005 x 1.640052 x 1.566075
+OK | blue/building_blacksmith_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.287601 x 0.985105 x 1.224594
+OK | blue/building_castle_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.975413 x 3.979206 x 2.256254
+OK | blue/building_church_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.028993 x 1.645036 x 1.155002
+OK | blue/building_docks_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=2.000000 x 1.444471 x 0.500000
+OK | blue/building_home_A_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=EMPTY
+OK | blue/building_home_B_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.840000 x 1.280000 x 1.085000
+OK | blue/building_lumbermill_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.359958 x 1.707826 x 1.188732
+OK | blue/building_market_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.799381 x 0.981640 x 1.315602
+OK | blue/building_mine_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.605553 x 1.136575 x 1.919960
+OK | blue/building_shipyard_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.919379 x 1.238926 x 1.883835
+OK | blue/building_shrine_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.154414 x 0.853343 x 1.297227
+OK | blue/building_stables_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.858565 x 0.611494 x 2.131630
+OK | blue/building_tavern_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.171728 x 1.396650 x 1.332318
+OK | blue/building_tent_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.515241 x 0.849623 x 1.344923
+OK | blue/building_tower_A_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.993273 x 2.191735 x 1.153466
+OK | blue/building_tower_B_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.197396 x 2.485365 x 1.382633
+OK | blue/building_tower_base_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 1.500000 x 1.111126
+OK | blue/building_tower_cannon_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 2.039726 x 1.111126
+OK | blue/building_tower_catapult_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 1.964091 x 1.303330
+OK | blue/building_townhall_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.400000 x 1.886103 x 1.550000
+OK | blue/building_watchtower_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.995265 x 1.112976 x 0.999921
+OK | blue/building_watermill_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.167842 x 1.568004 x 1.235964
+OK | blue/building_well_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.651794 x 0.826013 x 0.750724
+OK | blue/building_windmill_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.125770 x 1.457879 x 0.816521
+OK | blue/building_workshop_blue.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.665358 x 1.153570 x 1.667187
+OK | green/building_archeryrange_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.670634 x 1.791735 x 1.550816
+OK | green/building_barracks_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.440005 x 1.640052 x 1.566075
+OK | green/building_blacksmith_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.287601 x 0.985105 x 1.245150
+OK | green/building_castle_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.975413 x 3.979206 x 2.256254
+OK | green/building_church_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.028993 x 1.645036 x 1.155002
+OK | green/building_docks_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=2.000000 x 1.444471 x 0.500000
+OK | green/building_home_A_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.791960 x 0.930000 x 0.853652
+OK | green/building_home_B_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.874928 x 1.280000 x 1.098652
+OK | green/building_lumbermill_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.366967 x 1.707826 x 1.189233
+OK | green/building_market_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.799381 x 0.981640 x 1.315603
+OK | green/building_mine_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.605553 x 1.136635 x 1.919960
+OK | green/building_shipyard_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.919379 x 1.238926 x 1.883835
+OK | green/building_shrine_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.154414 x 0.853343 x 1.297227
+OK | green/building_stables_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.858565 x 0.611494 x 2.131630
+OK | green/building_tavern_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.171728 x 1.396650 x 1.332318
+OK | green/building_tent_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.516432 x 0.849623 x 1.344923
+OK | green/building_tower_A_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.993273 x 2.191735 x 1.153466
+OK | green/building_tower_B_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.197396 x 2.485365 x 1.382633
+OK | green/building_tower_base_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 1.500000 x 1.111126
+OK | green/building_tower_cannon_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 2.039726 x 1.111126
+OK | green/building_tower_catapult_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 1.964091 x 1.303331
+OK | green/building_townhall_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.434928 x 1.886103 x 1.563652
+OK | green/building_watchtower_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.044942 x 1.112976 x 1.044942
+OK | green/building_watermill_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.050000 x 1.568004 x 1.235964
+OK | green/building_well_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.651794 x 0.826012 x 0.750724
+OK | green/building_windmill_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.125770 x 1.457879 x 0.816522
+OK | green/building_workshop_green.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.665358 x 1.153570 x 1.667187
+OK | neutral/building_bridge_A.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.333331 x 1.250000 x 1.924500
+OK | neutral/building_bridge_B.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.333331 x 1.250000 x 1.924500
+OK | neutral/building_destroyed.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.539276 x 0.993912 x 1.305918
+OK | neutral/building_dirt.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.794818 x 0.086594 x 2.006808
+OK | neutral/building_grain.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.873690 x 0.393796 x 2.093598
+OK | neutral/building_scaffolding.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.900476 x 1.298636 x 2.109300
+OK | neutral/building_stage_A.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.046698 x 0.285893 x 0.875011
+OK | neutral/building_stage_B.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.020506 x 0.635892 x 1.130577
+OK | neutral/building_stage_C.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.160009 x 0.985897 x 1.127083
+OK | neutral/fence_stone_straight.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.200000 x 0.268994 x 1.154700
+OK | neutral/fence_stone_straight_gate.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.200000 x 0.296272 x 1.154700
+OK | neutral/fence_wood_straight.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.100000 x 0.550013 x 1.154701
+OK | neutral/fence_wood_straight_gate.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.140000 x 0.650000 x 1.154701
+OK | neutral/projectile_catapult.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.240451 x 0.282671 x 0.252828
+OK | neutral/wall_corner_A_gate.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.759799 x 1.415108 x 1.532521
+OK | neutral/wall_corner_A_inside.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.846422 x 1.100000 x 1.416020
+OK | neutral/wall_corner_A_outside.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.759807 x 1.100000 x 1.431745
+OK | neutral/wall_corner_B_inside.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.962500 x 1.100000 x 1.466018
+OK | neutral/wall_corner_B_outside.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.964026 x 1.100000 x 1.349716
+OK | neutral/wall_straight.fbx | units=100.0 | importerScale=1.0 | rawBounds=2.000000 x 1.100000 x 0.800000
+OK | neutral/wall_straight_gate.fbx | units=100.0 | importerScale=1.0 | rawBounds=2.000000 x 1.414029 x 0.895624
+OK | red/building_archeryrange_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.670634 x 1.791735 x 1.550816
+OK | red/building_barracks_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.440005 x 1.640052 x 1.566075
+OK | red/building_blacksmith_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.287601 x 0.985105 x 1.245150
+OK | red/building_castle_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.975413 x 3.979206 x 2.256254
+OK | red/building_church_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.028993 x 1.645036 x 1.155002
+OK | red/building_docks_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=2.000000 x 1.444471 x 0.500000
+OK | red/building_home_A_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.791960 x 0.930000 x 0.853652
+OK | red/building_home_B_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.874928 x 1.280000 x 1.098652
+OK | red/building_lumbermill_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.366967 x 1.707826 x 1.189233
+OK | red/building_market_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.799381 x 0.981640 x 1.315603
+OK | red/building_mine_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.605553 x 1.136635 x 1.919960
+OK | red/building_shipyard_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.919379 x 1.238926 x 1.883835
+OK | red/building_shrine_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.154414 x 0.853343 x 1.297227
+OK | red/building_stables_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.858565 x 0.611494 x 2.131630
+OK | red/building_tavern_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.171728 x 1.396650 x 1.332318
+OK | red/building_tent_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.516432 x 0.849623 x 1.344923
+OK | red/building_tower_A_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.993273 x 2.191735 x 1.153466
+OK | red/building_tower_B_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.197396 x 2.485365 x 1.382633
+OK | red/building_tower_base_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 1.500000 x 1.111126
+OK | red/building_tower_cannon_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 2.039726 x 1.111126
+OK | red/building_tower_catapult_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 1.964091 x 1.303331
+OK | red/building_townhall_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.434928 x 1.886103 x 1.563652
+OK | red/building_watchtower_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.044942 x 1.112976 x 1.044942
+OK | red/building_watermill_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.050000 x 1.568004 x 1.235964
+OK | red/building_well_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.651794 x 0.826012 x 0.750724
+OK | red/building_windmill_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.125770 x 1.457879 x 0.816521
+OK | red/building_workshop_red.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.665358 x 1.153570 x 1.667187
+OK | yellow/building_archeryrange_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.670634 x 1.791735 x 1.550816
+OK | yellow/building_barracks_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.440005 x 1.640052 x 1.566075
+OK | yellow/building_blacksmith_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.287601 x 0.985105 x 1.245150
+OK | yellow/building_castle_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.975413 x 3.979206 x 2.256254
+OK | yellow/building_church_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.028993 x 1.645036 x 1.155002
+OK | yellow/building_docks_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=2.000000 x 1.444471 x 0.500000
+OK | yellow/building_home_A_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.791960 x 0.930000 x 0.853652
+OK | yellow/building_home_B_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.874928 x 1.280000 x 1.098652
+OK | yellow/building_lumbermill_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.366967 x 1.707826 x 1.189234
+OK | yellow/building_market_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.799381 x 0.981640 x 1.315603
+OK | yellow/building_mine_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.605553 x 1.136635 x 1.919960
+OK | yellow/building_shipyard_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.919379 x 1.238926 x 1.883835
+OK | yellow/building_shrine_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.154414 x 0.853343 x 1.297227
+OK | yellow/building_stables_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.858565 x 0.611494 x 2.131630
+OK | yellow/building_tavern_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.171728 x 1.396650 x 1.332318
+OK | yellow/building_tent_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.516432 x 0.849623 x 1.344923
+OK | yellow/building_tower_A_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.993273 x 2.191735 x 1.153466
+OK | yellow/building_tower_B_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.197396 x 2.485365 x 1.382633
+OK | yellow/building_tower_base_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 1.500000 x 1.111126
+OK | yellow/building_tower_cannon_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 2.039726 x 1.111126
+OK | yellow/building_tower_catapult_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.929793 x 1.964091 x 1.303330
+OK | yellow/building_townhall_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.434928 x 1.886103 x 1.563652
+OK | yellow/building_watchtower_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.044942 x 1.112976 x 1.044942
+OK | yellow/building_watermill_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.050000 x 1.568004 x 1.235964
+OK | yellow/building_well_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=0.651794 x 0.826012 x 0.750724
+OK | yellow/building_windmill_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.125770 x 1.457879 x 0.816522
+OK | yellow/building_workshop_yellow.fbx | units=100.0 | importerScale=1.0 | rawBounds=1.665358 x 1.153570 x 1.667187

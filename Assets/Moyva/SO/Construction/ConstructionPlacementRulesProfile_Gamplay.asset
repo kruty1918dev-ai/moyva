@@ -21,6 +21,7 @@ MonoBehaviour:
   _blockEdgeTerrainTiles: 0
   _enableFogRules: 1
   _requireVisibleFogTile: 1
-  _blockedTileIds: []
+  _blockedTileIds:
+  - water
   _allowedTileIds: []
   _blockedTerrainLevelRanges: []

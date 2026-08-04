@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: TileWater
   m_EditorClassIdentifier: 
   previewThumbnail: {fileID: 2800000, guid: 96d6a84947bb1e24a8c0025ec5bf0c13, type: 3}
+  tileId: water
   gridtype: 1
   DUALGRD_cornerTile: {fileID: 1327582878135713183, guid: 01241bf96eccd2544af67614bf04a6b7, type: 3}
   DUALGRD_invertedCornerTile: {fileID: 8353162540286234213, guid: 110f73005accbbe4cb8dc8185a19f00c, type: 3}
@@ -33,11 +34,17 @@ MonoBehaviour:
   NRMGRD_edgeCornerFillTile: {fileID: 0}
   NRMGRD_threeCornerTile: {fileID: 0}
   NRMGRD_fourWayTile: {fileID: 0}
+  materialOverride: {fileID: 0}
   cornerTileYRotationOffset: 180
   invertedCornerTileYRotationOffset: 180
   edgeTileYRotationOffset: -90
   fillTileYRotationOffset: 0
   doubleInteriorCornerTileYRotationOffset: -90
+  cornerTileXRotationOffset: 0
+  invertedCornerTileXRotationOffset: 0
+  edgeTileXRotationOffset: 0
+  fillTileXRotationOffset: 0
+  doubleInteriorCornerTileXRotationOffset: 0
   NRMGRD_deadEndTileYRotationOffset: 0
   NRMGRD_singleTileYRotationOffset: 0
   NRMGRD_fillTileYRotationOffset: 0

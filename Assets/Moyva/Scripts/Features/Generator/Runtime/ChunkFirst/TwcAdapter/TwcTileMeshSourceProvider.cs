@@ -249,6 +249,25 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             float visibleBottomY = sample.TileGeometryMode == TileGeometryMode.SolidTerrain
                 ? ResolveVisibleBottomY(composition)
                 : float.NaN;
+            float actualTopWorldY = placementHeight + prefabTopOffset;
+            float authoredBottomWorldY = placementHeight + prefabBottomOffset;
+            float actualBottomWorldY = sample.TileGeometryMode == TileGeometryMode.SolidTerrain
+                && IsFinite(visibleBottomY)
+                ? Mathf.Min(authoredBottomWorldY, visibleBottomY)
+                : authoredBottomWorldY;
+
+            ChunkFirstHeightAudit.RecordPlacement(
+                sample.GraphLayerId,
+                sample.GraphLayerName,
+                composition.Cell,
+                composition.MainTerrain.GraphLayerName,
+                composition.MainTerrain.SurfaceHeight,
+                composition.SupportHeight,
+                prefabTopOffset,
+                prefabBottomOffset,
+                rootMatrix.m13,
+                actualTopWorldY,
+                actualBottomWorldY);
 
             int missingClosureOwner =
                 sample.TileGeometryMode == TileGeometryMode.SolidTerrain
@@ -278,6 +297,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     template.Mesh,
                     template.ResolveMaterials(materialOverride),
                     rootMatrix * template.ChildMatrix,
+                    sample.GraphLayerId,
+                    sample.GraphLayerName,
                     visibleBottomY,
                     occludedSides,
                     new Vector2(position.x, position.z),
