@@ -27,7 +27,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             bool hasOverlay = TryResolveOverlay(neighborhood, out var overlay);
             string reason = hasMain ? TerrainWinnerReason : "no terrain-like layer in stack";
 
-            return new ResolvedTileComposition(
+            float supportHeight = hasMain
+                ? ResolveSupportHeight(
+                    main,
+                    neighborhood.Center,
+                    lowestLayerHeight)
+                : float.NaN;
+
+            var result = new ResolvedTileComposition(
                 cell,
                 main,
                 overlay,
@@ -42,9 +49,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 MatchesMain(main, neighborhood.SouthEast),
                 MatchesMain(main, neighborhood.SouthWest),
                 MatchesMain(main, neighborhood.NorthWest),
-                supportHeight: hasMain
-                    ? ResolveSupportHeight(main, neighborhood.Center, lowestLayerHeight)
-                    : float.NaN,
+                supportHeight: supportHeight,
                 northSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.North),
                 eastSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.East),
                 southSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.South),
@@ -53,6 +58,31 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 southEastSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.SouthEast),
                 southWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.SouthWest),
                 northWestSurfaceHeight: ResolveNeighborSurfaceHeight(neighborhood.NorthWest));
+
+            if (hasMain)
+            {
+                string traceKey =
+                    $"{main.GraphLayerId}|" +
+                    $"{main.Height:0.###}|" +
+                    $"{main.SurfaceHeight:0.###}|" +
+                    $"{supportHeight:0.###}|" +
+                    $"{neighborhood.Center.Count}";
+
+                ChunkFirstHeightAudit.TraceUnique(
+                    "RESOLVE",
+                    traceKey,
+                    $"exampleCell=({cell.x},{cell.y}) " +
+                    $"stackCount={neighborhood.Center.Count} " +
+                    $"winnerLayer={main.GraphLayerName} " +
+                    $"winnerTile={main.TileId} " +
+                    $"winnerHeight={main.Height:0.###} " +
+                    $"winnerSurface={main.SurfaceHeight:0.###} " +
+                    $"supportHeight={supportHeight:0.###} " +
+                    $"sortingOrder={main.SortingOrder} " +
+                    $"terrainPriority={main.TerrainPriority}");
+            }
+
+            return result;
         }
 
         private float ResolveNeighborSurfaceHeight(TileStackCell cell)
