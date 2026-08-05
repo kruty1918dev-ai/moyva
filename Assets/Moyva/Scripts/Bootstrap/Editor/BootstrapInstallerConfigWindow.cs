@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
 {
     public sealed class BootstrapInstallerConfigWindow : EditorWindow
     {
-        private const string DefaultAssetPath = "Assets/Moyva/SO/Bootstrap/BootstrapInstallerConfig.asset";
+        private const string DefaultAssetPath = "Assets/Moyva/Data/ScriptableObjects/Bootstrap/BootstrapInstallerConfig.asset";
 
         private BootstrapInstallerConfigSO _config;
         private FogOfWarSettings _fogSettings;
@@ -559,8 +559,8 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
 
         private void CreateConfigAsset()
         {
-            EnsureFolder("Assets/Moyva/SO");
-            EnsureFolder("Assets/Moyva/SO/Bootstrap");
+            EnsureFolder("Assets/Moyva/Data/ScriptableObjects");
+            EnsureFolder("Assets/Moyva/Data/ScriptableObjects/Bootstrap");
 
             var created = ScriptableObject.CreateInstance<BootstrapInstallerConfigSO>();
             string path = AssetDatabase.GenerateUniqueAssetPath(DefaultAssetPath);

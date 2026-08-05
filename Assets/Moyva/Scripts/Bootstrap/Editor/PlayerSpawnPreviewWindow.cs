@@ -7,7 +7,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
 {
     public sealed class PlayerSpawnPreviewWindow : EditorWindow
     {
-        private const string DefaultBootstrapAssetPath = "Assets/Moyva/SO/Bootstrap/BootstrapInstallerConfig.asset";
+        private const string DefaultBootstrapAssetPath = "Assets/Moyva/Data/ScriptableObjects/Bootstrap/BootstrapInstallerConfig.asset";
         private const float PreviewPadding = 20f;
         private const int DefaultPreviewSeed = 1918;
 
@@ -60,7 +60,7 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
 
             if (_config == null)
             {
-                EditorGUILayout.HelpBox("Признач BootstrapInstallerConfigSO. За замовчуванням інструмент шукає Assets/Moyva/SO/Bootstrap/BootstrapInstallerConfig.asset.", MessageType.Info);
+                EditorGUILayout.HelpBox("Признач BootstrapInstallerConfigSO. За замовчуванням інструмент шукає Assets/Moyva/Data/ScriptableObjects/Bootstrap/BootstrapInstallerConfig.asset.", MessageType.Info);
                 if (GUILayout.Button("Завантажити стандартний config"))
                     LoadDefaultConfig();
                 return;

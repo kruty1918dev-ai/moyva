@@ -8,7 +8,7 @@ namespace Kruty1918.Moyva.Construction.Editor
     public sealed class BuildingTemplateLibrarySO : ScriptableObject
     {
         [FolderPath(RequireExistingPath = true)]
-        public string DefaultOutputFolder = "Assets/Moyva/SO/Construction/Buildings";
+        public string DefaultOutputFolder = "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings";
 
         [AssetsOnly]
         [ListDrawerSettings(ShowFoldout = true, DefaultExpandedState = true)]

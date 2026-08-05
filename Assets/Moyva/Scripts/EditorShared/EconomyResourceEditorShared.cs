@@ -10,7 +10,7 @@ namespace Kruty1918.Moyva.Editor.Shared
     public static class EconomyResourceEditorShared
     {
         private const string ResourcesProperty = "_resources";
-        private const string EconomyRootFolder = "Assets/Moyva/SO/Economy";
+        private const string EconomyRootFolder = "Assets/Moyva/Data/ScriptableObjects/Economy";
         private const string ResourcesFolder = EconomyRootFolder + "/Resources";
 
         public static bool TrySyncResourceAssetName(EconomyResourceDefinition resource, out string error)

@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Calendar.Editor
     /// </summary>
     public sealed class CalendarConfigEditorWindow : EditorWindow
     {
-        private const string ConfigPath = "Assets/Moyva/calendar_config.dat";
+        private const string ConfigPath = "Assets/Moyva/Data/Configs/calendar_config.dat";
 
         private static readonly GUIContent MonthsInYearContent = new(
             "Кількість місяців у році",

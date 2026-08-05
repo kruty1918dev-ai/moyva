@@ -16,7 +16,7 @@ namespace Kruty1918.Moyva.Tests.Generator
     public sealed class ChunkFirstHeightAuditIntegrationTests
     {
         private const string SourceGraphPath =
-            "Assets/Moyva/SO/Generation/Prototype/TestGeneratorGraph.asset";
+            "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/TestGeneratorGraph.asset";
         private const string TestFolder =
             "Assets/Moyva/Scripts/Tests/Generator/__ChunkFirstHeightAuditTemp";
         private const string GraphCopyPath =

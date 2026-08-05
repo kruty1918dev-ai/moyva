@@ -12,7 +12,7 @@ namespace Kruty1918.Moyva.Editor
     public sealed class RegistryFactoryEditorWindow : EditorWindow
     {
         private const string TilePrefabFolder = "Assets/Moyva/Prefabs/Tiles";
-        private const string ObjectPrefabFolder = "Assets/Moyva/Prefabs/Objects";
+        private const string ObjectPrefabFolder = "Assets/Moyva/Prefabs/Environment";
         private const string UnitPrefabFolder = "Assets/Moyva/Prefabs/Units";
 
         private TileRegistrySO _tileRegistry;

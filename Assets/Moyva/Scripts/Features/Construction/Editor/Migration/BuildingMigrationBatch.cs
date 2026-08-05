@@ -8,7 +8,7 @@ namespace Kruty1918.Moyva.Construction.Editor
 {
     public static class BuildingMigrationBatch
     {
-        private const string DefaultOutputFolder = "Assets/Moyva/SO/Construction/Buildings";
+        private const string DefaultOutputFolder = "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings";
 
         [MenuItem(
             "Moyva/Tools/Construction/Migrate Placement Rules To Modules",

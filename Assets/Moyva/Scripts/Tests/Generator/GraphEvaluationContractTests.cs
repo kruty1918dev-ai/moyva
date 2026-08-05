@@ -1012,11 +1012,11 @@ namespace Kruty1918.Moyva.Tests.Generator
             Assert.That(
                 AssetDatabase.GUIDToAssetPath(LegacyGraphGuid),
                 Is.EqualTo(
-                    "Assets/Moyva/SO/Generation/Legacy/GeneratorGraph.asset"));
+                    "Assets/Moyva/Data/ScriptableObjects/Generation/Legacy/GeneratorGraph.asset"));
             Assert.That(
                 AssetDatabase.GUIDToAssetPath(ActiveGraphGuid),
                 Is.EqualTo(
-                    "Assets/Moyva/SO/Generation/Prototype/TestGeneratorGraph.asset"));
+                    "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/TestGeneratorGraph.asset"));
             Assert.That(
                 AssetDatabase.LoadAssetAtPath<GraphAsset>(
                     AssetDatabase.GUIDToAssetPath(ActiveGraphGuid)),

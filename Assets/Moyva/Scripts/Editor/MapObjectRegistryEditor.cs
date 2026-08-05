@@ -7,7 +7,7 @@ namespace Kruty1918.Moyva.Editor
     [CustomEditor(typeof(MapObjectRegistrySO))]
     public sealed class MapObjectRegistryEditor : UnityEditor.Editor
     {
-        private const string ObjectPrefabFolder = "Assets/Moyva/Prefabs/Objects";
+        private const string ObjectPrefabFolder = "Assets/Moyva/Prefabs/Environment";
 
         private SerializedProperty _definitions;
         private Vector2 _scroll;

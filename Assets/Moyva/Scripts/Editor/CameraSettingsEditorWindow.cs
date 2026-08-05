@@ -6,7 +6,7 @@ namespace Kruty1918.Moyva.Editor
 {
     public sealed class CameraSettingsEditorWindow : EditorWindow
     {
-        private const string DefaultAssetPath = "Assets/Moyva/SO/Camera/CameraSettings.asset";
+        private const string DefaultAssetPath = "Assets/Moyva/Data/ScriptableObjects/Camera/CameraSettings.asset";
 
         private CameraSettingsSO _settingsAsset;
         private SerializedObject _serialized;
@@ -132,8 +132,8 @@ namespace Kruty1918.Moyva.Editor
         private void CreateOrFindAsset()
         {
             EnsureFolder("Assets/Moyva");
-            EnsureFolder("Assets/Moyva/SO");
-            EnsureFolder("Assets/Moyva/SO/Camera");
+            EnsureFolder("Assets/Moyva/Data/ScriptableObjects");
+            EnsureFolder("Assets/Moyva/Data/ScriptableObjects/Camera");
 
             _settingsAsset = AssetDatabase.LoadAssetAtPath<CameraSettingsSO>(DefaultAssetPath);
             if (_settingsAsset == null)

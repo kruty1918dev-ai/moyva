@@ -317,7 +317,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             return !_prefabCache.TryGetValue(id, out bool has) || has;
         }
 
-        private const string ObjectPrefabFolder = "Assets/Moyva/Prefabs/Objects";
+        private const string ObjectPrefabFolder = "Assets/Moyva/Prefabs/Environment";
 
         private static void GeneratePrefabForObjectId(string id, Sprite sprite)
         {

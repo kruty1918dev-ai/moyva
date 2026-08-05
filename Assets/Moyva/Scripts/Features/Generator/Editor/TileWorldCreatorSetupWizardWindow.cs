@@ -36,7 +36,7 @@ namespace Kruty1918.Moyva.Generator.Editor
             public string TilePresetHint { get; }
         }
 
-        private const string DefaultAssetFolder = "Assets/Moyva/SO/Generation/TileWorldCreator";
+        private const string DefaultAssetFolder = "Assets/Moyva/Data/ScriptableObjects/Generation/TileWorldCreator";
         private const string DefaultConfigurationName = "MoyvaTileWorldCreatorConfiguration.asset";
         private const string DefaultMappingName = "MoyvaTileWorldCreatorIdMapping.asset";
         private const string DefaultSceneContextName = "SceneContext";
@@ -1005,7 +1005,7 @@ namespace Kruty1918.Moyva.Generator.Editor
         private static List<TilePreset> LoadTilePresets()
         {
             var result = new List<TilePreset>();
-            string[] guids = AssetDatabase.FindAssets("t:TilePreset", new[] { "Assets/TileWorldCreator/Tiles URP" });
+            string[] guids = AssetDatabase.FindAssets("t:TilePreset", new[] { "Assets/ThirdParty/TileWorldCreator/Tiles URP" });
             foreach (string guid in guids)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);

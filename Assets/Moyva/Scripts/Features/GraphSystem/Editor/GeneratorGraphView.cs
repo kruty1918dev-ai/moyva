@@ -3131,8 +3131,8 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             System.Reflection.BindingFlags.NonPublic |
             System.Reflection.BindingFlags.Public;
 
-        private const string DefaultGenerationSOFolder = "Assets/Moyva/SO/Generation";
-        private const string MainTileRegistryPath = "Assets/Moyva/SO/Tile/TileRegistry.asset";
+        private const string DefaultGenerationSOFolder = "Assets/Moyva/Data/ScriptableObjects/Generation";
+        private const string MainTileRegistryPath = "Assets/Moyva/Data/ScriptableObjects/Tile/TileRegistry.asset";
 
         private static readonly System.Text.RegularExpressions.Regex UnityGuidRegex = new("^[0-9a-fA-F]{32}$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
@@ -3257,7 +3257,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         private static void EnsureGenerationSOFolder()
         {
             if (!AssetDatabase.IsValidFolder(DefaultGenerationSOFolder))
-                AssetDatabase.CreateFolder("Assets/Moyva/SO", "Generation");
+                AssetDatabase.CreateFolder("Assets/Moyva/Data/ScriptableObjects", "Generation");
         }
 
         private static ScriptableObject FindExistingSOForPresetEntry(ScriptableObjectEntry entry, Type soType,

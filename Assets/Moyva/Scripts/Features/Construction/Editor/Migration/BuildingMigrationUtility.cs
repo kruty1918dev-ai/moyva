@@ -491,12 +491,12 @@ namespace Kruty1918.Moyva.Construction.Editor
         private static string NormalizeFolder(string outputFolder)
         {
             if (string.IsNullOrWhiteSpace(outputFolder))
-                return "Assets/Moyva/SO/Construction/Buildings";
+                return "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings";
 
             outputFolder = outputFolder.Replace('\\', '/').TrimEnd('/');
             return outputFolder.StartsWith("Assets/", StringComparison.Ordinal)
                 ? outputFolder
-                : "Assets/Moyva/SO/Construction/Buildings";
+                : "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings";
         }
 
         private static void EnsureFolder(string folder)

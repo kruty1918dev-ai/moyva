@@ -4505,8 +4505,8 @@ namespace Kruty1918.Moyva.Units.Editor
 
         private void CreateRegistryAsset()
         {
-            EnsureFolder("Assets/Moyva/SO/Units");
-            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/Moyva/SO/Units/UnitRegistry.asset");
+            EnsureFolder("Assets/Moyva/Data/ScriptableObjects/Units");
+            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/Moyva/Data/ScriptableObjects/Units/UnitRegistry.asset");
             var asset = CreateInstance<UnitRegistrySO>();
             asset.Configs = new List<UnitClassConfig>();
             AssetDatabase.CreateAsset(asset, path);

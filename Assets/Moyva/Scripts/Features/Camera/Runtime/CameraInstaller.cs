@@ -28,7 +28,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         [SerializeField] private CameraSettingsSO _cameraSettings;
         [SerializeField] private InputActionAsset _cameraInputAsset;
 
-        private const string DefaultCameraInputAssetPath = "Assets/Moyva/SO/Input/InputSystem_Actions.inputactions";
+        private const string DefaultCameraInputAssetPath = "Assets/Moyva/Data/ScriptableObjects/Input/InputSystem_Actions.inputactions";
         private CameraSettingsSO _runtimeFallbackSettings;
 
         public override void InstallBindings()

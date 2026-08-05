@@ -310,9 +310,9 @@ namespace Kruty1918.Moyva.Grid.Editor
 
         private static void InvalidateCache() => _cacheTime = 0;
 
-        private const string MainTileRegistryPath = "Assets/Moyva/SO/Tile/TileRegistry.asset";
+        private const string MainTileRegistryPath = "Assets/Moyva/Data/ScriptableObjects/Tile/TileRegistry.asset";
         private const string GraphEditorWindowSettingsPath = "Assets/Moyva/Scripts/Features/GraphSystem/Editor/GraphEditorWindowSettings.asset";
-        private const string EditorPreviewSettingsPath = "Assets/Moyva/SO/Generation/EditorPreviewSettings.asset";
+        private const string EditorPreviewSettingsPath = "Assets/Moyva/Data/ScriptableObjects/Generation/EditorPreviewSettings.asset";
         private const string PreferredTileRegistryGuidKey = "Moyva.RegistryHub.TileRegistry.Guid";
 
         private static TileRegistrySO FindRegistryInternal()

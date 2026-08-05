@@ -5,7 +5,7 @@ namespace Kruty1918.Moyva.Grid.API
     [CreateAssetMenu(fileName = "MoyvaProjectSettings", menuName = "Moyva/Project Settings", order = 0)]
     public sealed class MoyvaProjectSettingsSO : ScriptableObject
     {
-        public const string DefaultAssetPath = "Assets/Moyva/SO/ProjectDefaults/MoyvaProjectSettings.asset";
+        public const string DefaultAssetPath = "Assets/Moyva/Data/ScriptableObjects/ProjectDefaults/MoyvaProjectSettings.asset";
 
         [Header("Game Visual Mode")]
         public MoyvaProjectVisualMode ProjectVisualMode = MoyvaProjectVisualMode.Auto;

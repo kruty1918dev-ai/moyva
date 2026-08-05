@@ -3292,8 +3292,8 @@ namespace Kruty1918.Moyva.Units.Editor
                 return;
             }
 
-            EnsureFolder("Assets/Moyva/SO/Generator");
-            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/Moyva/SO/Generator/DataNoiseSettings.asset");
+            EnsureFolder("Assets/Moyva/Data/ScriptableObjects/Generator");
+            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/Moyva/Data/ScriptableObjects/Generator/DataNoiseSettings.asset");
             _noiseSettingsAsset = ScriptableObject.CreateInstance(type);
             AssetDatabase.CreateAsset(_noiseSettingsAsset, path);
             AssetDatabase.SaveAssets();
@@ -3314,8 +3314,8 @@ namespace Kruty1918.Moyva.Units.Editor
                 return;
             }
 
-            EnsureFolder("Assets/Moyva/SO/Generator");
-            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/Moyva/SO/Generator/HeightMapSettings.asset");
+            EnsureFolder("Assets/Moyva/Data/ScriptableObjects/Generator");
+            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/Moyva/Data/ScriptableObjects/Generator/HeightMapSettings.asset");
             _heightSettingsAsset = ScriptableObject.CreateInstance(type);
             AssetDatabase.CreateAsset(_heightSettingsAsset, path);
             _heightSettingsObject = new SerializedObject(_heightSettingsAsset);

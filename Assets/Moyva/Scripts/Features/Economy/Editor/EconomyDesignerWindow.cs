@@ -506,7 +506,7 @@ namespace Kruty1918.Moyva.Economy.Editor
         private string _bulkSearch = string.Empty;
         private readonly HashSet<UnityEngine.Object> _bulkSelection = new HashSet<UnityEngine.Object>();
         private Vector2 _bulkScroll;
-        private const string EconomyRootFolder = "Assets/Moyva/SO/Economy";
+        private const string EconomyRootFolder = "Assets/Moyva/Data/ScriptableObjects/Economy";
 
         [MenuItem("Moyva/Tools/Редактор Економіки")]
         public static void OpenWindow()

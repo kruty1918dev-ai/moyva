@@ -14,7 +14,7 @@ namespace Kruty1918.Moyva.Construction.Editor
     {
         private const string RegistryPrefKey = "Moyva.BuildingDesigner.AssetRegistryGuid";
         private const string OutputFolderPrefKey = "Moyva.BuildingDesigner.OutputFolder";
-        private const string DefaultOutputFolder = "Assets/Moyva/SO/Construction/Buildings";
+        private const string DefaultOutputFolder = "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings";
 
         [SerializeField] private BuildingRegistrySO _registry;
         [SerializeField] private BuildingTemplateLibrarySO _templateLibrary;

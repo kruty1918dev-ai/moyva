@@ -13,7 +13,7 @@ namespace Kruty1918.Moyva.Construction.Editor
         public BuildingRegistrySO Registry;
 
         [FolderPath(RequireExistingPath = false)]
-        public string OutputFolder = "Assets/Moyva/SO/Construction/Buildings";
+        public string OutputFolder = "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings";
 
         public bool AddLegacyFogRevealModules = true;
 

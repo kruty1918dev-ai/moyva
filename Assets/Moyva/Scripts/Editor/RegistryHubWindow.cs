@@ -39,7 +39,7 @@ namespace Kruty1918.Moyva.Editor
         };
 
         private const string TilePrefabFolder    = "Assets/Moyva/Prefabs/Tiles";
-        private const string ObjectPrefabFolder  = "Assets/Moyva/Prefabs/Objects";
+        private const string ObjectPrefabFolder  = "Assets/Moyva/Prefabs/Environment";
         private const string UnitPrefabFolder    = "Assets/Moyva/Prefabs/Units";
         private const string BuildingPrefabFolder = "Assets/Moyva/Prefabs/Buildings";
         private const string PrefKeyTileRegistryGuid = "Moyva.RegistryHub.TileRegistry.Guid";
