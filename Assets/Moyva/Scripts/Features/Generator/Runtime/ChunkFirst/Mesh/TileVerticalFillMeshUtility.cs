@@ -459,13 +459,910 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Mesh source,
             float authoredBottomWorld)
         {
-            Mesh skirt = CreateAxisAlignedClosureSkirt(
-                tileSource,
-                source,
-                authoredBottomWorld);
-            return skirt != null
-                ? CombineSourceWithSkirt(source, skirt)
-                : null;
+            Vector2 generatedSideUv =
+                ResolveGeneratedSideUv(
+                    tileSource,
+                    source);
+
+            Mesh uniformSideSource =
+                CreateMeshWithUniformSideUvs(
+                    tileSource,
+                    source,
+                    generatedSideUv);
+
+            Mesh sourceForCombination =
+                uniformSideSource != null
+                    ? uniformSideSource
+                    : source;
+
+            Mesh skirt =
+                CreateAuthoredContourClosureSkirt(
+                    tileSource,
+                    source,
+                    authoredBottomWorld);
+
+            skirt ??=
+                CreateAxisAlignedClosureSkirt(
+                    tileSource,
+                    source,
+                    authoredBottomWorld);
+
+            if (skirt == null)
+            {
+                return uniformSideSource;
+            }
+
+            Mesh result =
+                CombineSourceWithSkirt(
+                    sourceForCombination,
+                    skirt);
+
+            if (uniformSideSource != null)
+            {
+                if (Application.isPlaying)
+                {
+                    UnityEngine.Object.Destroy(
+                        uniformSideSource);
+                }
+                else
+                {
+                    UnityEngine.Object.DestroyImmediate(
+                        uniformSideSource);
+                }
+            }
+
+            return result;
+        }
+
+        private static Mesh CreateAuthoredContourClosureSkirt(
+            TileMeshSource source,
+            Mesh mesh,
+            float authoredBottomWorld)
+        {
+            if (mesh == null
+                || !mesh.isReadable
+                || mesh.vertexCount <= 0
+                || !IsFinite(authoredBottomWorld)
+                || !IsFinite(source.VisibleBottomY))
+            {
+                return null;
+            }
+
+            Vector3[] sourceVertices =
+                mesh.vertices;
+
+            if (sourceVertices == null
+                || sourceVertices.Length == 0)
+            {
+                return null;
+            }
+
+            Matrix4x4 linearMatrix =
+                source.LocalMatrix;
+
+            linearMatrix.m03 = 0f;
+            linearMatrix.m13 = 0f;
+            linearMatrix.m23 = 0f;
+
+            var relativeVertices =
+                new Vector3[sourceVertices.Length];
+
+            float minimumY =
+                float.PositiveInfinity;
+
+            float maximumY =
+                float.NegativeInfinity;
+
+            for (int i = 0;
+                 i < sourceVertices.Length;
+                 i++)
+            {
+                Vector3 relative =
+                    linearMatrix.MultiplyPoint3x4(
+                        sourceVertices[i]);
+
+                relativeVertices[i] = relative;
+
+                minimumY =
+                    Mathf.Min(minimumY, relative.y);
+
+                maximumY =
+                    Mathf.Max(maximumY, relative.y);
+            }
+
+            float meshHeight =
+                Mathf.Max(
+                    HeightEpsilon,
+                    maximumY - minimumY);
+
+            float bottomTolerance =
+                Mathf.Max(
+                    0.001f,
+                    meshHeight * 0.04f);
+
+            Dictionary<GeometricEdgeKey, AuthoredContourEdge>
+                contourEdges =
+                    CollectAuthoredBottomContourEdges(
+                        mesh,
+                        relativeVertices,
+                        minimumY,
+                        bottomTolerance);
+
+            if (contourEdges.Count == 0)
+                return null;
+
+            var vertices =
+                new List<Vector3>(
+                    contourEdges.Count * 4);
+
+            var uvs =
+                new List<Vector2>(
+                    contourEdges.Count * 4);
+
+            var normals =
+                new List<Vector3>(
+                    contourEdges.Count * 4);
+
+            var triangles =
+                new List<int>(
+                    contourEdges.Count * 6);
+
+            Matrix4x4 worldToSource =
+                source.LocalMatrix.inverse;
+
+            Vector2 generatedSideUv =
+                ResolveGeneratedSideUv(
+                    source,
+                    mesh);
+
+            foreach (AuthoredContourEdge edge
+                     in contourEdges.Values)
+            {
+                Vector3 worldTopA =
+                    source.LocalMatrix.MultiplyPoint3x4(
+                        sourceVertices[edge.A]);
+
+                Vector3 worldTopB =
+                    source.LocalMatrix.MultiplyPoint3x4(
+                        sourceVertices[edge.B]);
+
+                // Вирівнюємо дрібні похибки нижнього кільця.
+                if (Mathf.Abs(
+                        worldTopA.y - authoredBottomWorld)
+                    <= bottomTolerance)
+                {
+                    worldTopA.y =
+                        authoredBottomWorld;
+                }
+
+                if (Mathf.Abs(
+                        worldTopB.y - authoredBottomWorld)
+                    <= bottomTolerance)
+                {
+                    worldTopB.y =
+                        authoredBottomWorld;
+                }
+
+                TileMeshOccludedSides side =
+                    ResolveContourSide(
+                        source,
+                        worldTopA,
+                        worldTopB,
+                        edge.ExpectedNormal);
+
+                if ((source.OccludedSides & side) != 0)
+                    continue;
+
+                float bottomY =
+                    source.EdgeBottoms.Resolve(
+                        side,
+                        source.VisibleBottomY);
+
+                if (!IsFinite(bottomY)
+                    || bottomY
+                    >= Mathf.Min(
+                           worldTopA.y,
+                           worldTopB.y)
+                       - HeightEpsilon)
+                {
+                    continue;
+                }
+
+                Vector3 worldBottomA =
+                    worldTopA;
+
+                Vector3 worldBottomB =
+                    worldTopB;
+
+                worldBottomA.y = bottomY;
+                worldBottomB.y = bottomY;
+
+                /*
+                 * Зберігаємо winding таким самим, як у
+                 * авторської бокової поверхні.
+                 */
+                Vector3 generatedNormal =
+                    Vector3.Cross(
+                        worldBottomA - worldTopA,
+                        worldTopB - worldTopA);
+
+                if (generatedNormal.sqrMagnitude
+                        > HeightEpsilon
+                    && edge.ExpectedNormal.sqrMagnitude
+                        > HeightEpsilon
+                    && Vector3.Dot(
+                           generatedNormal,
+                           edge.ExpectedNormal) < 0f)
+                {
+                    Vector3 temporaryTop =
+                        worldTopA;
+
+                    worldTopA =
+                        worldTopB;
+
+                    worldTopB =
+                        temporaryTop;
+
+                    Vector3 temporaryBottom =
+                        worldBottomA;
+
+                    worldBottomA =
+                        worldBottomB;
+
+                    worldBottomB =
+                        temporaryBottom;
+                }
+
+                Vector3 localTopA =
+                    worldToSource.MultiplyPoint3x4(
+                        worldTopA);
+
+                Vector3 localTopB =
+                    worldToSource.MultiplyPoint3x4(
+                        worldTopB);
+
+                Vector3 localBottomA =
+                    worldToSource.MultiplyPoint3x4(
+                        worldBottomA);
+
+                Vector3 localBottomB =
+                    worldToSource.MultiplyPoint3x4(
+                        worldBottomB);
+
+                Vector3 worldSideNormal =
+                    Vector3.Cross(
+                        worldBottomA - worldTopA,
+                        worldTopB - worldTopA);
+
+                worldSideNormal.y = 0f;
+
+                if (worldSideNormal.sqrMagnitude
+                    <= HeightEpsilon)
+                {
+                    worldSideNormal =
+                        edge.ExpectedNormal;
+
+                    worldSideNormal.y = 0f;
+                }
+
+                if (worldSideNormal.sqrMagnitude
+                    <= HeightEpsilon)
+                {
+                    worldSideNormal =
+                        Vector3.Cross(
+                            worldBottomA - worldTopA,
+                            worldTopB - worldTopA);
+                }
+
+                worldSideNormal.Normalize();
+
+                Vector3 localSideNormal =
+                    source.LocalMatrix.transpose
+                        .MultiplyVector(worldSideNormal)
+                        .normalized;
+
+                Vector3 localQuadNormal =
+                    Vector3.Cross(
+                        localBottomA - localTopA,
+                        localTopB - localTopA)
+                    .normalized;
+
+                if (localQuadNormal.sqrMagnitude
+                        > HeightEpsilon
+                    && Vector3.Dot(
+                           localSideNormal,
+                           localQuadNormal) < 0f)
+                {
+                    localSideNormal =
+                        -localSideNormal;
+                }
+
+                AddOneSidedQuad(
+                    vertices,
+                    uvs,
+                    triangles,
+                    localTopA,
+                    localTopB,
+                    localBottomA,
+                    localBottomB,
+                    generatedSideUv);
+
+                AddQuadNormals(
+                    normals,
+                    localSideNormal);
+            }
+
+            if (vertices.Count == 0)
+                return null;
+
+            var skirt = new Mesh
+            {
+                name =
+                    mesh.name
+                    + "_AuthoredContourClosure",
+
+                indexFormat =
+                    vertices.Count > 65535
+                        ? IndexFormat.UInt32
+                        : IndexFormat.UInt16
+            };
+
+            skirt.SetVertices(vertices);
+            skirt.SetUVs(0, uvs);
+            skirt.SetNormals(normals);
+            skirt.SetTriangles(
+                triangles,
+                0,
+                false);
+
+            skirt.RecalculateBounds();
+
+            return skirt;
+        }
+
+        private static TileMeshOccludedSides ResolveContourSide(
+    TileMeshSource source,
+    Vector3 worldA,
+    Vector3 worldB,
+    Vector3 expectedNormal)
+        {
+            Vector3 midpoint =
+                (worldA + worldB) * 0.5f;
+
+            float deltaX =
+                midpoint.x
+                - source.TileCenterXZ.x;
+
+            float deltaZ =
+                midpoint.z
+                - source.TileCenterXZ.y;
+
+            if (Mathf.Abs(deltaX) > 0.0001f
+                || Mathf.Abs(deltaZ) > 0.0001f)
+            {
+                if (Mathf.Abs(deltaX)
+                    >= Mathf.Abs(deltaZ))
+                {
+                    return deltaX >= 0f
+                        ? TileMeshOccludedSides.East
+                        : TileMeshOccludedSides.West;
+                }
+
+                return deltaZ >= 0f
+                    ? TileMeshOccludedSides.North
+                    : TileMeshOccludedSides.South;
+            }
+
+            // Резервний варіант для геометрії,
+            // центр якої збігається з центром tile.
+            if (Mathf.Abs(expectedNormal.x)
+                >= Mathf.Abs(expectedNormal.z))
+            {
+                return expectedNormal.x >= 0f
+                    ? TileMeshOccludedSides.East
+                    : TileMeshOccludedSides.West;
+            }
+
+            return expectedNormal.z >= 0f
+                ? TileMeshOccludedSides.North
+                : TileMeshOccludedSides.South;
+        }
+
+        private readonly struct AuthoredContourEdge
+        {
+            public AuthoredContourEdge(
+                int a,
+                int b,
+                Vector3 expectedNormal)
+            {
+                A = a;
+                B = b;
+                ExpectedNormal =
+                    expectedNormal;
+            }
+
+            public int A { get; }
+            public int B { get; }
+            public Vector3 ExpectedNormal { get; }
+        }
+
+        private static Dictionary<
+            GeometricEdgeKey,
+            AuthoredContourEdge>
+            CollectAuthoredBottomContourEdges(
+                Mesh mesh,
+                IReadOnlyList<Vector3> relativeVertices,
+                float minimumY,
+                float bottomTolerance)
+        {
+            var result =
+                new Dictionary<
+                    GeometricEdgeKey,
+                    AuthoredContourEdge>();
+
+            for (int subMesh = 0;
+                 subMesh < mesh.subMeshCount;
+                 subMesh++)
+            {
+                if (mesh.GetTopology(subMesh)
+                    != MeshTopology.Triangles)
+                {
+                    continue;
+                }
+
+                int[] indices =
+                    mesh.GetIndices(subMesh);
+
+                for (int i = 0;
+                     i + 2 < indices.Length;
+                     i += 3)
+                {
+                    int indexA = indices[i];
+                    int indexB = indices[i + 1];
+                    int indexC = indices[i + 2];
+
+                    if ((uint)indexA
+                            >= (uint)relativeVertices.Count
+                        || (uint)indexB
+                            >= (uint)relativeVertices.Count
+                        || (uint)indexC
+                            >= (uint)relativeVertices.Count)
+                    {
+                        continue;
+                    }
+
+                    Vector3 a =
+                        relativeVertices[indexA];
+
+                    Vector3 b =
+                        relativeVertices[indexB];
+
+                    Vector3 c =
+                        relativeVertices[indexC];
+
+                    Vector3 cross =
+                        Vector3.Cross(
+                            b - a,
+                            c - a);
+
+                    if (cross.sqrMagnitude
+                        <= HeightEpsilon)
+                    {
+                        continue;
+                    }
+
+                    Vector3 faceNormal =
+                        cross.normalized;
+
+                    /*
+                     * Горизонтальні bottom/top faces нам не потрібні.
+                     * Беремо лише вертикальні або похилі боковини.
+                     */
+                    if (Mathf.Abs(faceNormal.y) > 0.8f)
+                        continue;
+
+                    AddAuthoredBottomContourEdge(
+                        result,
+                        relativeVertices,
+                        indexA,
+                        indexB,
+                        minimumY,
+                        bottomTolerance,
+                        faceNormal);
+
+                    AddAuthoredBottomContourEdge(
+                        result,
+                        relativeVertices,
+                        indexB,
+                        indexC,
+                        minimumY,
+                        bottomTolerance,
+                        faceNormal);
+
+                    AddAuthoredBottomContourEdge(
+                        result,
+                        relativeVertices,
+                        indexC,
+                        indexA,
+                        minimumY,
+                        bottomTolerance,
+                        faceNormal);
+                }
+            }
+
+            return result;
+        }
+
+        private static void AddAuthoredBottomContourEdge(
+            Dictionary<
+                GeometricEdgeKey,
+                AuthoredContourEdge> edges,
+            IReadOnlyList<Vector3> vertices,
+            int indexA,
+            int indexB,
+            float minimumY,
+            float bottomTolerance,
+            Vector3 expectedNormal)
+        {
+            Vector3 a =
+                vertices[indexA];
+
+            Vector3 b =
+                vertices[indexB];
+
+            if (Mathf.Abs(a.y - minimumY)
+                    > bottomTolerance
+                || Mathf.Abs(b.y - minimumY)
+                    > bottomTolerance)
+            {
+                return;
+            }
+
+            Vector2 horizontalDelta =
+                new Vector2(
+                    b.x - a.x,
+                    b.z - a.z);
+
+            if (horizontalDelta.sqrMagnitude
+                <= HeightEpsilon)
+            {
+                return;
+            }
+
+            var key =
+                new GeometricEdgeKey(a, b);
+
+            if (edges.ContainsKey(key))
+                return;
+
+            edges[key] =
+                new AuthoredContourEdge(
+                    indexA,
+                    indexB,
+                    expectedNormal);
+        }
+
+        private static Mesh CreateMeshWithUniformSideUvs(
+            TileMeshSource tileSource,
+            Mesh source,
+            Vector2 sideUv)
+        {
+            if (source == null
+                || !source.isReadable
+                || source.vertexCount <= 0
+                || source.subMeshCount <= 0)
+            {
+                return null;
+            }
+
+            Vector3[] sourceVertices = source.vertices;
+            if (sourceVertices == null
+                || sourceVertices.Length == 0)
+            {
+                return null;
+            }
+
+            Vector3[] sourceNormals = source.normals;
+            Vector4[] sourceTangents = source.tangents;
+            Color32[] sourceColors = source.colors32;
+
+            bool hasNormals =
+                sourceNormals != null
+                && sourceNormals.Length == sourceVertices.Length;
+
+            bool hasTangents =
+                sourceTangents != null
+                && sourceTangents.Length == sourceVertices.Length;
+
+            bool hasColors =
+                sourceColors != null
+                && sourceColors.Length == sourceVertices.Length;
+
+            var sourceUvs = new List<Vector4>[8];
+            var outputUvs = new List<Vector4>[8];
+            var hasUvChannel = new bool[8];
+
+            for (int channel = 0; channel < 8; channel++)
+            {
+                var channelUvs = new List<Vector4>(source.vertexCount);
+                source.GetUVs(channel, channelUvs);
+
+                if (channelUvs.Count != source.vertexCount)
+                    continue;
+
+                sourceUvs[channel] = channelUvs;
+                outputUvs[channel] =
+                    new List<Vector4>(source.vertexCount * 3);
+                hasUvChannel[channel] = true;
+            }
+
+            if (!hasUvChannel[0])
+            {
+                sourceUvs[0] = new List<Vector4>(source.vertexCount);
+                for (int i = 0; i < source.vertexCount; i++)
+                    sourceUvs[0].Add(Vector4.zero);
+
+                outputUvs[0] =
+                    new List<Vector4>(source.vertexCount * 3);
+                hasUvChannel[0] = true;
+            }
+
+            var outputVertices =
+                new List<Vector3>(source.vertexCount * 3);
+
+            var outputNormals =
+                hasNormals
+                    ? new List<Vector3>(source.vertexCount * 3)
+                    : null;
+
+            var outputTangents =
+                hasTangents
+                    ? new List<Vector4>(source.vertexCount * 3)
+                    : null;
+
+            var outputColors =
+                hasColors
+                    ? new List<Color32>(source.vertexCount * 3)
+                    : null;
+
+            var vertexVariants =
+                new Dictionary<UniformSideVertexKey, int>(
+                    source.vertexCount * 3);
+
+            int GetOrCreateVertex(
+                int sourceIndex,
+                bool useUniformSideUv,
+                Vector3 uniformSideNormal)
+            {
+                var key =
+                    new UniformSideVertexKey(
+                        sourceIndex,
+                        useUniformSideUv,
+                        uniformSideNormal);
+
+                if (vertexVariants.TryGetValue(key, out int existing))
+                    return existing;
+
+                int outputIndex = outputVertices.Count;
+                vertexVariants[key] = outputIndex;
+
+                outputVertices.Add(sourceVertices[sourceIndex]);
+
+                if (hasNormals)
+                {
+                    Vector3 normal =
+                        useUniformSideUv
+                        && uniformSideNormal.sqrMagnitude > HeightEpsilon
+                            ? uniformSideNormal
+                            : sourceNormals[sourceIndex];
+
+                    outputNormals.Add(normal.normalized);
+                }
+
+                if (hasTangents)
+                    outputTangents.Add(sourceTangents[sourceIndex]);
+
+                if (hasColors)
+                    outputColors.Add(sourceColors[sourceIndex]);
+
+                for (int channel = 0; channel < 8; channel++)
+                {
+                    if (!hasUvChannel[channel])
+                        continue;
+
+                    Vector4 uv = sourceUvs[channel][sourceIndex];
+                    if (channel == 0 && useUniformSideUv)
+                    {
+                        uv.x = sideUv.x;
+                        uv.y = sideUv.y;
+                    }
+
+                    outputUvs[channel].Add(uv);
+                }
+
+                return outputIndex;
+            }
+
+            Matrix4x4 linearMatrix = tileSource.LocalMatrix;
+            linearMatrix.m03 = 0f;
+            linearMatrix.m13 = 0f;
+            linearMatrix.m23 = 0f;
+
+            Matrix4x4 worldNormalToLocal =
+                tileSource.LocalMatrix.transpose;
+
+            var outputIndices = new int[source.subMeshCount][];
+            var outputTopologies =
+                new MeshTopology[source.subMeshCount];
+
+            for (int subMesh = 0;
+                 subMesh < source.subMeshCount;
+                 subMesh++)
+            {
+                MeshTopology topology = source.GetTopology(subMesh);
+                outputTopologies[subMesh] = topology;
+
+                int[] sourceIndices = source.GetIndices(subMesh);
+                var remapped = new int[sourceIndices.Length];
+
+                if (topology != MeshTopology.Triangles)
+                {
+                    for (int i = 0; i < sourceIndices.Length; i++)
+                    {
+                        remapped[i] =
+                            GetOrCreateVertex(
+                                sourceIndices[i],
+                                false,
+                                Vector3.zero);
+                    }
+
+                    outputIndices[subMesh] = remapped;
+                    continue;
+                }
+
+                for (int i = 0; i + 2 < sourceIndices.Length; i += 3)
+                {
+                    int indexA = sourceIndices[i];
+                    int indexB = sourceIndices[i + 1];
+                    int indexC = sourceIndices[i + 2];
+
+                    Vector3 a =
+                        linearMatrix.MultiplyPoint3x4(
+                            sourceVertices[indexA]);
+
+                    Vector3 b =
+                        linearMatrix.MultiplyPoint3x4(
+                            sourceVertices[indexB]);
+
+                    Vector3 c =
+                        linearMatrix.MultiplyPoint3x4(
+                            sourceVertices[indexC]);
+
+                    Vector3 worldCross =
+                        Vector3.Cross(b - a, c - a);
+
+                    bool useUniformSideUv = false;
+                    Vector3 localSideNormal = Vector3.zero;
+
+                    if (worldCross.sqrMagnitude > HeightEpsilon)
+                    {
+                        Vector3 worldFaceNormal =
+                            worldCross.normalized;
+
+                        useUniformSideUv =
+                            Mathf.Abs(worldFaceNormal.y) < 0.85f;
+
+                        if (useUniformSideUv && hasNormals)
+                        {
+                            Vector3 worldSideNormal =
+                                new Vector3(
+                                    worldFaceNormal.x,
+                                    0f,
+                                    worldFaceNormal.z);
+
+                            if (worldSideNormal.sqrMagnitude
+                                <= HeightEpsilon)
+                            {
+                                worldSideNormal =
+                                    worldFaceNormal;
+                            }
+
+                            worldSideNormal.Normalize();
+
+                            localSideNormal =
+                                worldNormalToLocal
+                                    .MultiplyVector(worldSideNormal)
+                                    .normalized;
+
+                            Vector3 localFaceNormal =
+                                Vector3.Cross(
+                                    sourceVertices[indexB]
+                                        - sourceVertices[indexA],
+                                    sourceVertices[indexC]
+                                        - sourceVertices[indexA])
+                                .normalized;
+
+                            if (localFaceNormal.sqrMagnitude
+                                    > HeightEpsilon
+                                && Vector3.Dot(
+                                       localSideNormal,
+                                       localFaceNormal) < 0f)
+                            {
+                                localSideNormal =
+                                    -localSideNormal;
+                            }
+                        }
+                    }
+
+                    remapped[i] =
+                        GetOrCreateVertex(
+                            indexA,
+                            useUniformSideUv,
+                            localSideNormal);
+
+                    remapped[i + 1] =
+                        GetOrCreateVertex(
+                            indexB,
+                            useUniformSideUv,
+                            localSideNormal);
+
+                    remapped[i + 2] =
+                        GetOrCreateVertex(
+                            indexC,
+                            useUniformSideUv,
+                            localSideNormal);
+                }
+
+                outputIndices[subMesh] = remapped;
+            }
+
+            if (outputVertices.Count == 0)
+                return null;
+
+            var result = new Mesh
+            {
+                name = source.name + "_UniformSideUv",
+                indexFormat =
+                    outputVertices.Count > 65535
+                        ? IndexFormat.UInt32
+                        : IndexFormat.UInt16
+            };
+
+            result.SetVertices(outputVertices);
+
+            if (hasNormals)
+                result.SetNormals(outputNormals);
+
+            if (hasTangents)
+                result.SetTangents(outputTangents);
+
+            if (hasColors)
+                result.SetColors(outputColors);
+
+            for (int channel = 0; channel < 8; channel++)
+            {
+                if (hasUvChannel[channel])
+                    result.SetUVs(channel, outputUvs[channel]);
+            }
+
+            result.subMeshCount = source.subMeshCount;
+
+            for (int subMesh = 0;
+                 subMesh < source.subMeshCount;
+                 subMesh++)
+            {
+                result.SetIndices(
+                    outputIndices[subMesh],
+                    outputTopologies[subMesh],
+                    subMesh,
+                    false);
+            }
+
+            if (!hasNormals)
+                result.RecalculateNormals();
+
+            result.RecalculateBounds();
+            return result;
         }
 
         private static Mesh CreateAxisAlignedClosureSkirt(
@@ -756,32 +1653,45 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             uvs.Add(generatedSideUv);
         }
 
-        private static Vector2 ResolveGeneratedSideUv(
-            TileMeshSource tileSource,
-            Mesh mesh)
+        private static void AddQuadNormals(
+            List<Vector3> normals,
+            Vector3 normal)
         {
-            if (mesh == null)
-                return Vector2.zero;
+            Vector3 normalized =
+                normal.sqrMagnitude > HeightEpsilon
+                    ? normal.normalized
+                    : Vector3.forward;
 
-            Vector3[] vertices = mesh.vertices;
-            Vector2[] sourceUvs = mesh.uv;
+            normals.Add(normalized);
+            normals.Add(normalized);
+            normals.Add(normalized);
+            normals.Add(normalized);
+        }
 
-            if (vertices == null
-                || sourceUvs == null
-                || vertices.Length == 0
-                || sourceUvs.Length != vertices.Length)
+        private static Vector2 ResolveGeneratedSideUv(
+     TileMeshSource tileSource,
+     Mesh mesh)
+        {
+            if (mesh == null
+                || !mesh.isReadable
+                || mesh.vertexCount <= 0)
             {
                 return Vector2.zero;
             }
 
-            var verticalWeights =
-                new Dictionary<Vector2Int, float>();
+            Vector3[] vertices =
+                mesh.vertices;
 
-            var allWeights =
-                new Dictionary<Vector2Int, float>();
+            Vector2[] uvs =
+                mesh.uv;
 
-            var representatives =
-                new Dictionary<Vector2Int, Vector2>();
+            if (vertices == null
+                || uvs == null
+                || vertices.Length == 0
+                || uvs.Length != vertices.Length)
+            {
+                return Vector2.zero;
+            }
 
             Matrix4x4 linearMatrix =
                 tileSource.LocalMatrix;
@@ -789,6 +1699,12 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             linearMatrix.m03 = 0f;
             linearMatrix.m13 = 0f;
             linearMatrix.m23 = 0f;
+
+            var weights =
+                new Dictionary<Vector2Int, float>();
+
+            var representatives =
+                new Dictionary<Vector2Int, Vector2>();
 
             for (int subMesh = 0;
                  subMesh < mesh.subMeshCount;
@@ -811,13 +1727,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     int indexB = indices[i + 1];
                     int indexC = indices[i + 2];
 
-                    if ((uint)indexA >= (uint)vertices.Length
-                        || (uint)indexB >= (uint)vertices.Length
-                        || (uint)indexC >= (uint)vertices.Length)
-                    {
-                        continue;
-                    }
-
                     Vector3 a =
                         linearMatrix.MultiplyPoint3x4(
                             vertices[indexA]);
@@ -835,78 +1744,119 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                             b - a,
                             c - a);
 
-                    float doubledArea =
+                    float area =
                         cross.magnitude;
 
-                    if (doubledArea <= HeightEpsilon)
+                    if (area <= HeightEpsilon)
                         continue;
 
-                    float weight =
-                        doubledArea / 3f;
+                    Vector3 normal =
+                        cross / area;
 
-                    AddUvWeight(
-                        allWeights,
-                        representatives,
-                        sourceUvs[indexA],
-                        weight);
-
-                    AddUvWeight(
-                        allWeights,
-                        representatives,
-                        sourceUvs[indexB],
-                        weight);
-
-                    AddUvWeight(
-                        allWeights,
-                        representatives,
-                        sourceUvs[indexC],
-                        weight);
-
-                    float normalY =
-                        Mathf.Abs(
-                            cross.y / doubledArea);
-
-                    // Face is mostly vertical.
-                    if (normalY > 0.55f)
+                    // Беремо тільки side або bevel faces.
+                    if (Mathf.Abs(normal.y) >= 0.85f)
                         continue;
 
-                    AddUvWeight(
-                        verticalWeights,
-                        representatives,
-                        sourceUvs[indexA],
-                        weight);
+                    /*
+                     * Центр UV-трикутника знаходиться всередині
+                     * palette cell і не потрапляє на її межу.
+                     */
+                    Vector2 centroid =
+                        (
+                            uvs[indexA]
+                            + uvs[indexB]
+                            + uvs[indexC]
+                        ) / 3f;
 
-                    AddUvWeight(
-                        verticalWeights,
-                        representatives,
-                        sourceUvs[indexB],
-                        weight);
+                    var key =
+                        new Vector2Int(
+                            Mathf.RoundToInt(
+                                centroid.x * 4096f),
+                            Mathf.RoundToInt(
+                                centroid.y * 4096f));
 
-                    AddUvWeight(
-                        verticalWeights,
-                        representatives,
-                        sourceUvs[indexC],
-                        weight);
+                    if (weights.TryGetValue(
+                            key,
+                            out float currentWeight))
+                    {
+                        weights[key] =
+                            currentWeight + area;
+                    }
+                    else
+                    {
+                        weights[key] = area;
+                        representatives[key] =
+                            centroid;
+                    }
                 }
             }
 
-            if (TryResolveStrongestUv(
-                    verticalWeights,
-                    representatives,
-                    out Vector2 verticalUv))
+            bool found = false;
+
+            float strongestWeight =
+                float.NegativeInfinity;
+
+            Vector2 result =
+                Vector2.zero;
+
+            foreach (KeyValuePair<Vector2Int, float> pair
+                     in weights)
             {
-                return verticalUv;
+                if (found
+                    && pair.Value <= strongestWeight)
+                {
+                    continue;
+                }
+
+                if (!representatives.TryGetValue(
+                        pair.Key,
+                        out Vector2 candidate))
+                {
+                    continue;
+                }
+
+                strongestWeight =
+                    pair.Value;
+
+                result =
+                    candidate;
+
+                found = true;
             }
 
-            if (TryResolveStrongestUv(
-                    allWeights,
-                    representatives,
-                    out Vector2 fallbackUv))
+            if (found)
+                return result;
+
+            /*
+             * Fallback: центр першого UV-трикутника,
+             * а не UV окремої вершини.
+             */
+            for (int subMesh = 0;
+                 subMesh < mesh.subMeshCount;
+                 subMesh++)
             {
-                return fallbackUv;
+                if (mesh.GetTopology(subMesh)
+                    != MeshTopology.Triangles)
+                {
+                    continue;
+                }
+
+                int[] indices =
+                    mesh.GetIndices(subMesh);
+
+                if (indices.Length < 3)
+                    continue;
+
+                return (
+                    uvs[indices[0]]
+                    + uvs[indices[1]]
+                    + uvs[indices[2]]
+                ) / 3f;
             }
 
-            return sourceUvs[0];
+            return uvs.Length > 0
+                ? uvs[0]
+                : Vector2.zero;
         }
 
         private static void AddUvWeight(
@@ -1155,6 +2105,77 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             {
                 if (referenced[i])
                     destination[next++] = source[i];
+            }
+        }
+
+        private readonly struct UniformSideVertexKey
+            : IEquatable<UniformSideVertexKey>
+        {
+            private const float NormalQuantization = 10000f;
+
+            private readonly int _sourceIndex;
+            private readonly int _sideVariant;
+            private readonly int _normalX;
+            private readonly int _normalY;
+            private readonly int _normalZ;
+
+            public UniformSideVertexKey(
+                int sourceIndex,
+                bool sideVariant,
+                Vector3 normal)
+            {
+                _sourceIndex = sourceIndex;
+                _sideVariant = sideVariant ? 1 : 0;
+
+                if (sideVariant)
+                {
+                    _normalX =
+                        Mathf.RoundToInt(
+                            normal.x * NormalQuantization);
+
+                    _normalY =
+                        Mathf.RoundToInt(
+                            normal.y * NormalQuantization);
+
+                    _normalZ =
+                        Mathf.RoundToInt(
+                            normal.z * NormalQuantization);
+                }
+                else
+                {
+                    _normalX = 0;
+                    _normalY = 0;
+                    _normalZ = 0;
+                }
+            }
+
+            public bool Equals(
+                UniformSideVertexKey other)
+            {
+                return _sourceIndex == other._sourceIndex
+                    && _sideVariant == other._sideVariant
+                    && _normalX == other._normalX
+                    && _normalY == other._normalY
+                    && _normalZ == other._normalZ;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is UniformSideVertexKey other
+                    && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash = _sourceIndex;
+                    hash = hash * 397 ^ _sideVariant;
+                    hash = hash * 397 ^ _normalX;
+                    hash = hash * 397 ^ _normalY;
+                    hash = hash * 397 ^ _normalZ;
+                    return hash;
+                }
             }
         }
 
