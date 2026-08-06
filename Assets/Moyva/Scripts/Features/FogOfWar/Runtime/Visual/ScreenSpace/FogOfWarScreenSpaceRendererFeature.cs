@@ -18,8 +18,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     ///    простим override shader і отримує найближчу реальну поверхню,
     ///    включно з transparent water.
     /// 2. RawScreenState — переводить world fog mask у screen-space.
-    /// 3. Dilate + Erode — закриває дрібні дірки та нерівні стики.
-    /// 4. Composite — explored tint, virtual depth edge, main grey fog.
+    /// 3. Dilate + Erode — лише діагностичний closed-state preview.
+    /// 4. Composite — point-stable fog mask, surface-locked
+    ///    grid edge, main grey unexplored fog.
     /// 5. CopyBack — повертає результат у camera color.
     ///
     /// Legacy world curtain у цьому режимі не використовується.
@@ -48,7 +49,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private static readonly RenderPassEvent FogRenderPassEvent =
             (RenderPassEvent)(
                 (int)RenderPassEvent.BeforeRenderingPostProcessing
-                - 1);
+                - 10);
 
         [SerializeField]
         private Shader _screenSpaceShader;
@@ -58,59 +59,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
         [SerializeField]
         [Tooltip(
-            "Звичайний Unity LayerMask як грубий фільтр. " +
-            "Додатково surface renderers ізолюються окремим " +
-            "Rendering Layer bit.")]
+            "Renderers, які формують fog surface depth. " +
+            "За замовчуванням Everything. Виключи UI, Clouds та " +
+            "інші суто декоративні шари, якщо вони мають MeshRenderer.")]
         private LayerMask _fogSurfaceLayerMask = -1;
-
-        [SerializeField]
-        [Range(0, 31)]
-        [Tooltip(
-            "Зарезервований Rendering Layer bit лише для terrain/water, " +
-            "які формують fog surface depth.")]
-        private int _fogSurfaceRenderingLayerBit = 31;
-
-        [SerializeField]
-        [Tooltip(
-            "Автоматично позначає generated terrain та water як fog " +
-            "surface і виключає construction grid, preview, overlay, " +
-            "clouds, UI та інші декоративні renderers.")]
-        private bool _autoTagFogSurfaces = true;
-
-        [SerializeField]
-        private string[] _surfaceIncludeTokens =
-        {
-            "TerrainMesh",
-            "Terrain",
-            "Water",
-            "River",
-            "Lake",
-            "Ocean",
-            "Ground",
-            "MapVisualChunk"
-        };
-
-        [SerializeField]
-        private string[] _surfaceExcludeTokens =
-        {
-            "Grid",
-            "Overlay",
-            "Preview",
-            "Ghost",
-            "Construction",
-            "Build",
-            "Placement",
-            "Selection",
-            "Highlight",
-            "Outline",
-            "Cloud",
-            "Fog",
-            "UI",
-            "Canvas",
-            "Cursor",
-            "Marker",
-            "Gizmo"
-        };
 
         [SerializeField]
         [Range(0.5f, 1f)]
@@ -228,26 +180,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         0.5f,
                         1f);
 
-            uint surfaceRenderingLayerMask =
-                1u << Mathf.Clamp(
-                    _fogSurfaceRenderingLayerBit,
-                    0,
-                    31);
-
-            if (_autoTagFogSurfaces
-                && Application.isPlaying)
-            {
-                FogSurfaceAutoTagger.RefreshIfNeeded(
-                    surfaceRenderingLayerMask,
-                    _surfaceIncludeTokens,
-                    _surfaceExcludeTokens);
-            }
-
             _pass.Setup(
                 _screenSpaceMaterial,
                 _surfaceDepthMaterial,
                 _fogSurfaceLayerMask,
-                surfaceRenderingLayerMask,
                 effectiveStateScale,
                 HandleBackBufferWarning);
 
@@ -263,8 +199,15 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     "[MOYVA_FOG_PRESENTATION] " +
                     "pipeline=DepthAwareScreenSpace " +
                     "surfaceDepth=DedicatedOverridePass " +
-                    "stateMorphology=Close(DilateThenErode) " +
-                    "virtualDepth=CameraProjected " +
+                    "stateMorphology=DebugOnly " +
+                    "edgeMode=SurfaceLockedGridEdge " +
+                    "cornerJoin=RadialSoftUnion " +
+                    "diagonalCornerCaps=True " +
+                    "edgeSide=UnexploredCellOnly " +
+                    "cameraExtrusion=False " +
+                    "screenNeighbourSampling=False " +
+                    "fallbackPlane=False " +
+                    "depthOcclusion=False " +
                     "legacyCurtain=False " +
                     "stateScale=" +
                     (
@@ -278,17 +221,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     " zoomStable=True " +
                     "depthSource=ImmutableSurfaceEyeDepth " +
                     "maskDepthDecoupled=True " +
-                    "overlayIsolation=True " +
-                    "edgeDomain=WorldGridAnalytic " +
-                    "finalMask=DirectWorldFogState " +
-                    "screenMorphology=DebugOnly " +
+                    "presentationSafety=SurfaceLocked " +
+                    "finalMask=RawPointState " +
                     "finalEvent=" +
                     (int)FogRenderPassEvent +
-                    " activeColorStage=PrePostProcessing " +
-                    " surfaceRenderingLayerBit=" +
-                    _fogSurfaceRenderingLayerBit +
-                    " autoTaggedSurfaces=" +
-                    FogSurfaceAutoTagger.IncludedCount +
                     " layerMask=" +
                     _fogSurfaceLayerMask.value);
             }
@@ -471,12 +407,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 return;
 
             _pass = null;
-
-            if (Application.isPlaying)
-            {
-                FogSurfaceAutoTagger.RestoreAll();
-            }
-
             DisposeMaterials();
         }
 
@@ -556,8 +486,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             private Material _screenSpaceMaterial;
             private Material _surfaceDepthMaterial;
             private LayerMask _layerMask;
-            private uint _surfaceRenderingLayerMask =
-                uint.MaxValue;
             private float _stateScale = 1f;
             private System.Action _onBackBuffer;
 
@@ -575,7 +503,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 Material screenSpaceMaterial,
                 Material surfaceDepthMaterial,
                 LayerMask layerMask,
-                uint surfaceRenderingLayerMask,
                 float stateScale,
                 System.Action onBackBuffer)
             {
@@ -587,9 +514,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 
                 _layerMask =
                     layerMask;
-
-                _surfaceRenderingLayerMask =
-                    surfaceRenderingLayerMask;
 
                 _stateScale =
                     Mathf.Clamp(
@@ -811,9 +735,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     new FilteringSettings(
                         RenderQueueRange.all,
                         _layerMask.value);
-
-                filteringSettings.renderingLayerMask =
-                    _surfaceRenderingLayerMask;
 
                 RendererListParams rendererListParams =
                     new RendererListParams(

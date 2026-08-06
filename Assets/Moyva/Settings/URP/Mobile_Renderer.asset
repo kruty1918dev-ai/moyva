@@ -250,35 +250,6 @@ MonoBehaviour:
   _fogSurfaceLayerMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  _fogSurfaceRenderingLayerBit: 31
-  _autoTagFogSurfaces: 1
-  _surfaceIncludeTokens:
-  - TerrainMesh
-  - Terrain
-  - Water
-  - River
-  - Lake
-  - Ocean
-  - Ground
-  - MapVisualChunk
-  _surfaceExcludeTokens:
-  - Grid
-  - Overlay
-  - Preview
-  - Ghost
-  - Construction
-  - Build
-  - Placement
-  - Selection
-  - Highlight
-  - Outline
-  - Cloud
-  - Fog
-  - UI
-  - Canvas
-  - Cursor
-  - Marker
-  - Gizmo
   _screenStateScale: 0.5
   _forceFullResolutionState: 1
   _applyInSceneView: 1

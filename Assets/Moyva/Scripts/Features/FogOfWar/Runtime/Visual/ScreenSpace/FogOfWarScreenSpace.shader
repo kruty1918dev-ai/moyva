@@ -461,375 +461,6 @@ Shader "Moyva/FogOfWar/ScreenSpace"
             return uv;
         }
 
-        float SampleUnexploredCellOrOutside(
-            float2 cell,
-            out float insideCell)
-        {
-            float2 mapSize =
-                max(
-                    _MoyvaFogMapSize.xy,
-                    1.0.xx);
-
-            insideCell =
-                step(-0.5, cell.x)
-                * step(cell.x, mapSize.x - 0.5)
-                * step(-0.5, cell.y)
-                * step(cell.y, mapSize.y - 0.5);
-
-            if (insideCell < 0.5)
-                return 1.0;
-
-            return saturate(
-                SampleFogMasks(cell).g);
-        }
-
-        float2 FogGridDeltaToWorldXZ(
-            float2 gridDelta)
-        {
-            /*
-             * WorldToGrid:
-             * [ a b ] * worldXZ = gridX
-             * [ c d ]             gridY
-             *
-             * Invert the 2x2 matrix so boundary filtering can operate
-             * in stable world/grid units instead of screen pixels.
-             */
-            if (_MoyvaFogFlipY > 0.5)
-            {
-                gridDelta.y =
-                    -gridDelta.y;
-            }
-
-            float a =
-                _MoyvaFogWorldToGrid.x;
-
-            float b =
-                _MoyvaFogWorldToGrid.y;
-
-            float c =
-                _MoyvaFogWorldToGrid.z;
-
-            float d =
-                _MoyvaFogWorldToGrid.w;
-
-            float determinant =
-                a * d - b * c;
-
-            if (abs(determinant) <= 0.000001)
-            {
-                return gridDelta;
-            }
-
-            float inverseDeterminant =
-                rcp(determinant);
-
-            return float2(
-                (
-                    d * gridDelta.x
-                    - b * gridDelta.y
-                )
-                * inverseDeterminant,
-
-                (
-                    -c * gridDelta.x
-                    + a * gridDelta.y
-                )
-                * inverseDeterminant);
-        }
-
-        float ResolveProjectedGridPixels(
-            float3 worldPosition,
-            float2 gridDelta)
-        {
-            float2 worldDeltaXZ =
-                FogGridDeltaToWorldXZ(
-                    gridDelta);
-
-            float2 baseUv =
-                ProjectWorldToScreenUv(
-                    worldPosition);
-
-            float2 offsetUv =
-                ProjectWorldToScreenUv(
-                    worldPosition
-                    + float3(
-                        worldDeltaXZ.x,
-                        0.0,
-                        worldDeltaXZ.y));
-
-            return max(
-                0.001,
-                length(
-                    (offsetUv - baseUv)
-                    * _ScaledScreenParams.xy));
-        }
-
-        float ResolveSideBoundaryWeight(
-            float stateDifference,
-            float distanceCells,
-            float widthCells)
-        {
-            if (stateDifference <= 0.001)
-                return 0.0;
-
-            return stateDifference
-                   * (
-                       1.0
-                       - smoothstep(
-                           0.0,
-                           max(
-                               0.001,
-                               widthCells),
-                           max(
-                               0.0,
-                               distanceCells))
-                   );
-        }
-
-        float ResolveWorldBoundaryAtWorld(
-            float3 worldPosition,
-            out float sourceUnexplored)
-        {
-            float2 gridPosition =
-                WorldToFogGrid(
-                    worldPosition);
-
-            float2 currentCell =
-                floor(
-                    gridPosition
-                    + 0.5.xx);
-
-            float2 localPosition =
-                clamp(
-                    gridPosition
-                    - currentCell,
-                    -0.5.xx,
-                    0.5.xx);
-
-            float currentInside;
-
-            sourceUnexplored =
-                SampleUnexploredCellOrOutside(
-                    currentCell,
-                    currentInside);
-
-            /*
-             * The dark virtual depth originates only on the unexplored
-             * side of a world-grid boundary.
-             */
-            if (sourceUnexplored < 0.5)
-                return 0.0;
-
-            float ignoredInside;
-
-            float leftState =
-                SampleUnexploredCellOrOutside(
-                    currentCell
-                    + float2(-1.0, 0.0),
-                    ignoredInside);
-
-            float rightState =
-                SampleUnexploredCellOrOutside(
-                    currentCell
-                    + float2(1.0, 0.0),
-                    ignoredInside);
-
-            float downState =
-                SampleUnexploredCellOrOutside(
-                    currentCell
-                    + float2(0.0, -1.0),
-                    ignoredInside);
-
-            float upState =
-                SampleUnexploredCellOrOutside(
-                    currentCell
-                    + float2(0.0, 1.0),
-                    ignoredInside);
-
-            float downLeftState =
-                SampleUnexploredCellOrOutside(
-                    currentCell
-                    + float2(-1.0, -1.0),
-                    ignoredInside);
-
-            float upLeftState =
-                SampleUnexploredCellOrOutside(
-                    currentCell
-                    + float2(-1.0, 1.0),
-                    ignoredInside);
-
-            float downRightState =
-                SampleUnexploredCellOrOutside(
-                    currentCell
-                    + float2(1.0, -1.0),
-                    ignoredInside);
-
-            float upRightState =
-                SampleUnexploredCellOrOutside(
-                    currentCell
-                    + float2(1.0, 1.0),
-                    ignoredInside);
-
-            float gridXPixels =
-                ResolveProjectedGridPixels(
-                    worldPosition,
-                    float2(1.0, 0.0));
-
-            float gridYPixels =
-                ResolveProjectedGridPixels(
-                    worldPosition,
-                    float2(0.0, 1.0));
-
-            /*
-             * Approximately 1.25 screen pixels of analytical AA,
-             * expressed in grid-cell units. The boundary position remains
-             * fixed in world space while its coverage stays antialiased.
-             */
-            float widthX =
-                clamp(
-                    max(
-                        _MoyvaFogEdgeSoftness * 0.35,
-                        1.25 / gridXPixels),
-                    0.025,
-                    0.48);
-
-            float widthY =
-                clamp(
-                    max(
-                        _MoyvaFogEdgeSoftness * 0.35,
-                        1.25 / gridYPixels),
-                    0.025,
-                    0.48);
-
-            float leftDistance =
-                0.5 + localPosition.x;
-
-            float rightDistance =
-                0.5 - localPosition.x;
-
-            float downDistance =
-                0.5 + localPosition.y;
-
-            float upDistance =
-                0.5 - localPosition.y;
-
-            float boundary = 0.0;
-
-            boundary =
-                max(
-                    boundary,
-                    ResolveSideBoundaryWeight(
-                        abs(
-                            sourceUnexplored
-                            - leftState),
-                        leftDistance,
-                        widthX));
-
-            boundary =
-                max(
-                    boundary,
-                    ResolveSideBoundaryWeight(
-                        abs(
-                            sourceUnexplored
-                            - rightState),
-                        rightDistance,
-                        widthX));
-
-            boundary =
-                max(
-                    boundary,
-                    ResolveSideBoundaryWeight(
-                        abs(
-                            sourceUnexplored
-                            - downState),
-                        downDistance,
-                        widthY));
-
-            boundary =
-                max(
-                    boundary,
-                    ResolveSideBoundaryWeight(
-                        abs(
-                            sourceUnexplored
-                            - upState),
-                        upDistance,
-                        widthY));
-
-            /*
-             * Corner coverage prevents tiny gaps or thickness changes
-             * where two orthogonal grid boundaries meet.
-             */
-            float diagonalWidth =
-                max(widthX, widthY)
-                * 1.41421356;
-
-            float downLeftDistance =
-                length(
-                    float2(
-                        leftDistance,
-                        downDistance));
-
-            float upLeftDistance =
-                length(
-                    float2(
-                        leftDistance,
-                        upDistance));
-
-            float downRightDistance =
-                length(
-                    float2(
-                        rightDistance,
-                        downDistance));
-
-            float upRightDistance =
-                length(
-                    float2(
-                        rightDistance,
-                        upDistance));
-
-            boundary =
-                max(
-                    boundary,
-                    ResolveSideBoundaryWeight(
-                        abs(
-                            sourceUnexplored
-                            - downLeftState),
-                        downLeftDistance,
-                        diagonalWidth));
-
-            boundary =
-                max(
-                    boundary,
-                    ResolveSideBoundaryWeight(
-                        abs(
-                            sourceUnexplored
-                            - upLeftState),
-                        upLeftDistance,
-                        diagonalWidth));
-
-            boundary =
-                max(
-                    boundary,
-                    ResolveSideBoundaryWeight(
-                        abs(
-                            sourceUnexplored
-                            - downRightState),
-                        downRightDistance,
-                        diagonalWidth));
-
-            boundary =
-                max(
-                    boundary,
-                    ResolveSideBoundaryWeight(
-                        abs(
-                            sourceUnexplored
-                            - upRightState),
-                        upRightDistance,
-                        diagonalWidth));
-
-            return saturate(boundary);
-        }
-
         float SampleSurfaceEyeDepth(float2 screenUv)
         {
             return SAMPLE_TEXTURE2D_X(
@@ -862,33 +493,15 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                 return true;
             }
 
-            return TryResolveFallbackWorldPosition(
-                screenUv,
-                worldPosition,
-                eyeDepth);
-        }
-
-        float ResolveWorldBoundaryAtScreenUv(
-            float2 screenUv,
-            out float sourceUnexplored,
-            out float sourceEyeDepth,
-            out float sourceSurfaceValid)
-        {
-            float3 sourceWorldPosition;
-
-            if (!TryResolveStableWorldPosition(
-                    screenUv,
-                    sourceWorldPosition,
-                    sourceEyeDepth,
-                    sourceSurfaceValid))
-            {
-                sourceUnexplored = 1.0;
-                return 0.0;
-            }
-
-            return ResolveWorldBoundaryAtWorld(
-                sourceWorldPosition,
-                sourceUnexplored);
+            /*
+             * No fallback plane in the final presentation.
+             * Empty background has no physical fog surface and therefore
+             * cannot generate a camera-dependent diagonal boundary.
+             */
+            worldPosition = 0.0.xxx;
+            eyeDepth = 0.0;
+            surfaceValid = 0.0;
+            return false;
         }
 
         float4 SampleClosedState(float2 screenUv)
@@ -923,263 +536,396 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                 saturate(screenUv));
         }
 
-        float ResolveVirtualDepthWeight(
-            float2 screenUv,
-            float3 worldPosition,
-            float currentEyeDepth,
-            float currentSurfaceValid,
-            float currentUnexplored)
+        float IsFogCellInsideMap(
+            float2 cell)
         {
-            if (_MoyvaFogVirtualDepthEnabled < 0.5)
-                return 0.0;
-
-            currentUnexplored =
-                saturate(
-                    currentUnexplored);
-
-            if (currentUnexplored > 0.98)
-                return 0.0;
-
-            float2 topUv =
-                ProjectWorldToScreenUv(
-                    worldPosition);
-
-            float2 bottomUv =
-                ProjectWorldToScreenUv(
-                    worldPosition
-                    - float3(
-                        0.0,
-                        max(
-                            0.1,
-                            _MoyvaFogVirtualDepthWorld),
-                        0.0));
-
-            float2 projectedDown =
-                bottomUv - topUv;
-
-            float2 projectedPixelsVector =
-                projectedDown
-                * _ScaledScreenParams.xy;
-
-            float projectedPixels =
-                length(
-                    projectedPixelsVector);
-
-            if (projectedPixels <= 0.35)
-                return 0.0;
-
-            float maximumPixels =
+            float2 mapSize =
                 max(
-                    1.0,
-                    _MoyvaFogVirtualDepthMaxPixels);
-
-            /*
-             * Не примушуємо edge завжди бути мінімум 5 px.
-             * На zoom out він фізично стає тоншим і плавно згасає,
-             * замість того щоб перетворюватися на широку темну пляму.
-             */
-            float extrusionPixels =
-                min(
-                    projectedPixels,
-                    maximumPixels);
-
-            float fullOpacityPixels =
-                max(
-                    1.0,
-                    _MoyvaFogVirtualDepthMinPixels);
-
-            float zoomVisibility =
-                smoothstep(
-                    0.55,
-                    fullOpacityPixels,
-                    projectedPixels);
-
-            float2 directionPixels =
-                normalize(
-                    projectedPixelsVector);
-
-            float2 directionUv =
-                directionPixels
-                / max(
-                    _ScaledScreenParams.xy,
+                    _MoyvaFogMapSize.xy,
                     1.0.xx);
 
-            float2 perpendicularUv =
-                float2(
-                    -directionPixels.y,
-                    directionPixels.x)
-                / max(
-                    _ScaledScreenParams.xy,
-                    1.0.xx)
-                * 0.45;
+            return step(-0.5, cell.x)
+                   * step(cell.x, mapSize.x - 0.5)
+                   * step(-0.5, cell.y)
+                   * step(cell.y, mapSize.y - 0.5);
+        }
 
-            int configuredSamples =
-                (int)clamp(
-                    floor(
-                        _MoyvaFogVirtualDepthSamples
-                        + 0.5),
-                    4.0,
-                    24.0);
-
-            int sampleCount =
-                (int)clamp(
-                    ceil(
-                        extrusionPixels
-                        * 1.25),
-                    3.0,
-                    (float)configuredSamples);
-
-            float strongest = 0.0;
-
-            [unroll(24)]
-            for (int sampleIndex = 1;
-                 sampleIndex <= 24;
-                 sampleIndex++)
-            {
-                if (sampleIndex > sampleCount)
-                    break;
-
-                /*
-                 * Центри sample-інтервалів дають стабільніший результат,
-                 * ніж вибірка точно на їхніх межах.
-                 */
-                float normalizedDistance =
-                    (
-                        (float)sampleIndex
-                        - 0.5
-                    )
-                    / max(
-                        1.0,
-                        (float)sampleCount);
-
-                float2 sourceUv =
-                    screenUv
-                    - directionUv
-                    * extrusionPixels
-                    * normalizedDistance;
-
-                if (any(sourceUv < 0.0.xx)
-                    || any(sourceUv > 1.0.xx))
-                {
-                    continue;
-                }
-
-                float sourceUnexplored;
-                float sourceEyeDepth;
-                float sourceSurfaceValid;
-
-                float centerBoundary =
-                    ResolveWorldBoundaryAtScreenUv(
-                        sourceUv,
-                        sourceUnexplored,
-                        sourceEyeDepth,
-                        sourceSurfaceValid);
-
-                float sideAUnexplored;
-                float sideAEyeDepth;
-                float sideAValid;
-
-                float sideABoundary =
-                    ResolveWorldBoundaryAtScreenUv(
-                        sourceUv
-                        + perpendicularUv,
-                        sideAUnexplored,
-                        sideAEyeDepth,
-                        sideAValid);
-
-                float sideBUnexplored;
-                float sideBEyeDepth;
-                float sideBValid;
-
-                float sideBBoundary =
-                    ResolveWorldBoundaryAtScreenUv(
-                        sourceUv
-                        - perpendicularUv,
-                        sideBUnexplored,
-                        sideBEyeDepth,
-                        sideBValid);
-
-                /*
-                 * All three samples evaluate the same world-grid boundary.
-                 * Their maximum only stabilizes sub-pixel diagonal coverage;
-                 * it no longer changes the shape according to screen
-                 * morphology or zoom-dependent pixel neighborhoods.
-                 */
-                float stableBoundary =
-                    max(
-                        centerBoundary,
-                        max(
-                            sideABoundary,
-                            sideBBoundary));
-
-                sourceUnexplored =
-                    max(
-                        sourceUnexplored,
-                        max(
-                            sideAUnexplored,
-                            sideBUnexplored));
-
-                float depthVisible = 1.0;
-
-                if (currentSurfaceValid > 0.5
-                    && sourceSurfaceValid > 0.5)
-                {
-                    depthVisible =
-                        step(
-                            sourceEyeDepth
-                            - max(
-                                0.0,
-                                _MoyvaFogVirtualDepthOcclusionBias),
-                            currentEyeDepth);
-                }
-
-                float gradient =
-                    pow(
-                        saturate(
-                            1.0
-                            - normalizedDistance),
-                        max(
-                            0.25,
-                            _MoyvaFogVirtualDepthGradientPower));
-
-                float sourceContribution =
-                    stableBoundary
-                    * depthVisible
-                    * gradient;
-
-                strongest =
-                    max(
-                        strongest,
-                        sourceContribution);
-
-            }
-
-            float softnessPixels =
-                min(
-                    max(
-                        0.0,
-                        _MoyvaFogScreenBoundarySoftnessPixels),
-                    max(
-                        0.35,
-                        extrusionPixels * 0.25));
-
-            if (softnessPixels > 0.001)
-            {
-                strongest =
-                    smoothstep(
-                        0.0,
-                        saturate(
-                            1.0
-                            / (
-                                1.0
-                                + softnessPixels
-                            )),
-                        strongest);
-            }
+        float SampleDiscreteUnexploredCell(
+            float2 cell)
+        {
+            /*
+             * Cells outside the logical fog map count as Unexplored.
+             * This prevents the hidden terrain silhouette from producing
+             * an artificial edge along the external map perimeter.
+             */
+            if (IsFogCellInsideMap(cell) < 0.5)
+                return 1.0;
 
             return saturate(
-                strongest
-                * zoomVisibility);
+                SampleFogMasks(cell).g);
+        }
+
+        float ResolveFogSideWeight(
+            float neighbourUnexplored,
+            float distanceToSide,
+            float widthCells)
+        {
+            float neighbourVisible =
+                1.0
+                - step(
+                    0.5,
+                    neighbourUnexplored);
+
+            return neighbourVisible
+                   * (
+                       1.0
+                       - smoothstep(
+                           0.0,
+                           max(
+                               0.0001,
+                               widthCells),
+                           max(
+                               0.0,
+                               distanceToSide))
+                   );
+        }
+
+        float ResolveFogSoftUnion(
+            float firstWeight,
+            float secondWeight)
+        {
+            /*
+             * Smooth probabilistic union.
+             * Unlike max(), it does not leave a visible crease where
+             * two perpendicular edge gradients meet.
+             */
+            return saturate(
+                firstWeight
+                + secondWeight
+                - firstWeight
+                * secondWeight);
+        }
+
+        float ResolveFogCornerJoinWeight(
+            float diagonalUnexplored,
+            float horizontalUnexplored,
+            float verticalUnexplored,
+            float horizontalDistance,
+            float verticalDistance,
+            float horizontalWidth,
+            float verticalWidth)
+        {
+            float diagonalVisible =
+                1.0
+                - step(
+                    0.5,
+                    diagonalUnexplored);
+
+            float horizontalVisible =
+                1.0
+                - step(
+                    0.5,
+                    horizontalUnexplored);
+
+            float verticalVisible =
+                1.0
+                - step(
+                    0.5,
+                    verticalUnexplored);
+
+            /*
+             * Two cases need an explicit corner cap:
+             *
+             * 1. Both adjacent cardinal sides are boundaries.
+             * 2. A visible cell touches this unexplored cell only
+             *    diagonally, which otherwise leaves a pinhole.
+             */
+            float cardinalJoin =
+                horizontalVisible
+                * verticalVisible;
+
+            float diagonalOnlyJoin =
+                diagonalVisible
+                * (
+                    1.0
+                    - max(
+                        horizontalVisible,
+                        verticalVisible)
+                );
+
+            float joinRequired =
+                saturate(
+                    cardinalJoin
+                    + diagonalOnlyJoin);
+
+            if (joinRequired <= 0.0001)
+                return 0.0;
+
+            /*
+             * Slightly overlap the side widths so independently evaluated
+             * cells meet without a sub-pixel crack. The cap remains radial,
+             * so it cannot produce a long miter spike.
+             */
+            float widthScale =
+                lerp(
+                    0.78,
+                    1.16,
+                    cardinalJoin);
+
+            float2 normalizedDistance =
+                float2(
+                    horizontalDistance
+                    / max(
+                        0.0001,
+                        horizontalWidth
+                        * widthScale),
+                    verticalDistance
+                    / max(
+                        0.0001,
+                        verticalWidth
+                        * widthScale));
+
+            float radialDistance =
+                length(
+                    normalizedDistance);
+
+            float cornerWeight =
+                1.0
+                - smoothstep(
+                    0.68,
+                    1.08,
+                    radialDistance);
+
+            return saturate(
+                cornerWeight
+                * joinRequired);
+        }
+
+        float ResolveSurfaceLockedGridEdge(
+            float2 gridPosition,
+            float surfaceValid)
+        {
+            if (_MoyvaFogVirtualDepthEnabled < 0.5
+                || surfaceValid < 0.5)
+            {
+                return 0.0;
+            }
+
+            float2 currentCell =
+                floor(
+                    gridPosition
+                    + 0.5.xx);
+
+            float currentUnexplored =
+                SampleDiscreteUnexploredCell(
+                    currentCell);
+
+            /*
+             * The bevel exists only inside a discrete Unexplored cell.
+             * Smoothed coverage on the visible side can never receive it.
+             */
+            if (currentUnexplored < 0.5)
+                return 0.0;
+
+            float2 localPosition =
+                clamp(
+                    gridPosition
+                    - currentCell,
+                    -0.5.xx,
+                    0.5.xx);
+
+            float2 gridUnitsPerPixel =
+                max(
+                    fwidth(gridPosition),
+                    0.00001.xx);
+
+            float widthPixels =
+                clamp(
+                    _MoyvaFogVirtualDepthMaxPixels,
+                    2.0,
+                    10.0);
+
+            /*
+             * Fixed screen thickness converted into grid units.
+             * The logical boundary remains fixed in world space.
+             */
+            float widthX =
+                clamp(
+                    gridUnitsPerPixel.x
+                    * widthPixels,
+                    0.002,
+                    0.48);
+
+            float widthY =
+                clamp(
+                    gridUnitsPerPixel.y
+                    * widthPixels,
+                    0.002,
+                    0.48);
+
+            float leftDistance =
+                localPosition.x + 0.5;
+
+            float rightDistance =
+                0.5 - localPosition.x;
+
+            float downDistance =
+                localPosition.y + 0.5;
+
+            float upDistance =
+                0.5 - localPosition.y;
+
+            float leftState =
+                SampleDiscreteUnexploredCell(
+                    currentCell
+                    + float2(-1.0, 0.0));
+
+            float rightState =
+                SampleDiscreteUnexploredCell(
+                    currentCell
+                    + float2(1.0, 0.0));
+
+            float downState =
+                SampleDiscreteUnexploredCell(
+                    currentCell
+                    + float2(0.0, -1.0));
+
+            float upState =
+                SampleDiscreteUnexploredCell(
+                    currentCell
+                    + float2(0.0, 1.0));
+
+            float downLeftState =
+                SampleDiscreteUnexploredCell(
+                    currentCell
+                    + float2(-1.0, -1.0));
+
+            float upLeftState =
+                SampleDiscreteUnexploredCell(
+                    currentCell
+                    + float2(-1.0, 1.0));
+
+            float downRightState =
+                SampleDiscreteUnexploredCell(
+                    currentCell
+                    + float2(1.0, -1.0));
+
+            float upRightState =
+                SampleDiscreteUnexploredCell(
+                    currentCell
+                    + float2(1.0, 1.0));
+
+            float leftWeight =
+                ResolveFogSideWeight(
+                    leftState,
+                    leftDistance,
+                    widthX);
+
+            float rightWeight =
+                ResolveFogSideWeight(
+                    rightState,
+                    rightDistance,
+                    widthX);
+
+            float downWeight =
+                ResolveFogSideWeight(
+                    downState,
+                    downDistance,
+                    widthY);
+
+            float upWeight =
+                ResolveFogSideWeight(
+                    upState,
+                    upDistance,
+                    widthY);
+
+            /*
+             * Smoothly unite cardinal sides. This preserves the Pass 6.11
+             * width and falloff while removing the hard seam at 90° joins.
+             */
+            float horizontalUnion =
+                ResolveFogSoftUnion(
+                    leftWeight,
+                    rightWeight);
+
+            float verticalUnion =
+                ResolveFogSoftUnion(
+                    downWeight,
+                    upWeight);
+
+            float edgeWeight =
+                ResolveFogSoftUnion(
+                    horizontalUnion,
+                    verticalUnion);
+
+            /*
+             * Radial corner caps seal all four vertices:
+             * - no gap where two sides meet;
+             * - no missing pixel at diagonal-only contact;
+             * - no infinitely extended miter.
+             */
+            float downLeftCorner =
+                ResolveFogCornerJoinWeight(
+                    downLeftState,
+                    leftState,
+                    downState,
+                    leftDistance,
+                    downDistance,
+                    widthX,
+                    widthY);
+
+            float upLeftCorner =
+                ResolveFogCornerJoinWeight(
+                    upLeftState,
+                    leftState,
+                    upState,
+                    leftDistance,
+                    upDistance,
+                    widthX,
+                    widthY);
+
+            float downRightCorner =
+                ResolveFogCornerJoinWeight(
+                    downRightState,
+                    rightState,
+                    downState,
+                    rightDistance,
+                    downDistance,
+                    widthX,
+                    widthY);
+
+            float upRightCorner =
+                ResolveFogCornerJoinWeight(
+                    upRightState,
+                    rightState,
+                    upState,
+                    rightDistance,
+                    upDistance,
+                    widthX,
+                    widthY);
+
+            float cornerUnion =
+                ResolveFogSoftUnion(
+                    ResolveFogSoftUnion(
+                        downLeftCorner,
+                        upLeftCorner),
+                    ResolveFogSoftUnion(
+                        downRightCorner,
+                        upRightCorner));
+
+            edgeWeight =
+                ResolveFogSoftUnion(
+                    edgeWeight,
+                    cornerUnion);
+
+            edgeWeight =
+                pow(
+                    saturate(edgeWeight),
+                    max(
+                        0.25,
+                        _MoyvaFogVirtualDepthGradientPower));
+
+            return saturate(edgeWeight);
         }
 
         ENDHLSL
@@ -1211,27 +957,19 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                         0.0001,
                         surfaceEyeDepth);
 
-                bool resolvedWorld = false;
-
-                if (validSurface > 0.5)
-                {
-                    resolvedWorld =
-                        TryResolveWorldFromEyeDepth(
-                            screenUv,
-                            surfaceEyeDepth,
-                            worldPosition);
-                }
-                else
-                {
-                    resolvedWorld =
-                        TryResolveFallbackWorldPosition(
-                            screenUv,
-                            worldPosition,
-                            resolvedEyeDepth);
-                }
+                bool resolvedWorld =
+                    validSurface > 0.5
+                    && TryResolveWorldFromEyeDepth(
+                        screenUv,
+                        surfaceEyeDepth,
+                        worldPosition);
 
                 if (!resolvedWorld)
                 {
+                    /*
+                     * Empty screen background is fully Unexplored,
+                     * but carries no depth and cannot form a bevel.
+                     */
                     return float4(
                         1.0,
                         1.0,
@@ -1257,60 +995,16 @@ Shader "Moyva/FogOfWar/ScreenSpace"
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-                float2 screenUv =
-                    input.texcoord;
-
-                float4 center =
-                    ResolveScreenStateSample(
-                        screenUv);
-
                 /*
-                 * Sub-pixel screen-state coverage.
-                 * При zoom out одна fog boundary може займати менше пікселя.
-                 * Чотири додаткові sample згладжують silhouette без temporal
-                 * jitter і без розмиття eye depth.
+                 * One central sample only.
+                 *
+                 * Fog AA is already calculated analytically in
+                 * ResolveSmoothedFogMasks via fwidth(gridPosition).
+                 * Additional screen-space samples mixed unrelated surfaces:
+                 * terrain, water, props and empty background.
                  */
-                float2 subPixel =
-                    _BlitTexture_TexelSize.xy
-                    * 0.35;
-
-                float2 coverage =
-                    center.rg;
-
-                coverage +=
-                    ResolveScreenStateSample(
-                        screenUv
-                        + float2(
-                            subPixel.x,
-                            subPixel.y)).rg;
-
-                coverage +=
-                    ResolveScreenStateSample(
-                        screenUv
-                        + float2(
-                            -subPixel.x,
-                            subPixel.y)).rg;
-
-                coverage +=
-                    ResolveScreenStateSample(
-                        screenUv
-                        + float2(
-                            subPixel.x,
-                            -subPixel.y)).rg;
-
-                coverage +=
-                    ResolveScreenStateSample(
-                        screenUv
-                        - subPixel).rg;
-
-                coverage *=
-                    0.2;
-
-                return float4(
-                    saturate(
-                        coverage),
-                    center.b,
-                    center.a);
+                return ResolveScreenStateSample(
+                    input.texcoord);
             }
 
             ENDHLSL
@@ -1493,6 +1187,10 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                 float4 rawState =
                     SampleRawState(screenUv);
 
+                float4 rawStatePoint =
+                    SampleRawStatePoint(
+                        screenUv);
+
                 float4 state =
                     SampleClosedState(screenUv);
 
@@ -1504,8 +1202,28 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                  * BA in the morphed screen state are not geometry data.
                  * Geometry always comes from the immutable surface depth.
                  */
-                float surfaceEyeDepth = 0.0;
-                float surfaceValid = 0.0;
+                float surfaceEyeDepth;
+                float surfaceValid;
+
+                /*
+                 * Final fog shape comes from the antialiased RawScreenState.
+                 * Dilate/Erode remains available only in debug views and can
+                 * no longer expand, shrink or deform the visible boundary.
+                 */
+                float hiddenWeight =
+                    saturate(
+                        rawStatePoint.r);
+
+                float unexploredWeight =
+                    saturate(
+                        min(
+                            rawStatePoint.g,
+                            hiddenWeight));
+
+                float exploredWeight =
+                    saturate(
+                        hiddenWeight
+                        - unexploredWeight);
 
                 float3 worldPosition = 0.0.xxx;
 
@@ -1516,50 +1234,11 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                         surfaceEyeDepth,
                         surfaceValid);
 
-                float insideMap = 0.0;
-
-                float2 directFogState =
-                    worldResolved
-                        ? ResolveFogStateAtWorld(
-                            worldPosition,
-                            insideMap)
-                        : saturate(
-                            rawState.rg);
-
                 /*
-                 * Dedicated surface depth is authoritative where available.
-                 * If no physical terrain/water surface was tagged at this
-                 * pixel, use the already-built RawScreenState instead of
-                 * turning the frame into infinite unexplored fog.
+                 * ClosedScreenState remains authoritative for fog coverage.
+                 * Missing dedicated surface depth must not force the entire
+                 * Game View into Unexplored.
                  */
-                float useDirectWorldState =
-                    worldResolved
-                    && surfaceValid > 0.5
-                        ? 1.0
-                        : 0.0;
-
-                float2 finalFogState =
-                    lerp(
-                        saturate(
-                            rawState.rg),
-                        directFogState,
-                        useDirectWorldState);
-
-                float hiddenWeight =
-                    saturate(
-                        finalFogState.r);
-
-                float unexploredWeight =
-                    saturate(
-                        min(
-                            finalFogState.g,
-                            hiddenWeight));
-
-                float exploredWeight =
-                    saturate(
-                        hiddenWeight
-                        - unexploredWeight);
-
                 float2 gridPosition =
                     worldResolved
                         ? WorldToFogGrid(
@@ -1568,6 +1247,16 @@ Shader "Moyva/FogOfWar/ScreenSpace"
 
                 if (_MoyvaFogDebugMode > 0.5)
                 {
+                    if (!worldResolved
+                        && _MoyvaFogDebugMode >= 1.5)
+                    {
+                        return half4(
+                            rawState.r,
+                            rawState.g,
+                            0.0,
+                            1.0);
+                    }
+
                     if (_MoyvaFogDebugMode < 1.5)
                     {
                         float3 stateColor =
@@ -1586,15 +1275,6 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                                 unexploredWeight);
 
                         return half4(stateColor, 1.0);
-                    }
-
-                    if (!worldResolved)
-                    {
-                        return half4(
-                            rawState.r,
-                            rawState.g,
-                            0.0,
-                            1.0);
                     }
 
                     if (_MoyvaFogDebugMode < 2.5)
@@ -1686,34 +1366,24 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                             1.0);
                     }
 
-                    float boundarySourceUnexplored;
-
-                    float boundaryStrength =
-                        ResolveWorldBoundaryAtWorld(
-                            worldPosition,
-                            boundarySourceUnexplored);
+                    float innerEdgeDebug =
+                        worldResolved
+                            ? ResolveSurfaceLockedGridEdge(
+                                gridPosition,
+                                surfaceValid)
+                            : 0.0;
 
                     if (_MoyvaFogDebugMode < 8.5)
                     {
                         return half4(
-                            boundaryStrength.xxx,
+                            innerEdgeDebug.xxx,
                             1.0);
                     }
 
-                    float virtualDepthDebug =
-                        worldResolved
-                            ? ResolveVirtualDepthWeight(
-                                screenUv,
-                                worldPosition,
-                                surfaceEyeDepth,
-                                surfaceValid,
-                                unexploredWeight)
-                            : 0.0;
-
                     return half4(
-                        virtualDepthDebug,
+                        innerEdgeDebug,
                         0.1,
-                        1.0 - virtualDepthDebug,
+                        1.0 - innerEdgeDebug,
                         1.0);
                 }
 
@@ -1734,23 +1404,24 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                         * saturate(
                             _MoyvaFogExploredOpacity));
 
-                float virtualDepthWeight =
-                    worldResolved
-                        ? ResolveVirtualDepthWeight(
-                            screenUv,
-                            worldPosition,
-                            surfaceEyeDepth,
-                            surfaceValid,
-                            unexploredWeight)
-                        : 0.0;
+                float innerFogEdgeWeight =
+                    (
+                        worldResolved
+                            ? ResolveSurfaceLockedGridEdge(
+                                gridPosition,
+                                surfaceValid)
+                            : 0.0
+                    )
+                    * min(
+                        saturate(
+                            _MoyvaFogVirtualDepthOpacity),
+                        0.88);
 
-                result =
+                float3 unexploredTargetColor =
                     lerp(
-                        result,
+                        _MoyvaFogUnexploredColor.rgb,
                         _MoyvaFogVirtualDepthColor.rgb,
-                        virtualDepthWeight
-                        * saturate(
-                            _MoyvaFogVirtualDepthOpacity));
+                        innerFogEdgeWeight);
 
                 float unexploredBlend =
                     unexploredWeight
@@ -1761,7 +1432,7 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                     && _MoyvaFogUnexploredOpacity >= 0.999)
                 {
                     result =
-                        _MoyvaFogUnexploredColor.rgb;
+                        unexploredTargetColor;
                 }
                 else
                 {
@@ -1773,7 +1444,7 @@ Shader "Moyva/FogOfWar/ScreenSpace"
                     float3 unexploredTinted =
                         lerp(
                             unexploredSource,
-                            _MoyvaFogUnexploredColor.rgb,
+                            unexploredTargetColor,
                             0.92);
 
                     result =

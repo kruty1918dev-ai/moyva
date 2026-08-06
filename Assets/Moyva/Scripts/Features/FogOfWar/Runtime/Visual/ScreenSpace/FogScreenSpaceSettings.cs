@@ -34,6 +34,12 @@ namespace Kruty1918.Moyva.FogOfWar.API
     [Serializable]
     public sealed class FogScreenSpaceSettings
     {
+        private const int CurrentCornerJoinRevision = 613;
+
+        [SerializeField]
+        [HideInInspector]
+        private int _cornerJoinRevision;
+
         [BoxGroup("General")]
         public bool Enabled = true;
 
@@ -97,8 +103,9 @@ namespace Kruty1918.Moyva.FogOfWar.API
 
         [BoxGroup("Depth-Aware Screen Edge")]
         [Tooltip(
-            "Новий основний режим презентації краю. Темна глибина " +
-            "обчислюється у fullscreen shader без world-space quad-стінок.")]
+            "Темний кант на стороні дискретної Unexplored клітинки. " +
+            "Він обчислюється з world-grid меж, лише на реальній поверхні, " +
+            "без screen-neighbour sampling та fallback-площини.")]
         public bool DepthAwareEdgeEnabled = true;
 
         [BoxGroup("Depth-Aware Screen Edge")]
@@ -117,54 +124,63 @@ namespace Kruty1918.Moyva.FogOfWar.API
 
         [BoxGroup("Depth-Aware Screen Edge")]
         [Range(0f, 1f)]
-        public float DepthAwareEdgeOpacity = 0.96f;
+        public float DepthAwareEdgeOpacity = 0.82f;
 
         [BoxGroup("Depth-Aware Screen Edge")]
         [Range(0.1f, 5f)]
         [Tooltip(
-            "Умовна world-space глибина, що лише визначає напрямок " +
-            "екранної екструзії відносно поточної камери.")]
+            "Legacy-параметр. Inner Fog Bevel не використовує " +
+            "world-space екструзію або напрямок Vector3.down.")]
         public float DepthAwareEdgeWorldDepth = 1.5f;
 
         [BoxGroup("Depth-Aware Screen Edge")]
         [Range(1f, 16f)]
         [Tooltip(
-            "Не примусова мінімальна товщина, а screen-size, починаючи " +
-            "з якого virtual depth має повну непрозорість. На меншому " +
-            "розмірі край плавно тоншає та згасає.")]
+            "Legacy-параметр, збережений для сумісності serialized asset. " +
+            "Нова фаска використовує лише Max Pixels як ширину.")]
         public float DepthAwareEdgeMinPixels = 5f;
 
         [BoxGroup("Depth-Aware Screen Edge")]
-        [Range(4f, 64f)]
-        public float DepthAwareEdgeMaxPixels = 18f;
+        [Range(2f, 10f)]
+        [Tooltip(
+            "Ширина surface-locked канту в screen pixels. " +
+            "Логічна межа при цьому залишається у world-grid.")]
+        public float DepthAwareEdgeMaxPixels = 6f;
 
         [BoxGroup("Depth-Aware Screen Edge")]
-        [Range(4, 24)]
-        public int DepthAwareEdgeSamples = 16;
+        [Range(4, 12)]
+        [Tooltip(
+            "Legacy-параметр. SurfaceLockedGridEdge не виконує " +
+            "радіальні screen-space вибірки.")]
+        public int DepthAwareEdgeSamples = 8;
 
         [BoxGroup("Depth-Aware Screen Edge")]
         [Range(0f, 1f)]
         [Tooltip(
-            "Запас camera-space depth. Менше значення сильніше захищає " +
-            "ближні високі тайли від перекриття віртуальною глибиною.")]
+            "Legacy-параметр. Нова фаска не виконує camera-depth " +
+            "оклюзію, оскільки ніколи не виходить на Visible side.")]
         public float DepthAwareEdgeOcclusionBias = 0.08f;
 
         [BoxGroup("Depth-Aware Screen Edge")]
         [Range(0.25f, 4f)]
-        public float DepthAwareEdgeGradientPower = 1.25f;
+        [Tooltip(
+            "Форма згасання фаски вглиб туману. Більше значення " +
+            "робить темну частину вужчою.")]
+        public float DepthAwareEdgeGradientPower = 1.5f;
 
         [BoxGroup("Depth-Aware Screen Edge")]
         [Range(0, 3)]
         [Tooltip(
-            "Screen-space morphological close radius. 1 прибирає " +
-            "однопіксельні дірки та вм'ятини без помітного розширення fog.")]
-        public int DepthAwareStateCloseRadiusPixels = 1;
+            "Використовується лише для debug ClosedScreenState. " +
+            "Фінальна форма fog береться з RawScreenState.")]
+        public int DepthAwareStateCloseRadiusPixels = 0;
 
         [BoxGroup("Depth-Aware Screen Edge")]
         [Range(0f, 4f)]
         [Tooltip(
-            "М'якість віртуальної глибини після screen-state morphology.")]
-        public float DepthAwareBoundarySoftnessPixels = 0.85f;
+            "М'якість внутрішньої фаски. Не впливає на логічну " +
+            "форму основної fog mask.")]
+        public float DepthAwareBoundarySoftnessPixels = 0.65f;
 
         [BoxGroup("World Curtain")]
         [Tooltip(
@@ -414,9 +430,27 @@ namespace Kruty1918.Moyva.FogOfWar.API
 
         public void EnsureDefaults()
         {
+            /*
+             * Pass 6.13 intentionally restores the exact Pass 6.11
+             * presentation values. Only corner joining is new.
+             */
+            if (_cornerJoinRevision < CurrentCornerJoinRevision)
+            {
+                DepthAwareEdgeOpacity = 0.82f;
+                DepthAwareEdgeMaxPixels = 6f;
+                DepthAwareEdgeGradientPower = 1.5f;
+                DepthAwareBoundarySoftnessPixels = 0.65f;
+                DepthAwareStateCloseRadiusPixels = 0;
+
+                _cornerJoinRevision =
+                    CurrentCornerJoinRevision;
+            }
+
             DepthAwareEdgeOpacity =
-                Mathf.Clamp01(
-                    DepthAwareEdgeOpacity);
+                Mathf.Clamp(
+                    DepthAwareEdgeOpacity,
+                    0f,
+                    0.88f);
 
             DepthAwareEdgeWorldDepth =
                 Mathf.Clamp(
@@ -431,18 +465,16 @@ namespace Kruty1918.Moyva.FogOfWar.API
                     32f);
 
             DepthAwareEdgeMaxPixels =
-                Mathf.Max(
-                    DepthAwareEdgeMinPixels,
-                    Mathf.Clamp(
-                        DepthAwareEdgeMaxPixels,
-                        4f,
-                        64f));
+                Mathf.Clamp(
+                    DepthAwareEdgeMaxPixels,
+                    2f,
+                    10f);
 
             DepthAwareEdgeSamples =
                 Mathf.Clamp(
                     DepthAwareEdgeSamples,
                     4,
-                    24);
+                    12);
 
             DepthAwareEdgeOcclusionBias =
                 Mathf.Clamp01(
@@ -454,11 +486,11 @@ namespace Kruty1918.Moyva.FogOfWar.API
                     0.25f,
                     4f);
 
+            /*
+             * Morphology is debug-only in Inner Fog Bevel mode.
+             */
             DepthAwareStateCloseRadiusPixels =
-                Mathf.Clamp(
-                    DepthAwareStateCloseRadiusPixels,
-                    0,
-                    3);
+                0;
 
             DepthAwareBoundarySoftnessPixels =
                 Mathf.Clamp(
