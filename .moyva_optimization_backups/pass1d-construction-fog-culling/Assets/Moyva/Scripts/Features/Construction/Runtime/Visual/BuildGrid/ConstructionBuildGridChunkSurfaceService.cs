@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Kruty1918.Moyva.Construction.API;
-using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.MapChunks.API;
 using UnityEngine;
 using Zenject;
@@ -43,28 +42,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly IConstructionGridGeometryService _gridGeometry;
         private readonly IConstructionVisualSettingsProvider _settingsProvider;
         private readonly IConstructionBuildGridDiagnostics _diagnostics;
-        private readonly IFogStateReader _fogStateReader;
         private readonly Dictionary<MapChunkCoord, ConstructionBuildGridChunkSurfaceHandle> _handles = new();
-        private readonly Dictionary<MapChunkCoord, bool> _chunkFogVisibilityCache = new();
         private readonly Queue<MapChunkCoord> _geometryQueue = new();
         private readonly Queue<MapChunkCoord> _maskQueue = new();
         private readonly HashSet<MapChunkCoord> _queuedGeometry = new();
         private readonly HashSet<MapChunkCoord> _queuedMasks = new();
         private readonly HashSet<MapChunkCoord> _fullMaskUpdates = new();
         private readonly Dictionary<MapChunkCoord, RectInt> _dirtyMaskRegions = new();
-
-        /*
-         * A mask is evaluated incrementally, one tile row at a time.
-         * The Texture2D is updated only when the complete rectangle is ready.
-         */
-        private MapChunkCoord? _activeMaskCoord;
-        private RectInt _activeMaskRect;
-        private int _activeMaskNextY;
-        private int _activeMaskRevision;
-        private int _activeMaskGeneral;
-        private int _activeMaskValid;
-        private int _activeMaskInvalid;
-        private int _activeMaskHidden;
 
         private Material _material;
         private bool _visible;
@@ -79,8 +63,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             [InjectOptional] IMapVisualChunkRegistry chunkRegistry = null,
             [InjectOptional] IConstructionGridGeometryService gridGeometry = null,
             [InjectOptional] IConstructionVisualSettingsProvider settingsProvider = null,
-            [InjectOptional] IConstructionBuildGridDiagnostics diagnostics = null,
-            [InjectOptional] IFogStateReader fogStateReader = null)
+            [InjectOptional] IConstructionBuildGridDiagnostics diagnostics = null)
         {
             _chunkLayout = chunkLayout;
             _chunkRoots = chunkRoots;
@@ -90,14 +73,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _gridGeometry = gridGeometry;
             _settingsProvider = settingsProvider;
             _diagnostics = diagnostics;
-            _fogStateReader = fogStateReader;
         }
 
         public bool MaterialReady => _material != null;
-        public bool IsUpdating =>
-            _activeMaskCoord.HasValue
-            || _geometryQueue.Count > 0
-            || _maskQueue.Count > 0;
+        public bool IsUpdating => _geometryQueue.Count > 0 || _maskQueue.Count > 0;
 
         public void Initialize(string shaderName)
         {
@@ -181,45 +160,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 if (!IsCameraVisible(descriptor.Coord))
                     continue;
 
-                bool hasVisibleFogCells =
-                    HasVisibleFogCells(
-                        descriptor.Coord,
-                        descriptor.TileRect);
-
-                if (!hasVisibleFogCells)
-                {
-                    if (_handles.TryGetValue(
-                            descriptor.Coord,
-                            out ConstructionBuildGridChunkSurfaceHandle hiddenHandle))
-                    {
-                        hiddenHandle.MaskDirty = true;
-
-                        if (hiddenHandle.GameObject != null
-                            && hiddenHandle.GameObject.activeSelf)
-                        {
-                            hiddenHandle.GameObject.SetActive(false);
-                        }
-                    }
-
-                    continue;
-                }
-
-                if (!_handles.TryGetValue(
-                        descriptor.Coord,
-                        out ConstructionBuildGridChunkSurfaceHandle handle))
-                {
+                if (!_handles.ContainsKey(descriptor.Coord))
                     EnqueueGeometry(descriptor.Coord);
-                }
                 else if (invalidateMasks
-                         || handle.MaskDirty
-                         || handle.AppliedMaskRevision != _maskRevision)
+                         || _handles[descriptor.Coord].MaskDirty
+                         || _handles[descriptor.Coord].AppliedMaskRevision != _maskRevision)
                 {
-                    if (invalidateMasks
-                        || handle.AppliedMaskRevision != _maskRevision)
-                    {
+                    if (invalidateMasks || _handles[descriptor.Coord].AppliedMaskRevision != _maskRevision)
                         _fullMaskUpdates.Add(descriptor.Coord);
-                    }
-
                     EnqueueMask(descriptor.Coord);
                 }
             }
@@ -231,7 +179,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _maskRevision++;
             _dirtyMaskRegions.Clear();
-            _chunkFogVisibilityCache.Clear();
             if (_handles.Count == 0)
             {
                 EnsureVisibleChunks(invalidateMasks: true);
@@ -241,27 +188,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
             foreach (KeyValuePair<MapChunkCoord, ConstructionBuildGridChunkSurfaceHandle> pair in _handles)
             {
                 _fullMaskUpdates.Add(pair.Key);
-
-                bool shouldProcess =
-                    IsCameraVisible(pair.Key)
-                    && HasVisibleFogCells(
-                        pair.Key,
-                        pair.Value.TileRect);
-
-                if (shouldProcess)
-                {
+                if (IsCameraVisible(pair.Key))
                     EnqueueMask(pair.Key);
-                }
                 else
-                {
                     pair.Value.MaskDirty = true;
-
-                    if (pair.Value.GameObject != null
-                        && pair.Value.GameObject.activeSelf)
-                    {
-                        pair.Value.GameObject.SetActive(false);
-                    }
-                }
             }
 
             EnsureVisibleChunks(invalidateMasks: false);
@@ -291,45 +221,20 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 for (int chunkY = minCoord.Y; chunkY <= maxCoord.Y; chunkY++)
                 {
                     var coord = new MapChunkCoord(chunkX, chunkY);
-                    _chunkFogVisibilityCache.Remove(coord);
-
-                    if (_handles.TryGetValue(
-                            coord,
-                            out ConstructionBuildGridChunkSurfaceHandle handle))
+                    if (_handles.ContainsKey(coord))
                     {
+                        ConstructionBuildGridChunkSurfaceHandle handle = _handles[coord];
                         handle.MaskDirty = true;
                         RectInt dirtyRegion = IntersectTileRects(
                             handle.TileRect,
                             CreateTileRect(minTile.x, minTile.y, maxTile.x + 1, maxTile.y + 1));
                         if (dirtyRegion.width > 0 && dirtyRegion.height > 0)
                             MergeDirtyMaskRegion(coord, dirtyRegion);
-
-                        bool shouldProcess =
-                            IsCameraVisible(coord)
-                            && HasVisibleFogCells(
-                                coord,
-                                handle.TileRect);
-
-                        if (shouldProcess)
-                        {
+                        if (IsCameraVisible(coord))
                             EnqueueMask(coord);
-                        }
-                        else if (handle.GameObject != null
-                                 && handle.GameObject.activeSelf)
-                        {
-                            handle.GameObject.SetActive(false);
-                        }
                     }
-                    else if (IsCameraVisible(coord)
-                             && _chunkLayout.TryGetDescriptor(
-                                 coord,
-                                 out MapChunkDescriptor descriptor)
-                             && HasVisibleFogCells(
-                                 coord,
-                                 descriptor.TileRect))
-                    {
+                    else if (IsCameraVisible(coord))
                         EnqueueGeometry(coord);
-                    }
                 }
             }
         }
@@ -339,52 +244,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (!IsUpdating || !CanBuild())
                 return;
 
-            long startedAt =
-                Stopwatch.GetTimestamp();
-
-            double budgetTicks =
-                Mathf.Max(
-                    0.1f,
-                    budgetMilliseconds)
-                * Stopwatch.Frequency
-                / 1000.0;
-
+            long startedAt = Stopwatch.GetTimestamp();
+            double budgetTicks = Mathf.Max(0.1f, budgetMilliseconds) * Stopwatch.Frequency / 1000.0;
             bool processedAny = false;
 
-            while (IsUpdating
-                   && (
-                       !processedAny
-                       || Stopwatch.GetTimestamp() - startedAt
-                          < budgetTicks
-                   ))
+            while (IsUpdating && (!processedAny || Stopwatch.GetTimestamp() - startedAt < budgetTicks))
             {
-                bool didWork;
-
-                if (_activeMaskCoord.HasValue
-                    || _maskQueue.Count > 0)
-                {
-                    /*
-                     * One iteration evaluates at most one tile row.
-                     * This makes the configured budget meaningful.
-                     */
-                    didWork =
-                        ProcessNextMaskRow();
-                }
-                else if (_geometryQueue.Count > 0)
-                {
-                    /*
-                     * Geometry remains one chunk per task. Pass 1D already
-                     * prevents geometry for fully fogged chunks.
-                     */
-                    ProcessNextGeometry();
-                    didWork = true;
-                }
+                if (_maskQueue.Count > 0)
+                    ProcessNextMask();
                 else
-                {
-                    break;
-                }
+                    ProcessNextGeometry();
 
-                processedAny |= didWork;
+                processedAny = true;
             }
 
             ApplyChunkVisibility();
@@ -403,19 +274,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             foreach (KeyValuePair<MapChunkCoord, ConstructionBuildGridChunkSurfaceHandle> pair in _handles)
             {
                 GameObject gameObject = pair.Value.GameObject;
-                if (gameObject == null)
-                    continue;
-
-                bool shouldBeVisible =
-                    _visible
-                    && pair.Value.MaskReady
-                    && IsCameraVisible(pair.Key)
-                    && HasVisibleFogCells(
-                        pair.Key,
-                        pair.Value.TileRect);
-
-                if (gameObject.activeSelf != shouldBeVisible)
-                    gameObject.SetActive(shouldBeVisible);
+                if (gameObject != null)
+                    gameObject.SetActive(_visible && IsCameraVisible(pair.Key));
             }
         }
 
@@ -427,8 +287,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _queuedMasks.Clear();
             _fullMaskUpdates.Clear();
             _dirtyMaskRegions.Clear();
-            _chunkFogVisibilityCache.Clear();
-            CancelActiveMaskUpdate();
 
             foreach (ConstructionBuildGridChunkSurfaceHandle handle in _handles.Values)
             {
@@ -458,283 +316,54 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
-            if (!IsCameraVisible(coord)
-                || !HasVisibleFogCells(
-                    coord,
-                    descriptor.TileRect))
-            {
-                return;
-            }
-
             BuildChunk(descriptor);
         }
 
-        private bool ProcessNextMaskRow()
+        private void ProcessNextMask()
         {
-            if (!_activeMaskCoord.HasValue
-                && !TryBeginNextMaskUpdate())
-            {
-                return false;
-            }
+            MapChunkCoord coord = _maskQueue.Dequeue();
+            _queuedMasks.Remove(coord);
+            if (!_handles.TryGetValue(coord, out ConstructionBuildGridChunkSurfaceHandle handle))
+                return;
 
-            MapChunkCoord coord =
-                _activeMaskCoord.Value;
-
-            if (!_handles.TryGetValue(
-                    coord,
-                    out ConstructionBuildGridChunkSurfaceHandle handle))
-            {
-                CancelActiveMaskUpdate();
-                return false;
-            }
-
-            if (!IsCameraVisible(coord)
-                || !HasVisibleFogCells(
-                    coord,
-                    handle.TileRect))
-            {
-                handle.MaskDirty = true;
-
-                if (handle.GameObject != null
-                    && handle.GameObject.activeSelf)
-                {
-                    handle.GameObject.SetActive(false);
-                }
-
-                CancelActiveMaskUpdate();
-                return false;
-            }
-
-            if (_activeMaskNextY
-                >= _activeMaskRect.yMax)
-            {
-                CompleteActiveMaskUpdate(handle);
-                return true;
-            }
-
-            UpdateMaskRow(
-                handle,
-                _activeMaskRect,
-                _activeMaskNextY);
-
-            _activeMaskNextY++;
-
-            if (_activeMaskNextY
-                >= _activeMaskRect.yMax)
-            {
-                CompleteActiveMaskUpdate(handle);
-            }
-
-            return true;
+            bool requiresFullUpdate = _fullMaskUpdates.Remove(coord);
+            RectInt updateRect = !requiresFullUpdate
+                                 && _dirtyMaskRegions.TryGetValue(coord, out RectInt dirtyRegion)
+                ? dirtyRegion
+                : handle.TileRect;
+            _dirtyMaskRegions.Remove(coord);
+            UpdateMask(handle, updateRect);
         }
 
-        private bool TryBeginNextMaskUpdate()
+        private void UpdateMask(ConstructionBuildGridChunkSurfaceHandle handle, RectInt updateRect)
         {
-            while (_maskQueue.Count > 0)
+            byte[] buffer = handle.CellMaskBuffer;
+            RectInt rect = handle.TileRect;
+            int general = 0;
+            int valid = 0;
+            int invalid = 0;
+            int hidden = 0;
+            for (int tileY = updateRect.yMin; tileY < updateRect.yMax; tileY++)
             {
-                MapChunkCoord coord =
-                    _maskQueue.Dequeue();
-
-                _queuedMasks.Remove(coord);
-
-                if (!_handles.TryGetValue(
-                        coord,
-                        out ConstructionBuildGridChunkSurfaceHandle handle))
+                int rowStart = (tileY - rect.yMin) * rect.width;
+                for (int tileX = updateRect.xMin; tileX < updateRect.xMax; tileX++)
                 {
-                    continue;
+                    var tile = new Vector2Int(tileX, tileY);
+                    ConstructionBuildGridTileVisualState visualState = _tileFilter.ResolveVisualState(tile);
+                    CountVisualState(visualState, ref general, ref valid, ref invalid, ref hidden);
+                    buffer[rowStart + tileX - rect.xMin] = EncodeVisualState(visualState);
                 }
-
-                if (!IsCameraVisible(coord)
-                    || !HasVisibleFogCells(
-                        coord,
-                        handle.TileRect))
-                {
-                    handle.MaskDirty = true;
-
-                    if (handle.GameObject != null
-                        && handle.GameObject.activeSelf)
-                    {
-                        handle.GameObject.SetActive(false);
-                    }
-
-                    continue;
-                }
-
-                bool requiresFullUpdate =
-                    _fullMaskUpdates.Remove(coord);
-
-                RectInt updateRect =
-                    !requiresFullUpdate
-                    && _dirtyMaskRegions.TryGetValue(
-                        coord,
-                        out RectInt dirtyRegion)
-                        ? dirtyRegion
-                        : handle.TileRect;
-
-                _dirtyMaskRegions.Remove(coord);
-
-                if (updateRect.width <= 0
-                    || updateRect.height <= 0)
-                {
-                    continue;
-                }
-
-                _activeMaskCoord =
-                    coord;
-
-                _activeMaskRect =
-                    updateRect;
-
-                _activeMaskNextY =
-                    updateRect.yMin;
-
-                _activeMaskRevision =
-                    _maskRevision;
-
-                _activeMaskGeneral = 0;
-                _activeMaskValid = 0;
-                _activeMaskInvalid = 0;
-                _activeMaskHidden = 0;
-
-                return true;
             }
 
-            return false;
-        }
-
-        private void UpdateMaskRow(
-            ConstructionBuildGridChunkSurfaceHandle handle,
-            RectInt updateRect,
-            int tileY)
-        {
-            byte[] buffer =
-                handle.CellMaskBuffer;
-
-            RectInt rect =
-                handle.TileRect;
-
-            int rowStart =
-                (tileY - rect.yMin)
-                * rect.width;
-
-            for (int tileX = updateRect.xMin;
-                 tileX < updateRect.xMax;
-                 tileX++)
-            {
-                var tile =
-                    new Vector2Int(
-                        tileX,
-                        tileY);
-
-                ConstructionBuildGridTileVisualState visualState =
-                    _tileFilter.ResolveVisualState(tile);
-
-                CountVisualState(
-                    visualState,
-                    ref _activeMaskGeneral,
-                    ref _activeMaskValid,
-                    ref _activeMaskInvalid,
-                    ref _activeMaskHidden);
-
-                buffer[
-                    rowStart
-                    + tileX
-                    - rect.xMin
-                ] =
-                    EncodeVisualState(
-                        visualState);
-            }
-        }
-
-        private void CompleteActiveMaskUpdate(
-            ConstructionBuildGridChunkSurfaceHandle handle)
-        {
-            MapChunkCoord coord =
-                _activeMaskCoord.Value;
-
-            RectInt completedRect =
-                _activeMaskRect;
-
-            int completedRevision =
-                _activeMaskRevision;
-
-            int general =
-                _activeMaskGeneral;
-
-            int valid =
-                _activeMaskValid;
-
-            int invalid =
-                _activeMaskInvalid;
-
-            int hidden =
-                _activeMaskHidden;
-
-            /*
-             * Upload once, after every row has been evaluated.
-             * The previously complete GPU texture remains visible while
-             * the new CPU buffer is being prepared.
-             */
-            handle.CellMask.SetPixelData(
-                handle.CellMaskBuffer,
-                0);
-
-            handle.CellMask.Apply(
-                updateMipmaps: false,
-                makeNoLongerReadable: false);
-
-            handle.AppliedMaskRevision =
-                completedRevision;
-
-            handle.MaskReady =
-                true;
-
-            CancelActiveMaskUpdate();
-
-            bool hasNewerPendingWork =
-                _maskRevision != completedRevision
-                || _queuedMasks.Contains(coord)
-                || _fullMaskUpdates.Contains(coord)
-                || _dirtyMaskRegions.ContainsKey(coord);
-
-            handle.MaskDirty =
-                hasNewerPendingWork;
-
-            _diagnostics?.LogChunkMaskUpdated(
-                completedRect,
-                general,
-                valid,
-                invalid,
-                hidden);
-
-            if (hasNewerPendingWork
-                && !_queuedMasks.Contains(coord))
-            {
-                EnqueueMask(coord);
-            }
-        }
-
-        private void CancelActiveMaskUpdate()
-        {
-            _activeMaskCoord = null;
-            _activeMaskRect = default;
-            _activeMaskNextY = 0;
-            _activeMaskRevision = -1;
-            _activeMaskGeneral = 0;
-            _activeMaskValid = 0;
-            _activeMaskInvalid = 0;
-            _activeMaskHidden = 0;
+            handle.CellMask.SetPixelData(buffer, 0);
+            handle.CellMask.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+            handle.AppliedMaskRevision = _maskRevision;
+            handle.MaskDirty = false;
+            _diagnostics?.LogChunkMaskUpdated(updateRect, general, valid, invalid, hidden);
         }
 
         private void BuildChunk(MapChunkDescriptor descriptor)
         {
-            if (!HasVisibleFogCells(
-                    descriptor.Coord,
-                    descriptor.TileRect))
-            {
-                return;
-            }
-
             if (!_builder.TryBuild(descriptor, out Mesh mesh) || mesh == null)
                 return;
 
@@ -875,49 +504,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private bool IsCameraVisible(MapChunkCoord coord)
             => _chunkRegistry == null || _chunkRegistry.IsCameraVisible(coord);
 
-        private bool HasVisibleFogCells(
-            MapChunkCoord coord,
-            RectInt tileRect)
-        {
-            if (_fogStateReader == null)
-                return true;
-
-            if (_chunkFogVisibilityCache.TryGetValue(
-                    coord,
-                    out bool cached))
-            {
-                return cached;
-            }
-
-            for (int tileY = tileRect.yMin;
-                 tileY < tileRect.yMax;
-                 tileY++)
-            {
-                for (int tileX = tileRect.xMin;
-                     tileX < tileRect.xMax;
-                     tileX++)
-                {
-                    if (!_fogStateReader.IsVisible(
-                            new Vector2Int(
-                                tileX,
-                                tileY)))
-                    {
-                        continue;
-                    }
-
-                    _chunkFogVisibilityCache[coord] =
-                        true;
-
-                    return true;
-                }
-            }
-
-            _chunkFogVisibilityCache[coord] =
-                false;
-
-            return false;
-        }
-
         private static byte EncodeVisualState(ConstructionBuildGridTileVisualState state)
         {
             return state switch
@@ -934,16 +520,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             if (handle == null)
                 return;
-
-            /*
-             * Initial texture contains only zero/Missing values.
-             * Keep the renderer hidden until the complete first mask has
-             * been evaluated under the regular frame budget.
-             */
-            handle.MaskDirty = true;
-            handle.MaskReady = false;
-            _fullMaskUpdates.Add(handle.Coord);
-            EnqueueMask(handle.Coord);
+            UpdateMask(handle, handle.TileRect);
         }
 
         private void MergeDirtyMaskRegion(MapChunkCoord coord, RectInt region)

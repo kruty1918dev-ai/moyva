@@ -92,20 +92,21 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             var filter = terrainRoot.GetComponent<MeshFilter>();
             if (filter == null)
                 filter = terrainRoot.gameObject.AddComponent<MeshFilter>();
+
             var renderer = terrainRoot.GetComponent<MeshRenderer>();
             if (renderer == null)
                 renderer = terrainRoot.gameObject.AddComponent<MeshRenderer>();
-            var collider = terrainRoot.GetComponent<MeshCollider>();
-            if (collider == null)
-                collider = terrainRoot.gameObject.AddComponent<MeshCollider>();
 
-            filter.sharedMesh = combined;
-            renderer.sharedMaterials = _materials.ToArray();
-            // Rendering and physics must consume the exact same optimized mesh;
-            // assigning null first forces Unity to recook a regenerated chunk.
-            collider.sharedMesh = null;
-            collider.cookingOptions = MeshColliderCookingOptions.None;
-            collider.sharedMesh = combined;
+            filter.sharedMesh =
+                combined;
+
+            renderer.sharedMaterials =
+                _materials.ToArray();
+
+            ConfigureTerrainCollider(
+                terrainRoot,
+                combined);
+
             _meshRegistry.Register(combined);
 
             LogChunkMetrics(chunkRoot, combined);
@@ -425,25 +426,55 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 indexFormat = vertexCount > 65535 ? IndexFormat.UInt32 : IndexFormat.UInt16
             };
             mesh.CombineMeshes(_finalCombine.ToArray(), false, false);
-            int referencedVerticesBeforeOptimization =
-                CountReferencedVertices(mesh);
-            if (ExactVertexWeldMeshUtility.TryCreate(
-                    mesh,
-                    out Mesh welded))
+            /*
+             * ExactVertexWeldMeshUtility preserves the final appearance,
+             * but it must read every vertex stream and every submesh index,
+             * allocate remap tables, and create a second complete mesh.
+             *
+             * Imported tile meshes already contain their authored normals,
+             * UV seams and topology. During Editor Play Mode, keep the
+             * combined mesh directly and avoid this expensive duplicate
+             * optimization for every generated chunk.
+             *
+             * Standalone/player builds, Edit Mode generation and tests keep
+             * the original exact-weld path. Define
+             * MOYVA_EDITOR_RUNTIME_VERTEX_WELD to restore it in Play Mode.
+             */
+#if UNITY_EDITOR && !MOYVA_EDITOR_RUNTIME_VERTEX_WELD
+            bool shouldRunExactVertexWeld =
+                !Application.isPlaying;
+#else
+            const bool shouldRunExactVertexWeld =
+                true;
+#endif
+
+            if (shouldRunExactVertexWeld)
             {
-                _unreferencedVerticesRemoved += Mathf.Max(
-                    0,
-                    mesh.vertexCount
-                    - referencedVerticesBeforeOptimization);
-                _exactDuplicateVerticesRemoved += Mathf.Max(
-                    0,
-                    referencedVerticesBeforeOptimization
-                    - welded.vertexCount);
-                if (Application.isPlaying)
-                    UnityEngine.Object.Destroy(mesh);
-                else
-                    UnityEngine.Object.DestroyImmediate(mesh);
-                mesh = welded;
+                int referencedVerticesBeforeOptimization =
+                    CountReferencedVertices(mesh);
+
+                if (ExactVertexWeldMeshUtility.TryCreate(
+                        mesh,
+                        out Mesh welded))
+                {
+                    _unreferencedVerticesRemoved += Mathf.Max(
+                        0,
+                        mesh.vertexCount
+                        - referencedVerticesBeforeOptimization);
+
+                    _exactDuplicateVerticesRemoved += Mathf.Max(
+                        0,
+                        referencedVerticesBeforeOptimization
+                        - welded.vertexCount);
+
+                    if (Application.isPlaying)
+                        UnityEngine.Object.Destroy(mesh);
+                    else
+                        UnityEngine.Object.DestroyImmediate(mesh);
+
+                    mesh =
+                        welded;
+                }
             }
 
             mesh.RecalculateBounds();
@@ -572,14 +603,83 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             return transform;
         }
 
+        private static void ConfigureTerrainCollider(
+            Transform terrainRoot,
+            Mesh combined)
+        {
+#if UNITY_EDITOR && !MOYVA_EDITOR_RUNTIME_TERRAIN_COLLIDERS
+            /*
+             * Construction pointer mapping and tile clicks use the
+             * generated terrain-height map and mathematical grid planes.
+             * They do not require a cooked PhysX representation.
+             *
+             * Skip the expensive per-chunk MeshCollider cooking during
+             * ordinary Editor Play Mode. Player builds remain unchanged.
+             */
+            if (Application.isPlaying)
+            {
+                var editorCollider =
+                    terrainRoot.GetComponent<MeshCollider>();
+
+                if (editorCollider != null)
+                {
+                    editorCollider.sharedMesh =
+                        null;
+
+                    editorCollider.enabled =
+                        false;
+                }
+
+                return;
+            }
+#endif
+
+            var collider =
+                terrainRoot.GetComponent<MeshCollider>();
+
+            if (collider == null)
+            {
+                collider =
+                    terrainRoot.gameObject
+                        .AddComponent<MeshCollider>();
+            }
+
+            collider.enabled =
+                true;
+
+            if (collider.sharedMesh != null)
+            {
+                collider.sharedMesh =
+                    null;
+            }
+
+            collider.cookingOptions =
+                MeshColliderCookingOptions.None;
+
+            collider.sharedMesh =
+                combined;
+        }
+
         private static void ClearExistingMesh(Transform terrainRoot)
         {
-            var filter = terrainRoot.GetComponent<MeshFilter>();
-            var collider = terrainRoot.GetComponent<MeshCollider>();
-            if (collider != null)
-                collider.sharedMesh = null;
-            if (filter == null || filter.sharedMesh == null)
+            var filter =
+                terrainRoot.GetComponent<MeshFilter>();
+
+            var collider =
+                terrainRoot.GetComponent<MeshCollider>();
+
+            if (collider != null
+                && collider.sharedMesh != null)
+            {
+                collider.sharedMesh =
+                    null;
+            }
+
+            if (filter == null
+                || filter.sharedMesh == null)
+            {
                 return;
+            }
 
             if (Application.isPlaying)
                 UnityEngine.Object.Destroy(filter.sharedMesh);

@@ -169,7 +169,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void HandleBuildGridStateChanged(FogStateChangedSignal _)
         {
-            _buildGridOverlay.MarkFogDirty();
+            _buildGridOverlay.MarkDirty();
         }
 
         private void HandleBuildGridStateChanged(SettlementResourceChangedSignal _)

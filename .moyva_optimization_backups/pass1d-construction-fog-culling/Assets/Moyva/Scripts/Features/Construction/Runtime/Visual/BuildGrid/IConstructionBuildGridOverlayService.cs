@@ -6,7 +6,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         void SetConstructionModeActive(bool active);
         void SetSelectedBuilding(string buildingId, bool isDemolishMode);
         void MarkDirty();
-        void MarkFogDirty();
         void MarkDirty(UnityEngine.Vector2Int position, int radius);
         void ResetWorld();
         void Tick();

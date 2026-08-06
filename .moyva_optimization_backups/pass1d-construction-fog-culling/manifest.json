@@ -1,0 +1,10 @@
+{
+  "pass": "pass1d-construction-fog-culling",
+  "files": [
+    "Assets/Moyva/Scripts/Features/Construction/Runtime/Visual/BuildGrid/ConstructionBuildGridTileFilter.cs",
+    "Assets/Moyva/Scripts/Features/Construction/Runtime/Visual/BuildGrid/ConstructionBuildGridChunkSurfaceService.cs",
+    "Assets/Moyva/Scripts/Features/Construction/Runtime/Visual/BuildGrid/IConstructionBuildGridOverlayService.cs",
+    "Assets/Moyva/Scripts/Features/Construction/Runtime/Visual/BuildGrid/ConstructionBuildGridOverlayService.cs",
+    "Assets/Moyva/Scripts/Features/Construction/Runtime/Visual/Service/ConstructionVisualService.cs"
+  ]
+}

@@ -132,18 +132,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _diagnostics.LogFullRefreshRequested(_stateController.State, _stateController.SelectedBuildingId);
         }
 
-        public void MarkFogDirty()
-        {
-            if (UseChunkSurfaceMode())
-            {
-                _chunkSurfaceService?.InvalidateAllMasks();
-                _chunkSurfaceService?.ApplyChunkVisibility();
-                return;
-            }
-
-            _dirty = true;
-        }
-
         public void MarkDirty(Vector2Int position, int radius)
         {
             if (UsesUnfilteredChunkSurface())

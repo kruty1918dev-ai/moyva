@@ -15,6 +15,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly Dictionary<ResourceValidationCacheKey, ResourceValidationCacheValue> _resourceValidationCache = new();
         private int _resourceValidationCacheFrame = -1;
 
+        /*
+         * Prerequisites and per-owner limits are global for a building
+         * selection. They do not depend on the candidate tile position.
+         */
+        private readonly Dictionary<
+            PlacementAvailabilityCacheKey,
+            PlacementAvailabilityCacheValue>
+            _placementAvailabilityCache = new();
+
+        private int _placementAvailabilityCacheFrame = -1;
+
         public ConstructionPlacementQueryResult EvaluatePlacement(ConstructionPlacementQueryRequest request)
         {
             string placementOwnerId = string.IsNullOrWhiteSpace(request.OwnerId)
@@ -36,48 +47,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     BuildingPlacementBlockerKind.Configuration);
             }
 
-            BuildingDefinition requestedDefinition =
-                _placementBuildingRegistry?.GetById(request.BuildingId);
-            if (requestedDefinition == null)
-            {
-                return InvalidPlacementQueryResult(
-                    availabilityValid: false,
-                    $"Building definition '{request.BuildingId}' is missing.",
-                    "building-definition-missing",
+            PlacementAvailabilityCacheValue availability =
+                ResolvePlacementAvailabilityCached(
                     request,
-                    placementOwnerId,
-                    limitEvaluation,
-                    BuildingPlacementBlockerKind.Configuration);
-            }
+                    placementOwnerId);
 
-            if (!TryValidateBuildingPrerequisites(
-                    requestedDefinition,
-                    placementOwnerId,
-                    out string prerequisiteReason))
-            {
-                return InvalidPlacementQueryResult(
-                    availabilityValid: false,
-                    prerequisiteReason,
-                    "building-prerequisite",
-                    request,
-                    placementOwnerId,
-                    limitEvaluation,
-                    BuildingPlacementBlockerKind.Prerequisite);
-            }
+            limitEvaluation =
+                availability.LimitEvaluation;
 
-            if (!TryValidatePerPlayerBuildingLimit(
-                    request,
-                    placementOwnerId,
-                    out limitEvaluation))
+            if (!availability.IsValid)
             {
                 return InvalidPlacementQueryResult(
                     availabilityValid: false,
-                    limitEvaluation.Reason,
-                    "per-player-limit",
+                    availability.Reason,
+                    availability.ReasonCode,
                     request,
                     placementOwnerId,
                     limitEvaluation,
-                    BuildingPlacementBlockerKind.Configuration);
+                    availability.BlockerKind);
             }
 
             if (_gridService != null
@@ -214,6 +201,116 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 resourcesValid ? null : "resources");
         }
 
+
+        private PlacementAvailabilityCacheValue
+            ResolvePlacementAvailabilityCached(
+                ConstructionPlacementQueryRequest request,
+                string ownerId)
+        {
+            /*
+             * Relocation queries can ignore an existing or pending origin,
+             * which changes the per-owner limit result. Keep those queries
+             * on the authoritative uncached path.
+             */
+            bool cacheable =
+                Application.isPlaying
+                && !request.IgnoredPendingPosition.HasValue
+                && !request.IgnoredOccupiedPosition.HasValue;
+
+            if (!cacheable)
+            {
+                return EvaluatePlacementAvailability(
+                    request,
+                    ownerId);
+            }
+
+            int frame =
+                Time.frameCount;
+
+            if (_placementAvailabilityCacheFrame
+                != frame)
+            {
+                _placementAvailabilityCacheFrame =
+                    frame;
+
+                _placementAvailabilityCache.Clear();
+            }
+
+            string normalizedOwnerId =
+                NormalizeOwnerId(ownerId);
+
+            var key =
+                new PlacementAvailabilityCacheKey(
+                    request.BuildingId,
+                    normalizedOwnerId,
+                    request.IncludePendingPlacements,
+                    request.IncludePendingPlacements
+                        ? _pendingPlacementsVersion
+                        : -1);
+
+            if (_placementAvailabilityCache.TryGetValue(
+                    key,
+                    out PlacementAvailabilityCacheValue cached))
+            {
+                return cached;
+            }
+
+            PlacementAvailabilityCacheValue evaluated =
+                EvaluatePlacementAvailability(
+                    request,
+                    normalizedOwnerId);
+
+            _placementAvailabilityCache[key] =
+                evaluated;
+
+            return evaluated;
+        }
+
+        private PlacementAvailabilityCacheValue
+            EvaluatePlacementAvailability(
+                ConstructionPlacementQueryRequest request,
+                string ownerId)
+        {
+            BuildingDefinition requestedDefinition =
+                _placementBuildingRegistry?.GetById(
+                    request.BuildingId);
+
+            if (requestedDefinition == null)
+            {
+                return PlacementAvailabilityCacheValue.Invalid(
+                    $"Building definition '{request.BuildingId}' is missing.",
+                    "building-definition-missing",
+                    BuildingPlacementBlockerKind.Configuration,
+                    BuildingPerPlayerLimitEvaluation.Disabled);
+            }
+
+            if (!TryValidateBuildingPrerequisites(
+                    requestedDefinition,
+                    ownerId,
+                    out string prerequisiteReason))
+            {
+                return PlacementAvailabilityCacheValue.Invalid(
+                    prerequisiteReason,
+                    "building-prerequisite",
+                    BuildingPlacementBlockerKind.Prerequisite,
+                    BuildingPerPlayerLimitEvaluation.Disabled);
+            }
+
+            if (!TryValidatePerPlayerBuildingLimit(
+                    request,
+                    ownerId,
+                    out BuildingPerPlayerLimitEvaluation limitEvaluation))
+            {
+                return PlacementAvailabilityCacheValue.Invalid(
+                    limitEvaluation.Reason,
+                    "per-player-limit",
+                    BuildingPlacementBlockerKind.Configuration,
+                    limitEvaluation);
+            }
+
+            return PlacementAvailabilityCacheValue.Valid(
+                limitEvaluation);
+        }
 
         private bool EvaluateSpatialRules(
             ConstructionPlacementQueryRequest request,
@@ -406,6 +503,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private void MarkPendingPlacementsChanged()
         {
             _pendingPlacementsVersion++;
+            InvalidatePlacementAvailabilityCache();
+        }
+
+        private void InvalidatePlacementAvailabilityCache()
+        {
+            _placementAvailabilityCacheFrame = -1;
+            _placementAvailabilityCache.Clear();
         }
 
         private void InvalidatePlacementResourceValidationCache()
@@ -522,6 +626,138 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ownerId,
                 limitEvaluation,
                 reasonCode);
+        }
+
+
+        private readonly struct PlacementAvailabilityCacheKey
+            : IEquatable<PlacementAvailabilityCacheKey>
+        {
+            public PlacementAvailabilityCacheKey(
+                string buildingId,
+                string ownerId,
+                bool includePendingPlacements,
+                int pendingVersion)
+            {
+                BuildingId = buildingId;
+                OwnerId = ownerId;
+                IncludePendingPlacements =
+                    includePendingPlacements;
+                PendingVersion = pendingVersion;
+            }
+
+            private string BuildingId { get; }
+            private string OwnerId { get; }
+            private bool IncludePendingPlacements { get; }
+            private int PendingVersion { get; }
+
+            public bool Equals(
+                PlacementAvailabilityCacheKey other)
+            {
+                return IncludePendingPlacements
+                       == other.IncludePendingPlacements
+                    && PendingVersion
+                       == other.PendingVersion
+                    && string.Equals(
+                        BuildingId,
+                        other.BuildingId,
+                        StringComparison.Ordinal)
+                    && string.Equals(
+                        OwnerId,
+                        other.OwnerId,
+                        StringComparison.Ordinal);
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj
+                    is PlacementAvailabilityCacheKey other
+                    && Equals(other);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    int hash =
+                        PendingVersion;
+
+                    hash =
+                        hash * 397
+                        ^ (
+                            IncludePendingPlacements
+                                ? 1
+                                : 0
+                        );
+
+                    hash =
+                        hash * 397
+                        ^ (
+                            BuildingId != null
+                                ? StringComparer.Ordinal.GetHashCode(
+                                    BuildingId)
+                                : 0
+                        );
+
+                    hash =
+                        hash * 397
+                        ^ (
+                            OwnerId != null
+                                ? StringComparer.Ordinal.GetHashCode(
+                                    OwnerId)
+                                : 0
+                        );
+
+                    return hash;
+                }
+            }
+        }
+
+        private readonly struct PlacementAvailabilityCacheValue
+        {
+            private PlacementAvailabilityCacheValue(
+                bool isValid,
+                string reason,
+                string reasonCode,
+                BuildingPlacementBlockerKind blockerKind,
+                BuildingPerPlayerLimitEvaluation limitEvaluation)
+            {
+                IsValid = isValid;
+                Reason = reason;
+                ReasonCode = reasonCode;
+                BlockerKind = blockerKind;
+                LimitEvaluation = limitEvaluation;
+            }
+
+            public bool IsValid { get; }
+            public string Reason { get; }
+            public string ReasonCode { get; }
+            public BuildingPlacementBlockerKind BlockerKind { get; }
+            public BuildingPerPlayerLimitEvaluation LimitEvaluation { get; }
+
+            public static PlacementAvailabilityCacheValue Valid(
+                BuildingPerPlayerLimitEvaluation limitEvaluation)
+            {
+                return new PlacementAvailabilityCacheValue(
+                    true,
+                    null,
+                    null,
+                    BuildingPlacementBlockerKind.Configuration,
+                    limitEvaluation);
+            }
+
+            public static PlacementAvailabilityCacheValue Invalid(
+                string reason,
+                string reasonCode,
+                BuildingPlacementBlockerKind blockerKind,
+                BuildingPerPlayerLimitEvaluation limitEvaluation)
+            {
+                return new PlacementAvailabilityCacheValue(
+                    false,
+                    reason,
+                    reasonCode,
+                    blockerKind,
+                    limitEvaluation);
+            }
         }
 
 
