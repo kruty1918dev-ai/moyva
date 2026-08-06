@@ -59,33 +59,109 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
         }
 
-        private GraphTwcMapGenerationResult GenerateSafe(GraphTwcMapGenerationRequest request, int seed, Vector2Int mapSize)
+        private GraphTwcMapGenerationResult GenerateSafe(
+    GraphTwcMapGenerationRequest request,
+    int seed,
+    Vector2Int mapSize)
         {
-            GraphTwcValidationResult validation = _validation.Validate(request.Graph);
-            _diagnostics.LogValidation(validation);
-            if (validation.HasGlobalErrors)
-                return FailValidation(request, seed, mapSize, validation);
+            GraphTwcValidationResult validation =
+                _validation.Validate(request.Graph);
 
-            _diagnostics.LogSkippedLayers(_validation, validation);
-            IReadOnlyList<CompiledLayerMap> compiled = Compile(request, seed, mapSize, validation);
-            float cellSize = ResolveCellSize(request);
+            _diagnostics.LogValidation(validation);
+
+            if (validation.HasGlobalErrors)
+            {
+                return FailValidation(
+                    request,
+                    seed,
+                    mapSize,
+                    validation);
+            }
+
+            _diagnostics.LogSkippedLayers(
+                _validation,
+                validation);
+
+            IReadOnlyList<CompiledLayerMap> compiled =
+                Compile(
+                    request,
+                    seed,
+                    mapSize,
+                    validation);
+
+            float cellSize =
+                ResolveCellSize(request);
+
             Bounds bounds = default;
-            bool hasBounds = GeneratedWorldBoundsUtility.TryCreateTileWorldBounds(
-                request.Manager.transform,
+
+            bool hasBounds =
+                GeneratedWorldBoundsUtility
+                    .TryCreateTileWorldBounds(
+                        request.Manager.transform,
+                        mapSize.x,
+                        mapSize.y,
+                        cellSize,
+                        out bounds);
+
+            _diagnostics.LogTwcCall(
+                request.Manager);
+
+            long elapsedMs =
+                ExecuteLogicalBlueprintLayers(request);
+
+            GraphLayerCoverageAudit.LogBlueprintPositions(
+                request.Graph,
+                request.Manager,
+                compiled,
+                mapSize);
+
+            _diagnostics.EmitLayerLog(
+                request,
+                validation,
+                validation.SkippedLayerIds,
+                seed,
+                mapSize,
+                false,
+                compiled);
+
+            GraphLogicalTileMap logicalMap =
+                _logicalMapExport.Export(
+                    request.Graph,
+                    request.Manager,
+                    compiled,
+                    mapSize.x,
+                    mapSize.y,
+                    seed);
+
+            GraphLayerCoverageAudit.LogLogicalMap(
+                request.Graph,
+                logicalMap);
+
+            _terrainHeightPublisher.Publish(
+                logicalMap.SurfaceHeights);
+
+            GraphTwcMapGenerationResult result =
+                CreateResult(
+                    logicalMap,
+                    compiled,
+                    cellSize,
+                    hasBounds,
+                    bounds);
+
+            _diagnostics.LogTwcResult(
+                elapsedMs,
+                result.BiomeMap,
+                result.HeightMap,
+                result.ObjectMap);
+
+            _diagnostics.LogExit(
                 mapSize.x,
                 mapSize.y,
-                cellSize,
-                out bounds);
+                result.BiomeMap,
+                result.HeightMap,
+                result.ObjectMap,
+                result.BuildingMap);
 
-            _diagnostics.LogTwcCall(request.Manager);
-            long elapsedMs = ExecuteLogicalBlueprintLayers(request);
-            _diagnostics.EmitLayerLog(request, validation, validation.SkippedLayerIds, seed, mapSize, false, compiled);
-
-            var logicalMap = _logicalMapExport.Export(request.Graph, request.Manager, compiled, mapSize.x, mapSize.y, seed);
-            _terrainHeightPublisher.Publish(logicalMap.SurfaceHeights);
-            var result = CreateResult(logicalMap, compiled, cellSize, hasBounds, bounds);
-            _diagnostics.LogTwcResult(elapsedMs, result.BiomeMap, result.HeightMap, result.ObjectMap);
-            _diagnostics.LogExit(mapSize.x, mapSize.y, result.BiomeMap, result.HeightMap, result.ObjectMap, result.BuildingMap);
             return result;
         }
 

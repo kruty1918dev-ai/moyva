@@ -20,14 +20,25 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         private const float DefaultBoundsPaddingCells = 0f;
 
         private static readonly string[] WorldRootNames =
+  {
+    "ObjectsRoot",
+    "BuildingsRoot",
+    "PlayerBuildingsRoot",
+};
+
+        private static readonly string[] NonCullableRootNames =
         {
-            "TilesRoot",
-            "ObjectsRoot",
-            "BuildingsRoot",
-            "PlayerBuildingsRoot",
-            "Clouds",
-            "CloudsRoot",
-        };
+    "TilesRoot",
+    "MapVisualChunks",
+    "TileWorldCreatorRoot",
+    "TileWorldCreatorManager",
+    "Chunk",
+    "Water",
+    "WaterRoot",
+    "Clouds",
+    "CloudsRoot",
+    "FogEffect",
+};
 
         private readonly FogOfWarService _fogService;
         private readonly IGridService _gridService;
@@ -339,8 +350,25 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (!_settings.EnableRendererCulling)
                 return false;
 
-            if (_settings.RequireOpaqueUnexploredForCulling && _settings.UnexploredAlpha < 0.99f)
+            /*
+             * У screen-space режимі culling використовується
+             * тільки для gameplay-об'єктів.
+             *
+             * Прозорість fog presentation не повинна
+             * вимикати приховування ворожих юнітів
+             * або невідомих будівель.
+             */
+            if (_settings.PresentationMode
+                == FogVisualPresentationMode.ScreenSpace)
+            {
+                return true;
+            }
+
+            if (_settings.RequireOpaqueUnexploredForCulling
+                && _settings.UnexploredAlpha < 0.99f)
+            {
                 return false;
+            }
 
             return true;
         }
@@ -376,22 +404,77 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
         /// рендерер має бути активним та належати дозволеному шару. Ігнорує рендерери
         /// які знаходяться в батьківському `FogOfWarVolumeController`.
         /// </summary>
-        private bool IsSupportedRenderer(Renderer renderer)
+        private bool IsSupportedRenderer(
+     Renderer renderer)
         {
-            if (renderer == null || !renderer.gameObject.activeInHierarchy)
+            if (renderer == null
+                || !renderer.gameObject.activeInHierarchy)
+            {
                 return false;
+            }
 
-            if (!(renderer is SpriteRenderer) && !(renderer is MeshRenderer) && !(renderer is TilemapRenderer))
+            if (!(renderer is SpriteRenderer)
+                && !(renderer is MeshRenderer)
+                && !(renderer is TilemapRenderer))
+            {
                 return false;
+            }
+
+            if (IsUnderNonCullableRoot(
+                    renderer.transform))
+            {
+                return false;
+            }
 
             if (_settings != null)
             {
-                int bit = 1 << renderer.gameObject.layer;
-                if ((_settings.RendererCullingLayerMask.value & bit) == 0)
+                int bit =
+                    1 << renderer.gameObject.layer;
+
+                if ((_settings
+                         .RendererCullingLayerMask
+                         .value
+                     & bit) == 0)
+                {
                     return false;
+                }
             }
 
-            return renderer.GetComponentInParent<FogOfWarVolumeController>() == null;
+            return renderer
+                       .GetComponentInParent<
+                           FogOfWarVolumeController>()
+                   == null;
+        }
+
+        private static bool IsUnderNonCullableRoot(
+    Transform transform)
+        {
+            Transform current =
+                transform;
+
+            while (current != null)
+            {
+                string currentName =
+                    current.name;
+
+                for (int i = 0;
+                     i < NonCullableRootNames.Length;
+                     i++)
+                {
+                    if (string.Equals(
+                            currentName,
+                            NonCullableRootNames[i],
+                            StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
+
+                current =
+                    current.parent;
+            }
+
+            return false;
         }
     }
 }

@@ -16,12 +16,37 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private static readonly HashSet<string> Logged =
             new HashSet<string>(System.StringComparer.Ordinal);
 
+        private const string HeightTracePrefix = "[MOYVA_HEIGHT_TRACE]";
+
+        private static readonly HashSet<string> HeightTraceKeys =
+            new HashSet<string>(System.StringComparer.Ordinal);
+
+        private static bool HeightTraceEnabled =>
+            Application.isEditor || Debug.isDebugBuild;
+
+        public static void TraceUnique(
+            string stage,
+            string key,
+            string message)
+        {
+            if (!HeightTraceEnabled)
+                return;
+
+            string uniqueKey = $"{stage}|{key}";
+            if (!HeightTraceKeys.Add(uniqueKey))
+                return;
+
+            Debug.Log(
+                $"{HeightTracePrefix} stage={stage} {message}");
+        }
+
         public static void Reset()
         {
             Records.Clear();
             LogicalRecorded.Clear();
             PlacementRecorded.Clear();
             Logged.Clear();
+            HeightTraceKeys.Clear();
         }
 
         public static void RecordLogicalLayer(

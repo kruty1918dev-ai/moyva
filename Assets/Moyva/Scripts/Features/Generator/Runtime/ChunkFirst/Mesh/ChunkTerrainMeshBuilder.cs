@@ -137,20 +137,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         {
             int count = 0;
             for (int y = coreRect.yMin; y < coreRect.yMax; y++)
-            for (int x = coreRect.xMin; x < coreRect.xMax; x++)
-            {
-                var cell = new Vector2Int(x, y);
-                if (!resolvedCells.TryGetValue(cell, out var composition))
-                    continue;
-
-                _cellSources.Clear();
-                int sourceCount = meshSource.CollectMeshSources(composition, _cellSources);
-                for (int i = 0; i < sourceCount; i++)
+                for (int x = coreRect.xMin; x < coreRect.xMax; x++)
                 {
-                    AddSource(_cellSources[i]);
-                    count++;
+                    var cell = new Vector2Int(x, y);
+                    if (!resolvedCells.TryGetValue(cell, out var composition))
+                        continue;
+
+                    _cellSources.Clear();
+                    int sourceCount = meshSource.CollectMeshSources(composition, _cellSources);
+                    for (int i = 0; i < sourceCount; i++)
+                    {
+                        AddSource(_cellSources[i]);
+                        count++;
+                    }
                 }
-            }
 
             return count;
         }
@@ -160,52 +160,168 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (!source.IsValid || source.Mesh.subMeshCount <= 0)
                 return;
 
+            float incomingTop =
+                TwcTileMeshSourceProvider.ResolveTransformedBoundsTop(
+                    source.Mesh.bounds,
+                    source.LocalMatrix);
+
+            float incomingBottom =
+                TwcTileMeshSourceProvider.ResolveTransformedBoundsBottom(
+                    source.Mesh.bounds,
+                    source.LocalMatrix);
+
+            string sourcePositionKey =
+                $"{source.GraphLayerId}|" +
+                $"{source.Mesh.GetInstanceID()}|" +
+                $"{source.LocalMatrix.m03:0.###}|" +
+                $"{source.LocalMatrix.m23:0.###}";
+
+            ChunkFirstHeightAudit.TraceUnique(
+                "BUILDER_INPUT",
+                sourcePositionKey,
+                $"layer={source.GraphLayerName} " +
+                $"mesh={source.Mesh.name} " +
+                $"vertices={source.Mesh.vertexCount} " +
+                $"subMeshes={source.Mesh.subMeshCount} " +
+                $"materials={source.Materials?.Length ?? 0} " +
+                $"matrixY={source.LocalMatrix.m13:0.###} " +
+                $"transformedBottom={incomingBottom:0.###} " +
+                $"transformedTop={incomingTop:0.###}");
+
             _sourceVertices += source.Mesh.vertexCount;
             _sourceIndices += CountIndices(source.Mesh);
             _sourceTriangles += CountTriangles(source.Mesh);
 
             Mesh mesh = ResolveVisibleMesh(source);
+
             if (mesh == null || mesh.subMeshCount <= 0)
             {
+                ChunkFirstHeightAudit.TraceUnique(
+                    "BUILDER_DROPPED_VISIBLE_MESH",
+                    sourcePositionKey,
+                    $"layer={source.GraphLayerName} " +
+                    $"sourceMesh={source.Mesh.name} " +
+                    $"sourceVertices={source.Mesh.vertexCount} " +
+                    $"matrixY={source.LocalMatrix.m13:0.###} " +
+                    $"visibleBottomY={source.VisibleBottomY:0.###} " +
+                    $"geometryMode={source.TileGeometryMode} " +
+                    $"closurePolicy={source.AuthoredClosurePolicy} " +
+                    $"generateMissingClosure={source.GenerateMissingClosure}");
+
                 _visibilityUnreferencedVerticesRemoved +=
                     source.Mesh.vertexCount;
+
                 return;
             }
+
+            float processedTop =
+                TwcTileMeshSourceProvider.ResolveTransformedBoundsTop(
+                    mesh.bounds,
+                    source.LocalMatrix);
+
+            float processedBottom =
+                TwcTileMeshSourceProvider.ResolveTransformedBoundsBottom(
+                    mesh.bounds,
+                    source.LocalMatrix);
+
+            ChunkFirstHeightAudit.TraceUnique(
+                "BUILDER_PROCESSED",
+                $"{sourcePositionKey}|{mesh.GetInstanceID()}",
+                $"layer={source.GraphLayerName} " +
+                $"sourceMesh={source.Mesh.name} " +
+                $"processedMesh={mesh.name} " +
+                $"processedVertices={mesh.vertexCount} " +
+                $"processedSubMeshes={mesh.subMeshCount} " +
+                $"matrixY={source.LocalMatrix.m13:0.###} " +
+                $"processedTransformedBottom={processedBottom:0.###} " +
+                $"processedTransformedTop={processedTop:0.###}");
 
             _processedVertices += mesh.vertexCount;
             _processedIndices += CountIndices(mesh);
             _processedTriangles += CountTriangles(mesh);
+
             _visibilityUnreferencedVerticesRemoved += Mathf.Max(
                 0,
                 source.Mesh.vertexCount - mesh.vertexCount);
+
             if (!string.IsNullOrWhiteSpace(source.GraphLayerId))
                 _chunkAuditLayerIds.Add(source.GraphLayerId);
 
             Material[] materials = source.Materials;
             int subMeshCount = mesh.subMeshCount;
+            bool addedToAnyMaterialGroup = false;
+
             for (int subMesh = 0; subMesh < subMeshCount; subMesh++)
             {
-                Material material = ResolveMaterial(materials, subMesh);
-                if (material == null)
-                    continue;
+                Material material = ResolveMaterial(
+                    materials,
+                    subMesh);
 
-                if (!_byMaterial.TryGetValue(material, out var combines))
+                if (material == null)
+                {
+                    ChunkFirstHeightAudit.TraceUnique(
+                        "BUILDER_NULL_MATERIAL",
+                        $"{sourcePositionKey}|{mesh.GetInstanceID()}|{subMesh}",
+                        $"layer={source.GraphLayerName} " +
+                        $"mesh={mesh.name} " +
+                        $"subMesh={subMesh} " +
+                        $"materials={materials?.Length ?? 0} " +
+                        $"matrixY={source.LocalMatrix.m13:0.###} " +
+                        $"processedTop={processedTop:0.###}");
+
+                    continue;
+                }
+
+                if (!_byMaterial.TryGetValue(
+                        material,
+                        out List<CombineInstance> combines))
                 {
                     combines = _combineListPool.Count > 0
                         ? _combineListPool.Pop()
                         : new List<CombineInstance>(64);
+
                     _byMaterial[material] = combines;
                 }
 
                 combines.Add(new CombineInstance
                 {
                     mesh = mesh,
-                    subMeshIndex = Mathf.Min(subMesh, mesh.subMeshCount - 1),
+                    subMeshIndex = Mathf.Min(
+                        subMesh,
+                        mesh.subMeshCount - 1),
                     transform = source.LocalMatrix
                 });
+
+                addedToAnyMaterialGroup = true;
+
+                ChunkFirstHeightAudit.TraceUnique(
+                    "BUILDER_COMBINE_ADDED",
+                    $"{sourcePositionKey}|" +
+                    $"{mesh.GetInstanceID()}|" +
+                    $"{subMesh}",
+                    $"layer={source.GraphLayerName} " +
+                    $"mesh={mesh.name} " +
+                    $"material={material.name} " +
+                    $"subMesh={subMesh} " +
+                    $"matrixY={source.LocalMatrix.m13:0.###} " +
+                    $"processedTop={processedTop:0.###} " +
+                    $"combineCount={combines.Count}");
+            }
+
+            if (!addedToAnyMaterialGroup)
+            {
+                ChunkFirstHeightAudit.TraceUnique(
+                    "BUILDER_NOT_COMBINED",
+                    $"{sourcePositionKey}|{mesh.GetInstanceID()}",
+                    $"layer={source.GraphLayerName} " +
+                    $"mesh={mesh.name} " +
+                    $"matrixY={source.LocalMatrix.m13:0.###} " +
+                    $"processedBottom={processedBottom:0.###} " +
+                    $"processedTop={processedTop:0.###} " +
+                    $"subMeshes={mesh.subMeshCount} " +
+                    $"materials={materials?.Length ?? 0}");
             }
         }
-
         private Mesh ResolveVisibleMesh(TileMeshSource source)
         {
             if (source.TileGeometryMode == TileGeometryMode.SurfaceOnly)
@@ -331,6 +447,18 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
 
             mesh.RecalculateBounds();
+
+            Bounds actualCombinedBounds = mesh.bounds;
+
+            ChunkFirstHeightAudit.TraceUnique(
+                "CHUNK_MESH",
+                area.Coord.ToString(),
+                $"chunk={area.Coord} " +
+                $"actualMinY={actualCombinedBounds.min.y:0.###} " +
+                $"actualMaxY={actualCombinedBounds.max.y:0.###} " +
+                $"actualSizeY={actualCombinedBounds.size.y:0.###} " +
+                $"vertices={mesh.vertexCount}");
+
             mesh.bounds = CreateStableChunkBounds(area, mesh.bounds);
             foreach (string graphLayerId in _chunkAuditLayerIds)
                 ChunkFirstHeightAudit.RecordChunkBounds(graphLayerId, mesh.bounds);

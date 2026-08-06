@@ -9,132 +9,332 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     /// <summary>
     /// Zenject installer для FogOfWar runtime підсистеми.
-    /// Біндить gameplay fog state, save module, visual update path, validation/preview helpers
-    /// та renderer culling services. Ці bindings runtime-critical для нормальної роботи туману.
     /// </summary>
     public class FogOfWarInstaller : MonoInstaller
     {
-        /// <summary>
-        /// Реєструє всі FogOfWar сервіси в контейнері сцени.
-        /// Під час інсталяції також знаходить на сцені <see cref="FogOfWarVolumeController"/> і ставить їх у чергу на inject.
-        /// </summary>
         public override void InstallBindings()
         {
-            var fogVolumes = Object.FindObjectsByType<FogOfWarVolumeController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-            var resolvedSettings = ResolveSettings(fogVolumes);
-            if (resolvedSettings != null)
-                Container.BindInstance(resolvedSettings).AsSingle();
-            else
-                Debug.LogWarning("[FogOfWar] FogOfWarInstaller did not find FogOfWarSettings on any FogOfWarVolumeController.");
+            FogOfWarVolumeController[] fogVolumes =
+                Object.FindObjectsByType<FogOfWarVolumeController>(
+                    FindObjectsInactive.Include,
+                    FindObjectsSortMode.None);
 
-            Debug.Log($"[FogOfWar] Installer found {fogVolumes?.Length ?? 0} FogOfWarVolumeController(s); settings={(resolvedSettings != null ? resolvedSettings.name : "null")}. Diagnostics build=2026-06-30-fog-volume-logging.");
+            FogOfWarSettings resolvedSettings =
+                ResolveSettings(fogVolumes);
+
+            if (resolvedSettings != null)
+            {
+                Container.BindInstance(resolvedSettings)
+                    .AsSingle();
+            }
+            else
+            {
+                Debug.LogWarning(
+                    "[FogOfWar] FogOfWarInstaller did not find " +
+                    "FogOfWarSettings on any FogOfWarVolumeController.");
+            }
+
+            int controllerCount =
+                fogVolumes != null
+                    ? fogVolumes.Length
+                    : 0;
+
+            string settingsName =
+                resolvedSettings != null
+                    ? resolvedSettings.name
+                    : "null";
+
+            string presentationName =
+                resolvedSettings != null
+                    ? resolvedSettings.PresentationMode.ToString()
+                    : "LegacyTwcVolume fallback";
+
+            string installerMessage =
+                "[FogOfWar] Installer found " +
+                controllerCount +
+                " FogOfWarVolumeController(s); settings=" +
+                settingsName +
+                "; presentation=" +
+                presentationName +
+                ".";
+
+            Debug.Log(installerMessage);
+
             LogControllerDiagnostics(fogVolumes);
+
             MapChunkFeatureBindings.Install(Container);
 
-            Container.Bind<IFogSaveDataProvider>().To<FogSaveDataStub>().AsSingle();
-            Container.Bind<HeightAwareVisionEngine>().AsSingle();
-            Container.BindInterfacesAndSelfTo<HeightAwareVisionService>().AsSingle();
-            Container.Bind<IFogVisibilityResolver>().To<FogVisibilityResolver>().AsSingle();
-            Container.Bind<IFogVolumePreviewBuilder>().To<FogVolumePreviewBuilder>().AsSingle();
-            Container.Bind<IFogVolumeSceneContextBuilder>().To<FogVolumeSceneContextBuilder>().AsSingle();
-            Container.Bind<IFogVolumeOutputCleaner>().To<FogVolumeOutputCleaner>().AsSingle();
-            Container.Bind<IFogVolumeValidationService>().To<FogVolumeValidationService>().AsSingle();
-            Container.Bind<IFogVolumeStateCache>().To<FogVolumeStateCache>().AsSingle();
-            Container.Bind<IFogStartupFogServiceFactory>().To<FogStartupFogServiceFactory>().AsSingle();
-            Container.BindInterfacesAndSelfTo<FogVolumePendingWorkQueue>().AsSingle();
-            Container.Bind<IFogVisualUpdateSchedulerFactory>().To<FogVisualUpdateSchedulerFactory>().AsSingle();
-            Container.Bind<IFogDirtyClusterTracker>().To<FogDirtyClusterTracker>().AsSingle();
-            Container.Bind<IFogClusterGeometryBuilder>().To<FogClusterGeometryBuilder>().AsSingle();
-            Container.Bind<IFogClusterMaterialProvider>().To<FogClusterMaterialProvider>().AsSingle();
-            Container.Bind<IFogClusterMeshPresenter>().To<FogClusterMeshPresenter>().AsSingle();
-            Container.Bind<IFogClusterMeshRegistry>().To<FogClusterMeshRegistry>().AsSingle();
-            Container.Bind<IFogClusterMeshBuilder>().To<FogClusterMeshBuilder>().AsSingle();
-            Container.Bind<IFogClusteredVolumeRenderer>().To<FogClusteredVolumeRenderer>().AsSingle();
-            Container.Bind<FogVolumeVisualUpdateEngine>().AsSingle();
-            Container.BindInterfacesAndSelfTo<FogOfWarVolumeUpdater>()
+            Container.Bind<IFogSaveDataProvider>()
+                .To<FogSaveDataStub>()
+                .AsSingle();
+
+            Container.Bind<HeightAwareVisionEngine>()
+                .AsSingle();
+
+            Container
+                .BindInterfacesAndSelfTo<HeightAwareVisionService>()
+                .AsSingle();
+
+            Container.Bind<IFogVisibilityResolver>()
+                .To<FogVisibilityResolver>()
+                .AsSingle();
+
+            /*
+             * Legacy TWC volume services залишаються
+             * зареєстрованими для fallback mode.
+             */
+            Container.Bind<IFogVolumePreviewBuilder>()
+                .To<FogVolumePreviewBuilder>()
+                .AsSingle();
+
+            Container.Bind<IFogVolumeSceneContextBuilder>()
+                .To<FogVolumeSceneContextBuilder>()
+                .AsSingle();
+
+            Container.Bind<IFogVolumeOutputCleaner>()
+                .To<FogVolumeOutputCleaner>()
+                .AsSingle();
+
+            Container.Bind<IFogVolumeValidationService>()
+                .To<FogVolumeValidationService>()
+                .AsSingle();
+
+            Container.Bind<IFogVolumeStateCache>()
+                .To<FogVolumeStateCache>()
+                .AsSingle();
+
+            Container.Bind<IFogStartupFogServiceFactory>()
+                .To<FogStartupFogServiceFactory>()
+                .AsSingle();
+
+            Container
+                .BindInterfacesAndSelfTo<FogVolumePendingWorkQueue>()
+                .AsSingle();
+
+            Container.Bind<IFogVisualUpdateSchedulerFactory>()
+                .To<FogVisualUpdateSchedulerFactory>()
+                .AsSingle();
+
+            Container.Bind<IFogDirtyClusterTracker>()
+                .To<FogDirtyClusterTracker>()
+                .AsSingle();
+
+            Container.Bind<IFogClusterGeometryBuilder>()
+                .To<FogClusterGeometryBuilder>()
+                .AsSingle();
+
+            Container.Bind<IFogClusterMaterialProvider>()
+                .To<FogClusterMaterialProvider>()
+                .AsSingle();
+
+            Container.Bind<IFogClusterMeshPresenter>()
+                .To<FogClusterMeshPresenter>()
+                .AsSingle();
+
+            Container.Bind<IFogClusterMeshRegistry>()
+                .To<FogClusterMeshRegistry>()
+                .AsSingle();
+
+            Container.Bind<IFogClusterMeshBuilder>()
+                .To<FogClusterMeshBuilder>()
+                .AsSingle();
+
+            Container.Bind<IFogClusteredVolumeRenderer>()
+                .To<FogClusteredVolumeRenderer>()
+                .AsSingle();
+
+            Container.Bind<FogVolumeVisualUpdateEngine>()
+                .AsSingle();
+
+            /*
+             * Concrete visual implementations.
+             * Їхні interfaces напряму не реєструються.
+             */
+            Container.Bind<FogOfWarVolumeUpdater>()
+                .AsSingle();
+
+            Container.Bind<FogScreenSpaceTextureUpdater>()
+                .AsSingle();
+
+            /*
+             * Router є єдиним:
+             *
+             * IFogVisualUpdater
+             * IFogVolumeRuntimeUpdater
+             * ITickable
+             * IDisposable
+             */
+            Container
+                .BindInterfacesAndSelfTo<FogVisualUpdaterRouter>()
                 .AsSingle()
                 .NonLazy();
 
-            Container.BindInterfacesAndSelfTo<FogOfWarService>()
+            Container
+                .BindInterfacesAndSelfTo<FogOfWarService>()
                 .AsSingle()
                 .NonLazy();
 
             Container.Bind<FogRendererCullingEngine>()
                 .AsSingle();
 
-            Container.BindInterfacesAndSelfTo<FogRendererCullingService>()
+            Container
+                .BindInterfacesAndSelfTo<FogRendererCullingService>()
                 .AsSingle()
                 .NonLazy();
 
-            Container.BindInterfacesAndSelfTo<FogOfWarSaveModule>()
+            Container
+                .BindInterfacesAndSelfTo<FogOfWarSaveModule>()
                 .AsSingle();
 
-            Container.BindInterfacesTo<SaveModuleRegistrar<FogOfWarSaveModule>>()
+            Container
+                .BindInterfacesTo<
+                    SaveModuleRegistrar<FogOfWarSaveModule>>()
                 .AsSingle()
                 .NonLazy();
 
-            foreach (var fogVolume in fogVolumes)
+            if (fogVolumes != null)
             {
-                Container.QueueForInject(fogVolume);
+                for (int i = 0;
+                     i < fogVolumes.Length;
+                     i++)
+                {
+                    FogOfWarVolumeController fogVolume =
+                        fogVolumes[i];
+
+                    if (fogVolume == null)
+                        continue;
+
+                    Container.QueueForInject(fogVolume);
+                }
             }
 
             Container.Bind<IFogOfWarServiceRegistry>()
                 .To<FogOfWarServiceRegistry>()
                 .AsSingle();
 
-            if (!Container.HasBinding<IMapFogChunkCoverageService>())
-                Container.Bind<IMapFogChunkCoverageService>().To<MapFogChunkCoverageService>().AsSingle();
+            if (!Container.HasBinding<
+                    IMapFogChunkCoverageService>())
+            {
+                Container.Bind<IMapFogChunkCoverageService>()
+                    .To<MapFogChunkCoverageService>()
+                    .AsSingle();
+            }
 
-            Container.BindInterfacesAndSelfTo<MapFogChunkCoverageRefreshService>()
+            Container
+                .BindInterfacesAndSelfTo<
+                    MapFogChunkCoverageRefreshService>()
                 .AsSingle()
                 .NonLazy();
 
-            Container.BindExecutionOrder<FogOfWarService>(-5);
-            Container.BindExecutionOrder<FogOfWarVolumeUpdater>(-4);
-            Container.BindExecutionOrder<FogRendererCullingService>(-3);
-            Container.BindExecutionOrder<MapFogChunkCoverageRefreshService>(260);
+            Container.BindExecutionOrder<
+                FogOfWarService>(-5);
+
+            Container.BindExecutionOrder<
+                FogVisualUpdaterRouter>(-4);
+
+            Container.BindExecutionOrder<
+                FogRendererCullingService>(-3);
+
+            Container.BindExecutionOrder<
+                MapFogChunkCoverageRefreshService>(260);
         }
 
-        /// <summary>
-        /// Пише у лог короткий діагностичний знімок controller-ів, знайдених у сцені.
-        /// Використовується лише для валідації setup і не впливає на gameplay logic.
-        /// </summary>
-        /// <param name="fogVolumes">Масив знайдених fog volume controller-ів.</param>
-        private static void LogControllerDiagnostics(FogOfWarVolumeController[] fogVolumes)
+        private static void LogControllerDiagnostics(
+            FogOfWarVolumeController[] fogVolumes)
         {
-            if (fogVolumes == null || fogVolumes.Length == 0)
-                return;
-
-            for (int i = 0; i < fogVolumes.Length; i++)
+            if (fogVolumes == null
+                || fogVolumes.Length == 0)
             {
-                var fogVolume = fogVolumes[i];
+                return;
+            }
+
+            for (int i = 0;
+                 i < fogVolumes.Length;
+                 i++)
+            {
+                FogOfWarVolumeController fogVolume =
+                    fogVolumes[i];
+
                 if (fogVolume == null)
                     continue;
 
-                var manager = fogVolume.TileWorldCreatorManager;
+                var manager =
+                    fogVolume.TileWorldCreatorManager;
+
+                string settingsName =
+                    fogVolume.Settings != null
+                        ? fogVolume.Settings.name
+                        : "null";
+
+                string presentationName =
+                    fogVolume.Settings != null
+                        ? fogVolume.Settings
+                            .PresentationMode
+                            .ToString()
+                        : "unknown";
+
+                string managerName =
+                    manager != null
+                        ? manager.name
+                        : "null";
+
+                string managerConfigurationName =
+                    manager != null
+                    && manager.configuration != null
+                        ? manager.configuration.name
+                        : "null";
+
+                string message =
+                    "[FogOfWar] Controller[" +
+                    i +
+                    "] name='" +
+                    fogVolume.name +
+                    "', active=" +
+                    fogVolume.gameObject.activeInHierarchy +
+                    ", enabled=" +
+                    fogVolume.enabled +
+                    ", settings=" +
+                    settingsName +
+                    ", presentation=" +
+                    presentationName +
+                    ", manager=" +
+                    managerName +
+                    ", managerConfig=" +
+                    managerConfigurationName +
+                    ", updateMode=" +
+                    fogVolume.EffectiveUpdateMode +
+                    ", logSummary=" +
+                    fogVolume.LogBuildSummary +
+                    ", logEveryUpdate=" +
+                    fogVolume.LogEveryVolumeUpdate +
+                    ", logValidation=" +
+                    fogVolume.LogValidationWarnings +
+                    ".";
+
                 Debug.Log(
-                    $"[FogOfWar] Controller[{i}] name='{fogVolume.name}', active={fogVolume.gameObject.activeInHierarchy}, enabled={fogVolume.enabled}, " +
-                    $"settings={(fogVolume.Settings != null ? fogVolume.Settings.name : "null")}, manager={(manager != null ? manager.name : "null")}, " +
-                    $"managerConfig={(manager != null && manager.configuration != null ? manager.configuration.name : "null")}, " +
-                    $"updateMode={fogVolume.EffectiveUpdateMode}, logSummary={fogVolume.LogBuildSummary}, logEveryUpdate={fogVolume.LogEveryVolumeUpdate}, logValidation={fogVolume.LogValidationWarnings}.",
+                    message,
                     fogVolume);
             }
         }
 
-        /// <summary>
-        /// Повертає перший доступний <see cref="FogOfWarSettings"/>, знайдений через fog volume controllers у сцені.
-        /// </summary>
-        /// <param name="fogVolumes">Контролери, які були знайдені у сцені.</param>
-        /// <returns>Знайдений settings asset або <see langword="null"/>.</returns>
-        private FogOfWarSettings ResolveSettings(FogOfWarVolumeController[] fogVolumes)
+        private FogOfWarSettings ResolveSettings(
+            FogOfWarVolumeController[] fogVolumes)
         {
             if (fogVolumes == null)
                 return null;
 
-            for (int i = 0; i < fogVolumes.Length; i++)
+            for (int i = 0;
+                 i < fogVolumes.Length;
+                 i++)
             {
-                if (fogVolumes[i] != null && fogVolumes[i].Settings != null)
-                    return fogVolumes[i].Settings;
+                FogOfWarVolumeController controller =
+                    fogVolumes[i];
+
+                if (controller != null
+                    && controller.Settings != null)
+                {
+                    return controller.Settings;
+                }
             }
 
             return null;

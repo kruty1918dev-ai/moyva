@@ -69,6 +69,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return TileWorldCreatorWorldBuildResult.Disabled;
             }
 
+            TraceLogicalHeightSummary(worldData.LogicalTileMap);
+
             using (TileWorldCreatorChunkFirstGuard.Enter())
             {
                 if (worldData.Seed != 0)
@@ -104,23 +106,128 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
         }
 
-        private void ResolveCompositions(GraphLogicalTileMap map, IReadOnlyList<ChunkBuildArea> areas)
+        private static void TraceLogicalHeightSummary(
+            GraphLogicalTileMap map)
+        {
+            if (map == null)
+                return;
+
+            bool hasSample = false;
+
+            float minHeight = 0f;
+            float maxHeight = 0f;
+            float minSurface = 0f;
+            float maxSurface = 0f;
+
+            int sampleCount = 0;
+
+            var distinctHeights = new HashSet<int>();
+            var distinctSurfaces = new HashSet<int>();
+
+            for (int x = 0; x < map.Width; x++)
+                for (int y = 0; y < map.Height; y++)
+                {
+                    TileStackCell stack = map.GetCellStack(x, y);
+                    if (stack == null)
+                        continue;
+
+                    for (int i = 0; i < stack.Samples.Count; i++)
+                    {
+                        GraphTileLayerSample sample = stack.Samples[i];
+
+                        if (!IsFiniteHeightTraceValue(sample.Height)
+                            || !IsFiniteHeightTraceValue(sample.SurfaceHeight))
+                        {
+                            continue;
+                        }
+
+                        if (!hasSample)
+                        {
+                            minHeight = maxHeight = sample.Height;
+                            minSurface = maxSurface = sample.SurfaceHeight;
+                            hasSample = true;
+                        }
+                        else
+                        {
+                            minHeight = Mathf.Min(minHeight, sample.Height);
+                            maxHeight = Mathf.Max(maxHeight, sample.Height);
+                            minSurface = Mathf.Min(
+                                minSurface,
+                                sample.SurfaceHeight);
+                            maxSurface = Mathf.Max(
+                                maxSurface,
+                                sample.SurfaceHeight);
+                        }
+
+                        distinctHeights.Add(
+                            Mathf.RoundToInt(sample.Height * 1000f));
+
+                        distinctSurfaces.Add(
+                            Mathf.RoundToInt(
+                                sample.SurfaceHeight * 1000f));
+
+                        sampleCount++;
+                    }
+                }
+
+            ChunkFirstHeightAudit.TraceUnique(
+                "LOGICAL_SUMMARY",
+                "world",
+                $"map={map.Width}x{map.Height} " +
+                $"samples={sampleCount} " +
+                $"minHeight={minHeight:0.###} " +
+                $"maxHeight={maxHeight:0.###} " +
+                $"distinctHeights={distinctHeights.Count} " +
+                $"minSurface={minSurface:0.###} " +
+                $"maxSurface={maxSurface:0.###} " +
+                $"distinctSurfaces={distinctSurfaces.Count}");
+        }
+
+        private static bool IsFiniteHeightTraceValue(float value)
+        {
+            return !float.IsNaN(value)
+                   && !float.IsInfinity(value);
+        }
+
+        private void ResolveCompositions(
+     GraphLogicalTileMap map,
+     IReadOnlyList<ChunkBuildArea> areas)
         {
             _resolved.Clear();
-            float lowestLayerHeight = ResolveLowestTerrainHeight(map);
-            for (int areaIndex = 0; areaIndex < areas.Count; areaIndex++)
+
+            float lowestLayerHeight =
+                ResolveLowestTerrainHeight(map);
+
+            for (int areaIndex = 0;
+                 areaIndex < areas.Count;
+                 areaIndex++)
             {
-                RectInt core = areas[areaIndex].CoreRect;
-                for (int y = core.yMin; y < core.yMax; y++)
-                for (int x = core.xMin; x < core.xMax; x++)
-                {
-                    var cell = new Vector2Int(x, y);
-                    _resolved[cell] = _resolver.Resolve(
-                        cell,
-                        _neighborhoods.Create(map, cell),
-                        lowestLayerHeight);
-                }
+                RectInt core =
+                    areas[areaIndex].CoreRect;
+
+                for (int y = core.yMin;
+                     y < core.yMax;
+                     y++)
+                    for (int x = core.xMin;
+                         x < core.xMax;
+                         x++)
+                    {
+                        var cell =
+                            new Vector2Int(x, y);
+
+                        _resolved[cell] =
+                            _resolver.Resolve(
+                                cell,
+                                _neighborhoods.Create(
+                                    map,
+                                    cell),
+                                lowestLayerHeight);
+                    }
             }
+
+            GraphLayerCoverageAudit.LogResolvedWinners(
+                map,
+                _resolved);
         }
 
         private static float ResolveLowestTerrainHeight(GraphLogicalTileMap map)
@@ -131,22 +238,22 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             bool hasTerrain = false;
             float lowest = 0f;
             for (int x = 0; x < map.Width; x++)
-            for (int y = 0; y < map.Height; y++)
-            {
-                TileStackCell stack = map.GetCellStack(x, y);
-                if (stack == null)
-                    continue;
-
-                for (int i = 0; i < stack.Samples.Count; i++)
+                for (int y = 0; y < map.Height; y++)
                 {
-                    var sample = stack.Samples[i];
-                    if (!sample.IsTerrainLike || sample.LayerKind == LayerKind.OverlayTerrain)
+                    TileStackCell stack = map.GetCellStack(x, y);
+                    if (stack == null)
                         continue;
 
-                    lowest = hasTerrain ? Mathf.Min(lowest, sample.Height) : sample.Height;
-                    hasTerrain = true;
+                    for (int i = 0; i < stack.Samples.Count; i++)
+                    {
+                        var sample = stack.Samples[i];
+                        if (!sample.IsTerrainLike || sample.LayerKind == LayerKind.OverlayTerrain)
+                            continue;
+
+                        lowest = hasTerrain ? Mathf.Min(lowest, sample.Height) : sample.Height;
+                        hasTerrain = true;
+                    }
                 }
-            }
 
             return hasTerrain ? lowest : 0f;
         }
@@ -221,20 +328,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return;
 
             for (int x = 0; x < map.GetLength(0); x++)
-            for (int y = 0; y < map.GetLength(1); y++)
-            {
-                string id = map[x, y];
-                if (!string.IsNullOrWhiteSpace(id) && resolveLayer(id, out _))
-                    ids.Add(id);
-            }
+                for (int y = 0; y < map.GetLength(1); y++)
+                {
+                    string id = map[x, y];
+                    if (!string.IsNullOrWhiteSpace(id) && resolveLayer(id, out _))
+                        ids.Add(id);
+                }
         }
 
         private static int CountStackSamples(GraphLogicalTileMap map)
         {
             int count = 0;
             for (int x = 0; x < map.Width; x++)
-            for (int y = 0; y < map.Height; y++)
-                count += map.GetCellStack(x, y)?.Count ?? 0;
+                for (int y = 0; y < map.Height; y++)
+                    count += map.GetCellStack(x, y)?.Count ?? 0;
             return count;
         }
 
@@ -245,9 +352,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             int count = 0;
             for (int x = 0; x < map.GetLength(0); x++)
-            for (int y = 0; y < map.GetLength(1); y++)
-                if (!string.IsNullOrWhiteSpace(map[x, y]))
-                    count++;
+                for (int y = 0; y < map.GetLength(1); y++)
+                    if (!string.IsNullOrWhiteSpace(map[x, y]))
+                        count++;
             return count;
         }
 
@@ -258,19 +365,19 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             int count = 0;
             for (int x = 0; x < map.Width; x++)
-            for (int y = 0; y < map.Height; y++)
-            {
-                var stack = map.GetCellStack(x, y);
-                if (stack == null)
-                    continue;
-
-                for (int i = 0; i < stack.Samples.Count; i++)
+                for (int y = 0; y < map.Height; y++)
                 {
-                    var kind = stack.Samples[i].LayerKind;
-                    if (kind == LayerKind.ObjectSpawn || kind == LayerKind.Building || kind == LayerKind.Decoration)
-                        count++;
+                    var stack = map.GetCellStack(x, y);
+                    if (stack == null)
+                        continue;
+
+                    for (int i = 0; i < stack.Samples.Count; i++)
+                    {
+                        var kind = stack.Samples[i].LayerKind;
+                        if (kind == LayerKind.ObjectSpawn || kind == LayerKind.Building || kind == LayerKind.Decoration)
+                            count++;
+                    }
                 }
-            }
 
             return count;
         }
@@ -292,23 +399,23 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 return;
 
             for (int x = 0; x < map.Width; x++)
-            for (int y = 0; y < map.Height; y++)
-            {
-                var stack = map.GetCellStack(x, y);
-                if (stack == null)
-                    continue;
-
-                for (int i = 0; i < stack.Samples.Count; i++)
+                for (int y = 0; y < map.Height; y++)
                 {
-                    var sample = stack.Samples[i];
-                    if (sample.LayerKind != kind)
+                    var stack = map.GetCellStack(x, y);
+                    if (stack == null)
                         continue;
 
-                    TryCollectSampleId(sample.TileId, resolveLayer, ids);
-                    TryCollectSampleId(sample.PresetId, resolveLayer, ids);
-                    TryCollectSampleId(sample.GraphLayerId, resolveLayer, ids);
+                    for (int i = 0; i < stack.Samples.Count; i++)
+                    {
+                        var sample = stack.Samples[i];
+                        if (sample.LayerKind != kind)
+                            continue;
+
+                        TryCollectSampleId(sample.TileId, resolveLayer, ids);
+                        TryCollectSampleId(sample.PresetId, resolveLayer, ids);
+                        TryCollectSampleId(sample.GraphLayerId, resolveLayer, ids);
+                    }
                 }
-            }
         }
 
         private static void TryCollectSampleId(string id, TryResolveLayer resolveLayer, HashSet<string> ids)
