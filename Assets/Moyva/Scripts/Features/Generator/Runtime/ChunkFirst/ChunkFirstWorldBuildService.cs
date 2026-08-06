@@ -88,6 +88,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     worldData.BaseMapWorldBounds,
                     NeighborhoodHalo);
 
+                ChunkAuditRuntime.BeginBuild(
+                    worldData.Width,
+                    worldData.Height,
+                    ResolveCellSize(worldData, configuration),
+                    worldData.HasBaseMapWorldBounds,
+                    worldData.BaseMapWorldBounds);
+
                 ResolveCompositions(worldData.LogicalTileMap, areas);
                 int objectCandidates = CountObjectLikeSamples(worldData.LogicalTileMap)
                                        + CountCells(worldData.ObjectMap)
@@ -269,6 +276,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                 RegisterChunkRenderer(chunkRoot, areas[i].Coord);
             }
 
+            ChunkAuditRuntime.CompleteBuild();
             return built;
         }
 

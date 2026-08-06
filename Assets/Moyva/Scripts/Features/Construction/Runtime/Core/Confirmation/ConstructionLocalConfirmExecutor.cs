@@ -25,7 +25,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public bool TryHandleConfirmRequest()
         {
             _diagnostics?.CompleteStep(_diagnosticsSession?.CurrentFlow, ConstructionDiagnosticSteps.BuildConfirmed, "executor=local");
-            _constructionService.Confirm();
+
+            using (ConstructionCommitProfiler.ConfirmMarker.Auto())
+            {
+                _constructionService.Confirm();
+            }
+
             return true;
         }
     }

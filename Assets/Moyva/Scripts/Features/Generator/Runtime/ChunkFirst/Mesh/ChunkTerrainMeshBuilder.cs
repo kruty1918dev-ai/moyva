@@ -17,6 +17,8 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private readonly List<CombineInstance> _finalCombine = new List<CombineInstance>(16);
         private readonly List<Material> _materials = new List<Material>(16);
         private readonly List<TileMeshSource> _cellSources = new List<TileMeshSource>(4);
+        private readonly HashSet<Vector2Int> _auditProviderEmittedCells =
+            new HashSet<Vector2Int>();
         private readonly HashSet<string> _chunkAuditLayerIds =
             new HashSet<string>(System.StringComparer.Ordinal);
         private readonly Dictionary<TileVerticalFillMeshKey, Mesh> _verticalMeshCache =
@@ -59,12 +61,15 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (chunkRoot == null || resolvedCells == null || meshSource == null)
                 return 0;
 
+            ChunkAuditRuntime.BeginChunk(area);
+
             var terrainRoot = EnsureTerrainRoot(chunkRoot);
             ClearExistingMesh(terrainRoot);
             RecycleCombineLists();
             _finalCombine.Clear();
             _materials.Clear();
             _chunkAuditLayerIds.Clear();
+            _auditProviderEmittedCells.Clear();
             _sourceVertices = 0;
             _sourceIndices = 0;
             _sourceTriangles = 0;
@@ -75,9 +80,17 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             _unreferencedVerticesRemoved = 0;
             _exactDuplicateVerticesRemoved = 0;
 
-            int fragmentCount = CollectFragments(area.CoreRect, resolvedCells, meshSource);
+            int fragmentCount = CollectFragments(area, resolvedCells, meshSource);
             if (fragmentCount == 0)
             {
+                ChunkAuditRuntime.CompleteChunk(
+                    chunkRoot,
+                    terrainRoot,
+                    area,
+                    resolvedCells,
+                    _auditProviderEmittedCells,
+                    null);
+
                 LogChunkMetrics(chunkRoot, null);
                 return 0;
             }
@@ -85,6 +98,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             Mesh combined = CombineByMaterial(terrainRoot.name, area);
             if (combined == null || combined.vertexCount == 0)
             {
+                ChunkAuditRuntime.CompleteChunk(
+                    chunkRoot,
+                    terrainRoot,
+                    area,
+                    resolvedCells,
+                    _auditProviderEmittedCells,
+                    null);
+
                 LogChunkMetrics(chunkRoot, null);
                 return 0;
             }
@@ -109,6 +130,14 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 
             _meshRegistry.Register(combined);
 
+            ChunkAuditRuntime.CompleteChunk(
+                chunkRoot,
+                terrainRoot,
+                area,
+                resolvedCells,
+                _auditProviderEmittedCells,
+                combined);
+
             LogChunkMetrics(chunkRoot, combined);
             return 1;
         }
@@ -132,10 +161,11 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         }
 
         private int CollectFragments(
-            RectInt coreRect,
+            ChunkBuildArea area,
             IReadOnlyDictionary<Vector2Int, ResolvedTileComposition> resolvedCells,
             IResolvedTileMeshSource meshSource)
         {
+            RectInt coreRect = area.CoreRect;
             int count = 0;
             for (int y = coreRect.yMin; y < coreRect.yMax; y++)
                 for (int x = coreRect.xMin; x < coreRect.xMax; x++)
@@ -148,7 +178,20 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     int sourceCount = meshSource.CollectMeshSources(composition, _cellSources);
                     for (int i = 0; i < sourceCount; i++)
                     {
-                        AddSource(_cellSources[i]);
+                        TileMeshSource source = _cellSources[i];
+
+                        ChunkAuditRuntime.RecordSource(
+                            area,
+                            cell,
+                            source);
+
+                        if (source.IsValid)
+                        {
+                            _auditProviderEmittedCells.Add(
+                                cell);
+                        }
+
+                        AddSource(source);
                         count++;
                     }
                 }

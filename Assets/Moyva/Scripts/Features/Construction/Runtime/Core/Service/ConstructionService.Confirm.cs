@@ -12,6 +12,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         public void Confirm()
         {
+            using var commitAudit =
+                ConstructionCommitAudit.Begin(
+                    _pendingPlacements.Count,
+                    IsDemolishMode,
+                    State.ToString());
+
             IDiagnosticFlow flow = _diagnosticsSession?.CurrentFlow;
             if (IsDemolishMode)
             {
@@ -39,6 +45,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             var pendingSnapshot = new List<PendingPlacement>(_pendingPlacements);
             var confirmedPositions = new HashSet<Vector2Int>();
+            commitAudit.Step("snapshot");
             int confirmedCount = 0;
             int skippedCount = 0;
 
@@ -46,6 +53,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 var pos = placement.Position;
                 var id = placement.BuildingId;
+                commitAudit.ObservePlacement(id, pos);
                 bool isRelocation = IsRelocation(placement);
                 bool hasRelocationSource = placement.OriginalPosition.HasValue;
                 Vector2Int? relocationSource = placement.OriginalPosition;
@@ -88,11 +96,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         skippedCount++;
                         _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.GridCellValidated, "placement-invalid", $"building={id}, pos={pos}");
                         Debug.LogWarning($"[MoyvaBuildGridDiag] placement-failed building='{id}' origin={pos} reason='validation' occupied={tileOccupied} spacing={spacingBlocked} fog={fogBlocked} influence={influenceZoneBlocked} terrain={terrainBlocked}");
+                        commitAudit.Step("validation-failed");
                         continue;
                     }
 
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.GridCellValidated, $"building={id}, pos={pos}");
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.TerrainValidated, $"building={id}, pos={pos}");
+                    commitAudit.Step("validation");
 
                     if (hasRelocationSource
                         && relocationSource.HasValue
@@ -134,6 +144,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     }
                     targetFootprintRegistered = true;
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingRegistered, $"building={id}, pos={pos}");
+                    commitAudit.Step("footprint");
 
                     if (!hasRelocationSource
                         && !TryConsumeConstructionResources(pos, id, relocationOwnerId, out var resourceReason))
@@ -150,6 +161,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                             });
                         _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, "resources-blocked", resourceReason);
                         Debug.LogWarning($"[MoyvaBuildGridDiag] placement-failed building='{id}' origin={pos} reason='{resourceReason}'");
+                        commitAudit.Step("resources-failed");
                         continue;
                     }
 
@@ -158,6 +170,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesChecked, $"building={id}, owner={relocationOwnerId}");
                         _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ResourcesReserved, $"building={id}, owner={relocationOwnerId}");
                     }
+
+                    commitAudit.Step("resources");
 
                     if (gateReplacementAllowed)
                         RemovePlacedRecordAt(replacedOrigin);
@@ -172,6 +186,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     modelCommitted = true;
                     confirmedPositions.Add(pos);
                     confirmedCount++;
+                    commitAudit.Step("model-commit");
                 }
                 catch (Exception ex)
                 {
@@ -214,6 +229,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     });
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.BuildingSpawned, $"building={id}, pos={pos}");
                     _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.ConstructionSignalFired, $"building={id}, pos={pos}");
+                    commitAudit.Step("building-placed-signal");
 
                     try
                     {
@@ -225,6 +241,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     {
                         Debug.LogError($"[Construction] Fog reveal failed for '{id}' at {pos}: {fogEx.GetType().Name} - {fogEx.Message}");
                     }
+
+                    commitAudit.Step("fog-reveal");
 
                     if (VerboseLogs)
                         Debug.Log($"[MoyvaBuildGridDiag] placement-complete building='{id}' origin={pos} result='{(isRelocation ? "relocated" : "placed")}' source={relocationSource?.ToString() ?? "none"}");
@@ -257,6 +275,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 }
             }
 
+            commitAudit.Step("preview-cleanup");
+
             _undoSnapshots.Clear();
             _redoSnapshots.Clear();
 
@@ -267,6 +287,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     _pendingPlacements[_pendingPlacements.Count - 1].BuildingId,
                     BuildingPlacementState.Placing);
 
+            commitAudit.Step("selection-state");
+
             if (VerboseLogs)
                 Debug.Log($"[MoyvaBuildGridDiag] placement-batch-complete confirmed={confirmedCount} skipped={skippedCount} remaining={_pendingPlacements.Count} state={State}");
 
@@ -274,6 +296,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _diagnostics?.CompleteStep(flow, ConstructionDiagnosticSteps.UiUpdated, $"confirmed={confirmedCount}, skipped={skippedCount}");
             else
                 _diagnostics?.FailStep(flow, ConstructionDiagnosticSteps.BuildingSpawned, "no-buildings-confirmed", $"skipped={skippedCount}");
+
+            commitAudit.SetOutcome(
+                confirmedCount,
+                skippedCount,
+                _pendingPlacements.Count);
+            commitAudit.Step("finalize");
 
             _diagnostics?.Report(flow);
             _diagnosticsSession?.Clear(flow);
