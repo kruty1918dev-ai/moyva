@@ -198,11 +198,13 @@ MonoBehaviour:
   - {fileID: -1277754162075699806}
   - {fileID: 2715838963536112315}
   - {fileID: -3635418284479857414}
-  - {fileID: -3650923340913689866}
-  - {fileID: -6911283437992747537}
   - {fileID: -7353802473347338803}
+  - {fileID: 2137144580926649332}
+  - {fileID: 9125716127256680482}
+  - {fileID: -6911283437992747537}
+  - {fileID: -3650923340913689866}
   - {fileID: -4669532212205383062}
-  m_RendererFeatureMap: 052f64f5285a565ebb2abcf02599b025fa3c9edf54668ccdf63aa89a905055cdcd2dbed39c0bf299
+  m_RendererFeatureMap: 052f64f5285a565ebb2abcf02599b025fa3c9edf54668ccdf63aa89a905055cd221830b6770ea57ecd2dbed39c0bf299f4b3c85baca9a81d
   m_UseNativeRenderPass: 1
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_AssetVersion: 3
@@ -230,6 +232,57 @@ MonoBehaviour:
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 0
+--- !u!114 &2137144580926649332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb43ecdb319af63ab8864da960ffdda3, type: 3}
+  m_Name: FogOfWarScreenSpaceRendererFeature
+  m_EditorClassIdentifier: Kruty1918.Moyva.FogOfWar::Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarScreenSpaceRendererFeature
+  m_Active: 1
+  _screenSpaceShader: {fileID: 4800000, guid: 771ed85632d26dfa2a74bb3ea7df247b, type: 3}
+  _surfaceDepthShader: {fileID: 4800000, guid: 3e8861b0f188bb66fba668a0d5738254, type: 3}
+  _fogSurfaceLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _fogSurfaceRenderingLayerBit: 31
+  _autoTagFogSurfaces: 1
+  _surfaceIncludeTokens:
+  - TerrainMesh
+  - Terrain
+  - Water
+  - River
+  - Lake
+  - Ocean
+  - Ground
+  - MapVisualChunk
+  _surfaceExcludeTokens:
+  - Grid
+  - Overlay
+  - Preview
+  - Ghost
+  - Construction
+  - Build
+  - Placement
+  - Selection
+  - Highlight
+  - Outline
+  - Cloud
+  - Fog
+  - UI
+  - Canvas
+  - Cursor
+  - Marker
+  - Gizmo
+  _screenStateScale: 0.5
+  _forceFullResolutionState: 1
+  _applyInSceneView: 1
+  _logPipelineDiagnostics: 1
 --- !u!114 &2715838963536112315
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -272,3 +325,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::FlatKit.FlatKitOutline
   m_Active: 0
   settings: {fileID: 11400000, guid: 6a9ce4523839c4a44a17d8d1334b16d2, type: 2}
+--- !u!114 &9125716127256680482
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 70b5e83cd20041e4c9d5e464b1a6d240, type: 3}
+  m_Name: FogBoundaryCurtainRendererFeature
+  m_EditorClassIdentifier: Kruty1918.Moyva.FogOfWar::Kruty1918.Moyva.FogOfWar.Runtime.FogBoundaryCurtainRendererFeature
+  m_Active: 1
+  _applyInSceneView: 1
