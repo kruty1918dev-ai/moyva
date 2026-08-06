@@ -14,8 +14,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         public float CameraCullingPaddingCells => 1f;
         public bool EnableVisualChunkDiscovery => true;
         public bool EnableVisualChunkPartitioning => true;
-        public bool RepeatVisualChunkDiscoveryDuringStartup => false;
-        public bool RepeatVisualChunkPartitioningDuringStartup => false;
         public float VisualDiscoveryIntervalSeconds => 0.75f;
         public float VisualPartitionDurationSeconds => 2f;
         public LayerMask VisualDiscoveryLayerMask => ~0;

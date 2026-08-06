@@ -106,7 +106,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             }
         }
 
-        [System.Diagnostics.Conditional("MOYVA_DEEP_GENERATION_DIAGNOSTICS")]
         private static void TraceLogicalHeightSummary(
             GraphLogicalTileMap map)
         {

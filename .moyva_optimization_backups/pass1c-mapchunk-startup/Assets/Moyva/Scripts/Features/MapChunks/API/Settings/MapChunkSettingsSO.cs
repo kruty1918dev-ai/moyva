@@ -13,15 +13,6 @@ namespace Kruty1918.Moyva.MapChunks.API
         [Min(0f)] public float CameraCullingPaddingCells = 1f;
         public bool EnableVisualChunkDiscovery = true;
         public bool EnableVisualChunkPartitioning = true;
-
-        [Tooltip(
-            "Повторювати повний visual discovery scan протягом startup-вікна.")]
-        public bool RepeatVisualChunkDiscoveryDuringStartup;
-
-        [Tooltip(
-            "Повторювати повний visual partition scan протягом startup-вікна.")]
-        public bool RepeatVisualChunkPartitioningDuringStartup;
-
         [Min(0.05f)] public float VisualDiscoveryIntervalSeconds = 0.75f;
         [Min(0.1f)] public float VisualPartitionDurationSeconds = 2f;
         public LayerMask VisualDiscoveryLayerMask = ~0;
@@ -33,10 +24,6 @@ namespace Kruty1918.Moyva.MapChunks.API
         float IMapChunkSettingsProvider.CameraCullingPaddingCells => Mathf.Max(0f, CameraCullingPaddingCells);
         bool IMapChunkSettingsProvider.EnableVisualChunkDiscovery => EnableVisualChunkDiscovery;
         bool IMapChunkSettingsProvider.EnableVisualChunkPartitioning => EnableVisualChunkPartitioning;
-        bool IMapChunkSettingsProvider.RepeatVisualChunkDiscoveryDuringStartup =>
-            RepeatVisualChunkDiscoveryDuringStartup;
-        bool IMapChunkSettingsProvider.RepeatVisualChunkPartitioningDuringStartup =>
-            RepeatVisualChunkPartitioningDuringStartup;
         float IMapChunkSettingsProvider.VisualDiscoveryIntervalSeconds => Mathf.Max(0.05f, VisualDiscoveryIntervalSeconds);
         float IMapChunkSettingsProvider.VisualPartitionDurationSeconds => Mathf.Max(0.1f, VisualPartitionDurationSeconds);
         LayerMask IMapChunkSettingsProvider.VisualDiscoveryLayerMask => VisualDiscoveryLayerMask;

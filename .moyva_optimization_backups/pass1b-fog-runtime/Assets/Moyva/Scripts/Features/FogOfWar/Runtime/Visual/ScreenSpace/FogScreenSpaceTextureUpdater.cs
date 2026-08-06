@@ -370,26 +370,17 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _width,
                 _height);
 
-            bool committedChanged = false;
-
             foreach (Vector2Int tile
                      in dirtyTiles)
             {
                 if (!IsInBounds(tile))
                     continue;
 
-                committedChanged |=
-                    SetCommittedPixelValue(
-                        tile,
-                        EncodeState(
-                            fogService.GetFogState(
-                                tile)));
-            }
-
-            if (!committedChanged
-                && !_previewActive)
-            {
-                return;
+                SetCommittedPixelValue(
+                    tile,
+                    EncodeState(
+                        fogService.GetFogState(
+                            tile)));
             }
 
             EndPreviewAndCopyCommittedToVisual();
@@ -422,18 +413,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (changes == null
                 || changes.Count == 0)
             {
-                /*
-                 * Empty updates are common during initialization and
-                 * repeated signals. Without an active preview there is
-                 * nothing to copy, upload or publish.
-                 */
-                if (!_previewActive)
-                    return;
-
                 EndPreviewAndCopyCommittedToVisual();
 
                 LogStateSynchronization(
-                    "RequestCellsUpdate.Empty.EndPreview",
+                    "RequestCellsUpdate.Empty",
                     false,
                     default,
                     0,
@@ -442,7 +425,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     0);
 
                 CommitVisualState(
-                    "RequestCellsUpdate.Empty.EndPreview");
+                    "RequestCellsUpdate.Empty");
 
                 return;
             }
@@ -450,8 +433,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             EnsureTexture(
                 _width,
                 _height);
-
-            bool committedChanged = false;
 
             for (int i = 0;
                  i < changes.Count;
@@ -473,16 +454,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                             change.Cell)
                         : change.NewState;
 
-                committedChanged |=
-                    SetCommittedPixelValue(
-                        change.Cell,
-                        EncodeState(state));
-            }
-
-            if (!committedChanged
-                && !_previewActive)
-            {
-                return;
+                SetCommittedPixelValue(
+                    change.Cell,
+                    EncodeState(state));
             }
 
             EndPreviewAndCopyCommittedToVisual();
@@ -811,29 +785,29 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             CopyCommittedToVisual();
         }
 
-        private bool SetCommittedPixelValue(
+        private void SetCommittedPixelValue(
             Vector2Int tile,
             Color32 value)
         {
-            return SetBufferPixelValue(
+            SetBufferPixelValue(
                 _committedPixels,
                 tile,
                 value,
                 false);
         }
 
-        private bool SetPixelValue(
+        private void SetPixelValue(
             Vector2Int tile,
             Color32 value)
         {
-            return SetBufferPixelValue(
+            SetBufferPixelValue(
                 _pixels,
                 tile,
                 value,
                 true);
         }
 
-        private bool SetBufferPixelValue(
+        private void SetBufferPixelValue(
             Color32[] buffer,
             Vector2Int tile,
             Color32 value,
@@ -842,7 +816,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (buffer == null
                 || !IsInBounds(tile))
             {
-                return false;
+                return;
             }
 
             int index =
@@ -856,7 +830,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                     current,
                     value))
             {
-                return false;
+                return;
             }
 
             buffer[index] =
@@ -867,8 +841,6 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 _isDirty =
                     true;
             }
-
-            return true;
         }
 
         private static bool AreEqual(

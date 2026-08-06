@@ -20,19 +20,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         [Header("Visual Discovery")]
         [SerializeField] private bool enableVisualChunkDiscovery = true;
         [SerializeField] private bool enableVisualChunkPartitioning = true;
-
-        [Tooltip(
-            "Повторно сканує renderers протягом startup-вікна. " +
-            "Для chunk-first генерації зазвичай не потрібно.")]
-        [SerializeField]
-        private bool repeatVisualChunkDiscoveryDuringStartup;
-
-        [Tooltip(
-            "Повторно перепризначає renderer parents протягом startup-вікна. " +
-            "Для повністю зібраного світу залиш вимкненим.")]
-        [SerializeField]
-        private bool repeatVisualChunkPartitioningDuringStartup;
-
         [SerializeField, Min(0.05f)] private float visualDiscoveryIntervalSeconds = 0.75f;
         [SerializeField, Min(0.1f)] private float visualPartitionDurationSeconds = 2f;
         [SerializeField] private LayerMask visualDiscoveryLayerMask = ~0;
@@ -44,10 +31,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         public float CameraCullingPaddingCells => Mathf.Max(0f, cameraCullingPaddingCells);
         public bool EnableVisualChunkDiscovery => enableVisualChunkDiscovery;
         public bool EnableVisualChunkPartitioning => enableVisualChunkPartitioning;
-        public bool RepeatVisualChunkDiscoveryDuringStartup =>
-            repeatVisualChunkDiscoveryDuringStartup;
-        public bool RepeatVisualChunkPartitioningDuringStartup =>
-            repeatVisualChunkPartitioningDuringStartup;
         public float VisualDiscoveryIntervalSeconds => Mathf.Max(0.05f, visualDiscoveryIntervalSeconds);
         public float VisualPartitionDurationSeconds => Mathf.Max(0.1f, visualPartitionDurationSeconds);
         public LayerMask VisualDiscoveryLayerMask => visualDiscoveryLayerMask;

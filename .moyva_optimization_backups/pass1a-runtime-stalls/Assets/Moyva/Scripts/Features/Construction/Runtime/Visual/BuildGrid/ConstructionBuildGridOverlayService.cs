@@ -99,6 +99,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 _stateController.SelectedBuildingId,
                 active ? "construction-mode-enter" : "construction-mode-exit");
 
+            if (UseChunkSurfaceMode())
+                _chunkSurfaceService?.SetVisible(active);
+
             if (!active)
                 Hide();
         }
@@ -176,6 +179,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
             _dirty = true;
 
+            if (UseChunkSurfaceMode())
+                _chunkSurfaceService?.SetVisible(_isConstructionModeActive);
         }
 
         public void Tick()
@@ -237,11 +242,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _entries.Clear();
             _renderer.SetVisible(false);
             ApplyGridStyleToChunkSurface();
-            if (UsesUnfilteredChunkSurface())
-                _chunkSurfaceService?.EnsureVisibleChunks(invalidateMasks: false);
-            else
+            _chunkSurfaceService?.EnsureVisibleChunks(invalidateMasks: false);
+            if (!UsesUnfilteredChunkSurface())
                 _chunkSurfaceService?.InvalidateAllMasks();
-
             _chunkSurfaceService?.SetVisible(_isConstructionModeActive);
             _lastChunkVisibilityVersion = ResolveChunkVisibilityVersion();
         }

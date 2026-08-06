@@ -20,7 +20,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         private float _partitionUntil;
         private float _nextPartitionAt;
         private bool _requested;
-        private int _lastRequestFrame = -1;
 
         public MapVisualChunkPartitionService(
             SignalBus signalBus,
@@ -63,42 +62,14 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
 
             PartitionOnce();
             _requested = false;
-
-            if (_settings.RepeatVisualChunkPartitioningDuringStartup)
-            {
-                _nextPartitionAt =
-                    Time.unscaledTime
-                    + _settings.VisualDiscoveryIntervalSeconds;
-            }
-            else
-            {
-                _partitionUntil =
-                    float.NegativeInfinity;
-
-                _nextPartitionAt =
-                    float.PositiveInfinity;
-            }
+            _nextPartitionAt = Time.unscaledTime + _settings.VisualDiscoveryIntervalSeconds;
         }
 
         public void RequestPartition()
         {
-            if (_lastRequestFrame == Time.frameCount)
-                return;
-
-            _lastRequestFrame =
-                Time.frameCount;
-
-            _requested =
-                true;
-
-            _partitionUntil =
-                _settings.RepeatVisualChunkPartitioningDuringStartup
-                    ? Time.unscaledTime
-                      + _settings.VisualPartitionDurationSeconds
-                    : Time.unscaledTime;
-
-            _nextPartitionAt =
-                0f;
+            _requested = true;
+            _partitionUntil = Time.unscaledTime + _settings.VisualPartitionDurationSeconds;
+            _nextPartitionAt = 0f;
         }
 
         private void OnWorldBuilt(WorldBuiltSignal _) => RequestPartition();
@@ -139,17 +110,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                 moved++;
             }
 
-            if (moved > 0
-                || multiChunk > 0
-                || oversized > 0)
-            {
-                Debug.Log(
-                    $"[MoyvaMapChunks] Visual partition pass moved={moved}, " +
-                    $"multiChunk={multiChunk}, oversized={oversized}, " +
-                    $"scanned={_renderers.Count}.");
-            }
-
-            _renderers.Clear();
+            Debug.Log($"[MoyvaMapChunks] Visual partition pass moved={moved}, multiChunk={multiChunk}, oversized={oversized}, scanned={_renderers.Count}.");
         }
     }
 }

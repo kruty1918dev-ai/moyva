@@ -264,6 +264,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public void SetVisible(bool visible)
         {
             _visible = visible;
+            if (visible)
+                EnsureVisibleChunks(invalidateMasks: false);
             ApplyChunkVisibility();
         }
 

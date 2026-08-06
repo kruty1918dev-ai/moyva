@@ -15,7 +15,6 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         private bool _requested = true;
         private float _discoveryUntil;
         private float _nextDiscoveryAt;
-        private int _lastRequestFrame = -1;
 
         public MapVisualChunkDiscoveryService(
             SignalBus signalBus,
@@ -48,42 +47,14 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
 
             _rebuildService.Rebuild();
             _requested = false;
-
-            if (_settings.RepeatVisualChunkDiscoveryDuringStartup)
-            {
-                _nextDiscoveryAt =
-                    Time.unscaledTime
-                    + _settings.VisualDiscoveryIntervalSeconds;
-            }
-            else
-            {
-                _discoveryUntil =
-                    float.NegativeInfinity;
-
-                _nextDiscoveryAt =
-                    float.PositiveInfinity;
-            }
+            _nextDiscoveryAt = Time.unscaledTime + _settings.VisualDiscoveryIntervalSeconds;
         }
 
         public void RequestDiscovery()
         {
-            if (_lastRequestFrame == Time.frameCount)
-                return;
-
-            _lastRequestFrame =
-                Time.frameCount;
-
-            _requested =
-                true;
-
-            _discoveryUntil =
-                _settings.RepeatVisualChunkDiscoveryDuringStartup
-                    ? Time.unscaledTime
-                      + _settings.VisualPartitionDurationSeconds
-                    : Time.unscaledTime;
-
-            _nextDiscoveryAt =
-                0f;
+            _requested = true;
+            _discoveryUntil = Time.unscaledTime + _settings.VisualPartitionDurationSeconds;
+            _nextDiscoveryAt = 0f;
         }
 
         private bool CanRunDiscovery()
