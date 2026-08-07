@@ -9,7 +9,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
     public sealed class MapChunkSceneSettings : MonoBehaviour, IMapChunkSettingsProvider
     {
         [Header("Chunk Layout")]
-        [Tooltip("Розмір чанка у grid-тайлах: 16 означає 16x16 тайлів. Тільки крайові чанки можуть бути обрізані розміром мапи.")]
+        [Tooltip("Розмір чанка у grid-тайлах: 16 означає 16x16 тайлів. Якщо розмір карти не кратний chunkSize, +X/+Z край автоматично обрізається до останнього повного чанка.")]
         [SerializeField, Min(1)] private int chunkSize = 16;
 
         [Header("Camera Culling")]

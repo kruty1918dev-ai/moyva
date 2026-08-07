@@ -9,6 +9,17 @@ using Zenject;
 
 namespace Kruty1918.Moyva.MapChunks.Runtime
 {
+    /// <summary>
+    /// Assigns authored map visual owners to generated chunk roots.
+    ///
+    /// Important invariants:
+    /// - generated terrain already has an explicit chunk root and is never
+    ///   repartitioned here;
+    /// - only renderers below known map-content roots are considered;
+    /// - a complete visual owner transform is moved, never an individual
+    ///   child renderer;
+    /// - owner bounds must fit completely inside exactly one chunk.
+    /// </summary>
     internal sealed class MapVisualChunkPartitionService :
         IMapVisualChunkPartitionService,
         IInitializable,
@@ -18,19 +29,41 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         private const string AuditPrefix =
             "[MOYVA_CHUNK_PARTITION]";
 
+        private const int PassesPerRequest = 2;
+
+        private static readonly string[] PartitionRootNames =
+        {
+            "TilesRoot",
+            "ObjectsRoot",
+            "BuildingsRoot",
+            "PlayerBuildingsRoot",
+            "LayersRoot"
+        };
+
         private readonly SignalBus _signalBus;
         private readonly IMapChunkSettingsProvider _settings;
         private readonly IMapChunkLayoutService _layout;
         private readonly IMapVisualChunkRootService _roots;
         private readonly IMapVisualRendererCollector _collector;
         private readonly IMapVisualRendererFilter _filter;
-        private readonly List<Renderer> _renderers = new(512);
-        private readonly List<MapChunkCoord> _chunks = new(16);
 
-        private float _partitionUntil;
+        private readonly List<Renderer> _renderers =
+            new List<Renderer>(512);
+
+        private readonly List<Renderer> _ownerRenderers =
+            new List<Renderer>(32);
+
+        private readonly List<MapChunkCoord> _chunks =
+            new List<MapChunkCoord>(16);
+
+        private readonly List<Transform> _owners =
+            new List<Transform>(256);
+
+        private readonly HashSet<Transform> _ownerSet =
+            new HashSet<Transform>();
+
+        private int _pendingPasses;
         private float _nextPartitionAt;
-        private bool _requested;
-        private int _lastRequestFrame = -1;
 
         public MapVisualChunkPartitionService(
             SignalBus signalBus,
@@ -74,55 +107,34 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                 return;
             }
 
-            if (!_requested
-                && Time.unscaledTime > _partitionUntil)
-            {
+            if (_pendingPasses <= 0)
                 return;
-            }
 
             if (Time.unscaledTime < _nextPartitionAt)
                 return;
 
             PartitionOnce();
-            _requested = false;
 
-            if (_settings
-                .RepeatVisualChunkPartitioningDuringStartup)
-            {
-                _nextPartitionAt =
-                    Time.unscaledTime
-                    + _settings.VisualDiscoveryIntervalSeconds;
-            }
-            else
-            {
-                _partitionUntil =
-                    float.NegativeInfinity;
+            _pendingPasses--;
 
-                _nextPartitionAt =
-                    float.PositiveInfinity;
-            }
+            _nextPartitionAt =
+                Time.unscaledTime
+                + _settings.VisualDiscoveryIntervalSeconds;
         }
 
         public void RequestPartition()
         {
-            if (_lastRequestFrame == Time.frameCount)
-                return;
+            /*
+             * WorldGenerated and WorldBuilt can arrive close together.
+             * Coalesce them into at most two deterministic passes instead of
+             * repeatedly scanning for the full duration window.
+             */
+            _pendingPasses =
+                Mathf.Max(
+                    _pendingPasses,
+                    PassesPerRequest);
 
-            _lastRequestFrame =
-                Time.frameCount;
-
-            _requested =
-                true;
-
-            _partitionUntil =
-                _settings
-                    .RepeatVisualChunkPartitioningDuringStartup
-                    ? Time.unscaledTime
-                      + _settings.VisualPartitionDurationSeconds
-                    : Time.unscaledTime;
-
-            _nextPartitionAt =
-                0f;
+            _nextPartitionAt = 0f;
         }
 
         private void OnWorldBuilt(
@@ -139,13 +151,23 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
 
         private void PartitionOnce()
         {
-            _collector.CollectScene(
+            /*
+             * Never use CollectScene here. Scene-wide discovery was pulling
+             * clouds, construction preview renderers, cameras and unrelated
+             * test objects into the chunk hierarchy.
+             */
+            _collector.CollectPreferredRoots(
                 _renderers);
 
-            int moved = 0;
-            int multiChunk = 0;
-            int oversized = 0;
-            int noChunk = 0;
+            _owners.Clear();
+            _ownerSet.Clear();
+
+            int scannedRenderers =
+                _renderers.Count;
+
+            int filteredRenderers = 0;
+            int renderersWithoutOwner = 0;
+            int alreadyChunkOwnedRenderers = 0;
 
             for (int i = 0;
                  i < _renderers.Count;
@@ -158,34 +180,91 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                         renderer,
                         _roots))
                 {
+                    filteredRenderers++;
                     continue;
                 }
 
-                int count =
+                if (IsUnderChunkRoot(
+                        renderer.transform))
+                {
+                    alreadyChunkOwnedRenderers++;
+                    continue;
+                }
+
+                if (!TryResolveOwner(
+                        renderer.transform,
+                        out Transform owner))
+                {
+                    renderersWithoutOwner++;
+                    continue;
+                }
+
+                if (_ownerSet.Add(owner))
+                    _owners.Add(owner);
+            }
+
+            int movedOwners = 0;
+            int movedRenderers = 0;
+            int multiChunkOwners = 0;
+            int oversizedOwners = 0;
+            int emptyOwners = 0;
+            int alreadyOwnedOwners = 0;
+
+            for (int i = 0;
+                 i < _owners.Count;
+                 i++)
+            {
+                Transform owner =
+                    _owners[i];
+
+                if (owner == null)
+                {
+                    emptyOwners++;
+                    continue;
+                }
+
+                if (IsUnderChunkRoot(owner))
+                {
+                    alreadyOwnedOwners++;
+                    continue;
+                }
+
+                if (!TryCalculateOwnerBounds(
+                        owner,
+                        out Bounds ownerBounds,
+                        out int rendererCount))
+                {
+                    emptyOwners++;
+                    continue;
+                }
+
+                int overlapCount =
                     _layout.GetChunksOverlapping(
-                        renderer.bounds,
+                        ownerBounds,
                         _chunks);
 
-                if (count != 1)
+                if (overlapCount != 1)
                 {
-                    if (count > 1)
+                    if (overlapCount > 1)
                     {
-                        multiChunk++;
+                        multiChunkOwners++;
 
-                        LogPartitionDetail(
-                            "MULTI_CHUNK",
-                            renderer,
+                        LogOwnerDetail(
+                            "MULTI_CHUNK_OWNER",
+                            owner,
+                            ownerBounds,
+                            rendererCount,
                             _chunks,
                             default,
                             false);
                     }
                     else
                     {
-                        noChunk++;
-
-                        LogPartitionDetail(
-                            "NO_CHUNK",
-                            renderer,
+                        LogOwnerDetail(
+                            "NO_CHUNK_OWNER",
+                            owner,
+                            ownerBounds,
+                            rendererCount,
                             _chunks,
                             default,
                             false);
@@ -194,106 +273,266 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                     continue;
                 }
 
-                MapChunkCoord targetCoord =
+                MapChunkCoord target =
                     _chunks[0];
 
                 if (!MapChunkBoundsContainment
                     .ContainsRendererXZ(
                         _layout,
-                        renderer.bounds,
-                        targetCoord))
+                        ownerBounds,
+                        target))
                 {
-                    oversized++;
+                    oversizedOwners++;
 
-                    LogPartitionDetail(
-                        "OVERSIZED",
-                        renderer,
+                    LogOwnerDetail(
+                        "OVERSIZED_OWNER",
+                        owner,
+                        ownerBounds,
+                        rendererCount,
                         _chunks,
-                        targetCoord,
+                        target,
                         true);
 
                     continue;
                 }
 
-                Transform root =
+                Transform chunkRoot =
                     _roots.GetOrCreateRoot(
-                        targetCoord);
+                        target);
 
-                if (renderer.transform.parent == root)
+                if (owner.parent == chunkRoot)
+                {
+                    alreadyOwnedOwners++;
                     continue;
+                }
 
-                LogPartitionDetail(
-                    "MOVE",
-                    renderer,
+                LogOwnerDetail(
+                    "MOVE_OWNER",
+                    owner,
+                    ownerBounds,
+                    rendererCount,
                     _chunks,
-                    targetCoord,
+                    target,
                     true);
 
-                renderer.transform.SetParent(
-                    root,
+                owner.SetParent(
+                    chunkRoot,
                     true);
 
-                moved++;
-            }
-
-            if (moved > 0
-                || multiChunk > 0
-                || oversized > 0
-                || noChunk > 0)
-            {
-                Debug.Log(
-                    $"[MoyvaMapChunks] Visual partition pass " +
-                    $"moved={moved}, " +
-                    $"multiChunk={multiChunk}, " +
-                    $"oversized={oversized}, " +
-                    $"noChunk={noChunk}, " +
-                    $"scanned={_renderers.Count}.");
+                movedOwners++;
+                movedRenderers += rendererCount;
             }
 
             Debug.Log(
                 $"{AuditPrefix} COMPLETE " +
-                $"moved={moved} " +
-                $"multiChunk={multiChunk} " +
-                $"oversized={oversized} " +
-                $"noChunk={noChunk} " +
-                $"scanned={_renderers.Count}");
+                $"scanMode=PreferredMapRoots " +
+                $"sceneWideScan=False " +
+                $"pendingPasses={Mathf.Max(0, _pendingPasses - 1)} " +
+                $"scannedRenderers={scannedRenderers} " +
+                $"candidateOwners={_owners.Count} " +
+                $"movedOwners={movedOwners} " +
+                $"movedRenderers={movedRenderers} " +
+                $"multiChunkOwners={multiChunkOwners} " +
+                $"oversizedOwners={oversizedOwners} " +
+                $"emptyOwners={emptyOwners} " +
+                $"alreadyOwnedOwners={alreadyOwnedOwners} " +
+                $"filteredRenderers={filteredRenderers} " +
+                $"renderersWithoutOwner={renderersWithoutOwner} " +
+                $"alreadyChunkOwnedRenderers=" +
+                $"{alreadyChunkOwnedRenderers}");
 
+            _ownerRenderers.Clear();
+            _owners.Clear();
+            _ownerSet.Clear();
             _renderers.Clear();
+            _chunks.Clear();
         }
 
-        private static void LogPartitionDetail(
+        private bool TryCalculateOwnerBounds(
+            Transform owner,
+            out Bounds bounds,
+            out int rendererCount)
+        {
+            bounds = default;
+            rendererCount = 0;
+
+            _ownerRenderers.Clear();
+
+            owner.GetComponentsInChildren(
+                true,
+                _ownerRenderers);
+
+            bool hasBounds = false;
+
+            for (int i = 0;
+                 i < _ownerRenderers.Count;
+                 i++)
+            {
+                Renderer renderer =
+                    _ownerRenderers[i];
+
+                if (!_filter.CanRegister(renderer))
+                    continue;
+
+                if (IsUnderDifferentChunkRoot(
+                        owner,
+                        renderer.transform))
+                {
+                    continue;
+                }
+
+                Bounds rendererBounds =
+                    renderer.bounds;
+
+                if (!IsFiniteBounds(rendererBounds))
+                    continue;
+
+                if (!hasBounds)
+                {
+                    bounds = rendererBounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(
+                        rendererBounds);
+                }
+
+                rendererCount++;
+            }
+
+            return hasBounds
+                && rendererCount > 0;
+        }
+
+        private bool TryResolveOwner(
+            Transform rendererTransform,
+            out Transform owner)
+        {
+            owner = null;
+
+            if (rendererTransform == null)
+                return false;
+
+            Transform current =
+                rendererTransform;
+
+            while (current != null
+                   && current.parent != null)
+            {
+                if (_roots.IsChunkRoot(current)
+                    || _roots.IsChunkRoot(current.parent))
+                {
+                    return false;
+                }
+
+                if (IsPartitionRootName(
+                        current.parent.name))
+                {
+                    owner = current;
+                    return true;
+                }
+
+                current =
+                    current.parent;
+            }
+
+            return false;
+        }
+
+        private bool IsUnderChunkRoot(
+            Transform transform)
+        {
+            for (Transform current = transform;
+                 current != null;
+                 current = current.parent)
+            {
+                if (_roots.IsChunkRoot(current))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private bool IsUnderDifferentChunkRoot(
+            Transform owner,
+            Transform rendererTransform)
+        {
+            for (Transform current = rendererTransform;
+                 current != null
+                 && current != owner;
+                 current = current.parent)
+            {
+                if (_roots.IsChunkRoot(current))
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static bool IsPartitionRootName(
+            string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return false;
+
+            for (int i = 0;
+                 i < PartitionRootNames.Length;
+                 i++)
+            {
+                if (string.Equals(
+                        name,
+                        PartitionRootNames[i],
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsFiniteBounds(
+            Bounds bounds)
+        {
+            Vector3 center =
+                bounds.center;
+
+            Vector3 size =
+                bounds.size;
+
+            return IsFinite(center.x)
+                && IsFinite(center.y)
+                && IsFinite(center.z)
+                && IsFinite(size.x)
+                && IsFinite(size.y)
+                && IsFinite(size.z)
+                && size.sqrMagnitude > 0.00000001f;
+        }
+
+        private static bool IsFinite(
+            float value)
+        {
+            return !float.IsNaN(value)
+                && !float.IsInfinity(value);
+        }
+
+        private static void LogOwnerDetail(
             string kind,
-            Renderer renderer,
+            Transform owner,
+            Bounds bounds,
+            int rendererCount,
             IReadOnlyList<MapChunkCoord> overlaps,
             MapChunkCoord target,
             bool hasTarget)
         {
-            if (renderer == null)
-                return;
-
-            Transform parent =
-                renderer.transform.parent;
-
             Debug.LogWarning(
                 $"{AuditPrefix} {kind} " +
-                $"renderer='{BuildPath(renderer.transform)}' " +
-                $"parent='" +
-                $"{(parent != null ? BuildPath(parent) : "<root>")}' " +
-                $"generatedTerrain={IsGeneratedTerrain(renderer)} " +
+                $"owner='{BuildPath(owner)}' " +
+                $"rendererCount={rendererCount} " +
                 $"overlaps={FormatChunks(overlaps)} " +
-                $"target=" +
-                $"{(hasTarget ? target.ToString() : "<none>")} " +
-                $"bounds={FormatBounds(renderer.bounds)}");
-        }
-
-        private static bool IsGeneratedTerrain(
-            Renderer renderer)
-        {
-            return renderer != null
-                && string.Equals(
-                    renderer.gameObject.name,
-                    "TerrainMesh",
-                    StringComparison.Ordinal);
+                $"target={(hasTarget ? target.ToString() : "<none>")} " +
+                $"bounds={FormatBounds(bounds)}");
         }
 
         private static string BuildPath(

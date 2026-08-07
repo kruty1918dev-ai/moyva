@@ -17,11 +17,13 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
     public sealed class EditorPreviewSettings : ScriptableObject
     {
         [Header("Preview Map Size")]
-        [Tooltip("Ширина мапи для превью (у тайлах).")]
+        [Tooltip("Legacy preview width. Map size is now controlled by GraphAsset.SharedSettings from Graph Editor.")]
+        [HideInInspector]
         [Min(4)]
         [SerializeField] private int _previewWidth = 64;
 
-        [Tooltip("Висота мапи для превью (у тайлах).")]
+        [Tooltip("Legacy preview height. Map size is now controlled by GraphAsset.SharedSettings from Graph Editor.")]
+        [HideInInspector]
         [Min(4)]
         [SerializeField] private int _previewHeight = 64;
 

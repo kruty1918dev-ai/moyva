@@ -13,12 +13,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
     {
         public Vector2Int Resolve(GraphAsset graph, int requestedWidth, int requestedHeight)
         {
-            if (GameLaunchContext.TryGetWorldDimensions(out int launchWidth, out int launchHeight))
-                return Clamp(launchWidth, launchHeight);
-
             var shared = graph?.SharedSettings;
             if (shared != null && shared.HasMapSize)
                 return Clamp(shared.MapWidth, shared.MapHeight);
+
+            if (GameLaunchContext.TryGetWorldDimensions(out int launchWidth, out int launchHeight))
+                return Clamp(launchWidth, launchHeight);
 
             return Clamp(requestedWidth, requestedHeight);
         }

@@ -8,33 +8,55 @@ using UnityEditor;
 namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
 {
     /// <summary>
-    /// Scene-view diagnostic representation. White is the canonical CoreRect,
-    /// grey is SampleRect/halo, yellow is source footprint, orange is the
-    /// actual final mesh and its real bounds.
+    /// Truthful chunk visualization.
+    ///
+    /// Default scene view:
+    /// - only canonical CoreRect is drawn for every chunk;
+    /// - no per-cell/source clutter;
+    /// - no labels for every chunk.
+    ///
+    /// Selected chunk:
+    /// - canonical CoreRect;
+    /// - real final mesh bounds;
+    /// - real final mesh wireframe;
+    /// - one readable information label.
+    ///
+    /// Advanced layers remain available as serialized toggles but are disabled
+    /// by default because they are useful only while investigating a specific
+    /// source/halo problem.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class ChunkAuditGizmo : MonoBehaviour
     {
+        [Header("Always Visible")]
         [SerializeField]
         private bool drawCoreRect = true;
 
-        [SerializeField]
-        private bool drawSampleRect = true;
-
+        [Header("Selected Chunk")]
         [SerializeField]
         private bool drawFinalMeshBounds = true;
-
-        [SerializeField]
-        private bool drawSourceBounds = true;
-
-        [SerializeField]
-        private bool drawSourceFootprints = true;
 
         [SerializeField]
         private bool drawActualMeshWhenSelected = true;
 
         [SerializeField]
-        private bool drawEmittedCellsWhenSelected = true;
+        private bool drawSelectedLabel = true;
+
+        [Header("Advanced Diagnostics")]
+        [SerializeField]
+        private bool drawSampleRect;
+
+        [SerializeField]
+        private bool drawSourceBounds;
+
+        [SerializeField]
+        private bool drawSourceFootprints;
+
+        [SerializeField]
+        private bool drawEmittedCellsWhenSelected;
+
+        [SerializeField]
+        private bool drawAllChunkLabels;
 
         private int _chunkX;
         private int _chunkY;
@@ -48,6 +70,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
         private Bounds _sourceFootprintBounds;
         private Transform _terrainTransform;
         private Mesh _mesh;
+
         private readonly List<Vector2Int> _emittedCells =
             new List<Vector2Int>();
 
@@ -86,94 +109,100 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             if (emittedCells == null)
                 return;
 
-            foreach (Vector2Int cell
-                     in emittedCells)
-            {
-                _emittedCells.Add(
-                    cell);
-            }
+            foreach (Vector2Int cell in emittedCells)
+                _emittedCells.Add(cell);
         }
 
         private void OnDrawGizmos()
         {
-            if (drawSampleRect)
-            {
-                Gizmos.color =
-                    new Color(
-                        0.55f,
-                        0.55f,
-                        0.55f,
-                        0.7f);
-
-                DrawBounds(
-                    _sampleBounds);
-            }
+            bool selected =
+                IsThisChunkSelected();
 
             if (drawCoreRect)
             {
                 Gizmos.color =
-                    Color.white;
+                    selected
+                        ? new Color(
+                            0.1f,
+                            0.95f,
+                            1f,
+                            1f)
+                        : new Color(
+                            1f,
+                            1f,
+                            1f,
+                            0.92f);
 
                 DrawBounds(
                     _coreBounds);
             }
 
-            if (drawSourceFootprints)
+            /*
+             * Advanced bounds are intentionally selected-only.
+             * Drawing them for all 49/100 chunks was the source of the
+             * unreadable orange/yellow grid in Scene View.
+             */
+            if (selected)
             {
-                Gizmos.color =
-                    new Color(
-                        1f,
-                        0.9f,
-                        0.1f,
-                        0.75f);
+                if (drawSampleRect)
+                {
+                    Gizmos.color =
+                        new Color(
+                            0.55f,
+                            0.55f,
+                            0.55f,
+                            0.7f);
 
-                DrawBounds(
-                    _sourceFootprintBounds);
-            }
+                    DrawBounds(
+                        _sampleBounds);
+                }
 
-            if (drawSourceBounds)
-            {
-                Gizmos.color =
-                    new Color(
-                        1f,
-                        0.55f,
-                        0.05f,
-                        0.65f);
+                if (drawSourceFootprints)
+                {
+                    Gizmos.color =
+                        new Color(
+                            1f,
+                            0.9f,
+                            0.1f,
+                            0.8f);
 
-                DrawBounds(
-                    _sourceBounds);
-            }
+                    DrawBounds(
+                        _sourceFootprintBounds);
+                }
 
-            if (drawFinalMeshBounds)
-            {
-                Gizmos.color =
-                    new Color(
-                        1f,
-                        0.25f,
-                        0.02f,
-                        1f);
+                if (drawSourceBounds)
+                {
+                    Gizmos.color =
+                        new Color(
+                            1f,
+                            0.55f,
+                            0.05f,
+                            0.8f);
 
-                DrawBounds(
-                    _finalMeshBounds);
+                    DrawBounds(
+                        _sourceBounds);
+                }
+
+                if (drawFinalMeshBounds)
+                {
+                    Gizmos.color =
+                        new Color(
+                            1f,
+                            0.27f,
+                            0.03f,
+                            1f);
+
+                    DrawBounds(
+                        _finalMeshBounds);
+                }
             }
 
 #if UNITY_EDITOR
-            if (_coreBounds.size.sqrMagnitude
-                > 0.0000001f)
+            if ((selected && drawSelectedLabel)
+                || drawAllChunkLabels)
             {
-                Handles.color =
-                    Color.white;
-
-                Handles.Label(
-                    _coreBounds.center
-                    + Vector3.up
-                    * (
-                        _coreBounds.extents.y
-                        + 0.15f
-                    ),
-                    $"Chunk ({_chunkX},{_chunkY}) " +
-                    $"core={_coreRect.width}x{_coreRect.height} " +
-                    $"emitted={_emittedCells.Count}");
+                DrawChunkLabel(
+                    selected);
             }
 #endif
         }
@@ -189,7 +218,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                         1f,
                         0.2f,
                         0.02f,
-                        1f);
+                        0.95f);
 
                 for (int subMesh = 0;
                      subMesh < _mesh.subMeshCount;
@@ -219,13 +248,13 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     0.1f,
                     1f,
                     0.35f,
-                    0.95f);
+                    0.9f);
 
             Vector3 size =
                 new Vector3(
-                    _cellSize * 0.92f,
+                    _cellSize * 0.86f,
                     0.025f,
-                    _cellSize * 0.92f);
+                    _cellSize * 0.86f);
 
             for (int i = 0;
                  i < _emittedCells.Count;
@@ -245,6 +274,73 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
                     size);
             }
         }
+
+        private bool IsThisChunkSelected()
+        {
+#if UNITY_EDITOR
+            Transform selected =
+                Selection.activeTransform;
+
+            if (selected == null)
+                return false;
+
+            return selected == transform
+                || selected.IsChildOf(transform);
+#else
+            return false;
+#endif
+        }
+
+#if UNITY_EDITOR
+        private void DrawChunkLabel(
+            bool selected)
+        {
+            if (_coreBounds.size.sqrMagnitude
+                <= 0.0000001f)
+            {
+                return;
+            }
+
+            Handles.color =
+                selected
+                    ? new Color(
+                        0.2f,
+                        1f,
+                        1f,
+                        1f)
+                    : new Color(
+                        1f,
+                        1f,
+                        1f,
+                        0.8f);
+
+            string text =
+                $"Chunk ({_chunkX},{_chunkY})  " +
+                $"Core {_coreRect.width}×{_coreRect.height}  " +
+                $"Cells {_emittedCells.Count}";
+
+            if (selected
+                && _mesh != null)
+            {
+                text +=
+                    $"  Mesh {_mesh.vertexCount} verts/" +
+                    $"{_mesh.subMeshCount} sub";
+            }
+
+            Vector3 position =
+                new Vector3(
+                    _coreBounds.min.x,
+                    Mathf.Max(
+                        _coreBounds.max.y,
+                        _finalMeshBounds.max.y)
+                    + 0.22f,
+                    _coreBounds.min.z);
+
+            Handles.Label(
+                position,
+                text);
+        }
+#endif
 
         private static void DrawBounds(
             Bounds bounds)

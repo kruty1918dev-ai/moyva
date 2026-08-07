@@ -16,8 +16,8 @@ MonoBehaviour:
   previewSettingsGuid: 451896f3688b8a541875ea83d926be82
   graphAsset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
   previewSettings: {fileID: 11400000, guid: 451896f3688b8a541875ea83d926be82, type: 2}
-  previewWidth: 64
-  previewHeight: 64
+  previewWidth: 50
+  previewHeight: 50
   showInlinePreviews: 1
   autoRunOnChange: 1
   previewResolution: 2

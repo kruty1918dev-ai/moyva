@@ -24,22 +24,55 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
 
         public void Configure(int width, int height, float cellSize, bool hasWorldBounds, Bounds worldBounds)
         {
-            Width = Mathf.Max(1, width);
-            Height = Mathf.Max(1, height);
-            CellSize = ResolveCellSize(Width, Height, cellSize, hasWorldBounds, worldBounds);
-            Bounds bounds = hasWorldBounds ? worldBounds : CreateFallbackBounds(Width, Height, CellSize);
+            int requestedWidth = Mathf.Max(1, width);
+            int requestedHeight = Mathf.Max(1, height);
+            int chunkSize = ChunkSize;
+            Vector2Int effective = FullChunkMapSizeUtility.CropDown(
+                requestedWidth,
+                requestedHeight,
+                chunkSize);
+
+            Width = effective.x;
+            Height = effective.y;
+
+            CellSize = ResolveCellSize(
+                requestedWidth,
+                requestedHeight,
+                cellSize,
+                hasWorldBounds,
+                worldBounds);
+
+            Bounds bounds = hasWorldBounds
+                ? CreateCroppedBounds(worldBounds, Width, Height, CellSize)
+                : CreateFallbackBounds(Width, Height, CellSize);
 
             _chunks.Clear();
             _byCoord.Clear();
-            int countX = Mathf.CeilToInt(Width / (float)ChunkSize);
-            int countY = Mathf.CeilToInt(Height / (float)ChunkSize);
+
+            int countX = Width / chunkSize;
+            int countY = Height / chunkSize;
 
             for (int y = 0; y < countY; y++)
             for (int x = 0; x < countX; x++)
                 AddChunk(new MapChunkCoord(x, y), CellSize, bounds);
 
             IsConfigured = true;
-            Debug.Log($"[MoyvaMapChunks] Layout configured map={Width}x{Height} tiles, chunk={ChunkSize}x{ChunkSize} tiles, chunks={countX}x{countY} ({_chunks.Count}), cellSize={CellSize:0.###}.");
+
+            if (requestedWidth != Width || requestedHeight != Height)
+            {
+                Debug.LogWarning(
+                    "[MOYVA_CHUNK_SIZE] LAYOUT_CROPPED " +
+                    $"requested={requestedWidth}x{requestedHeight} " +
+                    $"effective={Width}x{Height} " +
+                    $"chunkSize={chunkSize} " +
+                    $"trimmed={requestedWidth - Width}x{requestedHeight - Height} " +
+                    "partialChunks=0");
+            }
+
+            Debug.Log(
+                $"[MoyvaMapChunks] Layout configured map={Width}x{Height} tiles, " +
+                $"chunk={chunkSize}x{chunkSize} tiles, chunks={countX}x{countY} ({_chunks.Count}), " +
+                $"cellSize={CellSize:0.###}.");
         }
 
         public bool TryGetChunkCoord(Vector2Int tile, out MapChunkCoord coord)
@@ -74,10 +107,11 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         {
             int xMin = coord.X * ChunkSize;
             int yMin = coord.Y * ChunkSize;
-            int width = Mathf.Min(ChunkSize, Width - xMin);
-            int height = Mathf.Min(ChunkSize, Height - yMin);
-            var tileRect = new RectInt(xMin, yMin, width, height);
-            var descriptor = new MapChunkDescriptor(coord, tileRect, CreateWorldBounds(tileRect, cellSize, mapBounds));
+            var tileRect = new RectInt(xMin, yMin, ChunkSize, ChunkSize);
+            var descriptor = new MapChunkDescriptor(
+                coord,
+                tileRect,
+                CreateWorldBounds(tileRect, cellSize, mapBounds));
             _chunks.Add(descriptor);
             _byCoord[coord] = descriptor;
         }
@@ -89,6 +123,24 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
             float zMin = min.z + rect.yMin * cellSize;
             var size = new Vector3(rect.width * cellSize, mapBounds.size.y, rect.height * cellSize);
             var center = new Vector3(xMin + size.x * 0.5f, mapBounds.center.y, zMin + size.z * 0.5f);
+            return new Bounds(center, size);
+        }
+
+        private static Bounds CreateCroppedBounds(
+            Bounds requestedBounds,
+            int width,
+            int height,
+            float cellSize)
+        {
+            Vector3 min = requestedBounds.min;
+            Vector3 size = new Vector3(
+                width * cellSize,
+                requestedBounds.size.y,
+                height * cellSize);
+            Vector3 center = new Vector3(
+                min.x + size.x * 0.5f,
+                requestedBounds.center.y,
+                min.z + size.z * 0.5f);
             return new Bounds(center, size);
         }
 
