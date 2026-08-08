@@ -79,7 +79,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public void Handle(BuildingPreviewDragVisualSignal signal)
         {
             if (TryGetDefinition(signal.BuildingId, out BuildingDefinition def))
-                _previewVisuals.MoveDragVisual(signal.Position, signal.BuildingId, signal.WorldPosition, signal.SnapToGrid, signal.HasSnapTarget, signal.SnapTargetPosition, def.VisualYOffset);
+                _previewVisuals.MoveDragVisual(signal.Position, signal.BuildingId, signal.WorldPosition, signal.SnapToGrid, signal.HasSnapTarget, signal.SnapTargetPosition, signal.IsSnapTargetValid, def.VisualYOffset);
         }
 
         public void Handle(BuildGridHoverChangedSignal signal)

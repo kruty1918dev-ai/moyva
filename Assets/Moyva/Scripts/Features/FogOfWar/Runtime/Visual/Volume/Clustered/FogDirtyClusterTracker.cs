@@ -126,10 +126,21 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             => Mathf.Max(1, _settings?.Volume.ClusterSize ?? 16);
 
         private int ResolveClusterPadding(int clusterSize)
-            => Mathf.Clamp(_settings?.Volume.ClusterPaddingCells ?? 1, 0, clusterSize);
+        {
+            // FogStabilityFix: an immediate neighbour contributes side
+            // geometry, so cluster-boundary updates always need >= 1 cell halo.
+            int configured =
+                _settings?.Volume.ClusterPaddingCells ?? 1;
+            return Mathf.Clamp(
+                Mathf.Max(1, configured),
+                1,
+                clusterSize);
+        }
 
         private bool ShouldLogClusterUpdates()
-            => _settings == null || _settings.Volume.LogClusterUpdates;
+            => Debug.isDebugBuild
+                && _settings != null
+                && _settings.Volume.LogClusterUpdates;
 
         private static int PositiveModulo(int value, int modulo)
         {

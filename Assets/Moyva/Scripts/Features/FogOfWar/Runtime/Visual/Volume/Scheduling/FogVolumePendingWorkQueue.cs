@@ -9,8 +9,10 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     /// </summary>
     internal sealed class FogVolumePendingWorkQueue : IFogVolumePendingWorkState, IFogVolumePendingWorkRequests, IFogVolumePendingWorkMaintenance
     {
-        private readonly HashSet<Vector2Int> _pendingDirtyTiles = new HashSet<Vector2Int>();
-        private readonly List<FogCellVisualChange> _pendingCellChanges = new List<FogCellVisualChange>();
+        private readonly HashSet<Vector2Int> _pendingDirtyTiles =
+            new HashSet<Vector2Int>();
+        private readonly List<FogCellVisualChange> _pendingCellChanges =
+            new List<FogCellVisualChange>();
 
         private int _mapWidth = 1;
         private int _mapHeight = 1;
@@ -78,15 +80,19 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             return _pendingDirtyTiles.Count;
         }
 
-        public int RequestCellsUpdate(IFogOfWarService fogService, IReadOnlyList<FogCellVisualChange> changes)
+        public int RequestCellsUpdate(
+            IFogOfWarService fogService,
+            IReadOnlyList<FogCellVisualChange> changes)
         {
+            // FogStabilityFix: preserve every accepted visual transition in
+            // order. Do not synthesize one coalesced transition per cell.
             FogService = fogService;
             int accepted = 0;
             if (changes != null)
             {
                 for (int i = 0; i < changes.Count; i++)
                 {
-                    var change = changes[i];
+                    FogCellVisualChange change = changes[i];
                     if (!IsInBounds(change.Cell))
                         continue;
 
@@ -96,9 +102,11 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 }
             }
 
-            HasPendingWork = HasPendingWork || accepted > 0;
+            HasPendingWork =
+                HasPendingWork || accepted > 0;
             return accepted;
         }
+
 
         public void Complete()
         {

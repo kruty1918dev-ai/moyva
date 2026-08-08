@@ -37,7 +37,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             mesh.Clear();
 
             if (fogService == null || !context.IsValid)
+            {
                 return;
+            }
 
             int clusterSize = Mathf.Max(1, _settings?.Volume.ClusterSize ?? 16);
             int startX = Mathf.Clamp(key.ClusterX * clusterSize, 0, context.Width);
@@ -207,11 +209,16 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (!_materialProvider.ShouldRenderState(state))
                 return false;
 
-            var stateSettings = _materialProvider.ResolveStateSettings(state);
+            var stateSettings =
+                _materialProvider.ResolveStateSettings(state);
+            float surfaceHeight =
+                heightSampler.ResolveGeneratedSurfaceHeight(cell);
             sample = new FogCellRenderSample(
                 cell,
-                heightSampler.ResolveWorldHeight(heightSampler.ResolveGeneratedSurfaceHeight(cell), stateSettings),
-                heightSampler.ResolveGeneratedSurfaceHeight(cell),
+                heightSampler.ResolveWorldHeight(
+                    surfaceHeight,
+                    stateSettings),
+                surfaceHeight,
                 ResolveSubMeshIndex(state));
             return true;
         }
@@ -220,7 +227,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             => cell.x >= 0 && cell.y >= 0 && cell.x < context.Width && cell.y < context.Height;
 
         private bool ShouldLogClusterUpdates()
-            => _settings == null || _settings.Volume.LogClusterUpdates;
+            => Debug.isDebugBuild
+                && _settings != null
+                && _settings.Volume.LogClusterUpdates;
 
         private readonly struct FogCellRenderSample
         {

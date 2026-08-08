@@ -12,6 +12,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private const float PreviewDragSharpness = 28f;
         private const float PreviewSnapSharpness = 14f;
         private const int SnapHighlightRenderQueue = 3995;
+        private const string PerfLogTag =
+            "[MoyvaConstructionPerf]";
+        private const int MaxPooledInstancesPerPrefab = 24;
 
         private static readonly int EdgeMaskPropertyId = Shader.PropertyToID("_EdgeMask");
         private static readonly int LineColorPropertyId = Shader.PropertyToID("_LineColor");
@@ -22,6 +25,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private static readonly int UseCellMaskPropertyId = Shader.PropertyToID("_UseCellMask");
 
         private readonly Dictionary<Vector2Int, GameObject> _previewByPosition = new();
+        private readonly Dictionary<int, Stack<GameObject>> _previewPoolByPrefabId = new();
+        private readonly Dictionary<GameObject, int> _prefabIdByPreviewInstance = new();
+        private readonly HashSet<int> _loggedPoolReusePrefabIds = new();
         private readonly List<GameObject> _gridHoverHighlights = new();
         private readonly List<MeshRenderer> _gridHoverRenderers = new();
         private readonly IConstructionVisualRootService _roots;
@@ -35,6 +41,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private Mesh _snapHighlightMesh;
         private Material _snapHighlightMaterial;
         private MaterialPropertyBlock _gridHoverPropertyBlock;
+        private int _poolCreatedCount;
+        private int _poolReusedCount;
+        private int _poolReleasedCount;
+        private int _poolOverflowDestroyedCount;
 
         [Inject]
         public ConstructionPreviewVisualService(
@@ -95,8 +105,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _previewByPosition.Remove(fromPosition);
 
-            if (_previewByPosition.TryGetValue(toPosition, out GameObject existing) && existing != null && existing != instance)
-                Object.Destroy(existing);
+            if (_previewByPosition.TryGetValue(toPosition, out GameObject existing)
+                && existing != null
+                && existing != instance)
+            {
+                ReleasePreviewToPool(existing);
+            }
 
             _previewByPosition[toPosition] = instance;
             ConstructionBuildingPointerTarget.AttachOrUpdate(instance, buildingId, toPosition, isPreviewVisual: true);
@@ -104,25 +118,82 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return true;
         }
 
-        public void MoveDragVisual(Vector2Int position, string buildingId, Vector3 worldPosition, bool snapToGrid, bool hasSnapTarget, Vector2Int snapTargetPosition, float visualOffsetY = 0f)
+        public void MoveDragVisual(
+            Vector2Int position,
+            string buildingId,
+            Vector3 worldPosition,
+            bool snapToGrid,
+            bool hasSnapTarget,
+            Vector2Int snapTargetPosition,
+            bool isSnapTargetValid,
+            float visualOffsetY = 0f)
         {
-            if (!TryGet(position, out GameObject instance) || !MatchesBuildingId(instance, buildingId))
-                return;
-
-            Vector3 target = ResolveAlignedTarget(instance, position, isPreviewVisual: true, visualOffsetY);
-            if (!snapToGrid && _terrainAlignment != null)
+            if (!TryGet(position, out GameObject instance)
+                || !MatchesBuildingId(instance, buildingId))
             {
-                Vector3 surfaceAnchor = _terrainAlignment.ResolveWorldPosition(position, 0f);
-                target.x = worldPosition.x + (target.x - surfaceAnchor.x);
-                target.y = worldPosition.y + (target.y - surfaceAnchor.y);
-                target.z = worldPosition.z + (target.z - surfaceAnchor.z);
-                Vector2 cursorOffset = _settingsProvider?.PreviewDragCursorOffsetXZ ?? Vector2.zero;
+                HideSnapTargetHighlight();
+                return;
+            }
+
+            Vector2Int surfaceTile = !snapToGrid && hasSnapTarget
+                ? snapTargetPosition
+                : position;
+
+            // DragPlacementFix: Y always comes from normal terrain alignment.
+            // Cursor following is XZ-only, so a base-plane ray can never pull
+            // the preview below an elevated tile.
+            Vector3 target = ResolveAlignedTarget(
+                instance,
+                surfaceTile,
+                isPreviewVisual: true,
+                visualOffsetY);
+
+            if (!snapToGrid)
+            {
+                if (_terrainAlignment != null)
+                {
+                    Vector3 surfaceAnchor =
+                        _terrainAlignment.ResolveWorldPosition(
+                            surfaceTile,
+                            0f);
+
+                    target.x = worldPosition.x
+                        + (target.x - surfaceAnchor.x);
+                    target.z = worldPosition.z
+                        + (target.z - surfaceAnchor.z);
+                }
+                else
+                {
+                    target.x = worldPosition.x;
+                    target.z = worldPosition.z;
+                }
+
+                Vector2 cursorOffset =
+                    _settingsProvider?.PreviewDragCursorOffsetXZ
+                    ?? Vector2.zero;
                 target.x += cursorOffset.x;
                 target.z += cursorOffset.y;
             }
 
-            MoveVisual(instance, target, snapToGrid ? PreviewSnapSharpness : ResolvePreviewDragSharpness());
+            if (!snapToGrid
+                && hasSnapTarget
+                && isSnapTargetValid)
+            {
+                ShowSnapTargetHighlight(snapTargetPosition);
+            }
+            else
+            {
+                HideSnapTargetHighlight();
+            }
+
+            MoveVisual(
+                instance,
+                target,
+                snapToGrid
+                    ? PreviewSnapSharpness
+                    : ResolvePreviewDragSharpness());
         }
+
 
         public bool TryRelease(Vector2Int position, out GameObject visual)
         {
@@ -133,6 +204,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             _previewByPosition.Remove(position);
+            _prefabIdByPreviewInstance.Remove(visual);
             return true;
         }
 
@@ -156,7 +228,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
 
             if (instance != null)
-                Object.Destroy(instance);
+                ReleasePreviewToPool(instance);
 
             _previewByPosition.Remove(position);
         }
@@ -168,7 +240,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             foreach (KeyValuePair<Vector2Int, GameObject> pair in _previewByPosition)
             {
                 if (pair.Value != null)
-                    Object.Destroy(pair.Value);
+                    ReleasePreviewToPool(pair.Value);
             }
 
             _previewByPosition.Clear();
@@ -177,6 +249,18 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public void Dispose()
         {
             Clear();
+            DestroyPreviewPool();
+
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log(
+                    $"{PerfLogTag} preview-pool summary " +
+                    $"created={_poolCreatedCount} " +
+                    $"reused={_poolReusedCount} " +
+                    $"released={_poolReleasedCount} " +
+                    $"overflowDestroyed={_poolOverflowDestroyedCount}");
+            }
+
             for (int index = 0; index < _gridHoverHighlights.Count; index++)
                 DestroyUnityObject(_gridHoverHighlights[index]);
 
@@ -259,22 +343,170 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 : defaultPrefab;
         }
 
-        private GameObject CreatePreview(GameObject prefab, Vector2Int position, string buildingId, float visualOffsetY)
+        private GameObject CreatePreview(
+            GameObject prefab,
+            Vector2Int position,
+            string buildingId,
+            float visualOffsetY)
         {
-            string prefabTag = prefab != null ? prefab.name : "NULL";
-            GameObject instance = _visualFactory.CreateInstance(
-                prefab,
-                position,
-                _roots.PreviewRoot,
-                $"Preview_{buildingId}_{prefabTag}_{position.x}_{position.y}",
-                ResolveSortingOrder(),
-                isPreviewVisual: true,
-                visualOffsetY: visualOffsetY);
-            if (instance != null)
-                ConstructionBuildingPointerTarget.AttachOrUpdate(instance, buildingId, position, isPreviewVisual: true);
+            string prefabTag =
+                prefab != null ? prefab.name : "NULL";
+            string objectName =
+                $"Preview_{buildingId}_{prefabTag}_{position.x}_{position.y}";
 
-            ConstructionSmoothVisualMotion.AttachOrUpdate(instance)?.JumpToCurrent();
+            GameObject instance = TakePreviewFromPool(prefab);
+            if (instance != null
+                && _visualFactory
+                    is IConstructionVisualInstanceRecycler recycler)
+            {
+                instance = recycler.ReuseInstance(
+                    instance,
+                    prefab,
+                    position,
+                    _roots.PreviewRoot,
+                    objectName,
+                    ResolveSortingOrder(),
+                    isPreviewVisual: true,
+                    visualOffsetY: visualOffsetY);
+                _poolReusedCount++;
+
+                int prefabId = prefab.GetInstanceID();
+                if (Debug.isDebugBuild
+                    && _loggedPoolReusePrefabIds.Add(prefabId))
+                {
+                    Debug.Log(
+                        $"{PerfLogTag} preview-pool first-reuse " +
+                        $"prefab={prefab.name}");
+                }
+            }
+            else
+            {
+                if (instance != null)
+                    Object.Destroy(instance);
+
+                instance = _visualFactory.CreateInstance(
+                    prefab,
+                    position,
+                    _roots.PreviewRoot,
+                    objectName,
+                    ResolveSortingOrder(),
+                    isPreviewVisual: true,
+                    visualOffsetY: visualOffsetY);
+                if (instance != null)
+                    _poolCreatedCount++;
+            }
+
+            if (instance == null)
+                return null;
+
+            if (prefab != null)
+            {
+                _prefabIdByPreviewInstance[instance] =
+                    prefab.GetInstanceID();
+            }
+
+            ConstructionBuildingPointerTarget.AttachOrUpdate(
+                instance,
+                buildingId,
+                position,
+                isPreviewVisual: true);
+            ConstructionSmoothVisualMotion
+                .AttachOrUpdate(instance)
+                ?.JumpToCurrent();
             return instance;
+        }
+
+        private GameObject TakePreviewFromPool(GameObject prefab)
+        {
+            if (prefab == null)
+                return null;
+
+            int prefabId = prefab.GetInstanceID();
+            if (!_previewPoolByPrefabId.TryGetValue(
+                    prefabId,
+                    out Stack<GameObject> pool))
+            {
+                return null;
+            }
+
+            while (pool.Count > 0)
+            {
+                GameObject instance = pool.Pop();
+                if (instance != null)
+                    return instance;
+            }
+
+            _previewPoolByPrefabId.Remove(prefabId);
+            return null;
+        }
+
+        private void ReleasePreviewToPool(GameObject instance)
+        {
+            if (instance == null)
+                return;
+
+            if (!_prefabIdByPreviewInstance.TryGetValue(
+                    instance,
+                    out int prefabId))
+            {
+                Object.Destroy(instance);
+                return;
+            }
+
+            _prefabIdByPreviewInstance.Remove(instance);
+
+            if (!_previewPoolByPrefabId.TryGetValue(
+                    prefabId,
+                    out Stack<GameObject> pool))
+            {
+                pool = new Stack<GameObject>(
+                    MaxPooledInstancesPerPrefab);
+                _previewPoolByPrefabId[prefabId] = pool;
+            }
+
+            if (pool.Count >= MaxPooledInstancesPerPrefab)
+            {
+                _poolOverflowDestroyedCount++;
+                Object.Destroy(instance);
+
+                if (Debug.isDebugBuild)
+                {
+                    Debug.Log(
+                        $"{PerfLogTag} preview-pool overflow " +
+                        $"prefabId={prefabId} " +
+                        $"cap={MaxPooledInstancesPerPrefab}");
+                }
+                return;
+            }
+
+            ConstructionSmoothVisualMotion
+                .AttachOrUpdate(instance)
+                ?.JumpToCurrent();
+            instance.SetActive(false);
+            instance.transform.SetParent(
+                _roots.PreviewRoot,
+                true);
+            pool.Push(instance);
+            _poolReleasedCount++;
+        }
+
+        private void DestroyPreviewPool()
+        {
+            foreach (KeyValuePair<int, Stack<GameObject>> pair
+                     in _previewPoolByPrefabId)
+            {
+                Stack<GameObject> pool = pair.Value;
+                while (pool.Count > 0)
+                {
+                    GameObject instance = pool.Pop();
+                    if (instance != null)
+                        Object.Destroy(instance);
+                }
+            }
+
+            _previewPoolByPrefabId.Clear();
+            _prefabIdByPreviewInstance.Clear();
+            _loggedPoolReusePrefabIds.Clear();
         }
 
         private void MoveVisualToTile(GameObject instance, Vector2Int position, bool isPreviewVisual, float visualOffsetY, float sharpness)
@@ -311,29 +543,43 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         private void ShowSnapTargetHighlight(Vector2Int position)
         {
-            if (_settingsProvider != null && !_settingsProvider.ShowSnapTargetHighlight)
-            {
-                HideSnapTargetHighlight();
-                return;
-            }
-
+            // DragPlacementFix: target-cell feedback is part of the drag
+            // interaction itself, so it is always shown for a valid target.
             EnsureSnapTargetHighlight();
             if (_snapHighlight == null)
                 return;
 
             Vector3 center = _terrainAlignment != null
-                ? _terrainAlignment.ResolveWorldPosition(position, ResolveSnapHighlightSurfaceOffsetY())
-                : new Vector3(position.x, ResolveSnapHighlightSurfaceOffsetY(), position.y);
+                ? _terrainAlignment.ResolveWorldPosition(
+                    position,
+                    ResolveSnapHighlightSurfaceOffsetY())
+                : new Vector3(
+                    position.x,
+                    ResolveSnapHighlightSurfaceOffsetY(),
+                    position.y);
+
             Vector2 cellSize = ResolveCellSize();
-            float inset = Mathf.Clamp(_settingsProvider?.SnapTargetHighlightInsetNormalized ?? 0.04f, 0f, 0.45f);
-            float scale = Mathf.Max(0.01f, 1f - inset * 2f);
+            float inset = Mathf.Clamp(
+                _settingsProvider?.SnapTargetHighlightInsetNormalized
+                    ?? 0.04f,
+                0f,
+                0.45f);
+            float scale = Mathf.Max(
+                0.01f,
+                1f - inset * 2f);
 
             _snapHighlight.transform.position = center;
             _snapHighlight.transform.rotation = Quaternion.identity;
-            _snapHighlight.transform.localScale = new Vector3(cellSize.x * scale, 1f, cellSize.y * scale);
+            _snapHighlight.transform.localScale =
+                new Vector3(
+                    cellSize.x * scale,
+                    1f,
+                    cellSize.y * scale);
+
             ApplySnapHighlightStyle();
             _snapHighlight.SetActive(true);
         }
+
 
         private void HideSnapTargetHighlight()
         {
