@@ -6,7 +6,7 @@ namespace Kruty1918.Moyva.MapChunks.API
     [CreateAssetMenu(fileName = "MapChunkSettings", menuName = "Moyva/Map/Chunk Settings")]
     public sealed class MapChunkSettingsSO : ScriptableObject, IMapChunkSettingsProvider
     {
-        [Tooltip("Розмір чанка у grid-тайлах: 16 означає 16x16 тайлів. Крайові чанки можуть бути менші, якщо розмір мапи не кратний.")]
+        [Tooltip("Розмір чанка у grid-тайлах: 16 означає 16x16 тайлів. Крайові неповні чанки заборонені; розмір мапи обрізається до повних 16x16 чанків.")]
         [Min(1)] public int ChunkSize = 16;
         public bool EnableCameraCulling = true;
         [Min(0.02f)] public float CameraCullingIntervalSeconds = 0.08f;
@@ -27,7 +27,12 @@ namespace Kruty1918.Moyva.MapChunks.API
         public LayerMask VisualDiscoveryLayerMask = ~0;
         public string[] IgnoredRendererNameTokens = { "Fog", "Canvas", "UI", "Camera", "Light" };
 
-        int IMapChunkSettingsProvider.ChunkSize => Mathf.Max(1, ChunkSize);
+        private void OnValidate()
+        {
+            ChunkSize = MapChunkSizePolicy.ChunkSize;
+        }
+
+        int IMapChunkSettingsProvider.ChunkSize => MapChunkSizePolicy.ChunkSize;
         bool IMapChunkSettingsProvider.EnableCameraCulling => EnableCameraCulling;
         float IMapChunkSettingsProvider.CameraCullingIntervalSeconds => Mathf.Max(0.02f, CameraCullingIntervalSeconds);
         float IMapChunkSettingsProvider.CameraCullingPaddingCells => Mathf.Max(0f, CameraCullingPaddingCells);

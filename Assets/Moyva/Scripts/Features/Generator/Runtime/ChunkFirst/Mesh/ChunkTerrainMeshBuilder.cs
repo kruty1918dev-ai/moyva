@@ -280,16 +280,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.ChunkFirst
             ChunkBuildArea area)
         {
             /*
-             * Edge chunks can be smaller than the configured chunk size.
-             * Example for a 50x50 map with chunkSize=8:
-             *
-             *   coord=(6,6)
-             *   CoreRect=(48,48,2,2)
-             *
-             * CoreRect.width/height therefore cannot be used as the global
-             * stride. Recover the canonical stride from the coordinate and
-             * the CoreRect origin. This remains stable regardless of which
-             * chunk is built first.
+             * MOYVA_FULL_CHUNKS_16_PASS76: map dimensions are cropped before
+             * logical generation, so runtime CoreRects are full 16x16 chunks.
+             * Keep stride recovery defensive for legacy/dev data.
              */
             int resolved =
                 Mathf.Max(

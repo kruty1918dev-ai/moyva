@@ -54,9 +54,9 @@ namespace Kruty1918.Moyva.Construction.UI
         private const string previewInfoPanelTextLabelKeyWord = "Label";
         private const string previewInfoPanelTextInfoKeyWord = "Info";
         private const int previewInfoMaxResourcesLines = 6;
-        private const float previewInfoHeaderFontSize = 20f;
-        private const float previewInfoBodyFontSize = 14f;
-        private const float previewInfoBodyLineSpacing = 8f;
+        private const float previewInfoHeaderFontSize = 24f; // MOYVA_GAMEPLAY_UI_PASS73
+        private const float previewInfoBodyFontSize = 18f; // MOYVA_GAMEPLAY_UI_PASS73
+        private const float previewInfoBodyLineSpacing = 4f; // MOYVA_GAMEPLAY_UI_PASS73
 
         // --- Інжектується Zenject ---
         private IConstructionService _constructionService;

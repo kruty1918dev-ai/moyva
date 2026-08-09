@@ -18,7 +18,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         public bool IsConfigured { get; private set; }
         public int Width { get; private set; }
         public int Height { get; private set; }
-        public int ChunkSize => Mathf.Max(1, _settings.ChunkSize);
+        public int ChunkSize => MapChunkSizePolicy.ChunkSize;
         public float CellSize { get; private set; } = 1f;
         public IReadOnlyList<MapChunkDescriptor> Chunks => _chunks;
 
@@ -27,10 +27,10 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
             int requestedWidth = Mathf.Max(1, width);
             int requestedHeight = Mathf.Max(1, height);
             int chunkSize = ChunkSize;
-            Vector2Int effective = FullChunkMapSizeUtility.CropDown(
+            // MOYVA_FULL_CHUNKS_16_PASS76
+            Vector2Int effective = MapChunkSizePolicy.CropMapSize(
                 requestedWidth,
-                requestedHeight,
-                chunkSize);
+                requestedHeight);
 
             Width = effective.x;
             Height = effective.y;
@@ -66,7 +66,7 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
                     $"effective={Width}x{Height} " +
                     $"chunkSize={chunkSize} " +
                     $"trimmed={requestedWidth - Width}x{requestedHeight - Height} " +
-                    "partialChunks=0");
+                    "fullChunksOnly=1");
             }
 
             Debug.Log(

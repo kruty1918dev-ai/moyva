@@ -38,7 +38,12 @@ namespace Kruty1918.Moyva.MapChunks.Runtime
         [SerializeField] private LayerMask visualDiscoveryLayerMask = ~0;
         [SerializeField] private string[] ignoredRendererNameTokens = { "Fog", "Canvas", "UI", "Camera", "Light" };
 
-        public int ChunkSize => Mathf.Max(1, chunkSize);
+        private void OnValidate()
+        {
+            chunkSize = MapChunkSizePolicy.ChunkSize;
+        }
+
+        public int ChunkSize => MapChunkSizePolicy.ChunkSize;
         public bool EnableCameraCulling => enableCameraCulling;
         public float CameraCullingIntervalSeconds => Mathf.Max(0.02f, cameraCullingIntervalSeconds);
         public float CameraCullingPaddingCells => Mathf.Max(0f, cameraCullingPaddingCells);

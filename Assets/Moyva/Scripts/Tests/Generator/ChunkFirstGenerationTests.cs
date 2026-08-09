@@ -256,20 +256,20 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
 
         [Test]
-        public void ChunkBuildAreaPlanner_UsesExistingMapChunksAndAddsClampedHalo()
+        public void ChunkBuildAreaPlanner_CropsMapToFullChunksAndAddsClampedHalo()
         {
             var settings = ScriptableObject.CreateInstance<MapChunkSettingsSO>();
             _created.Add(settings);
-            settings.ChunkSize = 4;
+            settings.ChunkSize = 4; // stale value: fixed project policy remains 16
             var planner = new ChunkBuildAreaPlanner(new MapChunkLayoutService(settings));
 
-            var areas = planner.Build(10, 10, 1f, false, default, 1);
+            var areas = planner.Build(50, 50, 1f, false, default, 1);
 
             Assert.AreEqual(9, areas.Count);
-            Assert.AreEqual(new RectInt(0, 0, 4, 4), areas[0].CoreRect);
-            Assert.AreEqual(new RectInt(0, 0, 5, 5), areas[0].SampleRect);
-            Assert.AreEqual(new RectInt(8, 8, 2, 2), areas[8].CoreRect);
-            Assert.AreEqual(new RectInt(7, 7, 3, 3), areas[8].SampleRect);
+            Assert.AreEqual(new RectInt(0, 0, 16, 16), areas[0].CoreRect);
+            Assert.AreEqual(new RectInt(0, 0, 17, 17), areas[0].SampleRect);
+            Assert.AreEqual(new RectInt(32, 32, 16, 16), areas[8].CoreRect);
+            Assert.AreEqual(new RectInt(31, 31, 17, 17), areas[8].SampleRect);
         }
 
         [Test]
