@@ -510,24 +510,20 @@ namespace Kruty1918.Moyva.Construction.Editor
                         EditorGUILayout.LabelField("Іконка конструкції", centeredMini);
 
                         EditorGUI.BeginChangeCheck();
+                        // MOYVA_ODIN_PREVIEW_RECT_COMPAT_FIX4
                         Rect iconFieldRect = GUILayoutUtility.GetRect(
                             112f,
                             112f,
                             GUILayout.Width(112f),
                             GUILayout.Height(112f));
-                        Texture iconPreview = icon != null
-                            ? (AssetPreview.GetAssetPreview(icon) ?? AssetPreview.GetMiniThumbnail(icon))
-                            : null;
+                        Texture iconPreview = ResolveBuildingMenuIcon(icon);
                         var nextIcon = (Sprite)SirenixEditorFields.UnityPreviewObjectField(
                             iconFieldRect,
                             icon,
                             iconPreview,
                             typeof(Sprite),
-                            false,
-                            true,
-                            true,
-                            false); // MOYVA_PASS66_COMPILE_FIX1
-                        if (EditorGUI.EndChangeCheck())
+                            false);
+if (EditorGUI.EndChangeCheck())
                             assignIcon?.Invoke(nextIcon);
                     }
                 }
