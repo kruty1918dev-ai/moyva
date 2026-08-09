@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+export PATH="$HOME/.local/bin:$PATH"
+
+if ! command -v unity >/dev/null 2>&1; then
+  echo "ERROR: Unity CLI is not in PATH." >&2
+  exit 10
+fi
+
+STAMP="$(date +%Y%m%d_%H%M%S)"
+REPORT_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/moyva-cli/reports/gameplay-ui"
+REPORT_DIR="$REPORT_ROOT/$STAMP"
+mkdir -p "$REPORT_DIR/cli_existing" "$REPORT_DIR/local_source"
+
+echo "[GameplayUIAudit] PROJECT=$PROJECT"
+echo "[GameplayUIAudit] REPORT_DIR=$REPORT_DIR"
+
+run_optional() {
+  local name="$1"
+  shift
+  echo "[GameplayUIAudit] optional: $name"
+  if "$@" >"$REPORT_DIR/cli_existing/$name.json" 2>"$REPORT_DIR/cli_existing/$name.stderr"; then
+    :
+  else
+    echo "unavailable or failed" >>"$REPORT_DIR/cli_existing/$name.stderr"
+  fi
+}
+
+unity status --format json >"$REPORT_DIR/cli_existing/unity_status.json" 2>&1 || true
+unity pipeline list --format json >"$REPORT_DIR/cli_existing/pipeline_list.json" 2>&1 || true
+unity command --project-path="$PROJECT" --format json >"$REPORT_DIR/cli_existing/command_catalog.json" 2>&1 || true
+
+PREPARE_OUT="$REPORT_DIR/prepare.json"
+unity command moyva-gameplay-ui-prepare \
+  --project-path="$PROJECT" \
+  --format json | tee "$PREPARE_OUT"
+
+if grep -q '"ok"[[:space:]]*:[[:space:]]*false' "$PREPARE_OUT"; then
+  echo "[GameplayUIAudit] ERROR: Gameplay scene preparation refused/failed." >&2
+  echo "[GameplayUIAudit] See $PREPARE_OUT" >&2
+  exit 20
+fi
+
+AUDIT_OUT="$REPORT_DIR/audit_command_result.json"
+unity command moyva-gameplay-ui-audit \
+  --project-path="$PROJECT" \
+  --output-dir "$REPORT_DIR" \
+  --format json | tee "$AUDIT_OUT"
+
+if grep -q '"ok"[[:space:]]*:[[:space:]]*false' "$AUDIT_OUT"; then
+  echo "[GameplayUIAudit] ERROR: live audit command failed." >&2
+  exit 21
+fi
+
+# Existing Pass70/Pass71 commands are useful supplemental snapshots but are best-effort.
+run_optional project_status \
+  unity command moyva-project-status --project-path="$PROJECT" --format json
+run_optional scene_tree \
+  unity command moyva-scene-tree --project-path="$PROJECT" --format json
+run_optional pass70_ui_audit \
+  unity command moyva-ui-audit --project-path="$PROJECT" --format json
+run_optional project_overview \
+  unity command moyva-core-overview --project-path="$PROJECT" --format json
+run_optional project_health \
+  unity command moyva-safety-project-health --project-path="$PROJECT" --format json
+run_optional construction_summary \
+  unity command moyva-construction-summary --project-path="$PROJECT" --format json
+run_optional economy_summary \
+  unity command moyva-economy-summary --project-path="$PROJECT" --format json
+run_optional gamemode_summary \
+  unity command moyva-gamemode-summary --project-path="$PROJECT" --format json
+run_optional infopanel_summary \
+  unity command moyva-infopanel-summary --project-path="$PROJECT" --format json
+run_optional interactions_summary \
+  unity command moyva-interactions-summary --project-path="$PROJECT" --format json
+
+# Wait for asynchronous GameView screenshot.
+for i in $(seq 1 30); do
+  if [[ -s "$REPORT_DIR/gameview.png" ]]; then
+    echo "[GameplayUIAudit] GAMEVIEW_SCREENSHOT_OK"
+    break
+  fi
+  sleep 1
+done
+
+if [[ ! -s "$REPORT_DIR/gameview.png" ]]; then
+  cat > "$REPORT_DIR/GAMEVIEW_SCREENSHOT_NOTE.txt" <<'EOF'
+GameView screenshot was requested through ScreenCapture.CaptureScreenshot but no PNG
+appeared within 30 seconds. The JSON and SceneView capture are still valid.
+Open/focus the Game tab and rerun:
+  tools/unity-cli/moyva-gameplay-ui-audit
+EOF
+  echo "[GameplayUIAudit] WARNING: GameView screenshot not produced within 30 seconds."
+fi
+
+# Git/local state.
+{
+  echo "branch=$(git -C "$PROJECT" branch --show-current 2>/dev/null || true)"
+  echo "head=$(git -C "$PROJECT" rev-parse HEAD 2>/dev/null || true)"
+  echo
+  git -C "$PROJECT" status --short 2>/dev/null || true
+} > "$REPORT_DIR/git_state.txt"
+
+git -C "$PROJECT" diff --stat > "$REPORT_DIR/git_diff_stat.txt" 2>/dev/null || true
+
+git -C "$PROJECT" diff -- \
+  Assets/Moyva/Scripts/Features/Construction/UI \
+  Assets/Moyva/Scripts/Features/Economy/UI \
+  Assets/Moyva/Scripts/Features/InfoPanel \
+  Assets/Moyva/Scripts/Features/GameMode \
+  Assets/Moyva/Scripts/Features/WorldCreation/UI \
+  Assets/Moyva/Scripts/Features/Interactions \
+  > "$REPORT_DIR/relevant_ui_git_diff.patch" 2>/dev/null || true
+
+# Copy exact current local source for the UI systems that are most relevant to Gameplay UI.
+copy_tree_files() {
+  local rel="$1"
+  local src="$PROJECT/$rel"
+  [[ -d "$src" ]] || return 0
+
+  while IFS= read -r -d '' file; do
+    local relative="${file#$PROJECT/}"
+    local dest="$REPORT_DIR/local_source/$relative"
+    mkdir -p "$(dirname "$dest")"
+    cp -a "$file" "$dest"
+  done < <(find "$src" -type f \( \
+      -name '*.cs' -o -name '*.asmdef' -o -name '*.md' \
+    \) -print0 2>/dev/null)
+}
+
+copy_tree_files "Assets/Moyva/Scripts/Features/Construction/UI"
+copy_tree_files "Assets/Moyva/Scripts/Features/Economy/UI"
+copy_tree_files "Assets/Moyva/Scripts/Features/InfoPanel"
+copy_tree_files "Assets/Moyva/Scripts/Features/GameMode"
+copy_tree_files "Assets/Moyva/Scripts/Features/WorldCreation/UI"
+copy_tree_files "Assets/Moyva/Scripts/Features/Interactions"
+
+# Individual support files with direct relevance to gameplay UI wiring.
+for rel in \
+  "ProjectSettings/EditorBuildSettings.asset" \
+  "docs/systems/construction/ui.md" \
+  "Assets/Moyva/Scenes/Gamplay_Scene.unity"
+do
+  src="$PROJECT/$rel"
+  if [[ -f "$src" ]]; then
+    size="$(stat -c %s "$src" 2>/dev/null || echo 0)"
+    # Scene copy is helpful, but avoid exploding the report if it is exceptionally large.
+    if [[ "$rel" == *.unity && "$size" -gt 30000000 ]]; then
+      echo "$rel omitted from raw copy because size=$size > 30MB" >> "$REPORT_DIR/raw_copy_notes.txt"
+      continue
+    fi
+    dest="$REPORT_DIR/local_source/$rel"
+    mkdir -p "$(dirname "$dest")"
+    cp -a "$src" "$dest"
+  fi
+done
+
+# Index existing UI-prefab-ish files without blindly copying all art.
+find "$PROJECT/Assets/Moyva" -type f \( \
+    -iname '*ui*.prefab' -o \
+    -iname '*panel*.prefab' -o \
+    -iname '*button*.prefab' -o \
+    -iname '*hud*.prefab' -o \
+    -iname '*menu*.prefab' \
+  \) -printf '%P\n' 2>/dev/null | sort > "$REPORT_DIR/ui_prefab_filename_index.txt"
+
+# Recent log context.
+EDITOR_LOG="$HOME/.config/unity3d/Editor.log"
+if [[ -f "$EDITOR_LOG" ]]; then
+  tail -n 5000 "$EDITOR_LOG" > "$REPORT_DIR/editor_log_tail_5000.txt" || true
+  grep -E \
+    'error CS[0-9]+|NullReferenceException|MissingReferenceException|ConstructionUI|GameModeUI|WorldInfoPanel|EconomyPlayerResource|MoyvaGameplayUiAudit' \
+    "$REPORT_DIR/editor_log_tail_5000.txt" \
+    > "$REPORT_DIR/editor_log_ui_relevant.txt" || true
+fi
+
+# Create a concise handoff note.
+cat > "$REPORT_DIR/UPLOAD_ME.txt" <<EOF
+Moyva Gameplay UI Audit
+Generated: $STAMP
+Project: $PROJECT
+
+Primary analysis file:
+  gameplay_ui_audit.json
+
+Visual evidence:
+  gameview.png        (best effort)
+  sceneview.png       (best effort)
+
+Local source snapshot:
+  local_source/
+
+Supplemental live CLI state:
+  cli_existing/
+
+Send the final ZIP printed by the terminal back to ChatGPT.
+EOF
+
+# Compress report using Python (zip utility not required).
+DOWNLOAD_DIR=''
+for candidate in "$HOME/Завантажене" "$HOME/Завантаження" "$HOME/Downloads"; do
+  if [[ -d "$candidate" ]]; then
+    DOWNLOAD_DIR="$candidate"
+    break
+  fi
+done
+[[ -n "$DOWNLOAD_DIR" ]] || DOWNLOAD_DIR="$HOME"
+
+FINAL_ZIP="$DOWNLOAD_DIR/Moyva_GameplayUI_Audit_${STAMP}.zip"
+
+python3 - "$REPORT_DIR" "$FINAL_ZIP" <<'PY'
+from pathlib import Path
+import sys, zipfile
+src = Path(sys.argv[1])
+dst = Path(sys.argv[2])
+with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as z:
+    for p in sorted(src.rglob("*")):
+        if p.is_file():
+            z.write(p, p.relative_to(src))
+print(dst)
+PY
+
+echo
+echo "=============================================================="
+echo "[GameplayUIAudit] ГОТОВО"
+echo "[GameplayUIAudit] REPORT_JSON=$REPORT_DIR/gameplay_ui_audit.json"
+echo "[GameplayUIAudit] REPORT_DIR=$REPORT_DIR"
+echo "[GameplayUIAudit] UPLOAD_THIS_FILE=$FINAL_ZIP"
+echo "=============================================================="
