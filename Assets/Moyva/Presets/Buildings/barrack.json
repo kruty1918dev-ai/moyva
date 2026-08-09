@@ -1,0 +1,78 @@
+{
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "barrack",
+  "identity": {
+    "displayName": "Barrack",
+    "category": "Military",
+    "role": "Defense"
+  },
+  "construction": {
+    "buildTurns": 4,
+    "cost": [
+      {
+        "resource": "logs",
+        "amount": 20
+      },
+      {
+        "resource": "boards",
+        "amount": 10
+      },
+      {
+        "resource": "stone",
+        "amount": 20
+      }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Buildings/barrack.png",
+      "required": true
+    },
+    "prefab": {
+      "root": "Assets/KayKit",
+      "exact": [
+        "building_barracks_blue"
+      ],
+      "search": [
+        "barrack",
+        "barracks",
+        "building_barracks"
+      ],
+      "fallback": [],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [],
+    "remove": [],
+    "conditional": [
+      {
+        "type": "FogRevealBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "SettlementInfluenceRequirementBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "BuildingPerPlayerLimitModule",
+        "data": {
+          "policy": "project-rule"
+        }
+      }
+    ],
+    "deferred": [
+      {
+        "type": "RecruitmentBuildingModule",
+        "data": {
+          "reason": "runtime recruitment consumer not part of this patch"
+        }
+      }
+    ]
+  }
+}

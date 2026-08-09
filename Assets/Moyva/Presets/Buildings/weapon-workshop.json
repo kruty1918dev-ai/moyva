@@ -1,0 +1,81 @@
+{
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "weapon-workshop",
+  "identity": {
+    "displayName": "Weapon Workshop",
+    "category": "Industrial",
+    "role": "Production"
+  },
+  "construction": {
+    "buildTurns": 3,
+    "cost": [
+      {
+        "resource": "logs",
+        "amount": 20
+      },
+      {
+        "resource": "boards",
+        "amount": 10
+      },
+      {
+        "resource": "iron",
+        "amount": 5
+      }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Buildings/weapon-workshop.png",
+      "required": true
+    },
+    "prefab": {
+      "root": "Assets/KayKit",
+      "exact": [
+        "building_blacksmith_blue"
+      ],
+      "search": [
+        "weapon workshop",
+        "blacksmith",
+        "building_blacksmith"
+      ],
+      "fallback": [],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [
+      {
+        "type": "WorkforceBuildingModule",
+        "data": {
+          "workersRequired": 2
+        }
+      }
+    ],
+    "remove": [
+      "ProductionBuildingModule"
+    ],
+    "conditional": [
+      {
+        "type": "FogRevealBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "SettlementInfluenceRequirementBuildingModule",
+        "data": {}
+      }
+    ],
+    "deferred": [
+      {
+        "type": "ProductionBuildingModule",
+        "data": {
+          "reason": "weapon output/recipe unresolved"
+        }
+      }
+    ]
+  }
+}

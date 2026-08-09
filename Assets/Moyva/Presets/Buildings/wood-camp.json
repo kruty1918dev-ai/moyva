@@ -1,0 +1,80 @@
+{
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "wood-camp",
+  "identity": {
+    "displayName": "Wood Camp",
+    "category": "Industrial",
+    "role": "Production"
+  },
+  "construction": {
+    "buildTurns": 2,
+    "cost": [
+      {
+        "resource": "logs",
+        "amount": 5
+      }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Buildings/wood-camp.png",
+      "required": true
+    },
+    "prefab": {
+      "root": "Assets/KayKit",
+      "exact": [
+        "building_lumbermill_blue"
+      ],
+      "search": [
+        "wood camp",
+        "woodcamp",
+        "lumber camp",
+        "lumbermill",
+        "building_lumbermill"
+      ],
+      "fallback": [
+        "building_lumbermill_blue"
+      ],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [
+      {
+        "type": "WorkforceBuildingModule",
+        "data": {
+          "workersRequired": 2
+        }
+      },
+      {
+        "type": "ProductionBuildingModule",
+        "data": {
+          "resourceId": "walnut-wood-materials-resources"
+        }
+      }
+    ],
+    "remove": [],
+    "conditional": [
+      {
+        "type": "TileRequirementBuildingModule",
+        "data": {
+          "terrainTag": "forest"
+        }
+      },
+      {
+        "type": "FogRevealBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "SettlementInfluenceRequirementBuildingModule",
+        "data": {}
+      }
+    ],
+    "deferred": []
+  }
+}

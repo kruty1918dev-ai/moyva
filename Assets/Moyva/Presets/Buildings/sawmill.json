@@ -1,0 +1,70 @@
+{
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "sawmill",
+  "identity": {
+    "displayName": "Sawmill",
+    "category": "Industrial",
+    "role": "Production"
+  },
+  "construction": {
+    "buildTurns": 4,
+    "cost": [
+      {
+        "resource": "logs",
+        "amount": 15
+      }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Buildings/sawmill.png",
+      "required": true
+    },
+    "prefab": {
+      "root": "Assets/KayKit",
+      "exact": [
+        "building_lumbermill_blue"
+      ],
+      "search": [
+        "sawmill",
+        "lumbermill",
+        "building_lumbermill"
+      ],
+      "fallback": [],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [
+      {
+        "type": "WorkforceBuildingModule",
+        "data": {
+          "workersRequired": 4
+        }
+      },
+      {
+        "type": "ProductionBuildingModule",
+        "data": {
+          "resourceId": "hardwood-materials-resources"
+        }
+      }
+    ],
+    "remove": [],
+    "conditional": [
+      {
+        "type": "FogRevealBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "SettlementInfluenceRequirementBuildingModule",
+        "data": {}
+      }
+    ],
+    "deferred": []
+  }
+}

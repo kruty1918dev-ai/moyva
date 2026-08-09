@@ -62,6 +62,26 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 return;
             }
 
+            ConstructionSelectionAvailabilityResult selectionAvailability =
+                EvaluateSelectionAvailability(
+                    buildingId,
+                    _activeOwnerId,
+                    preferredFundingPosition: null,
+                    includePendingPlacements: true);
+            if (!selectionAvailability.CanSelect)
+            {
+                _lastActionMessage = string.IsNullOrWhiteSpace(
+                    selectionAvailability.Reason)
+                    ? "Будівля зараз недоступна."
+                    : selectionAvailability.Reason;
+                Debug.LogWarning(
+                    $"[MoyvaConstructionAvailability] selection-rejected " +
+                    $"building='{buildingId}' owner='{NormalizeOwnerId(_activeOwnerId)}' " +
+                    $"code='{selectionAvailability.ReasonCode ?? "unavailable"}' " +
+                    $"reason='{_lastActionMessage}'");
+                return;
+            }
+
             try
             {
                 ClearPendingDemolitionsPreview();
@@ -253,6 +273,96 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             if (VerboseLogs)
                 Debug.Log($"[Construction] ToggleDemolishMode -> {IsDemolishMode}");
+        }
+
+        private bool RevalidateActiveSelectionAvailability(
+            string trigger,
+            Vector2Int? preferredFundingPosition = null)
+        {
+            if (!_isActive
+                || IsDemolishMode
+                || State != BuildingPlacementState.Placing
+                || string.IsNullOrWhiteSpace(_selectedBuildingId))
+            {
+                return true;
+            }
+
+            string selectedBuildingId = _selectedBuildingId;
+            ConstructionSelectionAvailabilityResult availability =
+                EvaluateSelectionAvailability(
+                    selectedBuildingId,
+                    _activeOwnerId,
+                    preferredFundingPosition,
+                    includePendingPlacements: true);
+
+            if (availability.CanSelect
+                || CanContinueSelectionAtCapacity(
+                    selectedBuildingId,
+                    availability))
+            {
+                return true;
+            }
+
+            _lastActionMessage =
+                string.IsNullOrWhiteSpace(availability.Reason)
+                    ? "Будівля більше недоступна для нового розміщення."
+                    : availability.Reason;
+
+            Debug.LogWarning(
+                $"[MoyvaConstructionAvailability] active-selection-cleared " +
+                $"trigger='{trigger ?? "unknown"}' " +
+                $"building='{selectedBuildingId}' " +
+                $"owner='{NormalizeOwnerId(_activeOwnerId)}' " +
+                $"code='{availability.ReasonCode ?? "unavailable"}' " +
+                $"pending={_pendingPlacements.Count} " +
+                $"reason='{_lastActionMessage}'");
+
+            SetPlacementSelection(
+                null,
+                BuildingPlacementState.Placing);
+            return false;
+        }
+
+        private bool CanContinueSelectionAtCapacity(
+            string buildingId,
+            ConstructionSelectionAvailabilityResult availability)
+        {
+            if (!string.Equals(
+                    availability.ReasonCode,
+                    "per-player-limit",
+                    StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            BuildingDefinition definition =
+                _placementBuildingRegistry?.GetById(buildingId);
+            if (!BuildingDefinitionCapabilities.TryGetEnabledModule(
+                    definition,
+                    out BuildingPerPlayerLimitModule limitModule))
+            {
+                return false;
+            }
+
+            switch (limitModule.OverflowPolicy)
+            {
+                case BuildingLimitOverflowPolicy.MovePending:
+                    return TryFindPendingPlacementByBuildingId(
+                        buildingId,
+                        out _);
+
+                case BuildingLimitOverflowPolicy.RelocateExisting:
+                    return TryFindPendingPlacementByBuildingId(
+                               buildingId,
+                               out _)
+                           || TryFindOwnedPlacedBuildingPosition(
+                               buildingId,
+                               _activeOwnerId,
+                               out _);
+
+                default:
+                    return false;
+            }
         }
 
         private void PublishSelectionChanged()

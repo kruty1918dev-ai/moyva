@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56a0a73b43b94045b28dec05ad231549, type: 3}
+  m_Name: armor-workshop(Clone)(Clone)
+  m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.BuildingDefinitionAsset
+  _placementModuleMigrationVersion: 0
+  Identity:
+    Id: armor-workshop
+    DisplayName: Armor Workshop
+    Category: 2
+    Role: 2
+    Description: 
+    Tags: []
+  Presentation:
+    Prefab: {fileID: 919132149155446097, guid: f5d290f564dc7d7438e79949b85fce90, type: 3}
+    Icon: {fileID: 21300000, guid: 5b7685bbb3f4298ca03a7ec521be73fa, type: 3}
+    RuntimePreview: {fileID: 0}
+    UiTint: {r: 1, g: 1, b: 1, a: 1}
+    VisualYOffset: 0
+    PreviewSettings:
+      CameraOffset: {x: 4, y: 5, z: -6}
+      CameraEulerAngles: {x: 45, y: -35, z: 0}
+      OrthographicSize: 4
+      BackgroundColor: {r: 0, g: 0, b: 0, a: 0}
+  Footprint:
+    Size: {x: 1, y: 1}
+    Anchor: 0
+    CustomAnchor: {x: 0, y: 0}
+    BlocksMovement: 1
+    BlocksConstruction: 1
+    RequiresFlatGround: 1
+    OccupiedCells: []
+    EntranceCells: []
+    RoadConnectionCells: []
+  Placement:
+    CanPlaceInFog: 0
+    RequiresSettlementInfluence: 1
+    CreatesSettlementInfluence: 0
+    BlockIfSettlementCenterInRange: 0
+    InfluenceRadius: 0
+    MinDistanceFromSettlementCenters: 0
+    RequiredTerrainIds: []
+    RequiredNeighborOffsets: []
+    RequiresWaterNearby: 0
+    RequiresForestNearby: 0
+    RequiresMountainNearby: 0
+    RequiresRoadNearby: 0
+    NearbyTileRequirements: []
+  Construction:
+    Cost:
+    - ResourceId: walnut-wood-materials-resources
+      Amount: 20
+    - ResourceId: hardwood-materials-resources
+      Amount: 10
+    - ResourceId: iron-ingot-materials-resources
+      Amount: 5
+    BuildTurns: 3
+    RequiresBuilder: 1
+    WorkRequired: 0
+  RuntimeStats:
+    MaxHp: 100
+    Armor: 0
+    Flags: 7
+    RuntimeTags: []
+  Modules:
+  - rid: 6920774998241575019
+  references:
+    version: 2
+    RefIds:
+    - rid: 6920774998241575019
+      type: {class: WorkforceBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
+        WorkersRequired: 2
+        Priority: 0
+        WorkerTypeId: 

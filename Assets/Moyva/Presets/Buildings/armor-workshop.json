@@ -1,0 +1,86 @@
+{
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "armor-workshop",
+  "identity": {
+    "displayName": "Armor Workshop",
+    "category": "Industrial",
+    "role": "Production"
+  },
+  "construction": {
+    "buildTurns": 3,
+    "cost": [
+      {
+        "resource": "logs",
+        "amount": 20
+      },
+      {
+        "resource": "boards",
+        "amount": 10
+      },
+      {
+        "resource": "iron",
+        "amount": 5
+      }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Buildings/armor-workshop.png",
+      "required": true
+    },
+    "prefab": {
+      "root": "Assets/KayKit",
+      "exact": [
+        "building_workshop_blue"
+      ],
+      "search": [
+        "armor workshop",
+        "armour workshop",
+        "workshop",
+        "building_workshop",
+        "blacksmith",
+        "building_blacksmith"
+      ],
+      "fallback": [
+        "building_blacksmith_blue"
+      ],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [
+      {
+        "type": "WorkforceBuildingModule",
+        "data": {
+          "workersRequired": 2
+        }
+      }
+    ],
+    "remove": [
+      "ProductionBuildingModule"
+    ],
+    "conditional": [
+      {
+        "type": "FogRevealBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "SettlementInfluenceRequirementBuildingModule",
+        "data": {}
+      }
+    ],
+    "deferred": [
+      {
+        "type": "ProductionBuildingModule",
+        "data": {
+          "reason": "armor output/recipe unresolved"
+        }
+      }
+    ]
+  }
+}

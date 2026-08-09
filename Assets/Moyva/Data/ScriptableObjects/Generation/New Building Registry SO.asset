@@ -13,21 +13,66 @@ MonoBehaviour:
   m_Name: New Building Registry SO
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.Runtime.BuildingRegistrySO
   _buildingAssets:
+  - {fileID: 11400000, guid: 04500cfd6ec2e731aa4cec7614714e3c, type: 2}
+  - {fileID: 11400000, guid: 8b4d733a43f386b8fba8400ac59749fb, type: 2}
+  - {fileID: 11400000, guid: 606d898fad7459e1995920a8a6c1b20c, type: 2}
   - {fileID: 11400000, guid: c8422d0cbb95460790a5398833c25c95, type: 2}
-  - {fileID: 11400000, guid: d70edd3a02f349be841e71e5065da390, type: 2}
-  - {fileID: 11400000, guid: 229418570327446a8e81031091c506a0, type: 2}
+  - {fileID: 11400000, guid: 61163c815ddb0909595e83b807ecc759, type: 2}
   - {fileID: 11400000, guid: 3c49c2b4920e42c1abe92caab7210221, type: 2}
-  - {fileID: 11400000, guid: 0b20337f749c4a7c8e4d575d49f0db4b, type: 2}
+  - {fileID: 11400000, guid: cd4702b2fbee51209b033d36b372e11a, type: 2}
+  - {fileID: 11400000, guid: a1169d7d66566850eae3d69b63623abf, type: 2}
+  - {fileID: 11400000, guid: 574a21c8262590755943aedbec51bcb3, type: 2}
   - {fileID: 11400000, guid: 879cfc3665ce4e118302bee8294dc708, type: 2}
+  - {fileID: 11400000, guid: 5adbb35606f712adaa3b9f240d9ab812, type: 2}
+  - {fileID: 11400000, guid: 0b20337f749c4a7c8e4d575d49f0db4b, type: 2}
+  - {fileID: 11400000, guid: 99e6b6605b5e133ac8ae12226ab8451b, type: 2}
+  - {fileID: 11400000, guid: a6106c092c0cf94948fb251421fa61d6, type: 2}
+  - {fileID: 11400000, guid: 229418570327446a8e81031091c506a0, type: 2}
+  - {fileID: 11400000, guid: a435c2324a0288cdea730d07f0c151ad, type: 2}
   Buildings:
   - Id: castle-01
     DisplayName: Castle
     Category: 1
+    Role: 0
+    Description: 
+    Tags: []
+    RuntimeTags: []
     Icon: {fileID: 0}
+    RuntimePreview: {fileID: 0}
     Prefab: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
+    Footprint:
+      Size: {x: 1, y: 1}
+      Anchor: 0
+      CustomAnchor: {x: 0, y: 0}
+      BlocksMovement: 1
+      BlocksConstruction: 1
+      RequiresFlatGround: 1
+      OccupiedCells: []
+      EntranceCells: []
+      RoadConnectionCells: []
+    VisualYOffset: 0
     ConstructionCost: []
     Modules:
     - rid: 1139584718011891780
+    MaxHp: 100
+    Armor: 0
+    RuntimeFlags: 0
+    PlacementRules:
+      CanPlaceInFog: 0
+      RequiresSettlementInfluence: 1
+      CreatesSettlementInfluence: 0
+      BlockIfSettlementCenterInRange: 0
+      InfluenceRadius: 0
+      MinDistanceFromSettlementCenters: 0
+      RequiredTerrainIds: []
+      RequiredNeighborOffsets: []
+      RequiresWaterNearby: 0
+      RequiresForestNearby: 0
+      RequiresMountainNearby: 0
+      RequiresRoadNearby: 0
+      NearbyTileRequirements: []
+    CanPlaceInFog: 0
+    RequiredTerrainIds: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 0
     BlockIfTownHallAlreadyInRange: 1
@@ -35,8 +80,24 @@ MonoBehaviour:
   - Id: bridge-wood-01
     DisplayName: Wood Bridge
     Category: 1
+    Role: 0
+    Description: 
+    Tags: []
+    RuntimeTags: []
     Icon: {fileID: 0}
+    RuntimePreview: {fileID: 0}
     Prefab: {fileID: 8030073889366943068, guid: f9fff611f2465687b966cf0e0cfdda74, type: 3}
+    Footprint:
+      Size: {x: 1, y: 1}
+      Anchor: 0
+      CustomAnchor: {x: 0, y: 0}
+      BlocksMovement: 1
+      BlocksConstruction: 1
+      RequiresFlatGround: 1
+      OccupiedCells: []
+      EntranceCells: []
+      RoadConnectionCells: []
+    VisualYOffset: 0
     ConstructionCost:
     - ResourceId: walnut-wood-materials-resources
       Amount: 1
@@ -44,6 +105,25 @@ MonoBehaviour:
       Amount: 1
     Modules:
     - rid: 1139584718011891781
+    MaxHp: 100
+    Armor: 0
+    RuntimeFlags: 0
+    PlacementRules:
+      CanPlaceInFog: 0
+      RequiresSettlementInfluence: 1
+      CreatesSettlementInfluence: 0
+      BlockIfSettlementCenterInRange: 0
+      InfluenceRadius: 0
+      MinDistanceFromSettlementCenters: 0
+      RequiredTerrainIds: []
+      RequiredNeighborOffsets: []
+      RequiresWaterNearby: 0
+      RequiresForestNearby: 0
+      RequiresMountainNearby: 0
+      RequiresRoadNearby: 0
+      NearbyTileRequirements: []
+    CanPlaceInFog: 0
+    RequiredTerrainIds: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
@@ -51,8 +131,24 @@ MonoBehaviour:
   - Id: windmill-01
     DisplayName: Windmill
     Category: 2
+    Role: 0
+    Description: 
+    Tags: []
+    RuntimeTags: []
     Icon: {fileID: 0}
+    RuntimePreview: {fileID: 0}
     Prefab: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
+    Footprint:
+      Size: {x: 1, y: 1}
+      Anchor: 0
+      CustomAnchor: {x: 0, y: 0}
+      BlocksMovement: 1
+      BlocksConstruction: 1
+      RequiresFlatGround: 1
+      OccupiedCells: []
+      EntranceCells: []
+      RoadConnectionCells: []
+    VisualYOffset: 0
     ConstructionCost:
     - ResourceId: walnut-wood-materials-resources
       Amount: 1
@@ -61,6 +157,25 @@ MonoBehaviour:
     - ResourceId: hardwood-materials-resources
       Amount: 1
     Modules: []
+    MaxHp: 100
+    Armor: 0
+    RuntimeFlags: 0
+    PlacementRules:
+      CanPlaceInFog: 0
+      RequiresSettlementInfluence: 1
+      CreatesSettlementInfluence: 0
+      BlockIfSettlementCenterInRange: 0
+      InfluenceRadius: 0
+      MinDistanceFromSettlementCenters: 0
+      RequiredTerrainIds: []
+      RequiredNeighborOffsets: []
+      RequiresWaterNearby: 0
+      RequiresForestNearby: 0
+      RequiresMountainNearby: 0
+      RequiresRoadNearby: 0
+      NearbyTileRequirements: []
+    CanPlaceInFog: 0
+    RequiredTerrainIds: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
@@ -68,8 +183,24 @@ MonoBehaviour:
   - Id: house-01
     DisplayName: House
     Category: 1
+    Role: 0
+    Description: 
+    Tags: []
+    RuntimeTags: []
     Icon: {fileID: 0}
+    RuntimePreview: {fileID: 0}
     Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
+    Footprint:
+      Size: {x: 1, y: 1}
+      Anchor: 0
+      CustomAnchor: {x: 0, y: 0}
+      BlocksMovement: 1
+      BlocksConstruction: 1
+      RequiresFlatGround: 1
+      OccupiedCells: []
+      EntranceCells: []
+      RoadConnectionCells: []
+    VisualYOffset: 0
     ConstructionCost:
     - ResourceId: walnut-wood-materials-resources
       Amount: 1
@@ -78,6 +209,25 @@ MonoBehaviour:
     - ResourceId: hardwood-materials-resources
       Amount: 1
     Modules: []
+    MaxHp: 100
+    Armor: 0
+    RuntimeFlags: 0
+    PlacementRules:
+      CanPlaceInFog: 0
+      RequiresSettlementInfluence: 1
+      CreatesSettlementInfluence: 0
+      BlockIfSettlementCenterInRange: 0
+      InfluenceRadius: 0
+      MinDistanceFromSettlementCenters: 0
+      RequiredTerrainIds: []
+      RequiredNeighborOffsets: []
+      RequiresWaterNearby: 0
+      RequiresForestNearby: 0
+      RequiresMountainNearby: 0
+      RequiresRoadNearby: 0
+      NearbyTileRequirements: []
+    CanPlaceInFog: 0
+    RequiredTerrainIds: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
@@ -85,14 +235,49 @@ MonoBehaviour:
   - Id: stone-wall
     DisplayName: "\u0421\u0442\u0456\u043D\u0430"
     Category: 3
+    Role: 0
+    Description: 
+    Tags: []
+    RuntimeTags: []
     Icon: {fileID: -1448105316, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
+    RuntimePreview: {fileID: 0}
     Prefab: {fileID: 8756741331363231770, guid: 190f77ff4fd19557ebd89ef3e3e06832, type: 3}
+    Footprint:
+      Size: {x: 1, y: 1}
+      Anchor: 0
+      CustomAnchor: {x: 0, y: 0}
+      BlocksMovement: 1
+      BlocksConstruction: 1
+      RequiresFlatGround: 1
+      OccupiedCells: []
+      EntranceCells: []
+      RoadConnectionCells: []
+    VisualYOffset: 0
     ConstructionCost:
     - ResourceId: stone-materials-resources
       Amount: 1
     - ResourceId: hardwood-materials-resources
       Amount: 1
     Modules: []
+    MaxHp: 100
+    Armor: 0
+    RuntimeFlags: 0
+    PlacementRules:
+      CanPlaceInFog: 0
+      RequiresSettlementInfluence: 1
+      CreatesSettlementInfluence: 0
+      BlockIfSettlementCenterInRange: 0
+      InfluenceRadius: 0
+      MinDistanceFromSettlementCenters: 0
+      RequiredTerrainIds: []
+      RequiredNeighborOffsets: []
+      RequiresWaterNearby: 0
+      RequiresForestNearby: 0
+      RequiresMountainNearby: 0
+      RequiresRoadNearby: 0
+      NearbyTileRequirements: []
+    CanPlaceInFog: 0
+    RequiredTerrainIds: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0
@@ -100,8 +285,24 @@ MonoBehaviour:
   - Id: stone-gate
     DisplayName: "\u0412\u043E\u0440\u043E\u0442\u0430"
     Category: 3
+    Role: 0
+    Description: 
+    Tags: []
+    RuntimeTags: []
     Icon: {fileID: 1129816292, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
+    RuntimePreview: {fileID: 0}
     Prefab: {fileID: 4054757616884961693, guid: 2fc84416ec42ca98796010998d7561ef, type: 3}
+    Footprint:
+      Size: {x: 1, y: 1}
+      Anchor: 0
+      CustomAnchor: {x: 0, y: 0}
+      BlocksMovement: 1
+      BlocksConstruction: 1
+      RequiresFlatGround: 1
+      OccupiedCells: []
+      EntranceCells: []
+      RoadConnectionCells: []
+    VisualYOffset: 0
     ConstructionCost:
     - ResourceId: walnut-wood-materials-resources
       Amount: 1
@@ -110,6 +311,25 @@ MonoBehaviour:
     - ResourceId: hardwood-materials-resources
       Amount: 1
     Modules: []
+    MaxHp: 100
+    Armor: 0
+    RuntimeFlags: 0
+    PlacementRules:
+      CanPlaceInFog: 0
+      RequiresSettlementInfluence: 1
+      CreatesSettlementInfluence: 0
+      BlockIfSettlementCenterInRange: 0
+      InfluenceRadius: 0
+      MinDistanceFromSettlementCenters: 0
+      RequiredTerrainIds: []
+      RequiredNeighborOffsets: []
+      RequiresWaterNearby: 0
+      RequiresForestNearby: 0
+      RequiresMountainNearby: 0
+      RequiresRoadNearby: 0
+      NearbyTileRequirements: []
+    CanPlaceInFog: 0
+    RequiredTerrainIds: []
     UseCustomTownHallRules: 0
     RequireTownHallInRange: 1
     BlockIfTownHallAlreadyInRange: 0

@@ -1,0 +1,33 @@
+{
+  "schema": "moyva.building-preset-pack",
+  "version": 1,
+  "packId": "moyva.base-buildings.2026-08",
+  "requiresSchemaVersion": 1,
+  "applyPolicy": "idempotent",
+  "applyProposedModules": false,
+  "presets": [
+    "wood-camp",
+    "sawmill",
+    "stone-quarry",
+    "iron-mine",
+    "storage",
+    "barn",
+    "weapon-workshop",
+    "armor-workshop",
+    "barrack",
+    "stable",
+    "engineers-guild"
+  ],
+  "resourceAliases": {
+    "logs": "walnut-wood-materials-resources",
+    "boards": "hardwood-materials-resources",
+    "stone": "stone-materials-resources",
+    "iron": "iron-ingot-materials-resources"
+  },
+  "notes": [
+    "Code-first -> compile -> apply.",
+    "Conditional/proposed modules are documented but not attached automatically.",
+    "Weapon/Armor production remains deferred until valid resource/recipe IDs exist.",
+    "Recruitment/Training is outside this patch."
+  ]
+}

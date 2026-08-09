@@ -235,6 +235,173 @@ namespace Kruty1918.Moyva.Construction.Runtime
         }
 
 
+        public ConstructionSelectionAvailabilityResult
+            EvaluateSelectionAvailability(
+                string buildingId,
+                string ownerId = null,
+                Vector2Int? preferredFundingPosition = null,
+                bool includePendingPlacements = true)
+        {
+            string normalizedOwnerId = NormalizeOwnerId(ownerId);
+            var request = new ConstructionPlacementQueryRequest(
+                buildingId,
+                preferredFundingPosition.GetValueOrDefault(),
+                includeResources: false,
+                includeDetails: false,
+                ownerId: normalizedOwnerId,
+                includePendingPlacements: includePendingPlacements,
+                attemptSource: ConstructionPlacementAttemptSource.Unknown,
+                allowUniquePreviewRelocation: false);
+
+            if (string.IsNullOrWhiteSpace(buildingId))
+            {
+                return new ConstructionSelectionAvailabilityResult(
+                    globalAvailabilityValid: false,
+                    resourcesValid: false,
+                    resourceCheckPerformed: false,
+                    reason: "Building id is empty.",
+                    reasonCode: "building-id-empty");
+            }
+
+            PlacementAvailabilityCacheValue availability =
+                ResolvePlacementAvailabilityCached(
+                    request,
+                    normalizedOwnerId);
+            if (!availability.IsValid)
+            {
+                return new ConstructionSelectionAvailabilityResult(
+                    globalAvailabilityValid: false,
+                    resourcesValid: false,
+                    resourceCheckPerformed: false,
+                    reason: availability.Reason,
+                    reasonCode: availability.ReasonCode);
+            }
+
+            // Buildings with no cost are always resource-ready and do not need
+            // a settlement/funding position.
+            if (BuildConstructionCostMap(buildingId).Count == 0)
+            {
+                return new ConstructionSelectionAvailabilityResult(
+                    globalAvailabilityValid: true,
+                    resourcesValid: true,
+                    resourceCheckPerformed: true);
+            }
+
+            if (!TryResolveSelectionFundingPosition(
+                    normalizedOwnerId,
+                    preferredFundingPosition,
+                    out Vector2Int fundingPosition))
+            {
+                // Do not incorrectly disable a building just because the menu
+                // opened before a settlement position was known. Pointer-click
+                // validation still remains authoritative.
+                return new ConstructionSelectionAvailabilityResult(
+                    globalAvailabilityValid: true,
+                    resourcesValid: true,
+                    resourceCheckPerformed: false,
+                    reasonCode: "resource-context-deferred");
+            }
+
+            var resourceRequest = new ConstructionPlacementQueryRequest(
+                buildingId,
+                fundingPosition,
+                includeResources: true,
+                includeDetails: false,
+                ownerId: normalizedOwnerId,
+                includePendingPlacements: includePendingPlacements,
+                attemptSource: ConstructionPlacementAttemptSource.Unknown,
+                allowUniquePreviewRelocation: false);
+            bool resourcesValid = TryValidateConstructionResourcesCached(
+                resourceRequest,
+                normalizedOwnerId,
+                out string resourceReason);
+
+            return new ConstructionSelectionAvailabilityResult(
+                globalAvailabilityValid: true,
+                resourcesValid: resourcesValid,
+                resourceCheckPerformed: true,
+                reason: resourcesValid ? null : resourceReason,
+                reasonCode: resourcesValid ? null : "resources");
+        }
+
+        private bool TryResolveSelectionFundingPosition(
+            string ownerId,
+            Vector2Int? preferredFundingPosition,
+            out Vector2Int resolvedPosition)
+        {
+            if (ShouldUseOwnerPoolConstructionFunding(ownerId))
+            {
+                resolvedPosition = preferredFundingPosition.GetValueOrDefault();
+                return true;
+            }
+
+            if (preferredFundingPosition.HasValue
+                && !string.Equals(
+                    ResolveResourceFundingContext(
+                        preferredFundingPosition.Value,
+                        ownerId),
+                    "no-settlement",
+                    StringComparison.Ordinal))
+            {
+                resolvedPosition = preferredFundingPosition.Value;
+                return true;
+            }
+
+            for (int i = 0; i < _pendingPlacements.Count; i++)
+            {
+                Vector2Int candidate = _pendingPlacements[i].Position;
+                if (!string.Equals(
+                        ResolveResourceFundingContext(candidate, ownerId),
+                        "no-settlement",
+                        StringComparison.Ordinal))
+                {
+                    resolvedPosition = candidate;
+                    return true;
+                }
+            }
+
+            foreach (var pair in _factionPlacedBuildings)
+            {
+                if (!string.Equals(
+                        NormalizeOwnerId(pair.Value.FactionId),
+                        ownerId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (!string.Equals(
+                        ResolveResourceFundingContext(pair.Key, ownerId),
+                        "no-settlement",
+                        StringComparison.Ordinal))
+                {
+                    resolvedPosition = pair.Key;
+                    return true;
+                }
+            }
+
+            if (string.Equals(
+                    NormalizeOwnerId(_activeOwnerId),
+                    ownerId,
+                    StringComparison.Ordinal))
+            {
+                foreach (var pair in _playerPlacedBuildings)
+                {
+                    if (!string.Equals(
+                            ResolveResourceFundingContext(pair.Key, ownerId),
+                            "no-settlement",
+                            StringComparison.Ordinal))
+                    {
+                        resolvedPosition = pair.Key;
+                        return true;
+                    }
+                }
+            }
+
+            resolvedPosition = default;
+            return false;
+        }
+
         private PlacementAvailabilityCacheValue
             ResolvePlacementAvailabilityCached(
                 ConstructionPlacementQueryRequest request,
@@ -598,6 +765,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _pendingPlacementsVersion++;
             InvalidatePlacementAvailabilityCache();
+
+            // Pass 62: pending count and reserved resources are part of
+            // selection availability. As soon as the last legal preview is
+            // added, the old selected building must stop accepting new clicks.
+            RevalidateActiveSelectionAvailability(
+                "pending-changed");
         }
 
         private void InvalidatePlacementAvailabilityCache()

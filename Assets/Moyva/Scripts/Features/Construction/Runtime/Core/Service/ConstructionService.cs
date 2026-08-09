@@ -19,6 +19,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IConstructionPendingPlacementIntentSource,
         IAuthoritativeConstructionPlacementExecutor,
         IConstructionPlacementQuery,
+        IConstructionSelectionAvailabilityQuery,
         IConstructionPendingUndoBatch,
         IConstructionBootstrapQuery,
         IConstructionBuildingOwnershipQuery,
@@ -355,7 +356,19 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 $"revision={revision} placed={refreshed}");
         }
 
-        private void OnSettlementResourceChanged(SettlementResourceChangedSignal _)
-            => InvalidatePlacementResourceValidationCache();
+        private void OnSettlementResourceChanged(
+            SettlementResourceChangedSignal signal)
+        {
+            InvalidatePlacementResourceValidationCache();
+
+            if (!RevalidateActiveSelectionAvailability(
+                    "resource-change"))
+            {
+                Debug.LogWarning(
+                    $"[MoyvaConstructionAvailability] resource-invalidated-selection " +
+                    $"owner='{signal.OwnerId}' resource='{signal.ResourceId}' " +
+                    $"new={signal.NewAmount:0.###} delta={signal.Delta:0.###}");
+            }
+        }
     }
 }

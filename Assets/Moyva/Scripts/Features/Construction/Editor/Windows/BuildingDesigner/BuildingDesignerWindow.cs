@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
 using Kruty1918.Moyva.Editor.Shared;
 using Sirenix.OdinInspector.Editor;
+using Sirenix.Utilities.Editor;
 using UnityEditor;
 using UnityEngine;
 
@@ -69,6 +70,12 @@ namespace Kruty1918.Moyva.Construction.Editor
             tree.Add("Бібліотека/Реєстр", _registry);
             tree.Add("Бібліотека/Шаблони", _templateLibrary);
 
+            // MOYVA_CONTEXT_MENU_PASS64: category roots stay visible even when empty.
+            tree.Add($"Бібліотека/{GetCategoryLabel(BuildingCategory.Military)}", null);
+            tree.Add($"Бібліотека/{GetCategoryLabel(BuildingCategory.Civilian)}", null);
+            tree.Add($"Бібліотека/{GetCategoryLabel(BuildingCategory.Industrial)}", null);
+            tree.Add($"Бібліотека/{GetCategoryLabel(BuildingCategory.Walls)}", null);
+
             if (_registry == null)
             {
                 tree.Add("Бібліотека/Реєстр не вибрано", this);
@@ -106,12 +113,20 @@ namespace Kruty1918.Moyva.Construction.Editor
                 tree.Add($"Бібліотека/Застарілі inline-дані/{label}", definition);
             }
 
+            ConfigureTreeContextMenus(tree);
+            ConfigureBuildingTreeIcons(tree); // MOYVA_BUILDING_ICON_PASS66_RIGHT
             return tree;
         }
 
         protected override void OnBeginDrawEditors()
         {
             DrawToolbar();
+            GUILayout.Space(6f);
+            DrawSelectedBuildingIconHeader();
+            GUILayout.Space(6f);
+            Presets.BuildingDesignerPresetPanel.Draw(
+                _registry,
+                () => ForceMenuTreeRebuild());
             GUILayout.Space(6f);
             DrawSelectedBuildingModuleHealth();
             GUILayout.Space(6f);
@@ -333,34 +348,546 @@ namespace Kruty1918.Moyva.Construction.Editor
                     if (GUILayout.Button(EditorTooltipStandard.Content(
                             "Нова будівля",
                             "Створює новий BuildingDefinition asset і додає його до реєстру.",
-                            "Нова будівля стане доступною системі після коректного налаштування.")))
+                            "Для створення одразу в конкретній категорії натисніть ПКМ по групі зліва."),
+                            GUILayout.Width(180f)))
                         CreateBuilding();
-                    if (GUILayout.Button(EditorTooltipStandard.Content(
-                            "Дублювати вибрану",
-                            "Створює копію вибраної будівлі з новим ID.",
-                            "Дає незалежну конфігурацію на основі існуючої.")))
-                        DuplicateSelected();
-                    if (GUILayout.Button(EditorTooltipStandard.Content(
-                            "Видалити вибрану",
-                            "Видаляє вибраний asset після підтвердження.",
-                            "Будівля зникне з реєстру й не буде доступна в грі.")))
-                        DeleteSelected();
-                    if (GUILayout.Button(EditorTooltipStandard.Content(
-                            "Перевірити реєстр",
-                            "Запускає повну валідацію всіх будівель.",
-                            "Знаходить конфігурації, які можуть зламати меню або будівництво.")))
-                        ValidateRegistry();
-                    if (GUILayout.Button(EditorTooltipStandard.Content(
-                            "Перебудувати реєстр",
-                            "Повторно збирає всі BuildingDefinition asset у реєстр.",
-                            "Відновлює пропущені посилання без зміни самих будівель.")))
-                        RebuildRegistryFromAssets();
-                    if (GUILayout.Button(EditorTooltipStandard.Content(
-                            "Мігрувати старі дані",
-                            "Перетворює legacy inline definitions на окремі asset.",
-                            "Зберігає старі будівлі в актуальному data-driven форматі.")))
-                        MigrateLegacy();
+
+                    GUILayout.Space(8f);
+                    EditorGUILayout.LabelField(
+                        "ПКМ по будівлі або групі зліва — додати, дублювати, видалити, перевірити та інші дії.",
+                        EditorStyles.miniLabel);
                 }
+            }
+        }
+
+        private static readonly Dictionary<int, Texture> BuildingMenuIconPreviewCache =
+            new Dictionary<int, Texture>();
+
+        private void ConfigureBuildingTreeIcons(OdinMenuTree tree)
+        {
+            if (tree == null)
+                return;
+
+            if (tree.DefaultMenuStyle != null)
+                tree.DefaultMenuStyle.Height = Mathf.Max(tree.DefaultMenuStyle.Height, 24);
+
+            foreach (OdinMenuItem menuItem in tree.EnumerateTree())
+            {
+                if (menuItem.Value is BuildingDefinitionAsset asset)
+                {
+                    BuildingDefinitionAsset capturedAsset = asset;
+
+                    // Built-in Odin icons appear on the left; Pass66 needs the icon on the right.
+                    menuItem.Icon = null;
+                    menuItem.IconSelected = null;
+                    menuItem.IconGetter = null;
+                    menuItem.OnDrawItem += item =>
+                        DrawBuildingMenuIconRight(item, capturedAsset?.Presentation?.Icon);
+                    continue;
+                }
+
+                if (menuItem.Value is BuildingDefinition legacy)
+                {
+                    BuildingDefinition capturedLegacy = legacy;
+                    menuItem.Icon = null;
+                    menuItem.IconSelected = null;
+                    menuItem.IconGetter = null;
+                    menuItem.OnDrawItem += item =>
+                        DrawBuildingMenuIconRight(item, capturedLegacy?.Icon);
+                }
+            }
+        }
+
+        private static void DrawBuildingMenuIconRight(OdinMenuItem menuItem, Sprite sprite)
+        {
+            // No assigned Sprite means no icon at all.
+            if (menuItem == null || sprite == null || Event.current.type != EventType.Repaint)
+                return;
+
+            Texture preview = ResolveBuildingMenuIcon(sprite);
+            if (preview == null)
+                return;
+
+            Rect row = menuItem.Rect;
+            if (row.width <= 1f || row.height <= 1f)
+                return;
+
+            float size = Mathf.Clamp(row.height - 5f, 14f, 20f);
+            const float rightPadding = 6f;
+            Rect iconRect = new Rect(
+                row.xMax - rightPadding - size,
+                row.y + (row.height - size) * 0.5f,
+                size,
+                size);
+
+            GUI.DrawTexture(iconRect, preview, ScaleMode.ScaleToFit, true);
+        }
+
+        private static Texture ResolveBuildingMenuIcon(Sprite sprite)
+        {
+            if (sprite == null)
+                return null;
+
+            int key = sprite.GetInstanceID();
+            if (BuildingMenuIconPreviewCache.TryGetValue(key, out Texture cached) && cached != null)
+                return cached;
+
+            Texture preview = AssetPreview.GetAssetPreview(sprite);
+            if (preview != null)
+            {
+                BuildingMenuIconPreviewCache[key] = preview;
+                return preview;
+            }
+
+            return AssetPreview.GetMiniThumbnail(sprite);
+        }
+
+        private void DrawSelectedBuildingIconHeader()
+        {
+            object selectedValue = MenuTree?.Selection?.SelectedValue;
+            if (selectedValue is BuildingDefinitionAsset asset)
+            {
+                DrawBuildingIconHeader(
+                    asset.DisplayName,
+                    asset.Id,
+                    asset.Category.ToString(),
+                    asset.Presentation?.Icon,
+                    nextIcon => SetBuildingAssetIcon(asset, nextIcon),
+                    false);
+                return;
+            }
+
+            if (selectedValue is BuildingDefinition legacy)
+            {
+                DrawBuildingIconHeader(
+                    string.IsNullOrWhiteSpace(legacy.DisplayName) ? legacy.Id : legacy.DisplayName,
+                    legacy.Id,
+                    legacy.Category.ToString(),
+                    legacy.Icon,
+                    nextIcon => SetLegacyBuildingIcon(legacy, nextIcon),
+                    true);
+            }
+        }
+
+        private void DrawBuildingIconHeader(
+            string displayName,
+            string id,
+            string category,
+            Sprite icon,
+            Action<Sprite> assignIcon,
+            bool legacy)
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    using (new EditorGUILayout.VerticalScope())
+                    {
+                        GUILayout.Space(4f);
+                        EditorGUILayout.LabelField(
+                            string.IsNullOrWhiteSpace(displayName) ? "Будівля" : displayName,
+                            EditorStyles.boldLabel);
+                        EditorGUILayout.LabelField($"ID: {id}", EditorStyles.miniLabel);
+                        EditorGUILayout.LabelField($"Категорія: {category}", EditorStyles.miniLabel);
+                        if (legacy)
+                            EditorGUILayout.LabelField("Legacy inline building", EditorStyles.miniLabel);
+
+                        GUILayout.Space(5f);
+                        EditorGUILayout.LabelField(
+                            icon == null
+                                ? "Іконку конструкції не задано."
+                                : "Це іконка, яку використовує ця конструкція в UI.",
+                            EditorStyles.wordWrappedMiniLabel);
+                    }
+
+                    GUILayout.FlexibleSpace();
+                    using (new EditorGUILayout.VerticalScope(GUILayout.Width(132f)))
+                    {
+                        var centeredMini = new GUIStyle(EditorStyles.miniBoldLabel)
+                        {
+                            alignment = TextAnchor.MiddleCenter,
+                        };
+                        EditorGUILayout.LabelField("Іконка конструкції", centeredMini);
+
+                        EditorGUI.BeginChangeCheck();
+                        Rect iconFieldRect = GUILayoutUtility.GetRect(
+                            112f,
+                            112f,
+                            GUILayout.Width(112f),
+                            GUILayout.Height(112f));
+                        Texture iconPreview = icon != null
+                            ? (AssetPreview.GetAssetPreview(icon) ?? AssetPreview.GetMiniThumbnail(icon))
+                            : null;
+                        var nextIcon = (Sprite)SirenixEditorFields.UnityPreviewObjectField(
+                            iconFieldRect,
+                            icon,
+                            iconPreview,
+                            typeof(Sprite),
+                            false,
+                            true,
+                            true,
+                            false); // MOYVA_PASS66_COMPILE_FIX1
+                        if (EditorGUI.EndChangeCheck())
+                            assignIcon?.Invoke(nextIcon);
+                    }
+                }
+            }
+        }
+
+        private void SetBuildingAssetIcon(BuildingDefinitionAsset asset, Sprite nextIcon)
+        {
+            if (asset == null)
+                return;
+
+            asset.Presentation ??= new BuildingPresentation();
+            if (asset.Presentation.Icon == nextIcon)
+                return;
+
+            Undo.RecordObject(asset, "Building Designer: change building icon");
+            asset.Presentation.Icon = nextIcon;
+            asset.NotifyEditorDataChanged();
+            EditorUtility.SetDirty(asset);
+            AssetDatabase.SaveAssetIfDirty(asset);
+
+            BuildingMenuIconPreviewCache.Clear();
+            Repaint();
+            Debug.Log($"[BuildingDesigner] Icon changed: '{asset.Id}' -> {(nextIcon != null ? nextIcon.name : "<none>")}.");
+        }
+
+        private void SetLegacyBuildingIcon(BuildingDefinition legacy, Sprite nextIcon)
+        {
+            if (legacy == null || legacy.Icon == nextIcon || _registry == null)
+                return;
+
+            Undo.RecordObject(_registry, "Building Designer: change legacy building icon");
+            legacy.Icon = nextIcon;
+            EditorUtility.SetDirty(_registry);
+            AssetDatabase.SaveAssetIfDirty(_registry);
+
+            BuildingMenuIconPreviewCache.Clear();
+            Repaint();
+            Debug.Log($"[BuildingDesigner] Legacy icon changed: '{legacy.Id}' -> {(nextIcon != null ? nextIcon.name : "<none>")}.");
+        }
+
+        // MOYVA_CONTEXT_MENU_PASS64
+        private void ConfigureTreeContextMenus(OdinMenuTree tree)
+        {
+            if (tree == null)
+                return;
+
+            var libraryItem = tree.GetMenuItem("Бібліотека");
+            if (libraryItem != null)
+                libraryItem.OnRightClick += _ => ShowLibraryContextMenu();
+
+            var registryItem = tree.GetMenuItem("Бібліотека/Реєстр");
+            if (registryItem != null)
+                registryItem.OnRightClick += _ => ShowRegistryContextMenu();
+
+            var templatesItem = tree.GetMenuItem("Бібліотека/Шаблони");
+            if (templatesItem != null)
+                templatesItem.OnRightClick += _ => ShowTemplatesContextMenu();
+
+            BuildingCategory[] categories =
+            {
+                BuildingCategory.Military,
+                BuildingCategory.Civilian,
+                BuildingCategory.Industrial,
+                BuildingCategory.Walls,
+            };
+            for (int i = 0; i < categories.Length; i++)
+            {
+                BuildingCategory category = categories[i];
+                var categoryItem = tree.GetMenuItem($"Бібліотека/{GetCategoryLabel(category)}");
+                if (categoryItem == null)
+                    continue;
+
+                BuildingCategory capturedCategory = category;
+                categoryItem.OnRightClick += _ => ShowCategoryContextMenu(capturedCategory);
+            }
+
+            var legacyItem = tree.GetMenuItem("Бібліотека/Застарілі inline-дані");
+            if (legacyItem != null)
+                legacyItem.OnRightClick += _ => ShowLegacyContextMenu();
+
+            foreach (OdinMenuItem menuItem in tree.EnumerateTree())
+            {
+                if (!(menuItem.Value is BuildingDefinitionAsset asset))
+                    continue;
+
+                BuildingDefinitionAsset capturedAsset = asset;
+                OdinMenuItem capturedItem = menuItem;
+                menuItem.OnRightClick += _ => ShowBuildingContextMenu(capturedItem, capturedAsset);
+            }
+        }
+
+        private void ShowLibraryContextMenu()
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Нова будівля"), false, CreateBuilding);
+            menu.AddSeparator(string.Empty);
+            AddRegistryActions(menu);
+            menu.ShowAsContext();
+        }
+
+        private void ShowRegistryContextMenu()
+        {
+            var menu = new GenericMenu();
+            if (_registry != null)
+            {
+                menu.AddItem(new GUIContent("Показати реєстр у Project"), false, () => PingAsset(_registry));
+                menu.AddSeparator(string.Empty);
+                AddRegistryActions(menu);
+            }
+            else
+            {
+                menu.AddDisabledItem(new GUIContent("Реєстр не вибрано"));
+            }
+            menu.ShowAsContext();
+        }
+
+        private void ShowTemplatesContextMenu()
+        {
+            var menu = new GenericMenu();
+            if (_templateLibrary != null)
+                menu.AddItem(new GUIContent("Показати бібліотеку шаблонів у Project"), false, () => PingAsset(_templateLibrary));
+            else
+                menu.AddDisabledItem(new GUIContent("Бібліотеку шаблонів не вибрано"));
+            menu.ShowAsContext();
+        }
+
+        private void ShowCategoryContextMenu(BuildingCategory category)
+        {
+            string label = GetCategoryLabel(category);
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent($"Додати нову будівлю в «{label}»"), false, () => CreateBuildingInCategory(category));
+            menu.AddItem(new GUIContent("Перевірити будівлі цієї групи"), false, () => ValidateCategory(category));
+            menu.AddSeparator(string.Empty);
+
+            bool filteredHere = _filterByCategory && _categoryFilter == category;
+            if (filteredHere)
+                menu.AddItem(new GUIContent("Показати всі групи"), false, ClearCategoryFilter);
+            else
+                menu.AddItem(new GUIContent("Показати тільки цю групу"), false, () => FilterToCategory(category));
+
+            menu.ShowAsContext();
+        }
+
+        private void ShowLegacyContextMenu()
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Мігрувати всі старі дані"), false, MigrateLegacy);
+            menu.AddItem(new GUIContent("Перевірити реєстр"), false, ValidateRegistry);
+            menu.ShowAsContext();
+        }
+
+        private void ShowBuildingContextMenu(OdinMenuItem item, BuildingDefinitionAsset asset)
+        {
+            if (asset == null)
+                return;
+
+            item?.Select();
+            Selection.activeObject = asset;
+
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Дублювати будівлю"), false, DuplicateSelected);
+            menu.AddItem(new GUIContent("Видалити будівлю…"), false, DeleteSelected);
+            menu.AddSeparator(string.Empty);
+            menu.AddItem(new GUIContent("Перевірити цю будівлю"), false, () => ValidateBuilding(asset));
+            menu.AddItem(new GUIContent("Показати asset у Project"), false, () => PingAsset(asset));
+
+            AddPresetContextActions(menu, asset);
+            menu.ShowAsContext();
+        }
+
+        private void AddRegistryActions(GenericMenu menu)
+        {
+            if (_registry == null)
+            {
+                menu.AddDisabledItem(new GUIContent("Перевірити реєстр"));
+                menu.AddDisabledItem(new GUIContent("Перебудувати реєстр"));
+                return;
+            }
+
+            menu.AddItem(new GUIContent("Перевірити реєстр"), false, ValidateRegistry);
+            menu.AddItem(new GUIContent("Перебудувати реєстр з BuildingDefinition assets"), false, RebuildRegistryFromAssets);
+            if (_registry.LegacyBuildings != null && _registry.LegacyBuildings.Length > 0)
+                menu.AddItem(new GUIContent("Мігрувати старі inline-дані"), false, MigrateLegacy);
+        }
+
+        private void AddPresetContextActions(GenericMenu menu, BuildingDefinitionAsset asset)
+        {
+            try
+            {
+                var pack = Presets.BuildingJsonPresetSerializer.LoadPack();
+                menu.AddSeparator(string.Empty);
+                menu.AddItem(new GUIContent("JSON Presets/Експортувати цю будівлю в clipboard"), false, () => ExportBuildingJson(asset));
+
+                for (int i = 0; i < pack.PresetIds.Count; i++)
+                {
+                    string presetId = pack.PresetIds[i];
+                    string capturedPresetId = presetId;
+                    menu.AddItem(
+                        new GUIContent($"JSON Presets/Застосувати/{presetId}"),
+                        false,
+                        () => ApplyPresetToBuilding(capturedPresetId, asset));
+                }
+            }
+            catch (Exception ex)
+            {
+                menu.AddSeparator(string.Empty);
+                menu.AddDisabledItem(new GUIContent("JSON Presets/Pack недоступний: " + ex.Message));
+            }
+        }
+
+        private void CreateBuildingInCategory(BuildingCategory category)
+        {
+            if (_registry == null)
+            {
+                Debug.LogWarning("[BuildingDesigner] Спочатку виберіть BuildingRegistry.");
+                return;
+            }
+
+            EnsureOutputFolder();
+            var asset = CreateInstance<BuildingDefinitionAsset>();
+            asset.Identity.Id = SanitizeId(_newBuildingId);
+            asset.Identity.DisplayName = string.IsNullOrWhiteSpace(_newBuildingName)
+                ? asset.Identity.Id
+                : _newBuildingName.Trim();
+            _newBuildingTemplate?.ApplyTo(asset);
+            asset.Identity.Category = category;
+            asset.Normalize();
+
+            string path = AssetDatabase.GenerateUniqueAssetPath($"{_outputFolder}/{SanitizeFileName(asset.Id)}.asset");
+            AssetDatabase.CreateAsset(asset, path);
+            AddAssetToRegistry(asset);
+            AssetDatabase.SaveAssets();
+            Selection.activeObject = asset;
+
+            if (_filterByCategory)
+                _categoryFilter = category;
+
+            ForceMenuTreeRebuild();
+            Debug.Log($"[BuildingDesigner] Створено '{asset.Id}' у групі '{GetCategoryLabel(category)}'.");
+        }
+
+        private void ValidateBuilding(BuildingDefinitionAsset asset)
+        {
+            if (asset == null)
+                return;
+
+            var issues = BuildingValidator.Validate(asset.ToRuntimeDefinition());
+            int errors = 0;
+            int warnings = 0;
+            for (int i = 0; i < issues.Count; i++)
+            {
+                if (issues[i] == null)
+                    continue;
+                if (issues[i].Severity == BuildingValidationSeverity.Error)
+                    errors++;
+                else if (issues[i].Severity == BuildingValidationSeverity.Warning)
+                    warnings++;
+                Debug.Log($"[BuildingDesigner] {asset.Id}: {issues[i].Severity} {issues[i].Code}: {issues[i].Message}");
+            }
+
+            Debug.Log($"[BuildingDesigner] Перевірка '{asset.Id}': помилок={errors}, попереджень={warnings}, усього={issues.Count}");
+            EditorUtility.DisplayDialog(
+                "Перевірка будівлі",
+                $"{asset.DisplayName}\n\nПомилок: {errors}\nПопереджень: {warnings}\nУсього: {issues.Count}",
+                "OK");
+        }
+
+        private void ValidateCategory(BuildingCategory category)
+        {
+            if (_registry == null)
+                return;
+
+            int buildings = 0;
+            int errors = 0;
+            int warnings = 0;
+            var assets = _registry.BuildingAssets;
+            for (int i = 0; i < assets.Length; i++)
+            {
+                var asset = assets[i];
+                if (asset == null || asset.Category != category)
+                    continue;
+
+                buildings++;
+                var issues = BuildingValidator.Validate(asset.ToRuntimeDefinition());
+                for (int issueIndex = 0; issueIndex < issues.Count; issueIndex++)
+                {
+                    var issue = issues[issueIndex];
+                    if (issue == null)
+                        continue;
+                    if (issue.Severity == BuildingValidationSeverity.Error)
+                        errors++;
+                    else if (issue.Severity == BuildingValidationSeverity.Warning)
+                        warnings++;
+                    Debug.Log($"[BuildingDesigner] {asset.Id}: {issue.Severity} {issue.Code}: {issue.Message}");
+                }
+            }
+
+            string groupName = GetCategoryLabel(category);
+            Debug.Log($"[BuildingDesigner] Група '{groupName}': будівель={buildings}, помилок={errors}, попереджень={warnings}");
+            EditorUtility.DisplayDialog(
+                "Перевірка групи",
+                $"{groupName}\n\nБудівель: {buildings}\nПомилок: {errors}\nПопереджень: {warnings}",
+                "OK");
+        }
+
+        private void FilterToCategory(BuildingCategory category)
+        {
+            _filterByCategory = true;
+            _categoryFilter = category;
+            ForceMenuTreeRebuild();
+        }
+
+        private void ClearCategoryFilter()
+        {
+            _filterByCategory = false;
+            ForceMenuTreeRebuild();
+        }
+
+        private static void PingAsset(UnityEngine.Object asset)
+        {
+            if (asset == null)
+                return;
+            Selection.activeObject = asset;
+            EditorGUIUtility.PingObject(asset);
+        }
+
+        private void ApplyPresetToBuilding(string presetId, BuildingDefinitionAsset asset)
+        {
+            if (asset == null)
+                return;
+
+            try
+            {
+                var result = Presets.BuildingPresetBatchService.ApplyPresetToSelected(presetId, asset, true);
+                Debug.Log($"[MoyvaBuildingPresets] Context apply '{presetId}' -> '{asset.Id}': {result.Summary}");
+                Selection.activeObject = asset;
+                ForceMenuTreeRebuild();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[MoyvaBuildingPresets] Context apply failed '{presetId}' -> '{asset.Id}': {ex}");
+                EditorUtility.DisplayDialog("Building Presets", ex.Message, "OK");
+            }
+        }
+
+        private static void ExportBuildingJson(BuildingDefinitionAsset asset)
+        {
+            if (asset == null)
+                return;
+
+            try
+            {
+                EditorGUIUtility.systemCopyBuffer = Presets.BuildingJsonPresetSerializer.ExportSelected(asset);
+                Debug.Log($"[MoyvaBuildingPresets] Exported '{asset.Id}' JSON to clipboard from context menu.");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[MoyvaBuildingPresets] Context export failed for '{asset.Id}': {ex}");
+                EditorUtility.DisplayDialog("Building Presets", ex.Message, "OK");
             }
         }
 

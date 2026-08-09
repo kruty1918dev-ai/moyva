@@ -411,7 +411,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
 
         [Test]
-        public void UnaffordablePreview_RemainsPendingUntilResourcesExist_ThenConsumesOnce()
+        public void UnaffordablePreview_IsRejectedAndNeverBecomesPending()
         {
             _buildingRegistry.Buildings = new[]
             {
@@ -421,42 +421,122 @@ namespace Kruty1918.Moyva.Tests.Construction
                     ("stone", 10)),
             };
             Vector2Int position = new Vector2Int(9, 9);
-            _service.SelectBuilding("house");
 
-            Assert.IsTrue(
-                _service.TryPreviewAt(position),
-                "A spatially valid but unaffordable building must still create a pending preview.");
+            // Selection is initially legal, then the resource state changes
+            // before the pointer click. Preview validation must still reject it.
+            _economyInfoMediator.SetOwnerPoolResource("stone", 10f);
+            _service.SelectBuilding("house");
+            Assert.AreEqual("house", _service.GetSelectedBuildingId());
+            _economyInfoMediator.SetOwnerPoolResource("stone", 0f);
+
+            Assert.IsFalse(_service.TryPreviewAt(position));
             Assert.AreEqual(
                 BuildingPreviewState.Unaffordable,
                 _lastPreview.PreviewState);
-            Assert.IsTrue(
-                _service.TryGetPendingPlacementStatus(
-                    position,
-                    out ConstructionPendingPlacementStatus status));
-            Assert.IsFalse(status.IsAffordable);
-            StringAssert.Contains("stone", status.ErrorMessage);
+            Assert.IsFalse(_service.HasPendingPlacementAt(position));
+            Assert.AreEqual(0, _service.GetPendingPlacements().Count);
 
             _service.Confirm();
 
-            Assert.IsTrue(_service.HasPendingPlacementAt(position));
             Assert.AreEqual(0, _placedCount);
             Assert.AreEqual(
                 0,
                 _economyInfoMediator.OwnerPoolSuccessfulConsumeCalls);
+        }
 
-            _economyInfoMediator.SetOwnerPoolResource("stone", 10f);
-            _service.Confirm();
+        [Test]
+        public void SelectionAvailability_BlocksInsufficientOwnerPoolResources()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding(
+                    "house",
+                    null,
+                    ("stone", 10)),
+            };
+            _economyInfoMediator.SetOwnerPoolResource("stone", 0f);
 
-            Assert.IsFalse(_service.HasPendingPlacementAt(position));
-            Assert.AreEqual(1, _placedCount);
+            var availabilityQuery =
+                _service as IConstructionSelectionAvailabilityQuery;
+            Assert.NotNull(availabilityQuery);
+
+            ConstructionSelectionAvailabilityResult result =
+                availabilityQuery.EvaluateSelectionAvailability(
+                    "house",
+                    "player_0",
+                    Vector2Int.zero,
+                    includePendingPlacements: true);
+
+            Assert.IsFalse(result.CanSelect);
+            Assert.IsTrue(result.ResourceCheckPerformed);
+            Assert.AreEqual("resources", result.ReasonCode);
+
+            _service.SelectBuilding("house");
+            Assert.AreNotEqual("house", _service.GetSelectedBuildingId());
+        }
+
+        [Test]
+        public void BlockLimit_ReachingPendingLimit_ClearsSelectionAndBlocksNextPreview()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding(
+                    "limited-house",
+                    new BuildingPerPlayerLimitModule
+                    {
+                        MaxBuildingsPerPlayer = 1,
+                        LimitScope = BuildingLimitScope.PerOwner,
+                        OverflowPolicy = BuildingLimitOverflowPolicy.Block,
+                    }),
+            };
+
+            Vector2Int first = new Vector2Int(18, 12);
+            Vector2Int second = new Vector2Int(19, 12);
+
+            _service.SelectBuilding("limited-house");
             Assert.AreEqual(
-                1,
-                _economyInfoMediator.OwnerPoolSuccessfulConsumeCalls,
-                "Only the host-side successful commit may deduct resources.");
-            Assert.AreEqual(
-                0f,
-                _economyInfoMediator.GetOwnerPoolResource("stone"),
-                0.01f);
+                "limited-house",
+                _service.GetSelectedBuildingId());
+
+            Assert.IsTrue(_service.TryPreviewAt(first));
+            Assert.AreEqual(1, _service.GetPendingPlacements().Count);
+
+            Assert.IsTrue(
+                string.IsNullOrWhiteSpace(
+                    _service.GetSelectedBuildingId()));
+
+            Assert.IsFalse(_service.TryPreviewAt(second));
+            Assert.AreEqual(1, _service.GetPendingPlacements().Count);
+            Assert.IsFalse(_service.HasPendingPlacementAt(second));
+        }
+
+        [Test]
+        public void ReservedResources_ExhaustNextCopy_ClearsSelection()
+        {
+            _buildingRegistry.Buildings = new[]
+            {
+                CreateBuilding(
+                    "costly-house",
+                    null,
+                    ("stone", 10)),
+            };
+            _economyInfoMediator.SetOwnerPoolResource(
+                "stone",
+                10f);
+
+            Vector2Int first = new Vector2Int(20, 12);
+            Vector2Int second = new Vector2Int(21, 12);
+
+            _service.SelectBuilding("costly-house");
+            Assert.IsTrue(_service.TryPreviewAt(first));
+
+            Assert.IsTrue(
+                string.IsNullOrWhiteSpace(
+                    _service.GetSelectedBuildingId()));
+            Assert.AreEqual(1, _service.GetPendingPlacements().Count);
+
+            Assert.IsFalse(_service.TryPreviewAt(second));
+            Assert.AreEqual(1, _service.GetPendingPlacements().Count);
         }
 
         [Test]

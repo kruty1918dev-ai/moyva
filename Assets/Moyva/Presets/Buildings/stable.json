@@ -1,0 +1,79 @@
+{
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "stable",
+  "identity": {
+    "displayName": "Stable",
+    "category": "Military",
+    "role": "Support"
+  },
+  "construction": {
+    "buildTurns": 4,
+    "cost": [
+      {
+        "resource": "logs",
+        "amount": 40
+      },
+      {
+        "resource": "boards",
+        "amount": 20
+      },
+      {
+        "resource": "stone",
+        "amount": 30
+      },
+      {
+        "resource": "iron",
+        "amount": 10
+      }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Buildings/stable.png",
+      "required": true
+    },
+    "prefab": {
+      "root": "Assets/KayKit",
+      "exact": [
+        "building_stable_blue"
+      ],
+      "search": [
+        "stable",
+        "horse",
+        "cavalry",
+        "building_stable",
+        "building_horse",
+        "building_cavalry"
+      ],
+      "fallback": [],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [],
+    "remove": [],
+    "conditional": [
+      {
+        "type": "FogRevealBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "SettlementInfluenceRequirementBuildingModule",
+        "data": {}
+      }
+    ],
+    "deferred": [
+      {
+        "type": "RecruitmentBuildingModule",
+        "data": {
+          "reason": "runtime recruitment consumer not part of this patch"
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "barn",
+  "identity": {
+    "displayName": "Barn",
+    "category": "Industrial",
+    "role": "Storage"
+  },
+  "construction": {
+    "buildTurns": 0,
+    "cost": [
+      {
+        "resource": "logs",
+        "amount": 10
+      }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Buildings/barn.png",
+      "required": true
+    },
+    "prefab": {
+      "root": "Assets/KayKit",
+      "exact": [
+        "building_barn_blue"
+      ],
+      "search": [
+        "barn",
+        "farm",
+        "building_barn",
+        "building_farm"
+      ],
+      "fallback": [
+        "building_market_blue"
+      ],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [
+      {
+        "type": "StorageBuildingModule",
+        "data": {
+          "storageKind": "Food",
+          "capacity": -1
+        }
+      }
+    ],
+    "remove": [
+      "WarehouseBuildingModule",
+      "BarnBuildingModule"
+    ],
+    "conditional": [
+      {
+        "type": "WorkerlessBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "FogRevealBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "SettlementInfluenceRequirementBuildingModule",
+        "data": {}
+      }
+    ],
+    "deferred": []
+  }
+}

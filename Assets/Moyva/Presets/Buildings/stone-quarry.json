@@ -1,0 +1,78 @@
+{
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "stone-quarry",
+  "identity": {
+    "displayName": "Stone Quarry",
+    "category": "Industrial",
+    "role": "Production"
+  },
+  "construction": {
+    "buildTurns": 3,
+    "cost": [
+      {
+        "resource": "logs",
+        "amount": 20
+      }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Buildings/stone-quarry.png",
+      "required": true
+    },
+    "prefab": {
+      "root": "Assets/KayKit",
+      "exact": [
+        "building_quarry_blue"
+      ],
+      "search": [
+        "stone quarry",
+        "quarry",
+        "building_quarry"
+      ],
+      "fallback": [
+        "building_mine_blue"
+      ],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [
+      {
+        "type": "WorkforceBuildingModule",
+        "data": {
+          "workersRequired": 4
+        }
+      },
+      {
+        "type": "ProductionBuildingModule",
+        "data": {
+          "resourceId": "stone-materials-resources"
+        }
+      }
+    ],
+    "remove": [],
+    "conditional": [
+      {
+        "type": "TileRequirementBuildingModule",
+        "data": {
+          "terrainTag": "stone"
+        }
+      },
+      {
+        "type": "FogRevealBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "SettlementInfluenceRequirementBuildingModule",
+        "data": {}
+      }
+    ],
+    "deferred": []
+  }
+}

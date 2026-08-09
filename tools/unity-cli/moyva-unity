@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+export UNITY_PROJECT_PATH="$PROJECT"
+export PATH="$HOME/.local/bin:$PATH"
+
+if ! command -v unity >/dev/null 2>&1; then
+  echo "Unity CLI not found. Run the Pass70 installer or install Unity CLI first." >&2
+  exit 10
+fi
+
+usage() {
+  cat <<'EOF'
+Moyva Unity CLI bridge
+
+Usage:
+  tools/unity-cli/moyva-unity status
+  tools/unity-cli/moyva-unity commands
+  tools/unity-cli/moyva-unity project
+  tools/unity-cli/moyva-unity scene
+  tools/unity-cli/moyva-unity ui
+  tools/unity-cli/moyva-unity object 'Canvas/TopBar'
+  tools/unity-cli/moyva-unity select 'Canvas/TopBar'
+  tools/unity-cli/moyva-unity set-text 'Canvas/TopBar/TurnText' 'Turn 4'
+  tools/unity-cli/moyva-unity set-active 'Canvas/Panel' true
+  tools/unity-cli/moyva-unity set-rect 'Canvas/Panel' 0 0 800 160
+  tools/unity-cli/moyva-unity set-sprite 'Canvas/Icon' 'Assets/.../icon.png'
+  tools/unity-cli/moyva-unity save
+  tools/unity-cli/moyva-unity undo
+  tools/unity-cli/moyva-unity eval 'return Application.unityVersion;'
+  tools/unity-cli/moyva-unity eval-file /absolute/or/project/relative/script.cs
+  tools/unity-cli/moyva-unity mcp
+EOF
+}
+
+CMD="${1:-help}"
+shift || true
+
+case "$CMD" in
+  help|-h|--help)
+    usage
+    ;;
+  status)
+    unity status --format json
+    ;;
+  commands)
+    unity command --project-path="$PROJECT" --format json
+    ;;
+  project)
+    unity command moyva-project-status --project-path="$PROJECT" --format json
+    ;;
+  scene)
+    unity command moyva-scene-tree --project-path="$PROJECT" --format json
+    ;;
+  ui)
+    unity command moyva-ui-audit --project-path="$PROJECT" --format json
+    ;;
+  object)
+    unity command moyva-ui-object --project-path="$PROJECT" --path "${1:?hierarchy path required}" --format json
+    ;;
+  select)
+    unity command moyva-ui-select --project-path="$PROJECT" --path "${1:?hierarchy path required}" --format json
+    ;;
+  set-text)
+    unity command moyva-ui-set-text --project-path="$PROJECT" \
+      --path "${1:?hierarchy path required}" --text "${2-}" --format json
+    ;;
+  set-active)
+    unity command moyva-ui-set-active --project-path="$PROJECT" \
+      --path "${1:?hierarchy path required}" --active "${2:?true/false required}" --format json
+    ;;
+  set-rect)
+    unity command moyva-ui-set-rect --project-path="$PROJECT" \
+      --path "${1:?hierarchy path required}" \
+      --x "${2:?x required}" --y "${3:?y required}" \
+      --width "${4:?width required}" --height "${5:?height required}" --format json
+    ;;
+  set-sprite)
+    unity command moyva-ui-set-sprite --project-path="$PROJECT" \
+      --path "${1:?hierarchy path required}" --asset-path "${2-}" --format json
+    ;;
+  save)
+    unity command moyva-ui-save-scene --project-path="$PROJECT" --format json
+    ;;
+  undo)
+    unity command moyva-ui-undo --project-path="$PROJECT" --format json
+    ;;
+  eval)
+    unity command eval "${1:?C# code required}" --project-path="$PROJECT" --format json
+    ;;
+  eval-file)
+    FILE="${1:?script path required}"
+    if [[ "$FILE" != /* ]]; then FILE="$PROJECT/$FILE"; fi
+    unity command eval_file "$FILE" --project-path="$PROJECT" --format json
+    ;;
+  mcp)
+    exec unity mcp "$@"
+    ;;
+  *)
+    echo "Unknown subcommand: $CMD" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

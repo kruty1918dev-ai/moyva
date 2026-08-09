@@ -1,0 +1,87 @@
+{
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "engineers-guild",
+  "identity": {
+    "displayName": "Engineers' Guild",
+    "category": "Military",
+    "role": "Support"
+  },
+  "construction": {
+    "buildTurns": 5,
+    "cost": [
+      {
+        "resource": "logs",
+        "amount": 50
+      },
+      {
+        "resource": "boards",
+        "amount": 40
+      },
+      {
+        "resource": "stone",
+        "amount": 40
+      },
+      {
+        "resource": "iron",
+        "amount": 20
+      }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Buildings/engineers-guild.png",
+      "required": true
+    },
+    "prefab": {
+      "root": "Assets/KayKit",
+      "exact": [
+        "building_engineersguild_blue",
+        "building_engineers_guild_blue",
+        "building_guild_blue"
+      ],
+      "search": [
+        "engineers guild",
+        "engineer guild",
+        "guild",
+        "workshop"
+      ],
+      "fallback": [
+        "building_archeryrange_blue"
+      ],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [],
+    "remove": [],
+    "conditional": [
+      {
+        "type": "FogRevealBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "SettlementInfluenceRequirementBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "BuildingPrerequisiteModule",
+        "data": {
+          "policy": "project-progression"
+        }
+      }
+    ],
+    "deferred": [
+      {
+        "type": "RecruitmentBuildingModule",
+        "data": {
+          "reason": "runtime engineer recruitment consumer not part of this patch"
+        }
+      }
+    ]
+  }
+}

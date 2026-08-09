@@ -1,0 +1,76 @@
+{
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "iron-mine",
+  "identity": {
+    "displayName": "Iron Mine",
+    "category": "Industrial",
+    "role": "Production"
+  },
+  "construction": {
+    "buildTurns": 4,
+    "cost": [
+      {
+        "resource": "logs",
+        "amount": 20
+      }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Buildings/iron-mine.png",
+      "required": true
+    },
+    "prefab": {
+      "root": "Assets/KayKit",
+      "exact": [
+        "building_mine_blue"
+      ],
+      "search": [
+        "iron mine",
+        "mine",
+        "building_mine"
+      ],
+      "fallback": [],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [
+      {
+        "type": "WorkforceBuildingModule",
+        "data": {
+          "workersRequired": 4
+        }
+      },
+      {
+        "type": "ProductionBuildingModule",
+        "data": {
+          "resourceId": "iron-ore-materials-resources"
+        }
+      }
+    ],
+    "remove": [],
+    "conditional": [
+      {
+        "type": "TileRequirementBuildingModule",
+        "data": {
+          "terrainTag": "ore"
+        }
+      },
+      {
+        "type": "FogRevealBuildingModule",
+        "data": {}
+      },
+      {
+        "type": "SettlementInfluenceRequirementBuildingModule",
+        "data": {}
+      }
+    ],
+    "deferred": []
+  }
+}
