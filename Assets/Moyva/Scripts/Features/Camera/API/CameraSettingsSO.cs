@@ -6,9 +6,12 @@ namespace Kruty1918.Moyva.Camera.API
     [System.Serializable]
     public struct CameraControlProfile
     {
+        private const float DefaultRotationSpeed = 90f;
+
         [Min(0.01f)] public float moveSpeed;
         [Min(0.01f)] public float smoothTime;
         [Min(0.01f)] public float zoomSpeed;
+        [Min(0.01f)] public float rotationSpeed;
         [Min(0.1f)] public float minZoom;
         [Min(0.2f)] public float maxZoom;
 
@@ -28,6 +31,9 @@ namespace Kruty1918.Moyva.Camera.API
                 moveSpeed = Mathf.Max(0.01f, moveSpeed),
                 smoothTime = Mathf.Max(0.01f, smoothTime),
                 zoomSpeed = Mathf.Max(0.01f, zoomSpeed),
+                rotationSpeed = rotationSpeed > 0f
+                    ? Mathf.Max(0.01f, rotationSpeed)
+                    : DefaultRotationSpeed,
                 minZoom = normalizedMinZoom,
                 maxZoom = Mathf.Max(normalizedMinZoom + 0.1f, maxZoom),
                 touchMoveSpeed = Mathf.Max(0.01f, touchMoveSpeed),
@@ -47,6 +53,7 @@ namespace Kruty1918.Moyva.Camera.API
                 moveSpeed = 3.2f,
                 smoothTime = 0.42f,
                 zoomSpeed = 2.4f,
+                rotationSpeed = DefaultRotationSpeed,
                 minZoom = 2f,
                 maxZoom = 70f,
                 touchMoveSpeed = 0.9f,
@@ -84,6 +91,12 @@ namespace Kruty1918.Moyva.Camera.API
         public Vector3 orthographic3DEuler = new Vector3(90f, 0f, 0f);
         public Vector3 isometric3DEuler = new Vector3(50f, 45f, 0f);
 
+        [Header("Rotation Pivot")]
+        [Tooltip("Maximum distance for the forward ray used to find the camera rotation pivot.")]
+        [Min(0.1f)] public float rotationPivotRaycastDistance = 1000f;
+        [Tooltip("Physics layers that can provide a camera rotation pivot. Falls back to the grid plane when nothing is hit.")]
+        public LayerMask rotationPivotLayers = Physics.DefaultRaycastLayers;
+
         [Header("Shader / Mip Bias")]
         [Tooltip("Applies global automatic mip bias for zoom. Disable to avoid tile atlas artifacts/bleeding on zoom-out.")]
         [HideInInspector]
@@ -117,6 +130,7 @@ namespace Kruty1918.Moyva.Camera.API
         public float ResolveMoveSpeed() => ResolveActiveProfile().moveSpeed;
         public float ResolveSmoothTime() => ResolveActiveProfile().smoothTime;
         public float ResolveZoomSpeed() => ResolveActiveProfile().zoomSpeed;
+        public float ResolveRotationSpeed() => ResolveActiveProfile().rotationSpeed;
         public float ResolveMinZoom() => ResolveActiveProfile().minZoom;
         public float ResolveMaxZoom() => ResolveActiveProfile().maxZoom;
         public float ResolveTouchMoveSpeed() => ResolveActiveProfile().touchMoveSpeed;
@@ -131,6 +145,8 @@ namespace Kruty1918.Moyva.Camera.API
         public float ResolveDefault3DCameraDistance() => Mathf.Max(0.1f, default3DCameraDistance);
         public float ResolveDefault3DOrthographicSize() => Mathf.Max(ResolveMinZoom(), default3DOrthographicSize);
         public float ResolveDefault3DFieldOfView() => Mathf.Clamp(default3DFieldOfView, 1f, 179f);
+        public float ResolveRotationPivotRaycastDistance() => Mathf.Max(0.1f, rotationPivotRaycastDistance);
+        public int ResolveRotationPivotLayerMask() => rotationPivotLayers.value;
         public Vector2 ResolveBoundsOverflowWorldUnits() => new Vector2(
             Mathf.Max(0f, boundsOverflowTiles.x),
             Mathf.Max(0f, boundsOverflowTiles.y));
@@ -146,6 +162,7 @@ namespace Kruty1918.Moyva.Camera.API
             default3DCameraDistance = Mathf.Max(0.1f, default3DCameraDistance);
             default3DOrthographicSize = Mathf.Max(ResolveMinZoom(), default3DOrthographicSize);
             default3DFieldOfView = Mathf.Clamp(default3DFieldOfView, 1f, 179f);
+            rotationPivotRaycastDistance = Mathf.Max(0.1f, rotationPivotRaycastDistance);
             automaticMipBiasMax = Mathf.Clamp(automaticMipBiasMax, 0f, 3f);
         }
     }

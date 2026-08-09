@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
             BuildingDefinitionAsset stage=UnityEngine.Object.Instantiate(selected); stage.hideFlags=HideFlags.HideAndDontSave;
             try
             {
+                stage.name = selected.name;
                 BuildingJsonPresetApplier.ApplyToAsset(resolved,stage,preserveId); BuildingPresetValidation.ValidateRuntimeAsset(stage);
                 string before=EditorJsonUtility.ToJson(selected,false); string after=EditorJsonUtility.ToJson(stage,false);
                 int changed=string.Equals(before,after,StringComparison.Ordinal)?0:1;
@@ -52,7 +53,7 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
                 {
                     existing.TryGetValue(item.Spec.Id,out BuildingDefinitionAsset current);
                     BuildingDefinitionAsset stage=current!=null?UnityEngine.Object.Instantiate(current):ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
-                    stage.hideFlags=HideFlags.HideAndDontSave; BuildingJsonPresetApplier.ApplyToAsset(item,stage,false); BuildingPresetValidation.ValidateRuntimeAsset(stage); stages.Add((item,stage,current));
+                    stage.name=item.Spec.Id; stage.hideFlags=HideFlags.HideAndDontSave; BuildingJsonPresetApplier.ApplyToAsset(item,stage,false); BuildingPresetValidation.ValidateRuntimeAsset(stage); stages.Add((item,stage,current));
                 }
                 BuildingRegistrySO registry=FindRegistry();
                 if(validateOnly) return new BuildingPresetBatchResult{PackId=pack.PackId,PresetCount=stages.Count,ChangedCount=0,ValidateOnly=true,Summary=$"validated {stages.Count}/{stages.Count}"};
@@ -69,7 +70,7 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
                     else
                     {
                         string before=EditorJsonUtility.ToJson(target,false); string after=EditorJsonUtility.ToJson(tuple.stage,false);
-                        if(!string.Equals(before,after,StringComparison.Ordinal)) { EditorUtility.CopySerialized(tuple.stage,target); target.NotifyEditorDataChanged(); EditorUtility.SetDirty(target); changed++; }
+                        if(!string.Equals(before,after,StringComparison.Ordinal)) { EditorUtility.CopySerialized(tuple.stage,target); target.name=tuple.resolved.Spec.Id; target.NotifyEditorDataChanged(); EditorUtility.SetDirty(target); changed++; }
                     }
                     committed.Add(target);
                 }

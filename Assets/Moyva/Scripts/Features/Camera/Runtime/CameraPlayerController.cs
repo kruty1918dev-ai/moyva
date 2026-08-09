@@ -18,6 +18,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private readonly InputAction _moveAction;
         private readonly InputAction _zoomAction;
+        private readonly InputAction _rotateAction;
         private readonly List<RaycastResult> _uiRaycastResults = new List<RaycastResult>(8);
         private PointerEventData _pointerEventData;
 
@@ -40,6 +41,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             _moveAction = map.FindAction("Move");
             _zoomAction = map.FindAction("Zoom");
+            _rotateAction = map.FindAction("Rotate");
 
             map.Enable();
         }
@@ -66,6 +68,13 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (Mathf.Abs(zoomDelta) > 0.001f)
             {
                 _cameraZoom.ZoomCamera(zoomDelta);
+            }
+
+            float rotationDirection = _rotateAction?.ReadValue<float>() ?? 0f;
+            if (Mathf.Abs(rotationDirection) > 0.001f)
+            {
+                float angleDegrees = rotationDirection * _settings.ResolveRotationSpeed() * Time.deltaTime;
+                _cameraMovement.RotateCameraAroundFocusPoint(angleDegrees);
             }
         }
 
@@ -209,6 +218,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
         {
             _moveAction?.Disable();
             _zoomAction?.Disable();
+            _rotateAction?.Disable();
         }
     }
 }

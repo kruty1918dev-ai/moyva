@@ -8,6 +8,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
     internal sealed class CameraMovement : ICameraMovement, IInitializable, ILateTickable
     {
         private const string StartupChainTag = "[MoyvaStartupChain]";
+        private const float RotationEpsilon = 0.0001f;
 
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
@@ -50,6 +51,33 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         public void MoveCameraImmediate(Vector3 delta, float speedMultiplier)
             => ApplyScreenDelta(delta, speedMultiplier, immediate: true);
+
+        public void RotateCameraAroundFocusPoint(float angleDegrees)
+        {
+            if (_forceBlockTimer > 0f
+                || _camera == null
+                || float.IsNaN(angleDegrees)
+                || float.IsInfinity(angleDegrees)
+                || Mathf.Abs(angleDegrees) <= RotationEpsilon)
+            {
+                return;
+            }
+
+            if (!TryResolveRotationPivot(out Vector3 pivot))
+                return;
+
+            Quaternion rotationDelta = Quaternion.AngleAxis(angleDegrees, ResolveNavigationPlaneNormal());
+            Transform cameraTransform = _camera.transform;
+
+            Vector3 rotatedPosition = pivot + rotationDelta * (cameraTransform.position - pivot);
+            Quaternion rotatedRotation = rotationDelta * cameraTransform.rotation;
+            cameraTransform.SetPositionAndRotation(rotatedPosition, rotatedRotation);
+
+            _targetPosition = pivot + rotationDelta * (_targetPosition - pivot);
+            _currentVelocity = rotationDelta * _currentVelocity;
+            ApplyFixedPlaneAxis();
+            ClampTargetToBounds();
+        }
 
         public void ShiftCameraWorld(Vector3 worldDelta, bool immediate)
         {
@@ -354,6 +382,24 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             worldPoint = cameraPosition + direction * distance;
             return true;
+        }
+
+        private bool TryResolveRotationPivot(out Vector3 pivot)
+        {
+            Transform cameraTransform = _camera.transform;
+            Ray forwardRay = new Ray(cameraTransform.position, cameraTransform.forward);
+            if (Physics.Raycast(
+                    forwardRay,
+                    out RaycastHit hit,
+                    _settings.ResolveRotationPivotRaycastDistance(),
+                    _settings.ResolveRotationPivotLayerMask(),
+                    QueryTriggerInteraction.Ignore))
+            {
+                pivot = hit.point;
+                return true;
+            }
+
+            return TryResolveNavigationPlaneCenter(cameraTransform.position, out pivot, out _);
         }
 
         private void ResolveViewportHalfExtents(Vector3 cameraPosition, out float halfWidth, out float halfHeight)

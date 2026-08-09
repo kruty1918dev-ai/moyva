@@ -16,6 +16,7 @@ MonoBehaviour:
     moveSpeed: 4
     smoothTime: 0.4
     zoomSpeed: 5
+    rotationSpeed: 90
     minZoom: 4
     maxZoom: 50
     touchMoveSpeed: 1
@@ -34,6 +35,10 @@ MonoBehaviour:
   default3DFieldOfView: 30
   orthographic3DEuler: {x: 90, y: 0, z: 0}
   isometric3DEuler: {x: 50, y: 45, z: 0}
+  rotationPivotRaycastDistance: 1000
+  rotationPivotLayers:
+    serializedVersion: 2
+    m_Bits: 4294967291
   enableAutomaticMipBias: 0
   automaticMipBiasMax: 0.75
   mapRenderMaskEnabled: 1

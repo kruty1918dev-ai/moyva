@@ -1,0 +1,37 @@
+{
+  "$schema": "../Schemas/building-preset.schema.json",
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "castle-01",
+  "identity": {
+    "displayName": "Castle",
+    "category": "Civilian",
+    "role": "SettlementCenter"
+  },
+  "construction": {
+    "buildTurns": 1,
+    "cost": []
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/Sprites/Icons/v4_mobile_focus/11_grand_castle.png",
+      "required": true
+    },
+    "prefab": {
+      "path": "Assets/Moyva/Prefabs/Buildings/castle-01.prefab",
+      "root": "Assets/Moyva/Prefabs/Buildings",
+      "exact": ["castle-01"],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [],
+    "remove": [],
+    "conditional": [],
+    "deferred": []
+  }
+}

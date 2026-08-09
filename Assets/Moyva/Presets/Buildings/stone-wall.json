@@ -1,0 +1,36 @@
+{
+  "$schema": "../Schemas/building-preset.schema.json",
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "stone-wall",
+  "identity": {
+    "displayName": "Стіна",
+    "category": "Walls",
+    "role": "Wall"
+  },
+  "construction": {
+    "buildTurns": 1,
+    "cost": [
+      { "resource": "stone", "amount": 1 },
+      { "resource": "boards", "amount": 1 }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "prefab": {
+      "path": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Horizontal.prefab",
+      "root": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0",
+      "exact": ["wall-stone-collection-0_Horizontal"],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [],
+    "remove": [],
+    "conditional": [],
+    "deferred": []
+  }
+}

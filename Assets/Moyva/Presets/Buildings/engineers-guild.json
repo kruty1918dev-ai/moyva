@@ -1,4 +1,5 @@
 {
+  "$schema": "../Schemas/building-preset.schema.json",
   "schema": "moyva.building-preset",
   "version": 1,
   "id": "engineers-guild",

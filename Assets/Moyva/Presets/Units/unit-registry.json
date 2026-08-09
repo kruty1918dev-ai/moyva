@@ -1,0 +1,202 @@
+{
+  "$schema": "../Schemas/unit-registry.schema.json",
+  "schema": "moyva.unit-registry",
+  "version": 1,
+  "targetAsset": "Assets/Moyva/Data/ScriptableObjects/Units/UnitRegistry.asset",
+  "units": [
+    {
+      "typeId": "warrior",
+      "displayName": null,
+      "role": "Military",
+      "combatType": "Infantry",
+      "movement": {
+        "baseStamina": 15.0,
+        "staminaRandomRange": {
+          "min": -1.0,
+          "max": 1.0
+        },
+        "moveDurationPerTile": 0.3,
+        "delayOnTile": 0.05
+      },
+      "vision": {
+        "range": 2,
+        "heightBoostPerLevel": 0.0,
+        "canSeeCrest": true,
+        "crestVisibilityFactor": 1.0,
+        "downSlopeBonus": 0.0,
+        "silhouettePenalty": 0.0
+      },
+      "combat": {
+        "hitPoints": 100,
+        "baseLevel": 1,
+        "cuttingDamage": 15,
+        "penetratingDamage": 0,
+        "crushingDamage": 0,
+        "cuttingDefense": 0,
+        "penetratingDefense": 0,
+        "crushingDefense": 0
+      },
+      "presentation": {
+        "prefab": {
+          "path": "Assets/Moyva/Prefabs/Units/Unit-warrior-01.prefab",
+          "guid": "4d504a73108154c2a87c088a007ff633",
+          "localId": 3012185294812511675
+        },
+        "customSprite": null
+      },
+      "animations": [
+        {
+          "type": "Idle",
+          "name": "Animation 1",
+          "animationClip": null,
+          "animatorParameterName": null,
+          "spriteFrames": [],
+          "spriteFps": 0,
+          "loop": true,
+          "duration": 1.0
+        }
+      ]
+    },
+    {
+      "typeId": "Spearman",
+      "displayName": null,
+      "role": "Military",
+      "combatType": "Infantry",
+      "movement": {
+        "baseStamina": 100.0,
+        "staminaRandomRange": {
+          "min": -5.0,
+          "max": 5.0
+        },
+        "moveDurationPerTile": 0.3,
+        "delayOnTile": 0.05
+      },
+      "vision": {
+        "range": 3,
+        "heightBoostPerLevel": 0.0,
+        "canSeeCrest": true,
+        "crestVisibilityFactor": 1.0,
+        "downSlopeBonus": 0.0,
+        "silhouettePenalty": 0.0
+      },
+      "combat": {
+        "hitPoints": 100,
+        "baseLevel": 1,
+        "cuttingDamage": 15,
+        "penetratingDamage": 0,
+        "crushingDamage": 0,
+        "cuttingDefense": 0,
+        "penetratingDefense": 0,
+        "crushingDefense": 0
+      },
+      "presentation": {
+        "prefab": {
+          "path": "Assets/Moyva/Prefabs/Units/spearman.prefab",
+          "guid": "f6eca2d1e3131f6d69c2b40f8a22f1d0",
+          "localId": 804881041722963365
+        },
+        "customSprite": {
+          "path": "Assets/Moyva/Art/Prototype/MiniWorldPreview.png",
+          "guid": "24f577213f615d54ca31f1d5da309e46",
+          "subAsset": "MiniWorldPreview_13",
+          "localId": 1618817777
+        }
+      },
+      "animations": []
+    },
+    {
+      "typeId": "Archer",
+      "displayName": null,
+      "role": "Military",
+      "combatType": "Infantry",
+      "movement": {
+        "baseStamina": 100.0,
+        "staminaRandomRange": {
+          "min": -5.0,
+          "max": 5.0
+        },
+        "moveDurationPerTile": 0.3,
+        "delayOnTile": 0.05
+      },
+      "vision": {
+        "range": 3,
+        "heightBoostPerLevel": 0.0,
+        "canSeeCrest": true,
+        "crestVisibilityFactor": 1.0,
+        "downSlopeBonus": 0.0,
+        "silhouettePenalty": 0.0
+      },
+      "combat": {
+        "hitPoints": 100,
+        "baseLevel": 1,
+        "cuttingDamage": 15,
+        "penetratingDamage": 0,
+        "crushingDamage": 0,
+        "cuttingDefense": 0,
+        "penetratingDefense": 0,
+        "crushingDefense": 0
+      },
+      "presentation": {
+        "prefab": {
+          "path": "Assets/Moyva/Prefabs/Units/archer.prefab",
+          "guid": "6e123bcf7098822d4a01e669ab0f8b46",
+          "localId": 3893281008883271442
+        },
+        "customSprite": {
+          "path": "Assets/Moyva/Art/Prototype/Puny-Characters/Archer-Green.png",
+          "guid": "53dd6007514ce6947aa259b0acb750fc",
+          "subAsset": "Archer-Green_34",
+          "localId": 518154196223322196
+        }
+      },
+      "animations": []
+    },
+    {
+      "typeId": "Light-cavalry",
+      "displayName": null,
+      "role": "Military",
+      "combatType": "Infantry",
+      "movement": {
+        "baseStamina": 100.0,
+        "staminaRandomRange": {
+          "min": -5.0,
+          "max": 5.0
+        },
+        "moveDurationPerTile": 0.3,
+        "delayOnTile": 0.05
+      },
+      "vision": {
+        "range": 3,
+        "heightBoostPerLevel": 0.0,
+        "canSeeCrest": true,
+        "crestVisibilityFactor": 1.0,
+        "downSlopeBonus": 0.0,
+        "silhouettePenalty": 0.0
+      },
+      "combat": {
+        "hitPoints": 100,
+        "baseLevel": 1,
+        "cuttingDamage": 15,
+        "penetratingDamage": 0,
+        "crushingDamage": 0,
+        "cuttingDefense": 0,
+        "penetratingDefense": 0,
+        "crushingDefense": 0
+      },
+      "presentation": {
+        "prefab": {
+          "path": "Assets/Moyva/Prefabs/Units/light-cavalry.prefab",
+          "guid": "c98063cb2ac50f4fe98a1a114ea55281",
+          "localId": 4789759872813502532
+        },
+        "customSprite": {
+          "path": "Assets/Moyva/Art/Prototype/MiniWorldPreview.png",
+          "guid": "24f577213f615d54ca31f1d5da309e46",
+          "subAsset": "MiniWorldPreview_483",
+          "localId": -1276854379
+        }
+      },
+      "animations": []
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 {
+  "$schema": "../Schemas/building-preset-pack.schema.json",
   "schema": "moyva.building-preset-pack",
   "version": 1,
   "packId": "moyva.base-buildings.2026-08",
@@ -16,7 +17,12 @@
     "armor-workshop",
     "barrack",
     "stable",
-    "engineers-guild"
+    "engineers-guild",
+    "castle-01",
+    "house-01",
+    "stone-gate",
+    "stone-wall",
+    "windmill-01"
   ],
   "resourceAliases": {
     "logs": "walnut-wood-materials-resources",

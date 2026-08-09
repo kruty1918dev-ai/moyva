@@ -81,6 +81,7 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
             string escapedId = Escape(asset.Id);
             string escapedName = Escape(asset.DisplayName);
             return "{\n" +
+                   "  \"$schema\": \"../Schemas/building-preset.schema.json\",\n" +
                    "  \"schema\": \"moyva.building-preset\",\n" +
                    "  \"version\": 1,\n" +
                    $"  \"id\": \"{escapedId}\",\n" +

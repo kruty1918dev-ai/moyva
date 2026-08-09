@@ -1,0 +1,41 @@
+{
+  "$schema": "../Schemas/building-preset.schema.json",
+  "schema": "moyva.building-preset",
+  "version": 1,
+  "id": "house-01",
+  "identity": {
+    "displayName": "House",
+    "category": "Civilian",
+    "role": "Housing"
+  },
+  "construction": {
+    "buildTurns": 1,
+    "cost": [
+      { "resource": "logs", "amount": 1 },
+      { "resource": "stone", "amount": 1 },
+      { "resource": "boards", "amount": 1 }
+    ]
+  },
+  "runtimeStats": {
+    "maxHp": 100
+  },
+  "presentation": {
+    "icon": {
+      "path": "Assets/Moyva/Art/Sprites/Icons/v4_mobile_focus/13_house.png",
+      "required": true
+    },
+    "prefab": {
+      "path": "Assets/Moyva/Prefabs/Buildings/house-01.prefab",
+      "root": "Assets/Moyva/Prefabs/Buildings",
+      "exact": ["house-01"],
+      "required": true
+    }
+  },
+  "modules": {
+    "mode": "merge",
+    "active": [],
+    "remove": [],
+    "conditional": [],
+    "deferred": []
+  }
+}

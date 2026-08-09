@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/building-preset.schema.json",
+  "title": "Moyva Building Preset",
+  "description": "JSON authoring source merged into a BuildingDefinitionAsset by the Unity editor.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "version", "id"],
+  "properties": {
+    "$schema": { "type": "string", "description": "Relative schema path used by IDEs for completion and validation." },
+    "schema": { "const": "moyva.building-preset" },
+    "version": { "const": 1 },
+    "id": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "description": "Stable building ID and generated asset name." },
+    "identity": { "$ref": "#/$defs/identity" },
+    "construction": { "$ref": "#/$defs/construction" },
+    "runtimeStats": { "$ref": "#/$defs/runtimeStats" },
+    "presentation": { "$ref": "#/$defs/presentation" },
+    "modules": { "$ref": "#/$defs/modules" }
+  },
+  "$defs": {
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "displayName": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["Military", "Civilian", "Industrial", "Walls"] },
+        "role": { "enum": ["None", "Housing", "Production", "Storage", "SettlementCenter", "Defense", "Wall", "Gate", "Decoration", "Support"] }
+      }
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resource", "amount"],
+      "properties": {
+        "resource": { "type": "string", "minLength": 1, "description": "Resource ID or an alias declared by preset-pack.json." },
+        "amount": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "construction": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "buildTurns": { "type": "integer", "minimum": 0 },
+        "cost": { "type": "array", "items": { "$ref": "#/$defs/cost" } }
+      }
+    },
+    "runtimeStats": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxHp": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "objectReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "pattern": "^Assets/", "description": "Exact project-relative path. Preferred when stable." },
+        "root": { "type": "string", "pattern": "^Assets(?:/|$)", "description": "Search root used when path is not supplied." },
+        "exact": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Exact Unity object names, in priority order." },
+        "search": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "AssetDatabase search terms, in priority order." },
+        "fallback": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Fallback asset paths." },
+        "required": { "type": "boolean" }
+      },
+      "anyOf": [
+        { "required": ["path"] },
+        { "required": ["exact"] },
+        { "required": ["search"] },
+        { "required": ["fallback"] }
+      ]
+    },
+    "presentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "icon": { "$ref": "#/$defs/objectReference" },
+        "prefab": { "$ref": "#/$defs/objectReference" }
+      }
+    },
+    "moduleData": {
+      "type": "object",
+      "description": "Module-specific keys. The Unity importer performs semantic validation for active modules.",
+      "additionalProperties": true
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "data"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Concrete BuildingModule class name, for example StorageBuildingModule."
+        },
+        "data": { "$ref": "#/$defs/moduleData" }
+      }
+    },
+    "modules": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": { "enum": ["merge", "replace"], "description": "merge preserves modules not mentioned here; replace starts from an empty module list." },
+        "active": { "type": "array", "items": { "$ref": "#/$defs/module" }, "description": "Modules applied immediately." },
+        "remove": { "type": "array", "items": { "type": "string", "minLength": 1 }, "description": "Module class names removed from the asset." },
+        "conditional": { "type": "array", "items": { "$ref": "#/$defs/module" }, "description": "Documented candidates, not applied unless pack policy enables them." },
+        "deferred": { "type": "array", "items": { "$ref": "#/$defs/module" }, "description": "Intentionally inactive modules retained as design notes." }
+      }
+    }
+  }
+}

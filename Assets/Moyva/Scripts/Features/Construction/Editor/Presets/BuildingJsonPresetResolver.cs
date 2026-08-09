@@ -61,6 +61,30 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
         private static GameObject ResolvePrefab(BuildingPresetObjectRefSpec spec, string buildingId)
         {
             if (spec == null) return null;
+            if (!string.IsNullOrWhiteSpace(spec.Path))
+            {
+                string path = spec.Path.Replace('\\', '/').Trim();
+                GameObject direct = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (direct == null)
+                {
+                    UnityEngine.Object[] subAssets = AssetDatabase.LoadAllAssetsAtPath(path);
+                    for (int index = 0; index < subAssets.Length; index++)
+                    {
+                        if (subAssets[index] is GameObject candidate)
+                        {
+                            direct = candidate;
+                            break;
+                        }
+                    }
+                }
+
+                if (direct != null)
+                    return direct;
+                if (spec.Required)
+                    throw new InvalidOperationException($"{buildingId}: required prefab not resolved: {path}");
+                return null;
+            }
+
             string root = string.IsNullOrWhiteSpace(spec.Root) ? "Assets" : spec.Root.TrimEnd('/');
             if (!AssetDatabase.IsValidFolder(root))
             {
