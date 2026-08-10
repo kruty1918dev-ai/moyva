@@ -12,6 +12,11 @@ namespace Kruty1918.Moyva.Camera.API
         [Min(0.01f)] public float smoothTime;
         [Min(0.01f)] public float zoomSpeed;
         [Min(0.01f)] public float rotationSpeed;
+        [Min(0.01f)] public float rotationAcceleration;
+        [Min(0.01f)] public float rotationDeceleration;
+        [Min(0.001f)] public float pointerOrbitSensitivity;
+        [Min(0.01f)] public float closeZoomRotationMultiplier;
+        [Min(0.01f)] public float farZoomRotationMultiplier;
         [Min(0.1f)] public float minZoom;
         [Min(0.2f)] public float maxZoom;
 
@@ -34,6 +39,11 @@ namespace Kruty1918.Moyva.Camera.API
                 rotationSpeed = rotationSpeed > 0f
                     ? Mathf.Max(0.01f, rotationSpeed)
                     : DefaultRotationSpeed,
+                rotationAcceleration = rotationAcceleration > 0f ? rotationAcceleration : 540f,
+                rotationDeceleration = rotationDeceleration > 0f ? rotationDeceleration : 720f,
+                pointerOrbitSensitivity = pointerOrbitSensitivity > 0f ? pointerOrbitSensitivity : 0.25f,
+                closeZoomRotationMultiplier = closeZoomRotationMultiplier > 0f ? closeZoomRotationMultiplier : 0.65f,
+                farZoomRotationMultiplier = farZoomRotationMultiplier > 0f ? farZoomRotationMultiplier : 1.15f,
                 minZoom = normalizedMinZoom,
                 maxZoom = Mathf.Max(normalizedMinZoom + 0.1f, maxZoom),
                 touchMoveSpeed = Mathf.Max(0.01f, touchMoveSpeed),
@@ -54,6 +64,11 @@ namespace Kruty1918.Moyva.Camera.API
                 smoothTime = 0.42f,
                 zoomSpeed = 2.4f,
                 rotationSpeed = DefaultRotationSpeed,
+                rotationAcceleration = 540f,
+                rotationDeceleration = 720f,
+                pointerOrbitSensitivity = 0.25f,
+                closeZoomRotationMultiplier = 0.65f,
+                farZoomRotationMultiplier = 1.15f,
                 minZoom = 2f,
                 maxZoom = 70f,
                 touchMoveSpeed = 0.9f,
@@ -131,6 +146,11 @@ namespace Kruty1918.Moyva.Camera.API
         public float ResolveSmoothTime() => ResolveActiveProfile().smoothTime;
         public float ResolveZoomSpeed() => ResolveActiveProfile().zoomSpeed;
         public float ResolveRotationSpeed() => ResolveActiveProfile().rotationSpeed;
+        public float ResolveRotationAcceleration() => ResolveActiveProfile().rotationAcceleration;
+        public float ResolveRotationDeceleration() => ResolveActiveProfile().rotationDeceleration;
+        public float ResolvePointerOrbitSensitivity() => ResolveActiveProfile().pointerOrbitSensitivity;
+        public float ResolveCloseZoomRotationMultiplier() => ResolveActiveProfile().closeZoomRotationMultiplier;
+        public float ResolveFarZoomRotationMultiplier() => ResolveActiveProfile().farZoomRotationMultiplier;
         public float ResolveMinZoom() => ResolveActiveProfile().minZoom;
         public float ResolveMaxZoom() => ResolveActiveProfile().maxZoom;
         public float ResolveTouchMoveSpeed() => ResolveActiveProfile().touchMoveSpeed;

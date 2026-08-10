@@ -23,6 +23,7 @@ namespace Kruty1918.Moyva.Construction.API
         public string BuildingId;
         public string OwnerId;
         public Vector2Int Position;
+        public ConstructionRotation Rotation;
         public Vector2Int? IgnoredPendingPosition;
         public Vector2Int? IgnoredOccupiedPosition;
         public int MinSpacing;

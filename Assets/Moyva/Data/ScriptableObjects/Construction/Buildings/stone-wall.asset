@@ -13,23 +13,65 @@ MonoBehaviour:
   m_Name: stone-wall
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.API.BuildingDefinitionAsset
   _placementModuleMigrationVersion: 1
-  Identity: {Id: stone-wall, DisplayName: "\u0421\u0442\u0456\u043D\u0430", Category: 3, Role: 6, Description: "", Tags: []}
+  Identity:
+    Id: stone-wall
+    DisplayName: "\u0421\u0442\u0456\u043D\u0430"
+    Category: 3
+    Role: 6
+    Description: "\u0417\u0430\u0445\u0438\u0441\u043D\u0438\u0439 \u0441\u0435\u0433\u043C\u0435\u043D\u0442,
+      \u0449\u043E \u0430\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u043D\u043E
+      \u0437'\u0454\u0434\u043D\u0443\u0454\u0442\u044C\u0441\u044F \u0456\u0437
+      \u0441\u0443\u0441\u0456\u0434\u043D\u0456\u043C\u0438 \u0441\u0442\u0456\u043D\u0430\u043C\u0438."
+    Tags: []
   Presentation:
     Prefab: {fileID: 8756741331363231770, guid: 190f77ff4fd19557ebd89ef3e3e06832, type: 3}
     Icon: {fileID: -1448105316, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
     RuntimePreview: {fileID: 0}
     UiTint: {r: 1, g: 1, b: 1, a: 1}
-    PreviewSettings: {CameraOffset: {x: 4, y: 5, z: -6}, CameraEulerAngles: {x: 45, y: -35, z: 0}, OrthographicSize: 4, BackgroundColor: {r: 0, g: 0, b: 0, a: 0}}
-  Footprint: {Size: {x: 1, y: 1}, Anchor: 0, CustomAnchor: {x: 0, y: 0}, BlocksMovement: 1, BlocksConstruction: 1, RequiresFlatGround: 1, OccupiedCells: [], EntranceCells: [], RoadConnectionCells: []}
-  Placement: {CanPlaceInFog: 0, RequiresSettlementInfluence: 1, CreatesSettlementInfluence: 0, BlockIfSettlementCenterInRange: 0, InfluenceRadius: 0, MinDistanceFromSettlementCenters: 0, RequiredTerrainIds: [], RequiredNeighborOffsets: [], RequiresWaterNearby: 0, RequiresForestNearby: 0, RequiresMountainNearby: 0, RequiresRoadNearby: 0, NearbyTileRequirements: []}
+    VisualYOffset: 0
+    PreviewSettings:
+      CameraOffset: {x: 4, y: 5, z: -6}
+      CameraEulerAngles: {x: 45, y: -35, z: 0}
+      OrthographicSize: 4
+      BackgroundColor: {r: 0, g: 0, b: 0, a: 0}
+  Footprint:
+    Size: {x: 1, y: 1}
+    Anchor: 0
+    CustomAnchor: {x: 0, y: 0}
+    BlocksMovement: 1
+    BlocksConstruction: 1
+    RequiresFlatGround: 1
+    OccupiedCells: []
+    EntranceCells: []
+    RoadConnectionCells: []
+  Placement:
+    CanPlaceInFog: 0
+    RequiresSettlementInfluence: 1
+    CreatesSettlementInfluence: 0
+    BlockIfSettlementCenterInRange: 0
+    InfluenceRadius: 0
+    MinDistanceFromSettlementCenters: 0
+    RequiredTerrainIds: []
+    RequiredNeighborOffsets: []
+    RequiresWaterNearby: 0
+    RequiresForestNearby: 0
+    RequiresMountainNearby: 0
+    RequiresRoadNearby: 0
+    NearbyTileRequirements: []
   Construction:
     Cost:
-    - {ResourceId: stone-materials-resources, Amount: 1}
-    - {ResourceId: hardwood-materials-resources, Amount: 1}
+    - ResourceId: stone-materials-resources
+      Amount: 1
+    - ResourceId: hardwood-materials-resources
+      Amount: 1
     BuildTurns: 1
     RequiresBuilder: 1
     WorkRequired: 0
-  RuntimeStats: {MaxHp: 100, Armor: 1, Flags: 7, RuntimeTags: []}
+  RuntimeStats:
+    MaxHp: 100
+    Armor: 1
+    Flags: 7
+    RuntimeTags: []
   Modules:
   - rid: 1401
   - rid: 1402
@@ -39,10 +81,27 @@ MonoBehaviour:
     RefIds:
     - rid: 1401
       type: {class: WallBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
-      data: {IsEnabled: 1, SingletonScope: 1, HitPoints: 100, IsPassable: 0}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
+        HitPoints: 100
+        IsPassable: 0
     - rid: 1402
       type: {class: FogRevealBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
-      data: {IsEnabled: 1, SingletonScope: 1, RevealRadius: 1, Shape: 0, RevealOnBuilt: 1, RevealWhileActive: 1, OnlyAfterConstructionComplete: 1}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
+        RevealRadius: 1
+        Shape: 0
+        RevealOnBuilt: 1
+        RevealWhileActive: 1
+        OnlyAfterConstructionComplete: 1
     - rid: 1403
       type: {class: SettlementInfluenceRequirementBuildingModule, ns: Kruty1918.Moyva.Construction.API, asm: Kruty1918.Moyva.Construction}
-      data: {IsEnabled: 1, SingletonScope: 1, MergeMode: 1, RequiresInfluence: 1, BlockOverlappingCenters: 0, MaximumDistanceToCenter: 0}
+      data:
+        IsEnabled: 1
+        SingletonScope: 1
+        MergeMode: 1
+        RequiresInfluence: 1
+        BlockOverlappingCenters: 0
+        MaximumDistanceToCenter: 0

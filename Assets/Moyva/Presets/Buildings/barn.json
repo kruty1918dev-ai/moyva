@@ -4,7 +4,8 @@
   "version": 1,
   "id": "barn",
   "identity": {
-    "displayName": "Barn",
+    "displayName": "Комора",
+    "description": "Зберігає харчові ресурси поселення.",
     "category": "Industrial",
     "role": "Storage"
   },

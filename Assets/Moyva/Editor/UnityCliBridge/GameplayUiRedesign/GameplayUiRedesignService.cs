@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using TMPro;
+using Kruty1918.Moyva.InputRouting.Runtime;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -15,6 +16,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
     {
         internal const string ScenePath = "Assets/Moyva/Scenes/Gamplay_Scene.unity";
         private const string AppliedMarker = "MOYVA_GAMEPLAY_UI_PASS73";
+        private const string DefaultFontPath = "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset";
 
         private static readonly Color PanelDark = new(0.055f, 0.060f, 0.050f, 0.94f);
         private static readonly Color PanelMid = new(0.085f, 0.090f, 0.075f, 0.96f);
@@ -118,6 +120,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 changed += StyleConstructionActions();
                 changed += StyleConstructionClose();
                 changed += StylePreviewPanel();
+                changed += NormalizeGameplayFonts();
 
                 GameObject canvas = Find("Canvas");
                 if (canvas != null)
@@ -133,7 +136,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 Undo.CollapseUndoOperations(group);
 
                 result.changedObjects = changed;
-                result.message = "Pass73 applied in memory. Scene is dirty but not saved; validate and capture before saving.";
+                result.message = "PC Gameplay UI foundation applied in memory. Scene is dirty but not saved; validate and capture before saving.";
                 return JsonUtility.ToJson(result, true);
             }
             catch (Exception exception)
@@ -175,8 +178,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
 
             GameObject build = Find("Canvas/GameModeUI/Build Button");
             RectTransform buildRect = build != null ? build.GetComponent<RectTransform>() : null;
-            if (buildRect == null || buildRect.sizeDelta.x < 120f || buildRect.sizeDelta.y < 120f)
-                Add(result, "warning", "build-touch-target", "Canvas/GameModeUI/Build Button", "Build button should be at least 120x120 reference pixels.");
+            if (buildRect == null || buildRect.sizeDelta.x < 104f || buildRect.sizeDelta.y < 40f)
+                Add(result, "warning", "build-pc-target", "Canvas/GameModeUI/Build Button", "Build command should be at least 104x40 reference pixels.");
 
             GameObject viewport = Find("Canvas/ConstructionUI/Root/BuildingSelectionPanel/Viewport");
             Image viewportImage = viewport != null ? viewport.GetComponent<Image>() : null;
@@ -188,6 +191,10 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 int missing = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(go);
                 if (missing > 0)
                     Add(result, "error", "missing-script", PathOf(go.transform), $"Missing MonoBehaviour count={missing}.");
+
+                TMP_Text text = go.GetComponent<TMP_Text>();
+                if (text != null && text.font == null)
+                    Add(result, "error", "tmp-font-missing", PathOf(go.transform), "TMP text has no font asset.");
             }
 
             result.errors = result.checks.Count(c => c.severity == "error");
@@ -245,7 +252,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             topRect.anchorMin = topRect.anchorMax = new Vector2(0.5f, 1f);
             topRect.pivot = new Vector2(0.5f, 1f);
             topRect.anchoredPosition = new Vector2(0f, -18f);
-            topRect.sizeDelta = new Vector2(820f, 82f);
+            topRect.sizeDelta = new Vector2(520f, 48f);
 
             Image bg = RequireComponent<Image>(top);
             bg.color = PanelDark;
@@ -254,8 +261,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
 
             HorizontalLayoutGroup layout = EnsureComponent<HorizontalLayoutGroup>(top);
             Record(layout);
-            layout.padding = new RectOffset(18, 18, 10, 10);
-            layout.spacing = 8f;
+            layout.padding = new RectOffset(12, 12, 6, 6);
+            layout.spacing = 6f;
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
@@ -302,7 +309,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             if (text == null) return;
             Record(text);
             text.text = editModeLabel;
-            text.fontSize = 30f;
+            ApplyDefaultFont(text);
+            text.fontSize = 16f;
             text.fontStyle = FontStyles.Bold;
             text.alignment = TextAlignmentOptions.Center;
             text.color = Ivory;
@@ -310,9 +318,9 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             text.textWrappingMode = TextWrappingModes.NoWrap;
             LayoutElement le = EnsureComponent<LayoutElement>(text.gameObject);
             Record(le);
-            le.minWidth = 220f;
-            le.preferredWidth = 250f;
-            le.preferredHeight = 58f;
+            le.minWidth = 140f;
+            le.preferredWidth = 156f;
+            le.preferredHeight = 36f;
             le.flexibleWidth = 1f;
         }
 
@@ -323,8 +331,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             RectTransform rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(1f, 0f);
             rect.pivot = new Vector2(1f, 0f);
-            rect.anchoredPosition = new Vector2(-34f, 34f);
-            rect.sizeDelta = new Vector2(132f, 132f);
+            rect.anchoredPosition = new Vector2(-24f, 24f);
+            rect.sizeDelta = new Vector2(112f, 40f);
 
             Image bg = go.GetComponent<Image>();
             if (bg != null)
@@ -348,13 +356,33 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             {
                 Record(iconGo);
                 RectTransform iconRect = iconGo.GetComponent<RectTransform>();
-                iconRect.anchorMin = iconRect.anchorMax = new Vector2(0.5f, 0.5f);
-                iconRect.pivot = new Vector2(0.5f, 0.5f);
-                iconRect.anchoredPosition = Vector2.zero;
-                iconRect.sizeDelta = new Vector2(68f, 68f);
+                iconRect.anchorMin = iconRect.anchorMax = new Vector2(0f, 0.5f);
+                iconRect.pivot = new Vector2(0f, 0.5f);
+                iconRect.anchoredPosition = new Vector2(10f, 0f);
+                iconRect.sizeDelta = new Vector2(22f, 22f);
                 Image icon = iconGo.GetComponent<Image>();
                 if (icon != null) icon.raycastTarget = false;
             }
+            GameObject labelGo = Find("Canvas/GameModeUI/Build Button/Label");
+            if (labelGo == null)
+            {
+                labelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+                Undo.RegisterCreatedObjectUndo(labelGo, "Create PC build button label");
+                labelGo.transform.SetParent(go.transform, false);
+            }
+            RectTransform labelRect = labelGo.GetComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = new Vector2(36f, 0f);
+            labelRect.offsetMax = new Vector2(-8f, 0f);
+            TMP_Text buildLabel = labelGo.GetComponent<TMP_Text>();
+            ApplyDefaultFont(buildLabel);
+            buildLabel.text = "Build  [B]";
+            buildLabel.fontSize = 14f;
+            buildLabel.fontStyle = FontStyles.Bold;
+            buildLabel.alignment = TextAlignmentOptions.Center;
+            buildLabel.color = Ivory;
+            buildLabel.raycastTarget = false;
             return 2;
         }
 
@@ -366,7 +394,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
             rect.pivot = new Vector2(0.5f, 1f);
             rect.anchoredPosition = new Vector2(0f, -18f);
-            rect.sizeDelta = new Vector2(1080f, 76f);
+            rect.sizeDelta = new Vector2(720f, 42f);
 
             Image bg = panel.GetComponent<Image>();
             bg.color = PanelDark;
@@ -375,8 +403,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
 
             HorizontalLayoutGroup layout = panel.GetComponent<HorizontalLayoutGroup>();
             Record(layout);
-            layout.padding = new RectOffset(24, 24, 10, 10);
-            layout.spacing = 14f;
+            layout.padding = new RectOffset(14, 14, 5, 5);
+            layout.spacing = 8f;
             layout.childAlignment = TextAnchor.MiddleLeft;
             layout.childControlWidth = true;
             layout.childControlHeight = true;
@@ -388,15 +416,16 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 GameObject labelGo = Require("Canvas/ConstructionUI/Root/StatusPanel/" + child);
                 TMP_Text text = labelGo.GetComponent<TMP_Text>();
                 Record(text);
-                text.fontSize = 23f;
+                ApplyDefaultFont(text);
+                text.fontSize = 15f;
                 text.alignment = TextAlignmentOptions.MidlineLeft;
                 text.color = child == "PreviewLabel" ? Gold : Ivory;
                 text.raycastTarget = false;
                 LayoutElement le = EnsureComponent<LayoutElement>(labelGo);
                 Record(le);
-                le.minWidth = 280f;
-                le.preferredWidth = 320f;
-                le.preferredHeight = 52f;
+                le.minWidth = 180f;
+                le.preferredWidth = 220f;
+                le.preferredHeight = 32f;
                 le.flexibleWidth = 1f;
             }
             return 4;
@@ -411,12 +440,13 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             panelRect.anchorMax = new Vector2(1f, 0f);
             panelRect.pivot = new Vector2(0.5f, 0f);
             panelRect.anchoredPosition = new Vector2(0f, 24f);
-            panelRect.sizeDelta = new Vector2(-48f, 260f);
+            panelRect.sizeDelta = new Vector2(-48f, 232f);
 
             Image panelBg = EnsureComponent<Image>(panel);
             Record(panelBg);
             panelBg.color = PanelDark;
             panelBg.raycastTarget = false;
+            EnsureComponent<GameplayInputBlocker>(panel);
             AddOutline(panel, new Color(Gold.r, Gold.g, Gold.b, 0.35f), new Vector2(0f, 2f));
 
             GameObject tabs = Require("Canvas/ConstructionUI/Root/BuildingSelectionPanel/CategoryTabs");
@@ -426,7 +456,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             tabsRect.anchorMax = new Vector2(1f, 1f);
             tabsRect.pivot = new Vector2(0.5f, 1f);
             tabsRect.anchoredPosition = new Vector2(0f, -10f);
-            tabsRect.sizeDelta = new Vector2(-20f, 70f);
+            tabsRect.sizeDelta = new Vector2(-300f, 48f);
             Image tabsBg = tabs.GetComponent<Image>();
             tabsBg.color = PanelMid;
             tabsBg.raycastTarget = false;
@@ -434,8 +464,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             GameObject tabContainer = Require("Canvas/ConstructionUI/Root/BuildingSelectionPanel/CategoryTabs/TabContainer");
             HorizontalLayoutGroup tabLayout = tabContainer.GetComponent<HorizontalLayoutGroup>();
             Record(tabLayout);
-            tabLayout.padding = new RectOffset(10, 10, 6, 6);
-            tabLayout.spacing = 10f;
+            tabLayout.padding = new RectOffset(8, 8, 6, 6);
+            tabLayout.spacing = 6f;
             tabLayout.childAlignment = TextAnchor.MiddleLeft;
             tabLayout.childControlWidth = false;
             tabLayout.childControlHeight = false;
@@ -447,8 +477,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             RectTransform vpRect = viewport.GetComponent<RectTransform>();
             vpRect.anchorMin = Vector2.zero;
             vpRect.anchorMax = Vector2.one;
-            vpRect.offsetMin = new Vector2(12f, 12f);
-            vpRect.offsetMax = new Vector2(-12f, -88f);
+            vpRect.offsetMin = new Vector2(12f, 24f);
+            vpRect.offsetMax = new Vector2(-12f, -60f);
             Image vpImage = viewport.GetComponent<Image>();
             vpImage.color = new Color(0.03f, 0.035f, 0.03f, 0.28f);
             vpImage.raycastTarget = true; // intentional scroll drag surface
@@ -459,7 +489,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             HorizontalLayoutGroup contentLayout = content.GetComponent<HorizontalLayoutGroup>();
             Record(contentLayout);
             contentLayout.padding = new RectOffset(12, 12, 8, 8);
-            contentLayout.spacing = 12f;
+            contentLayout.spacing = 8f;
             contentLayout.childAlignment = TextAnchor.MiddleLeft;
             contentLayout.childControlWidth = false;
             contentLayout.childControlHeight = false;
@@ -472,8 +502,22 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             {
                 panelSo.Update();
                 SerializedProperty size = panelSo.FindProperty("buttonSize");
-                if (size != null) size.vector2Value = new Vector2(156f, 156f);
+                if (size != null) size.vector2Value = new Vector2(112f, 128f);
+                TMP_InputField search = EnsureConstructionSearch(panel);
+                SerializedProperty searchProperty = panelSo.FindProperty("searchInput");
+                if (searchProperty != null) searchProperty.objectReferenceValue = search;
                 panelSo.ApplyModifiedProperties();
+            }
+
+            ScrollRect scrollRect = panel.GetComponent<ScrollRect>();
+            if (scrollRect != null)
+            {
+                Record(scrollRect);
+                scrollRect.scrollSensitivity = 32f;
+                scrollRect.inertia = false;
+                scrollRect.horizontal = true;
+                scrollRect.vertical = false;
+                EnsureHorizontalScrollbar(panel, scrollRect);
             }
 
             GameObject buildingTemplate = Require("Canvas/ConstructionUI/Root/Templates/BuildingButtonTemplate");
@@ -483,11 +527,102 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             return 7;
         }
 
+        private static TMP_InputField EnsureConstructionSearch(GameObject panel)
+        {
+            Transform existing = panel.transform.Find("Search");
+            GameObject searchGo = existing != null ? existing.gameObject : null;
+            if (searchGo == null)
+            {
+                searchGo = new GameObject(
+                    "Search",
+                    typeof(RectTransform),
+                    typeof(CanvasRenderer),
+                    typeof(Image),
+                    typeof(TMP_InputField));
+                Undo.RegisterCreatedObjectUndo(searchGo, "Create construction catalogue search");
+                searchGo.transform.SetParent(panel.transform, false);
+            }
+
+            RectTransform rect = searchGo.GetComponent<RectTransform>();
+            rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-12f, -16f);
+            rect.sizeDelta = new Vector2(268f, 36f);
+
+            Image background = searchGo.GetComponent<Image>();
+            background.color = new Color(0.045f, 0.05f, 0.043f, 0.98f);
+            background.raycastTarget = true;
+            AddOutline(searchGo, new Color(Gold.r, Gold.g, Gold.b, 0.32f), Vector2.one);
+            EnsureComponent<GameplayInputBlocker>(searchGo);
+
+            RectTransform textArea = EnsureRectChild(searchGo.transform, "Text Area");
+            textArea.anchorMin = Vector2.zero;
+            textArea.anchorMax = Vector2.one;
+            textArea.offsetMin = new Vector2(10f, 4f);
+            textArea.offsetMax = new Vector2(-10f, -4f);
+
+            TextMeshProUGUI placeholder = EnsureTmpChild(textArea, "Placeholder");
+            placeholder.text = "Пошук  [Ctrl+F]";
+            placeholder.fontStyle = FontStyles.Italic;
+            placeholder.color = new Color(Muted.r, Muted.g, Muted.b, 0.7f);
+
+            TextMeshProUGUI text = EnsureTmpChild(textArea, "Text");
+            text.text = string.Empty;
+            text.color = Ivory;
+
+            TMP_InputField input = searchGo.GetComponent<TMP_InputField>();
+            Record(input);
+            input.textViewport = textArea;
+            input.textComponent = text;
+            input.placeholder = placeholder;
+            input.lineType = TMP_InputField.LineType.SingleLine;
+            input.characterLimit = 48;
+            input.targetGraphic = background;
+            return input;
+        }
+
+        private static RectTransform EnsureRectChild(Transform parent, string name)
+        {
+            Transform existing = parent.Find(name);
+            if (existing != null)
+                return existing as RectTransform;
+
+            var child = new GameObject(name, typeof(RectTransform));
+            Undo.RegisterCreatedObjectUndo(child, "Create " + name);
+            child.transform.SetParent(parent, false);
+            return (RectTransform)child.transform;
+        }
+
+        private static TextMeshProUGUI EnsureTmpChild(RectTransform parent, string name)
+        {
+            Transform existing = parent.Find(name);
+            GameObject child = existing != null ? existing.gameObject : null;
+            if (child == null)
+            {
+                child = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+                Undo.RegisterCreatedObjectUndo(child, "Create " + name);
+                child.transform.SetParent(parent, false);
+            }
+
+            RectTransform rect = child.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            TextMeshProUGUI label = child.GetComponent<TextMeshProUGUI>();
+            ApplyDefaultFont(label);
+            label.fontSize = 14f;
+            label.alignment = TextAlignmentOptions.MidlineLeft;
+            label.raycastTarget = false;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            return label;
+        }
+
         private static void StyleBuildingCardTemplate(GameObject go)
         {
             Record(go);
             RectTransform rect = go.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(156f, 156f);
+            rect.sizeDelta = new Vector2(112f, 128f);
             Image bg = go.GetComponent<Image>();
             bg.color = PanelSoft;
             bg.raycastTarget = true;
@@ -500,8 +635,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 Record(ir);
                 ir.anchorMin = ir.anchorMax = new Vector2(0.5f, 1f);
                 ir.pivot = new Vector2(0.5f, 1f);
-                ir.anchoredPosition = new Vector2(0f, -10f);
-                ir.sizeDelta = new Vector2(104f, 104f);
+                ir.anchoredPosition = new Vector2(0f, -8f);
+                ir.sizeDelta = new Vector2(72f, 72f);
                 Image image = iconGo.GetComponent<Image>();
                 if (image != null) image.raycastTarget = false;
             }
@@ -514,10 +649,11 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 lr.anchorMin = new Vector2(0f, 0f);
                 lr.anchorMax = new Vector2(1f, 0f);
                 lr.pivot = new Vector2(0.5f, 0f);
-                lr.anchoredPosition = new Vector2(0f, 6f);
-                lr.sizeDelta = new Vector2(-12f, 40f);
+                lr.anchoredPosition = new Vector2(0f, 5f);
+                lr.sizeDelta = new Vector2(-10f, 38f);
                 TMP_Text text = labelGo.GetComponent<TMP_Text>();
-                text.fontSize = 21f;
+                ApplyDefaultFont(text);
+                text.fontSize = 15f;
                 text.fontStyle = FontStyles.Bold;
                 text.color = Ivory;
                 text.alignment = TextAlignmentOptions.Center;
@@ -529,14 +665,15 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
         {
             Record(go);
             RectTransform rect = go.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(200f, 58f);
+            rect.sizeDelta = new Vector2(132f, 36f);
             ApplyProjectButtonSkin(go);
             GameObject labelGo = Find("Canvas/ConstructionUI/Root/Templates/CategoryTabButtonTemplate/Label");
             if (labelGo != null)
             {
                 TMP_Text text = labelGo.GetComponent<TMP_Text>();
                 Record(text);
-                text.fontSize = 21f;
+                ApplyDefaultFont(text);
+                text.fontSize = 15f;
                 text.fontStyle = FontStyles.Bold;
                 text.color = Ivory;
                 text.raycastTarget = false;
@@ -549,7 +686,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             {
                 tabsSo.Update();
                 SerializedProperty size = tabsSo.FindProperty("categoryButtonSize");
-                if (size != null) size.vector2Value = new Vector2(200f, 58f);
+                if (size != null) size.vector2Value = new Vector2(132f, 36f);
                 SerializedProperty active = tabsSo.FindProperty("activeColor");
                 if (active != null) active.colorValue = Gold;
                 SerializedProperty inactive = tabsSo.FindProperty("inactiveColor");
@@ -565,8 +702,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             RectTransform rect = panel.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
             rect.pivot = new Vector2(0.5f, 0f);
-            rect.anchoredPosition = new Vector2(0f, 300f);
-            rect.sizeDelta = new Vector2(1000f, 104f);
+            rect.anchoredPosition = new Vector2(0f, 268f);
+            rect.sizeDelta = new Vector2(720f, 56f);
 
             Image bg = panel.GetComponent<Image>();
             bg.color = PanelDark;
@@ -575,8 +712,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
 
             HorizontalLayoutGroup layout = panel.GetComponent<HorizontalLayoutGroup>();
             Record(layout);
-            layout.padding = new RectOffset(12, 12, 12, 12);
-            layout.spacing = 12f;
+            layout.padding = new RectOffset(8, 8, 8, 8);
+            layout.spacing = 8f;
             layout.childAlignment = TextAnchor.MiddleCenter;
             layout.childControlWidth = false;
             layout.childControlHeight = false;
@@ -588,13 +725,13 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 GameObject buttonGo = Require("Canvas/ConstructionUI/Root/ActionBar/" + name);
                 Record(buttonGo);
                 RectTransform br = buttonGo.GetComponent<RectTransform>();
-                br.sizeDelta = new Vector2(176f, 80f);
+                br.sizeDelta = new Vector2(128f, 40f);
                 LayoutElement le = EnsureComponent<LayoutElement>(buttonGo);
                 Record(le);
-                le.minWidth = 176f;
-                le.preferredWidth = 176f;
-                le.minHeight = 80f;
-                le.preferredHeight = 80f;
+                le.minWidth = 128f;
+                le.preferredWidth = 128f;
+                le.minHeight = 40f;
+                le.preferredHeight = 40f;
                 le.flexibleWidth = 0f;
                 le.flexibleHeight = 0f;
                 ApplyProjectButtonSkin(buttonGo);
@@ -603,7 +740,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 if (label != null)
                 {
                     Record(label);
-                    label.fontSize = 22f;
+                    ApplyDefaultFont(label);
+                    label.fontSize = 14f;
                     label.fontStyle = FontStyles.Bold;
                     label.color = Ivory;
                     label.raycastTarget = false;
@@ -620,14 +758,15 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             RectTransform rect = go.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(1f, 1f);
-            rect.anchoredPosition = new Vector2(-30f, -24f);
-            rect.sizeDelta = new Vector2(176f, 78f);
+            rect.anchoredPosition = new Vector2(-24f, -18f);
+            rect.sizeDelta = new Vector2(112f, 40f);
             ApplyProjectButtonSkin(go);
             TMP_Text label = go.transform.Find("Label")?.GetComponent<TMP_Text>();
             if (label != null)
             {
                 Record(label);
-                label.fontSize = 22f;
+                ApplyDefaultFont(label);
+                label.fontSize = 14f;
                 label.fontStyle = FontStyles.Bold;
                 label.color = Ivory;
                 label.raycastTarget = false;
@@ -642,11 +781,12 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
             RectTransform rect = panel.GetComponent<RectTransform>();
             rect.anchorMin = rect.anchorMax = new Vector2(1f, 0.5f);
             rect.pivot = new Vector2(1f, 0.5f);
-            rect.anchoredPosition = new Vector2(-30f, 120f);
-            rect.sizeDelta = new Vector2(430f, 480f);
+            rect.anchoredPosition = new Vector2(-24f, 90f);
+            rect.sizeDelta = new Vector2(320f, 380f);
             Image bg = panel.GetComponent<Image>();
             bg.color = new Color(0.045f, 0.05f, 0.04f, 0.97f);
             bg.raycastTarget = false;
+            EnsureComponent<GameplayInputBlocker>(panel);
             AddOutline(panel, new Color(Gold.r, Gold.g, Gold.b, 0.50f), new Vector2(-2f, -2f));
 
             GameObject labelGo = Find("Canvas/ConstructionUI/Root/PreviewPanelInfo/Label Text");
@@ -660,6 +800,8 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 lr.anchoredPosition = new Vector2(0f, -14f);
                 lr.sizeDelta = new Vector2(-28f, 54f);
                 TMP_Text text = labelGo.GetComponent<TMP_Text>();
+                ApplyDefaultFont(text);
+                text.fontSize = 22f;
                 text.color = Gold;
                 text.raycastTarget = false;
             }
@@ -674,11 +816,114 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
                 ir.offsetMin = new Vector2(18f, 18f);
                 ir.offsetMax = new Vector2(-18f, -76f);
                 TMP_Text text = infoGo.GetComponent<TMP_Text>();
+                ApplyDefaultFont(text);
+                text.fontSize = 15f;
                 text.color = Ivory;
                 text.raycastTarget = false;
             }
             return 3;
         }
+
+        private static void EnsureHorizontalScrollbar(GameObject panel, ScrollRect scrollRect)
+        {
+            Transform existing = panel.transform.Find("HorizontalScrollbar");
+            GameObject scrollbarGo = existing != null ? existing.gameObject : null;
+            if (scrollbarGo == null)
+            {
+                scrollbarGo = new GameObject("HorizontalScrollbar", typeof(RectTransform), typeof(Image), typeof(Scrollbar));
+                Undo.RegisterCreatedObjectUndo(scrollbarGo, "Create PC construction scrollbar");
+                scrollbarGo.transform.SetParent(panel.transform, false);
+            }
+
+            RectTransform rect = scrollbarGo.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 0f);
+            rect.anchorMax = new Vector2(1f, 0f);
+            rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchoredPosition = new Vector2(0f, 6f);
+            rect.sizeDelta = new Vector2(-28f, 10f);
+
+            Image track = scrollbarGo.GetComponent<Image>();
+            track.color = new Color(0.03f, 0.035f, 0.03f, 0.82f);
+            track.raycastTarget = true;
+
+            Transform slidingTransform = scrollbarGo.transform.Find("SlidingArea");
+            GameObject sliding = slidingTransform != null ? slidingTransform.gameObject : null;
+            if (sliding == null)
+            {
+                sliding = new GameObject("SlidingArea", typeof(RectTransform));
+                Undo.RegisterCreatedObjectUndo(sliding, "Create scrollbar sliding area");
+                sliding.transform.SetParent(scrollbarGo.transform, false);
+            }
+            RectTransform slidingRect = sliding.GetComponent<RectTransform>();
+            slidingRect.anchorMin = Vector2.zero;
+            slidingRect.anchorMax = Vector2.one;
+            slidingRect.offsetMin = new Vector2(2f, 2f);
+            slidingRect.offsetMax = new Vector2(-2f, -2f);
+
+            Transform handleTransform = sliding.transform.Find("Handle");
+            GameObject handle = handleTransform != null ? handleTransform.gameObject : null;
+            if (handle == null)
+            {
+                handle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+                Undo.RegisterCreatedObjectUndo(handle, "Create scrollbar handle");
+                handle.transform.SetParent(sliding.transform, false);
+            }
+            RectTransform handleRect = handle.GetComponent<RectTransform>();
+            handleRect.anchorMin = Vector2.zero;
+            handleRect.anchorMax = Vector2.one;
+            handleRect.offsetMin = Vector2.zero;
+            handleRect.offsetMax = Vector2.zero;
+            Image handleImage = handle.GetComponent<Image>();
+            handleImage.color = Gold;
+            handleImage.raycastTarget = true;
+
+            Scrollbar scrollbar = scrollbarGo.GetComponent<Scrollbar>();
+            scrollbar.handleRect = handleRect;
+            scrollbar.direction = Scrollbar.Direction.LeftToRight;
+            scrollbar.targetGraphic = handleImage;
+            scrollRect.horizontalScrollbar = scrollbar;
+            scrollRect.horizontalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+            scrollRect.horizontalScrollbarSpacing = 4f;
+        }
+
+        private static int NormalizeGameplayFonts()
+        {
+            GameObject canvas = Find("Canvas");
+            if (canvas == null)
+                return 0;
+
+            int changed = 0;
+            TMP_FontAsset font = LoadDefaultFont();
+            if (font == null)
+                throw new InvalidOperationException($"Default TMP font not found at '{DefaultFontPath}'.");
+
+            TMP_Text[] texts = canvas.GetComponentsInChildren<TMP_Text>(true);
+            for (int index = 0; index < texts.Length; index++)
+            {
+                TMP_Text text = texts[index];
+                if (text == null || text.font == font)
+                    continue;
+
+                Record(text);
+                text.font = font;
+                changed++;
+            }
+
+            return changed;
+        }
+
+        private static void ApplyDefaultFont(TMP_Text text)
+        {
+            if (text == null)
+                return;
+
+            TMP_FontAsset font = LoadDefaultFont();
+            if (font != null)
+                text.font = font;
+        }
+
+        private static TMP_FontAsset LoadDefaultFont()
+            => AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(DefaultFontPath);
 
         private static void ApplyProjectButtonSkin(GameObject go)
         {

@@ -1,6 +1,7 @@
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
+using UnityEngine;
 using Zenject;
 
 namespace Kruty1918.Moyva.Tests.GameMode
@@ -41,6 +42,12 @@ namespace Kruty1918.Moyva.Tests.GameMode
             _signalBus.Subscribe<GameEndedSignal>(s => { _endedCount++; _lastEndedSignal = s; });
         }
 
+        [TearDown]
+        public void TearDown()
+        {
+            Time.timeScale = 1f;
+        }
+
         // --- Initial State ---
         [Test]
         public void InitialState_IsIdle()
@@ -78,6 +85,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
             _service.StartGame();
             _service.PauseGame();
             Assert.AreEqual(GameStateType.Paused, _service.CurrentState);
+            Assert.AreEqual(0f, Time.timeScale);
         }
 
         [Test]
@@ -124,6 +132,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
             _service.PauseGame();
             _service.ResumeGame();
             Assert.AreEqual(GameStateType.Playing, _service.CurrentState);
+            Assert.AreEqual(1f, Time.timeScale);
         }
 
         [Test]

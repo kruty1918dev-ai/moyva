@@ -4,7 +4,8 @@
   "version": 1,
   "id": "iron-mine",
   "identity": {
-    "displayName": "Iron Mine",
+    "displayName": "Залізна шахта",
+    "description": "Видобуває залізну руду та потребує чотирьох працівників.",
     "category": "Industrial",
     "role": "Production"
   },

@@ -7,6 +7,7 @@ using Kruty1918.Moyva.Calendar.Core;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using Unity.Profiling;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
@@ -154,8 +155,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _pendingGarrisonRestoreByUnit.Clear();
         }
 
+        private static readonly ProfilerMarker BuildingPlacedMarker =
+            new("Moyva.BuildCommit.Subscriber.Health");
+
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
+            using var marker = BuildingPlacedMarker.Auto();
             double startedAt =
                 Time.realtimeSinceStartupAsDouble;
 

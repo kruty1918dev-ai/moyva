@@ -101,6 +101,50 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return _selectedBuildingId;
         }
 
+        public ConstructionRotation SelectedRotation =>
+            _selectedRotation;
+
+        public bool RotateSelectedClockwise()
+        {
+            if (!_isActive
+                || State != BuildingPlacementState.Placing
+                || string.IsNullOrWhiteSpace(_selectedBuildingId)
+                || IsDemolishMode)
+            {
+                return false;
+            }
+
+            if (_wallTopologyService?.IsWallOrGate(
+                    _selectedBuildingId) == true)
+            {
+                _lastActionMessage =
+                    "Напрямок стін і воріт визначається сусідніми сегментами.";
+                return false;
+            }
+
+            _selectedRotation =
+                ConstructionRotationUtility.NextClockwise(
+                    _selectedRotation);
+            PublishSelectionChanged();
+            return true;
+        }
+
+        public bool TryGetPendingRotation(
+            Vector2Int position,
+            out ConstructionRotation rotation)
+        {
+            if (_pendingPlacementByPosition.TryGetValue(
+                    position,
+                    out PendingPlacement placement))
+            {
+                rotation = placement.Rotation;
+                return true;
+            }
+
+            rotation = ConstructionRotation.Degrees0;
+            return false;
+        }
+
         public void SetActiveOwner(string ownerId)
         {
             _activeOwnerId =
@@ -370,7 +414,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _signalBus?.Fire(new BuildingSelectionChangedSignal
             {
                 BuildingId = _selectedBuildingId,
-                IsDemolishMode = IsDemolishMode
+                IsDemolishMode = IsDemolishMode,
+                RotationQuarterTurns = (int)_selectedRotation,
             });
         }
 
@@ -379,6 +424,14 @@ namespace Kruty1918.Moyva.Construction.Runtime
             string normalizedId = string.IsNullOrWhiteSpace(buildingId) ? null : buildingId.Trim();
             bool changed = State != state
                 || !string.Equals(_selectedBuildingId, normalizedId, StringComparison.Ordinal);
+
+            if (!string.Equals(
+                    _selectedBuildingId,
+                    normalizedId,
+                    StringComparison.Ordinal))
+            {
+                _selectedRotation = ConstructionRotation.Degrees0;
+            }
 
             State = state;
             _selectedBuildingId = normalizedId;

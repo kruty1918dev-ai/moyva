@@ -4,7 +4,8 @@
   "version": 1,
   "id": "wood-camp",
   "identity": {
-    "displayName": "Wood Camp",
+    "displayName": "Табір лісорубів",
+    "description": "Заготовляє деревину та потребує двох працівників.",
     "category": "Industrial",
     "role": "Production"
   },

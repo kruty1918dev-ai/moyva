@@ -20,19 +20,24 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private readonly UnityEngine.Camera _camera;
         private readonly CameraSettingsSO _settings;
+        private readonly ICameraMovement _cameraMovement;
 
         private float _targetZoom;
         private float _lastPushedMipBias = float.NaN;
+        private Vector2 _screenFocalPoint;
+        private bool _hasScreenFocus;
 
         private float _forceBlockTimer;
         private const float ForceBlockDuration = 1.5f; // Час затримки після форсованого зуму
 
         public CameraZoom(
             UnityEngine.Camera camera,
-            CameraSettingsSO settings)
+            CameraSettingsSO settings,
+            ICameraMovement cameraMovement)
         {
             _camera = camera;
             _settings = settings;
+            _cameraMovement = cameraMovement;
         }
 
         public void Initialize()
@@ -63,6 +68,9 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
             if (Mathf.Abs(_targetZoom - previousTargetZoom) <= ZoomEpsilon)
                 return;
+
+            _screenFocalPoint = screenFocalPoint;
+            _hasScreenFocus = true;
         }
 
         public void ZoomCameraByScale(float scaleFactor, bool immediate)
@@ -124,7 +132,18 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (Mathf.Abs(nextZoom - _targetZoom) <= ZoomEpsilon)
                 nextZoom = _targetZoom;
 
+            Vector3 focusBefore = default;
+            bool preserveScreenFocus = _hasScreenFocus
+                && _cameraMovement.TryScreenPointToNavigationPlane(_screenFocalPoint, out focusBefore);
             ApplyZoomValue(nextZoom);
+            if (preserveScreenFocus
+                && _cameraMovement.TryScreenPointToNavigationPlane(_screenFocalPoint, out Vector3 focusAfter))
+            {
+                _cameraMovement.ShiftCameraWorld(focusBefore - focusAfter, immediate: true);
+            }
+
+            if (Mathf.Abs(nextZoom - _targetZoom) <= ZoomEpsilon)
+                _hasScreenFocus = false;
 
             UpdateGlobalMipBias();
         }

@@ -13,6 +13,7 @@ using Kruty1918.Moyva.Shared.Graphics;
 using Kruty1918.Moyva.Shared.Common;
 using Kruty1918.Moyva.Shared.Performance;
 using Kruty1918.Moyva.Shared.Diagnostics;
+using Kruty1918.Moyva.Shared.UI;
 
 namespace Kruty1918.Moyva.Shared
 {
@@ -66,6 +67,9 @@ namespace Kruty1918.Moyva.Shared
             container.BindInterfacesTo<CpuHotspotSamplerService>().AsSingle().NonLazy();
             container.BindInterfacesTo<FrameTimeDeveloperHudService>().AsSingle().NonLazy();
             container.BindInterfacesTo<AsyncGlobalErrorHandlerService>().AsSingle().NonLazy();
+
+            container.BindInterfacesTo<UiMotionService>().AsSingle();
+            container.BindInterfacesTo<UiTooltipService>().AsSingle();
 
             container.BindInterfacesAndSelfTo<InternetConnectivityHealthReporter>().AsSingle();
             container.Bind<IHealthCheckService>().To<HealthCheckService>().AsSingle().NonLazy();
@@ -806,8 +810,6 @@ namespace Kruty1918.Moyva.Shared.Graphics
 
     public struct GraphicsSettingsData
     {
-        private const int FixedGameplayFrameRate = 60;
-
         public GraphicsQualityProfile Profile;
         public int TargetFrameRate;
         public float RenderScale;
@@ -936,7 +938,7 @@ namespace Kruty1918.Moyva.Shared.Graphics
 
         private static int NormalizeFrameRate(int value)
         {
-            return FixedGameplayFrameRate;
+            return Mathf.Clamp(value, 30, 360);
         }
 
         private static int NormalizeAntiAliasing(int value)
@@ -973,8 +975,6 @@ namespace Kruty1918.Moyva.Shared.Graphics
 
     internal sealed class GraphicsSettingsService : IGraphicsSettingsService, IInitializable
     {
-        private const int FixedGameplayFrameRate = 60;
-
         private const int Version = 1;
         private readonly string _filePath;
         private readonly GraphicsSettingsData _startupDefaults;
@@ -1096,8 +1096,8 @@ namespace Kruty1918.Moyva.Shared.Graphics
         {
             var effective = ApplyDeveloperPixelOverride(settings);
 
-            QualitySettings.vSyncCount = 0;
-            Application.targetFrameRate = FixedGameplayFrameRate;
+            QualitySettings.vSyncCount = effective.VSync ? 1 : 0;
+            Application.targetFrameRate = effective.VSync ? -1 : effective.TargetFrameRate;
             OnDemandRendering.renderFrameInterval = 1;
             QualitySettings.antiAliasing = effective.AntiAliasing;
             QualitySettings.shadows = effective.Shadows ? ShadowQuality.HardOnly : ShadowQuality.Disable;

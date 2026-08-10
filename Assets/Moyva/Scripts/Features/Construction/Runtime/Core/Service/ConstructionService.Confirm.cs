@@ -202,7 +202,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         out var influenceZoneBlocked,
                         out var terrainBlocked,
                         relocationSource,
-                        placement.ReplacedPendingBuildingId);
+                        placement.ReplacedPendingBuildingId,
+                        placement.Rotation);
 
                     AddConfirmStage(
                         ref validationMs,
@@ -271,7 +272,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     }
 
                     bool footprintRegistered =
-                        TryRegisterBuildingFootprint(pos, id);
+                        TryRegisterBuildingFootprint(
+                            pos,
+                            id,
+                            placement.Rotation);
 
                     AddConfirmStage(
                         ref footprintMs,
@@ -353,6 +357,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         _factionPlacedBuildings[pos] = (id, relocationOwnerId);
                     else
                         _playerPlacedBuildings[pos] = id;
+                    _placedRotationByOrigin[pos] =
+                        placement.Rotation;
 
                     modelCommitted = true;
                     confirmedPositions.Add(pos);
@@ -402,6 +408,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         SourceFactionId = relocationWasFactionOwned ? relocationOwnerId : null,
                         HasRelocationSource = isRelocation && relocationSource.HasValue && relocationSource.Value != pos,
                         RelocationSourcePosition = relocationSource.GetValueOrDefault(),
+                        RotationQuarterTurns =
+                            (int)placement.Rotation,
                     });
 
                     AddConfirmStage(

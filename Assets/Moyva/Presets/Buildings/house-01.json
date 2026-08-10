@@ -4,7 +4,8 @@
   "version": 1,
   "id": "house-01",
   "identity": {
-    "displayName": "House",
+    "displayName": "Будинок",
+    "description": "Житлова будівля для мешканців поселення.",
     "category": "Civilian",
     "role": "Housing"
   },

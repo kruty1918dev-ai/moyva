@@ -6,7 +6,7 @@
   "units": [
     {
       "typeId": "warrior",
-      "displayName": null,
+      "displayName": "Воїн",
       "role": "Military",
       "combatType": "Infantry",
       "movement": {
@@ -38,9 +38,9 @@
       },
       "presentation": {
         "prefab": {
-          "path": "Assets/Moyva/Prefabs/Units/Unit-warrior-01.prefab",
-          "guid": "4d504a73108154c2a87c088a007ff633",
-          "localId": 3012185294812511675
+          "path": "Assets/Moyva/Prefabs/Units/KayKit/warrior.prefab",
+          "guid": "ad2b8f501d94436369b0452412f40429",
+          "localId": 6725926376646028200
         },
         "customSprite": null
       },
@@ -59,7 +59,7 @@
     },
     {
       "typeId": "Spearman",
-      "displayName": null,
+      "displayName": "Списник",
       "role": "Military",
       "combatType": "Infantry",
       "movement": {
@@ -91,22 +91,17 @@
       },
       "presentation": {
         "prefab": {
-          "path": "Assets/Moyva/Prefabs/Units/spearman.prefab",
-          "guid": "f6eca2d1e3131f6d69c2b40f8a22f1d0",
-          "localId": 804881041722963365
+          "path": "Assets/Moyva/Prefabs/Units/KayKit/spearman.prefab",
+          "guid": "cb916fee6b164251ebf6969bcb41053f",
+          "localId": 4267310605530257900
         },
-        "customSprite": {
-          "path": "Assets/Moyva/Art/Prototype/MiniWorldPreview.png",
-          "guid": "24f577213f615d54ca31f1d5da309e46",
-          "subAsset": "MiniWorldPreview_13",
-          "localId": 1618817777
-        }
+        "customSprite": null
       },
       "animations": []
     },
     {
       "typeId": "Archer",
-      "displayName": null,
+      "displayName": "Лучник",
       "role": "Military",
       "combatType": "Infantry",
       "movement": {
@@ -138,24 +133,19 @@
       },
       "presentation": {
         "prefab": {
-          "path": "Assets/Moyva/Prefabs/Units/archer.prefab",
-          "guid": "6e123bcf7098822d4a01e669ab0f8b46",
-          "localId": 3893281008883271442
+          "path": "Assets/Moyva/Prefabs/Units/KayKit/archer.prefab",
+          "guid": "87b835b1a22a0b90583840638a5c5cb0",
+          "localId": 3925536428086337897
         },
-        "customSprite": {
-          "path": "Assets/Moyva/Art/Prototype/Puny-Characters/Archer-Green.png",
-          "guid": "53dd6007514ce6947aa259b0acb750fc",
-          "subAsset": "Archer-Green_34",
-          "localId": 518154196223322196
-        }
+        "customSprite": null
       },
       "animations": []
     },
     {
       "typeId": "Light-cavalry",
-      "displayName": null,
+      "displayName": "Легка кіннота",
       "role": "Military",
-      "combatType": "Infantry",
+      "combatType": "Cavalry",
       "movement": {
         "baseStamina": 100.0,
         "staminaRandomRange": {
@@ -185,16 +175,11 @@
       },
       "presentation": {
         "prefab": {
-          "path": "Assets/Moyva/Prefabs/Units/light-cavalry.prefab",
-          "guid": "c98063cb2ac50f4fe98a1a114ea55281",
-          "localId": 4789759872813502532
+          "path": "Assets/Moyva/Prefabs/Units/KayKit/light-cavalry.prefab",
+          "guid": "32716c4f2fd9817ffb4d8981530bd546",
+          "localId": 8475329214379649031
         },
-        "customSprite": {
-          "path": "Assets/Moyva/Art/Prototype/MiniWorldPreview.png",
-          "guid": "24f577213f615d54ca31f1d5da309e46",
-          "subAsset": "MiniWorldPreview_483",
-          "localId": -1276854379
-        }
+        "customSprite": null
       },
       "animations": []
     }

@@ -4,7 +4,8 @@
   "version": 1,
   "id": "sawmill",
   "identity": {
-    "displayName": "Sawmill",
+    "displayName": "Лісопилка",
+    "description": "Виробляє оброблену деревину та потребує чотирьох працівників.",
     "category": "Industrial",
     "role": "Production"
   },

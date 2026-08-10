@@ -4,7 +4,8 @@
   "version": 1,
   "id": "stone-quarry",
   "identity": {
-    "displayName": "Stone Quarry",
+    "displayName": "Кам'яний кар'єр",
+    "description": "Видобуває камінь та потребує чотирьох працівників.",
     "category": "Industrial",
     "role": "Production"
   },

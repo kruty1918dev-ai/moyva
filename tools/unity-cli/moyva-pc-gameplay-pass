@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PROJECT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+export PATH="$HOME/.local/bin:$PATH"
+REPORT_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/moyva-cli/reports/gameplay-ui"
+STAMP="$(date +%Y%m%d_%H%M%S)"
+OUT="$REPORT_ROOT/pc-gameplay-pass/$STAMP"
+
+usage() {
+  printf '%s\n' \
+    'Usage: tools/unity-cli/moyva-pc-gameplay-pass <command>' \
+    '' \
+    'Commands:' \
+    '  status      Show Unity/editor/gameplay-scene status.' \
+    '  baseline    Create a complete external audit baseline.' \
+    '  apply --confirm APPLY  Apply editor-authored PC UI/content migrations in memory.' \
+    '  validate    Run non-mutating project/UI validation.' \
+    '  validate-all Run focused EditMode suites plus UI/content validation.' \
+    '  bake-icons [buildings|units|all]  Bake deterministic 512px prefab icons.' \
+    '  profile-castle  Print the external first-castle profile report directory.' \
+    '  capture     Run the gameplay UI capture lab.' \
+    '  commands    List the underlying Unity CLI commands.'
+}
+
+require_unity() {
+  command -v unity >/dev/null 2>&1 || {
+    printf 'Unity CLI is not available on PATH.\n' >&2
+    exit 10
+  }
+}
+
+prepare_output() {
+  mkdir -p "$OUT/data" "$OUT/logs"
+  printf 'REPORT=%s\n' "$OUT"
+}
+
+run_json() {
+  local output="$1"
+  shift
+  "$@" >"$output"
+}
+
+run_playmode_tests() {
+  local assembly="$1"
+  local output="$2"
+
+  unity command run_tests --project-path="$PROJECT" --mode playmode \
+    --filter "$assembly" --filter-type assembly --async_tests true \
+    --timeout 300 --format json >"$output.start.json"
+
+  for _ in $(seq 1 60); do
+    local status
+    status="$(unity command test_status \
+      --project-path="$PROJECT" --format json 2>/dev/null || true)"
+    if printf '%s' "$status" | rg -q '\\?"status\\?"[[:space:]]*:[[:space:]]*\\?"completed\\?"'; then
+      printf '%s\n' "$status" >"$output"
+      if printf '%s' "$status" | rg -q '\\?"failed\\?"[[:space:]]*:[[:space:]]*[1-9]'; then
+        printf 'PlayMode suite failed: %s\n' "$assembly" >&2
+        return 1
+      fi
+      return 0
+    fi
+    sleep 5
+  done
+
+  printf 'Timed out waiting for PlayMode suite: %s\n' "$assembly" >&2
+  return 1
+}
+
+command_name="${1:-help}"
+require_unity
+
+case "$command_name" in
+  help|-h|--help)
+    usage
+    ;;
+  status)
+    unity command moyva-project-status --project-path="$PROJECT" --format json
+    ;;
+  commands)
+    unity command --project-path="$PROJECT" --format json
+    ;;
+  baseline)
+    prepare_output
+    run_json "$OUT/data/prepare.json" \
+      unity command moyva-gameplay-ui-prepare --project-path="$PROJECT" --format json
+    run_json "$OUT/data/project_status.json" \
+      unity command moyva-project-status --project-path="$PROJECT" --format json
+    run_json "$OUT/data/scene_tree.json" \
+      unity command moyva-scene-tree --project-path="$PROJECT" --format json
+    run_json "$OUT/data/ui_state.json" \
+      unity command moyva-gameplay-ui-capture-state --project-path="$PROJECT" --format json
+    run_json "$OUT/data/ui_validation.json" \
+      unity command moyva-gameplay-ui-redesign-validate --project-path="$PROJECT" --format json
+    run_json "$OUT/logs/console.json" \
+      unity command get_console_logs --project-path="$PROJECT" --limit 500 --format json
+    unity command moyva-gameplay-ui-audit \
+      --project-path="$PROJECT" --output-dir "$OUT/audit" --format json \
+      >"$OUT/data/audit_command.json"
+    printf 'Baseline complete: %s\n' "$OUT"
+    ;;
+  apply)
+    if [[ "${2:-}" != "--confirm" || "${3:-}" != "APPLY" ]]; then
+      printf 'Refusing mutation. Use: %s apply --confirm APPLY\n' "$0" >&2
+      exit 12
+    fi
+    unity command moyva-gameplay-ui-redesign-plan --project-path="$PROJECT"
+    unity command moyva-gameplay-ui-redesign-apply --project-path="$PROJECT" --confirm APPLY
+    unity command menu --project-path="$PROJECT" --path 'Moyva/Construction/JSON Presets/Apply All'
+    unity command menu --project-path="$PROJECT" --path 'Moyva/Construction/Content/Apply KayKit Windmill Wrapper'
+    unity command menu --project-path="$PROJECT" --path 'Moyva/Units/Content/Apply KayKit Unit Wrappers'
+    unity command menu --project-path="$PROJECT" --path 'Moyva/Data/JSON/Units/Validate and Sync'
+    printf '%s\n' 'Changes are applied in Unity memory/assets. Validate and inspect before saving the scene.'
+    ;;
+  validate)
+    prepare_output
+    run_json "$OUT/data/project_status.json" \
+      unity command moyva-project-status --project-path="$PROJECT" --format json
+    run_json "$OUT/data/ui_validation.json" \
+      unity command moyva-gameplay-ui-redesign-validate --project-path="$PROJECT" --format json
+    run_json "$OUT/data/ui_audit.json" \
+      unity command moyva-ui-audit --project-path="$PROJECT" --format json
+    run_json "$OUT/logs/console.json" \
+      unity command get_console_logs --project-path="$PROJECT" --limit 500 --format json
+    printf 'Validation report: %s\n' "$OUT"
+    ;;
+  validate-all)
+    prepare_output
+    run_json "$OUT/data/ui_validation.json" \
+      unity command moyva-gameplay-ui-redesign-validate --project-path="$PROJECT" --format json
+    unity command menu --project-path="$PROJECT" --path 'Moyva/Construction/JSON Presets/Validate All' \
+      >"$OUT/data/building_presets.txt"
+    unity command menu --project-path="$PROJECT" --path 'Moyva/Construction/Content/Validate KayKit Windmill Wrapper' \
+      >"$OUT/data/building_content.txt"
+    unity command menu --project-path="$PROJECT" --path 'Moyva/Units/Content/Validate KayKit Unit Wrappers' \
+      >"$OUT/data/unit_content.txt"
+    unity command menu --project-path="$PROJECT" --path 'Moyva/Content/Icons/Validate Generated Icons' \
+      >"$OUT/data/generated_icons.txt"
+    for assembly in \
+      Kruty1918.Moyva.Tests.InputRouting \
+      Kruty1918.Moyva.Tests.GameMode \
+      Kruty1918.Moyva.Tests.Multiplayer \
+      Kruty1918.Moyva.Tests.InfoPanel \
+      Kruty1918.Moyva.Tests.Units \
+      Kruty1918.Moyva.Tests.SaveSystem; do
+      safe_name="${assembly//./_}"
+      run_json "$OUT/data/tests_${safe_name}.json" \
+        unity command run_tests --project-path="$PROJECT" --mode editor \
+          --filter "$assembly" --filter-type assembly --timeout 300 --format json
+    done
+    run_playmode_tests \
+      Kruty1918.Moyva.Tests.InputRoutingPlayMode \
+      "$OUT/data/tests_input_routing_playmode.json"
+    run_json "$OUT/logs/console.json" \
+      unity command get_console_logs --project-path="$PROJECT" --limit 500 --format json
+    printf 'Focused acceptance report: %s\n' "$OUT"
+    ;;
+  capture)
+    exec "$PROJECT/tools/unity-cli/moyva-gameplay-ui-capture-lab"
+    ;;
+  bake-icons)
+    scope="${2:-all}"
+    case "$scope" in
+      buildings) menu_path='Moyva/Content/Icons/Bake Buildings' ;;
+      units) menu_path='Moyva/Content/Icons/Bake Units' ;;
+      all) menu_path='Moyva/Content/Icons/Bake All' ;;
+      *)
+        printf 'Unknown icon scope: %s (expected buildings, units, or all)\n' "$scope" >&2
+        exit 2
+        ;;
+    esac
+    unity command menu --project-path="$PROJECT" --path "$menu_path"
+    unity command menu --project-path="$PROJECT" --path 'Moyva/Content/Icons/Validate Generated Icons'
+    ;;
+  profile-castle)
+    profile_root="${XDG_CONFIG_HOME:-$HOME/.config}/unity3d"
+    printf '%s\n' \
+      'Run a Development Player or enter Play Mode and place the first castle.' \
+      'The recorder captures the commit plus the next 120 frames.' \
+      "Reports are written under the game persistentDataPath/MoyvaDiagnostics/FirstCastle." \
+      "Unity configuration root: $profile_root"
+    ;;
+  *)
+    printf 'Unknown command: %s\n' "$command_name" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

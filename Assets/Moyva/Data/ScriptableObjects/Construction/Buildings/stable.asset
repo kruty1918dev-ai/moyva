@@ -18,7 +18,7 @@ MonoBehaviour:
     DisplayName: Stable
     Category: 0
     Role: 9
-    Description: 
+    Description: A military support building.
     Tags: []
   Presentation:
     Prefab: {fileID: 919132149155446097, guid: 49c0cff0949cccd488fd77e8e775d7ee, type: 3}

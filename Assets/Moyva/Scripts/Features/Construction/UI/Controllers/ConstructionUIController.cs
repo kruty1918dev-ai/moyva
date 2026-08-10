@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Signals;
 using TMPro;
 using UnityEngine;
+using Unity.Profiling;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.UI
@@ -336,8 +337,12 @@ namespace Kruty1918.Moyva.Construction.UI
                 this);
         }
 
+        private static readonly ProfilerMarker BuildingPlacedUiMarker =
+            new("Moyva.BuildCommit.Subscriber.ConstructionUI");
+
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
+            using var marker = BuildingPlacedUiMarker.Auto();
             RequestBuildingListRefresh();
             RefreshUI();
         }
@@ -608,19 +613,9 @@ namespace Kruty1918.Moyva.Construction.UI
             _buildingUnavailableReasons[definition.Id] =
                 result.CanSelect
                     ? null
-                    : string.IsNullOrWhiteSpace(result.Reason)
-                        ? "Не виконано умови будівництва."
-                        : result.Reason;
-
-            if (!result.CanSelect)
-            {
-                Debug.Log(
-                    $"[MoyvaConstructionAvailability] menu-disabled " +
-                    $"building='{definition.Id}' " +
-                    $"code='{result.ReasonCode ?? "unavailable"}' " +
-                    $"reason='{_buildingUnavailableReasons[definition.Id]}'",
-                    this);
-            }
+                    : ConstructionPlacementReasonText.Resolve(
+                        result.ReasonCode,
+                        result.Reason);
 
             return result.CanSelect;
         }

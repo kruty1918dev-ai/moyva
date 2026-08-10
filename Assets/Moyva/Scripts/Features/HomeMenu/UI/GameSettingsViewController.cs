@@ -313,6 +313,9 @@ namespace Kruty1918.Moyva.HomeMenu.UI
             {
                 _dynamicRenderScaleToggle.SetIsOnWithoutNotify(false);
                 _dynamicRenderScaleToggle.interactable = false;
+                // The runtime service deliberately does not expose dynamic scaling
+                // until the active URP asset/cameras support it end-to-end.
+                _dynamicRenderScaleToggle.gameObject.SetActive(false);
             }
             if (_closeZoomOptimizationToggle != null) _closeZoomOptimizationToggle.onValueChanged.AddListener(HandleCloseZoomOptimization);
             if (_vSyncToggle != null) _vSyncToggle.onValueChanged.AddListener(HandleVSync);

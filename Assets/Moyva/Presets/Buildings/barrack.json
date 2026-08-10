@@ -4,7 +4,8 @@
   "version": 1,
   "id": "barrack",
   "identity": {
-    "displayName": "Barrack",
+    "displayName": "Казарма",
+    "description": "Військова будівля для підтримки оборони поселення.",
     "category": "Military",
     "role": "Defense"
   },

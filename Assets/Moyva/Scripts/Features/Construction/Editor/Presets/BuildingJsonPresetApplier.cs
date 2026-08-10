@@ -16,6 +16,7 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
             asset.Identity ??= new BuildingIdentity(); asset.Presentation ??= new BuildingPresentation(); asset.Construction ??= new BuildingConstructionData(); asset.RuntimeStats ??= new BuildingRuntimeStats(); asset.Modules ??= new List<BuildingModuleDefinition>();
             if (!preserveId) asset.Identity.Id = spec.Id;
             if (spec.HasDisplayName) asset.Identity.DisplayName = spec.DisplayName;
+            if (spec.HasDescription) asset.Identity.Description = spec.Description;
             if (spec.HasCategory && Enum.TryParse(spec.Category, true, out BuildingCategory category)) asset.Identity.Category = category;
             else if (spec.HasCategory) throw new InvalidOperationException($"{spec.Id}: unknown category '{spec.Category}'.");
             if (spec.HasRole && Enum.TryParse(spec.Role, true, out BuildingRole role)) asset.Identity.Role = role;

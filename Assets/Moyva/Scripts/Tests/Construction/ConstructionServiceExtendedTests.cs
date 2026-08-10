@@ -318,6 +318,36 @@ namespace Kruty1918.Moyva.Tests.Construction
             Assert.AreEqual("house", _service.GetSelectedBuildingId());
         }
 
+        [Test]
+        public void Rotation_IsStoredInPendingAndCommittedPlacement()
+        {
+            var rotationService =
+                _service as IConstructionRotationService;
+            Assert.IsNotNull(rotationService);
+
+            _service.SelectBuilding("house");
+            Assert.IsTrue(rotationService.RotateSelectedClockwise());
+            Assert.AreEqual(
+                ConstructionRotation.Degrees90,
+                rotationService.SelectedRotation);
+
+            var position = new Vector2Int(12, 7);
+            Assert.IsTrue(_service.TryPreviewAt(position));
+            Assert.IsTrue(rotationService.TryGetPendingRotation(
+                position,
+                out ConstructionRotation pendingRotation));
+            Assert.AreEqual(
+                ConstructionRotation.Degrees90,
+                pendingRotation);
+
+            _service.Confirm();
+
+            Assert.AreEqual(1, _placedCount);
+            Assert.AreEqual(
+                1,
+                _lastPlacedSignal.RotationQuarterTurns);
+        }
+
         // --- Cancel ---
         [Test]
         public void Cancel_WithoutSelect_FiresCancelledSignal()

@@ -1,8 +1,7 @@
 using Kruty1918.Moyva.Signals;
 using Kruty1918.Moyva.Grid.API;
-using System.Collections.Generic;
+using Kruty1918.Moyva.InputRouting.API;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using Zenject;
@@ -16,9 +15,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private readonly SignalBus _signalBus;
         private readonly IGridProjection _gridProjection;
-        private readonly List<RaycastResult> _uiRaycastResults = new List<RaycastResult>(8);
+        private readonly IGameplayInputPolicy _inputPolicy;
 
-        private PointerEventData _pointerEventData;
         private int _trackedTouchId = -1;
         private Vector2 _touchStartScreenPosition;
         private float _touchStartTime;
@@ -27,10 +25,14 @@ namespace Kruty1918.Moyva.Interactions.Runtime
         private bool _multiTouchObserved;
         private Camera _cachedCamera;
 
-        public TileClickInputService(SignalBus signalBus, [InjectOptional] IGridProjection gridProjection = null)
+        public TileClickInputService(
+            SignalBus signalBus,
+            [InjectOptional] IGridProjection gridProjection = null,
+            [InjectOptional] IGameplayInputPolicy inputPolicy = null)
         {
             _signalBus = signalBus;
             _gridProjection = gridProjection;
+            _inputPolicy = inputPolicy;
         }
 
         public void Tick()
@@ -39,18 +41,14 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 return;
 
             var mouse = Mouse.current;
-            if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+            if (mouse == null)
                 return;
 
             Vector2 screenPos = mouse.position.ReadValue();
-            if (IsScreenPositionOverUi(screenPos, -1))
-                return;
-
-            var cam = ResolveCamera();
-            if (cam == null)
-                return;
-
-            FireTileClick(screenPos, cam);
+            if (mouse.leftButton.wasPressedThisFrame)
+                TryFireMouseTileClick(screenPos, TilePointerButton.Primary);
+            else if (mouse.rightButton.wasPressedThisFrame)
+                TryFireMouseTileClick(screenPos, TilePointerButton.Secondary);
         }
 
         private bool HandleTouchInput()
@@ -124,7 +122,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
             {
                 var cam = ResolveCamera();
                 if (cam != null)
-                    FireTileClick(releaseScreenPosition, cam);
+                    FireTileClick(releaseScreenPosition, cam, TilePointerButton.Primary);
             }
 
             ResetTouchTracking();
@@ -158,18 +156,7 @@ namespace Kruty1918.Moyva.Interactions.Runtime
 
         private bool IsScreenPositionOverUi(Vector2 screenPosition, int pointerId)
         {
-            var eventSystem = EventSystem.current;
-            if (eventSystem == null)
-                return false;
-
-            _pointerEventData ??= new PointerEventData(eventSystem);
-            _pointerEventData.Reset();
-            _pointerEventData.pointerId = pointerId;
-            _pointerEventData.position = screenPosition;
-
-            _uiRaycastResults.Clear();
-            eventSystem.RaycastAll(_pointerEventData, _uiRaycastResults);
-            return _uiRaycastResults.Count > 0;
+            return _inputPolicy?.IsPointerOverUi(screenPosition, pointerId, interactiveOnly: false) ?? false;
         }
 
         private Camera ResolveCamera()
@@ -183,14 +170,31 @@ namespace Kruty1918.Moyva.Interactions.Runtime
                 : null;
         }
 
-        private void FireTileClick(Vector2 screenPos, Camera cam)
+        private void TryFireMouseTileClick(Vector2 screenPosition, TilePointerButton button)
+        {
+            GameplayInputKind inputKind = button == TilePointerButton.Primary
+                ? GameplayInputKind.PrimaryPointer
+                : GameplayInputKind.SecondaryPointer;
+            if (!(_inputPolicy?.CanProcess(inputKind, screenPosition) ?? true))
+                return;
+
+            Camera cam = ResolveCamera();
+            if (cam != null)
+                FireTileClick(screenPosition, cam, button);
+        }
+
+        private void FireTileClick(Vector2 screenPos, Camera cam, TilePointerButton button)
         {
             Vector3 worldPos = ScreenToWorldOnGridPlane(screenPos, cam);
             var tilePos = _gridProjection != null
                 ? _gridProjection.WorldToGrid(worldPos)
                 : new Vector2Int(Mathf.RoundToInt(worldPos.x), Mathf.RoundToInt(worldPos.y));
 
-            _signalBus.Fire(new TileClickedSignal { Position = tilePos });
+            _signalBus.Fire(new TileClickedSignal
+            {
+                Position = tilePos,
+                Button = button,
+            });
         }
 
         private Vector3 ScreenToWorldOnGridPlane(Vector2 screenPos, Camera cam)

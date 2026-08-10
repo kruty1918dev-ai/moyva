@@ -45,6 +45,10 @@ namespace Kruty1918.Moyva.SaveSystem
                 .AsSingle()
                 .NonLazy();
 
+            container.Bind<Kruty1918.Moyva.GameMode.API.IExitMatchSaveHandler>()
+                .To<ExitMatchSaveHandler>()
+                .AsSingle();
+
             container.Bind<ISaveInspectorService>()
                 .To<SaveInspectorService>()
                 .AsSingle();

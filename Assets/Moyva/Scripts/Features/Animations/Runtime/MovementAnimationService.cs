@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,7 +54,13 @@ namespace Kruty1918.Moyva.Animations.Runtime
 
                 if (settings.DelayOnTile > 0)
                 {
-                    await Task.Delay(Mathf.RoundToInt(settings.DelayOnTile * 1000), cancellationToken);
+                    float remainingDelay = settings.DelayOnTile;
+                    while (remainingDelay > 0f)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        remainingDelay -= Time.deltaTime;
+                        await Task.Yield();
+                    }
                 }
 
                 // Фіксуємо завершення кроку (тут UnitService спише стаміну)

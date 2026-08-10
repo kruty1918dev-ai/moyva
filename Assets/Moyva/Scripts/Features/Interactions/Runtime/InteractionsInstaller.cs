@@ -1,5 +1,6 @@
 using Kruty1918.Moyva.Grid.API;
 using Kruty1918.Moyva.Interactions.API;
+using Kruty1918.Moyva.InputRouting.Runtime;
 using Zenject;
 
 namespace Kruty1918.Moyva.Interactions.Runtime
@@ -8,6 +9,8 @@ namespace Kruty1918.Moyva.Interactions.Runtime
     {
         public override void InstallBindings()
         {
+            InputRoutingBindings.Install(Container);
+
             Container.BindInterfacesAndSelfTo<TileClickInputService>()
                 .AsSingle();
 

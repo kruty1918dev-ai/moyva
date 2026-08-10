@@ -385,6 +385,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         {
             _playerPlacedBuildings.Remove(position);
             _factionPlacedBuildings.Remove(position);
+            _placedRotationByOrigin.Remove(position);
         }
     }
 }

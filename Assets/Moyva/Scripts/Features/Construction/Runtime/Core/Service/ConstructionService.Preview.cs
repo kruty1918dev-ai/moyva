@@ -78,7 +78,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ownerId: _activeOwnerId,
                     attemptSource:
                         ConstructionPlacementAttemptSource.PointerClick,
-                    allowUniquePreviewRelocation: true));
+                    allowUniquePreviewRelocation: true,
+                    rotation: _selectedRotation));
             if (!placementResult.CanPreview)
             {
                 _lastActionMessage = placementResult.Reason;
@@ -174,7 +175,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             intent = new ConstructionPlacementCommitIntent(
                 placement.OriginalPosition,
-                placement.ReplacedPendingBuildingId);
+                placement.ReplacedPendingBuildingId,
+                placement.Rotation);
             return true;
         }
 
@@ -219,7 +221,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ownerId: _activeOwnerId,
                     attemptSource:
                         ConstructionPlacementAttemptSource.PreviewMove,
-                    allowUniquePreviewRelocation: false));
+                    allowUniquePreviewRelocation: false,
+                    rotation: placement.Rotation));
             if (!moveResult.CanPreview)
             {
                 _lastActionMessage = moveResult.Reason;
@@ -254,7 +257,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 toPosition,
                 placement.BuildingId,
                 placement.OriginalPosition,
-                placement.ReplacedPendingBuildingId);
+                placement.ReplacedPendingBuildingId,
+                placement.Rotation);
             _pendingPlacements[index] = movedPlacement;
             _pendingPlacementByPosition[toPosition] = movedPlacement;
             MarkPendingPlacementsChanged();
@@ -263,7 +267,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 FromPosition = fromPosition,
                 ToPosition = toPosition,
-                BuildingId = placement.BuildingId
+                BuildingId = placement.BuildingId,
+                RotationQuarterTurns = (int)placement.Rotation,
             });
 
             _signalBus.Fire(new BuildingPreviewChangedSignal
@@ -277,6 +282,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             {
                 Position = toPosition,
                 BuildingId = placement.BuildingId,
+                RotationQuarterTurns = (int)placement.Rotation,
                 PreviewState = ResolvePreviewState(
                     moveResult.ResourcesValid)
             });
@@ -362,7 +368,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     new PendingPlacement(
                         position,
                         buildingId,
-                        originalPosition);
+                        originalPosition,
+                        rotation: _selectedRotation);
                 _pendingPlacements.Add(placement);
                 _pendingPositions.Add(position);
                 _pendingPlacementByPosition[position] = placement;
@@ -372,6 +379,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     Position = position,
                     BuildingId = buildingId,
+                    RotationQuarterTurns = (int)placement.Rotation,
                     PreviewState = ResolvePreviewState(isAffordable)
                 });
 
@@ -511,7 +519,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                                     .PointerClick,
                             allowUniquePreviewRelocation: false,
                             satisfiedReplacementBuildingId:
-                                current.BuildingId));
+                                current.BuildingId,
+                            rotation: _selectedRotation));
                 if (!placement.CanPreview)
                 {
                     _lastActionMessage = placement.Reason;
@@ -541,7 +550,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                         position,
                         replacementBuildingId,
                         current.OriginalPosition,
-                        current.BuildingId);
+                        current.BuildingId,
+                        _selectedRotation);
                 _pendingPlacements[index] = replacement;
                 _pendingPlacementByPosition[position] = replacement;
                 MarkPendingPlacementsChanged();
@@ -553,6 +563,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 {
                     Position = position,
                     BuildingId = replacementBuildingId,
+                    RotationQuarterTurns =
+                        (int)replacement.Rotation,
                     PreviewState = ResolvePreviewState(
                         placement.ResourcesValid)
                 });

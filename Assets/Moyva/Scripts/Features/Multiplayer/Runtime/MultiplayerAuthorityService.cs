@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using Kruty1918.Moyva.Construction.API;
+using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Multiplayer.Core;
 using Kruty1918.Moyva.Multiplayer.Networking;
 using Kruty1918.Moyva.Signals;
@@ -34,6 +35,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
         private readonly SignalBus               _signalBus;
         private IConstructionService             _constructionService;
         private readonly IUnitMovementService    _unitMovementService;
+        private readonly IUnitOwnershipQuery     _unitOwnershipQuery;
         private readonly IUnitFactory            _unitFactory;
 
         // Guard: не ретранслюємо події, що прийшли з мережі (уникаємо нескінченного циклу).
@@ -44,6 +46,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             ISessionManager         sessionManager,
             SignalBus               signalBus,
             [InjectOptional] IUnitMovementService unitMovementService = null,
+            [InjectOptional] IUnitOwnershipQuery unitOwnershipQuery = null,
             [InjectOptional] IUnitFactory unitFactory = null,
             [InjectOptional] IConstructionService constructionService = null)
         {
@@ -51,6 +54,7 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             _sessionManager      = sessionManager;
             _signalBus           = signalBus;
             _unitMovementService = unitMovementService;
+            _unitOwnershipQuery = unitOwnershipQuery;
             _unitFactory         = unitFactory;
             _constructionService = constructionService;
         }
@@ -146,21 +150,6 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     as IConstructionPendingPlacementIntentSource;
             foreach (var kv in pending)
             {
-                if (placementQuery != null)
-                {
-                    ConstructionPlacementQueryResult placement =
-                        placementQuery.EvaluatePlacement(
-                            CreateClientPlacementPreflightRequest(
-                                kv.Value,
-                                kv.Key,
-                                ownerId));
-                    if (!placement.CanPreview
-                        || !placement.ResourcesValid)
-                    {
-                        continue;
-                    }
-                }
-
                 ConstructionPlacementCommitIntent intent =
                     intentSource != null
                     && intentSource.TryGetPendingPlacementIntent(
@@ -169,6 +158,22 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                             pendingIntent)
                         ? pendingIntent
                         : ConstructionPlacementCommitIntent.None;
+                if (placementQuery != null)
+                {
+                    ConstructionPlacementQueryResult placement =
+                        placementQuery.EvaluatePlacement(
+                            CreateClientPlacementPreflightRequest(
+                                kv.Value,
+                                kv.Key,
+                                ownerId,
+                                intent.Rotation));
+                    if (!placement.CanPreview
+                        || !placement.ResourcesValid)
+                    {
+                        continue;
+                    }
+                }
+
                 var payload = new BuildingPlacePayload(
                     GameActionMessageKind.Request,
                     kv.Value,
@@ -178,7 +183,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     intent.HasRelocationSource,
                     intent.RelocationSourcePosition
                         .GetValueOrDefault(),
-                    intent.SatisfiedReplacementBuildingId);
+                    intent.SatisfiedReplacementBuildingId,
+                    intent.Rotation);
 
                 _syncService.SendCommand(GameCommandType.BuildingPlace, payload.ToBytes());
             }
@@ -194,7 +200,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             CreateClientPlacementPreflightRequest(
                 string buildingId,
                 Vector2Int position,
-                string ownerId)
+                string ownerId,
+                ConstructionRotation rotation =
+                    ConstructionRotation.Degrees0)
             => new ConstructionPlacementQueryRequest(
                 buildingId,
                 position,
@@ -206,13 +214,25 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 attemptSource:
                     ConstructionPlacementAttemptSource
                         .NetworkRequest,
-                allowUniquePreviewRelocation: false);
+                allowUniquePreviewRelocation: false,
+                rotation: rotation);
 
         private void OnLocalMoveUnitRequest(MoveUnitRequestSignal signal)
         {
-            if (_unitMovementService == null)
+            if (_unitMovementService == null || _unitOwnershipQuery == null)
             {
-                Debug.LogWarning("[MultiplayerAuthority] MoveUnitRequestSignal received, but IUnitMovementService is not bound in this scene.");
+                Debug.LogWarning("[MultiplayerAuthority] Move request rejected because unit command services are not bound in this scene.");
+                return;
+            }
+
+            string requesterOwnerId = string.IsNullOrWhiteSpace(signal.RequesterOwnerId)
+                ? _sessionManager?.LocalPlayerId
+                : signal.RequesterOwnerId;
+            string unitOwnerId = _unitOwnershipQuery.GetUnitOwnerId(signal.UnitId);
+            if (!IsUnitCommandAuthorized(unitOwnerId, requesterOwnerId))
+            {
+                Debug.LogWarning(
+                    $"[Authority] Rejected local UnitMove for '{signal.UnitId}': requester '{requesterOwnerId}' does not own unit '{unitOwnerId}'.");
                 return;
             }
 
@@ -244,7 +264,9 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 signal.OwnerId,
                 signal.SourceFactionId,
                 signal.HasRelocationSource,
-                signal.RelocationSourcePosition);
+                signal.RelocationSourcePosition,
+                rotation: ConstructionRotationUtility.Normalize(
+                    signal.RotationQuarterTurns));
             _syncService.SendCommand(GameCommandType.BuildingPlace, payload.ToBytes());
         }
 
@@ -359,7 +381,8 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                             intent.HasRelocationSource,
                             intent.RelocationSourcePosition
                                 .GetValueOrDefault(),
-                            intent.SatisfiedReplacementBuildingId);
+                            intent.SatisfiedReplacementBuildingId,
+                            intent.Rotation);
                         _syncService.SendCommand(GameCommandType.BuildingPlace, confirmed.ToBytes());
                     }
                     else
@@ -528,6 +551,21 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 // Лише хост обробляє запити на рух.
                 if (!IsOfflineOrHost()) return;
+                if (_unitOwnershipQuery == null)
+                    return;
+
+                string unitOwnerId = _unitOwnershipQuery.GetUnitOwnerId(data.UnitId);
+                if (!TryResolveAuthorizedRequestOwner(
+                        senderId,
+                        unitOwnerId,
+                        unitOwnerId,
+                        out _,
+                        out string authorizationReason))
+                {
+                    Debug.LogWarning(
+                        $"[Authority] Rejected UnitMove from '{senderId}' for '{data.UnitId}': {authorizationReason}");
+                    return;
+                }
                 // Хост виконує рух; UnitMovedSignal транслює кожен крок через OnUnitMovedLocally.
                 _ = _unitMovementService.MoveUnitAsync(data.UnitId, data.TargetPosition, CancellationToken.None);
             }
@@ -535,6 +573,12 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             {
                 // Клієнт запускає власний рух до тієї ж позиції (детерміноване pathfinding).
                 if (IsOfflineOrHost()) return;
+                if (!IsAuthorizedHostSender(senderId))
+                {
+                    Debug.LogWarning(
+                        $"[Authority] Ignored UnitMove confirmation from non-host '{senderId}'.");
+                    return;
+                }
 
                 _ = _unitMovementService.MoveUnitAsync(data.UnitId, data.TargetPosition, CancellationToken.None);
             }
@@ -705,6 +749,16 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                     requestedOwnerId.Trim(),
                     senderId,
                     System.StringComparison.Ordinal);
+
+        internal static bool IsUnitCommandAuthorized(
+            string unitOwnerId,
+            string requesterOwnerId)
+            => !string.IsNullOrWhiteSpace(unitOwnerId)
+               && !string.IsNullOrWhiteSpace(requesterOwnerId)
+               && string.Equals(
+                   unitOwnerId.Trim(),
+                   requesterOwnerId.Trim(),
+                   StringComparison.Ordinal);
     }
 
     internal sealed class MultiplayerConstructionPlacementAuthorityPolicy :
@@ -736,5 +790,21 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
                 "Placement is awaiting authoritative host confirmation.";
             return false;
         }
+    }
+
+    internal sealed class MultiplayerGamePauseModePolicy :
+        IGamePauseModePolicy
+    {
+        private readonly ISessionManager _sessionManager;
+
+        public MultiplayerGamePauseModePolicy(
+            ISessionManager sessionManager)
+        {
+            _sessionManager = sessionManager;
+        }
+
+        public bool IsMultiplayerSessionActive
+            => _sessionManager?.Participants != null
+               && _sessionManager.Participants.Count > 0;
     }
 }

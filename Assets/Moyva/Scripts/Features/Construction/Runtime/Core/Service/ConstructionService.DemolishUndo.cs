@@ -160,6 +160,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 UnregisterBuildingFootprint(pos, id);
                 _playerPlacedBuildings.Remove(pos);
+                _placedRotationByOrigin.Remove(pos);
                 InvalidatePlacementAvailabilityCache();
                 _signalBus.Fire(new BuildingDemolishedSignal
                 {
@@ -197,9 +198,11 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 var placement = _pendingPlacements[i];
                 _signalBus.Fire(new BuildingPreviewChangedSignal
                 {
-                    Position = placement.Position,
-                    BuildingId = placement.BuildingId,
-                    PreviewState = BuildingPreviewState.None
+                        Position = placement.Position,
+                        BuildingId = placement.BuildingId,
+                        RotationQuarterTurns =
+                            (int)placement.Rotation,
+                        PreviewState = BuildingPreviewState.None
                 });
             }
 
@@ -369,12 +372,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             foreach (var pair in previousByPosition)
             {
-                if (!currentByPosition.TryGetValue(pair.Key, out var current) || current.BuildingId != pair.Value.BuildingId)
+                if (!currentByPosition.TryGetValue(pair.Key, out var current)
+                    || current.BuildingId != pair.Value.BuildingId
+                    || current.Rotation != pair.Value.Rotation)
                 {
                     _signalBus.Fire(new BuildingPreviewChangedSignal
                     {
                         Position = pair.Key,
                         BuildingId = pair.Value.BuildingId,
+                        RotationQuarterTurns =
+                            (int)pair.Value.Rotation,
                         PreviewState = BuildingPreviewState.None
                     });
                 }
@@ -382,12 +389,16 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             foreach (var pair in currentByPosition)
             {
-                if (!previousByPosition.TryGetValue(pair.Key, out var previousPlacement) || previousPlacement.BuildingId != pair.Value.BuildingId)
+                if (!previousByPosition.TryGetValue(pair.Key, out var previousPlacement)
+                    || previousPlacement.BuildingId != pair.Value.BuildingId
+                    || previousPlacement.Rotation != pair.Value.Rotation)
                 {
                     _signalBus.Fire(new BuildingPreviewChangedSignal
                     {
                         Position = pair.Key,
                         BuildingId = pair.Value.BuildingId,
+                        RotationQuarterTurns =
+                            (int)pair.Value.Rotation,
                         PreviewState = BuildingPreviewState.Valid
                     });
                 }

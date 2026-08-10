@@ -18,7 +18,7 @@ MonoBehaviour:
     DisplayName: House
     Category: 1
     Role: 1
-    Description: 
+    Description: A civilian housing building.
     Tags: []
   Presentation:
     Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}

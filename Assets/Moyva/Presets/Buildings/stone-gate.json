@@ -5,6 +5,7 @@
   "id": "stone-gate",
   "identity": {
     "displayName": "Ворота",
+    "description": "Прохід у кам'яній стіні, орієнтований за топологією сусідніх сегментів.",
     "category": "Walls",
     "role": "Gate"
   },

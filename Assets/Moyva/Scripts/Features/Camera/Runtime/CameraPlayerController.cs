@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
 using Kruty1918.Moyva.Camera.API;
+using Kruty1918.Moyva.InputRouting.API;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
-using UnityEngine.UI;
 using Zenject;
 
 namespace Kruty1918.Moyva.Camera.Runtime
@@ -15,22 +13,25 @@ namespace Kruty1918.Moyva.Camera.Runtime
         private readonly ICameraMovement _cameraMovement;
         private readonly ICameraZoom _cameraZoom;
         private readonly CameraSettingsSO _settings;
+        private readonly IGameplayInputPolicy _inputPolicy;
 
         private readonly InputAction _moveAction;
         private readonly InputAction _zoomAction;
         private readonly InputAction _rotateAction;
-        private readonly List<RaycastResult> _uiRaycastResults = new List<RaycastResult>(8);
-        private PointerEventData _pointerEventData;
+        private bool _pointerPanCaptured;
+        private bool _pointerOrbitCaptured;
 
         public CameraPlayerController(
             ICameraMovement cameraMovement,
             ICameraZoom cameraZoom,
             CameraSettingsSO settings,
-            InputActionAsset inputAsset)
+            InputActionAsset inputAsset,
+            [InjectOptional] IGameplayInputPolicy inputPolicy = null)
         {
             _cameraMovement = cameraMovement;
             _cameraZoom = cameraZoom;
             _settings = settings;
+            _inputPolicy = inputPolicy;
 
             if (inputAsset == null)
                 return;
@@ -54,29 +55,94 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (_moveAction == null || _zoomAction == null)
                 return;
 
-            // Отримуємо сирі пікселі дельти (Mouse Delta або Touch Delta)
-            Vector2 moveDelta = _moveAction.ReadValue<Vector2>();
+            Mouse mouse = Mouse.current;
+            Vector2 pointerPosition = mouse?.position.ReadValue() ?? ResolveScreenCenter();
+            bool altPressed = IsAltPressed();
+            bool middlePressed = mouse?.middleButton.isPressed ?? false;
 
-            if (moveDelta.sqrMagnitude > 0.001f)
+            HandlePointerGestureCapture(mouse, pointerPosition, altPressed);
+
+            Vector2 moveDelta = _moveAction.ReadValue<Vector2>();
+            if (middlePressed)
             {
-                // Просто передаємо Vector2. Сервіс сам знає, як його перетворити для 2D.
-                _cameraMovement.MoveCamera(moveDelta);
+                if (altPressed)
+                {
+                    if (_pointerOrbitCaptured)
+                        _cameraMovement.RotatePointerOrbit(mouse.delta.ReadValue().x);
+                }
+                else if (_pointerPanCaptured && moveDelta.sqrMagnitude > 0.001f)
+                {
+                    _cameraMovement.MoveCamera(moveDelta);
+                }
+            }
+            else if (moveDelta.sqrMagnitude > 0.001f
+                     && CanProcess(GameplayInputKind.KeyboardNavigation, pointerPosition))
+            {
+                _cameraMovement.MoveCameraKeyboard(moveDelta, Time.unscaledDeltaTime);
             }
 
             // Зум (Scroll або Pinch)
             float zoomDelta = _zoomAction.ReadValue<float>();
-            if (Mathf.Abs(zoomDelta) > 0.001f)
+            if (Mathf.Abs(zoomDelta) > 0.001f
+                && CanProcess(GameplayInputKind.PointerZoom, pointerPosition))
             {
-                _cameraZoom.ZoomCamera(zoomDelta);
+                _cameraZoom.ZoomCamera(zoomDelta, pointerPosition);
             }
 
             float rotationDirection = _rotateAction?.ReadValue<float>() ?? 0f;
-            if (Mathf.Abs(rotationDirection) > 0.001f)
-            {
-                float angleDegrees = rotationDirection * _settings.ResolveRotationSpeed() * Time.deltaTime;
-                _cameraMovement.RotateCameraAroundFocusPoint(angleDegrees);
-            }
+            bool canRotateKeyboard = CanProcess(GameplayInputKind.KeyboardNavigation, pointerPosition);
+            _cameraMovement.SetCameraOrbitInput(canRotateKeyboard ? rotationDirection : 0f);
         }
+
+        private void HandlePointerGestureCapture(Mouse mouse, Vector2 pointerPosition, bool altPressed)
+        {
+            if (mouse == null)
+                return;
+
+            if (mouse.middleButton.wasPressedThisFrame)
+            {
+                if (altPressed)
+                {
+                    _pointerOrbitCaptured = TryBeginCapture(GameplayInputKind.PointerRotate, pointerPosition);
+                    if (_pointerOrbitCaptured)
+                        _cameraMovement.BeginPointerOrbit();
+                }
+                else
+                {
+                    _pointerPanCaptured = TryBeginCapture(GameplayInputKind.PointerPan, pointerPosition);
+                }
+            }
+
+            if (!mouse.middleButton.wasReleasedThisFrame)
+                return;
+
+            if (_pointerPanCaptured)
+                _inputPolicy?.EndPointerCapture(GameplayInputKind.PointerPan);
+
+            if (_pointerOrbitCaptured)
+            {
+                _cameraMovement.EndPointerOrbit();
+                _inputPolicy?.EndPointerCapture(GameplayInputKind.PointerRotate);
+            }
+
+            _pointerPanCaptured = false;
+            _pointerOrbitCaptured = false;
+        }
+
+        private bool TryBeginCapture(GameplayInputKind inputKind, Vector2 pointerPosition)
+            => _inputPolicy?.TryBeginPointerCapture(inputKind, pointerPosition) ?? true;
+
+        private bool CanProcess(GameplayInputKind inputKind, Vector2 pointerPosition)
+            => _inputPolicy?.CanProcess(inputKind, pointerPosition) ?? true;
+
+        private static bool IsAltPressed()
+        {
+            Keyboard keyboard = Keyboard.current;
+            return keyboard != null && (keyboard.leftAltKey.isPressed || keyboard.rightAltKey.isPressed);
+        }
+
+        private static Vector2 ResolveScreenCenter()
+            => new(Screen.width * 0.5f, Screen.height * 0.5f);
 
         private bool TryHandleTouchGestures()
         {
@@ -179,25 +245,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         private bool IsTouchOverInteractiveUi(TouchGestureSample touch)
         {
-            var eventSystem = EventSystem.current;
-            if (eventSystem == null)
-                return false;
-
-            _pointerEventData ??= new PointerEventData(eventSystem);
-            _pointerEventData.Reset();
-            _pointerEventData.pointerId = touch.TouchId;
-            _pointerEventData.position = touch.Position;
-
-            _uiRaycastResults.Clear();
-            eventSystem.RaycastAll(_pointerEventData, _uiRaycastResults);
-
-            for (int resultIndex = 0; resultIndex < _uiRaycastResults.Count; resultIndex++)
-            {
-                if (_uiRaycastResults[resultIndex].gameObject.GetComponentInParent<Selectable>() != null)
-                    return true;
-            }
-
-            return false;
+            return _inputPolicy?.IsPointerOverUi(touch.Position, touch.TouchId, interactiveOnly: true) ?? false;
         }
 
         private readonly struct TouchGestureSample
@@ -216,6 +264,10 @@ namespace Kruty1918.Moyva.Camera.Runtime
 
         public void Dispose()
         {
+            _inputPolicy?.EndPointerCapture(GameplayInputKind.PointerPan);
+            _inputPolicy?.EndPointerCapture(GameplayInputKind.PointerRotate);
+            _cameraMovement.SetCameraOrbitInput(0f);
+            _cameraMovement.EndPointerOrbit();
             _moveAction?.Disable();
             _zoomAction?.Disable();
             _rotateAction?.Disable();

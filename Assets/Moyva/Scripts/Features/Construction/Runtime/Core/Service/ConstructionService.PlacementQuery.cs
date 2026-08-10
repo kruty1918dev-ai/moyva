@@ -583,6 +583,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 ? _activeOwnerId
                 : request.OwnerId.Trim();
             _placementQueryEvaluationRequest.Position = request.Position;
+            _placementQueryEvaluationRequest.Rotation = request.Rotation;
             _placementQueryEvaluationRequest.IgnoredPendingPosition = request.IgnoredPendingPosition;
             _placementQueryEvaluationRequest.IgnoredOccupiedPosition = ignoredOccupiedPosition;
             BuildPlacedBuildingSimulationEntries();

@@ -82,6 +82,7 @@ namespace Kruty1918.Moyva.Signals
     {
         public string UnitId;
         public Vector2Int TargetPosition;
+        public string RequesterOwnerId;
     }
 
     /// <summary>

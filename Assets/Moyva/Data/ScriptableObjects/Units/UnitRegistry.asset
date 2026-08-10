@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Units::Kruty1918.Moyva.Units.Runtime.UnitRegistrySO
   Configs:
   - TypeId: warrior
+    DisplayName: "\u0412\u043E\u0457\u043D"
     Role: 1
     CombatType: 0
     BaseStamina: 15
@@ -31,7 +32,7 @@ MonoBehaviour:
     CuttingDefense: 0
     PenetratingDefense: 0
     CrushingDefense: 0
-    Prefab: {fileID: 3012185294812511675, guid: 4d504a73108154c2a87c088a007ff633, type: 3}
+    Prefab: {fileID: 6725926376646028200, guid: ad2b8f501d94436369b0452412f40429, type: 3}
     StaminaRandomRange: {x: -1, y: 1}
     AnimationSettings:
       MoveDurationPerTile: 0.3
@@ -47,6 +48,7 @@ MonoBehaviour:
       Loop: 1
       Duration: 1
   - TypeId: Spearman
+    DisplayName: "\u0421\u043F\u0438\u0441\u043D\u0438\u043A"
     Role: 1
     CombatType: 0
     BaseStamina: 100
@@ -64,14 +66,15 @@ MonoBehaviour:
     CuttingDefense: 0
     PenetratingDefense: 0
     CrushingDefense: 0
-    Prefab: {fileID: 804881041722963365, guid: f6eca2d1e3131f6d69c2b40f8a22f1d0, type: 3}
+    Prefab: {fileID: 4267310605530257900, guid: cb916fee6b164251ebf6969bcb41053f, type: 3}
     StaminaRandomRange: {x: -5, y: 5}
     AnimationSettings:
       MoveDurationPerTile: 0.3
       DelayOnTile: 0.05
-    CustomSprite: {fileID: 1618817777, guid: 24f577213f615d54ca31f1d5da309e46, type: 3}
+    CustomSprite: {fileID: 0}
     AnimationClips: []
   - TypeId: Archer
+    DisplayName: "\u041B\u0443\u0447\u043D\u0438\u043A"
     Role: 1
     CombatType: 0
     BaseStamina: 100
@@ -89,14 +92,15 @@ MonoBehaviour:
     CuttingDefense: 0
     PenetratingDefense: 0
     CrushingDefense: 0
-    Prefab: {fileID: 3893281008883271442, guid: 6e123bcf7098822d4a01e669ab0f8b46, type: 3}
+    Prefab: {fileID: 3925536428086337897, guid: 87b835b1a22a0b90583840638a5c5cb0, type: 3}
     StaminaRandomRange: {x: -5, y: 5}
     AnimationSettings:
       MoveDurationPerTile: 0.3
       DelayOnTile: 0.05
-    CustomSprite: {fileID: 518154196223322196, guid: 53dd6007514ce6947aa259b0acb750fc, type: 3}
+    CustomSprite: {fileID: 0}
     AnimationClips: []
   - TypeId: Light-cavalry
+    DisplayName: "\u041B\u0435\u0433\u043A\u0430 \u043A\u0456\u043D\u043D\u043E\u0442\u0430"
     Role: 1
     CombatType: 0
     BaseStamina: 100
@@ -114,10 +118,10 @@ MonoBehaviour:
     CuttingDefense: 0
     PenetratingDefense: 0
     CrushingDefense: 0
-    Prefab: {fileID: 4789759872813502532, guid: c98063cb2ac50f4fe98a1a114ea55281, type: 3}
+    Prefab: {fileID: 8475329214379649031, guid: 32716c4f2fd9817ffb4d8981530bd546, type: 3}
     StaminaRandomRange: {x: -5, y: 5}
     AnimationSettings:
       MoveDurationPerTile: 0.3
       DelayOnTile: 0.05
-    CustomSprite: {fileID: -1276854379, guid: 24f577213f615d54ca31f1d5da309e46, type: 3}
+    CustomSprite: {fileID: 0}
     AnimationClips: []

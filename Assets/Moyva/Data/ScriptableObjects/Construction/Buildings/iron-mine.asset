@@ -18,7 +18,7 @@ MonoBehaviour:
     DisplayName: Iron Mine
     Category: 2
     Role: 2
-    Description: 
+    Description: Produces iron ore and requires four workers.
     Tags: []
   Presentation:
     Prefab: {fileID: 919132149155446097, guid: 9fab77ecb6c0d0340aafded7b8e7b66b, type: 3}

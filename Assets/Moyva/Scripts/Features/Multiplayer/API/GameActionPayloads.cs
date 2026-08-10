@@ -19,7 +19,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
     public readonly struct BuildingPlacePayload
     {
         private const byte IntentExtensionMarker = 0xA7;
-        private const byte IntentExtensionVersion = 1;
+        private const byte IntentExtensionVersion = 2;
 
         public readonly GameActionMessageKind Kind;
         public readonly string BuildingId;
@@ -29,12 +29,15 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
         public readonly bool HasRelocationSource;
         public readonly Vector2Int RelocationSourcePosition;
         public readonly string SatisfiedReplacementBuildingId;
+        public readonly ConstructionRotation Rotation;
 
         public BuildingPlacePayload(GameActionMessageKind kind, string buildingId, Vector2Int position,
                                     string ownerId, string sourceFactionId,
                                     bool hasRelocationSource = false,
                                     Vector2Int relocationSourcePosition = default,
-                                    string satisfiedReplacementBuildingId = null)
+                                    string satisfiedReplacementBuildingId = null,
+                                    ConstructionRotation rotation =
+                                        ConstructionRotation.Degrees0)
         {
             Kind            = kind;
             BuildingId      = buildingId;
@@ -45,6 +48,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             RelocationSourcePosition = relocationSourcePosition;
             SatisfiedReplacementBuildingId =
                 satisfiedReplacementBuildingId;
+            Rotation = ConstructionRotationUtility.Normalize(
+                (int)rotation);
         }
 
         public ConstructionPlacementCommitIntent ToCommitIntent()
@@ -52,7 +57,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 HasRelocationSource
                     ? RelocationSourcePosition
                     : (Vector2Int?)null,
-                SatisfiedReplacementBuildingId);
+                SatisfiedReplacementBuildingId,
+                Rotation);
 
         public byte[] ToBytes()
         {
@@ -72,6 +78,7 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             w.Write(RelocationSourcePosition.x);
             w.Write(RelocationSourcePosition.y);
             w.Write(SatisfiedReplacementBuildingId ?? "");
+            w.Write((byte)Rotation);
             return ms.ToArray();
         }
 
@@ -90,6 +97,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
             bool hasRelocationSource = false;
             Vector2Int relocationSourcePosition = default;
             string satisfiedReplacementBuildingId = null;
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0;
             if (ms.Position < ms.Length)
             {
                 byte marker = r.ReadByte();
@@ -100,7 +109,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 }
 
                 byte version = r.ReadByte();
-                if (version != IntentExtensionVersion)
+                if (version != 1
+                    && version != IntentExtensionVersion)
                 {
                     throw new InvalidDataException(
                         $"Unsupported BuildingPlace payload extension version {version}.");
@@ -110,6 +120,11 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 relocationSourcePosition =
                     new Vector2Int(r.ReadInt32(), r.ReadInt32());
                 satisfiedReplacementBuildingId = r.ReadString();
+                if (version >= 2)
+                {
+                    rotation = ConstructionRotationUtility.Normalize(
+                        r.ReadByte());
+                }
             }
 
             return new BuildingPlacePayload(
@@ -120,7 +135,8 @@ namespace Kruty1918.Moyva.Multiplayer.Networking
                 sourceFactionId,
                 hasRelocationSource,
                 relocationSourcePosition,
-                satisfiedReplacementBuildingId);
+                satisfiedReplacementBuildingId,
+                rotation);
         }
     }
 

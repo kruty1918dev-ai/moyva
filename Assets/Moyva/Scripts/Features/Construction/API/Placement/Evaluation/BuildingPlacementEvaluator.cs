@@ -77,7 +77,11 @@ namespace Kruty1918.Moyva.Construction.API
             if (result != null)
             {
                 for (int index = 0; index < footprintCellCount; index++)
-                    result.AddFootprintPosition(BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index));
+                    result.AddFootprintPosition(BuildingFootprintUtility.GetOccupiedCell(
+                        definition,
+                        request.Position,
+                        index,
+                        request.Rotation));
             }
 
             bool footprintOutsideMap =
@@ -266,7 +270,8 @@ namespace Kruty1918.Moyva.Construction.API
                 Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
                     definition,
                     request.Position,
-                    index);
+                    index,
+                    request.Rotation);
                 if (request.TileExists(position))
                     continue;
 
@@ -324,7 +329,8 @@ namespace Kruty1918.Moyva.Construction.API
                 Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
                     definition,
                     request.Position,
-                    index);
+                    index,
+                    request.Rotation);
                 string tileId = request.GetTileId?.Invoke(position);
                 int? level = request.GetTerrainLevel?.Invoke(position);
 
@@ -469,7 +475,11 @@ namespace Kruty1918.Moyva.Construction.API
             int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index,
+                    request.Rotation);
                 string tileId = request.GetTileId(position);
                 if (ContainsTileId(requiredTerrainIds, tileId))
                     continue;
@@ -684,7 +694,8 @@ namespace Kruty1918.Moyva.Construction.API
                     .GetOccupiedCell(
                         definition,
                         request.Position,
-                        cellIndex);
+                        cellIndex,
+                        request.Rotation);
                 for (int offsetX = -radius;
                      offsetX <= radius;
                      offsetX++)
@@ -793,7 +804,11 @@ namespace Kruty1918.Moyva.Construction.API
             int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index,
+                    request.Rotation);
                 if (!request.IsTerrainBlocked(position))
                     continue;
 
@@ -840,7 +855,11 @@ namespace Kruty1918.Moyva.Construction.API
             int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index,
+                    request.Rotation);
                 int? level = request.GetTerrainLevel(position);
                 if (!level.HasValue)
                     continue;
@@ -909,7 +928,11 @@ namespace Kruty1918.Moyva.Construction.API
             int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index,
+                    request.Rotation);
                 bool occupied = request.IsOccupied != null && request.IsOccupied(position);
                 bool pending = HasPendingAt(request, position, request.IgnoredPendingPosition, out var pendingEntry);
                 if (!occupied && !pending)
@@ -940,7 +963,11 @@ namespace Kruty1918.Moyva.Construction.API
             int footprintCount = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int cellIndex = 0; cellIndex < footprintCount; cellIndex++)
             {
-                Vector2Int footprintCell = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, cellIndex);
+                Vector2Int footprintCell = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    cellIndex,
+                    request.Rotation);
                 for (int offsetX = -spacing; offsetX <= spacing; offsetX++)
                 {
                     for (int offsetY = -spacing; offsetY <= spacing; offsetY++)
@@ -949,7 +976,11 @@ namespace Kruty1918.Moyva.Construction.API
                             continue;
 
                         var neighbor = new Vector2Int(footprintCell.x + offsetX, footprintCell.y + offsetY);
-                        if (BuildingFootprintUtility.Contains(definition, request.Position, neighbor))
+                        if (BuildingFootprintUtility.Contains(
+                                definition,
+                                request.Position,
+                                neighbor,
+                                request.Rotation))
                             continue;
 
                         bool occupied = request.IsOccupied != null && request.IsOccupied(neighbor);
@@ -1032,7 +1063,11 @@ namespace Kruty1918.Moyva.Construction.API
             int count = BuildingFootprintUtility.GetOccupiedCellCount(definition);
             for (int index = 0; index < count; index++)
             {
-                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(definition, request.Position, index);
+                Vector2Int position = BuildingFootprintUtility.GetOccupiedCell(
+                    definition,
+                    request.Position,
+                    index,
+                    request.Rotation);
                 if (!request.IsFogBlocked(position))
                     continue;
 
@@ -1061,7 +1096,8 @@ namespace Kruty1918.Moyva.Construction.API
                     .GetOccupiedCell(
                         definition,
                         request.Position,
-                        index);
+                        index,
+                        request.Rotation);
                 FogStateType? state = request.GetFogState?.Invoke(position);
                 bool allowed = !state.HasValue
                     || state.Value == FogStateType.Visible
@@ -1107,7 +1143,8 @@ namespace Kruty1918.Moyva.Construction.API
                     .GetOccupiedCell(
                         definition,
                         request.Position,
-                        index);
+                        index,
+                        request.Rotation);
                 if (!request.IsFogBlocked(position))
                     continue;
 
@@ -1890,7 +1927,11 @@ private static int ResolveCoverageRadius(BuildingDefinition centerDefinition, in
                     continue;
 
                 BuildingDefinition pendingDefinition = request.BuildingRegistry?.GetById(pending.BuildingId);
-                if (!BuildingFootprintUtility.Contains(pendingDefinition, pending.Position, position))
+                if (!BuildingFootprintUtility.Contains(
+                        pendingDefinition,
+                        pending.Position,
+                        position,
+                        pending.Rotation))
                     continue;
 
                 pendingEntry = pending;

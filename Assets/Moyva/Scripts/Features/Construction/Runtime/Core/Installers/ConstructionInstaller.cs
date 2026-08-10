@@ -3,6 +3,7 @@ using Kruty1918.Moyva.Combat.API;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.SaveSystem;
 using Kruty1918.Moyva.WorldCreation.API;
+using Kruty1918.Moyva.InputRouting.Runtime;
 using System;
 using System.Reflection;
 using UnityEngine;
@@ -25,6 +26,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
         public override void InstallBindings()
         {
+            InputRoutingBindings.Install(Container);
+
             _sceneContext ??= GetComponent<ConstructionSceneContext>();
             if (buildingRegistry == null && _sceneContext?.BuildingRegistry != null)
                 buildingRegistry = _sceneContext.BuildingRegistry;
@@ -180,6 +183,13 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Container.BindInterfacesAndSelfTo<BuildingHealthService>()
                 .AsSingle()
                 .NonLazy();
+
+            if (Application.isEditor || Debug.isDebugBuild)
+            {
+                Container.BindInterfacesAndSelfTo<FirstCastlePerformanceRecorder>()
+                    .AsSingle()
+                    .NonLazy();
+            }
 
             QueueSceneDebugViewInjection();
 

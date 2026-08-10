@@ -4,7 +4,8 @@
   "version": 1,
   "id": "stable",
   "identity": {
-    "displayName": "Stable",
+    "displayName": "Стайня",
+    "description": "Будівля військової підтримки для утримання кінноти.",
     "category": "Military",
     "role": "Support"
   },

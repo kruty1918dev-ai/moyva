@@ -161,6 +161,19 @@ namespace Kruty1918.Moyva.Construction.API
     }
 
     /// <summary>
+    /// Optional PC placement rotation contract. Keeping it separate preserves
+    /// compatibility for integrations that only implement IConstructionService.
+    /// </summary>
+    public interface IConstructionRotationService
+    {
+        ConstructionRotation SelectedRotation { get; }
+        bool RotateSelectedClockwise();
+        bool TryGetPendingRotation(
+            Vector2Int position,
+            out ConstructionRotation rotation);
+    }
+
+    /// <summary>
     /// Optional bootstrap query used by construction UI and runtime guards.
     /// </summary>
     public interface IConstructionBootstrapQuery
@@ -177,16 +190,20 @@ namespace Kruty1918.Moyva.Construction.API
         public ConstructionSavedPlacement(
             Vector2Int position,
             string buildingId,
-            string ownerId)
+            string ownerId,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0)
         {
             Position = position;
             BuildingId = buildingId;
             OwnerId = ownerId;
+            Rotation = rotation;
         }
 
         public Vector2Int Position { get; }
         public string BuildingId { get; }
         public string OwnerId { get; }
+        public ConstructionRotation Rotation { get; }
     }
 
     public interface IConstructionSaveSnapshotSource
@@ -200,7 +217,9 @@ namespace Kruty1918.Moyva.Construction.API
         void RestoreFromSave(
             Vector2Int position,
             string buildingId,
-            string ownerId);
+            string ownerId,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0);
     }
 
     public interface IConstructionModuleStatePersistence
@@ -332,17 +351,22 @@ namespace Kruty1918.Moyva.Construction.API
     {
         public ConstructionPlacementCommitIntent(
             Vector2Int? relocationSourcePosition = null,
-            string satisfiedReplacementBuildingId = null)
+            string satisfiedReplacementBuildingId = null,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0)
         {
             RelocationSourcePosition = relocationSourcePosition;
             SatisfiedReplacementBuildingId =
                 satisfiedReplacementBuildingId;
+            Rotation = ConstructionRotationUtility.Normalize(
+                (int)rotation);
         }
 
         public Vector2Int? RelocationSourcePosition { get; }
         public bool HasRelocationSource =>
             RelocationSourcePosition.HasValue;
         public string SatisfiedReplacementBuildingId { get; }
+        public ConstructionRotation Rotation { get; }
 
         public static ConstructionPlacementCommitIntent None =>
             new ConstructionPlacementCommitIntent();

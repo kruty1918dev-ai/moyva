@@ -19,6 +19,8 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
         public int Version;
         public bool HasDisplayName;
         public string DisplayName;
+        public bool HasDescription;
+        public string Description;
         public bool HasCategory;
         public string Category;
         public bool HasRole;

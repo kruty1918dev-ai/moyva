@@ -106,7 +106,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     signal.Position,
                     signal.BuildingId,
                     def.Prefab,
-                    Quaternion.identity,
+                    ConstructionRotationUtility.ToWorldRotation(
+                        ConstructionRotationUtility.Normalize(
+                            signal.RotationQuarterTurns)),
                     def.VisualYOffset,
                     previewVisual);
             }

@@ -33,7 +33,6 @@ namespace Kruty1918.Moyva.Construction.API
             bool isWarehouse = BuildingDefinitionCapabilities.IsWarehouse(definition);
             bool isHousing = BuildingDefinitionCapabilities.IsHousing(definition);
             int requiredWorkers = BuildingDefinitionCapabilities.GetRequiredWorkers(definition);
-            int economyPriority = BuildingDefinitionCapabilities.GetEconomyPriority(definition);
             int housingCapacity = BuildingDefinitionCapabilities.GetHousingCapacity(definition);
             string industrialResourceId = BuildingDefinitionCapabilities.GetIndustrialResourceId(definition);
             bool requiresTiles = BuildingDefinitionCapabilities.RequiresTiles(definition);
@@ -44,16 +43,16 @@ namespace Kruty1918.Moyva.Construction.API
             bool disablesEconomyService = isWall || isCentral;
 
             if (isTownHall)
-                output.AppendLine("Прапорець: ратуша");
+                output.AppendLine("Тип: ратуша");
 
             if (isCastle)
-                output.AppendLine("Прапорець: замок");
+                output.AppendLine("Тип: замок");
 
             if (isWarehouse && !disablesEconomyService)
-                output.AppendLine("Прапорець: склад");
+                output.AppendLine("Призначення: зберігання ресурсів");
 
             if (isHousing && !disablesEconomyService)
-                output.AppendLine("Прапорець: житло");
+                output.AppendLine("Призначення: житло");
 
             if (TryGetMaintenanceFlag(definition, out var requiresMaintenance))
                 output.AppendLine($"Потребує обслуговування: {(disablesEconomyService ? "ні" : (requiresMaintenance ? "так" : "ні"))}");
@@ -61,20 +60,11 @@ namespace Kruty1918.Moyva.Construction.API
             if (!disablesEconomyService && requiredWorkers > 0)
                 output.AppendLine($"Потрібно робітників: {requiredWorkers}");
 
-            if (!disablesEconomyService && economyPriority > 0)
-                output.AppendLine($"Економічний пріоритет: {economyPriority}");
-
             if (!disablesEconomyService && isHousing && housingCapacity > 0)
                 output.AppendLine($"Житло: +{housingCapacity}");
 
             if (!disablesEconomyService && !string.IsNullOrWhiteSpace(industrialResourceId))
-            {
-                output.AppendLine("Прапорець: виготовляє/працює з ресурсом");
-                output.AppendLine($"Промисловий ресурс: {ResolveResourceDisplayName(industrialResourceId, resourceDisplayNameResolver)}");
-            }
-
-            if (!disablesEconomyService && definition.UseCustomTownHallRules)
-                output.AppendLine("Прапорець: кастомні правила ратуші");
+                output.AppendLine($"Виробляє: {ResolveResourceDisplayName(industrialResourceId, resourceDisplayNameResolver)}");
 
             if (!disablesEconomyService)
             {
@@ -97,14 +87,13 @@ namespace Kruty1918.Moyva.Construction.API
             }
 
             if (definition.RequireTownHallInRange)
-                output.AppendLine("Прапорець: потребує ратушу в радіусі");
+                output.AppendLine("Потрібна ратуша поблизу.");
 
             if (definition.BlockIfTownHallAlreadyInRange)
-                output.AppendLine("Прапорець: блокує другу ратушу/замок у радіусі");
+                output.AppendLine("Не можна будувати поруч з іншим центром поселення.");
 
             if (!disablesEconomyService && requiresTiles)
             {
-                output.AppendLine("Прапорець: потребує тайли");
                 var requirements = tileRequirements;
                 if (requirements != null)
                 {
@@ -126,21 +115,9 @@ namespace Kruty1918.Moyva.Construction.API
 
                     if (validCount > 0)
                     {
-                        output.AppendLine($"Вимоги до тайлів: {validCount}");
-                        for (int i = 0; i < requirements.Length; i++)
-                        {
-                            var req = requirements[i];
-                            if (req == null)
-                                continue;
-
-                            if (string.IsNullOrWhiteSpace(req.TileId))
-                                continue;
-
-                            if (req.Radius <= 0 || req.MinimumTileCount <= 0)
-                                continue;
-
-                            output.AppendLine($"- {req.TileId}: >= {req.MinimumTileCount} в радіусі {req.Radius}");
-                        }
+                        output.AppendLine(validCount == 1
+                            ? "Потрібна відповідна місцевість поблизу."
+                            : $"Потрібно відповідних ділянок місцевості: {validCount}.");
                     }
                 }
             }

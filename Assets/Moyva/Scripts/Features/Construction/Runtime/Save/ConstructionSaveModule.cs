@@ -23,7 +23,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
     {
         private const int SchemaMagic =
             unchecked((int)0xC0535632);
-        private const int SchemaVersion = 2;
+        private const int SchemaVersion = 3;
         private const string ModuleLogTag =
             "[MoyvaConstructionModules]";
         private const string PerfLogTag =
@@ -153,6 +153,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     placement.BuildingId ?? string.Empty);
                 context.Writer.Write(
                     placement.OwnerId ?? string.Empty);
+                context.Writer.Write((byte)placement.Rotation);
             }
 
             var providers =
@@ -270,7 +271,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             }
 
             int version = context.Reader.ReadInt32();
-            if (version != SchemaVersion)
+            if (version != 2 && version != SchemaVersion)
             {
                 Debug.LogWarning(
                     $"{ModuleLogTag} load rejected " +
@@ -294,6 +295,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     context.Reader.ReadString();
                 string ownerId =
                     context.Reader.ReadString();
+                ConstructionRotation rotation = version >= 3
+                    ? ConstructionRotationUtility.Normalize(
+                        context.Reader.ReadByte())
+                    : ConstructionRotation.Degrees0;
                 var position = new Vector2Int(x, y);
 
                 if (restorer != null)
@@ -301,7 +306,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     restorer.RestoreFromSave(
                         position,
                         buildingId,
-                        ownerId);
+                        ownerId,
+                        rotation);
                 }
                 else
                 {

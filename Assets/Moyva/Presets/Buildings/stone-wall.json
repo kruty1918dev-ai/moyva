@@ -5,6 +5,7 @@
   "id": "stone-wall",
   "identity": {
     "displayName": "Стіна",
+    "description": "Захисний сегмент, що автоматично з'єднується із сусідніми стінами.",
     "category": "Walls",
     "role": "Wall"
   },

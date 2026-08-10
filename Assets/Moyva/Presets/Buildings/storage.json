@@ -4,7 +4,8 @@
   "version": 1,
   "id": "storage",
   "identity": {
-    "displayName": "Storage",
+    "displayName": "Склад",
+    "description": "Зберігає підтримувані ресурси поселення.",
     "category": "Industrial",
     "role": "Storage"
   },

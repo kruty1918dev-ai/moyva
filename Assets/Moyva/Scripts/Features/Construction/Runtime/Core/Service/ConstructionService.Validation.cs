@@ -71,7 +71,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
             out bool influenceZoneBlocked,
             out bool terrainBlocked,
             Vector2Int? ignoredOccupiedPosition = null,
-            string satisfiedReplacementBuildingId = null)
+            string satisfiedReplacementBuildingId = null,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0)
         {
             var fastQuery = new ConstructionPlacementQueryRequest(
                 buildingId,
@@ -85,7 +87,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ConstructionPlacementAttemptSource.Confirm,
                 allowUniquePreviewRelocation: false,
                 satisfiedReplacementBuildingId:
-                    satisfiedReplacementBuildingId);
+                    satisfiedReplacementBuildingId,
+                rotation: rotation);
 
             ConstructionPlacementQueryResult fastResult =
                 EvaluatePlacement(fastQuery);
@@ -121,7 +124,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     ConstructionPlacementAttemptSource.Confirm,
                 allowUniquePreviewRelocation: false,
                 satisfiedReplacementBuildingId:
-                    satisfiedReplacementBuildingId);
+                    satisfiedReplacementBuildingId,
+                rotation: rotation);
 
             ConstructionPlacementQueryResult result =
                 EvaluatePlacement(detailedQuery);
@@ -175,7 +179,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     new BuildingPlacementSimulationEntry(
                         placement.Position,
                         placement.BuildingId,
-                        NormalizeOwnerId(_activeOwnerId)));
+                        NormalizeOwnerId(_activeOwnerId),
+                        placement.Rotation));
             }
 
             return _placementSimulationSnapshot;
@@ -192,7 +197,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     new BuildingPlacementSimulationEntry(
                         pair.Key,
                         pair.Value.BuildingId,
-                        NormalizeOwnerId(pair.Value.FactionId)));
+                        NormalizeOwnerId(pair.Value.FactionId),
+                        ResolvePlacedRotation(pair.Key)));
             }
 
             foreach (var pair in _playerPlacedBuildings)
@@ -201,7 +207,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     new BuildingPlacementSimulationEntry(
                         pair.Key,
                         pair.Value,
-                        NormalizeOwnerId(_activeOwnerId)));
+                        NormalizeOwnerId(_activeOwnerId),
+                        ResolvePlacedRotation(pair.Key)));
             }
 
             return _placedBuildingSimulationSnapshot;

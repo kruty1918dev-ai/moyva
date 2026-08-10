@@ -18,7 +18,7 @@ MonoBehaviour:
     DisplayName: Castle
     Category: 1
     Role: 4
-    Description: 
+    Description: The settlement center used by construction placement rules.
     Tags: []
   Presentation:
     Prefab: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}

@@ -15,7 +15,8 @@
         "Kruty1918.Moyva.Combat",
         "Kruty1918.Moyva.GameMode",
         "Kruty1918.Moyva.Calendar",
-        "Kruty1918.Moyva.MapChunks"
+    "Kruty1918.Moyva.MapChunks",
+    "Kruty1918.Moyva.InputRouting"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

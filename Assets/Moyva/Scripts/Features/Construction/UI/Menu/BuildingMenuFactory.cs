@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Kruty1918.Moyva.Construction.API;
 using UnityEngine;
 
@@ -28,7 +27,7 @@ namespace Kruty1918.Moyva.Construction.UI
             new List<BuildingDefinition>();
         private readonly Dictionary<int, Sprite> _prefabSpriteCache =
             new Dictionary<int, Sprite>();
-        private int _spriteCacheRevision = int.MinValue;
+        private readonly List<BuildingListItemData> _resultBuffer = new();
 
 		public List<BuildingListItemData> BuildMenuItems(
 			BuildingDefinition[] allBuildings,
@@ -38,47 +37,34 @@ namespace Kruty1918.Moyva.Construction.UI
 			Func<BuildingDefinition, bool> includeSelector = null,
 			Func<BuildingDefinition, string> unavailableReasonSelector = null)
 		{
-			Debug.Log($"[BuildMenuItems] START: allBuildings.Length={(allBuildings?.Length ?? 0)}, registry={(buildingRegistry != null ? "ok" : "NULL")}");
+			_resultBuffer.Clear();
+			BuildCompleteSource(allBuildings, buildingRegistry);
 
-			var result = new List<BuildingListItemData>();
-			var categories = (BuildingCategory[])Enum.GetValues(typeof(BuildingCategory));
-			var source = BuildCompleteSource(allBuildings, buildingRegistry);
-
-			Debug.Log($"[Construction UI] BuildMenuItems: загальна кількість BuildingDefinition = {source.Length}", context);
-
-			foreach (var category in categories)
+			foreach (var category in Categories)
 			{
-				string className = category.ToString();
-
-				var categoryBuildings = source
-					.Where(x => x != null && x.Category == category && (includeSelector == null || includeSelector(x)))
-					.OrderBy(GetDisplayName)
-					.ThenBy(x => x.Id)
-					.ToArray();
-
-				if (categoryBuildings.Length == 0)
+				_categoryBuffer.Clear();
+				for (int sourceIndex = 0; sourceIndex < _sourceBuffer.Count; sourceIndex++)
 				{
-					Debug.Log($"[Construction UI] Клас '{className}' не має будівель у реєстрі.", context);
-					continue;
+					BuildingDefinition candidate = _sourceBuffer[sourceIndex];
+					if (candidate != null
+					    && candidate.Category == category
+					    && (includeSelector == null || includeSelector(candidate)))
+					{
+						_categoryBuffer.Add(candidate);
+					}
 				}
 
-				Debug.Log($"[Construction UI] Клас '{className}': {categoryBuildings.Length} будівель.", context);
-
-				foreach (var building in categoryBuildings)
+				_categoryBuffer.Sort(CompareBuildings);
+				for (int buildingIndex = 0; buildingIndex < _categoryBuffer.Count; buildingIndex++)
 				{
+					BuildingDefinition building = _categoryBuffer[buildingIndex];
 					var sprite = ExtractSpriteForMenu(building, buildingRegistry, context);
 					var previewSprite = building.RuntimePreview;
 					bool isInteractable = isInteractableSelector == null || isInteractableSelector(building);
 					string unavailableReason = isInteractable
 						? null
 						: unavailableReasonSelector?.Invoke(building);
-					Debug.Log(
-						$"[Construction UI] → id='{building.Id}' display='{building.DisplayName}' " +
-						$"category={building.Category} prefab={(building.Prefab != null ? building.Prefab.name : "NULL")} " +
-						$"icon={(building.Icon != null ? building.Icon.name : "NULL")} " +
-						$"extractedSprite={(sprite != null ? sprite.name : "NULL")}",
-						context);
-					result.Add(new BuildingListItemData(
+					_resultBuffer.Add(new BuildingListItemData(
 						building.Id,
 						GetDisplayName(building),
 						building.Category,
@@ -89,18 +75,24 @@ namespace Kruty1918.Moyva.Construction.UI
 				}
 			}
 
-			Debug.Log($"[BuildMenuItems] FINISH: result.Count = {result.Count}");
-			return result;
+			return new List<BuildingListItemData>(_resultBuffer);
+		}
+
+		private static int CompareBuildings(BuildingDefinition left, BuildingDefinition right)
+		{
+			int byName = string.Compare(GetDisplayName(left), GetDisplayName(right), StringComparison.OrdinalIgnoreCase);
+			return byName != 0 ? byName : string.Compare(left?.Id, right?.Id, StringComparison.Ordinal);
 		}
 
 		private static string GetDisplayName(BuildingDefinition building)
 			=> string.IsNullOrWhiteSpace(building?.DisplayName) ? building?.Id : building.DisplayName;
 
-		private static BuildingDefinition[] BuildCompleteSource(BuildingDefinition[] allBuildings, IBuildingRegistry buildingRegistry)
+		private void BuildCompleteSource(BuildingDefinition[] allBuildings, IBuildingRegistry buildingRegistry)
 		{
-			var byId = new Dictionary<string, BuildingDefinition>(StringComparer.Ordinal);
+			_sourceById.Clear();
+			_sourceBuffer.Clear();
+			_allowedWallIds.Clear();
 			var collections = buildingRegistry?.GetWallCollections() ?? Array.Empty<WallCollectionDefinition>();
-			var allowedWallIds = new HashSet<string>(StringComparer.Ordinal);
 
 			for (int i = 0; i < collections.Length; i++)
 			{
@@ -109,49 +101,39 @@ namespace Kruty1918.Moyva.Construction.UI
 					continue;
 
 				if (!string.IsNullOrWhiteSpace(col.WallBuildingId))
-					allowedWallIds.Add(col.WallBuildingId);
+					_allowedWallIds.Add(col.WallBuildingId);
 				if (!string.IsNullOrWhiteSpace(col.GateBuildingId))
-					allowedWallIds.Add(col.GateBuildingId);
+					_allowedWallIds.Add(col.GateBuildingId);
 			}
 
 			var baseSource = allBuildings ?? Array.Empty<BuildingDefinition>();
-			Debug.Log($"[BuildCompleteSource] baseSource.Length = {baseSource.Length}");
 			for (int i = 0; i < baseSource.Length; i++)
 			{
 				var def = baseSource[i];
 				if (def == null || string.IsNullOrWhiteSpace(def.Id))
 					continue;
 
-				if (def.Category == BuildingCategory.Walls && allowedWallIds.Count > 0 && !allowedWallIds.Contains(def.Id))
-				{
-					Debug.Log($"[BuildCompleteSource] Пропущено variant wall id='{def.Id}'");
+				if (def.Category == BuildingCategory.Walls && _allowedWallIds.Count > 0 && !_allowedWallIds.Contains(def.Id))
 					continue;
-				}
 
-				if (!byId.ContainsKey(def.Id))
-				{
-					byId.Add(def.Id, def);
-					Debug.Log($"[BuildCompleteSource] Додано з baseSource: id='{def.Id}' category={def.Category}");
-				}
+				if (!_sourceById.ContainsKey(def.Id))
+					_sourceById.Add(def.Id, def);
 			}
 
-			Debug.Log($"[BuildCompleteSource] Знайдено {collections.Length} стінових колекцій");
 			for (int i = 0; i < collections.Length; i++)
 			{
 				var col = collections[i];
 				if (col == null)
 				{
-					Debug.LogWarning($"[BuildCompleteSource] Колекція[{i}] = null");
 					continue;
 				}
 
-				Debug.Log($"[BuildCompleteSource] Колекція[{i}]: CollectionId='{col.CollectionId}' WallId='{col.WallBuildingId}' GateId='{col.GateBuildingId}'");
-				AddWallIdIfMissing(byId, buildingRegistry, col, col.WallBuildingId);
-				AddWallIdIfMissing(byId, buildingRegistry, col, col.GateBuildingId);
+				AddWallIdIfMissing(_sourceById, buildingRegistry, col, col.WallBuildingId);
+				AddWallIdIfMissing(_sourceById, buildingRegistry, col, col.GateBuildingId);
 			}
 
-			Debug.Log($"[BuildCompleteSource] Фінально в меню буде {byId.Count} обєктів: {string.Join(", ", byId.Keys)}");
-			return byId.Values.ToArray();
+			foreach (BuildingDefinition definition in _sourceById.Values)
+				_sourceBuffer.Add(definition);
 		}
 
 		private static void AddWallIdIfMissing(
@@ -202,7 +184,6 @@ namespace Kruty1918.Moyva.Construction.UI
 					{
 						if (building.Icon != null)
 						{
-							Debug.Log($"[Construction UI] Для воріт використано передану Icon з реєстру: id='{building.Id}', icon='{building.Icon.name}'", context);
 							return building.Icon;
 						}
 
@@ -217,7 +198,6 @@ namespace Kruty1918.Moyva.Construction.UI
 						var horizontalSprite = ExtractSpriteFromPrefab(collection.HorizontalPrefab);
 						if (horizontalSprite != null)
 						{
-							Debug.Log($"[Construction UI] Для стін використано горизонтальний спрайт колекції: id='{building.Id}', sprite='{horizontalSprite.name}'", context);
 							return horizontalSprite;
 						}
 					}
@@ -233,20 +213,26 @@ namespace Kruty1918.Moyva.Construction.UI
 				return building.Icon;
 			}
 
+			int prefabId = building.Prefab.GetInstanceID();
+			if (_prefabSpriteCache.TryGetValue(prefabId, out Sprite cachedSprite))
+				return cachedSprite != null ? cachedSprite : building.Icon;
+
 			var renderers = building.Prefab.GetComponentsInChildren<SpriteRenderer>(true);
 			foreach (var renderer in renderers)
 			{
 				if (renderer != null && renderer.sprite != null)
+				{
+					_prefabSpriteCache[prefabId] = renderer.sprite;
 					return renderer.sprite;
+				}
 			}
+			_prefabSpriteCache[prefabId] = null;
 
 			if (building.Icon != null)
 			{
-				Debug.LogWarning($"[Construction UI] У prefab '{building.Prefab.name}' не знайдено SpriteRenderer зі спрайтом. Використовую Icon для '{building.Id}'.", context);
 				return building.Icon;
 			}
 
-			Debug.LogWarning($"[Construction UI] Не вдалося знайти іконку для будівлі '{building.Id}'. Для 3D prefab без Icon це допустимо; меню покаже кнопку без іконки.", context);
 			return null;
 		}
 

@@ -29,7 +29,9 @@ namespace Kruty1918.Moyva.Construction.API
             bool includePendingPlacements = true,
             ConstructionPlacementAttemptSource attemptSource = ConstructionPlacementAttemptSource.Unknown,
             bool allowUniquePreviewRelocation = false,
-            string satisfiedReplacementBuildingId = null)
+            string satisfiedReplacementBuildingId = null,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0)
         {
             BuildingId = buildingId;
             Position = position;
@@ -43,6 +45,8 @@ namespace Kruty1918.Moyva.Construction.API
             AllowUniquePreviewRelocation = allowUniquePreviewRelocation;
             SatisfiedReplacementBuildingId =
                 satisfiedReplacementBuildingId;
+            Rotation = ConstructionRotationUtility.Normalize(
+                (int)rotation);
         }
 
         public string BuildingId { get; }
@@ -78,6 +82,7 @@ namespace Kruty1918.Moyva.Construction.API
         /// replacement module (or the legacy gate adapter).
         /// </summary>
         public string SatisfiedReplacementBuildingId { get; }
+        public ConstructionRotation Rotation { get; }
 
         public ConstructionPlacementQueryRequest WithIgnoredPositions(
             Vector2Int? ignoredPendingPosition,
@@ -94,7 +99,8 @@ namespace Kruty1918.Moyva.Construction.API
                 IncludePendingPlacements,
                 AttemptSource,
                 AllowUniquePreviewRelocation,
-                SatisfiedReplacementBuildingId);
+                SatisfiedReplacementBuildingId,
+                Rotation);
         }
     }
 }

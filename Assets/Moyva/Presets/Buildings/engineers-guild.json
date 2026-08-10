@@ -4,7 +4,8 @@
   "version": 1,
   "id": "engineers-guild",
   "identity": {
-    "displayName": "Engineers' Guild",
+    "displayName": "Гільдія інженерів",
+    "description": "Будівля військової підтримки для роботи інженерів.",
     "category": "Military",
     "role": "Support"
   },

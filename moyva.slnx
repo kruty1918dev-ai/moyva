@@ -9,6 +9,7 @@
   <Project Path="Unity.ShaderGraph.Editor.csproj" />
   <Project Path="Unity.Mathematics.csproj" />
   <Project Path="Unity.Multiplayer.Center.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.InputRouting.csproj" />
   <Project Path="Unity.RenderPipelines.Universal.Runtime.csproj" />
   <Project Path="Unity.2D.Psdimporter.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetStatsMonitor.Editor.csproj" />
@@ -84,6 +85,7 @@
   <Project Path="Unity.Networking.Transport.csproj" />
   <Project Path="ScriptablePacker.csproj" />
   <Project Path="Unity.Rider.Editor.csproj" />
+  <Project Path="Kruty1918.Moyva.InputRouting.csproj" />
   <Project Path="Unity.InternalAPIEditorBridge.001.csproj" />
   <Project Path="Unity.VisualScripting.State.Editor.csproj" />
   <Project Path="Unity.2D.Tooling.Editor.csproj" />
@@ -141,6 +143,7 @@
   <Project Path="Kruty1918.Moyva.Calendar.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />
   <Project Path="Kruty1918.Moyva.Camera.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.csproj" />
   <Project Path="Unity.2D.IK.Runtime.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkSolutionInterface.csproj" />
@@ -157,7 +160,6 @@
   <Project Path="Unity.Multiplayer.Tools.NetStats.CodeGen.csproj" />
   <Project Path="Kruty1918.Moyva.Units.Editor.csproj" />
   <Project Path="Unity.Services.Deployment.Editor.Shared.csproj" />
-  <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkProfiler.Runtime.csproj" />
   <Project Path="Kruty1918.Moyva.Economy.Editor.csproj" />
   <Project Path="Unity.VisualScripting.Shared.Editor.csproj" />
@@ -248,6 +250,7 @@
   <Project Path="Unity.ShaderGraph.Utilities.csproj" />
   <Project Path="Unity.Recorder.Base.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Units.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.InputRoutingPlayMode.csproj" />
   <Project Path="Kruty1918.Moyva.Grid.Editor.csproj" />
   <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
   <Project Path="Unity.Services.Authentication.Editor.Shared.csproj" />

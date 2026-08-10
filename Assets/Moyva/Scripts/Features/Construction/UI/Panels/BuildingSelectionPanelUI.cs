@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
+using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace Kruty1918.Moyva.Construction.UI
@@ -30,6 +32,9 @@ namespace Kruty1918.Moyva.Construction.UI
         [Tooltip("Панель вкладок категорій. Необов'язкова.")]
         [SerializeField] private BuildingCategoryTabsUI categoryTabs;
 
+        [Tooltip("Поле пошуку за назвою або ID. Ctrl+F переводить сюди фокус, коли каталог відкритий.")]
+        [SerializeField] private TMP_InputField searchInput;
+
         [Header("Відображення кнопок")]
         [Tooltip("Єдиний розмір кнопок будівель у меню.")]
         [SerializeField] private Vector2 buttonSize = new Vector2(160f, 160f);
@@ -54,6 +59,7 @@ namespace Kruty1918.Moyva.Construction.UI
 
         private BuildingButtonUI _selectedButton;
         private BuildingCategory? _activeCategory;
+        private string _searchQuery = string.Empty;
 
         private void Awake()
         {
@@ -64,12 +70,33 @@ namespace Kruty1918.Moyva.Construction.UI
 
             if (categoryTabs != null)
                 categoryTabs.OnCategorySelected += SetCategoryFilter;
+            if (searchInput != null)
+                searchInput.onValueChanged.AddListener(SetSearchQuery);
+        }
+
+        private void Update()
+        {
+            if (searchInput == null || !isActiveAndEnabled || !gameObject.activeInHierarchy)
+                return;
+
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard == null
+                || !keyboard.fKey.wasPressedThisFrame
+                || !(keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed))
+            {
+                return;
+            }
+
+            searchInput.ActivateInputField();
+            searchInput.Select();
         }
 
         private void OnDestroy()
         {
             if (categoryTabs != null)
                 categoryTabs.OnCategorySelected -= SetCategoryFilter;
+            if (searchInput != null)
+                searchInput.onValueChanged.RemoveListener(SetSearchQuery);
         }
 
         /// <summary>
@@ -121,6 +148,16 @@ namespace Kruty1918.Moyva.Construction.UI
         public void SetCategoryFilter(BuildingCategory? category)
         {
             _activeCategory = category;
+            ApplyFilter();
+        }
+
+        public void SetSearchQuery(string query)
+        {
+            string normalized = (query ?? string.Empty).Trim();
+            if (string.Equals(_searchQuery, normalized, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _searchQuery = normalized;
             ApplyFilter();
         }
 
@@ -184,7 +221,9 @@ namespace Kruty1918.Moyva.Construction.UI
                     continue;
 
                 var item = FindItemById(buildingId);
-                bool visible = item != null && (!_activeCategory.HasValue || item.Category == _activeCategory.Value);
+                bool visible = item != null
+                               && (!_activeCategory.HasValue || item.Category == _activeCategory.Value)
+                               && MatchesSearch(item, _searchQuery);
                 button.gameObject.SetActive(visible);
 
                 if (!visible && button == _selectedButton)
@@ -303,6 +342,19 @@ namespace Kruty1918.Moyva.Construction.UI
                     out BuildingListItemData item)
                 ? item
                 : null;
+        }
+
+        private static bool MatchesSearch(BuildingListItemData item, string query)
+        {
+            if (item == null)
+                return false;
+            if (string.IsNullOrWhiteSpace(query))
+                return true;
+
+            return (!string.IsNullOrWhiteSpace(item.DisplayName)
+                    && item.DisplayName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0)
+                   || (!string.IsNullOrWhiteSpace(item.Id)
+                       && item.Id.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
         private void HandleBuildingClicked(string buildingId)

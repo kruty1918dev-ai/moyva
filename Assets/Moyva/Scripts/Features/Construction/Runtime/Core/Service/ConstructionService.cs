@@ -21,6 +21,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         IConstructionPlacementQuery,
         IConstructionSelectionAvailabilityQuery,
         IConstructionPendingUndoBatch,
+        IConstructionRotationService,
         IConstructionBootstrapQuery,
         IConstructionBuildingOwnershipQuery,
         IConstructionSaveSnapshotSource,
@@ -40,19 +41,24 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 Vector2Int position,
                 string buildingId,
                 Vector2Int? originalPosition = null,
-                string replacedPendingBuildingId = null)
+                string replacedPendingBuildingId = null,
+                ConstructionRotation rotation =
+                    ConstructionRotation.Degrees0)
             {
                 Position = position;
                 BuildingId = buildingId;
                 OriginalPosition = originalPosition;
                 ReplacedPendingBuildingId =
                     replacedPendingBuildingId;
+                Rotation = ConstructionRotationUtility.Normalize(
+                    (int)rotation);
             }
 
             public Vector2Int Position { get; }
             public string BuildingId { get; }
             public Vector2Int? OriginalPosition { get; }
             public string ReplacedPendingBuildingId { get; }
+            public ConstructionRotation Rotation { get; }
         }
 
         private readonly struct PendingDemolition
@@ -92,6 +98,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private bool _disposed;
 
         private string _selectedBuildingId;
+        private ConstructionRotation _selectedRotation;
         private readonly List<PendingPlacement> _pendingPlacements = new();
         private readonly List<BuildingPlacementSimulationEntry> _placementSimulationSnapshot = new();
         private readonly List<BuildingPlacementSimulationEntry> _placedBuildingSimulationSnapshot = new();
@@ -110,6 +117,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly List<PendingDemolition> _pendingDemolitions = new();
         private readonly HashSet<Vector2Int> _pendingDemolitionPositions = new();
         private readonly Dictionary<Vector2Int, string> _playerPlacedBuildings = new();
+        private readonly Dictionary<Vector2Int, ConstructionRotation>
+            _placedRotationByOrigin = new();
         private string _activeOwnerId = DefaultOwnerId;
         private string _lastActionMessage = string.Empty;
         private readonly Dictionary<Vector2Int, (string BuildingId, string FactionId)> _factionPlacedBuildings = new();

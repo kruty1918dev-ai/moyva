@@ -5,6 +5,7 @@ using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using Unity.Profiling;
 using Zenject;
 
 namespace Kruty1918.Moyva.Economy.Runtime
@@ -18,6 +19,8 @@ namespace Kruty1918.Moyva.Economy.Runtime
     /// </summary>
     public sealed class EconomyManager : IInitializable, IDisposable
     {
+        private static readonly ProfilerMarker BuildingPlacedMarker =
+            new("Moyva.BuildCommit.Subscriber.Economy");
         public const string DefaultOwnerId = "player_0";
         private const string StarterPackLogTag = "[Bootstrap][StarterPack]";
 
@@ -104,6 +107,7 @@ namespace Kruty1918.Moyva.Economy.Runtime
 
         private void OnBuildingPlaced(BuildingPlacedSignal signal)
         {
+            using var marker = BuildingPlacedMarker.Auto();
             _buildingIntegration.OnBuildingPlaced(
                 signal,
                 _settlementRegistry,

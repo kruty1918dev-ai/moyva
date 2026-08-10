@@ -22,7 +22,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     new ConstructionSavedPlacement(
                         pair.Key,
                         pair.Value,
-                        NormalizeOwnerId(_activeOwnerId)));
+                        NormalizeOwnerId(_activeOwnerId),
+                        ResolvePlacedRotation(pair.Key)));
             }
 
             foreach (var pair in _factionPlacedBuildings)
@@ -34,7 +35,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     new ConstructionSavedPlacement(
                         pair.Key,
                         pair.Value.BuildingId,
-                        NormalizeOwnerId(pair.Value.FactionId)));
+                        NormalizeOwnerId(pair.Value.FactionId),
+                        ResolvePlacedRotation(pair.Key)));
             }
 
             result.Sort(
@@ -71,14 +73,17 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public void RestoreFromSave(
             Vector2Int position,
             string buildingId,
-            string ownerId)
+            string ownerId,
+            ConstructionRotation rotation =
+                ConstructionRotation.Degrees0)
         {
             if (string.IsNullOrWhiteSpace(buildingId))
                 return;
 
             if (!TryRegisterBuildingFootprint(
                     position,
-                    buildingId))
+                    buildingId,
+                    rotation))
             {
                 Debug.LogWarning(
                     $"{ModuleLogTag} restore-placement skipped " +
@@ -86,6 +91,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     "reason=footprint-occupied");
                 return;
             }
+            _placedRotationByOrigin[position] = rotation;
 
             string normalizedOwner =
                 NormalizeOwnerId(ownerId);
@@ -110,6 +116,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     Position = position,
                     OwnerId = normalizedOwner,
                     SourceFactionId = normalizedOwner,
+                    RotationQuarterTurns = (int)rotation,
                 });
             ApplyBuildingFogReveal(
                 buildingId,
@@ -230,7 +237,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                             .NetworkRequest
                             ? null
                             : intent
-                                .SatisfiedReplacementBuildingId));
+                                .SatisfiedReplacementBuildingId,
+                    rotation: intent.Rotation));
             if (!placement.CanCommit)
             {
                 LogPlacementAttempt(
@@ -272,7 +280,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     relocationRemoved = true;
                 }
 
-                if (!TryRegisterBuildingFootprint(position, buildingId))
+                if (!TryRegisterBuildingFootprint(
+                        position,
+                        buildingId,
+                        intent.Rotation))
                     return false;
                 targetRegistered = true;
 
@@ -294,6 +305,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     RemovePlacedRecordAt(relocationSource.Value);
 
                 _factionPlacedBuildings[position] = (buildingId, ownerId);
+                _placedRotationByOrigin[position] = intent.Rotation;
                 modelCommitted = true;
             }
             finally
@@ -333,6 +345,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 HasRelocationSource = isRelocation,
                 RelocationSourcePosition =
                     relocationSource.GetValueOrDefault(),
+                RotationQuarterTurns = (int)intent.Rotation,
             });
             if (isRelocation)
             {
@@ -447,7 +460,10 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     relocationRemoved = true;
                 }
 
-                if (!TryRegisterBuildingFootprint(position, buildingId))
+                if (!TryRegisterBuildingFootprint(
+                        position,
+                        buildingId,
+                        intent.Rotation))
                     return false;
 
                 targetRegistered = true;
@@ -458,6 +474,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
                 _factionPlacedBuildings[position] =
                     (buildingId, normalizedOwnerId);
+                _placedRotationByOrigin[position] = intent.Rotation;
                 modelCommitted = true;
             }
             finally
@@ -498,6 +515,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     relocationSource.HasValue,
                 RelocationSourcePosition =
                     relocationSource.GetValueOrDefault(),
+                RotationQuarterTurns = (int)intent.Rotation,
             });
             if (relocationSource.HasValue)
             {
@@ -653,6 +671,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             UnregisterBuildingFootprint(origin, entry.BuildingId);
             _factionPlacedBuildings.Remove(origin);
+            _placedRotationByOrigin.Remove(origin);
             InvalidatePlacementAvailabilityCache();
             _signalBus.Fire(new BuildingDemolishedSignal
             {

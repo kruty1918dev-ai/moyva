@@ -15,6 +15,7 @@ namespace Kruty1918.Moyva.Units.Runtime
 {
     internal sealed class UnitService :
         IUnitService,
+        IUnitOwnershipQuery,
         IConstructionUnitGarrisonRuntime,
         IConstructionUnitTraversalQuery,
         IInitializable,

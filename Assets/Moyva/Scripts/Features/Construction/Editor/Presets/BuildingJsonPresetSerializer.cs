@@ -43,6 +43,7 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
             if (TryObject(root, "identity", out Dictionary<string, object> identity))
             {
                 spec.HasDisplayName = identity.ContainsKey("displayName"); spec.DisplayName = GetString(identity, "displayName");
+                spec.HasDescription = identity.ContainsKey("description"); spec.Description = GetString(identity, "description");
                 spec.HasCategory = identity.ContainsKey("category"); spec.Category = GetString(identity, "category");
                 spec.HasRole = identity.ContainsKey("role"); spec.Role = GetString(identity, "role");
             }

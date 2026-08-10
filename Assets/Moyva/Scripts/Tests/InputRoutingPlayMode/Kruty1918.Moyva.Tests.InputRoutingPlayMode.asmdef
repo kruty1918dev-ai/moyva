@@ -1,0 +1,18 @@
+{
+  "name": "Kruty1918.Moyva.Tests.InputRoutingPlayMode",
+  "rootNamespace": "Kruty1918.Moyva.Tests.InputRoutingPlayMode",
+  "references": [
+    "UnityEngine.TestRunner",
+    "Unity.TextMeshPro",
+    "Kruty1918.Moyva.InputRouting"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll"],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

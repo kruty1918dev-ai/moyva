@@ -4,7 +4,8 @@
   "version": 1,
   "id": "castle-01",
   "identity": {
-    "displayName": "Castle",
+    "displayName": "Замок",
+    "description": "Головний центр поселення, від якого залежать правила розміщення будівель.",
     "category": "Civilian",
     "role": "SettlementCenter"
   },

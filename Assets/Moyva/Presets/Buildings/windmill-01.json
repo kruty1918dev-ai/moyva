@@ -4,7 +4,8 @@
   "version": 1,
   "id": "windmill-01",
   "identity": {
-    "displayName": "Windmill",
+    "displayName": "Вітряк",
+    "description": "Переробляє зерно за допомогою вітряного механізму.",
     "category": "Industrial",
     "role": "Production"
   },

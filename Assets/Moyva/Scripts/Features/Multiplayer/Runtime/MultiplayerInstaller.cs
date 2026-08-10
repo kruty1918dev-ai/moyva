@@ -508,6 +508,24 @@ namespace Kruty1918.Moyva.Multiplayer.Runtime
             }
 
             if (!container.HasBinding(
+                    typeof(Kruty1918.Moyva.GameMode.API.IExitMatchDisconnectHandler)))
+            {
+                container.Bind<
+                        Kruty1918.Moyva.GameMode.API.IExitMatchDisconnectHandler>()
+                    .To<ExitMatchDisconnectHandler>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(
+                    typeof(Kruty1918.Moyva.GameMode.API.IGamePauseModePolicy)))
+            {
+                container.Bind<
+                        Kruty1918.Moyva.GameMode.API.IGamePauseModePolicy>()
+                    .To<MultiplayerGamePauseModePolicy>()
+                    .AsSingle();
+            }
+
+            if (!container.HasBinding(
                     typeof(IConstructionPlacementAuthorityPolicy)))
             {
                 container.Bind<IConstructionPlacementAuthorityPolicy>()

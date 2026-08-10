@@ -4,7 +4,8 @@
   "version": 1,
   "id": "armor-workshop",
   "identity": {
-    "displayName": "Armor Workshop",
+    "displayName": "Бронярська майстерня",
+    "description": "Виготовляє обладунки та потребує двох працівників.",
     "category": "Industrial",
     "role": "Production"
   },

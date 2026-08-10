@@ -18,7 +18,7 @@ MonoBehaviour:
     DisplayName: Barn
     Category: 2
     Role: 3
-    Description: 
+    Description: Stores food resources for the settlement.
     Tags: []
   Presentation:
     Prefab: {fileID: 919132149155446097, guid: cde5c5afa32fc5a419902e6a8bbef5c4, type: 3}

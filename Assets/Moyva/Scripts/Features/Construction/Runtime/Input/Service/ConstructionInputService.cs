@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Grid.API;
+using Kruty1918.Moyva.InputRouting.API;
 using Kruty1918.Moyva.ObjectsMap.API;
 using Kruty1918.Moyva.Signals;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Zenject;
 
 namespace Kruty1918.Moyva.Construction.Runtime
@@ -38,6 +40,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private readonly BuildModeGridStateController _buildGridState;
         private readonly IConstructionBuildGridDiagnostics _buildGridDiagnostics;
         private readonly IConstructionInteractiveUiHitTester _uiHitTester;
+        private readonly IGameplayInputPolicy _inputPolicy;
         private readonly SignalBus _signalBus;
         private readonly TouchTapTracker _touchTapTracker = new TouchTapTracker();
         private readonly HashSet<Vector2Int> _wallDragPendingPositions = new();
@@ -92,6 +95,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             BuildModeGridStateController buildGridState,
             IConstructionBuildGridDiagnostics buildGridDiagnostics,
             [InjectOptional] IConstructionInteractiveUiHitTester uiHitTester,
+            [InjectOptional] IGameplayInputPolicy inputPolicy,
             SignalBus signalBus,
             [InjectOptional] IConstructionTerrainAlignmentService terrainAlignment = null)
         {
@@ -110,6 +114,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _buildGridState = buildGridState;
             _buildGridDiagnostics = buildGridDiagnostics;
             _uiHitTester = uiHitTester ?? new ConstructionInteractiveUiHitTester();
+            _inputPolicy = inputPolicy;
             _signalBus = signalBus;
             _terrainAlignment = terrainAlignment;
             _touchTapMaxMovePixels = Mathf.Max(0f, _inputSettingsProvider?.TouchTapMaxMovePixels ?? 18f);
@@ -156,6 +161,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public void Tick()
         {
             if (!_isActive)
+                return;
+
+            if (HandlePcCommands())
                 return;
 
             RefreshPlacementSelectionState();
@@ -205,6 +213,89 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public void OnUndoRequested() => _constructionService.UndoLast();
 
         public void OnRedoRequested() => _constructionService.RedoLast();
+
+        private bool HandlePcCommands()
+        {
+            Keyboard keyboard = Keyboard.current;
+            Vector2 pointerPosition = Mouse.current?.position.ReadValue() ?? Vector2.zero;
+            bool keyboardAllowed = _inputPolicy?.CanProcess(
+                GameplayInputKind.KeyboardNavigation,
+                pointerPosition) ?? true;
+
+            if (keyboardAllowed && keyboard != null)
+            {
+                bool control = keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed;
+                if (control && keyboard.zKey.wasPressedThisFrame)
+                {
+                    _constructionService.UndoLast();
+                    return true;
+                }
+
+                if (control && keyboard.yKey.wasPressedThisFrame)
+                {
+                    _constructionService.RedoLast();
+                    return true;
+                }
+
+                if (keyboard.rKey.wasPressedThisFrame
+                    && _constructionService
+                        is IConstructionRotationService rotationService)
+                {
+                    if (rotationService.RotateSelectedClockwise())
+                    {
+                        InvalidatePlacementInteractionCaches();
+                        return true;
+                    }
+                }
+
+                if ((keyboard.enterKey.wasPressedThisFrame
+                     || keyboard.numpadEnterKey.wasPressedThisFrame)
+                    && _constructionService.GetPendingPlacements().Count > 0)
+                {
+                    _signalBus.Fire(new PlaceBuildingConfirmRequestSignal());
+                    return true;
+                }
+
+                if (keyboard.escapeKey.wasPressedThisFrame)
+                {
+                    CancelPlacementOrExitMode();
+                    return true;
+                }
+            }
+
+            Mouse mouse = Mouse.current;
+            if (mouse != null
+                && mouse.rightButton.wasPressedThisFrame
+                && (_inputPolicy?.CanProcess(
+                    GameplayInputKind.SecondaryPointer,
+                    pointerPosition) ?? true))
+            {
+                CancelPlacementOrExitMode();
+                return true;
+            }
+
+            return false;
+        }
+
+        private void CancelPlacementOrExitMode()
+        {
+            bool hasActiveConstructionAction =
+                _constructionService.State == BuildingPlacementState.Placing
+                || _constructionService.IsDemolishMode
+                || _constructionService.GetPendingPlacements().Count > 0;
+            if (hasActiveConstructionAction)
+            {
+                _constructionService.Cancel();
+                ClearBuildGridHover();
+                CancelActiveDrags();
+                return;
+            }
+
+            _signalBus.Fire(new GameModeChangeRequestedSignal
+            {
+                RequestedMode = GameModeType.Normal,
+            });
+        }
 
         private bool ValidateDependencies()
         {
@@ -296,7 +387,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     includeDetails: true,
                     attemptSource:
                         ConstructionPlacementAttemptSource.PointerHover,
-                    allowUniquePreviewRelocation: true));
+                    allowUniquePreviewRelocation: true,
+                    rotation: ResolveSelectedRotation()));
             ConstructionBuildGridTileVisualState visualState =
                 ResolvePlacementVisualState(detailed);
             if (!_buildGridState.SetHover(tile, visualState))
@@ -370,6 +462,8 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 BuildingId = buildingId,
                 IsPlacementValid = isPlacementValid,
                 IsAffordable = isAffordable,
+                RotationQuarterTurns =
+                    (int)ResolveSelectedRotation(),
                 FootprintPositions = footprintPositions,
                 InvalidFootprintPositions = invalidPositions,
             });
@@ -532,7 +626,9 @@ namespace Kruty1918.Moyva.Construction.Runtime
                     includeResources: true,
                     attemptSource:
                         ConstructionPlacementAttemptSource.DragValidation,
-                    allowUniquePreviewRelocation: true)).CanPreview;
+                    allowUniquePreviewRelocation: true,
+                    rotation: ResolvePlacementRotation(
+                        ignoredPendingPosition))).CanPreview;
 
             _hasPlacementValidationCache = true;
             _cachedPlacementValidationPosition = position;
@@ -540,6 +636,28 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _cachedPlacementValidationIgnoredPendingPosition = ignoredPendingPosition;
             _cachedPlacementValidationAllowed = allowed;
             return allowed;
+        }
+
+        private ConstructionRotation ResolveSelectedRotation()
+            => _constructionService
+                is IConstructionRotationService rotationService
+                ? rotationService.SelectedRotation
+                : ConstructionRotation.Degrees0;
+
+        private ConstructionRotation ResolvePlacementRotation(
+            Vector2Int? pendingPosition)
+        {
+            if (pendingPosition.HasValue
+                && _constructionService
+                    is IConstructionRotationService rotationService
+                && rotationService.TryGetPendingRotation(
+                    pendingPosition.Value,
+                    out ConstructionRotation pendingRotation))
+            {
+                return pendingRotation;
+            }
+
+            return ResolveSelectedRotation();
         }
 
         private static ConstructionBuildGridTileVisualState ResolvePlacementVisualState(

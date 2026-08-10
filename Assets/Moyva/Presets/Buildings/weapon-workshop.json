@@ -4,7 +4,8 @@
   "version": 1,
   "id": "weapon-workshop",
   "identity": {
-    "displayName": "Weapon Workshop",
+    "displayName": "Збройова майстерня",
+    "description": "Виготовляє зброю та потребує двох працівників.",
     "category": "Industrial",
     "role": "Production"
   },

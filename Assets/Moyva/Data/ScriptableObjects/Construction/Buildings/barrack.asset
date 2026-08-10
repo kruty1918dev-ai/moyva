@@ -18,7 +18,7 @@ MonoBehaviour:
     DisplayName: Barrack
     Category: 0
     Role: 5
-    Description: 
+    Description: A military defensive building.
     Tags: []
   Presentation:
     Prefab: {fileID: 919132149155446097, guid: f428515d2dbd75c4ea1e2b8ec7d0eeb7, type: 3}

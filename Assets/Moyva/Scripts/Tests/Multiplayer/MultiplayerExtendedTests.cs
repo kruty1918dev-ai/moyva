@@ -842,7 +842,8 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
                 relocationSourcePosition:
                     new Vector2Int(2, 3),
                 satisfiedReplacementBuildingId:
-                    "stone-wall");
+                    "stone-wall",
+                rotation: ConstructionRotation.Degrees270);
 
             BuildingPlacePayload actual =
                 BuildingPlacePayload.FromBytes(
@@ -859,6 +860,12 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
                 new Vector2Int(2, 3),
                 actual.ToCommitIntent()
                     .RelocationSourcePosition);
+            Assert.AreEqual(
+                ConstructionRotation.Degrees270,
+                actual.Rotation);
+            Assert.AreEqual(
+                ConstructionRotation.Degrees270,
+                actual.ToCommitIntent().Rotation);
         }
 
         [Test]
@@ -979,6 +986,22 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
                     .IsAuthorizedHostSender(
                         participants,
                         "client-player"));
+        }
+
+        [TestCase("player-a", "player-a", true)]
+        [TestCase("player-a", "player-b", false)]
+        [TestCase("player-a", "", false)]
+        [TestCase("", "player-a", false)]
+        public void UnitAuthority_RequiresExactNonEmptyOwner(
+            string unitOwnerId,
+            string requesterOwnerId,
+            bool expected)
+        {
+            Assert.AreEqual(
+                expected,
+                MultiplayerAuthorityService.IsUnitCommandAuthorized(
+                    unitOwnerId,
+                    requesterOwnerId));
         }
     }
 
