@@ -40,6 +40,7 @@ namespace Kruty1918.Moyva.Construction.Editor.Migration
                 visual.localPosition = Vector3.zero;
                 visual.localRotation = Quaternion.identity;
                 visual.localScale = Vector3.one;
+                CloseWindmillBodyGap(visual);
                 FitRootCollider(root);
 
                 PrefabUtility.SaveAsPrefabAsset(root, WindmillWrapperPath);
@@ -61,14 +62,48 @@ namespace Kruty1918.Moyva.Construction.Editor.Migration
                                  && wrapper.transform.Find("Cube") != null;
             bool hasVisual = wrapper != null
                              && wrapper.transform.Find("Visual") != null;
-            if (wrapper == null || hasLegacyCube || !hasVisual)
+            float bodyGap = hasVisual
+                ? CalculateWindmillBodyGap(wrapper.transform.Find("Visual"))
+                : float.PositiveInfinity;
+            if (wrapper == null
+                || hasLegacyCube
+                || !hasVisual
+                || bodyGap > 0.03f)
             {
                 throw new InvalidOperationException(
-                    $"Windmill wrapper invalid: exists={wrapper != null}, legacyCube={hasLegacyCube}, visual={hasVisual}.");
+                    $"Windmill wrapper invalid: exists={wrapper != null}, legacyCube={hasLegacyCube}, visual={hasVisual}, bodyGap={bodyGap:0.###}.");
             }
 
             Debug.Log(
                 "[MoyvaBuildingContent] VALIDATION_OK windmill wrapper uses KayKit visual and has no legacy Cube.");
+        }
+
+        private static void CloseWindmillBodyGap(Transform visual)
+        {
+            Transform top = visual.Find("building_windmill_top_blue");
+            float gap = CalculateWindmillBodyGap(visual);
+            if (top == null || gap <= 0f || float.IsInfinity(gap))
+                return;
+
+            // Keep the authored X/Z alignment and move only enough for the
+            // top renderer to meet the base renderer.
+            top.position -= Vector3.up * gap;
+        }
+
+        private static float CalculateWindmillBodyGap(Transform visual)
+        {
+            if (visual == null)
+                return float.PositiveInfinity;
+
+            Renderer baseRenderer = visual.GetComponent<Renderer>();
+            Transform top = visual.Find("building_windmill_top_blue");
+            Renderer topRenderer = top != null
+                ? top.GetComponent<Renderer>()
+                : null;
+            if (baseRenderer == null || topRenderer == null)
+                return float.PositiveInfinity;
+
+            return topRenderer.bounds.min.y - baseRenderer.bounds.max.y;
         }
 
         private static void RemoveLegacyCube(Transform root)

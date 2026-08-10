@@ -54,7 +54,7 @@ namespace Kruty1918.Moyva.Units.Editor
                 "helmet_blue_full"),
             new WrapperSpec(
                 "light-cavalry",
-                0.72f,
+                0.48f,
                 "horse_blue_full",
                 "unit_blue_full",
                 "sword_blue_full",
@@ -98,6 +98,8 @@ namespace Kruty1918.Moyva.Units.Editor
                     failures.Add($"{spec.Id}: root collider missing");
                 if (prefab.transform.Find("Visual") == null)
                     failures.Add($"{spec.Id}: Visual root missing");
+                if (spec.RiderHeight > 0f)
+                    ValidateRiderContact(prefab, spec.Id, failures);
             }
 
             if (failures.Count > 0)
@@ -109,6 +111,41 @@ namespace Kruty1918.Moyva.Units.Editor
 
             Debug.Log(
                 $"[MoyvaUnitContent] VALIDATION_OK wrappers={Specs.Length}");
+        }
+
+        private static void ValidateRiderContact(
+            GameObject prefab,
+            string id,
+            ICollection<string> failures)
+        {
+            Transform horse = prefab.transform.Find(
+                "Visual/horse_blue_full");
+            Transform rider = prefab.transform.Find(
+                "Visual/unit_blue_full");
+            Renderer horseRenderer = horse != null
+                ? horse.GetComponentInChildren<Renderer>(true)
+                : null;
+            Renderer riderRenderer = rider != null
+                ? rider.GetComponentInChildren<Renderer>(true)
+                : null;
+            if (horseRenderer == null || riderRenderer == null)
+            {
+                failures.Add($"{id}: rider/horse renderer missing");
+                return;
+            }
+
+            float verticalGap = riderRenderer.bounds.min.y
+                - horseRenderer.bounds.max.y;
+            if (verticalGap > 0.08f)
+            {
+                failures.Add(
+                    $"{id}: rider floats {verticalGap:0.###} units above horse");
+            }
+            else if (verticalGap < -0.2f)
+            {
+                failures.Add(
+                    $"{id}: rider penetrates horse by {-verticalGap:0.###} units");
+            }
         }
 
         private static void CreateWrapper(WrapperSpec spec)

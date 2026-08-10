@@ -30,6 +30,18 @@ require_unity() {
   }
 }
 
+require_clean_scene() {
+  local status
+  status="$(unity command moyva-project-status \
+    --project-path="$PROJECT" --format json)"
+  if printf '%s' "$status" | rg -q 'isSceneDirty[^:]*:[[:space:]]*true'; then
+    printf '%s\n' \
+      'Refusing to start Unity tests while the active scene has unsaved changes.' \
+      'Save or revert the scene explicitly, then run validate-all again.' >&2
+    exit 13
+  fi
+}
+
 prepare_output() {
   mkdir -p "$OUT/data" "$OUT/logs"
   printf 'REPORT=%s\n' "$OUT"
@@ -126,6 +138,7 @@ case "$command_name" in
     printf 'Validation report: %s\n' "$OUT"
     ;;
   validate-all)
+    require_clean_scene
     prepare_output
     run_json "$OUT/data/ui_validation.json" \
       unity command moyva-gameplay-ui-redesign-validate --project-path="$PROJECT" --format json
@@ -138,6 +151,7 @@ case "$command_name" in
     unity command menu --project-path="$PROJECT" --path 'Moyva/Content/Icons/Validate Generated Icons' \
       >"$OUT/data/generated_icons.txt"
     for assembly in \
+      Kruty1918.Moyva.Tests.Camera \
       Kruty1918.Moyva.Tests.InputRouting \
       Kruty1918.Moyva.Tests.GameMode \
       Kruty1918.Moyva.Tests.Multiplayer \
@@ -175,11 +189,34 @@ case "$command_name" in
     ;;
   profile-castle)
     profile_root="${XDG_CONFIG_HOME:-$HOME/.config}/unity3d"
+    report_dir="$(find "$profile_root" -type d \
+      -path '*/MoyvaDiagnostics/FirstCastle' -print -quit 2>/dev/null || true)"
     printf '%s\n' \
       'Run a Development Player or enter Play Mode and place the first castle.' \
       'The recorder captures the commit plus the next 120 frames.' \
       "Reports are written under the game persistentDataPath/MoyvaDiagnostics/FirstCastle." \
       "Unity configuration root: $profile_root"
+    if [[ -z "$report_dir" ]]; then
+      printf '%s\n' 'No first-castle reports exist yet; five cold runs are required.'
+      exit 14
+    fi
+
+    mapfile -t reports < <(find "$report_dir" -maxdepth 1 -type f \
+      -name 'castle-profile-*.json' -printf '%T@ %p\n' \
+      | sort -nr | head -5 | cut -d' ' -f2-)
+    printf 'REPORT_DIR=%s\nRUNS=%s/5\n' "$report_dir" "${#reports[@]}"
+    all_accepted=true
+    for report in "${reports[@]}"; do
+      jq -r '[.TimestampUtc, .Accepted, .BuildCommitMaxMilliseconds, .MainThreadP95Milliseconds, .MainThreadMaxMilliseconds, .GcCollectionFrames] | @tsv' "$report"
+      if ! jq -e '.Version >= 2 and .Accepted == true' "$report" >/dev/null; then
+        all_accepted=false
+      fi
+    done
+    if [[ "${#reports[@]}" -ge 5 && "$all_accepted" == true ]]; then
+      exit 0
+    fi
+    printf '%s\n' 'First-castle release gate is not green for five cold runs.' >&2
+    exit 15
     ;;
   *)
     printf 'Unknown command: %s\n' "$command_name" >&2

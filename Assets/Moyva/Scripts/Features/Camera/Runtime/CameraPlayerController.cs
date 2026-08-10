@@ -80,6 +80,10 @@ namespace Kruty1918.Moyva.Camera.Runtime
             {
                 _cameraMovement.MoveCameraKeyboard(moveDelta, Time.unscaledDeltaTime);
             }
+            else
+            {
+                TryApplyEdgeScroll(pointerPosition);
+            }
 
             // Зум (Scroll або Pinch)
             float zoomDelta = _zoomAction.ReadValue<float>();
@@ -92,6 +96,27 @@ namespace Kruty1918.Moyva.Camera.Runtime
             float rotationDirection = _rotateAction?.ReadValue<float>() ?? 0f;
             bool canRotateKeyboard = CanProcess(GameplayInputKind.KeyboardNavigation, pointerPosition);
             _cameraMovement.SetCameraOrbitInput(canRotateKeyboard ? rotationDirection : 0f);
+        }
+
+        private void TryApplyEdgeScroll(Vector2 pointerPosition)
+        {
+            if (!_settings.ResolveEdgeScrollEnabled()
+                || !Application.isFocused
+                || !CanProcess(GameplayInputKind.PointerPan, pointerPosition))
+            {
+                return;
+            }
+
+            Vector2 direction = CameraEdgeScrollMath.ResolveDirection(
+                pointerPosition,
+                new Vector2(Screen.width, Screen.height),
+                _settings.ResolveEdgeScrollMarginPixels());
+            if (direction.sqrMagnitude <= 0.001f)
+                return;
+
+            _cameraMovement.MoveCameraKeyboard(
+                direction * _settings.ResolveEdgeScrollSpeedMultiplier(),
+                Time.unscaledDeltaTime);
         }
 
         private void HandlePointerGestureCapture(Mouse mouse, Vector2 pointerPosition, bool altPressed)

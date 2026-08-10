@@ -98,7 +98,6 @@ namespace Kruty1918.Moyva.GameMode.Runtime
             catch (Exception exception)
             {
                 RestorePauseAfterFailedTransition(wasPaused, resumedForTransition);
-                Debug.LogError($"[ExitMatch] Exit to menu failed: {exception.Message}");
                 return ExitMatchResult.Failure(exception.Message);
             }
         }

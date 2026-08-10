@@ -15,15 +15,17 @@ MonoBehaviour:
   _placementModuleMigrationVersion: 0
   Identity:
     Id: armor-workshop
-    DisplayName: Armor Workshop
+    DisplayName: "\u0411\u0440\u043E\u043D\u044F\u0440\u0441\u044C\u043A\u0430 \u043C\u0430\u0439\u0441\u0442\u0435\u0440\u043D\u044F"
     Category: 2
     Role: 2
-    Description: An industrial workshop that requires two workers.
+    Description: "\u0412\u0438\u0433\u043E\u0442\u043E\u0432\u043B\u044F\u0454 \u043E\u0431\u043B\u0430\u0434\u0443\u043D\u043A\u0438
+      \u0442\u0430 \u043F\u043E\u0442\u0440\u0435\u0431\u0443\u0454 \u0434\u0432\u043E\u0445
+      \u043F\u0440\u0430\u0446\u0456\u0432\u043D\u0438\u043A\u0456\u0432."
     Tags: []
   Presentation:
     Prefab: {fileID: 919132149155446097, guid: f5d290f564dc7d7438e79949b85fce90, type: 3}
-    Icon: {fileID: 21300000, guid: 5b7685bbb3f4298ca03a7ec521be73fa, type: 3}
-    RuntimePreview: {fileID: 0}
+    Icon: {fileID: 21300000, guid: e607fe0e574308817a21c335a33e93e0, type: 3}
+    RuntimePreview: {fileID: 21300000, guid: e607fe0e574308817a21c335a33e93e0, type: 3}
     UiTint: {r: 1, g: 1, b: 1, a: 1}
     VisualYOffset: 0
     PreviewSettings:

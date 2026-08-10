@@ -35,7 +35,7 @@
   },
   "presentation": {
     "icon": {
-      "path": "Assets/Moyva/Art/UI/Icons/Buildings/engineers-guild.png",
+      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/engineers-guild.png",
       "required": true
     },
     "prefab": {

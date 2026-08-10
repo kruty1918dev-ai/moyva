@@ -15,15 +15,16 @@ MonoBehaviour:
   _placementModuleMigrationVersion: 1
   Identity:
     Id: house-01
-    DisplayName: House
+    DisplayName: "\u0411\u0443\u0434\u0438\u043D\u043E\u043A"
     Category: 1
     Role: 1
-    Description: A civilian housing building.
+    Description: "\u0416\u0438\u0442\u043B\u043E\u0432\u0430 \u0431\u0443\u0434\u0456\u0432\u043B\u044F
+      \u0434\u043B\u044F \u043C\u0435\u0448\u043A\u0430\u043D\u0446\u0456\u0432 \u043F\u043E\u0441\u0435\u043B\u0435\u043D\u043D\u044F."
     Tags: []
   Presentation:
     Prefab: {fileID: 8455700559009991949, guid: a160b9cda825be071b9873bf031543bc, type: 3}
-    Icon: {fileID: -3870072102170230363, guid: 401ae0fdbadfa5a8093749eb39d9860a, type: 3}
-    RuntimePreview: {fileID: -3870072102170230363, guid: 401ae0fdbadfa5a8093749eb39d9860a, type: 3}
+    Icon: {fileID: 21300000, guid: f9cc986bbaaa45bae8693609aabf23d4, type: 3}
+    RuntimePreview: {fileID: 21300000, guid: f9cc986bbaaa45bae8693609aabf23d4, type: 3}
     UiTint: {r: 1, g: 1, b: 1, a: 1}
     VisualYOffset: 0
     PreviewSettings:

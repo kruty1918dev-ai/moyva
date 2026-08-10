@@ -15,15 +15,17 @@ MonoBehaviour:
   _placementModuleMigrationVersion: 0
   Identity:
     Id: barrack
-    DisplayName: Barrack
+    DisplayName: "\u041A\u0430\u0437\u0430\u0440\u043C\u0430"
     Category: 0
     Role: 5
-    Description: A military defensive building.
+    Description: "\u0412\u0456\u0439\u0441\u044C\u043A\u043E\u0432\u0430 \u0431\u0443\u0434\u0456\u0432\u043B\u044F
+      \u0434\u043B\u044F \u043F\u0456\u0434\u0442\u0440\u0438\u043C\u043A\u0438 \u043E\u0431\u043E\u0440\u043E\u043D\u0438
+      \u043F\u043E\u0441\u0435\u043B\u0435\u043D\u043D\u044F."
     Tags: []
   Presentation:
     Prefab: {fileID: 919132149155446097, guid: f428515d2dbd75c4ea1e2b8ec7d0eeb7, type: 3}
-    Icon: {fileID: 21300000, guid: 6df6f8affab749ed2930384e8801467c, type: 3}
-    RuntimePreview: {fileID: 0}
+    Icon: {fileID: 21300000, guid: 0a0125f12b2c5923783afb847bf3a1bf, type: 3}
+    RuntimePreview: {fileID: 21300000, guid: 0a0125f12b2c5923783afb847bf3a1bf, type: 3}
     UiTint: {r: 1, g: 1, b: 1, a: 1}
     VisualYOffset: 0
     PreviewSettings:

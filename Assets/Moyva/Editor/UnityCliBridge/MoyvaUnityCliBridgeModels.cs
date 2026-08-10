@@ -17,6 +17,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge
         public bool isPlaying;
         public bool isCompiling;
         public bool isUpdating;
+        public bool isSceneDirty;
         public string backupPath;
         public int count;
         public List<UiNodeSnapshot> nodes = new();

@@ -112,6 +112,12 @@ namespace Kruty1918.Moyva.Camera.API
         [Tooltip("Physics layers that can provide a camera rotation pivot. Falls back to the grid plane when nothing is hit.")]
         public LayerMask rotationPivotLayers = Physics.DefaultRaycastLayers;
 
+        [Header("PC Edge Scroll")]
+        [Tooltip("Disabled by default. Can be exposed by the gameplay controls settings UI.")]
+        public bool edgeScrollEnabled;
+        [Min(1f)] public float edgeScrollMarginPixels = 12f;
+        [Min(0.01f)] public float edgeScrollSpeedMultiplier = 1f;
+
         [Header("Shader / Mip Bias")]
         [Tooltip("Applies global automatic mip bias for zoom. Disable to avoid tile atlas artifacts/bleeding on zoom-out.")]
         [HideInInspector]
@@ -167,6 +173,11 @@ namespace Kruty1918.Moyva.Camera.API
         public float ResolveDefault3DFieldOfView() => Mathf.Clamp(default3DFieldOfView, 1f, 179f);
         public float ResolveRotationPivotRaycastDistance() => Mathf.Max(0.1f, rotationPivotRaycastDistance);
         public int ResolveRotationPivotLayerMask() => rotationPivotLayers.value;
+        public bool ResolveEdgeScrollEnabled() => edgeScrollEnabled;
+        public float ResolveEdgeScrollMarginPixels()
+            => Mathf.Max(1f, edgeScrollMarginPixels);
+        public float ResolveEdgeScrollSpeedMultiplier()
+            => Mathf.Max(0.01f, edgeScrollSpeedMultiplier);
         public Vector2 ResolveBoundsOverflowWorldUnits() => new Vector2(
             Mathf.Max(0f, boundsOverflowTiles.x),
             Mathf.Max(0f, boundsOverflowTiles.y));
@@ -183,6 +194,8 @@ namespace Kruty1918.Moyva.Camera.API
             default3DOrthographicSize = Mathf.Max(ResolveMinZoom(), default3DOrthographicSize);
             default3DFieldOfView = Mathf.Clamp(default3DFieldOfView, 1f, 179f);
             rotationPivotRaycastDistance = Mathf.Max(0.1f, rotationPivotRaycastDistance);
+            edgeScrollMarginPixels = Mathf.Max(1f, edgeScrollMarginPixels);
+            edgeScrollSpeedMultiplier = Mathf.Max(0.01f, edgeScrollSpeedMultiplier);
             automaticMipBiasMax = Mathf.Clamp(automaticMipBiasMax, 0f, 3f);
         }
     }

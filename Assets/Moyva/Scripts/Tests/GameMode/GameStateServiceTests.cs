@@ -246,6 +246,47 @@ namespace Kruty1918.Moyva.Tests.GameMode
     }
 
     [TestFixture]
+    public sealed class MultiplayerPauseGameStateServiceTests
+        : ZenjectUnitTestFixture
+    {
+        [TearDown]
+        public void TearDownTimeScale()
+        {
+            Time.timeScale = 1f;
+        }
+
+        [Test]
+        public void PauseDuringMultiplayer_BlocksLocalStateWithoutStoppingTimeScale()
+        {
+            Zenject.SignalBusInstaller.Install(Container);
+            Container.DeclareSignal<GameStartedSignal>();
+            Container.DeclareSignal<GamePausedSignal>();
+            Container.DeclareSignal<GameEndedSignal>();
+            Container.Bind<IGamePauseModePolicy>()
+                .FromInstance(new ActiveMultiplayerPausePolicy());
+
+            var type = typeof(IGameStateService).Assembly
+                .GetType("Kruty1918.Moyva.GameMode.Runtime.GameStateService");
+            Container.BindInterfacesAndSelfTo(type).AsSingle();
+            Container.ResolveRoots();
+
+            IGameStateService service = Container.Resolve<IGameStateService>();
+            Time.timeScale = 1f;
+            service.StartGame();
+            service.PauseGame();
+
+            Assert.That(service.CurrentState, Is.EqualTo(GameStateType.Paused));
+            Assert.That(Time.timeScale, Is.EqualTo(1f));
+        }
+
+        private sealed class ActiveMultiplayerPausePolicy
+            : IGamePauseModePolicy
+        {
+            public bool IsMultiplayerSessionActive => true;
+        }
+    }
+
+    [TestFixture]
     public sealed class WinConditionSOTests
     {
         [Test]

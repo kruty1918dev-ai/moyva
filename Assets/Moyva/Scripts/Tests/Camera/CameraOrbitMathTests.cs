@@ -75,4 +75,38 @@ namespace Kruty1918.Moyva.Tests.Camera
             public float Velocity { get; }
         }
     }
+
+    public sealed class CameraEdgeScrollMathTests
+    {
+        [TestCase(0f, 540f, 1f, 0f)]
+        [TestCase(1920f, 540f, -1f, 0f)]
+        [TestCase(960f, 0f, 0f, -1f)]
+        [TestCase(960f, 1080f, 0f, 1f)]
+        [TestCase(960f, 540f, 0f, 0f)]
+        public void ResolveDirection_MapsViewportEdges(
+            float x,
+            float y,
+            float expectedX,
+            float expectedY)
+        {
+            var direction = CameraEdgeScrollMath.ResolveDirection(
+                new UnityEngine.Vector2(x, y),
+                new UnityEngine.Vector2(1920f, 1080f),
+                12f);
+
+            Assert.That(direction.x, Is.EqualTo(expectedX).Within(0.0001f));
+            Assert.That(direction.y, Is.EqualTo(expectedY).Within(0.0001f));
+        }
+
+        [Test]
+        public void ResolveDirection_OutsideWindowDoesNotScroll()
+        {
+            var direction = CameraEdgeScrollMath.ResolveDirection(
+                new UnityEngine.Vector2(-1f, 300f),
+                new UnityEngine.Vector2(1920f, 1080f),
+                12f);
+
+            Assert.That(direction, Is.EqualTo(UnityEngine.Vector2.zero));
+        }
+    }
 }

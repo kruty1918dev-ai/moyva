@@ -23,10 +23,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         private ProfilerRecorder _mainThreadRecorder;
         private ProfilerRecorder _renderThreadRecorder;
         private ProfilerRecorder _gcAllocatedRecorder;
+        private ProfilerRecorder _gcCollectRecorder;
         private ProfilerRecorder _commitRecorder;
         private BuildingPlacedSignal _trigger;
         private int _framesRemaining;
         private bool _captured;
+        private float _commitMillisecondsAtTrigger;
 
         public FirstCastlePerformanceRecorder(SignalBus signalBus, IBuildingRegistry registry)
         {
@@ -39,6 +41,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _mainThreadRecorder = TryStart(ProfilerCategory.Internal, "Main Thread");
             _renderThreadRecorder = TryStart(ProfilerCategory.Internal, "Render Thread");
             _gcAllocatedRecorder = TryStart(ProfilerCategory.Memory, "GC Allocated In Frame");
+            _gcCollectRecorder = TryStart(ProfilerCategory.Memory, "GC.Collect");
             _commitRecorder = TryStart(ProfilerCategory.Scripts, "Moyva.BuildCommit.Total");
             _signalBus.Subscribe<BuildingPlacedSignal>(OnBuildingPlaced);
         }
@@ -56,6 +59,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 RenderThreadMilliseconds = ToMilliseconds(_renderThreadRecorder),
                 BuildCommitMilliseconds = ToMilliseconds(_commitRecorder),
                 GcAllocatedBytes = ReadLastValue(_gcAllocatedRecorder),
+                GcCollectionMilliseconds = ToMilliseconds(_gcCollectRecorder),
             });
 
             _framesRemaining--;
@@ -69,6 +73,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             _mainThreadRecorder.Dispose();
             _renderThreadRecorder.Dispose();
             _gcAllocatedRecorder.Dispose();
+            _gcCollectRecorder.Dispose();
             _commitRecorder.Dispose();
         }
 
@@ -83,6 +88,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
 
             _captured = true;
             _trigger = signal;
+            _commitMillisecondsAtTrigger = ToMilliseconds(_commitRecorder);
             _samples.Clear();
             _framesRemaining = PostCommitFrameCount;
         }
@@ -92,7 +98,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             var report = new FirstCastlePerformanceReport
             {
                 Schema = "moyva.first-castle-profile",
-                Version = 1,
+                Version = 2,
                 TimestampUtc = DateTime.UtcNow.ToString("O"),
                 UnityVersion = Application.unityVersion,
                 BuildingId = _trigger.BuildingId,
@@ -100,6 +106,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
                 PositionY = _trigger.Position.y,
                 ResolutionWidth = Screen.width,
                 ResolutionHeight = Screen.height,
+                BuildCommitMaxMilliseconds = _commitMillisecondsAtTrigger,
                 Frames = _samples,
             };
             report.CalculateSummary();
@@ -108,7 +115,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             Directory.CreateDirectory(directory);
             string path = Path.Combine(directory, $"castle-profile-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json");
             File.WriteAllText(path, JsonUtility.ToJson(report, true));
-            Debug.Log($"[MoyvaCastleProfile] COMPLETE frames={report.Frames.Count}, p95MainMs={report.MainThreadP95Milliseconds:0.###}, maxMainMs={report.MainThreadMaxMilliseconds:0.###}, gcBytes={report.TotalGcAllocatedBytes}, path={path}");
+            Debug.Log($"[MoyvaCastleProfile] COMPLETE accepted={report.Accepted}, frames={report.Frames.Count}, commitMaxMs={report.BuildCommitMaxMilliseconds:0.###}, p95MainMs={report.MainThreadP95Milliseconds:0.###}, maxMainMs={report.MainThreadMaxMilliseconds:0.###}, gcCollections={report.GcCollectionFrames}, path={path}");
         }
 
         private static ProfilerRecorder TryStart(ProfilerCategory category, string marker)
@@ -145,7 +152,12 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public int ResolutionHeight;
         public float MainThreadP95Milliseconds;
         public float MainThreadMaxMilliseconds;
+        public float RenderThreadP95Milliseconds;
+        public float BuildCommitMaxMilliseconds;
         public long TotalGcAllocatedBytes;
+        public int GcCollectionFrames;
+        public bool Accepted;
+        public List<string> AcceptanceViolations;
         public List<CastleFrameSample> Frames;
 
         public void CalculateSummary()
@@ -153,20 +165,58 @@ namespace Kruty1918.Moyva.Construction.Runtime
             if (Frames == null || Frames.Count == 0)
                 return;
 
-            var values = new List<float>(Frames.Count);
+            var mainThreadValues = new List<float>(Frames.Count);
+            var renderThreadValues = new List<float>(Frames.Count);
             for (int index = 0; index < Frames.Count; index++)
             {
                 float value = Frames[index].MainThreadMilliseconds > 0f
                     ? Frames[index].MainThreadMilliseconds
                     : Frames[index].UnscaledFrameMilliseconds;
-                values.Add(value);
+                mainThreadValues.Add(value);
                 MainThreadMaxMilliseconds = Mathf.Max(MainThreadMaxMilliseconds, value);
+                if (Frames[index].RenderThreadMilliseconds > 0f)
+                    renderThreadValues.Add(Frames[index].RenderThreadMilliseconds);
+                BuildCommitMaxMilliseconds = Mathf.Max(
+                    BuildCommitMaxMilliseconds,
+                    Frames[index].BuildCommitMilliseconds);
                 TotalGcAllocatedBytes += Math.Max(0L, Frames[index].GcAllocatedBytes);
+                if (Frames[index].GcCollectionMilliseconds > 0.0001f)
+                    GcCollectionFrames++;
             }
 
+            MainThreadP95Milliseconds = CalculateP95(mainThreadValues);
+            RenderThreadP95Milliseconds = CalculateP95(renderThreadValues);
+            CalculateAcceptance();
+        }
+
+        private void CalculateAcceptance()
+        {
+            AcceptanceViolations = new List<string>();
+            if (Frames == null || Frames.Count != 120)
+                AcceptanceViolations.Add($"Expected 120 post-commit frames, got {Frames?.Count ?? 0}.");
+            if (BuildCommitMaxMilliseconds > 16.6f)
+                AcceptanceViolations.Add($"BuildCommit max {BuildCommitMaxMilliseconds:0.###} ms exceeds 16.6 ms.");
+            if (MainThreadP95Milliseconds > 16.6f)
+                AcceptanceViolations.Add($"Main Thread p95 {MainThreadP95Milliseconds:0.###} ms exceeds 16.6 ms.");
+            if (MainThreadMaxMilliseconds > 33.3f)
+                AcceptanceViolations.Add($"Main Thread max {MainThreadMaxMilliseconds:0.###} ms exceeds 33.3 ms.");
+            if (GcCollectionFrames > 0)
+                AcceptanceViolations.Add($"Managed GC collection was observed in {GcCollectionFrames} frame(s).");
+
+            Accepted = AcceptanceViolations.Count == 0;
+        }
+
+        private static float CalculateP95(List<float> values)
+        {
+            if (values == null || values.Count == 0)
+                return 0f;
+
             values.Sort();
-            int p95Index = Mathf.Clamp(Mathf.CeilToInt(values.Count * 0.95f) - 1, 0, values.Count - 1);
-            MainThreadP95Milliseconds = values[p95Index];
+            int p95Index = Mathf.Clamp(
+                Mathf.CeilToInt(values.Count * 0.95f) - 1,
+                0,
+                values.Count - 1);
+            return values[p95Index];
         }
     }
 
@@ -179,5 +229,6 @@ namespace Kruty1918.Moyva.Construction.Runtime
         public float RenderThreadMilliseconds;
         public float BuildCommitMilliseconds;
         public long GcAllocatedBytes;
+        public float GcCollectionMilliseconds;
     }
 }

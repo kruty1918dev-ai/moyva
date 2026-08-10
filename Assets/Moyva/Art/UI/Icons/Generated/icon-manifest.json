@@ -1,0 +1,207 @@
+{
+  "schema": "moyva.generated-icons",
+  "version": 1,
+  "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+  "entries": [
+    {
+      "scope": "building",
+      "id": "armor-workshop",
+      "sourcePrefabGuid": "f5d290f564dc7d7438e79949b85fce90",
+      "dependencyHash": "2d735963c3e4603fd7fb78ccaaa74d23",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/armor-workshop.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "barn",
+      "sourcePrefabGuid": "cde5c5afa32fc5a419902e6a8bbef5c4",
+      "dependencyHash": "0a107927b60c9e41b572317fd89f8490",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/barn.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "barrack",
+      "sourcePrefabGuid": "f428515d2dbd75c4ea1e2b8ec7d0eeb7",
+      "dependencyHash": "aeabd2d576c1d3e1813957442b3c0471",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/barrack.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "castle-01",
+      "sourcePrefabGuid": "6655d3eb8cc1fdb2e8eabc222e503d39",
+      "dependencyHash": "94fe2245845bad7f536fca273cae42e0",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/castle-01.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "engineers-guild",
+      "sourcePrefabGuid": "f5d290f564dc7d7438e79949b85fce90",
+      "dependencyHash": "2d735963c3e4603fd7fb78ccaaa74d23",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/engineers-guild.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "house-01",
+      "sourcePrefabGuid": "a160b9cda825be071b9873bf031543bc",
+      "dependencyHash": "e0f52701ee808bc0d60610212e8abba0",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/house-01.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "iron-mine",
+      "sourcePrefabGuid": "9fab77ecb6c0d0340aafded7b8e7b66b",
+      "dependencyHash": "e38ceea6edee415667f7f163105cc6ed",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/iron-mine.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "sawmill",
+      "sourcePrefabGuid": "81e5f8fecfba2464a994bcc5452fd31e",
+      "dependencyHash": "be846eca23b37b514de8e9c3cbcaee26",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/sawmill.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "stable",
+      "sourcePrefabGuid": "49c0cff0949cccd488fd77e8e775d7ee",
+      "dependencyHash": "c6833043a1a6b8423240543e6f870536",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stable.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "stone-gate",
+      "sourcePrefabGuid": "2fc84416ec42ca98796010998d7561ef",
+      "dependencyHash": "86e85f088913da3cd838ee8e0192077d",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-gate.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "stone-quarry",
+      "sourcePrefabGuid": "9fab77ecb6c0d0340aafded7b8e7b66b",
+      "dependencyHash": "e38ceea6edee415667f7f163105cc6ed",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-quarry.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "stone-wall",
+      "sourcePrefabGuid": "190f77ff4fd19557ebd89ef3e3e06832",
+      "dependencyHash": "5aa23876c9f2a3cd4a9bb72417a70c21",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-wall.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "storage",
+      "sourcePrefabGuid": "cde5c5afa32fc5a419902e6a8bbef5c4",
+      "dependencyHash": "0a107927b60c9e41b572317fd89f8490",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/storage.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "weapon-workshop",
+      "sourcePrefabGuid": "c0db6febc489e3e4193a96c3a9d4577a",
+      "dependencyHash": "c120129da0e381c6753aa1b903290190",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/weapon-workshop.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "windmill-01",
+      "sourcePrefabGuid": "87bc8f20c999a2d7c930c5143cc8c369",
+      "dependencyHash": "3a9cf98ada584208566020476835c6fc",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/windmill-01.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "building",
+      "id": "wood-camp",
+      "sourcePrefabGuid": "81e5f8fecfba2464a994bcc5452fd31e",
+      "dependencyHash": "be846eca23b37b514de8e9c3cbcaee26",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/wood-camp.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "unit",
+      "id": "archer",
+      "sourcePrefabGuid": "87b835b1a22a0b90583840638a5c5cb0",
+      "dependencyHash": "2af0f9aac6fbcec670c5174442f41614",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Units/archer.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "unit",
+      "id": "light-cavalry",
+      "sourcePrefabGuid": "32716c4f2fd9817ffb4d8981530bd546",
+      "dependencyHash": "0e86a7a98e9b7bcd7fda4b72391f9c60",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Units/light-cavalry.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "unit",
+      "id": "spearman",
+      "sourcePrefabGuid": "cb916fee6b164251ebf6969bcb41053f",
+      "dependencyHash": "45c41cd5c941a065d076dd48eca9ad74",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Units/spearman.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    },
+    {
+      "scope": "unit",
+      "id": "warrior",
+      "sourcePrefabGuid": "ad2b8f501d94436369b0452412f40429",
+      "dependencyHash": "83377af36f7d52e805a4ea06df4cd000",
+      "outputPath": "Assets/Moyva/Art/UI/Icons/Generated/Units/warrior.png",
+      "renderSettings": "orthographic-512-three-quarter-v3-rgba",
+      "width": 512,
+      "height": 512
+    }
+  ]
+}

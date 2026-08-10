@@ -15,15 +15,17 @@ MonoBehaviour:
   _placementModuleMigrationVersion: 0
   Identity:
     Id: stable
-    DisplayName: Stable
+    DisplayName: "\u0421\u0442\u0430\u0439\u043D\u044F"
     Category: 0
     Role: 9
-    Description: A military support building.
+    Description: "\u0411\u0443\u0434\u0456\u0432\u043B\u044F \u0432\u0456\u0439\u0441\u044C\u043A\u043E\u0432\u043E\u0457
+      \u043F\u0456\u0434\u0442\u0440\u0438\u043C\u043A\u0438 \u0434\u043B\u044F \u0443\u0442\u0440\u0438\u043C\u0430\u043D\u043D\u044F
+      \u043A\u0456\u043D\u043D\u043E\u0442\u0438."
     Tags: []
   Presentation:
     Prefab: {fileID: 919132149155446097, guid: 49c0cff0949cccd488fd77e8e775d7ee, type: 3}
-    Icon: {fileID: 21300000, guid: 395edb0875a3a47d66e78a33665c8e2e, type: 3}
-    RuntimePreview: {fileID: 0}
+    Icon: {fileID: 21300000, guid: 2cd37eb0e4bb66b2d8e69886715e4d8a, type: 3}
+    RuntimePreview: {fileID: 21300000, guid: 2cd37eb0e4bb66b2d8e69886715e4d8a, type: 3}
     UiTint: {r: 1, g: 1, b: 1, a: 1}
     VisualYOffset: 0
     PreviewSettings:

@@ -23,7 +23,7 @@
   },
   "presentation": {
     "icon": {
-      "path": "Assets/Moyva/Art/UI/Icons/Buildings/iron-mine.png",
+      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/iron-mine.png",
       "required": true
     },
     "prefab": {

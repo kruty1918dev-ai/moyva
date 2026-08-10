@@ -23,7 +23,7 @@
   },
   "presentation": {
     "icon": {
-      "path": "Assets/Moyva/Art/UI/Icons/Buildings/wood-camp.png",
+      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/wood-camp.png",
       "required": true
     },
     "prefab": {

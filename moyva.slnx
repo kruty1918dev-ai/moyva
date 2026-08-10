@@ -120,6 +120,7 @@
   <Project Path="Unity.Multiplayer.Center.Common.csproj" />
   <Project Path="Unity.UnifiedRayTracing.Runtime.csproj" />
   <Project Path="Kruty1918.Moyva.InfoPanel.csproj" />
+  <Project Path="Kruty1918.Moyva.Camera.csproj" />
   <Project Path="Unity.Multiplayer.Tools.DependencyInjection.UIElements.csproj" />
   <Project Path="Unity.Multiplayer.Tools.NetworkSimulator.Editor.csproj" />
   <Project Path="Unity.2D.Tilemap.Extras.Editor.csproj" />
@@ -142,7 +143,6 @@
   <Project Path="Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.Core.csproj" />
   <Project Path="Kruty1918.Moyva.Calendar.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.FogOfWar.csproj" />
-  <Project Path="Kruty1918.Moyva.Camera.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Construction.csproj" />
   <Project Path="Kruty1918.Moyva.Clouds.csproj" />
   <Project Path="Unity.2D.IK.Runtime.csproj" />
@@ -194,6 +194,7 @@
   <Project Path="Kruty1918.Moyva.ObjectsMap.csproj" />
   <Project Path="Kruty1918.Moyva.Visuals.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.Signals.csproj" />
+  <Project Path="Kruty1918.Moyva.Tests.Camera.csproj" />
   <Project Path="Unity.Services.Core.Registration.csproj" />
   <Project Path="Unity.Multiplayer.Tools.MetricEvents.csproj" />
   <Project Path="Unity.InputSystem.ForUI.csproj" />

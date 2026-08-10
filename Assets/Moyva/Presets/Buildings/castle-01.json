@@ -18,13 +18,15 @@
   },
   "presentation": {
     "icon": {
-      "path": "Assets/Moyva/Art/Sprites/Icons/v4_mobile_focus/11_grand_castle.png",
+      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/castle-01.png",
       "required": true
     },
     "prefab": {
       "path": "Assets/Moyva/Prefabs/Buildings/castle-01.prefab",
       "root": "Assets/Moyva/Prefabs/Buildings",
-      "exact": ["castle-01"],
+      "exact": [
+        "castle-01"
+      ],
       "required": true
     }
   },

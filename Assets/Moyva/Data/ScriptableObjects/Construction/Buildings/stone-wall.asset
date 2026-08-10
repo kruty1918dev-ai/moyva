@@ -25,8 +25,8 @@ MonoBehaviour:
     Tags: []
   Presentation:
     Prefab: {fileID: 8756741331363231770, guid: 190f77ff4fd19557ebd89ef3e3e06832, type: 3}
-    Icon: {fileID: -1448105316, guid: 95544520e0a0c4c4a9dd40ea99c04bd0, type: 3}
-    RuntimePreview: {fileID: 0}
+    Icon: {fileID: 21300000, guid: 76a8f783f194ee3feb9d6aa9ec1bb42a, type: 3}
+    RuntimePreview: {fileID: 21300000, guid: 76a8f783f194ee3feb9d6aa9ec1bb42a, type: 3}
     UiTint: {r: 1, g: 1, b: 1, a: 1}
     VisualYOffset: 0
     PreviewSettings:

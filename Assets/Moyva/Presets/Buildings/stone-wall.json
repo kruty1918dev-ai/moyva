@@ -12,8 +12,14 @@
   "construction": {
     "buildTurns": 1,
     "cost": [
-      { "resource": "stone", "amount": 1 },
-      { "resource": "boards", "amount": 1 }
+      {
+        "resource": "stone",
+        "amount": 1
+      },
+      {
+        "resource": "boards",
+        "amount": 1
+      }
     ]
   },
   "runtimeStats": {
@@ -23,7 +29,13 @@
     "prefab": {
       "path": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Horizontal.prefab",
       "root": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0",
-      "exact": ["wall-stone-collection-0_Horizontal"],
+      "exact": [
+        "wall-stone-collection-0_Horizontal"
+      ],
+      "required": true
+    },
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-wall.png",
       "required": true
     }
   },

@@ -37,7 +37,7 @@ MonoBehaviour:
     AnimationSettings:
       MoveDurationPerTile: 0.3
       DelayOnTile: 0.05
-    CustomSprite: {fileID: 0}
+    CustomSprite: {fileID: 21300000, guid: 370d453e6891f2fe5861721dd7dca04e, type: 3}
     AnimationClips:
     - Type: 0
       Name: Animation 1
@@ -47,7 +47,7 @@ MonoBehaviour:
       SpriteFPS: 0
       Loop: 1
       Duration: 1
-  - TypeId: Spearman
+  - TypeId: spearman
     DisplayName: "\u0421\u043F\u0438\u0441\u043D\u0438\u043A"
     Role: 1
     CombatType: 0
@@ -71,9 +71,9 @@ MonoBehaviour:
     AnimationSettings:
       MoveDurationPerTile: 0.3
       DelayOnTile: 0.05
-    CustomSprite: {fileID: 0}
+    CustomSprite: {fileID: 21300000, guid: 67220b0ed3a462e3284369f85c1f6928, type: 3}
     AnimationClips: []
-  - TypeId: Archer
+  - TypeId: archer
     DisplayName: "\u041B\u0443\u0447\u043D\u0438\u043A"
     Role: 1
     CombatType: 0
@@ -97,12 +97,12 @@ MonoBehaviour:
     AnimationSettings:
       MoveDurationPerTile: 0.3
       DelayOnTile: 0.05
-    CustomSprite: {fileID: 0}
+    CustomSprite: {fileID: 21300000, guid: e89002a4ba1837718a7fe4a60af88364, type: 3}
     AnimationClips: []
-  - TypeId: Light-cavalry
+  - TypeId: light-cavalry
     DisplayName: "\u041B\u0435\u0433\u043A\u0430 \u043A\u0456\u043D\u043D\u043E\u0442\u0430"
     Role: 1
-    CombatType: 0
+    CombatType: 1
     BaseStamina: 100
     VisionRange: 3
     VisionHeightBoostPerLevel: 0
@@ -123,5 +123,5 @@ MonoBehaviour:
     AnimationSettings:
       MoveDurationPerTile: 0.3
       DelayOnTile: 0.05
-    CustomSprite: {fileID: 0}
+    CustomSprite: {fileID: 21300000, guid: 0929e1c01643be78380650a9ce9b2c81, type: 3}
     AnimationClips: []

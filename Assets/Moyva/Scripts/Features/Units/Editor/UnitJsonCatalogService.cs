@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using Kruty1918.Moyva.Animations.API;
 using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Units.API;
@@ -23,6 +24,9 @@ namespace Kruty1918.Moyva.Units.Editor
         public const string JsonPath = "Assets/Moyva/Presets/Units/unit-registry.json";
         private const string ExpectedSchema = "moyva.unit-registry";
         private const int SupportedVersion = 1;
+        private static readonly Regex TypeIdPattern = new Regex(
+            "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+            RegexOptions.CultureInvariant);
 
         [MenuItem("Moyva/Data/JSON/Units/Validate and Sync")]
         public static void SyncFromMenu()
@@ -204,8 +208,12 @@ namespace Kruty1918.Moyva.Units.Editor
                 string context = $"{JsonPath}: units[{index}]";
                 if (string.IsNullOrWhiteSpace(unit.TypeId))
                     throw new InvalidDataException($"{context}: typeId is required.");
-                if (unit.TypeId.Contains("_"))
-                    throw new InvalidDataException($"{context}: typeId cannot contain '_' because it is reserved for instance IDs.");
+                if (!TypeIdPattern.IsMatch(unit.TypeId))
+                {
+                    throw new InvalidDataException(
+                        $"{context}: typeId must use lowercase kebab-case "
+                        + "(example: light-cavalry); '_' is reserved for instance IDs.");
+                }
                 if (!ids.Add(unit.TypeId))
                     throw new InvalidDataException($"{context}: duplicate typeId '{unit.TypeId}'.");
                 if (unit.Movement == null || unit.Vision == null || unit.Combat == null || unit.Presentation == null)

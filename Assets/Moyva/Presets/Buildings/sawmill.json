@@ -23,7 +23,7 @@
   },
   "presentation": {
     "icon": {
-      "path": "Assets/Moyva/Art/UI/Icons/Buildings/sawmill.png",
+      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/sawmill.png",
       "required": true
     },
     "prefab": {

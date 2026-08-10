@@ -112,7 +112,7 @@
       "additionalProperties": false,
       "required": ["typeId", "displayName", "role", "combatType", "movement", "vision", "combat", "presentation", "animations"],
       "properties": {
-        "typeId": { "type": "string", "minLength": 1, "pattern": "^[^_]+$", "description": "Stable save/runtime ID. Underscore is reserved for instance IDs." },
+        "typeId": { "type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$", "description": "Stable lowercase kebab-case save/runtime ID. Example: light-cavalry. Underscore is reserved for instance IDs." },
         "displayName": { "type": ["string", "null"], "description": "Optional UI name; null falls back to typeId." },
         "role": { "enum": ["Worker", "Military"] },
         "combatType": { "enum": ["Infantry", "Cavalry", "SiegeMachine"] },

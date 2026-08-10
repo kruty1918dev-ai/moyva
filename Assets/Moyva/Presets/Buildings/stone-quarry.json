@@ -23,7 +23,7 @@
   },
   "presentation": {
     "icon": {
-      "path": "Assets/Moyva/Art/UI/Icons/Buildings/stone-quarry.png",
+      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-quarry.png",
       "required": true
     },
     "prefab": {

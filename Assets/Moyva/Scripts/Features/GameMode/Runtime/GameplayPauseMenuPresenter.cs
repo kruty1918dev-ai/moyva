@@ -3,6 +3,7 @@ using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Signals;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using Zenject;
 
@@ -62,6 +63,8 @@ namespace Kruty1918.Moyva.GameMode.Runtime
                 return;
 
             _panelRoot.SetActive(visible);
+            if (visible && EventSystem.current != null && _resumeButton != null)
+                EventSystem.current.SetSelectedGameObject(_resumeButton.gameObject);
             if (!visible)
                 ResetExitConfirmation();
         }

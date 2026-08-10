@@ -23,7 +23,7 @@
   },
   "presentation": {
     "icon": {
-      "path": "Assets/Moyva/Art/UI/Icons/Buildings/barn.png",
+      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/barn.png",
       "required": true
     },
     "prefab": {

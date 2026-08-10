@@ -12,9 +12,18 @@
   "construction": {
     "buildTurns": 1,
     "cost": [
-      { "resource": "logs", "amount": 1 },
-      { "resource": "stone", "amount": 1 },
-      { "resource": "boards", "amount": 1 }
+      {
+        "resource": "logs",
+        "amount": 1
+      },
+      {
+        "resource": "stone",
+        "amount": 1
+      },
+      {
+        "resource": "boards",
+        "amount": 1
+      }
     ]
   },
   "runtimeStats": {
@@ -24,7 +33,13 @@
     "prefab": {
       "path": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Gate.prefab",
       "root": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0",
-      "exact": ["wall-stone-collection-0_Gate"],
+      "exact": [
+        "wall-stone-collection-0_Gate"
+      ],
+      "required": true
+    },
+    "icon": {
+      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-gate.png",
       "required": true
     }
   },

@@ -15,15 +15,19 @@ MonoBehaviour:
   _placementModuleMigrationVersion: 1
   Identity:
     Id: castle-01
-    DisplayName: Castle
+    DisplayName: "\u0417\u0430\u043C\u043E\u043A"
     Category: 1
     Role: 4
-    Description: The settlement center used by construction placement rules.
+    Description: "\u0413\u043E\u043B\u043E\u0432\u043D\u0438\u0439 \u0446\u0435\u043D\u0442\u0440
+      \u043F\u043E\u0441\u0435\u043B\u0435\u043D\u043D\u044F, \u0432\u0456\u0434
+      \u044F\u043A\u043E\u0433\u043E \u0437\u0430\u043B\u0435\u0436\u0430\u0442\u044C
+      \u043F\u0440\u0430\u0432\u0438\u043B\u0430 \u0440\u043E\u0437\u043C\u0456\u0449\u0435\u043D\u043D\u044F
+      \u0431\u0443\u0434\u0456\u0432\u0435\u043B\u044C."
     Tags: []
   Presentation:
     Prefab: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
-    Icon: {fileID: 700415024161382652, guid: 30d97717740313ad390b87a9b6eb3834, type: 3}
-    RuntimePreview: {fileID: 700415024161382652, guid: 30d97717740313ad390b87a9b6eb3834, type: 3}
+    Icon: {fileID: 21300000, guid: 467e2447c0b3e58eb9c1a4d52c777877, type: 3}
+    RuntimePreview: {fileID: 21300000, guid: 467e2447c0b3e58eb9c1a4d52c777877, type: 3}
     UiTint: {r: 1, g: 1, b: 1, a: 1}
     VisualYOffset: 0
     PreviewSettings:

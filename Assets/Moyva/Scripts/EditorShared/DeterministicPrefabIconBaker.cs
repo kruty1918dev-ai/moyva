@@ -27,7 +27,7 @@ namespace Kruty1918.Moyva.Editor.Shared
 
         private const string UnitJsonPath = "Assets/Moyva/Presets/Units/unit-registry.json";
         private const string BuildingJsonRoot = "Assets/Moyva/Presets/Buildings";
-        private const string RenderSettingsVersion = "orthographic-512-three-quarter-v1";
+        private const string RenderSettingsVersion = "orthographic-512-three-quarter-v3-rgba";
 
         [MenuItem("Moyva/Content/Icons/Bake Buildings")]
         public static void BakeBuildingsFromMenu()
@@ -111,6 +111,7 @@ namespace Kruty1918.Moyva.Editor.Shared
             ref int reused)
         {
             EnsureAssetFolder(BuildingRoot);
+            var activeIds = new HashSet<string>(StringComparer.Ordinal);
             string[] guids = AssetDatabase.FindAssets("t:BuildingDefinitionAsset", new[] { "Assets/Moyva" });
             Array.Sort(guids, StringComparer.Ordinal);
             foreach (string guid in guids)
@@ -120,10 +121,12 @@ namespace Kruty1918.Moyva.Editor.Shared
                 if (definition == null || definition.Presentation?.Prefab == null || string.IsNullOrWhiteSpace(definition.Id))
                     continue;
 
+                activeIds.Add(definition.Id);
                 string id = SanitizeFileName(definition.Id);
                 string outputPath = $"{BuildingRoot}/{id}.png";
                 BakeOne("building", definition.Id, definition.Presentation.Prefab, outputPath, manifest, replaceGenerated, ref rendered, ref reused);
             }
+            manifest.RemoveMissing("building", activeIds);
         }
 
         private static void BakeUnits(
@@ -141,15 +144,18 @@ namespace Kruty1918.Moyva.Editor.Shared
             if (registry?.Configs == null)
                 return;
 
+            var activeIds = new HashSet<string>(StringComparer.Ordinal);
             foreach (var config in registry.Configs)
             {
                 if (config?.Prefab == null || string.IsNullOrWhiteSpace(config.TypeId))
                     continue;
 
+                activeIds.Add(config.TypeId);
                 string id = SanitizeFileName(config.TypeId);
                 string outputPath = $"{UnitRoot}/{id}.png";
                 BakeOne("unit", config.TypeId, config.Prefab, outputPath, manifest, replaceGenerated, ref rendered, ref reused);
             }
+            manifest.RemoveMissing("unit", activeIds);
         }
 
         private static void BakeOne(
@@ -211,7 +217,10 @@ namespace Kruty1918.Moyva.Editor.Shared
                 Bounds bounds = CalculateBounds(instance);
                 Vector3 center = bounds.center;
                 float radius = Mathf.Max(0.25f, bounds.extents.magnitude);
-                Vector3 viewDirection = new Vector3(1f, 0.72f, -1f).normalized;
+                // Direction from the camera towards the subject. Negative Y
+                // places the camera above the pivot, producing the expected
+                // three-quarter top view instead of exposing model undersides.
+                Vector3 viewDirection = new Vector3(1f, -0.72f, -1f).normalized;
 
                 preview.camera.clearFlags = CameraClearFlags.SolidColor;
                 preview.camera.backgroundColor = Color.clear;
@@ -232,13 +241,48 @@ namespace Kruty1918.Moyva.Editor.Shared
                 preview.lights[1].transform.rotation = Quaternion.Euler(340f, 215f, 0f);
                 preview.ambientColor = new Color(0.32f, 0.34f, 0.37f);
 
-                var rect = new Rect(0f, 0f, IconSize, IconSize);
-                preview.BeginStaticPreview(rect);
-                preview.camera.Render();
-                Texture2D result = preview.EndStaticPreview();
-                if (result == null)
-                    throw new InvalidOperationException($"Unity returned no preview for '{prefab.name}'.");
-                return result;
+                var renderTexture = new RenderTexture(
+                    IconSize,
+                    IconSize,
+                    24,
+                    RenderTextureFormat.ARGB32,
+                    RenderTextureReadWrite.sRGB)
+                {
+                    antiAliasing = 4,
+                    useMipMap = false,
+                    autoGenerateMips = false,
+                    hideFlags = HideFlags.HideAndDontSave,
+                };
+                RenderTexture previousActive = RenderTexture.active;
+                try
+                {
+                    renderTexture.Create();
+                    preview.camera.targetTexture = renderTexture;
+                    RenderTexture.active = renderTexture;
+                    GL.Clear(true, true, Color.clear);
+                    preview.camera.Render();
+
+                    var result = new Texture2D(
+                        IconSize,
+                        IconSize,
+                        TextureFormat.RGBA32,
+                        mipChain: false,
+                        linear: false);
+                    result.ReadPixels(
+                        new Rect(0f, 0f, IconSize, IconSize),
+                        0,
+                        0,
+                        recalculateMipMaps: false);
+                    result.Apply(updateMipmaps: false, makeNoLongerReadable: false);
+                    return result;
+                }
+                finally
+                {
+                    preview.camera.targetTexture = null;
+                    RenderTexture.active = previousActive;
+                    renderTexture.Release();
+                    Object.DestroyImmediate(renderTexture);
+                }
             }
             finally
             {
@@ -529,6 +573,13 @@ namespace Kruty1918.Moyva.Editor.Shared
             if (current != null)
                 Entries.Remove(current);
             Entries.Add(value);
+        }
+
+        public void RemoveMissing(string scope, ISet<string> activeIds)
+        {
+            Entries.RemoveAll(entry =>
+                string.Equals(entry.Scope, scope, StringComparison.Ordinal)
+                && !activeIds.Contains(entry.Id));
         }
     }
 

@@ -133,6 +133,7 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge
                 isPlaying = EditorApplication.isPlaying,
                 isCompiling = EditorApplication.isCompiling,
                 isUpdating = EditorApplication.isUpdating,
+                isSceneDirty = scene.IsValid() && scene.isDirty,
             };
         }
 

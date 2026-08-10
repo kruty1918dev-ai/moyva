@@ -120,14 +120,16 @@ namespace Kruty1918.Moyva.Camera.Runtime
             // Оновлюємо таймер блокування
             if (_forceBlockTimer > 0f)
             {
-                _forceBlockTimer -= Time.deltaTime;
+                _forceBlockTimer -= Time.unscaledDeltaTime;
             }
 
             ResolveZoomRange(out float minZoom, out float maxZoom);
             _targetZoom = Mathf.Clamp(_targetZoom, minZoom, maxZoom);
 
             float currentZoom = GetCurrentZoom();
-            float interpolation = ResolveInterpolationFactor(_settings.ResolveSmoothTime());
+            float interpolation = ResolveInterpolationFactor(
+                _settings.ResolveSmoothTime(),
+                Time.unscaledDeltaTime);
             float nextZoom = Mathf.Lerp(currentZoom, _targetZoom, interpolation);
             if (Mathf.Abs(nextZoom - _targetZoom) <= ZoomEpsilon)
                 nextZoom = _targetZoom;
@@ -180,12 +182,14 @@ namespace Kruty1918.Moyva.Camera.Runtime
             }
         }
 
-        private static float ResolveInterpolationFactor(float smoothTime)
+        private static float ResolveInterpolationFactor(
+            float smoothTime,
+            float unscaledDeltaTime)
         {
             if (smoothTime <= 0.0001f)
                 return 1f;
 
-            return 1f - Mathf.Exp(-Time.deltaTime / smoothTime);
+            return 1f - Mathf.Exp(-Mathf.Max(0f, unscaledDeltaTime) / smoothTime);
         }
 
         private static float NormalizeWheelDelta(float delta)
