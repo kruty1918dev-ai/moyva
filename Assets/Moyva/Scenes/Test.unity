@@ -541,7 +541,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.MoyvaTileWorldCreatorGraphBinding
   _manager: {fileID: 1943245938}
-  _graphAsset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
+  _graphAsset:
+    _connections: []
+    _version: 2
+    _sharedSettings:
+      _mapWidth: 0
+      _mapHeight: 0
+      _gridTopology: 0
+      _projectionMode: 5
+      _renderMode: 3
+      _neighborhoodMode: 0
+    _globalGraphState:
+      _graphId: 
+      _layerId: 
+      _version: 1
+      _nodeIds: []
+      _connectionIds: []
+    _layers: []
+    _layerGraphStates: []
+    _tileRegistry:
+      _definitions: []
   _editorSeed: 1
   _compileBeforeGenerate: 1
   _generateBuildLayersAfterCompile: 1

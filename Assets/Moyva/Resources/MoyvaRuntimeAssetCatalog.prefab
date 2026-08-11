@@ -55,9 +55,9 @@ MonoBehaviour:
   - Key: asset.audio-mixer-group-controller.master.35a28e1f
     Asset: {fileID: 24100000, guid: 35a28e1f08aa176529bf03c2255bc3f8, type: 2}
   - Key: asset.cellular-automata.cellularautomata.b1deed2d
-    Asset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
+    Asset: {fileID: 0}
   - Key: asset.dot-grid.dotgrid.b1deed2d
-    Asset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
+    Asset: {fileID: 0}
   - Key: asset.game-object.archer.87b835b1
     Asset: {fileID: 3925536428086337897, guid: 87b835b1a22a0b90583840638a5c5cb0, type: 3}
   - Key: asset.game-object.baseblock-corner.01241bf9
@@ -701,9 +701,9 @@ MonoBehaviour:
   - Key: asset.game-object.windmill-01.87bc8f20
     Asset: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
   - Key: asset.shrink.shrink.b1deed2d
-    Asset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
+    Asset: {fileID: 0}
   - Key: asset.smooth.smooth.b1deed2d
-    Asset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
+    Asset: {fileID: 0}
   - Key: asset.sprite.16x16-items-sheet-10.62d7684d
     Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-104.62d7684d

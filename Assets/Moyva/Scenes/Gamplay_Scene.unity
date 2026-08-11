@@ -2932,8 +2932,155 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0e8379e3a3854067b25e81f5ff9edc0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Economy::Kruty1918.Moyva.Economy.EconomyInstaller
-  _database: {fileID: 11400000, guid: 545b933e7bbc78a5b8dd553f7e1604f8, type: 2}
-  _rulesTemplate: {fileID: 11400000, guid: 5a4cd68b049c62ec099070e7cbc5fe76, type: 2}
+  _database:
+    _schemaVersion: 1
+    _resources: []
+    _settlements: []
+    _warehousePolicies: []
+    _productionProfiles: []
+    _caravanTemplates: []
+    _aiRuleProfiles: []
+    _mapObjectEconomyEntries: []
+    _rulesConfig:
+      _settlement:
+        _maxSettlements: 3
+        _minTownHallDistance: 25
+        _allowSettlementWithoutPopulation: 0
+        _deactivateSettlementWhenPopulationIsZero: 1
+      _population:
+        _newResidentsArrivalIntervalTurns: 10
+        _requireHousingForFamilyCreation: 1
+        _enableWarMortality: 1
+        _enableDiseaseMortality: 1
+      _workforce:
+        _foodChainPriority: 400
+        _heatAndClothingPriority: 300
+        _materialsPriority: 200
+        _otherPriority: 100
+      _production:
+        _stopProductionWhenInputMissing: 1
+        _enableTileDependencyModifiers: 1
+        _enableFoodDecay: 1
+        _foodDecayPerTurn: 0.02
+      _storage:
+        _unlimitedCapacity: 1
+        _singleBarnPerSettlement: 1
+        _singleWarehousePerSettlement: 1
+        _sharedSettlementResourcePool: 1
+      _caravan:
+        _manualControlOnly: 1
+        _maxCaravansPerSettlement: 1
+        _maxWeightGrams: 50000
+        _offRoadRangeMultiplier: 0.7
+        _roadRangeMultiplier: 1.2
+        _enableInstantCombatInterceptionFallback: 1
+      _market:
+        _stockExponent: 0.35
+        _volumeExponent: 0.2
+        _minPriceMultiplier: 0.5
+        _maxPriceMultiplier: 2.5
+        _targetStock: 200
+        _referenceTradeVolume: 50
+        _resourceBasePrices:
+        - _resourceId: Wood
+          _basePrice: 5
+        - _resourceId: Stone
+          _basePrice: 6
+        - _resourceId: Grain
+          _basePrice: 5
+        - _resourceId: Meat
+          _basePrice: 8
+        - _resourceId: Berries
+          _basePrice: 6
+        - _resourceId: Water
+          _basePrice: 3
+        - _resourceId: Coal
+          _basePrice: 9
+        - _resourceId: Clothing
+          _basePrice: 12
+        - _resourceId: Planks
+          _basePrice: 8
+        - _resourceId: Tools
+          _basePrice: 14
+      _consumption:
+        _comfortWeights:
+          _foodWeight: 0.35
+          _heatWeight: 0.25
+          _lightWeight: 0.1
+          _clothingWeight: 0.1
+          _taxWeight: 0.1
+          _lawWeight: 0.1
+        _ageConsumption:
+        - _label: Child
+          _minAge: 0
+          _maxAge: 15
+          _foodPerTurn: 0.6
+          _waterPerTurn: 0.7
+          _firewoodPerTurn: 0.4
+          _clothingPerTurn: 0.2
+        - _label: Adult
+          _minAge: 16
+          _maxAge: 59
+          _foodPerTurn: 1
+          _waterPerTurn: 1
+          _firewoodPerTurn: 0.7
+          _clothingPerTurn: 0.3
+        - _label: Elder
+          _minAge: 60
+          _maxAge: 200
+          _foodPerTurn: 0.8
+          _waterPerTurn: 0.9
+          _firewoodPerTurn: 0.8
+          _clothingPerTurn: 0.35
+        _deficitPenalties:
+          _foodOrWaterHpDelta: -2
+          _foodOrWaterComfortDelta: -4
+          _firewoodHpDelta: -1
+          _firewoodComfortDelta: -3
+          _clothingComfortDelta: -2
+      _mortality:
+        _ageTiers:
+        - _minAge: 0
+          _maxAge: 44
+          _baseDeathChance: 0
+        - _minAge: 45
+          _maxAge: 54
+          _baseDeathChance: 0.0005
+        - _minAge: 55
+          _maxAge: 64
+          _baseDeathChance: 0.0015
+        - _minAge: 65
+          _maxAge: 74
+          _baseDeathChance: 0.004
+        - _minAge: 75
+          _maxAge: 200
+          _baseDeathChance: 0.01
+        _hungerWeight: 0.015
+        _coldWeight: 0.01
+        _diseaseWeight: 0.012
+        _warWeight: 0.02
+        _hungerCap: 0.15
+        _coldCap: 0.1
+        _diseaseCap: 0.12
+        _warCap: 0.2
+        _collapseDeathChance: 1
+      _building:
+        _enableMaintenance: 0
+        _allowBuildingPause: 1
+        _buildingDamageStopsProduction: 0
+        _validateTownHallHousingConflict: 1
+        _validateWorkerlessHousingConflict: 1
+        _validateWorkerlessProductionConflict: 1
+        _requireProductionResourceId: 1
+        _requireTileRequirementEntries: 1
+        _warnWorkerlessProductionWorkers: 1
+        _enforceSingletonModules: 1
+      _aiExtensibility:
+        _enableAutonomousAiEconomy: 0
+        _enableAiTradeWithPlayer: 0
+        _reserveHooksForCaravanEscort: 1
+  _rulesTemplate:
+    _parameters: []
 --- !u!43 &284614059
 Mesh:
   m_ObjectHideFlags: 0
@@ -7506,10 +7653,34 @@ MonoBehaviour:
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.GeneratorInstaller
   _graphBinding: {fileID: 1744875389}
   _tileWorldCreatorManager: {fileID: 1744875390}
-  _graphAsset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
-  _tileRegistry: {fileID: 11400000, guid: 5a57832fb61b869c4a38191aa4236799, type: 2}
-  _mapObjectRegistry: {fileID: 11400000, guid: c602fa50e26a4d741b0f0f08a03c82e5, type: 2}
-  _tileWorldCreatorMapping: {fileID: 11400000, guid: a45823eb63d12f8b5a4e688262ed4fca, type: 2}
+  _graphAsset:
+    _connections: []
+    _version: 2
+    _sharedSettings:
+      _mapWidth: 0
+      _mapHeight: 0
+      _gridTopology: 0
+      _projectionMode: 5
+      _renderMode: 3
+      _neighborhoodMode: 0
+    _globalGraphState:
+      _graphId: 
+      _layerId: 
+      _version: 1
+      _nodeIds: []
+      _connectionIds: []
+    _layers: []
+    _layerGraphStates: []
+    _tileRegistry:
+      _definitions: []
+  _tileRegistry:
+    _definitions: []
+  _mapObjectRegistry:
+    _definitions: []
+  _tileWorldCreatorMapping:
+    _terrainLayers: []
+    _objectLayers: []
+    _buildingLayers: []
   _tileWorldCreatorBuildOptions:
     _replaceMappedTerrainVisuals: 1
     _sendObjectIdsToTileWorldCreator: 0
@@ -10279,7 +10450,73 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 622d965c0b15130a097ecc8f02eb54cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kruty1918.Moyva.Pathfinding.Runtime.PathfinderInstaller
-  _projectSettings: {fileID: 11400000, guid: 62c207fc5c1497db8a5ea98c4f27f42b, type: 2}
+  _projectSettings:
+    ProjectVisualMode: 0
+    UseAdvancedProjectSettings: 0
+    DefaultGridTopology: 0
+    DefaultProjectionMode: 5
+    DefaultRenderMode: 3
+    DefaultNeighborhood: 0
+    OrthogonalCellWidth: 1
+    OrthogonalCellHeight: 1
+    OrthogonalCellDepth: 1
+    IsometricTileWidth: 1
+    IsometricTileHeight: 0.5
+    HexOrientation: 0
+    HexRadius: 0.5
+    HeightScale: 0.25
+    UseHeightForPreview: 1
+    EnableMeshPrefabPreviews: 1
+    PreviewTextureSize: 96
+    PreviewPadding: 1.35
+    GeneratePreviewMipmaps: 0
+    PreviewFilterMode: 1
+    PreviewRenderTextureFormat: 0
+    PreviewRenderTextureReadWrite: 1
+    Orthographic3DPreviewEuler: {x: 90, y: 0, z: 0}
+    Isometric3DPreviewEuler: {x: 50, y: 45, z: 0}
+    UsePerspectivePreviewCameraIn3D: 1
+    PreviewPerspectiveFieldOfView: 55
+    PreviewLightEuler: {x: 50, y: -30, z: 0}
+    PreviewLightIntensity: 1.35
+    UseLiveHomeMenuMeshPreview: 1
+    HomeMenuPreviewIncludeObjects: 1
+    HomeMenuPreviewIncludeBuildings: 1
+    HomeMenuPreviewCombineMeshesByMaterial: 1
+    HomeMenuPreviewTileStride: 1
+    HomeMenuPreviewMaxTerrainTiles: 30000
+    HomeMenuPreviewMaxVerticesPerBatch: 60000
+    HomeMenuPreviewMaxMaterialBatches: 128
+    HomeMenuPreviewCameraPadding: 1.2
+    HomeMenuPreviewCameraDepth: 100
+    HomeMenuPreviewLayer: 30
+    HomeMenuPreviewDisableFog: 1
+    HomeMenuPreviewUploadMeshData: 1
+    HomeMenuPreviewCastShadows: 0
+    HomeMenuPreviewReceiveShadows: 0
+    HomeMenuPreviewBackgroundColor: {r: 0.05, g: 0.07, b: 0.08, a: 1}
+    AutoConfigure3DLighting: 1
+    CreateDirectionalLightIn3D: 1
+    Project3DLightEuler: {x: 50, y: -35, z: 0}
+    Project3DLightColor: {r: 1, g: 0.96, b: 0.88, a: 1}
+    Project3DLightIntensity: 1.35
+    Project3DLightShadows: 1
+    Project3DAmbientSkyColor: {r: 0.46, g: 0.54, b: 0.64, a: 1}
+    Project3DAmbientEquatorColor: {r: 0.42, g: 0.38, b: 0.32, a: 1}
+    Project3DAmbientGroundColor: {r: 0.18, g: 0.16, b: 0.14, a: 1}
+    Enable3DAtmosphericFog: 1
+    Project3DAtmosphericFogColor: {r: 0.62, g: 0.68, b: 0.72, a: 1}
+    Project3DAtmosphericFogDensity: 0.012
+    CameraPolicy: 0
+    CameraAnglePolicy: 0
+    Custom3DCameraEuler: {x: 50, y: 45, z: 0}
+    Project3DCameraDistance: 20
+    Project3DOrthographicSize: 20
+    Project3DFieldOfView: 30
+    EnsureStartupCameraShowsRevealedArea: 1
+    StartupCameraPaddingTiles: 2
+    StartupCameraRadiusSource: 0
+    ManualStartupCameraRadius: 15
 --- !u!1 &1016403458
 GameObject:
   m_ObjectHideFlags: 0
@@ -12582,7 +12819,55 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5fcb65a2722db9d18a6ae9b25f5433e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Clouds::Kruty1918.Moyva.Clouds.Runtime.CloudsInstaller
-  _settings: {fileID: 11400000, guid: 1791697a3240b51ddadc7bae72cf33e3, type: 2}
+  _settings:
+    Enabled: 1
+    MaxActiveClouds: 10
+    InitialClouds: 3
+    InitialCloudsStartInView: 1
+    SpawnIntervalRange: {x: 1.5, y: 4}
+    SpawnAreaMode: 1
+    MinimumSpawnDistance: 5
+    SpawnPlacementAttempts: 10
+    CloudSprites: []
+    SpeedRange: {x: 0.35, y: 0.9}
+    ScaleRange: {x: 0.85, y: 1.35}
+    AltitudeScaleJitter: 0.12
+    LowAltitudeMipBias: 1.2
+    HighAltitudeMipBias: 0.15
+    LowAltitudeHeightMultiplier: 0.7
+    HighAltitudeHeightMultiplier: 1.35
+    LeftToRightChance: 0.5
+    SpawnHorizontalPadding: 3
+    SpawnVerticalPadding: 1.5
+    DespawnHorizontalPadding: 4
+    FadeDuration: 1.2
+    MapMaskEnabled: 1
+    ManualMapSize: {x: 32, y: 32}
+    ManualMapCenter: {x: 15.5, y: 15.5}
+    MaskEdgeFadeWidth: 1.5
+    MaskEdgeFadeSteps: 5
+    LifetimeDissolveEnabled: 0
+    LifetimeRange: {x: 12, y: 24}
+    DissolveDuration: 3
+    CloudColor: {r: 1, g: 1, b: 1, a: 1}
+    CloudAlpha: 0.85
+    SpriteMaterial: {fileID: 0}
+    CameraProximityFadeEnabled: 1
+    CameraFadeOrthographicRange: {x: 5, y: 14}
+    CloseCameraAlphaMultiplier: 0.28
+    CameraFadeSteps: 4
+    SortingLayerName: Default
+    SortingOrder: 50
+    ShadowsEnabled: 1
+    CloudHeight: 2
+    ShadowOffset: {x: 0, y: -0.45}
+    ShadowOffsetPerHeight: {x: 0.08, y: -0.18}
+    ShadowColor: {r: 0, g: 0, b: 0, a: 1}
+    ShadowAlphaMultiplier: 0.35
+    ShadowScaleMultiplier: 1.03
+    ShadowScalePerHeight: 0.04
+    ShadowAlphaHeightFade: 0.08
+    ShadowSortingOrderOffset: -1
   _sceneCamera: {fileID: 330585545}
   _cloudsRoot: {fileID: 334990248}
 --- !u!1 &1288086439
@@ -13100,7 +13385,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 895ad8c1ea815e9f99663023816b410b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Calendar::Kruty1918.Moyva.Calendar.Runtime.CalendarInstaller
-  _sessionConfig: {fileID: 11400000, guid: c43f8817fa72f7c3ba21db4e4b8f8a5e, type: 2}
+  _sessionConfig:
+    _startYear: 1054
+    _startMonth: 1
+    _startDay: 1
+    _startHour: 6
 --- !u!1 &1308590684
 GameObject:
   m_ObjectHideFlags: 0
@@ -14866,9 +15155,85 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c1f09faef73347d1aaf365061b67a86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Grid::Kruty1918.Moyva.Grid.GridInstaller
-  tileRegistry: {fileID: 11400000, guid: 5a57832fb61b869c4a38191aa4236799, type: 2}
-  terrainLayerProfiles: {fileID: 11400000, guid: 61d7022fddcf42e9be9ec8cb7c3ac85d, type: 2}
-  projectSettings: {fileID: 11400000, guid: 62c207fc5c1497db8a5ea98c4f27f42b, type: 2}
+  tileRegistry:
+    _definitions: []
+  terrainLayerProfiles:
+    _profiles: []
+    _fallback:
+      _layerId: 
+      _displayName: 
+      _walkable: 1
+      _movementCost: 1
+      _buildBlocked: 0
+      _surfaceOffset: 0
+      _tags: []
+  projectSettings:
+    ProjectVisualMode: 0
+    UseAdvancedProjectSettings: 0
+    DefaultGridTopology: 0
+    DefaultProjectionMode: 5
+    DefaultRenderMode: 3
+    DefaultNeighborhood: 0
+    OrthogonalCellWidth: 1
+    OrthogonalCellHeight: 1
+    OrthogonalCellDepth: 1
+    IsometricTileWidth: 1
+    IsometricTileHeight: 0.5
+    HexOrientation: 0
+    HexRadius: 0.5
+    HeightScale: 0.25
+    UseHeightForPreview: 1
+    EnableMeshPrefabPreviews: 1
+    PreviewTextureSize: 96
+    PreviewPadding: 1.35
+    GeneratePreviewMipmaps: 0
+    PreviewFilterMode: 1
+    PreviewRenderTextureFormat: 0
+    PreviewRenderTextureReadWrite: 1
+    Orthographic3DPreviewEuler: {x: 90, y: 0, z: 0}
+    Isometric3DPreviewEuler: {x: 50, y: 45, z: 0}
+    UsePerspectivePreviewCameraIn3D: 1
+    PreviewPerspectiveFieldOfView: 55
+    PreviewLightEuler: {x: 50, y: -30, z: 0}
+    PreviewLightIntensity: 1.35
+    UseLiveHomeMenuMeshPreview: 1
+    HomeMenuPreviewIncludeObjects: 1
+    HomeMenuPreviewIncludeBuildings: 1
+    HomeMenuPreviewCombineMeshesByMaterial: 1
+    HomeMenuPreviewTileStride: 1
+    HomeMenuPreviewMaxTerrainTiles: 30000
+    HomeMenuPreviewMaxVerticesPerBatch: 60000
+    HomeMenuPreviewMaxMaterialBatches: 128
+    HomeMenuPreviewCameraPadding: 1.2
+    HomeMenuPreviewCameraDepth: 100
+    HomeMenuPreviewLayer: 30
+    HomeMenuPreviewDisableFog: 1
+    HomeMenuPreviewUploadMeshData: 1
+    HomeMenuPreviewCastShadows: 0
+    HomeMenuPreviewReceiveShadows: 0
+    HomeMenuPreviewBackgroundColor: {r: 0.05, g: 0.07, b: 0.08, a: 1}
+    AutoConfigure3DLighting: 1
+    CreateDirectionalLightIn3D: 1
+    Project3DLightEuler: {x: 50, y: -35, z: 0}
+    Project3DLightColor: {r: 1, g: 0.96, b: 0.88, a: 1}
+    Project3DLightIntensity: 1.35
+    Project3DLightShadows: 1
+    Project3DAmbientSkyColor: {r: 0.46, g: 0.54, b: 0.64, a: 1}
+    Project3DAmbientEquatorColor: {r: 0.42, g: 0.38, b: 0.32, a: 1}
+    Project3DAmbientGroundColor: {r: 0.18, g: 0.16, b: 0.14, a: 1}
+    Enable3DAtmosphericFog: 1
+    Project3DAtmosphericFogColor: {r: 0.62, g: 0.68, b: 0.72, a: 1}
+    Project3DAtmosphericFogDensity: 0.012
+    CameraPolicy: 0
+    CameraAnglePolicy: 0
+    Custom3DCameraEuler: {x: 50, y: 45, z: 0}
+    Project3DCameraDistance: 20
+    Project3DOrthographicSize: 20
+    Project3DFieldOfView: 30
+    EnsureStartupCameraShowsRevealedArea: 1
+    StartupCameraPaddingTiles: 2
+    StartupCameraRadiusSource: 0
+    ManualStartupCameraRadius: 15
   gridWidth: 50
   gridHeight: 50
 --- !u!1 &1525852008
@@ -15268,8 +15633,88 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 302aee24ee3be87398ad005c5681f197, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.Runtime.ConstructionSceneContext
-  _systemProfile: {fileID: 11400000, guid: 1ec8fb00ceb9412896b7aef5e42fd827, type: 2}
-  _buildingRegistry: {fileID: 11400000, guid: 10b50407045da99758fd720b41437642, type: 2}
+  _systemProfile:
+    _buildingRegistry:
+      WallCollections: []
+    _placementRulesProfile:
+      _minSpacing: 0
+      _townHallBuildRadius: 0
+      _enableInfluenceZoneRules: 1
+      _enableTerrainRules: 1
+      _allowBuildingOnWater: 0
+      _allowBuildingOnHills: 1
+      _blockEdgeTerrainTiles: 1
+      _enableFogRules: 1
+      _requireVisibleFogTile: 1
+      _blockedTileIds: []
+      _allowedTileIds: []
+      _blockedTerrainLevelRanges: []
+    _visualProfile:
+      _buildingLayerMinSortingOrder: 5
+      _buildingSurfaceOffsetY: 0.5
+      _previewSurfaceOffsetY: 0.7
+      _ghostAlpha: 0.55
+      _blockedFlashDurationSeconds: 0.35
+      _previewDragFollowSharpness: 28
+      _previewDragCursorOffsetXZ: {x: 0, y: 0}
+      _showSnapTargetHighlight: 1
+      _snapTargetHighlightLineColor: {r: 1, g: 0.58, b: 0.12, a: 0.9}
+      _snapTargetHighlightFillColor: {r: 1, g: 0.58, b: 0.12, a: 0.16}
+      _snapTargetHighlightLineWidthNormalized: 0.06
+      _snapTargetHighlightInsetNormalized: 0.04
+      _snapTargetHighlightSurfaceOffsetY: 0.16
+      _useBuildGridOverlay: 1
+      _buildGridRenderMode: 0
+      _buildGridSurfacePlaneUseBuildableFilter: 0
+      _buildGridFillAlpha: 0.045
+      _buildGridLineAlpha: 0.22
+      _buildGridValidLineColor: {r: 0.28, g: 1, b: 0.42, a: 0.9}
+      _buildGridValidFillColor: {r: 0.2, g: 0.82, b: 0.32, a: 0.16}
+      _buildGridUnaffordableLineColor: {r: 1, g: 0.68, b: 0.12, a: 0.9}
+      _buildGridUnaffordableFillColor: {r: 0.95, g: 0.48, b: 0.08, a: 0.16}
+      _buildGridInvalidLineColor: {r: 1, g: 0.26, b: 0.22, a: 0.9}
+      _buildGridInvalidFillColor: {r: 0.92, g: 0.12, b: 0.1, a: 0.16}
+      _buildGridLineWidthNormalized: 0.035
+      _buildGridSurfaceOffsetY: 0.06
+      _buildGridTileInsetNormalized: 0.08
+      _buildGridUpdateBudgetMilliseconds: 2
+      _useInfluenceRadiusOverlay: 1
+      _influenceRadiusFillAlpha: 0.055
+      _influenceRadiusBorderWidth: 0.5
+      _influenceRadiusShaderName2D: Moyva/2D/InfluenceRadius
+      _influenceRadiusShaderName3D: Moyva/3D/InfluenceRadiusExistingMeshOverlay
+      _buildGridShaderName: Moyva/Overlay/ConstructionBuildGrid
+      _previewRootName: ConstructionPreviewRoot
+      _placedRootName: PlayerBuildingsRoot
+      _radiusRootName: ConstructionRadiusRoot
+    _inputProfile:
+      _touchTapMaxMovePixels: 18
+      _touchTapMaxDurationSeconds: 0.45
+      _enableMousePendingPreviewDrag: 1
+      _enableTouchPendingPreviewDrag: 1
+      _enableMultiTouchCancel: 1
+      _blockInteractiveUi: 1
+      _allowClicksThroughNonInteractiveUi: 1
+    _wallProfile:
+      _allowGateReplacement: 1
+      _gateRequiresHorizontalWall: 1
+      _allowWallPathThroughExistingWalls: 1
+      _allowWallPathThroughPendingWalls: 1
+      _allowWallPathThroughGates: 0
+      _wallPathMode: 0
+      _showWallHandles: 1
+    _diagnosticsProfile:
+      _enableVerboseLogs: 1
+      _enablePlacementDebug: 1
+      _enableResourceDebug: 1
+      _enableVisualDebug: 1
+      _enableWallDebug: 1
+      _drawSceneGizmos: 1
+      _drawBlockedTiles: 0
+      _drawInfluenceZones: 1
+    _highlightedDefinitions: []
+  _buildingRegistry:
+    WallCollections: []
   _sceneRoots:
     PreviewRoot: {fileID: 862388096}
     PlacedRoot: {fileID: 2122766906}
@@ -15277,11 +15722,85 @@ MonoBehaviour:
     UIRoot: {fileID: 1796280584}
     DebugRoot: {fileID: 1708461842}
   _sceneOverrides:
-    _placementRulesProfileOverride: {fileID: 0}
-    _visualProfileOverride: {fileID: 0}
-    _inputProfileOverride: {fileID: 0}
-    _wallProfileOverride: {fileID: 0}
-    _diagnosticsProfileOverride: {fileID: 0}
+    _placementRulesProfileOverride:
+      _minSpacing: 0
+      _townHallBuildRadius: 0
+      _enableInfluenceZoneRules: 1
+      _enableTerrainRules: 1
+      _allowBuildingOnWater: 0
+      _allowBuildingOnHills: 1
+      _blockEdgeTerrainTiles: 1
+      _enableFogRules: 1
+      _requireVisibleFogTile: 1
+      _blockedTileIds: []
+      _allowedTileIds: []
+      _blockedTerrainLevelRanges: []
+    _visualProfileOverride:
+      _buildingLayerMinSortingOrder: 5
+      _buildingSurfaceOffsetY: 0.5
+      _previewSurfaceOffsetY: 0.7
+      _ghostAlpha: 0.55
+      _blockedFlashDurationSeconds: 0.35
+      _previewDragFollowSharpness: 28
+      _previewDragCursorOffsetXZ: {x: 0, y: 0}
+      _showSnapTargetHighlight: 1
+      _snapTargetHighlightLineColor: {r: 1, g: 0.58, b: 0.12, a: 0.9}
+      _snapTargetHighlightFillColor: {r: 1, g: 0.58, b: 0.12, a: 0.16}
+      _snapTargetHighlightLineWidthNormalized: 0.06
+      _snapTargetHighlightInsetNormalized: 0.04
+      _snapTargetHighlightSurfaceOffsetY: 0.16
+      _useBuildGridOverlay: 1
+      _buildGridRenderMode: 0
+      _buildGridSurfacePlaneUseBuildableFilter: 0
+      _buildGridFillAlpha: 0.045
+      _buildGridLineAlpha: 0.22
+      _buildGridValidLineColor: {r: 0.28, g: 1, b: 0.42, a: 0.9}
+      _buildGridValidFillColor: {r: 0.2, g: 0.82, b: 0.32, a: 0.16}
+      _buildGridUnaffordableLineColor: {r: 1, g: 0.68, b: 0.12, a: 0.9}
+      _buildGridUnaffordableFillColor: {r: 0.95, g: 0.48, b: 0.08, a: 0.16}
+      _buildGridInvalidLineColor: {r: 1, g: 0.26, b: 0.22, a: 0.9}
+      _buildGridInvalidFillColor: {r: 0.92, g: 0.12, b: 0.1, a: 0.16}
+      _buildGridLineWidthNormalized: 0.035
+      _buildGridSurfaceOffsetY: 0.06
+      _buildGridTileInsetNormalized: 0.08
+      _buildGridUpdateBudgetMilliseconds: 2
+      _useInfluenceRadiusOverlay: 1
+      _influenceRadiusFillAlpha: 0.055
+      _influenceRadiusBorderWidth: 0.5
+      _influenceRadiusShaderName2D: Moyva/2D/InfluenceRadius
+      _influenceRadiusShaderName3D: Moyva/3D/InfluenceRadiusExistingMeshOverlay
+      _buildGridShaderName: Moyva/Overlay/ConstructionBuildGrid
+      _previewRootName: ConstructionPreviewRoot
+      _placedRootName: PlayerBuildingsRoot
+      _radiusRootName: ConstructionRadiusRoot
+    _inputProfileOverride:
+      _touchTapMaxMovePixels: 18
+      _touchTapMaxDurationSeconds: 0.45
+      _enableMousePendingPreviewDrag: 1
+      _enableTouchPendingPreviewDrag: 1
+      _enableMultiTouchCancel: 1
+      _blockInteractiveUi: 1
+      _allowClicksThroughNonInteractiveUi: 1
+    _wallProfileOverride:
+      _allowGateReplacement: 1
+      _gateRequiresHorizontalWall: 1
+      _allowWallPathThroughExistingWalls: 1
+      _allowWallPathThroughPendingWalls: 1
+      _allowWallPathThroughGates: 0
+      _wallPathMode: 0
+      _showWallHandles: 1
+    _diagnosticsProfileOverride:
+      _enableVerboseLogs: 1
+      _enablePlacementDebug: 1
+      _enableResourceDebug: 1
+      _enableVisualDebug: 1
+      _enableWallDebug: 1
+      _drawSceneGizmos: 1
+      _drawBlockedTiles: 0
+      _drawInfluenceZones: 1
+  references:
+    version: 2
+    RefIds: []
 --- !u!4 &1575837379
 Transform:
   m_ObjectHideFlags: 0
@@ -16427,7 +16946,54 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Camera::Kruty1918.Moyva.Camera.Runtime.CameraInstaller
   _sceneCamera: {fileID: 330585545}
-  _cameraSettings: {fileID: 11400000, guid: ae01871e620443b0fbd19bd93dfd1388, type: 2}
+  _cameraSettings:
+    controlProfile:
+      moveSpeed: 3.2
+      smoothTime: 0.42
+      zoomSpeed: 2.4
+      rotationSpeed: 90
+      rotationAcceleration: 540
+      rotationDeceleration: 720
+      pointerOrbitSensitivity: 0.25
+      closeZoomRotationMultiplier: 0.65
+      farZoomRotationMultiplier: 1.15
+      minZoom: 2
+      maxZoom: 70
+      touchMoveSpeed: 0.9
+      touchPinchZoomSensitivity: 0.85
+      touchDragDeadZonePixels: 1
+      touchPinchDeadZonePixels: 3
+      maxTouchDeltaPixels: 80
+      useImmediateTouchGestures: 0
+      keepPinchFocusUnderFingers: 1
+    boundsOverflowTiles: {x: 0, y: 0}
+    defaultCameraZ: -10
+    adaptToProject3DMode: 1
+    useOrthographicCameraIn3D: 0
+    default3DCameraDistance: 20
+    default3DOrthographicSize: 20
+    default3DFieldOfView: 30
+    orthographic3DEuler: {x: 90, y: 0, z: 0}
+    isometric3DEuler: {x: 50, y: 45, z: 0}
+    rotationPivotRaycastDistance: 1000
+    rotationPivotLayers:
+      serializedVersion: 2
+      m_Bits: 4294967291
+    edgeScrollEnabled: 0
+    edgeScrollMarginPixels: 12
+    edgeScrollSpeedMultiplier: 1
+    enableAutomaticMipBias: 0
+    automaticMipBiasMax: 0.75
+    mapRenderMaskEnabled: 1
+    mapMaskRefreshSeconds: 0.5
+    mapMaskLayers:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    mapMaskSortingLayerName: Default
+    mapMaskBackSortingOrder: -32768
+    mapMaskFrontSortingOrder: 32767
+    manualMapMaskCenter: {x: 4.5, y: 4.5}
+    manualMapMaskSize: {x: 10, y: 10}
   _cameraInputAsset: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
 --- !u!1 &1739012609
 GameObject:
@@ -16575,7 +17141,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Generator::Kruty1918.Moyva.Generator.Runtime.MoyvaTileWorldCreatorGraphBinding
   _manager: {fileID: 1744875390}
-  _graphAsset: {fileID: 11400000, guid: b1deed2da6c33de4882d0097ea3ce6d3, type: 2}
+  _graphAsset:
+    _connections: []
+    _version: 2
+    _sharedSettings:
+      _mapWidth: 0
+      _mapHeight: 0
+      _gridTopology: 0
+      _projectionMode: 5
+      _renderMode: 3
+      _neighborhoodMode: 0
+    _globalGraphState:
+      _graphId: 
+      _layerId: 
+      _version: 1
+      _nodeIds: []
+      _connectionIds: []
+    _layers: []
+    _layerGraphStates: []
+    _tileRegistry:
+      _definitions: []
   _editorSeed: 1
   _compileBeforeGenerate: 1
   _generateBuildLayersAfterCompile: 1
@@ -19374,7 +19959,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c3bc9d12be5b4a34bff748110fb73e92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.FogOfWar::Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarVolumeController
-  _settings: {fileID: 11400000, guid: cb6a4d88617863cf7ba7852a8ed5bbab, type: 2}
   _overrideUpdateMode: 0
   _updateMode: 0
   _rebuildIntervalSeconds: 0.1
@@ -20670,8 +21254,62 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 330f1d8186438ebc283ae44440a426e2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Units::Kruty1918.Moyva.Units.Runtime.UnitsInstaller
-  _unitRegistry: {fileID: 11400000, guid: f076d9b7569345691a79c3cf6e0a3eea, type: 2}
-  _worldDefaults: {fileID: 0}
+  _worldDefaults:
+    DefaultWorldName: "\u041C\u0456\u0439 \u0441\u0432\u0456\u0442"
+    AppendIndexWhenSaveExists: 1
+    FirstWorldIndex: 1
+    DefaultSizePreset: 1
+    DefaultCustomWidth: 64
+    DefaultCustomHeight: 64
+    SmallWorld:
+      Width: 32
+      Height: 32
+    MediumWorld:
+      Width: 64
+      Height: 64
+    LargeWorld:
+      Width: 128
+      Height: 128
+    DefaultMapType: 0
+    DefaultDifficulty: 1
+    DefaultEnableBots: 1
+    DefaultHumanPlayerCount: 1
+    DefaultBotCount: 1
+    DefaultStartingGold: 200
+    DefaultStartingFood: 100
+    DefaultForestDensity: 0.4
+    DefaultMountainDensity: 0.3
+    DefaultWaterDensity: 0.25
+    DefaultVillageDensity: 0.2
+    DefaultGenerateRivers: 1
+    DefaultGenerateBiomes: 1
+    DefaultApplyWFC: 1
+    PlacementRulesGraph:
+      _connections: []
+      _version: 2
+      _sharedSettings:
+        _mapWidth: 0
+        _mapHeight: 0
+        _gridTopology: 0
+        _projectionMode: 5
+        _renderMode: 3
+        _neighborhoodMode: 0
+      _globalGraphState:
+        _graphId: 
+        _layerId: 
+        _version: 1
+        _nodeIds: []
+        _connectionIds: []
+      _layers: []
+      _layerGraphStates: []
+      _tileRegistry:
+        _definitions: []
+    TileRegistry:
+      _definitions: []
+    BlockedBuildingTileIds: []
+    BlockedBuildingHillLevelRanges: []
+    BlockedUnitTileIds: []
+    BlockedUnitHillLevelRanges: []
 --- !u!1 &2086613746
 GameObject:
   m_ObjectHideFlags: 0
@@ -20818,7 +21456,48 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f99540aed5077c59a895fdaa0858276b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Bootstrap::Kruty1918.Moyva.Bootstrap.BootstrapInstaller
-  _config: {fileID: 11400000, guid: ffbfa0b8da1df2ee09606da8300526fc, type: 2}
+  _config:
+    _gameSettings:
+      InitialResources:
+      - ResourceId: steak-food-resources
+        Amount: 50
+      - ResourceId: hardwood-materials-resources
+        Amount: 30
+      WorldRevealFade:
+        Enabled: 1
+        DurationSeconds: 0.8
+        StartDelaySeconds: 0.05
+        StartAlpha: 1
+    _startingPositionSettings:
+      minMarginFromBorder: 5
+      relativeMarginFactor: 0.1667
+      startMinHeight: 0.35
+      startMaxHeight: 1
+      requireHeightMapForStart: 0
+      revealedCircleRadius: 15
+      revealShape: 0
+      minimumExploredTilesBeforeRepair: 4
+      useMapSizeScaledFog: 1
+      fogScaleByMapSize:
+      - MapSideTiles: 32
+        RevealedRadius: 9
+        CoreVisibleRadius: 7
+      - MapSideTiles: 64
+        RevealedRadius: 15
+        CoreVisibleRadius: 12
+      - MapSideTiles: 128
+        RevealedRadius: 24
+        CoreVisibleRadius: 18
+      keepCoreFullyVisible: 1
+      coreVisibleRadiusOverride: 0
+      multiplayerStartSlots: 4
+      minAStarDistanceBetweenPlayers: 15
+      startCandidateAttempts: 256
+      cameraZ: -10
+      ensureStartupCameraShowsRevealedArea: 1
+      startupCameraPaddingTiles: 2
+      startupCameraRadiusSource: 0
+      manualStartupCameraRadius: 15
   _legacyGameSettings:
     InitialResources:
     - ResourceId: food
@@ -20899,8 +21578,64 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a23baa2df5ef83214975a5b8149bec6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Construction::Kruty1918.Moyva.Construction.Runtime.ConstructionInstaller
-  buildingRegistry: {fileID: 11400000, guid: 10b50407045da99758fd720b41437642, type: 2}
-  _worldDefaults: {fileID: 11400000, guid: b6ced9580bc9ed9459d63ae34dcf05e4, type: 2}
+  buildingRegistry:
+    WallCollections: []
+  _worldDefaults:
+    DefaultWorldName: "\u041C\u0456\u0439 \u0441\u0432\u0456\u0442"
+    AppendIndexWhenSaveExists: 1
+    FirstWorldIndex: 1
+    DefaultSizePreset: 1
+    DefaultCustomWidth: 64
+    DefaultCustomHeight: 64
+    SmallWorld:
+      Width: 32
+      Height: 32
+    MediumWorld:
+      Width: 64
+      Height: 64
+    LargeWorld:
+      Width: 128
+      Height: 128
+    DefaultMapType: 0
+    DefaultDifficulty: 1
+    DefaultEnableBots: 1
+    DefaultHumanPlayerCount: 1
+    DefaultBotCount: 1
+    DefaultStartingGold: 200
+    DefaultStartingFood: 100
+    DefaultForestDensity: 0.4
+    DefaultMountainDensity: 0.3
+    DefaultWaterDensity: 0.25
+    DefaultVillageDensity: 0.2
+    DefaultGenerateRivers: 1
+    DefaultGenerateBiomes: 1
+    DefaultApplyWFC: 1
+    PlacementRulesGraph:
+      _connections: []
+      _version: 2
+      _sharedSettings:
+        _mapWidth: 0
+        _mapHeight: 0
+        _gridTopology: 0
+        _projectionMode: 5
+        _renderMode: 3
+        _neighborhoodMode: 0
+      _globalGraphState:
+        _graphId: 
+        _layerId: 
+        _version: 1
+        _nodeIds: []
+        _connectionIds: []
+      _layers: []
+      _layerGraphStates: []
+      _tileRegistry:
+        _definitions: []
+    TileRegistry:
+      _definitions: []
+    BlockedBuildingTileIds: []
+    BlockedBuildingHillLevelRanges: []
+    BlockedUnitTileIds: []
+    BlockedUnitHillLevelRanges: []
   _sceneContext: {fileID: 1575837378}
   _minSpacingBetweenBuildings: 0
   _settlementLabelSettings:
@@ -20932,8 +21667,155 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f0e8379e3a3854067b25e81f5ff9edc0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Kruty1918.Moyva.Economy::Kruty1918.Moyva.Economy.EconomyInstaller
-  _database: {fileID: 11400000, guid: 545b933e7bbc78a5b8dd553f7e1604f8, type: 2}
-  _rulesTemplate: {fileID: 11400000, guid: 5a4cd68b049c62ec099070e7cbc5fe76, type: 2}
+  _database:
+    _schemaVersion: 1
+    _resources: []
+    _settlements: []
+    _warehousePolicies: []
+    _productionProfiles: []
+    _caravanTemplates: []
+    _aiRuleProfiles: []
+    _mapObjectEconomyEntries: []
+    _rulesConfig:
+      _settlement:
+        _maxSettlements: 3
+        _minTownHallDistance: 25
+        _allowSettlementWithoutPopulation: 0
+        _deactivateSettlementWhenPopulationIsZero: 1
+      _population:
+        _newResidentsArrivalIntervalTurns: 10
+        _requireHousingForFamilyCreation: 1
+        _enableWarMortality: 1
+        _enableDiseaseMortality: 1
+      _workforce:
+        _foodChainPriority: 400
+        _heatAndClothingPriority: 300
+        _materialsPriority: 200
+        _otherPriority: 100
+      _production:
+        _stopProductionWhenInputMissing: 1
+        _enableTileDependencyModifiers: 1
+        _enableFoodDecay: 1
+        _foodDecayPerTurn: 0.02
+      _storage:
+        _unlimitedCapacity: 1
+        _singleBarnPerSettlement: 1
+        _singleWarehousePerSettlement: 1
+        _sharedSettlementResourcePool: 1
+      _caravan:
+        _manualControlOnly: 1
+        _maxCaravansPerSettlement: 1
+        _maxWeightGrams: 50000
+        _offRoadRangeMultiplier: 0.7
+        _roadRangeMultiplier: 1.2
+        _enableInstantCombatInterceptionFallback: 1
+      _market:
+        _stockExponent: 0.35
+        _volumeExponent: 0.2
+        _minPriceMultiplier: 0.5
+        _maxPriceMultiplier: 2.5
+        _targetStock: 200
+        _referenceTradeVolume: 50
+        _resourceBasePrices:
+        - _resourceId: Wood
+          _basePrice: 5
+        - _resourceId: Stone
+          _basePrice: 6
+        - _resourceId: Grain
+          _basePrice: 5
+        - _resourceId: Meat
+          _basePrice: 8
+        - _resourceId: Berries
+          _basePrice: 6
+        - _resourceId: Water
+          _basePrice: 3
+        - _resourceId: Coal
+          _basePrice: 9
+        - _resourceId: Clothing
+          _basePrice: 12
+        - _resourceId: Planks
+          _basePrice: 8
+        - _resourceId: Tools
+          _basePrice: 14
+      _consumption:
+        _comfortWeights:
+          _foodWeight: 0.35
+          _heatWeight: 0.25
+          _lightWeight: 0.1
+          _clothingWeight: 0.1
+          _taxWeight: 0.1
+          _lawWeight: 0.1
+        _ageConsumption:
+        - _label: Child
+          _minAge: 0
+          _maxAge: 15
+          _foodPerTurn: 0.6
+          _waterPerTurn: 0.7
+          _firewoodPerTurn: 0.4
+          _clothingPerTurn: 0.2
+        - _label: Adult
+          _minAge: 16
+          _maxAge: 59
+          _foodPerTurn: 1
+          _waterPerTurn: 1
+          _firewoodPerTurn: 0.7
+          _clothingPerTurn: 0.3
+        - _label: Elder
+          _minAge: 60
+          _maxAge: 200
+          _foodPerTurn: 0.8
+          _waterPerTurn: 0.9
+          _firewoodPerTurn: 0.8
+          _clothingPerTurn: 0.35
+        _deficitPenalties:
+          _foodOrWaterHpDelta: -2
+          _foodOrWaterComfortDelta: -4
+          _firewoodHpDelta: -1
+          _firewoodComfortDelta: -3
+          _clothingComfortDelta: -2
+      _mortality:
+        _ageTiers:
+        - _minAge: 0
+          _maxAge: 44
+          _baseDeathChance: 0
+        - _minAge: 45
+          _maxAge: 54
+          _baseDeathChance: 0.0005
+        - _minAge: 55
+          _maxAge: 64
+          _baseDeathChance: 0.0015
+        - _minAge: 65
+          _maxAge: 74
+          _baseDeathChance: 0.004
+        - _minAge: 75
+          _maxAge: 200
+          _baseDeathChance: 0.01
+        _hungerWeight: 0.015
+        _coldWeight: 0.01
+        _diseaseWeight: 0.012
+        _warWeight: 0.02
+        _hungerCap: 0.15
+        _coldCap: 0.1
+        _diseaseCap: 0.12
+        _warCap: 0.2
+        _collapseDeathChance: 1
+      _building:
+        _enableMaintenance: 0
+        _allowBuildingPause: 1
+        _buildingDamageStopsProduction: 0
+        _validateTownHallHousingConflict: 1
+        _validateWorkerlessHousingConflict: 1
+        _validateWorkerlessProductionConflict: 1
+        _requireProductionResourceId: 1
+        _requireTileRequirementEntries: 1
+        _warnWorkerlessProductionWorkers: 1
+        _enforceSingletonModules: 1
+      _aiExtensibility:
+        _enableAutonomousAiEconomy: 0
+        _enableAiTradeWithPlayer: 0
+        _reserveHooksForCaravanEscort: 1
+  _rulesTemplate:
+    _parameters: []
 --- !u!43 &2118818168
 Mesh:
   m_ObjectHideFlags: 0

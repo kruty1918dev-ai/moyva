@@ -98,3 +98,8 @@ InitTestScene*.unity*
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
 Assets/_Recovery/
+
+/.moyva-patch-backups/
+/Assets/Moyva/Resources/MoyvaConfigGenerated/
+/Assets/Moyva/Resources/MoyvaRuntimeAssetCatalog.prefab
+/Assets/Moyva/Resources/MoyvaRuntimeAssetCatalog.prefab.meta
