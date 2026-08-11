@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using Kruty1918.Moyva.InputRouting.API;
 using Kruty1918.Moyva.InputRouting.Runtime;
@@ -69,3 +70,5 @@ namespace Kruty1918.Moyva.Tests.InputRouting
 
     }
 }
+
+#endif

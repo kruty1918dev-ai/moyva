@@ -1,10 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Economy.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Economy/Caravan Template", fileName = "EconomyCaravanTemplate")]
-    public sealed class EconomyCaravanTemplate : ScriptableObject
+[System.Serializable]
+public sealed class EconomyCaravanTemplate : MoyvaJsonConfigObject
     {
         [SerializeField] private string _templateId;
         [SerializeField] private List<string> _allowedResourceIds = new List<string>();

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.IO;
 using Kruty1918.Moyva.Multiplayer.Config;
 using Kruty1918.Moyva.Multiplayer.Core;
@@ -178,3 +179,5 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         }
     }
 }
+
+#endif

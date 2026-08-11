@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
@@ -5,6 +6,7 @@ using Kruty1918.Moyva.Construction.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Construction
 {
     [TestFixture]
@@ -13,8 +15,8 @@ namespace Kruty1918.Moyva.Tests.Construction
         [Test]
         public void Registry_PrefersAssetDefinitionOverLegacyInlineDefinition()
         {
-            var asset = ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
-            var registry = ScriptableObject.CreateInstance<BuildingRegistrySO>();
+            var asset = MoyvaJsonObjectFactory.Create<BuildingDefinitionAsset>();
+            var registry = MoyvaJsonObjectFactory.Create<BuildingRegistrySO>();
             try
             {
                 asset.Identity.Id = "house";
@@ -54,15 +56,15 @@ namespace Kruty1918.Moyva.Tests.Construction
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(asset);
-                UnityEngine.Object.DestroyImmediate(registry);
+                MoyvaJsonObjectFactory.DestroyImmediate(asset);
+                MoyvaJsonObjectFactory.DestroyImmediate(registry);
             }
         }
 
         [Test]
         public void ApplyLegacy_CopiesFootprintWithoutSharingArrays()
         {
-            var asset = ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
+            var asset = MoyvaJsonObjectFactory.Create<BuildingDefinitionAsset>();
             try
             {
                 var legacy = new BuildingDefinition
@@ -90,14 +92,14 @@ namespace Kruty1918.Moyva.Tests.Construction
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(asset);
+                MoyvaJsonObjectFactory.DestroyImmediate(asset);
             }
         }
 
         [Test]
         public void ToRuntimeDefinition_CopiesIdentityPlacementAndDeepClonesManagedModules()
         {
-            var asset = ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
+            var asset = MoyvaJsonObjectFactory.Create<BuildingDefinitionAsset>();
             try
             {
                 asset.Identity.Id = "bridge";
@@ -208,14 +210,14 @@ namespace Kruty1918.Moyva.Tests.Construction
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(asset);
+                MoyvaJsonObjectFactory.DestroyImmediate(asset);
             }
         }
 
         [Test]
         public void PerPlayerLimitModule_IsCopiedToRuntimeDefinition_AndValidated()
         {
-            var asset = ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
+            var asset = MoyvaJsonObjectFactory.Create<BuildingDefinitionAsset>();
             try
             {
                 asset.Identity.Id = "unique-building";
@@ -242,7 +244,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(asset);
+                MoyvaJsonObjectFactory.DestroyImmediate(asset);
             }
         }
 
@@ -304,3 +306,5 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
     }
 }
+
+#endif

@@ -3,6 +3,7 @@ using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.WorldCreation.API
 {
 	[System.Serializable]
@@ -26,9 +27,8 @@ namespace Kruty1918.Moyva.WorldCreation.API
 			Height = Mathf.Max(16, height);
 		}
 	}
-
-	[CreateAssetMenu(menuName = "Moyva/WorldCreation/Defaults", fileName = "WorldCreationDefaults")]
-	public sealed class WorldCreationDefaultsSO : ScriptableObject
+[System.Serializable]
+public sealed class WorldCreationDefaultsSO : MoyvaJsonConfigObject
 	{
 		[Header("Основні параметри")]
 		[Tooltip("Назва нового світу за замовчуванням.")]

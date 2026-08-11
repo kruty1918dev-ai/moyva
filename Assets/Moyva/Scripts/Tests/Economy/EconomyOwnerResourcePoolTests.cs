@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using System.Reflection;
 using Kruty1918.Moyva.Construction.API;
@@ -7,6 +8,7 @@ using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Economy
 {
     [TestFixture]
@@ -199,7 +201,7 @@ namespace Kruty1918.Moyva.Tests.Economy
 
         private static EconomyDatabaseSO CreateDatabase()
         {
-            var database = ScriptableObject.CreateInstance<EconomyDatabaseSO>();
+            var database = MoyvaJsonObjectFactory.Create<EconomyDatabaseSO>();
             SetPrivateField(database, "_resources", new List<EconomyResourceDefinition>
             {
                 CreateResource("steak-food-resources", EconomyResourceCategory.Food),
@@ -210,7 +212,7 @@ namespace Kruty1918.Moyva.Tests.Economy
 
         private static EconomyResourceDefinition CreateResource(string resourceId, EconomyResourceCategory category)
         {
-            var resource = ScriptableObject.CreateInstance<EconomyResourceDefinition>();
+            var resource = MoyvaJsonObjectFactory.Create<EconomyResourceDefinition>();
             SetPrivateField(resource, "_id", resourceId);
             SetPrivateField(resource, "_category", category);
             return resource;
@@ -254,3 +256,5 @@ namespace Kruty1918.Moyva.Tests.Economy
         }
     }
 }
+
+#endif

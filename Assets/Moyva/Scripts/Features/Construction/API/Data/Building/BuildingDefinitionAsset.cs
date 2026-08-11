@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Construction/Building Definition", fileName = "NewBuildingDefinition")]
-    public sealed class BuildingDefinitionAsset : ScriptableObject
+[System.Serializable]
+public sealed class BuildingDefinitionAsset : MoyvaJsonConfigObject
     {
         [NonSerialized] private BuildingDefinition _editorRuntimeCache;
         [NonSerialized] private IReadOnlyList<BuildingValidationIssue> _editorValidationCache;

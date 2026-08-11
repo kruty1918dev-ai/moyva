@@ -7,6 +7,7 @@ using Zenject;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Clouds.Runtime
 {
     internal sealed class CloudsService : ICloudsService, IInitializable, ITickable, IDisposable
@@ -663,7 +664,7 @@ namespace Kruty1918.Moyva.Clouds.Runtime
             _maskTexture.Apply(updateMipmaps: false, makeNoLongerReadable: true);
             _maskSprite = Sprite.Create(_maskTexture, new Rect(0f, 0f, 1f, 1f), new Vector2(0.5f, 0.5f), 1f);
             _maskSprite.name = "CloudsMapMaskSprite";
-            _maskSprite.hideFlags = HideFlags.HideAndDontSave;
+            ; // JSON config object has no Unity hideFlags.
             return _maskSprite;
         }
 

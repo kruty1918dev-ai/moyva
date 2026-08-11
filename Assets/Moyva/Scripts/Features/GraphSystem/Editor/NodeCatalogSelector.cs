@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,11 +7,13 @@ using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.GraphSystem.Editor
 {
     /// <summary>
     /// Odin-вікно вибору вузлів. Каталог є єдиним джерелом назв, описів і контрактів.
     /// </summary>
+    [System.Serializable]
     internal sealed class NodeCatalogSelector : OdinMenuEditorWindow
     {
         private GraphAsset _graph;
@@ -20,7 +23,7 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
             Vector2 screenPosition,
             Action<NodeCatalogEntry> selectionConfirmed)
         {
-            var window = CreateInstance<NodeCatalogSelector>();
+            var window = MoyvaJsonObjectFactory.Create<NodeCatalogSelector>();
             window.titleContent = new GUIContent("Create Node");
             window.minSize = new Vector2(760f, 640f);
             window.position = new Rect(screenPosition.x, screenPosition.y, 760f, 640f);
@@ -242,3 +245,5 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         }
     }
 }
+
+#endif

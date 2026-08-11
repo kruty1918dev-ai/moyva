@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Sirenix.OdinInspector.Editor;
 using UnityEditor;
 using UnityEngine;
@@ -33,3 +34,5 @@ namespace Kruty1918.Moyva.FogOfWar.Editor
         }
     }
 }
+
+#endif

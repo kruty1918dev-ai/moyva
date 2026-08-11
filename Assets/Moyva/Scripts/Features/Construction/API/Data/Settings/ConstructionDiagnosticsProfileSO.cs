@@ -1,10 +1,11 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Construction/Profiles/Diagnostics", fileName = "ConstructionDiagnosticsProfile")]
-    public sealed class ConstructionDiagnosticsProfileSO : ScriptableObject
+[System.Serializable]
+public sealed class ConstructionDiagnosticsProfileSO : MoyvaJsonConfigObject
     {
         [BoxGroup("Logging")]
         [SerializeField] private bool _enableVerboseLogs = true;

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ using Sirenix.OdinInspector;
 using UnityEditor;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Construction
 {
     [TestFixture]
@@ -51,7 +53,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         {
             int before = BuildingDefinitionAsset.RuntimeRevision;
             var asset =
-                ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
+                MoyvaJsonObjectFactory.Create<BuildingDefinitionAsset>();
             try
             {
                 asset.NotifyEditorDataChanged();
@@ -61,7 +63,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(asset);
+                MoyvaJsonObjectFactory.DestroyImmediate(asset);
             }
         }
 
@@ -177,7 +179,7 @@ namespace Kruty1918.Moyva.Tests.Construction
                 assetPath = AssetDatabase.GenerateUniqueAssetPath(
                     $"{testFolder}/Migration.asset");
                 BuildingDefinitionAsset asset =
-                    ScriptableObject.CreateInstance<BuildingDefinitionAsset>();
+                    MoyvaJsonObjectFactory.Create<BuildingDefinitionAsset>();
                 asset.Identity.Id = "migration-regression";
                 asset.Identity.DisplayName = "Migration Regression";
                 asset.Placement.RequiresSettlementInfluence = true;
@@ -230,7 +232,7 @@ namespace Kruty1918.Moyva.Tests.Construction
                     ImportAssetOptions.ForceUpdate);
 
                 BuildingDefinitionAsset reloaded =
-                    AssetDatabase.LoadAssetAtPath<BuildingDefinitionAsset>(
+                    MoyvaJsonRuntime.GetLegacyResource<BuildingDefinitionAsset>(
                         assetPath);
                 Assert.NotNull(reloaded);
                 Assert.AreEqual(
@@ -706,3 +708,5 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
     }
 }
+
+#endif

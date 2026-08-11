@@ -1,11 +1,14 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using Kruty1918.Moyva.Units.API;
 using Kruty1918.Moyva.Units.Runtime;
 using UnityEditor;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Units.Editor
 {
+    [System.Serializable]
     internal sealed class UnitCreationWizardWindow : EditorWindow
     {
         private enum WizardStep
@@ -32,7 +35,7 @@ namespace Kruty1918.Moyva.Units.Editor
 
         public static void Open(UnitDesignerWindow host, UnitRegistrySO registry)
         {
-            var window = CreateInstance<UnitCreationWizardWindow>();
+            var window = MoyvaJsonObjectFactory.Create<UnitCreationWizardWindow>();
             window.titleContent = new GUIContent("Create Unit Wizard");
             window.minSize = new Vector2(560f, 520f);
             window._host = host;
@@ -420,3 +423,5 @@ namespace Kruty1918.Moyva.Units.Editor
         }
     }
 }
+
+#endif

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.API
 {
     [Serializable]
@@ -18,9 +19,8 @@ namespace Kruty1918.Moyva.Generator.API
         [Tooltip("Ймовірність спавну об'єкта в допустимій клітинці. 0 означає ніколи, 1 — завжди, якщо всі інші умови виконані.")]
         [Range(0f, 1f)] public float SpawnChance;
     }
-
-    [CreateAssetMenu(fileName = "MapObjectTerrainConfig", menuName = "Moyva/Generator/MapObjectTerrainConfig")]
-    public class MapObjectTerrainConfig : ScriptableObject
+[System.Serializable]
+public class MapObjectTerrainConfig : MoyvaJsonConfigObject
     {
         [Tooltip("Список правил розміщення об'єктів по місцевості. Кожне правило описує, який об'єкт, на якій висоті та в якому біомі може з'явитися.")]
         public List<TerrainObjectRule> Rules;

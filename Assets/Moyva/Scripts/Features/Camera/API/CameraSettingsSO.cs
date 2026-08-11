@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Serialization;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Camera.API
 {
     [System.Serializable]
@@ -81,9 +82,8 @@ namespace Kruty1918.Moyva.Camera.API
             };
         }
     }
-
-    [CreateAssetMenu(fileName = "CameraSettings", menuName = "Moyva/Camera/CameraSettings")]
-    public class CameraSettingsSO : ScriptableObject
+[System.Serializable]
+public class CameraSettingsSO : MoyvaJsonConfigObject
     {
         [Header("Control Profile")]
         [FormerlySerializedAs("desktopProfile")]

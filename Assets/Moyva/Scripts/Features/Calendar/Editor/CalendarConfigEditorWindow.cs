@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System.IO;
 using Kruty1918.Moyva.Calendar.Config;
 using Kruty1918.Moyva.Calendar.Domain;
@@ -374,3 +375,5 @@ namespace Kruty1918.Moyva.Calendar.Editor
                 _hoursPerTurn);
     }
 }
+
+#endif

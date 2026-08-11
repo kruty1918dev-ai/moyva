@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Kruty1918.Moyva.Audio.API;
 using Kruty1918.Moyva.Audio.Runtime;
 using UnityEditor;
@@ -384,3 +385,5 @@ namespace Kruty1918.Moyva.Editor.Audio
         }
     }
 }
+
+#endif

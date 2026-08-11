@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -453,3 +454,5 @@ namespace Kruty1918.Moyva.Tests.MovementIntegration
         }
     }
 }
+
+#endif

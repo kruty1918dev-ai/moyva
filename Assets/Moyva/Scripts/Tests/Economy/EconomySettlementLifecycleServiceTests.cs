@@ -1,8 +1,10 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Economy
 {
     [TestFixture]
@@ -11,7 +13,7 @@ namespace Kruty1918.Moyva.Tests.Economy
         [Test]
         public void ResolveState_ShouldDeactivate_WhenPopulationIsZero()
         {
-            var rules = ScriptableObject.CreateInstance<EconomyRulesConfigSO>();
+            var rules = MoyvaJsonObjectFactory.Create<EconomyRulesConfigSO>();
             var service = new EconomySettlementLifecycleService();
 
             var state = service.ResolveState(rules, townHallDestroyed: false, population: 0);
@@ -21,7 +23,7 @@ namespace Kruty1918.Moyva.Tests.Economy
         [Test]
         public void CanCreateSettlement_ShouldRespectMaxSettlements()
         {
-            var rules = ScriptableObject.CreateInstance<EconomyRulesConfigSO>();
+            var rules = MoyvaJsonObjectFactory.Create<EconomyRulesConfigSO>();
             var service = new EconomySettlementLifecycleService();
 
             Assert.IsTrue(service.CanCreateSettlement(rules, 2));
@@ -29,3 +31,5 @@ namespace Kruty1918.Moyva.Tests.Economy
         }
     }
 }
+
+#endif

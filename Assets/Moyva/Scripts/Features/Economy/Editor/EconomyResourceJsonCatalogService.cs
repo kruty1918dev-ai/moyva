@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -327,3 +328,5 @@ namespace Kruty1918.Moyva.Economy.Editor
         [JsonProperty("weightGrams")] public int WeightGrams = 1000;
     }
 }
+
+#endif

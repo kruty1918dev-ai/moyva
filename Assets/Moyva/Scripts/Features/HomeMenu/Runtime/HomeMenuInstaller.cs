@@ -8,6 +8,7 @@ using Kruty1918.Moyva.WorldCreation.API;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     /// <summary>
@@ -107,7 +108,7 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime
             if (_worldCreationDefaults != null)
                 Container.BindInstance(_worldCreationDefaults).AsSingle();
 
-            var config = _config != null ? _config : ScriptableObject.CreateInstance<HomeMenuConfigSO>();
+            var config = _config != null ? _config : MoyvaJsonObjectFactory.Create<HomeMenuConfigSO>();
             Container.BindInstance(config).AsSingle().IfNotBound();
 
             // View controllers (from scene hierarchy)

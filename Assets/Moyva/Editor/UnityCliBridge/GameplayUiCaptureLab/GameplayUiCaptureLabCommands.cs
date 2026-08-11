@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Unity.Pipeline.Commands;
 
 namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiCaptureLab
@@ -32,3 +33,5 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiCaptureLab
             => GameplayUiCaptureLabService.RestoreSceneView();
     }
 }
+
+#endif

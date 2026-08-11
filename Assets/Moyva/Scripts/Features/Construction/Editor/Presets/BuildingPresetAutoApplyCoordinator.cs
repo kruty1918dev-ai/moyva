@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using UnityEditor;
 using UnityEngine;
@@ -58,3 +59,5 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
         }
     }
 }
+
+#endif

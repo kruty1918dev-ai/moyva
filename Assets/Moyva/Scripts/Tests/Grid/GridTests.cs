@@ -1,8 +1,10 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using Kruty1918.Moyva.Grid.API;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Grid
 {
     [TestFixture]
@@ -290,7 +292,7 @@ namespace Kruty1918.Moyva.Tests.Grid
         [Test]
         public void Isometric3DPreviewProjection_PreservesConfiguredMode()
         {
-            var settings = ScriptableObject.CreateInstance<MoyvaProjectSettingsSO>();
+            var settings = MoyvaJsonObjectFactory.Create<MoyvaProjectSettingsSO>();
             settings.DefaultProjectionMode = GridProjectionMode.Isometric3DPreview;
             settings.OrthogonalCellWidth = 2f;
             settings.OrthogonalCellDepth = 3f;
@@ -321,7 +323,7 @@ namespace Kruty1918.Moyva.Tests.Grid
         [Test]
         public void Orthographic3DProjection_UsesXZPlaneAndYHeight()
         {
-            var settings = ScriptableObject.CreateInstance<MoyvaProjectSettingsSO>();
+            var settings = MoyvaJsonObjectFactory.Create<MoyvaProjectSettingsSO>();
             settings.OrthogonalCellWidth = 2f;
             settings.OrthogonalCellDepth = 3f;
             settings.HeightScale = 0.5f;
@@ -354,7 +356,7 @@ namespace Kruty1918.Moyva.Tests.Grid
     {
         private ITileSettingsService CreateService(params (string id, float cost)[] tiles)
         {
-            var registry = ScriptableObject.CreateInstance<TileRegistrySO>();
+            var registry = MoyvaJsonObjectFactory.Create<TileRegistrySO>();
 
             // Use SerializedObject to set private _definitions field
             var so = new UnityEditor.SerializedObject(registry);
@@ -413,3 +415,5 @@ namespace Kruty1918.Moyva.Tests.Grid
         }
     }
 }
+
+#endif

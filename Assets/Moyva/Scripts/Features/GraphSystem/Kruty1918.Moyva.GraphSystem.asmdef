@@ -1,17 +1,18 @@
 {
-    "name": "Kruty1918.Moyva.GraphSystem",
-    "rootNamespace": "Kruty1918.Moyva.GraphSystem",
-    "references": [
-        "Kruty1918.Moyva.Grid",
-        "Sirenix.OdinInspector.Attributes"
-    ],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.GraphSystem",
+  "rootNamespace": "Kruty1918.Moyva.GraphSystem",
+  "references": [
+    "Kruty1918.Moyva.Grid",
+    "Sirenix.OdinInspector.Attributes",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

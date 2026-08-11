@@ -1,6 +1,7 @@
 using Kruty1918.Moyva.Calendar.Config;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Calendar.Runtime
 {
     /// <summary>
@@ -10,8 +11,8 @@ namespace Kruty1918.Moyva.Calendar.Runtime
     /// За замовчуванням встановлено рік <see cref="CalendarConfig.PeakUkraineYear"/> (1054) —
     /// пасхалка: рік смерті Ярослава Мудрого і кінець золотої доби Київської Русі.
     /// </summary>
-    [CreateAssetMenu(menuName = "Moyva/Calendar/Session Config", fileName = "CalendarSessionConfig")]
-    public sealed class CalendarSessionConfigSO : ScriptableObject
+[System.Serializable]
+public sealed class CalendarSessionConfigSO : MoyvaJsonConfigObject
     {
         [Header("Початкова дата гри")]
         [Tooltip("Рік початку гри. За замовчуванням — розквіт Київської Русі (1054).")]

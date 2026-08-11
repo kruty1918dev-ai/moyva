@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using System.Linq;
 using GiantGrey.TileWorldCreator;
@@ -13,6 +14,7 @@ using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Generator
 {
     [TestFixture]
@@ -31,7 +33,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             for (int i = 0; i < _createdObjects.Count; i++)
             {
                 if (_createdObjects[i] != null)
-                    Object.DestroyImmediate(_createdObjects[i]);
+                    MoyvaJsonObjectFactory.DestroyImmediate(_createdObjects[i]);
             }
 
             _createdObjects.Clear();
@@ -537,7 +539,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             var lower = ScriptableObject.CreateInstance<BlueprintLayer>();
             var upper = ScriptableObject.CreateInstance<BlueprintLayer>();
             var sourceModifier = ScriptableObject.CreateInstance<SingleCellBlueprintModifier>();
-            var referenceModifier = ScriptableObject.CreateInstance<MoyvaLayerReferenceBlueprintModifier>();
+            var referenceModifier = MoyvaJsonObjectFactory.Create<MoyvaLayerReferenceBlueprintModifier>();
             _createdObjects.Add(lower);
             _createdObjects.Add(upper);
             _createdObjects.Add(sourceModifier);
@@ -629,7 +631,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             var config = GetCompanionConfiguration(graph, true);
             var existing = ScriptableObject.CreateInstance<BlueprintLayer>();
             existing.layerName = "Migrated";
-            AssetDatabase.AddObjectToAsset(existing, graph);
+            ; // JSON config object is not stored as a Unity subasset.
             config.blueprintLayerFolders = new List<BlueprintLayerFolder> { new BlueprintLayerFolder("Root") };
             config.blueprintLayerFolders[0].blueprintLayers.Add(existing);
 
@@ -662,7 +664,7 @@ namespace Kruty1918.Moyva.Tests.Generator
         private GraphAsset CreateGraphAsset()
         {
             AssetDatabase.DeleteAsset(TestAssetPath);
-            var graph = ScriptableObject.CreateInstance<GraphAsset>();
+            var graph = MoyvaJsonObjectFactory.Create<GraphAsset>();
             _createdObjects.Add(graph);
             AssetDatabase.CreateAsset(graph, TestAssetPath);
             return graph;
@@ -780,7 +782,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             }
             finally
             {
-                Object.DestroyImmediate(root);
+                MoyvaJsonObjectFactory.DestroyImmediate(root);
             }
 
             return AssetDatabase.LoadAssetAtPath<GameObject>(TestPrefabPath);
@@ -909,3 +911,5 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
     }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -1138,3 +1139,5 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
         [SerializeField] private string marker = "MOYVA_GAMEPLAY_UI_PASS73";
     }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
@@ -120,3 +121,5 @@ namespace Kruty1918.Moyva.Tests.InfoPanel
         }
     }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.IO;
 using UnityEditor;
@@ -118,3 +119,5 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge
         }
     }
 }
+
+#endif

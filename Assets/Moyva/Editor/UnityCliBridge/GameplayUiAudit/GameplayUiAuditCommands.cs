@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Unity.Pipeline.Commands;
 
 namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiAudit
@@ -39,3 +40,5 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiAudit
             => GameplayUiAuditService.Status();
     }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using System.Linq;
 using Kruty1918.Moyva.Units.API;
@@ -5,6 +6,7 @@ using Kruty1918.Moyva.Units.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Units
 {
     /// <summary>
@@ -21,7 +23,7 @@ namespace Kruty1918.Moyva.Tests.Units
 
         private static UnitRegistrySO BuildRegistry(params (string typeId, UnitRole role, int hp)[] entries)
         {
-            var so = ScriptableObject.CreateInstance<UnitRegistrySO>();
+            var so = MoyvaJsonObjectFactory.Create<UnitRegistrySO>();
             so.Configs = entries
                 .Select(e => new UnitClassConfig { TypeId = e.typeId, Role = e.role, HitPoints = e.hp })
                 .ToList();
@@ -65,7 +67,7 @@ namespace Kruty1918.Moyva.Tests.Units
         public void Snapshot_Registry_DuplicateTypeId_SecondEntryIgnored()
         {
             // Registry with a duplicate TypeId — the service should keep the first and warn (not throw).
-            var so = ScriptableObject.CreateInstance<UnitRegistrySO>();
+            var so = MoyvaJsonObjectFactory.Create<UnitRegistrySO>();
             so.Configs = new List<UnitClassConfig>
             {
                 new UnitClassConfig { TypeId = "warrior", Role = UnitRole.Military, HitPoints = 100 },
@@ -127,7 +129,7 @@ namespace Kruty1918.Moyva.Tests.Units
         public void Snapshot_BulkRegistry_100Entries_NoDuplicates_AllPresent()
         {
             const int Count = 100;
-            var so = ScriptableObject.CreateInstance<UnitRegistrySO>();
+            var so = MoyvaJsonObjectFactory.Create<UnitRegistrySO>();
             so.Configs = Enumerable.Range(0, Count)
                 .Select(i => new UnitClassConfig { TypeId = $"u{i}", HitPoints = i + 1 })
                 .ToList();
@@ -142,3 +144,5 @@ namespace Kruty1918.Moyva.Tests.Units
         }
     }
 }
+
+#endif

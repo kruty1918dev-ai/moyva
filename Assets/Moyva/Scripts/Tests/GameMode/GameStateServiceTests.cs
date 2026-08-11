@@ -1,9 +1,11 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.GameMode.API;
 using Kruty1918.Moyva.Signals;
 using NUnit.Framework;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.GameMode
 {
     [TestFixture]
@@ -292,28 +294,28 @@ namespace Kruty1918.Moyva.Tests.GameMode
         [Test]
         public void DefaultCondition_IsEliminateAllEnemies()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             Assert.AreEqual(WinConditionSO.ConditionType.EliminateAllEnemies, so.Condition);
         }
 
         [Test]
         public void DefaultControlPoints_IsThree()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             Assert.AreEqual(3, so.ControlPointsRequired);
         }
 
         [Test]
         public void DefaultSurvivalTime_Is300()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             Assert.AreEqual(300f, so.SurvivalTimeSeconds);
         }
 
         [Test]
         public void SetCondition_ViaSerializedObject()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             var serialized = new UnityEditor.SerializedObject(so);
             serialized.FindProperty("_condition").enumValueIndex = (int)WinConditionSO.ConditionType.Survival;
             serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -323,7 +325,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
         [Test]
         public void SetControlPoints_ViaSerializedObject()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             var serialized = new UnityEditor.SerializedObject(so);
             serialized.FindProperty("_controlPointsRequired").intValue = 5;
             serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -333,7 +335,7 @@ namespace Kruty1918.Moyva.Tests.GameMode
         [Test]
         public void SetSurvivalTime_ViaSerializedObject()
         {
-            var so = UnityEngine.ScriptableObject.CreateInstance<WinConditionSO>();
+            var so = MoyvaJsonObjectFactory.Create<WinConditionSO>();
             var serialized = new UnityEditor.SerializedObject(so);
             serialized.FindProperty("_survivalTimeSeconds").floatValue = 600f;
             serialized.ApplyModifiedPropertiesWithoutUndo();
@@ -341,3 +343,5 @@ namespace Kruty1918.Moyva.Tests.GameMode
         }
     }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ using UnityEngine;
 using Kruty1918.Moyva.GraphSystem.API;
 using Kruty1918.Moyva.SaveSystem;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Generator
 {
     public sealed class ChunkFirstHeightAuditIntegrationTests
@@ -96,16 +98,16 @@ namespace Kruty1918.Moyva.Tests.Generator
             finally
             {
                 if (generatedChunkRoot != null)
-                    Object.DestroyImmediate(generatedChunkRoot);
+                    MoyvaJsonObjectFactory.DestroyImmediate(generatedChunkRoot);
                 else
                 {
                     GameObject lateChunkRoot = GameObject.Find(ChunkRootName);
                     if (lateChunkRoot != null)
-                        Object.DestroyImmediate(lateChunkRoot);
+                        MoyvaJsonObjectFactory.DestroyImmediate(lateChunkRoot);
                 }
 
                 if (managerObject != null)
-                    Object.DestroyImmediate(managerObject);
+                    MoyvaJsonObjectFactory.DestroyImmediate(managerObject);
 
                 if (preservedChunkRoot != null)
                     preservedChunkRoot.name = preservedChunkRootName;
@@ -131,7 +133,9 @@ namespace Kruty1918.Moyva.Tests.Generator
             AssetDatabase.ImportAsset(
                 GraphCopyPath,
                 ImportAssetOptions.ForceUpdate);
-            return AssetDatabase.LoadAssetAtPath<GraphAsset>(GraphCopyPath);
+            return MoyvaJsonRuntime.GetLegacyResource<GraphAsset>(GraphCopyPath);
         }
     }
 }
+
+#endif

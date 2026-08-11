@@ -2,6 +2,7 @@ using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
 using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
 {
     [NodeInfo(
@@ -11,6 +12,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
         StableId = "moyva.objects.grass-card-settings",
         Order = 50,
         PreviewOutput = "out.grass")]
+    [System.Serializable]
     public sealed class GrassCardGeneratorNode : NodeBase, ICustomEditorNode
     {
         [SerializeField]
@@ -133,7 +135,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement
                     return;
 
                 _prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                UnityEditor.EditorUtility.SetDirty(this);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
                 if (_prefab != null)
                 {
                     UnityEditor.Selection.activeObject = _prefab;

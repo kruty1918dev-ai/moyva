@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Kruty1918.Moyva.Bootstrap.Runtime;
 using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.FogOfWar.API;
@@ -589,3 +590,5 @@ namespace Kruty1918.Moyva.Bootstrap.Editor
         }
     }
 }
+
+#endif

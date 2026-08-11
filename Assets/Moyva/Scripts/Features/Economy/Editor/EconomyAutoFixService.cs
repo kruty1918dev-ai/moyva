@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using Kruty1918.Moyva.Economy.API;
 using UnityEditor;
@@ -212,3 +213,5 @@ namespace Kruty1918.Moyva.Economy.Editor
         }
     }
 }
+
+#endif

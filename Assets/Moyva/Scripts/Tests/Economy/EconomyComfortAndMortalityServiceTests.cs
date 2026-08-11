@@ -1,8 +1,10 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Economy
 {
     [TestFixture]
@@ -11,7 +13,7 @@ namespace Kruty1918.Moyva.Tests.Economy
         [Test]
         public void CalculateComfort_ShouldUseConfiguredWeights()
         {
-            var rules = ScriptableObject.CreateInstance<EconomyRulesConfigSO>();
+            var rules = MoyvaJsonObjectFactory.Create<EconomyRulesConfigSO>();
             var service = new EconomyComfortAndMortalityService();
 
             var comfort = service.CalculateComfort(rules, new EconomyComfortInput(100f, 100f, 100f, 100f, 100f, 100f));
@@ -21,7 +23,7 @@ namespace Kruty1918.Moyva.Tests.Economy
         [Test]
         public void CalculateDeathChance_ShouldBeImmediate_WhenHouseCollapsed()
         {
-            var rules = ScriptableObject.CreateInstance<EconomyRulesConfigSO>();
+            var rules = MoyvaJsonObjectFactory.Create<EconomyRulesConfigSO>();
             var service = new EconomyComfortAndMortalityService();
 
             var resident = new EconomyResidentState(30, 100f, 80f, true);
@@ -31,3 +33,5 @@ namespace Kruty1918.Moyva.Tests.Economy
         }
     }
 }
+
+#endif

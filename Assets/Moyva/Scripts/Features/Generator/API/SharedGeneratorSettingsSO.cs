@@ -1,10 +1,11 @@
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Generator/SharedGeneratorSettings", fileName = "SharedGeneratorSettings")]
-    public class SharedGeneratorSettingsSO : ScriptableObject, ISharedGeneratorSettings
+[System.Serializable]
+public class SharedGeneratorSettingsSO : MoyvaJsonConfigObject, ISharedGeneratorSettings
     {
         [Tooltip("Tile ID, які вважаються водою у всіх нодах генератора.")]
         [SerializeField, TileId] private string[] _waterLikeTileIds = { "water" };

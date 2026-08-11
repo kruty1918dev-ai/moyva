@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.GraphSystem.API
 {
     [Serializable]
@@ -35,7 +36,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
     }
 
     /// <summary>
-    /// Embedded ScriptableObject data inside a preset.
+    /// Embedded MoyvaJsonConfigObject data inside a preset.
     /// Stores the full JSON of each referenced SO so it can be recreated on import.
     /// </summary>
     [Serializable]

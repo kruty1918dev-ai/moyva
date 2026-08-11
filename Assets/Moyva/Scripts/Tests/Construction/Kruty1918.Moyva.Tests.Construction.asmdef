@@ -1,32 +1,37 @@
 {
-    "name": "Kruty1918.Moyva.Tests.Construction",
-    "rootNamespace": "Kruty1918.Moyva.Tests.Construction",
-    "references": [
-        "Zenject",
-        "Zenject-TestFramework",
-        "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner",
-        "Kruty1918.Moyva.Signals",
-        "Kruty1918.Moyva.Construction",
-        "Kruty1918.Moyva.Construction.Editor",
-        "Kruty1918.Moyva.EditorShared",
-        "Kruty1918.Moyva.Grid",
-        "Kruty1918.Moyva.WorldCreation.API",
-        "Kruty1918.Moyva.ObjectsMap",
-        "Kruty1918.Moyva.FogOfWar",
-        "Sirenix.OdinInspector.Attributes"
-    ],
-    "includePlatforms": ["Editor"],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": true,
-    "precompiledReferences": [
-        "nunit.framework.dll",
-        "Zenject-usage.dll",
-        "Sirenix.OdinInspector.Attributes.dll"
-    ],
-    "autoReferenced": false,
-    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.Tests.Construction",
+  "rootNamespace": "Kruty1918.Moyva.Tests.Construction",
+  "references": [
+    "Zenject",
+    "Zenject-TestFramework",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.Construction",
+    "Kruty1918.Moyva.Construction.Editor",
+    "Kruty1918.Moyva.EditorShared",
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.WorldCreation.API",
+    "Kruty1918.Moyva.ObjectsMap",
+    "Kruty1918.Moyva.FogOfWar",
+    "Sirenix.OdinInspector.Attributes",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "Zenject-usage.dll",
+    "Sirenix.OdinInspector.Attributes.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

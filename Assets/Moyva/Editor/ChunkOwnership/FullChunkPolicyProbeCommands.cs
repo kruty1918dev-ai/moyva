@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Kruty1918.Moyva.MapChunks.API;
 using Kruty1918.Moyva.MapChunks.Runtime;
 using Unity.Pipeline.Commands;
@@ -63,3 +64,5 @@ namespace Kruty1918.Moyva.Editor.ChunkOwnership
         }
     }
 }
+
+#endif

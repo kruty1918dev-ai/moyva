@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using UnityEditor;
 using UnityEngine;
 
@@ -37,3 +38,5 @@ namespace Kruty1918.Moyva.Editor.UnityCliBridge.GameplayUiRedesign
         }
     }
 }
+
+#endif

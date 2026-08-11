@@ -1,8 +1,10 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.MapChunks.API;
 using Kruty1918.Moyva.MapChunks.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Generator
 {
     [TestFixture]
@@ -27,7 +29,7 @@ namespace Kruty1918.Moyva.Tests.Generator
         [Test]
         public void Layout_50x50Request_BecomesNineFull16x16Chunks()
         {
-            var settings = ScriptableObject.CreateInstance<MapChunkSettingsSO>();
+            var settings = MoyvaJsonObjectFactory.Create<MapChunkSettingsSO>();
             try
             {
                 settings.ChunkSize = 8;
@@ -52,8 +54,10 @@ namespace Kruty1918.Moyva.Tests.Generator
             }
             finally
             {
-                Object.DestroyImmediate(settings);
+                MoyvaJsonObjectFactory.DestroyImmediate(settings);
             }
         }
     }
 }
+
+#endif

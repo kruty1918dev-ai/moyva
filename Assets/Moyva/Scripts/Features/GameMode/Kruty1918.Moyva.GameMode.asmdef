@@ -1,20 +1,21 @@
 {
-    "name": "Kruty1918.Moyva.GameMode",
-    "rootNamespace": "Kruty1918.Moyva.GameMode",
-    "references": [
-        "Zenject",
-        "Kruty1918.Moyva.Signals",
-        "Kruty1918.Moyva.InputRouting",
-        "Unity.InputSystem",
-        "Unity.TextMeshPro"
-    ],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.GameMode",
+  "rootNamespace": "Kruty1918.Moyva.GameMode",
+  "references": [
+    "Zenject",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.InputRouting",
+    "Unity.InputSystem",
+    "Unity.TextMeshPro",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

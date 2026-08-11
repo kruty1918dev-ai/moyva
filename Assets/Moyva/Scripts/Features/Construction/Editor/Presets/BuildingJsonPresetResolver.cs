@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -394,3 +395,5 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
         { if (!module.Data.TryGetValue(key,out object node) || node==null) return fallback; try { return Convert.ToInt32(node); } catch { return fallback; } }
     }
 }
+
+#endif

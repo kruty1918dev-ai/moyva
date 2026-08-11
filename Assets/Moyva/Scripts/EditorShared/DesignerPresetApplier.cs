@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.FogOfWar.API;
@@ -49,3 +50,5 @@ namespace Kruty1918.Moyva.Editor.Shared
         }
     }
 }
+
+#endif

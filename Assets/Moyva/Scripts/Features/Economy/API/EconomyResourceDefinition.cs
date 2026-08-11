@@ -1,9 +1,10 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Economy.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Economy/Resource Definition", fileName = "EconomyResourceDefinition")]
-    public sealed class EconomyResourceDefinition : ScriptableObject
+[System.Serializable]
+public sealed class EconomyResourceDefinition : MoyvaJsonConfigObject
     {
         [SerializeField] private string _id;
         [SerializeField] private string _displayName;

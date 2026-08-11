@@ -8,6 +8,7 @@ using Kruty1918.Moyva.Generator.Runtime.ObjectPlacement;
 using Kruty1918.Moyva.GraphSystem.API;
 using Object = UnityEngine.Object;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal interface IGraphCompilerTileBuildLayerSyncService
@@ -100,7 +101,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 folder.buildLayers.Remove(stale);
 #if UNITY_EDITOR
                 if (UnityEditor.AssetDatabase.Contains(stale))
-                    UnityEditor.AssetDatabase.RemoveObjectFromAsset(stale);
+                    ; // JSON config object is not stored as a Unity subasset.
                 else
                     Object.DestroyImmediate(stale);
 #else

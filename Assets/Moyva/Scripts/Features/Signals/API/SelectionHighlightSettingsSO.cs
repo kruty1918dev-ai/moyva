@@ -1,9 +1,10 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Signals
 {
-    [CreateAssetMenu(fileName = "SelectionHighlightSettings", menuName = "Moyva/Signals/Selection Highlight Settings")]
-    public sealed class SelectionHighlightSettingsSO : ScriptableObject
+[System.Serializable]
+public sealed class SelectionHighlightSettingsSO : MoyvaJsonConfigObject
     {
         [Header("Outline")]
         [Min(0.25f)] public float OutlineSizePixels = 2f;

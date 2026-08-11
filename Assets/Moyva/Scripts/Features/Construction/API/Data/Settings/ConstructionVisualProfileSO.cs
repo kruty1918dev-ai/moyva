@@ -2,10 +2,11 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Construction/Profiles/Visual", fileName = "ConstructionVisualProfile")]
-    public sealed class ConstructionVisualProfileSO : ScriptableObject
+[System.Serializable]
+public sealed class ConstructionVisualProfileSO : MoyvaJsonConfigObject
     {
         [BoxGroup("Sorting")]
         [MinValue(0)]

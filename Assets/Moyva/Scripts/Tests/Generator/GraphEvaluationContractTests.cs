@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +19,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Generator
 {
     public sealed class GraphEvaluationContractTests
@@ -56,7 +58,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             for (int i = _transientObjects.Count - 1; i >= 0; i--)
             {
                 if (_transientObjects[i] != null)
-                    Object.DestroyImmediate(_transientObjects[i]);
+                    MoyvaJsonObjectFactory.DestroyImmediate(_transientObjects[i]);
             }
 
             _transientObjects.Clear();
@@ -260,7 +262,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             finally
             {
                 if (preview != null)
-                    Object.DestroyImmediate(preview);
+                    MoyvaJsonObjectFactory.DestroyImmediate(preview);
             }
         }
 
@@ -951,14 +953,14 @@ namespace Kruty1918.Moyva.Tests.Generator
         public void SubassetAudit_ProtectsExternalReferences()
         {
             GraphAsset graph = CreateGraph(AuditGraphPath);
-            var detached = ScriptableObject.CreateInstance<BoolValueNode>();
+            var detached = MoyvaJsonObjectFactory.Create<BoolValueNode>();
             detached.name = "Detached audit node";
-            AssetDatabase.AddObjectToAsset(detached, graph);
+            ; // JSON config object is not stored as a Unity subasset.
             AssetDatabase.SaveAssets();
             AssetDatabase.ImportAsset(
                 AuditGraphPath,
                 ImportAssetOptions.ForceUpdate);
-            graph = AssetDatabase.LoadAssetAtPath<GraphAsset>(AuditGraphPath);
+            graph = MoyvaJsonRuntime.GetLegacyResource<GraphAsset>(AuditGraphPath);
             detached = AssetDatabase.LoadAllAssetsAtPath(AuditGraphPath)
                 .OfType<BoolValueNode>()
                 .Single();
@@ -971,7 +973,7 @@ namespace Kruty1918.Moyva.Tests.Generator
                     entry.Asset == detached),
                 Is.True);
 
-            var holder = ScriptableObject.CreateInstance<GraphAsset>();
+            var holder = MoyvaJsonObjectFactory.Create<GraphAsset>();
             AssetDatabase.CreateAsset(holder, AuditReferencePath);
             var serializedHolder = new SerializedObject(holder);
             SerializedProperty nodes =
@@ -983,7 +985,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             AssetDatabase.ImportAsset(
                 AuditReferencePath,
                 ImportAssetOptions.ForceUpdate);
-            graph = AssetDatabase.LoadAssetAtPath<GraphAsset>(AuditGraphPath);
+            graph = MoyvaJsonRuntime.GetLegacyResource<GraphAsset>(AuditGraphPath);
             detached = AssetDatabase.LoadAllAssetsAtPath(AuditGraphPath)
                 .OfType<BoolValueNode>()
                 .Single();
@@ -1018,7 +1020,7 @@ namespace Kruty1918.Moyva.Tests.Generator
                 Is.EqualTo(
                     "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/TestGeneratorGraph.asset"));
             Assert.That(
-                AssetDatabase.LoadAssetAtPath<GraphAsset>(
+                MoyvaJsonRuntime.GetLegacyResource<GraphAsset>(
                     AssetDatabase.GUIDToAssetPath(ActiveGraphGuid)),
                 Is.Not.Null);
         }
@@ -1097,21 +1099,21 @@ namespace Kruty1918.Moyva.Tests.Generator
 
         private GraphAsset CreateGraph(string path)
         {
-            var graph = ScriptableObject.CreateInstance<GraphAsset>();
+            var graph = MoyvaJsonObjectFactory.Create<GraphAsset>();
             AssetDatabase.CreateAsset(graph, path);
             return graph;
         }
 
         private T CreateTransient<T>() where T : NodeBase
         {
-            var node = ScriptableObject.CreateInstance<T>();
+            var node = MoyvaJsonObjectFactory.Create<T>();
             _transientObjects.Add(node);
             return node;
         }
 
         private NodeBase CreateTransient(Type type)
         {
-            var node = ScriptableObject.CreateInstance(type) as NodeBase;
+            var node = MoyvaJsonObjectFactory.Create(type) as NodeBase;
             Assert.NotNull(node);
             _transientObjects.Add(node);
             return node;
@@ -1243,3 +1245,5 @@ namespace Kruty1918.Moyva.Tests.Generator
         }
     }
 }
+
+#endif

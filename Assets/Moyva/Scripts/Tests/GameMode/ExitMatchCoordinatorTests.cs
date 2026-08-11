@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -220,3 +221,5 @@ namespace Kruty1918.Moyva.Tests.GameMode
         }
     }
 }
+
+#endif

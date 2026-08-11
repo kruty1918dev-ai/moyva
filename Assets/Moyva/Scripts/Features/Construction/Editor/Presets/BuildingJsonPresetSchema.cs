@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 
@@ -93,3 +94,5 @@ namespace Kruty1918.Moyva.Construction.Editor.Presets
         public const string ExpectedPackId = "moyva.base-buildings.2026-08";
     }
 }
+
+#endif

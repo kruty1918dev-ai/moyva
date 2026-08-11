@@ -1,14 +1,15 @@
 using UnityEngine;
 using UnityEngine.Audio;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     /// <summary>
     /// ScriptableObject зі зв'язуванням параметрів AudioMixer для локальних налаштувань меню.
     /// Залежності: використовується LocalGameSettingsService і GameSettingsPanelService.
     /// </summary>
-    [CreateAssetMenu(fileName = "AudioMixerBindings", menuName = "Moyva/Home Menu/Audio Mixer Bindings")]
-    public sealed class AudioMixerBindingsSO : ScriptableObject
+[System.Serializable]
+public sealed class AudioMixerBindingsSO : MoyvaJsonConfigObject
     {
         /// <summary>Посилання на Unity AudioMixer.</summary>
         public AudioMixer mixer;

@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
 {
     /// <summary>
@@ -271,10 +272,10 @@ namespace Kruty1918.Moyva.HomeMenu.Runtime.Startup
         private static async Task PreloadStartupResourcesAsync(CancellationToken ct)
         {
             // 1: Стартуємо асинхронне завантаження графічних startup-налаштувань.
-            ResourceRequest graphicsRequest = Resources.LoadAsync<GraphicsStartupSettingsSO>(GraphicsStartupSettingsSO.DefaultResourcePath);
+            ResourceRequest graphicsRequest = Resources.LoadAsync<TextAsset>(GraphicsStartupSettingsSO.DefaultResourcePath);
 
             // 2: Паралельно підвантажуємо audio registry, щоб уникнути пізніх затримок після активації сцени.
-            ResourceRequest audioRequest = Resources.LoadAsync<AudioRegistrySO>("MoyvaAudioRegistry");
+            ResourceRequest audioRequest = Resources.LoadAsync<TextAsset>("MoyvaAudioRegistry");
 
             // 3: Чекаємо, доки обидва ресурси будуть повністю готові.
             while (!graphicsRequest.isDone || !audioRequest.isDone)

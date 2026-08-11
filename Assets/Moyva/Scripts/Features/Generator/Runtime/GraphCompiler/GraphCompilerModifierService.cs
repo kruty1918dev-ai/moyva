@@ -7,6 +7,7 @@ using Kruty1918.Moyva.GraphSystem.Runtime;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.Runtime
 {
     internal interface IGraphCompilerModifierService
@@ -111,15 +112,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             var modifier =
-                ScriptableObject.CreateInstance<
-                    MoyvaPrecomputedMaskBlueprintModifier>();
+                MoyvaJsonObjectFactory.Create<MoyvaPrecomputedMaskBlueprintModifier>();
 
             modifier.name =
                 "Moyva Authoritative Graph Output Mask";
 
-            modifier.hideFlags =
-                HideFlags.HideInHierarchy;
-
+            ; // JSON config object has no Unity hideFlags.
             modifier.isEnabled = true;
             modifier.asset = config;
 
@@ -191,9 +189,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
                 clone.name =
                     twcNode.Modifier.name;
 
-                clone.hideFlags =
-                    HideFlags.HideInHierarchy;
-
+                ; // JSON config object has no Unity hideFlags.
                 clone.isEnabled = true;
                 clone.asset = config;
 
@@ -221,15 +217,12 @@ namespace Kruty1918.Moyva.Generator.Runtime
             }
 
             var modifier =
-                ScriptableObject.CreateInstance<
-                    MoyvaLayerReferenceBlueprintModifier>();
+                MoyvaJsonObjectFactory.Create<MoyvaLayerReferenceBlueprintModifier>();
 
             modifier.name =
                 "Moyva Layer Ref Fallback";
 
-            modifier.hideFlags =
-                HideFlags.HideInHierarchy;
-
+            ; // JSON config object has no Unity hideFlags.
             modifier.isEnabled = true;
             modifier.asset = config;
 

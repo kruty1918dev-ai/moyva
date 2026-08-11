@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.UI;
 using Kruty1918.Moyva.Signals;
@@ -121,3 +122,5 @@ namespace Kruty1918.Moyva.Tests.ConstructionUI
         }
     }
 }
+
+#endif

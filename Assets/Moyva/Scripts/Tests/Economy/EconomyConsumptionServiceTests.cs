@@ -1,8 +1,10 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Runtime;
 using NUnit.Framework;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Economy
 {
     [TestFixture]
@@ -11,7 +13,7 @@ namespace Kruty1918.Moyva.Tests.Economy
         [Test]
         public void ResolveConsumption_ShouldReturnAgeConfiguredProfile()
         {
-            var rules = ScriptableObject.CreateInstance<EconomyRulesConfigSO>();
+            var rules = MoyvaJsonObjectFactory.Create<EconomyRulesConfigSO>();
             var service = new EconomyConsumptionService();
 
             var child = service.ResolveConsumption(rules, 10);
@@ -24,3 +26,5 @@ namespace Kruty1918.Moyva.Tests.Economy
         }
     }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -12,6 +13,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Generator
 {
     public sealed class MoyvaOverlayGenerationIntegrationTests
@@ -117,13 +119,13 @@ namespace Kruty1918.Moyva.Tests.Generator
             finally
             {
                 if (prefabSource != null)
-                    Object.DestroyImmediate(prefabSource);
+                    MoyvaJsonObjectFactory.DestroyImmediate(prefabSource);
 
                 generatedChunkRoot ??= GameObject.Find(ChunkRootName);
                 DestroyGeneratedChunkRoot(generatedChunkRoot);
 
                 if (managerObject != null)
-                    Object.DestroyImmediate(managerObject);
+                    MoyvaJsonObjectFactory.DestroyImmediate(managerObject);
 
                 if (preservedChunkRoot != null)
                     preservedChunkRoot.name = preservedChunkRootName;
@@ -173,14 +175,14 @@ namespace Kruty1918.Moyva.Tests.Generator
                 prefabSource,
                 PrefabPath);
             Assert.IsNotNull(prefab);
-            Object.DestroyImmediate(prefabSource);
+            MoyvaJsonObjectFactory.DestroyImmediate(prefabSource);
             prefabSource = null;
             return prefab;
         }
 
         private static GraphAsset CreateGraph(GameObject prefab)
         {
-            var graph = ScriptableObject.CreateInstance<GraphAsset>();
+            var graph = MoyvaJsonObjectFactory.Create<GraphAsset>();
             graph.name = "Overlay Generation Integration Graph";
             AssetDatabase.CreateAsset(graph, GraphPath);
 
@@ -227,9 +229,9 @@ namespace Kruty1918.Moyva.Tests.Generator
                 output.NodeId,
                 OutputNode.MaskInputIndex);
 
-            EditorUtility.SetDirty(tileSettings);
-            EditorUtility.SetDirty(output);
-            EditorUtility.SetDirty(graph);
+            ; // JSON source of truth: no ScriptableObject dirty flag.
+            ; // JSON source of truth: no ScriptableObject dirty flag.
+            ; // JSON source of truth: no ScriptableObject dirty flag.
             AssetDatabase.SaveAssets();
             return graph;
         }
@@ -244,8 +246,8 @@ namespace Kruty1918.Moyva.Tests.Generator
             preset.gridtype = TilePreset.GridType.standard;
             preset.NRMGRD_singleTile = prefab;
 
-            AssetDatabase.AddObjectToAsset(preset, graph);
-            EditorUtility.SetDirty(preset);
+            ; // JSON config object is not stored as a Unity subasset.
+            ; // JSON source of truth: no ScriptableObject dirty flag.
             return preset;
         }
 
@@ -257,7 +259,7 @@ namespace Kruty1918.Moyva.Tests.Generator
             configuration.width = 1;
             configuration.height = 1;
             configuration.cellSize = 1f;
-            EditorUtility.SetDirty(configuration);
+            ; // JSON source of truth: no ScriptableObject dirty flag.
             AssetDatabase.SaveAssets();
         }
 
@@ -300,12 +302,14 @@ namespace Kruty1918.Moyva.Tests.Generator
                     colliders[i].sharedMesh = null;
             }
 
-            Object.DestroyImmediate(root);
+            MoyvaJsonObjectFactory.DestroyImmediate(root);
             foreach (Mesh mesh in meshes)
             {
                 if (mesh != null)
-                    Object.DestroyImmediate(mesh);
+                    MoyvaJsonObjectFactory.DestroyImmediate(mesh);
             }
         }
     }
 }
+
+#endif

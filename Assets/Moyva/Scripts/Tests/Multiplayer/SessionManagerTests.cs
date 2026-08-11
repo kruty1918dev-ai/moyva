@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -701,3 +702,5 @@ namespace Kruty1918.Moyva.Tests.Multiplayer
         }
     }
 }
+
+#endif

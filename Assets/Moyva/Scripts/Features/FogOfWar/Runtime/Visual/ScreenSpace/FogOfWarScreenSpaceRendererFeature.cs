@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.Universal;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     /// <summary>
@@ -25,6 +26,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
     ///
     /// Legacy world curtain у цьому режимі не використовується.
     /// </summary>
+    [System.Serializable]
     public sealed class FogOfWarScreenSpaceRendererFeature
         : ScriptableRendererFeature
     {
@@ -274,7 +276,7 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
             if (_screenSpaceShader != null
                 || _surfaceDepthShader != null)
             {
-                EditorUtility.SetDirty(this);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
             }
 #endif
         }

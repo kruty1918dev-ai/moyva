@@ -6,6 +6,7 @@ using Zenject;
 
 #if UNITY_EDITOR
 using UnityEditor;
+using Kruty1918.Moyva.Jsonization;
 #endif
 
 namespace Kruty1918.Moyva.Grid.Runtime
@@ -87,7 +88,7 @@ namespace Kruty1918.Moyva.Grid.Runtime
 		private static MoyvaProjectSettingsSO LoadProjectSettingsAssetOrDefault()
 		{
 #if UNITY_EDITOR
-			var settings = AssetDatabase.LoadAssetAtPath<MoyvaProjectSettingsSO>(MoyvaProjectSettingsSO.DefaultAssetPath);
+			var settings = MoyvaJsonRuntime.GetLegacyResource<MoyvaProjectSettingsSO>(MoyvaProjectSettingsSO.DefaultAssetPath);
 			if (settings != null)
 				return settings;
 #endif

@@ -9,6 +9,7 @@ using Zenject;
 
 #if UNITY_EDITOR
 using UnityEditor;
+using Kruty1918.Moyva.Jsonization;
 #endif
 
 namespace Kruty1918.Moyva.Camera.Runtime
@@ -103,7 +104,7 @@ namespace Kruty1918.Moyva.Camera.Runtime
             if (_runtimeFallbackSettings != null)
                 return _runtimeFallbackSettings;
 
-            _runtimeFallbackSettings = ScriptableObject.CreateInstance<CameraSettingsSO>();
+            _runtimeFallbackSettings = MoyvaJsonObjectFactory.Create<CameraSettingsSO>();
             _runtimeFallbackSettings.name = "RuntimeFallback_CameraSettings";
             _runtimeFallbackSettings.adaptToProject3DMode = true;
             _runtimeFallbackSettings.useOrthographicCameraIn3D = false;

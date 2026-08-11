@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Audio.Runtime
 {
     // ─── Public API ──────────────────────────────────────────────────────────────
@@ -472,7 +473,7 @@ namespace Kruty1918.Moyva.Audio.Runtime
             // Знайти всі профілі в Resources якщо список порожній
             if (list.Count == 0)
             {
-                var found = Resources.LoadAll<SceneMusicProfileSO>("MusicProfiles");
+                var found = MoyvaJsonRuntime.GetAllLegacyResources<SceneMusicProfileSO>("MusicProfiles");
                 list.AddRange(found);
             }
 

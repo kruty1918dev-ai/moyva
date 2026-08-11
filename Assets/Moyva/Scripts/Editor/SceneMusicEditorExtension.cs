@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -426,3 +427,5 @@ namespace Kruty1918.Moyva.Editor.Audio
     /// <summary>RegistryEditorStyles must be accessible from new file.</summary>
     // (already defined in the same Assembly-CSharp-Editor assembly via UnitRegistryEditor.cs)
 }
+
+#endif

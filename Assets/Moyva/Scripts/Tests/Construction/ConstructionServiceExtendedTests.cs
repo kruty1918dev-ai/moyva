@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
@@ -9,6 +10,7 @@ using NUnit.Framework;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Construction
 {
     /// <summary>
@@ -249,7 +251,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             _economyInfoMediator = new FakeEconomyInfoMediator();
             Container.Bind<IEconomyInfoMediator>().FromInstance(_economyInfoMediator).AsSingle();
 
-            _buildingRegistry = ScriptableObject.CreateInstance<BuildingRegistrySO>();
+            _buildingRegistry = MoyvaJsonObjectFactory.Create<BuildingRegistrySO>();
             _buildingRegistry.Buildings = CreateUnrestrictedDefinitions(
                 "house",
                 "barracks",
@@ -294,7 +296,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         {
             _disposable?.Dispose();
             if (_buildingRegistry != null)
-                UnityEngine.Object.DestroyImmediate(_buildingRegistry);
+                MoyvaJsonObjectFactory.DestroyImmediate(_buildingRegistry);
             base.Teardown();
         }
 
@@ -953,3 +955,5 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
     }
 }
+
+#endif

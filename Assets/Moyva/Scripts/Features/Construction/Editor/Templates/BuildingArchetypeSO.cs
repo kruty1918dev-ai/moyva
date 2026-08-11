@@ -1,12 +1,14 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.Editor
 {
-    [CreateAssetMenu(menuName = "Moyva/Construction/Templates/Building Archetype", fileName = "BuildingArchetype")]
-    public sealed class BuildingArchetypeSO : ScriptableObject
+[System.Serializable]
+public sealed class BuildingArchetypeSO : MoyvaJsonConfigObject
     {
         [Required]
         public string DisplayName = "Building Archetype";
@@ -112,3 +114,5 @@ namespace Kruty1918.Moyva.Construction.Editor
         }
     }
 }
+
+#endif

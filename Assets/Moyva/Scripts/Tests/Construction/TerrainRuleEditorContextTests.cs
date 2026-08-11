@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Linq;
 using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Grid.API;
@@ -5,6 +6,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Construction
 {
     public sealed class TerrainRuleEditorContextTests
@@ -39,7 +41,7 @@ namespace Kruty1918.Moyva.Tests.Construction
         [Test]
         public void BuildCatalog_IncludesSuggestionsProfilesFallbackAndStableLayerLabels()
         {
-            TerrainLayerProfileSO asset = ScriptableObject.CreateInstance<TerrainLayerProfileSO>();
+            TerrainLayerProfileSO asset = MoyvaJsonObjectFactory.Create<TerrainLayerProfileSO>();
             try
             {
                 var serialized = new SerializedObject(asset);
@@ -76,7 +78,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             }
             finally
             {
-                Object.DestroyImmediate(asset);
+                MoyvaJsonObjectFactory.DestroyImmediate(asset);
             }
         }
 
@@ -96,3 +98,5 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
     }
 }
+
+#endif

@@ -1,9 +1,10 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Economy.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Economy/Production Profile", fileName = "EconomyProductionProfile")]
-    public sealed class EconomyProductionProfile : ScriptableObject
+[System.Serializable]
+public sealed class EconomyProductionProfile : MoyvaJsonConfigObject
     {
         [SerializeField] private string _buildingId;
         [SerializeField] private bool _isActiveByDefault = true;

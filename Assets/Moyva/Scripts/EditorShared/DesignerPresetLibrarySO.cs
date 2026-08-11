@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
@@ -6,10 +7,11 @@ using Kruty1918.Moyva.FogOfWar.API;
 using Kruty1918.Moyva.Units.API;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Editor.Shared
 {
-    [CreateAssetMenu(menuName = "Moyva/Designers/Designer Preset Library", fileName = "DesignerPresetLibrary")]
-    public sealed class DesignerPresetLibrarySO : ScriptableObject
+[System.Serializable]
+public sealed class DesignerPresetLibrarySO : MoyvaJsonConfigObject
     {
         public List<UnitDesignerPreset> UnitPresets = new List<UnitDesignerPreset>();
         public List<BuildingDesignerPreset> BuildingPresets = new List<BuildingDesignerPreset>();
@@ -45,3 +47,5 @@ namespace Kruty1918.Moyva.Editor.Shared
         public EconomyDatabaseSO Template;
     }
 }
+
+#endif

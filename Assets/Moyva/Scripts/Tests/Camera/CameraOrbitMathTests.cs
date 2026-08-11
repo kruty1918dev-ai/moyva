@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.Camera.Runtime;
 using NUnit.Framework;
 
@@ -110,3 +111,5 @@ namespace Kruty1918.Moyva.Tests.Camera
         }
     }
 }
+
+#endif

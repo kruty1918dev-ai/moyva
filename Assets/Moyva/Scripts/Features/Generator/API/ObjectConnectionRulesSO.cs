@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator.API
 {
     public enum ObjectAutoTilePreset
@@ -15,8 +16,8 @@ namespace Kruty1918.Moyva.Generator.API
     /// 4-бітна маска сусідів: N=1, E=2, S=4, W=8
     /// Визначає який варіант об'єкта використовувати залежно від оточення.
     /// </summary>
-    [CreateAssetMenu(menuName = "Moyva/Generator/ObjectConnectionRules", fileName = "ObjectConnectionRules")]
-    public class ObjectConnectionRulesSO : ScriptableObject
+[System.Serializable]
+public class ObjectConnectionRulesSO : MoyvaJsonConfigObject
     {
         [Tooltip("Групи правил автотайлінгу для об'єктів. Кожна група описує, як базовий об'єкт має змінюватися залежно від сусідів, наприклад для річок, доріг або огорож.")]
         public List<ObjectAutoTileGroup> Groups = new();

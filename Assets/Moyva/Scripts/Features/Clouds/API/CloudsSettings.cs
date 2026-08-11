@@ -1,5 +1,6 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Clouds.API
 {
     public enum CloudSpawnAreaMode
@@ -7,9 +8,8 @@ namespace Kruty1918.Moyva.Clouds.API
         CameraViewport = 0,
         MapBounds = 1
     }
-
-    [CreateAssetMenu(menuName = "Moyva/Clouds/Clouds Settings", fileName = "CloudsSettings")]
-    public sealed class CloudsSettings : ScriptableObject
+[System.Serializable]
+public sealed class CloudsSettings : MoyvaJsonConfigObject
     {
         [Header("Загальне")]
         [Tooltip("Вмикає або вимикає систему хмаринок.")]

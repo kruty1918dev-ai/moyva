@@ -1,13 +1,14 @@
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.HomeMenu.Runtime
 {
     /// <summary>
     /// Конфігурація сцен і часових затримок для старту гри з домашнього меню.
     /// Залежності: використовується HomeMenuGameStarter та startup pipeline.
     /// </summary>
-    [CreateAssetMenu(fileName = "HomeMenuConfig", menuName = "Moyva/Home Menu/Home Menu Config")]
-    public sealed class HomeMenuConfigSO : ScriptableObject
+[System.Serializable]
+public sealed class HomeMenuConfigSO : MoyvaJsonConfigObject
     {
         /// <summary>Назва gameplay-сцени.</summary>
         public string gameplaySceneName = "Gamplay_Scene";

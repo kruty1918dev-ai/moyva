@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -3958,3 +3959,5 @@ namespace Kruty1918.Moyva.Economy.Editor
         }
     }
 }
+
+#endif

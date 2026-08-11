@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 namespace Kruty1918.Moyva.GraphSystem.Editor
 {
     /// <summary>
@@ -82,3 +83,5 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         }
     }
 }
+
+#endif

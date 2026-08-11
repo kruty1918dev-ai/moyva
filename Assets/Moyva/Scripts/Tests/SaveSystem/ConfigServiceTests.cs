@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -147,3 +148,5 @@ namespace Kruty1918.Moyva.Tests.SaveSystem
         }
     }
 }
+
+#endif

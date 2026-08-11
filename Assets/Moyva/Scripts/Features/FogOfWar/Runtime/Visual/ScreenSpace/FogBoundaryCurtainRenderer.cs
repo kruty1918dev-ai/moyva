@@ -6,6 +6,7 @@ using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.FogOfWar.Runtime
 {
     /// <summary>
@@ -753,10 +754,9 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                 .ClearDrawData(
                     _mesh);
 
-            DestroyUnityObject(_material);
-            DestroyUnityObject(_mesh);
-            DestroyUnityObject(_root);
-
+            MoyvaJsonObjectFactory.DestroyImmediate(_material);
+            MoyvaJsonObjectFactory.DestroyImmediate(_mesh);
+            MoyvaJsonObjectFactory.DestroyImmediate(_root);
             _material = null;
             _mesh = null;
             _root = null;
@@ -865,9 +865,8 @@ namespace Kruty1918.Moyva.FogOfWar.Runtime
                         "Material does not contain the " +
                         "MoyvaFogCurtain pass.");
 
-                    DestroyUnityObject(
+                    MoyvaJsonObjectFactory.DestroyImmediate(
                         _material);
-
                     _material = null;
 
                     FogBoundaryCurtainRendererFeature

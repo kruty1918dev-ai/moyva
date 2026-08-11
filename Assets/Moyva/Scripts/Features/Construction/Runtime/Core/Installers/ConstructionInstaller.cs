@@ -9,6 +9,7 @@ using System.Reflection;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.Runtime
 {
     public sealed class ConstructionInstaller : MonoInstaller
@@ -293,7 +294,7 @@ namespace Kruty1918.Moyva.Construction.Runtime
             return resolved;
         }
 
-        private static bool TryResolveTownHallBuildRadiusFromProfile(ScriptableObject economyRulesProfile, out int radius)
+        private static bool TryResolveTownHallBuildRadiusFromProfile(MoyvaJsonConfigObject economyRulesProfile, out int radius)
         {
             radius = 0;
             if (economyRulesProfile == null)

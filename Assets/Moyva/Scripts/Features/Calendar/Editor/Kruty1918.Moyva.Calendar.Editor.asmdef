@@ -1,18 +1,19 @@
 {
-    "name": "Kruty1918.Moyva.Calendar.Editor",
-    "rootNamespace": "Kruty1918.Moyva.Calendar.Editor",
-    "references": [
-        "Kruty1918.Moyva.Calendar"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": false,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.Calendar.Editor",
+  "rootNamespace": "Kruty1918.Moyva.Calendar.Editor",
+  "references": [
+    "Kruty1918.Moyva.Calendar",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using Kruty1918.Moyva.Generator.API;
 using UnityEditor;
 using UnityEngine;
@@ -143,3 +144,5 @@ namespace Kruty1918.Moyva.Generator.Editor
         }
     }
 }
+
+#endif

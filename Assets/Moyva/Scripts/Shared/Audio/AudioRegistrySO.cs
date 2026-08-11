@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using Kruty1918.Moyva.Audio.API;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Audio.Runtime
 {
     /// <summary>
     /// Runtime registry for audio sounds. Loaded via Resources.Load("MoyvaAudioRegistry") by ProjectServicesInstaller.
     /// </summary>
-    [CreateAssetMenu(fileName = "MoyvaAudioRegistry", menuName = "Moyva/Audio/Audio Registry")]
-    public sealed class AudioRegistrySO : ScriptableObject
+[System.Serializable]
+public sealed class AudioRegistrySO : MoyvaJsonConfigObject
     {
         [SerializeField] private AudioSoundDefinition[] _sounds = Array.Empty<AudioSoundDefinition>();
         [SerializeField, Min(1)] private int _defaultPoolSize = 12;

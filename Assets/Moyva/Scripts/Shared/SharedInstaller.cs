@@ -15,6 +15,7 @@ using Kruty1918.Moyva.Shared.Performance;
 using Kruty1918.Moyva.Shared.Diagnostics;
 using Kruty1918.Moyva.Shared.UI;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Shared
 {
     /// <summary>
@@ -234,8 +235,8 @@ namespace Kruty1918.Moyva.Audio.Runtime
 
         public AudioService([InjectOptional] AudioRegistrySO registry, [InjectOptional] SceneAudioOverridesSO sceneOverrides)
         {
-            _registry = registry != null ? registry : Resources.Load<AudioRegistrySO>(DefaultRegistryResourcePath);
-            _sceneOverrides = sceneOverrides ?? Resources.Load<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
+            _registry = registry != null ? registry : MoyvaJsonRuntime.GetLegacyResource<AudioRegistrySO>(DefaultRegistryResourcePath);
+            _sceneOverrides = sceneOverrides ?? MoyvaJsonRuntime.GetLegacyResource<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
         }
 
         public void Initialize()
@@ -777,14 +778,14 @@ namespace Kruty1918.Moyva.Audio.Runtime
         {
             if (!container.HasBinding<AudioRegistrySO>())
             {
-                registry ??= Resources.Load<AudioRegistrySO>(DefaultRegistryResourcePath);
+                registry ??= MoyvaJsonRuntime.GetLegacyResource<AudioRegistrySO>(DefaultRegistryResourcePath);
                 if (registry != null)
                     container.BindInstance(registry).AsSingle();
             }
 
             if (!container.HasBinding<SceneAudioOverridesSO>())
             {
-                sceneOverrides ??= Resources.Load<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
+                sceneOverrides ??= MoyvaJsonRuntime.GetLegacyResource<SceneAudioOverridesSO>("MoyvaSceneAudioOverrides");
                 if (sceneOverrides != null)
                     container.BindInstance(sceneOverrides).AsSingle();
             }

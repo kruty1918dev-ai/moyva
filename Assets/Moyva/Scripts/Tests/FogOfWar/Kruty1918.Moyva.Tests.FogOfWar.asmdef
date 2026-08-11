@@ -1,24 +1,31 @@
 {
-    "name": "Kruty1918.Moyva.Tests.FogOfWar",
-    "rootNamespace": "Kruty1918.Moyva.Tests.FogOfWar",
-    "references": [
-        "Zenject",
-        "Zenject-TestFramework",
-        "UnityEngine.TestRunner",
-        "UnityEditor.TestRunner",
-        "Kruty1918.Moyva.Signals",
-        "Kruty1918.Moyva.Grid",
-        "Kruty1918.Moyva.FogOfWar",
-        "Kruty1918.Moyva.SaveSystem",
-        "GiantGrey.TileWorldCreator"
-    ],
-    "includePlatforms": ["Editor"],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": true,
-    "precompiledReferences": ["nunit.framework.dll"],
-    "autoReferenced": false,
-    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.Tests.FogOfWar",
+  "rootNamespace": "Kruty1918.Moyva.Tests.FogOfWar",
+  "references": [
+    "Zenject",
+    "Zenject-TestFramework",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner",
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.Grid",
+    "Kruty1918.Moyva.FogOfWar",
+    "Kruty1918.Moyva.SaveSystem",
+    "GiantGrey.TileWorldCreator",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

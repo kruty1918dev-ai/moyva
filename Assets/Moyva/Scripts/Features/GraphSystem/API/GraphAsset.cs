@@ -4,10 +4,11 @@ using System.Linq;
 using Kruty1918.Moyva.Grid.API;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.GraphSystem.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Generator/Graph Asset", fileName = "NewGeneratorGraph")]
-    public sealed class GraphAsset : ScriptableObject
+[System.Serializable]
+public sealed class GraphAsset : MoyvaJsonConfigObject
     {
         [HideInInspector, SerializeField] private List<NodeBase> _nodes = new();
         [HideInInspector, SerializeField] private List<Connection> _connections = new();
@@ -280,7 +281,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
             {
                 _version = Mathf.Max(_version, 2);
 #if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(this);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
 #endif
             }
 
@@ -303,7 +304,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
 #if UNITY_EDITOR
             if (changed > 0)
-                UnityEditor.EditorUtility.SetDirty(this);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
 #endif
 
             return changed;
@@ -333,7 +334,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
                 changed++;
 #if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(node);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
 #endif
             }
 
@@ -379,7 +380,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 var layer = new GeneratorLayerDefinition("Base");
                 _layers.Add(layer);
 #if UNITY_EDITOR
-                UnityEditor.EditorUtility.SetDirty(this);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
 #endif
                 return layer.Id;
             }
@@ -562,7 +563,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
             var layer = new GeneratorLayerDefinition(name);
             _layers.Add(layer);
             _layerGraphStates.Add(new LayerGraphState(layer.Id));
-            UnityEditor.EditorUtility.SetDirty(this);
+            ; // JSON source of truth: no ScriptableObject dirty flag.
             return layer;
         }
 
@@ -584,7 +585,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
             _layers.Remove(layer);
             _layerGraphStates.RemoveAll(state => state == null || state.LayerId == layerId);
-            UnityEditor.EditorUtility.SetDirty(this);
+            ; // JSON source of truth: no ScriptableObject dirty flag.
             return true;
         }
 
@@ -612,18 +613,18 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 }
             }
 
-            var node = CreateInstance(nodeType) as NodeBase;
+            var node = MoyvaJsonObjectFactory.Create(nodeType) as NodeBase;
             if (node == null) return null;
 
             node.name = nodeType.Name;
-            node.hideFlags = HideFlags.HideInHierarchy;
+            ; // JSON config object has no Unity hideFlags.
             if (!Attribute.IsDefined(nodeType, typeof(StaticGraphNodeAttribute)))
                 node.LayerId = string.IsNullOrEmpty(layerId) ? EnsureDefaultLayer() : layerId;
             _nodes.Add(node);
             EnsureLayerGraphStates();
 
-            UnityEditor.AssetDatabase.AddObjectToAsset(node, this);
-            UnityEditor.EditorUtility.SetDirty(this);
+            ; // JSON config object is not stored as a Unity subasset.
+            ; // JSON source of truth: no ScriptableObject dirty flag.
             return node;
         }
 
@@ -647,14 +648,14 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
             if (registerUndo)
             {
-                UnityEditor.Undo.DestroyObjectImmediate(node);
+                MoyvaJsonObjectFactory.DestroyImmediate(node);
             }
             else
             {
-                UnityEditor.AssetDatabase.RemoveObjectFromAsset(node);
-                DestroyImmediate(node, true);
+                ; // JSON config object is not stored as a Unity subasset.
+                MoyvaJsonObjectFactory.DestroyImmediate(node, true);
             }
-            UnityEditor.EditorUtility.SetDirty(this);
+            ; // JSON source of truth: no ScriptableObject dirty flag.
         }
 
         public int RemoveNodesCascade(IEnumerable<NodeBase> nodes, bool registerUndo = false)
@@ -681,19 +682,19 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 removed++;
                 if (registerUndo)
                 {
-                    UnityEditor.Undo.DestroyObjectImmediate(node);
+                    MoyvaJsonObjectFactory.DestroyImmediate(node);
                 }
                 else
                 {
-                    UnityEditor.AssetDatabase.RemoveObjectFromAsset(node);
-                    DestroyImmediate(node, true);
+                    ; // JSON config object is not stored as a Unity subasset.
+                    MoyvaJsonObjectFactory.DestroyImmediate(node, true);
                 }
             }
 
             if (removed > 0)
             {
                 EnsureLayerGraphStates();
-                UnityEditor.EditorUtility.SetDirty(this);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
             }
 
             return removed;
@@ -727,7 +728,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
                     !validIds.Contains(c.SourceNodeId) || !validIds.Contains(c.TargetNodeId));
                 EnsureLayerGraphStates();
 
-                UnityEditor.EditorUtility.SetDirty(this);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
             }
 
             return removed;
@@ -761,7 +762,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
             if (removed > 0)
             {
                 EnsureLayerGraphStates();
-                UnityEditor.EditorUtility.SetDirty(this);
+                ; // JSON source of truth: no ScriptableObject dirty flag.
             }
 
             return removed;
@@ -831,7 +832,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
 
             _nodes.Clear();
             _nodes.AddRange(ordered);
-            UnityEditor.EditorUtility.SetDirty(this);
+            ; // JSON source of truth: no ScriptableObject dirty flag.
         }
 
         /// <summary>
@@ -906,8 +907,7 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 EnsureLayerGraphStates();
 
             if (repaired > 0)
-                UnityEditor.EditorUtility.SetDirty(this);
-
+                ; // JSON source of truth: no ScriptableObject dirty flag.
             return repaired;
         }
 
@@ -919,14 +919,14 @@ namespace Kruty1918.Moyva.GraphSystem.API
                 var node = _nodes[i];
                 if (node != null)
                 {
-                    UnityEditor.AssetDatabase.RemoveObjectFromAsset(node);
-                    DestroyImmediate(node, true);
+                    ; // JSON config object is not stored as a Unity subasset.
+                    MoyvaJsonObjectFactory.DestroyImmediate(node, true);
                 }
             }
             _nodes.Clear();
             _globalGraphState.Clear();
             _layerGraphStates.Clear();
-            UnityEditor.EditorUtility.SetDirty(this);
+            ; // JSON source of truth: no ScriptableObject dirty flag.
         }
 #endif
     }

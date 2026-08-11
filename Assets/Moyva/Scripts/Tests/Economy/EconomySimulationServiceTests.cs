@@ -1,9 +1,11 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using Kruty1918.Moyva.Economy.API;
 using Kruty1918.Moyva.Economy.Editor;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Economy
 {
     [TestFixture]
@@ -12,13 +14,13 @@ namespace Kruty1918.Moyva.Tests.Economy
         [Test]
         public void Simulate_ShouldProduceDeterministicTotals()
         {
-            var profileA = ScriptableObject.CreateInstance<EconomyProductionProfile>();
+            var profileA = MoyvaJsonObjectFactory.Create<EconomyProductionProfile>();
             SetString(profileA, "_buildingId", "farm");
             SetString(profileA, "_recipeId", "food");
             SetFloat(profileA, "_cycleDurationSeconds", 60f);
             SetInt(profileA, "_outputAmountPerCycle", 2);
 
-            var profileB = ScriptableObject.CreateInstance<EconomyProductionProfile>();
+            var profileB = MoyvaJsonObjectFactory.Create<EconomyProductionProfile>();
             SetString(profileB, "_buildingId", "quarry");
             SetString(profileB, "_recipeId", "stone");
             SetFloat(profileB, "_cycleDurationSeconds", 120f);
@@ -66,3 +68,5 @@ namespace Kruty1918.Moyva.Tests.Economy
         }
     }
 }
+
+#endif

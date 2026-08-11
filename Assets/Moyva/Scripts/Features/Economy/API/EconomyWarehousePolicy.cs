@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Economy.API
 {
     [Serializable]
@@ -17,9 +18,8 @@ namespace Kruty1918.Moyva.Economy.API
         public int Priority => _priority;
         public int ReserveAmount => _reserveAmount;
     }
-
-    [CreateAssetMenu(menuName = "Moyva/Economy/Warehouse Policy", fileName = "EconomyWarehousePolicy")]
-    public sealed class EconomyWarehousePolicy : ScriptableObject
+[System.Serializable]
+public sealed class EconomyWarehousePolicy : MoyvaJsonConfigObject
     {
         [SerializeField] private EconomyWarehouseType _warehouseType;
         [SerializeField] private List<EconomyWarehousePolicyEntry> _entries = new List<EconomyWarehousePolicyEntry>();

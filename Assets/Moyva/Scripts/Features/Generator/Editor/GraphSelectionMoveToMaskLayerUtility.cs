@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 #if UNITY_EDITOR
 using System;
 using System.Collections;
@@ -502,4 +503,6 @@ namespace Kruty1918.Moyva.GraphSystem.Editor
         }
     }
 }
+#endif
+
 #endif

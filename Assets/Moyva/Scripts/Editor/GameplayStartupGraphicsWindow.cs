@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_EDITOR
 using System;
 using Kruty1918.Moyva.Editor.Shared;
 using Kruty1918.Moyva.Shared.Graphics;
@@ -536,3 +537,4 @@ namespace Kruty1918.Moyva.Editor
         }
     }
 }
+#endif

@@ -1,20 +1,21 @@
 {
-    "name": "Kruty1918.Moyva.Units.Editor",
-    "rootNamespace": "Kruty1918.Moyva.Units.Editor",
-    "references": [
-        "Kruty1918.Moyva.Units",
-        "Kruty1918.Moyva.Animations",
-        "Kruty1918.Moyva.EditorShared"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": false,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.Units.Editor",
+  "rootNamespace": "Kruty1918.Moyva.Units.Editor",
+  "references": [
+    "Kruty1918.Moyva.Units",
+    "Kruty1918.Moyva.Animations",
+    "Kruty1918.Moyva.EditorShared",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

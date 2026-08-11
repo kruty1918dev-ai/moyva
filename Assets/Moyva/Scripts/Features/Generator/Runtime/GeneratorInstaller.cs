@@ -11,6 +11,7 @@ using Kruty1918.Moyva.SaveSystem;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Generator
 {
     /// <summary>
@@ -219,7 +220,7 @@ namespace Kruty1918.Moyva.Generator
                 return _graphAsset.TileRegistry;
 
             Debug.LogError("[GeneratorInstaller] TileRegistrySO не знайдено. Створено runtime empty registry, але gameplay tile definitions будуть порожні.", this);
-            var empty = ScriptableObject.CreateInstance<TileRegistrySO>();
+            var empty = MoyvaJsonObjectFactory.Create<TileRegistrySO>();
             empty.name = "RuntimeEmptyTileRegistry";
             return empty;
         }

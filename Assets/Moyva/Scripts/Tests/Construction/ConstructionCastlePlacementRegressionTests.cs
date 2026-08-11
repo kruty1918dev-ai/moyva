@@ -1,3 +1,4 @@
+#if MOYVA_LEGACY_SCRIPTABLEOBJECT_TESTS
 using System.Collections.Generic;
 using Kruty1918.Moyva.Construction.API;
 using Kruty1918.Moyva.Construction.Runtime;
@@ -9,6 +10,7 @@ using NUnit.Framework;
 using UnityEngine;
 using Zenject;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Tests.Construction
 {
     [TestFixture]
@@ -84,7 +86,7 @@ namespace Kruty1918.Moyva.Tests.Construction
                 .To<VisibleFogService>()
                 .AsSingle();
 
-            _registry = ScriptableObject.CreateInstance<BuildingRegistrySO>();
+            _registry = MoyvaJsonObjectFactory.Create<BuildingRegistrySO>();
             _registry.Buildings = new[]
             {
                 CreateCastleDefinition(),
@@ -145,7 +147,7 @@ namespace Kruty1918.Moyva.Tests.Construction
             _disposable?.Dispose();
             Container.Resolve<ObjectsMapService>().Dispose();
             if (_registry != null)
-                Object.DestroyImmediate(_registry);
+                MoyvaJsonObjectFactory.DestroyImmediate(_registry);
             base.Teardown();
         }
 
@@ -532,3 +534,5 @@ namespace Kruty1918.Moyva.Tests.Construction
         }
     }
 }
+
+#endif

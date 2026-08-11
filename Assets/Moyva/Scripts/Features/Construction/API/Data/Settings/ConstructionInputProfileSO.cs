@@ -1,10 +1,11 @@
 using Sirenix.OdinInspector;
 using UnityEngine;
 
+using Kruty1918.Moyva.Jsonization;
 namespace Kruty1918.Moyva.Construction.API
 {
-    [CreateAssetMenu(menuName = "Moyva/Construction/Profiles/Input", fileName = "ConstructionInputProfile")]
-    public sealed class ConstructionInputProfileSO : ScriptableObject
+[System.Serializable]
+public sealed class ConstructionInputProfileSO : MoyvaJsonConfigObject
     {
         [BoxGroup("Touch")]
         [MinValue(0f)]

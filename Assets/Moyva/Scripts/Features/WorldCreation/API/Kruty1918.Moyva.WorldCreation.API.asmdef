@@ -1,18 +1,19 @@
 {
-    "name": "Kruty1918.Moyva.WorldCreation.API",
-    "rootNamespace": "Kruty1918.Moyva.WorldCreation.API",
-    "references": [
-        "Kruty1918.Moyva.Signals",
-        "Kruty1918.Moyva.GraphSystem",
-        "Kruty1918.Moyva.Grid"
-    ],
-    "includePlatforms": [],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": false,
-    "precompiledReferences": [],
-    "autoReferenced": true,
-    "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "Kruty1918.Moyva.WorldCreation.API",
+  "rootNamespace": "Kruty1918.Moyva.WorldCreation.API",
+  "references": [
+    "Kruty1918.Moyva.Signals",
+    "Kruty1918.Moyva.GraphSystem",
+    "Kruty1918.Moyva.Grid",
+    "GUID:ba6fb4ee41f3e3638850bb445fa13ba1"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

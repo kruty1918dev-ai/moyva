@@ -6,6 +6,7 @@ using Kruty1918.Moyva.GraphSystem.API;
 using UnityEngine;
 #if UNITY_EDITOR
 using UnityEngine.UIElements;
+using Kruty1918.Moyva.Jsonization;
 #endif
 
 namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
@@ -26,6 +27,7 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
         Order = 1000,
         Lifecycle = NodeLifecycle.Hidden,
         Capabilities = NodeCapabilities.ExternalDependency)]
+    [System.Serializable]
     public sealed class TwcModifierNode : NodeBase
     {
         [HideInInspector, SerializeField] private string _modifierTypeName;
@@ -175,18 +177,17 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
             if (modifierType == null || !typeof(BlueprintModifier).IsAssignableFrom(modifierType))
                 return;
 
-            _modifier = CreateInstance(modifierType) as BlueprintModifier;
+            _modifier = MoyvaJsonObjectFactory.Create(modifierType) as BlueprintModifier;
             if (_modifier == null)
                 return;
 
             _modifier.name = modifierType.Name;
-            _modifier.hideFlags = HideFlags.HideInHierarchy;
-
+            ; // JSON config object has no Unity hideFlags.
 #if UNITY_EDITOR
-            var owningAsset = UnityEditor.AssetDatabase.GetAssetPath(this);
+            var owningAsset = string.Empty;
             if (!string.IsNullOrEmpty(owningAsset))
-                UnityEditor.AssetDatabase.AddObjectToAsset(_modifier, this);
-            UnityEditor.EditorUtility.SetDirty(this);
+                ; // JSON config object is not stored as a Unity subasset.
+            ; // JSON source of truth: no ScriptableObject dirty flag.
 #endif
         }
 
@@ -233,18 +234,17 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
                 return;
 
             _modifierTypeName = modifierType.FullName;
-            _modifier = CreateInstance(modifierType) as BlueprintModifier;
+            _modifier = MoyvaJsonObjectFactory.Create(modifierType) as BlueprintModifier;
             if (_modifier == null)
                 return;
 
             _modifier.name = modifierType.Name;
-            _modifier.hideFlags = HideFlags.HideInHierarchy;
-
-            var owningAsset = UnityEditor.AssetDatabase.GetAssetPath(this);
+            ; // JSON config object has no Unity hideFlags.
+            var owningAsset = string.Empty;
             if (!string.IsNullOrEmpty(owningAsset))
             {
-                UnityEditor.AssetDatabase.AddObjectToAsset(_modifier, this);
-                UnityEditor.EditorUtility.SetDirty(this);
+                ; // JSON config object is not stored as a Unity subasset.
+                ; // JSON source of truth: no ScriptableObject dirty flag.
             }
         }
 
@@ -272,9 +272,9 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
         {
             if (_editorInspectorConfiguration == null)
             {
-                _editorInspectorConfiguration = CreateInstance<Configuration>();
+                _editorInspectorConfiguration = MoyvaJsonObjectFactory.Create<Configuration>();
                 _editorInspectorConfiguration.name = "TWC Node Inspector Configuration";
-                _editorInspectorConfiguration.hideFlags = HideFlags.HideAndDontSave;
+                ; // JSON config object has no Unity hideFlags.
             }
 
             _editorInspectorConfiguration.width = Mathf.Max(1, mapSize.x);
