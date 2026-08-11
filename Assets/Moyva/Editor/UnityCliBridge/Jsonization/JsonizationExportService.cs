@@ -254,6 +254,11 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             Type type = root.GetType();
             string id = JsonizationEditorUtil.StableId(root, type);
             string jsonPath = OutputPath(type, id);
+            if (OutputPathCollides(jsonPath, assetPath))
+            {
+                id = UniqueAssetPathId(assetPath, type);
+                jsonPath = OutputPath(type, id);
+            }
             var context = new ExportContext { RootAssetPath = assetPath };
             JObject data = SerializeObjectFields(root, type, context, type);
             JObject doc = CreateRootDocument(type, id, jsonPath, assetPath, data);
@@ -275,6 +280,36 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 schema = JsonizationEditorUtil.SchemaName(type),
                 hash = hash
             });
+        }
+
+        private static bool OutputPathCollides(string jsonPath, string assetPath)
+        {
+            if (!File.Exists(jsonPath))
+                return false;
+            try
+            {
+                JObject existing = JObject.Parse(File.ReadAllText(jsonPath));
+                string existingSource = existing["migration"]?.Value<string>("sourceAssetPath");
+                return !string.IsNullOrWhiteSpace(existingSource) &&
+                       !string.Equals(existingSource, assetPath, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
+        private static string UniqueAssetPathId(string assetPath, Type type)
+        {
+            string prefix = MoyvaJsonTypeRegistry.StableId(type);
+            string path = assetPath ?? string.Empty;
+            if (path.StartsWith("Assets/Moyva/Data/ScriptableObjects/", StringComparison.OrdinalIgnoreCase))
+                path = path.Substring("Assets/Moyva/Data/ScriptableObjects/".Length);
+            path = Path.Combine(
+                Path.GetDirectoryName(path) ?? string.Empty,
+                Path.GetFileNameWithoutExtension(path) ?? string.Empty);
+            string slug = JsonizationEditorUtil.Slug(path.Replace('\\', '/'));
+            return string.IsNullOrWhiteSpace(prefix) ? slug : prefix + "-" + slug;
         }
 
         private static int ExportUnitsFromRegistry(UnityEngine.Object registry, ExportReport report)
