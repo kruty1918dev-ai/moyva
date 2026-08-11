@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7265014200970477828}
   - component: {fileID: 169038267036490666}
-  - component: {fileID: 3582712613019906056}
+  - component: {fileID: 2729556553527693496}
   m_Layer: 0
   m_Name: MoyvaRuntimeAssetCatalog
   m_TagString: Untagged
@@ -84,6 +84,8 @@ MonoBehaviour:
     Asset: {fileID: 919132149155446097, guid: 49c0cff0949cccd488fd77e8e775d7ee, type: 3}
   - Key: asset.game-object.building-workshop-blue.f5d290f5
     Asset: {fileID: 919132149155446097, guid: f5d290f564dc7d7438e79949b85fce90, type: 3}
+  - Key: asset.game-object.bush.95c5bade
+    Asset: {fileID: 9113448713621649907, guid: 95c5badeee3ddb26f9a546ceeb5dcdfc, type: 3}
   - Key: asset.game-object.castle-01.6655d3eb
     Asset: {fileID: 9015920146946513893, guid: 6655d3eb8cc1fdb2e8eabc222e503d39, type: 3}
   - Key: asset.game-object.cliff-edge-a.8ef03624
@@ -616,6 +618,10 @@ MonoBehaviour:
     Asset: {fileID: 492550992111591437, guid: 268293bef8c33dc47b8c5625bd8ead2b, type: 3}
   - Key: asset.game-object.texture-grass-tile-008.eaff9ec4
     Asset: {fileID: 6237752717632887902, guid: eaff9ec43dc15cb44bf647fd31d0d2e7, type: 3}
+  - Key: asset.game-object.tree-oak.703ea305
+    Asset: {fileID: 5752514224038322538, guid: 703ea30507380d53b9e66396536e548f, type: 3}
+  - Key: asset.game-object.tree-pine.6a6b29fc
+    Asset: {fileID: 4608864207072105692, guid: 6a6b29fc17c7903caa206b7db9c123c1, type: 3}
   - Key: asset.game-object.wall-stone-collection-0-corner-ne.9221769d
     Asset: {fileID: 2798815301503560846, guid: 9221769dcedc85a49bc9e5f189344ee2, type: 3}
   - Key: asset.game-object.wall-stone-collection-0-corner-nw.f0bc445a
@@ -936,7 +942,7 @@ MonoBehaviour:
     Asset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
   - Key: asset.tile-preset.tilewater.dfeb07ab
     Asset: {fileID: 11400000, guid: dfeb07ab92df40308a24960fec915de2, type: 2}
---- !u!114 &3582712613019906056
+--- !u!114 &2729556553527693496
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -958,10 +964,10 @@ MonoBehaviour:
     ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
     ConfigId: testgeneratorgraph
   - Target: {fileID: 169038267036490666}
-    PropertyPath: _entries.Array.data[324].Asset
+    PropertyPath: _entries.Array.data[327].Asset
     ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
     ConfigId: testgeneratorgraph
   - Target: {fileID: 169038267036490666}
-    PropertyPath: _entries.Array.data[325].Asset
+    PropertyPath: _entries.Array.data[328].Asset
     ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
     ConfigId: testgeneratorgraph
