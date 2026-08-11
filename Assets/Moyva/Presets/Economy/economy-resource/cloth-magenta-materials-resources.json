@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "cloth-magenta-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Cloth-magenta",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-90.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "589cfbe9cb5d4c1a9111fed406e201bb",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cloth-green.asset",
+    "sourceHash": "c0161dd203b23075233ed2863db01d78746261c17a99c7ac9a6c7ccbbf44f5ec"
+  }
+}

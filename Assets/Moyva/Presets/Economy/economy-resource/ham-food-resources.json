@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "ham-food-resources",
+  "model": "economy-resource",
+  "displayName": "Ham",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-191.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "16daac64f3f54fd4a34db2a9f489d077",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Ham.asset",
+    "sourceHash": "da9367215d9625e1d5197e9add24bb7610d2af1f75fb9355d1d5f2ef3ededb49"
+  }
+}

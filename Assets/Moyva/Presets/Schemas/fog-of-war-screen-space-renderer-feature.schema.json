@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/fog-of-war-screen-space-renderer-feature.schema.json",
+  "title": "Moyva — Fog Of War Screen Space Renderer Feature",
+  "description": "JSON source of truth для Kruty1918.Moyva.FogOfWar.Runtime.FogOfWarScreenSpaceRendererFeature. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.fog-of-war-screen-space-renderer-feature"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "fog-of-war-screen-space-renderer-feature"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "screenSpaceShader": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "Screen Space Shader"
+    },
+    "surfaceDepthShader": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "Surface Depth Shader"
+    },
+    "fogSurfaceLayerMask": {
+      "type": "integer",
+      "title": "Fog Surface Layer Mask",
+      "description": "Renderers, які формують fog surface depth. За замовчуванням Everything. Виключи UI, Clouds та інші суто декоративні шари, якщо вони мають MeshRenderer."
+    },
+    "screenStateScale": {
+      "type": "number",
+      "title": "Screen State Scale",
+      "description": "Роздільна здатність screen-state/morphology texture. Для стабільного краю при zoom рекомендовано 1.0.",
+      "minimum": 0.5,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.5,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "forceFullResolutionState": {
+      "type": "boolean",
+      "title": "Force Full Resolution State",
+      "description": "Примусово використовує full-resolution screen state. Прибирає ступінчастість, плаваючу товщину та нерівності контуру під час віддалення камери."
+    },
+    "applyInSceneView": {
+      "type": "boolean",
+      "title": "Apply In Scene View"
+    },
+    "applyInSceneViewDuringPlay": {
+      "type": "boolean",
+      "title": "Apply In Scene View During Play",
+      "description": "Якщо вимкнено, під час Play Mode Fog of War рендериться тільки для Game camera, а не дублюється у Scene View."
+    },
+    "enableMorphologyDebugPasses": {
+      "type": "boolean",
+      "title": "Enable Morphology Debug Passes",
+      "description": "Вмикає додаткові fullscreen Dilate/Erode passes лише для діагностики ClosedScreenState. Фінальна маска використовує RawPointState і цих проходів не потребує."
+    },
+    "logPipelineDiagnostics": {
+      "type": "boolean",
+      "title": "Log Pipeline Diagnostics"
+    },
+    "m_Active": {
+      "type": "boolean",
+      "title": "Active"
+    }
+  }
+}

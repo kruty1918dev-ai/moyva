@@ -1,0 +1,16 @@
+{
+  "$schema": "../../Schemas/economy-settlement.schema.json",
+  "schema": "moyva.economy-settlement",
+  "version": 1,
+  "id": "economysettlementdefinition",
+  "model": "economy-settlement",
+  "settlementId": "",
+  "settlementType": "Village",
+  "centerBuildingId": "",
+  "buildRadius": 0,
+  "migration": {
+    "sourceAssetGuid": "bba64edd7975ffdfd869ae66bd6fdb5d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/EconomySettlementDefinition.asset",
+    "sourceHash": "d21881b1e54851cb5b193cd4545764b977c5b39b407e13fe21761258d42ee053"
+  }
+}

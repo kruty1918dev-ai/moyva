@@ -1,40 +1,166 @@
 {
-  "$schema": "../Schemas/building-preset.schema.json",
-  "schema": "moyva.building-preset",
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
   "version": 1,
   "id": "castle-01",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
   "identity": {
+    "id": "castle-01",
     "displayName": "Замок",
-    "description": "Головний центр поселення, від якого залежать правила розміщення будівель.",
     "category": "Civilian",
-    "role": "SettlementCenter"
-  },
-  "construction": {
-    "buildTurns": 1,
-    "cost": []
-  },
-  "runtimeStats": {
-    "maxHp": 100
+    "role": "SettlementCenter",
+    "description": "Головний центр поселення, від якого залежать правила розміщення будівель.",
+    "tags": []
   },
   "presentation": {
-    "icon": {
-      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/castle-01.png",
+    "prefab": {
+      "$asset": "asset.game-object.castle-01.6655d3eb",
+      "editorPath": "Assets/Moyva/Prefabs/Buildings/castle-01.prefab",
       "required": true
     },
-    "prefab": {
-      "path": "Assets/Moyva/Prefabs/Buildings/castle-01.prefab",
-      "root": "Assets/Moyva/Prefabs/Buildings",
-      "exact": [
-        "castle-01"
-      ],
+    "icon": {
+      "$asset": "asset.sprite.castle-01.467e2447",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/castle-01.png",
       "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.castle-01.467e2447",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/castle-01.png",
+      "required": true
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
     }
   },
-  "modules": {
-    "mode": "merge",
-    "active": [],
-    "remove": [],
-    "conditional": [],
-    "deferred": []
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [
+      {
+        "x": 0,
+        "y": 0
+      }
+    ],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": false,
+    "createsSettlementInfluence": true,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 5,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [],
+    "buildTurns": 1,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "castle",
+      "isCapital": true,
+      "garrisonCapacity": 0,
+      "exclusionRadius": 5,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "fog-reveal",
+      "revealRadius": 5,
+      "shape": "PixelCircle",
+      "revealOnBuilt": true,
+      "revealWhileActive": true,
+      "onlyAfterConstructionComplete": true,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-center",
+      "influenceRadius": 5,
+      "minimumDistanceFromOtherCenters": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "building-per-player-limit-module",
+      "maxBuildingsPerPlayer": 1,
+      "limitScope": "PerOwner",
+      "overflowPolicy": "Block",
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "terrain-placement-rule-module",
+      "mergeMode": "Inherit",
+      "allowedTerrainIds": [],
+      "blockedTerrainIds": [],
+      "allowedTerrainTags": [],
+      "blockedTerrainTags": [
+        "water"
+      ],
+      "allowedTerrainLevels": [],
+      "blockedTerrainLevels": [],
+      "requiredNeighborOffsets": [],
+      "allowHills": true,
+      "blockEdgeTerrainTiles": false,
+      "requiresFlatGround": false,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "c8422d0cbb95460790a5398833c25c95",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/castle-01.asset",
+    "sourceHash": "b84440aa53940bca6a413017e7fe9a54fdf3351038301f5ebbe053d5f13660db"
   }
 }

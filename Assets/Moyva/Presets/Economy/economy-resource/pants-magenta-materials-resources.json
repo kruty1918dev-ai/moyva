@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "pants-magenta-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Pants-magenta",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-66.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "ff4450de26f64284bc728e1bf05d9b15",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Copper-chunks.asset",
+    "sourceHash": "4e6bb3127ba91d9a4ac25ca27c7caf4157f49db1d97e0cf53064fa135136d23f"
+  }
+}

@@ -1,127 +1,42 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://moyva.local/schemas/unit-registry.schema.json",
-  "title": "Moyva Unit Registry",
-  "description": "Authoritative authoring data synchronized into UnitRegistrySO by the Unity editor.",
+  "title": "Moyva — Unit Registry SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Units.Runtime.UnitRegistrySO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "version", "targetAsset", "units"],
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
   "properties": {
-    "$schema": { "type": "string", "description": "Relative path to this schema; enables IDE completion and validation." },
-    "schema": { "const": "moyva.unit-registry" },
-    "version": { "const": 1 },
-    "targetAsset": { "type": "string", "pattern": "^Assets/.+\\.asset$", "description": "Generated runtime-compatible UnitRegistrySO asset." },
-    "units": {
-      "type": "array",
-      "minItems": 1,
-      "items": { "$ref": "#/$defs/unit" }
-    }
-  },
-  "$defs": {
-    "assetReference": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["path"],
-      "properties": {
-        "path": { "type": "string", "pattern": "^Assets/", "description": "Project-relative Unity asset path." },
-        "guid": { "type": "string", "pattern": "^[0-9a-fA-F]{32}$", "description": "Unity asset GUID used if the readable path changes." },
-        "subAsset": { "type": "string", "minLength": 1, "description": "Readable fallback name for a sprite or another sub-asset." },
-        "localId": { "type": "integer", "description": "Stable Unity local file ID. Prefer it when several objects share one asset path." }
-      }
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
     },
-    "nullableAssetReference": {
-      "oneOf": [
-        { "$ref": "#/$defs/assetReference" },
-        { "type": "null" }
-      ]
+    "schema": {
+      "const": "moyva.unit-registry"
     },
-    "floatRange": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["min", "max"],
-      "properties": {
-        "min": { "type": "number" },
-        "max": { "type": "number" }
-      }
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
     },
-    "movement": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["baseStamina", "staminaRandomRange", "moveDurationPerTile", "delayOnTile"],
-      "properties": {
-        "baseStamina": { "type": "number", "exclusiveMinimum": 0, "description": "Base movement stamina before the random modifier." },
-        "staminaRandomRange": { "$ref": "#/$defs/floatRange" },
-        "moveDurationPerTile": { "type": "number", "minimum": 0, "description": "Movement animation time per tile in seconds." },
-        "delayOnTile": { "type": "number", "minimum": 0, "description": "Pause between tile steps in seconds." }
-      }
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
     },
-    "vision": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["range", "heightBoostPerLevel", "canSeeCrest", "crestVisibilityFactor", "downSlopeBonus", "silhouettePenalty"],
-      "properties": {
-        "range": { "type": "integer", "minimum": 1 },
-        "heightBoostPerLevel": { "type": "number", "minimum": 0 },
-        "canSeeCrest": { "type": "boolean" },
-        "crestVisibilityFactor": { "type": "number", "minimum": 0, "maximum": 1 },
-        "downSlopeBonus": { "type": "number", "minimum": 0 },
-        "silhouettePenalty": { "type": "number", "minimum": 0, "maximum": 1 }
-      }
+    "model": {
+      "const": "unit-registry"
     },
-    "combat": {
+    "migration": {
       "type": "object",
-      "additionalProperties": false,
-      "required": ["hitPoints", "baseLevel", "cuttingDamage", "penetratingDamage", "crushingDamage", "cuttingDefense", "penetratingDefense", "crushingDefense"],
-      "properties": {
-        "hitPoints": { "type": "integer", "minimum": 1 },
-        "baseLevel": { "type": "integer", "minimum": 1 },
-        "cuttingDamage": { "type": "integer", "minimum": 0 },
-        "penetratingDamage": { "type": "integer", "minimum": 0 },
-        "crushingDamage": { "type": "integer", "minimum": 0 },
-        "cuttingDefense": { "type": "integer", "minimum": 0 },
-        "penetratingDefense": { "type": "integer", "minimum": 0 },
-        "crushingDefense": { "type": "integer", "minimum": 0 }
-      }
-    },
-    "presentation": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["prefab", "customSprite"],
-      "properties": {
-        "prefab": { "$ref": "#/$defs/assetReference" },
-        "customSprite": { "$ref": "#/$defs/nullableAssetReference" }
-      }
-    },
-    "animation": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["type", "name", "animationClip", "animatorParameterName", "spriteFrames", "spriteFps", "loop", "duration"],
-      "properties": {
-        "type": { "enum": ["Idle", "Move", "Attack", "TakeDamage", "Die", "Custom"] },
-        "name": { "type": ["string", "null"] },
-        "animationClip": { "$ref": "#/$defs/nullableAssetReference" },
-        "animatorParameterName": { "type": ["string", "null"] },
-        "spriteFrames": { "type": "array", "items": { "$ref": "#/$defs/assetReference" } },
-        "spriteFps": { "type": "integer", "minimum": 0 },
-        "loop": { "type": "boolean" },
-        "duration": { "type": "number", "minimum": 0 }
-      }
-    },
-    "unit": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["typeId", "displayName", "role", "combatType", "movement", "vision", "combat", "presentation", "animations"],
-      "properties": {
-        "typeId": { "type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$", "description": "Stable lowercase kebab-case save/runtime ID. Example: light-cavalry. Underscore is reserved for instance IDs." },
-        "displayName": { "type": ["string", "null"], "description": "Optional UI name; null falls back to typeId." },
-        "role": { "enum": ["Worker", "Military"] },
-        "combatType": { "enum": ["Infantry", "Cavalry", "SiegeMachine"] },
-        "movement": { "$ref": "#/$defs/movement" },
-        "vision": { "$ref": "#/$defs/vision" },
-        "combat": { "$ref": "#/$defs/combat" },
-        "presentation": { "$ref": "#/$defs/presentation" },
-        "animations": { "type": "array", "items": { "$ref": "#/$defs/animation" } }
-      }
+      "additionalProperties": true
     }
   }
 }

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "milk-bottle-food-resources",
+  "model": "economy-resource",
+  "displayName": "Milk-bottle",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-235.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "ff490840ff4345cd8839642240d5ffe6",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Corn.asset",
+    "sourceHash": "e06b9b078948b615d5acea5f9432e3f43844bf84a26392ff8c47385dda696ab7"
+  }
+}

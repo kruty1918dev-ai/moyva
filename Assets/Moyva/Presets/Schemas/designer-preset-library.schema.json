@@ -1,0 +1,3763 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/designer-preset-library.schema.json",
+  "title": "Moyva — Designer Preset Library SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Editor.Shared.DesignerPresetLibrarySO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.designer-preset-library"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "designer-preset-library"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "unitPresets": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Name"
+          },
+          "template": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "typeId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Type Id",
+                "description": "У написані айді НЕ повино використовуватися нижнє підкреслення, окільки це є зарезервований символ для внутрішнього використання (наприклад, для позначення інстанцій юнітів). Рекомендується використовувати дефіси або camelCase. Наприклад: \"warrior-01\" або \"Warrior01\"."
+              },
+              "displayName": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Display Name",
+                "description": "Назва для UI/інфопанелей. Якщо порожня, використовується TypeId."
+              },
+              "role": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:Worker|Military))$",
+                "x-enumNames": [
+                  "Worker",
+                  "Military"
+                ],
+                "x-flags": false,
+                "title": "Role",
+                "description": "Класифікація юніта: Worker (економічні задачі) або Military (бойові задачі)."
+              },
+              "combatType": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:Infantry|Cavalry|SiegeMachine))$",
+                "x-enumNames": [
+                  "Infantry",
+                  "Cavalry",
+                  "SiegeMachine"
+                ],
+                "x-flags": false,
+                "title": "Combat Type",
+                "description": "Бойова класифікація юніта: піхота, кавалерія або облогова машина."
+              },
+              "baseStamina": {
+                "type": "number",
+                "title": "Base Stamina"
+              },
+              "visionRange": {
+                "type": "integer",
+                "title": "Vision Range",
+                "minimum": 1.0,
+                "x-moyva-editorMinimum": 1.0
+              },
+              "visionHeightBoostPerLevel": {
+                "type": "number",
+                "title": "Vision Height Boost Per Level",
+                "description": "Індивідуальний бустер огляду за кожен рівень висоти в preview (Map + Fog).",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "canSeeCrest": {
+                "type": "boolean",
+                "title": "Can See Crest",
+                "description": "Чи може цей тип юніта знизу бачити верхній край пагорба/плато."
+              },
+              "crestVisibilityFactor": {
+                "type": "number",
+                "title": "Crest Visibility Factor",
+                "description": "Множник сили бачення верхівок знизу. 0 = край майже не читається, 1 = повна сила.",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "downSlopeVisionBonus": {
+                "type": "number",
+                "title": "Down Slope Vision Bonus",
+                "description": "Додаткова дальність у тайлах, коли юніт стоїть біля краю і дивиться вниз по схилу.",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "silhouettePenalty": {
+                "type": "number",
+                "title": "Silhouette Penalty",
+                "description": "Наскільки легко помітити цього юніта як силует на верхньому краї. 0 = без бонусу, 1 = дуже помітний.",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "x-moyva-editorMinimum": 0.0,
+                "x-moyva-editorMaximum": 1.0
+              },
+              "hitPoints": {
+                "type": "integer",
+                "title": "Hit Points",
+                "minimum": 1.0,
+                "x-moyva-editorMinimum": 1.0
+              },
+              "baseLevel": {
+                "type": "integer",
+                "title": "Base Level",
+                "minimum": 1.0,
+                "x-moyva-editorMinimum": 1.0
+              },
+              "cuttingDamage": {
+                "type": "integer",
+                "title": "Cutting Damage",
+                "description": "Ріжуча шкода: мечі, шаблі та інші удари лезом.",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "penetratingDamage": {
+                "type": "integer",
+                "title": "Penetrating Damage",
+                "description": "Колюча шкода: списи, стріли та інші точкові пробивні удари.",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "crushingDamage": {
+                "type": "integer",
+                "title": "Crushing Damage",
+                "description": "Дробляча шкода: тарани, катапульти, булави та важкі удари.",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "cuttingDefense": {
+                "type": "integer",
+                "title": "Cutting Defense",
+                "description": "Захист від ріжучої шкоди.",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "penetratingDefense": {
+                "type": "integer",
+                "title": "Penetrating Defense",
+                "description": "Захист від колючої шкоди.",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "crushingDefense": {
+                "type": "integer",
+                "title": "Crushing Defense",
+                "description": "Захист від дроблячої шкоди.",
+                "minimum": 0.0,
+                "x-moyva-editorMinimum": 0.0
+              },
+              "prefab": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Prefab"
+              },
+              "staminaRandomRange": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "title": "Stamina Random Range"
+              },
+              "animationSettings": {
+                "type": "object",
+                "properties": {
+                  "moveDurationPerTile": {
+                    "type": "number",
+                    "title": "Move Duration Per Tile"
+                  },
+                  "delayOnTile": {
+                    "type": "number",
+                    "title": "Delay On Tile"
+                  },
+                  "onStepCompleted": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {},
+                    "additionalProperties": false,
+                    "title": "On Step Completed"
+                  },
+                  "canPerformStep": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {},
+                    "additionalProperties": false,
+                    "title": "Can Perform Step"
+                  },
+                  "resolveWorldPosition": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {},
+                    "additionalProperties": false,
+                    "title": "Resolve World Position"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "Animation Settings"
+              },
+              "customSprite": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Спрайт юніта для швидкої редакції",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Custom Sprite"
+              },
+              "animationClips": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "pattern": "^(?:-?\\d+|(?:Idle|Move|Attack|TakeDamage|Die|Custom))$",
+                      "x-enumNames": [
+                        "Idle",
+                        "Move",
+                        "Attack",
+                        "TakeDamage",
+                        "Die",
+                        "Custom"
+                      ],
+                      "x-flags": false,
+                      "title": "Type",
+                      "description": "Тип анімації: Idle, Move, Attack, TakeDamage, Die, або Custom"
+                    },
+                    "name": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "title": "Name",
+                      "description": "Назва анімації для можливості пошуку/фільтрації"
+                    },
+                    "animationClip": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "description": "AnimationClip для Animator",
+                      "properties": {
+                        "$asset": {
+                          "type": "string",
+                          "title": "Asset ID"
+                        },
+                        "editorPath": {
+                          "type": "string",
+                          "description": "Editor-only path для діагностики/регенерації catalog."
+                        },
+                        "required": {
+                          "type": "boolean",
+                          "default": true
+                        }
+                      },
+                      "required": [
+                        "$asset"
+                      ],
+                      "title": "Animation Clip"
+                    },
+                    "animatorParameterName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "title": "Animator Parameter Name",
+                      "description": "Параметр в Animator, який запускає цю анімацію (наприклад 'IsAttacking')"
+                    },
+                    "spriteFrames": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                        "properties": {
+                          "$asset": {
+                            "type": "string",
+                            "title": "Asset ID"
+                          },
+                          "editorPath": {
+                            "type": "string",
+                            "description": "Editor-only path для діагностики/регенерації catalog."
+                          },
+                          "required": {
+                            "type": "boolean",
+                            "default": true
+                          }
+                        },
+                        "required": [
+                          "$asset"
+                        ]
+                      },
+                      "title": "Sprite Frames",
+                      "description": "Список спрайтів для простої спрайт-анімації (альтернатива AnimationClip)"
+                    },
+                    "spriteFPS": {
+                      "type": "integer",
+                      "title": "Sprite FPS",
+                      "description": "FPS для спрайт-анімації",
+                      "minimum": 1.0,
+                      "x-moyva-editorMinimum": 1.0
+                    },
+                    "loop": {
+                      "type": "boolean",
+                      "title": "Loop",
+                      "description": "Повторювати анімацію після завершення"
+                    },
+                    "duration": {
+                      "type": "number",
+                      "title": "Duration",
+                      "description": "Довжина анімації в секундах",
+                      "minimum": 0.01,
+                      "x-moyva-editorMinimum": 0.01
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "title": "Animation Clips",
+                "description": "Список анімацій, пов'язаних з юнітом"
+              }
+            },
+            "additionalProperties": false,
+            "title": "Template"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Unit Presets"
+    },
+    "buildingPresets": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Name"
+          },
+          "template": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Id"
+              },
+              "displayName": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Display Name"
+              },
+              "category": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:Military|Civilian|Industrial|Walls))$",
+                "x-enumNames": [
+                  "Military",
+                  "Civilian",
+                  "Industrial",
+                  "Walls"
+                ],
+                "x-flags": false,
+                "title": "Category"
+              },
+              "role": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:None|Housing|Production|Storage|SettlementCenter|Defense|Wall|Gate|Decoration|Support))$",
+                "x-enumNames": [
+                  "None",
+                  "Housing",
+                  "Production",
+                  "Storage",
+                  "SettlementCenter",
+                  "Defense",
+                  "Wall",
+                  "Gate",
+                  "Decoration",
+                  "Support"
+                ],
+                "x-flags": false,
+                "title": "Role"
+              },
+              "description": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Description"
+              },
+              "tags": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "title": "Tags"
+              },
+              "runtimeTags": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "title": "Runtime Tags"
+              },
+              "icon": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Icon"
+              },
+              "runtimePreview": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Runtime-safe preview префаба будівлі. Генерується редактором і використовується toolbar UI у білді.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Runtime Preview"
+              },
+              "prefab": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                "properties": {
+                  "$asset": {
+                    "type": "string",
+                    "title": "Asset ID"
+                  },
+                  "editorPath": {
+                    "type": "string",
+                    "description": "Editor-only path для діагностики/регенерації catalog."
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "required": [
+                  "$asset"
+                ],
+                "title": "Prefab"
+              },
+              "footprint": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "size": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Size"
+                  },
+                  "anchor": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:Center|SouthWest|Custom))$",
+                    "x-enumNames": [
+                      "Center",
+                      "SouthWest",
+                      "Custom"
+                    ],
+                    "x-flags": false,
+                    "title": "Anchor"
+                  },
+                  "customAnchor": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Custom Anchor"
+                  },
+                  "blocksMovement": {
+                    "type": "boolean",
+                    "title": "Blocks Movement"
+                  },
+                  "blocksConstruction": {
+                    "type": "boolean",
+                    "title": "Blocks Construction"
+                  },
+                  "requiresFlatGround": {
+                    "type": "boolean",
+                    "title": "Requires Flat Ground"
+                  },
+                  "occupiedCells": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "title": "Occupied Cells"
+                  },
+                  "entranceCells": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "title": "Entrance Cells"
+                  },
+                  "roadConnectionCells": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "title": "Road Connection Cells"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "Footprint",
+                "description": "Runtime footprint used by validation, occupancy and build-grid preview."
+              },
+              "visualYOffset": {
+                "type": "number",
+                "title": "Visual Y Offset",
+                "description": "Додатковий Y-offset для візуалу цієї будівлі. Не впливає на логіку клітинки чи колайдер розміщення."
+              },
+              "constructionCost": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "resourceId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "title": "Resource Id",
+                      "description": "ID ресурсу з EconomyDatabaseSO, який потрібен для будівництва.\nВибирається зі списку ресурсів через dropdown."
+                    },
+                    "amount": {
+                      "type": "integer",
+                      "title": "Amount",
+                      "description": "Кількість ресурсу, яка витрачається на будівництво 1 одиниці цієї споруди.",
+                      "minimum": 1.0,
+                      "x-moyva-editorMinimum": 1.0
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "title": "Construction Cost",
+                "description": "Список ресурсів і кількостей, необхідних для побудови 1 екземпляра цієї будівлі.\nПорожній список означає безкоштовне будівництво."
+              },
+              "modules": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "$type": {
+                      "type": "string",
+                      "enum": [
+                        "barn",
+                        "building-per-player-limit-module",
+                        "building-prerequisite-module",
+                        "castle",
+                        "defense",
+                        "fog-placement-rule-module",
+                        "fog-reveal",
+                        "garrison",
+                        "gate",
+                        "housing",
+                        "production",
+                        "replacement-placement-rule-module",
+                        "settlement-center",
+                        "settlement-influence-requirement",
+                        "spacing-placement-rule-module",
+                        "storage",
+                        "terrain-placement-rule-module",
+                        "tile-requirement",
+                        "town-hall",
+                        "wall",
+                        "warehouse",
+                        "workerless",
+                        "workforce"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "$type"
+                  ],
+                  "additionalProperties": true
+                },
+                "title": "Modules",
+                "description": "Компонентна модель будівлі. Runtime використовує модулі для визначення можливостей."
+              },
+              "maxHp": {
+                "type": "integer",
+                "title": "Max Hp",
+                "description": "Максимальне HP будівлі. Використовується для ініціалізації компонента IHealth під час spawn.",
+                "minimum": 1.0,
+                "x-moyva-editorMinimum": 1.0
+              },
+              "armor": {
+                "type": "integer",
+                "title": "Armor"
+              },
+              "runtimeFlags": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:None|BlocksPath|Selectable|Damageable|RequiresCompletion)(?:, (?:None|BlocksPath|Selectable|Damageable|RequiresCompletion))*)$",
+                "x-enumNames": [
+                  "None",
+                  "BlocksPath",
+                  "Selectable",
+                  "Damageable",
+                  "RequiresCompletion"
+                ],
+                "x-flags": true,
+                "title": "Runtime Flags"
+              },
+              "placementRules": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "canPlaceInFog": {
+                    "type": "boolean",
+                    "title": "Can Place In Fog"
+                  },
+                  "requiresSettlementInfluence": {
+                    "type": "boolean",
+                    "title": "Requires Settlement Influence"
+                  },
+                  "createsSettlementInfluence": {
+                    "type": "boolean",
+                    "title": "Creates Settlement Influence"
+                  },
+                  "blockIfSettlementCenterInRange": {
+                    "type": "boolean",
+                    "title": "Block If Settlement Center In Range"
+                  },
+                  "influenceRadius": {
+                    "type": "integer",
+                    "title": "Influence Radius"
+                  },
+                  "minDistanceFromSettlementCenters": {
+                    "type": "integer",
+                    "title": "Min Distance From Settlement Centers"
+                  },
+                  "requiredTerrainIds": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "title": "Required Terrain Ids"
+                  },
+                  "requiredNeighborOffsets": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "title": "Required Neighbor Offsets"
+                  },
+                  "requiresWaterNearby": {
+                    "type": "boolean",
+                    "title": "Requires Water Nearby"
+                  },
+                  "requiresForestNearby": {
+                    "type": "boolean",
+                    "title": "Requires Forest Nearby"
+                  },
+                  "requiresMountainNearby": {
+                    "type": "boolean",
+                    "title": "Requires Mountain Nearby"
+                  },
+                  "requiresRoadNearby": {
+                    "type": "boolean",
+                    "title": "Requires Road Nearby"
+                  },
+                  "nearbyTileRequirements": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "tileId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Tile Id",
+                          "description": "ID потрібного тайла або біому.\nСаме це поле каже системі, який тип місцевості шукати навколо будівлі.\nПриклади: forest-dense для лісу, water для води, grass для відкритої рівнини."
+                        },
+                        "terrainTag": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Terrain Tag",
+                          "description": "Альтернатива точному TileId: семантичний terrain-тег, наприклад water або forest."
+                        },
+                        "radius": {
+                          "type": "integer",
+                          "title": "Radius",
+                          "description": "Радіус пошуку тайла в клітинках.\nВизначає, наскільки далеко від будівлі дозволено шукати потрібну місцевість.\nЗбільшуйте значення для споруд, що використовують широку околицю, і зменшуйте для локальних залежностей.",
+                          "minimum": 1.0,
+                          "x-moyva-editorMinimum": 1.0
+                        },
+                        "minimumTileCount": {
+                          "type": "integer",
+                          "title": "Minimum Tile Count",
+                          "description": "Мінімальна кількість клітинок цього типу, яку треба знайти в заданому радіусі.\nПоле задає поріг достатності місцевості для роботи будівлі.\nНаприклад, мисливська хатина може вимагати кілька лісових клітин, а місту вистачає однієї водної.",
+                          "minimum": 1.0,
+                          "x-moyva-editorMinimum": 1.0
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "title": "Nearby Tile Requirements"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "Placement Rules",
+                "description": "Повна runtime-копія editor-authored placement settings. Нові модулі мають пріоритет над цією compatibility-моделлю."
+              },
+              "canPlaceInFog": {
+                "type": "boolean",
+                "title": "Can Place In Fog",
+                "description": "Дозволяє розміщення, навіть якщо клітинка ще не Visible у Fog of War."
+              },
+              "requiredTerrainIds": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "title": "Required Terrain Ids",
+                "description": "Якщо список не порожній, будівлю можна ставити тільки на тайли з цими ID."
+              },
+              "useCustomTownHallRules": {
+                "type": "boolean",
+                "title": "Use Custom Town Hall Rules",
+                "description": "Увімкнути кастомні правила розміщення відносно ратуші для цієї будівлі.\nЯкщо вимкнено — застосовуються стандартні правила за класом будівлі."
+              },
+              "requireTownHallInRange": {
+                "type": "boolean",
+                "title": "Require Town Hall In Range",
+                "description": "Чи потребує будівля наявності ратуші в радіусі дії.\nЗа замовчуванням для не-ратуш це true, для ратуші — false."
+              },
+              "blockIfTownHallAlreadyInRange": {
+                "type": "boolean",
+                "title": "Block If Town Hall Already In Range",
+                "description": "Чи забороняти розміщення, якщо в радіусі вже є інша ратуша.\nЗа замовчуванням true для ратуші та false для інших."
+              },
+              "townHallProximityRadiusOverride": {
+                "type": "integer",
+                "title": "Town Hall Proximity Radius Override",
+                "description": "Локальний override радіусу правил ратуші для цієї будівлі.\n<= 0 означає використати глобальний радіус із ConstructionInstaller."
+              }
+            },
+            "additionalProperties": false,
+            "title": "Template"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Building Presets"
+    },
+    "fogPresets": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Name"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "$config": {
+                    "type": "object",
+                    "required": [
+                      "id"
+                    ],
+                    "properties": {
+                      "model": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                },
+                "required": [
+                  "$config"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "unexploredColor": {
+                    "type": "object",
+                    "properties": {
+                      "r": {
+                        "type": "number"
+                      },
+                      "g": {
+                        "type": "number"
+                      },
+                      "b": {
+                        "type": "number"
+                      },
+                      "a": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "r",
+                      "g",
+                      "b",
+                      "a"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Unexplored Color"
+                  },
+                  "exploredColor": {
+                    "type": "object",
+                    "properties": {
+                      "r": {
+                        "type": "number"
+                      },
+                      "g": {
+                        "type": "number"
+                      },
+                      "b": {
+                        "type": "number"
+                      },
+                      "a": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "r",
+                      "g",
+                      "b",
+                      "a"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Explored Color"
+                  },
+                  "fogTileSprite": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Fog Tile Sprite"
+                  },
+                  "fogTileSpritePixelSize": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Fog Tile Sprite Pixel Size"
+                  },
+                  "fogTileSizeInCells": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Fog Tile Size In Cells"
+                  },
+                  "fogTileSeamOverlapPixels": {
+                    "type": "number",
+                    "title": "Fog Tile Seam Overlap Pixels"
+                  },
+                  "fogMapEdgePaddingPixels": {
+                    "type": "number",
+                    "title": "Fog Map Edge Padding Pixels"
+                  },
+                  "fogMapEdgeOverhangCells": {
+                    "type": "number",
+                    "title": "Fog Map Edge Overhang Cells"
+                  },
+                  "fogTileTiling": {
+                    "type": "number",
+                    "title": "Fog Tile Tiling"
+                  },
+                  "fogIconSprites": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                      "properties": {
+                        "$asset": {
+                          "type": "string",
+                          "title": "Asset ID"
+                        },
+                        "editorPath": {
+                          "type": "string",
+                          "description": "Editor-only path для діагностики/регенерації catalog."
+                        },
+                        "required": {
+                          "type": "boolean",
+                          "default": true
+                        }
+                      },
+                      "required": [
+                        "$asset"
+                      ]
+                    },
+                    "title": "Fog Icon Sprites"
+                  },
+                  "fogIconSpritePixelSize": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Fog Icon Sprite Pixel Size"
+                  },
+                  "fogIconGridSize": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number"
+                      },
+                      "y": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ],
+                    "additionalProperties": false,
+                    "title": "Fog Icon Grid Size"
+                  },
+                  "fogIconScale": {
+                    "type": "number",
+                    "title": "Fog Icon Scale"
+                  },
+                  "centerIcon": {
+                    "type": "boolean",
+                    "title": "Center Icon"
+                  },
+                  "fullyTransparentWhenVisible": {
+                    "type": "boolean",
+                    "title": "Fully Transparent When Visible"
+                  },
+                  "fog3DTopClearance": {
+                    "type": "number",
+                    "title": "Fog 3D Top Clearance"
+                  },
+                  "enableShaderFogCulling": {
+                    "type": "boolean",
+                    "title": "Enable Shader Fog Culling"
+                  },
+                  "shaderFogCullThreshold": {
+                    "type": "number",
+                    "title": "Shader Fog Cull Threshold"
+                  },
+                  "enableRendererCulling": {
+                    "type": "boolean",
+                    "title": "Enable Renderer Culling",
+                    "description": "Disables world renderers that are fully covered by unexplored fog."
+                  },
+                  "requireOpaqueUnexploredForCulling": {
+                    "type": "boolean",
+                    "title": "Require Opaque Unexplored For Culling",
+                    "description": "If enabled, renderer culling works only when UnexploredAlpha is close to opaque (>= 0.99)."
+                  },
+                  "rendererCullingLayerMask": {
+                    "type": "integer",
+                    "title": "Renderer Culling Layer Mask",
+                    "description": "Layers affected by fog renderer culling."
+                  },
+                  "rendererCullingMaxRenderersPerFrame": {
+                    "type": "integer",
+                    "title": "Renderer Culling Max Renderers Per Frame",
+                    "description": "Maximum tracked renderers evaluated per frame. Lower values spread work across more frames."
+                  },
+                  "rendererCullingDiscoveryInterval": {
+                    "type": "number",
+                    "title": "Renderer Culling Discovery Interval",
+                    "description": "How often the culling service searches for newly spawned world renderers."
+                  },
+                  "rendererCullingBoundsPaddingCells": {
+                    "type": "number",
+                    "title": "Renderer Culling Bounds Padding Cells",
+                    "description": "Small bounds padding in map cells to avoid edge flicker when sprites move between cells."
+                  },
+                  "unexploredAlpha": {
+                    "type": "number",
+                    "title": "Unexplored Alpha",
+                    "description": "Alpha for fully unexplored fog; still used by renderer culling safety checks.",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.0,
+                    "x-moyva-editorMaximum": 1.0
+                  },
+                  "exploredAlpha": {
+                    "type": "number",
+                    "title": "Explored Alpha",
+                    "description": "Alpha for explored fog; kept for preset migration and tuning notes.",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.0,
+                    "x-moyva-editorMaximum": 1.0
+                  },
+                  "presentationMode": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:ScreenSpace|LegacyTwcVolume))$",
+                    "x-enumNames": [
+                      "ScreenSpace",
+                      "LegacyTwcVolume"
+                    ],
+                    "x-flags": false,
+                    "title": "Presentation Mode"
+                  },
+                  "screenSpace": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "cornerJoinRevision": {
+                        "type": "integer",
+                        "title": "Corner Join Revision"
+                      },
+                      "enabled": {
+                        "type": "boolean",
+                        "title": "Enabled"
+                      },
+                      "flipTextureY": {
+                        "type": "boolean",
+                        "title": "Flip Texture Y",
+                        "description": "Інвертує координату Y fog texture. Увімкни лише якщо reveal віддзеркалений по осі Z."
+                      },
+                      "transparentFallbackPlaneOffsetY": {
+                        "type": "number",
+                        "title": "Transparent Fallback Plane Offset Y",
+                        "description": "Y-offset базової world-площини для transparent shaders, які не записують scene depth. Для поточного TerrainMesh/Water правильне значення близьке до 0.50–0.53. Нуль зміщує fog майже на половину клітинки при перспективній камері.",
+                        "minimum": -1.0,
+                        "maximum": 3.0,
+                        "x-moyva-editorMinimum": -1.0,
+                        "x-moyva-editorMaximum": 3.0
+                      },
+                      "unexploredColor": {
+                        "type": "object",
+                        "properties": {
+                          "r": {
+                            "type": "number"
+                          },
+                          "g": {
+                            "type": "number"
+                          },
+                          "b": {
+                            "type": "number"
+                          },
+                          "a": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "r",
+                          "g",
+                          "b",
+                          "a"
+                        ],
+                        "additionalProperties": false,
+                        "title": "Unexplored Color"
+                      },
+                      "unexploredOpacity": {
+                        "type": "number",
+                        "title": "Unexplored Opacity",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 1.0
+                      },
+                      "unexploredSaturation": {
+                        "type": "number",
+                        "title": "Unexplored Saturation",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 1.0
+                      },
+                      "exploredColor": {
+                        "type": "object",
+                        "properties": {
+                          "r": {
+                            "type": "number"
+                          },
+                          "g": {
+                            "type": "number"
+                          },
+                          "b": {
+                            "type": "number"
+                          },
+                          "a": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "r",
+                          "g",
+                          "b",
+                          "a"
+                        ],
+                        "additionalProperties": false,
+                        "title": "Explored Color"
+                      },
+                      "exploredOpacity": {
+                        "type": "number",
+                        "title": "Explored Opacity",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 1.0
+                      },
+                      "exploredSaturation": {
+                        "type": "number",
+                        "title": "Explored Saturation",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 1.0
+                      },
+                      "edgeSoftness": {
+                        "type": "number",
+                        "title": "Edge Softness",
+                        "description": "М'якість верхньої fullscreen-межі у частках клітинки.",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 1.0
+                      },
+                      "edgeNoiseStrength": {
+                        "type": "number",
+                        "title": "Edge Noise Strength",
+                        "minimum": 0.0,
+                        "maximum": 0.5,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 0.5
+                      },
+                      "depthAwareEdgeEnabled": {
+                        "type": "boolean",
+                        "title": "Depth Aware Edge Enabled",
+                        "description": "Темний кант на стороні дискретної Unexplored клітинки. Він обчислюється з world-grid меж, лише на реальній поверхні, без screen-neighbour sampling та fallback-площини."
+                      },
+                      "useLegacyWorldCurtain": {
+                        "type": "boolean",
+                        "title": "Use Legacy World Curtain",
+                        "description": "Тимчасово вмикає старий геометричний curtain для порівняння. У нормальному режимі має бути вимкнено."
+                      },
+                      "depthAwareEdgeColor": {
+                        "type": "object",
+                        "properties": {
+                          "r": {
+                            "type": "number"
+                          },
+                          "g": {
+                            "type": "number"
+                          },
+                          "b": {
+                            "type": "number"
+                          },
+                          "a": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "r",
+                          "g",
+                          "b",
+                          "a"
+                        ],
+                        "additionalProperties": false,
+                        "title": "Depth Aware Edge Color"
+                      },
+                      "depthAwareEdgeOpacity": {
+                        "type": "number",
+                        "title": "Depth Aware Edge Opacity",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 1.0
+                      },
+                      "depthAwareEdgeWorldDepth": {
+                        "type": "number",
+                        "title": "Depth Aware Edge World Depth",
+                        "description": "Legacy-параметр. Inner Fog Bevel не використовує world-space екструзію або напрямок Vector3.down.",
+                        "minimum": 0.1,
+                        "maximum": 5.0,
+                        "x-moyva-editorMinimum": 0.1,
+                        "x-moyva-editorMaximum": 5.0
+                      },
+                      "depthAwareEdgeMinPixels": {
+                        "type": "number",
+                        "title": "Depth Aware Edge Min Pixels",
+                        "description": "Legacy-параметр, збережений для сумісності serialized asset. Нова фаска використовує лише Max Pixels як ширину.",
+                        "minimum": 1.0,
+                        "maximum": 16.0,
+                        "x-moyva-editorMinimum": 1.0,
+                        "x-moyva-editorMaximum": 16.0
+                      },
+                      "depthAwareEdgeMaxPixels": {
+                        "type": "number",
+                        "title": "Depth Aware Edge Max Pixels",
+                        "description": "Ширина surface-locked канту в screen pixels. Логічна межа при цьому залишається у world-grid.",
+                        "minimum": 2.0,
+                        "maximum": 10.0,
+                        "x-moyva-editorMinimum": 2.0,
+                        "x-moyva-editorMaximum": 10.0
+                      },
+                      "depthAwareEdgeSamples": {
+                        "type": "integer",
+                        "title": "Depth Aware Edge Samples",
+                        "description": "Legacy-параметр. SurfaceLockedGridEdge не виконує радіальні screen-space вибірки.",
+                        "minimum": 4.0,
+                        "maximum": 12.0,
+                        "x-moyva-editorMinimum": 4.0,
+                        "x-moyva-editorMaximum": 12.0
+                      },
+                      "depthAwareEdgeOcclusionBias": {
+                        "type": "number",
+                        "title": "Depth Aware Edge Occlusion Bias",
+                        "description": "Legacy-параметр. Нова фаска не виконує camera-depth оклюзію, оскільки ніколи не виходить на Visible side.",
+                        "minimum": 0.0,
+                        "maximum": 1.0,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 1.0
+                      },
+                      "depthAwareEdgeGradientPower": {
+                        "type": "number",
+                        "title": "Depth Aware Edge Gradient Power",
+                        "description": "Форма згасання фаски вглиб туману. Більше значення робить темну частину вужчою.",
+                        "minimum": 0.25,
+                        "maximum": 4.0,
+                        "x-moyva-editorMinimum": 0.25,
+                        "x-moyva-editorMaximum": 4.0
+                      },
+                      "depthAwareStateCloseRadiusPixels": {
+                        "type": "integer",
+                        "title": "Depth Aware State Close Radius Pixels",
+                        "description": "Використовується лише для debug ClosedScreenState. Фінальна форма fog береться з RawScreenState.",
+                        "minimum": 0.0,
+                        "maximum": 3.0,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 3.0
+                      },
+                      "depthAwareBoundarySoftnessPixels": {
+                        "type": "number",
+                        "title": "Depth Aware Boundary Softness Pixels",
+                        "description": "М'якість внутрішньої фаски. Не впливає на логічну форму основної fog mask.",
+                        "minimum": 0.0,
+                        "maximum": 4.0,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 4.0
+                      },
+                      "curtainEnabled": {
+                        "type": "boolean",
+                        "title": "Curtain Enabled",
+                        "description": "Створює реальну вертикальну world-space стінку по межі Unexplored."
+                      },
+                      "curtainWorldDepth": {
+                        "type": "number",
+                        "title": "Curtain World Depth",
+                        "description": "Фіксована вертикальна довжина кожного curtain-сегмента. Якщо верх fog піднімається на високий тайл, низ піднімається разом із ним, тому товщина всюди залишається однаковою."
+                      },
+                      "curtainBottomPadding": {
+                        "type": "number",
+                        "title": "Curtain Bottom Padding",
+                        "description": "Наскільки нижче нижньої terrain-поверхні має доходити стінка."
+                      },
+                      "curtainTopOffset": {
+                        "type": "number",
+                        "title": "Curtain Top Offset",
+                        "description": "Невелике вертикальне зміщення верхнього краю. Використовуй лише для усунення z-fighting.",
+                        "minimum": -0.25,
+                        "maximum": 0.5,
+                        "x-moyva-editorMinimum": -0.25,
+                        "x-moyva-editorMaximum": 0.5
+                      },
+                      "curtainHiddenSideOffsetCells": {
+                        "type": "number",
+                        "title": "Curtain Hidden Side Offset Cells",
+                        "description": "Дуже малий зсув стінки у бік Unexplored. Не дозволяє їй заходити на відкриту поверхню.",
+                        "minimum": 0.0,
+                        "maximum": 0.05,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 0.05
+                      },
+                      "curtainEdgeOverlapCells": {
+                        "type": "number",
+                        "title": "Curtain Edge Overlap Cells",
+                        "description": "Невелике перекриття сусідніх вертикальних curtain edges. Закриває мікрощілини у grid corners без підняття одного кінця сегмента на висоту сусіднього terrain level.",
+                        "minimum": 0.0,
+                        "maximum": 0.05,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 0.05
+                      },
+                      "curtainUseHighestAdjacentSurface": {
+                        "type": "boolean",
+                        "title": "Curtain Use Highest Adjacent Surface",
+                        "description": "Верх кожного boundary edge береться з найвищої із двох сусідніх terrain-поверхонь. Прибирає стінки, які прорізають високий тайл."
+                      },
+                      "curtainAnchorToRevealedSurface": {
+                        "type": "boolean",
+                        "title": "Curtain Anchor To Revealed Surface",
+                        "description": "Legacy-параметр. У поточному height-aware режимі верх curtain завжди піднімається до найвищої з двох сусідніх поверхонь. Поле збережене лише для сумісності зі старими asset-файлами."
+                      },
+                      "curtainPerEdgeSurfaceProbe": {
+                        "type": "boolean",
+                        "title": "Curtain Per Edge Surface Probe",
+                        "description": "Виконує окремий downward raycast для кожного boundary edge. Верх стінки співпадає з реальною поверхнею меша, а не лише з logical height + глобальним median offset."
+                      },
+                      "curtainUseSharedBottomPlane": {
+                        "type": "boolean",
+                        "title": "Curtain Use Shared Bottom Plane",
+                        "description": "Legacy-параметр для сумісності зі старими asset-файлами. Поточний runtime завжди використовує однакову локальну Curtain World Depth для кожного сегмента."
+                      },
+                      "curtainDoubleSided": {
+                        "type": "boolean",
+                        "title": "Curtain Double Sided",
+                        "description": "Малює обидві сторони world curtain. Для перспективної камери це необхідно: інакше ближня або дальня половина 3D-краю зникає через back-face culling."
+                      },
+                      "curtainForceDoubleSidedInNormalMode": {
+                        "type": "boolean",
+                        "title": "Curtain Force Double Sided In Normal Mode",
+                        "description": "Примусово використовує Cull Off у normal mode навіть для старого serialized asset, де Curtain Double Sided ще false."
+                      },
+                      "curtainUseOpaqueDepthOcclusion": {
+                        "type": "boolean",
+                        "title": "Curtain Use Opaque Depth Occlusion",
+                        "description": "Legacy-параметр. Height-aware curtain тепер завжди малюється поверх world-геометрії. Перекриття високих тайлів усувається не depth-discard, а підняттям верхньої межі fog до їхньої реальної поверхні."
+                      },
+                      "curtainOpaqueDepthBias": {
+                        "type": "number",
+                        "title": "Curtain Opaque Depth Bias",
+                        "description": "Допуск depth-порівняння у camera-space world units. Збільшити, якщо край мерехтить на стику з тайлом. Зменшити, якщо curtain трохи заходить поверх близької геометрії.",
+                        "minimum": 0.0,
+                        "maximum": 0.25,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 0.25
+                      },
+                      "curtainAutoCalibrateSurfaceOffset": {
+                        "type": "boolean",
+                        "title": "Curtain Auto Calibrate Surface Offset",
+                        "description": "Автоматично вимірює різницю між logical height map і реальною поверхнею TerrainMesh через downward raycasts."
+                      },
+                      "curtainSurfaceOffsetY": {
+                        "type": "number",
+                        "title": "Curtain Surface Offset Y",
+                        "description": "Fallback або ручний Y-offset поверхні. За поточними логами Moyva реальне значення близьке до 0.51–0.53.",
+                        "minimum": -2.0,
+                        "maximum": 2.0,
+                        "x-moyva-editorMinimum": -2.0,
+                        "x-moyva-editorMaximum": 2.0
+                      },
+                      "curtainSurfaceCalibrationSamples": {
+                        "type": "integer",
+                        "title": "Curtain Surface Calibration Samples",
+                        "minimum": 4.0,
+                        "maximum": 64.0,
+                        "x-moyva-editorMinimum": 4.0,
+                        "x-moyva-editorMaximum": 64.0
+                      },
+                      "curtainSurfaceProbeHeight": {
+                        "type": "number",
+                        "title": "Curtain Surface Probe Height"
+                      },
+                      "curtainSurfaceProbeDistance": {
+                        "type": "number",
+                        "title": "Curtain Surface Probe Distance"
+                      },
+                      "curtainSurfaceCalibrationMaxOffset": {
+                        "type": "number",
+                        "title": "Curtain Surface Calibration Max Offset",
+                        "description": "Відкидає raycast hits, які надто далеко від logical height. Це не дозволяє будівлям і юнітам псувати калібрування.",
+                        "minimum": 0.1,
+                        "maximum": 3.0,
+                        "x-moyva-editorMinimum": 0.1,
+                        "x-moyva-editorMaximum": 3.0
+                      },
+                      "curtainSurfaceProbeMask": {
+                        "type": "integer",
+                        "title": "Curtain Surface Probe Mask"
+                      },
+                      "curtainTopCapEnabled": {
+                        "type": "boolean",
+                        "title": "Curtain Top Cap Enabled",
+                        "description": "Будує вузьку горизонтальну верхню кромку у бік Unexplored. Вона створює відчуття товщини fog-volume. Після розділення committed/preview mask цей lip більше не утворює внутрішні кільця."
+                      },
+                      "curtainTopCapWidthCells": {
+                        "type": "number",
+                        "title": "Curtain Top Cap Width Cells",
+                        "minimum": 0.02,
+                        "maximum": 0.4,
+                        "x-moyva-editorMinimum": 0.02,
+                        "x-moyva-editorMaximum": 0.4
+                      },
+                      "curtainTopCapCornerOverlapCells": {
+                        "type": "number",
+                        "title": "Curtain Top Cap Corner Overlap Cells",
+                        "minimum": 0.0,
+                        "maximum": 0.1,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 0.1
+                      },
+                      "curtainTopCapLift": {
+                        "type": "number",
+                        "title": "Curtain Top Cap Lift",
+                        "minimum": 0.0,
+                        "maximum": 0.05,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 0.05
+                      },
+                      "curtainTopDarkness": {
+                        "type": "number",
+                        "title": "Curtain Top Darkness",
+                        "description": "Наскільки темнішим є низ вертикальної стінки. Верхній край збігається з Unexplored Color, тому біля води не виникає чорного шва, схожого на пробивання water shader.",
+                        "minimum": 0.0,
+                        "maximum": 0.95,
+                        "x-moyva-editorMinimum": 0.0,
+                        "x-moyva-editorMaximum": 0.95
+                      },
+                      "curtainTopBandFraction": {
+                        "type": "number",
+                        "title": "Curtain Top Band Fraction",
+                        "description": "Частка висоти, яку займає найтемніший верхній кант.",
+                        "minimum": 0.01,
+                        "maximum": 0.35,
+                        "x-moyva-editorMinimum": 0.01,
+                        "x-moyva-editorMaximum": 0.35
+                      },
+                      "curtainGradientPower": {
+                        "type": "number",
+                        "title": "Curtain Gradient Power",
+                        "description": "Форма вертикального градієнта. Більше значення довше тримає нижній колір.",
+                        "minimum": 0.25,
+                        "maximum": 4.0,
+                        "x-moyva-editorMinimum": 0.25,
+                        "x-moyva-editorMaximum": 4.0
+                      },
+                      "revealDuration": {
+                        "type": "number",
+                        "title": "Reveal Duration"
+                      },
+                      "hideDuration": {
+                        "type": "number",
+                        "title": "Hide Duration"
+                      },
+                      "applyInSceneView": {
+                        "type": "boolean",
+                        "title": "Apply In Scene View"
+                      },
+                      "logCurtainDiagnostics": {
+                        "type": "boolean",
+                        "title": "Log Curtain Diagnostics",
+                        "description": "Пише summary та boundary-сегменти у Console з префіксом [MOYVA_FOG_CURTAIN_DIAG]."
+                      },
+                      "logShaderDiagnostics": {
+                        "type": "boolean",
+                        "title": "Log Shader Diagnostics",
+                        "description": "Пише camera/world-to-grid probes у Console з префіксом [MOYVA_FOG_SHADER_DIAG]."
+                      },
+                      "diagnosticLogIntervalSeconds": {
+                        "type": "number",
+                        "title": "Diagnostic Log Interval Seconds"
+                      },
+                      "diagnosticMaxSegmentLogs": {
+                        "type": "integer",
+                        "title": "Diagnostic Max Segment Logs",
+                        "minimum": 1.0,
+                        "maximum": 64.0,
+                        "x-moyva-editorMinimum": 1.0,
+                        "x-moyva-editorMaximum": 64.0
+                      },
+                      "diagnosticCenterRadiusCells": {
+                        "type": "integer",
+                        "title": "Diagnostic Center Radius Cells",
+                        "description": "Радіус навколо центра відкритої області, з якого boundary-сегменти потрапляють у детальний лог.",
+                        "minimum": 1.0,
+                        "maximum": 30.0,
+                        "x-moyva-editorMinimum": 1.0,
+                        "x-moyva-editorMaximum": 30.0
+                      },
+                      "diagnosticMaskRadiusCells": {
+                        "type": "integer",
+                        "title": "Diagnostic Mask Radius Cells",
+                        "description": "Радіус ASCII-знімка fog mask. V=Visible, e=Explored, B=boundary, #=Unexplored.",
+                        "minimum": 3.0,
+                        "maximum": 20.0,
+                        "x-moyva-editorMinimum": 3.0,
+                        "x-moyva-editorMaximum": 20.0
+                      },
+                      "diagnosticMaxComponentLogs": {
+                        "type": "integer",
+                        "title": "Diagnostic Max Component Logs",
+                        "minimum": 1.0,
+                        "maximum": 16.0,
+                        "x-moyva-editorMinimum": 1.0,
+                        "x-moyva-editorMaximum": 16.0
+                      },
+                      "curtainDebugVisualMode": {
+                        "type": "string",
+                        "pattern": "^(?:-?\\d+|(?:Off|BoundaryDirection|HeightBands|SegmentParity|HeightRelation))$",
+                        "x-enumNames": [
+                          "Off",
+                          "BoundaryDirection",
+                          "HeightBands",
+                          "SegmentParity",
+                          "HeightRelation"
+                        ],
+                        "x-flags": false,
+                        "title": "Curtain Debug Visual Mode",
+                        "description": "BoundaryDirection: Left=red, Right=green, Down=blue, Up=yellow."
+                      },
+                      "shaderDebugMode": {
+                        "type": "string",
+                        "pattern": "^(?:-?\\d+|(?:Off|FogState|GridCoordinates|SceneDepth|WorldGridPosition|FogSurfaceDepth|RawScreenState|ClosedScreenState|ScreenBoundary|VirtualDepth))$",
+                        "x-enumNames": [
+                          "Off",
+                          "FogState",
+                          "GridCoordinates",
+                          "SceneDepth",
+                          "WorldGridPosition",
+                          "FogSurfaceDepth",
+                          "RawScreenState",
+                          "ClosedScreenState",
+                          "ScreenBoundary",
+                          "VirtualDepth"
+                        ],
+                        "x-flags": false,
+                        "title": "Shader Debug Mode"
+                      },
+                      "shaderDebugGridLineWidthPixels": {
+                        "type": "number",
+                        "title": "Shader Debug Grid Line Width Pixels",
+                        "minimum": 0.5,
+                        "maximum": 6.0,
+                        "x-moyva-editorMinimum": 0.5,
+                        "x-moyva-editorMaximum": 6.0
+                      },
+                      "shaderDiagnosticRaycastMask": {
+                        "type": "integer",
+                        "title": "Shader Diagnostic Raycast Mask"
+                      },
+                      "shaderDiagnosticRaycastDistance": {
+                        "type": "number",
+                        "title": "Shader Diagnostic Raycast Distance"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "Screen Space"
+                  },
+                  "enableStartupFallbackReveal": {
+                    "type": "boolean",
+                    "title": "Enable Startup Fallback Reveal",
+                    "description": "If no bootstrap startup reveal arrives for a fresh non-load world, FogOfWarService opens a random visible start area so the map never starts fully black."
+                  },
+                  "startupFallbackRevealRadius": {
+                    "type": "integer",
+                    "title": "Startup Fallback Reveal Radius",
+                    "description": "Radius used by FogOfWarService when bootstrap did not provide a startup reveal."
+                  },
+                  "startupFallbackMinMarginFromBorder": {
+                    "type": "integer",
+                    "title": "Startup Fallback Min Margin From Border",
+                    "description": "Minimum margin from map edge for the fallback random start point."
+                  },
+                  "startupFallbackRelativeMarginFactor": {
+                    "type": "number",
+                    "title": "Startup Fallback Relative Margin Factor",
+                    "description": "Additional map-relative margin for the fallback random start point.",
+                    "minimum": 0.0,
+                    "maximum": 0.45,
+                    "x-moyva-editorMinimum": 0.0,
+                    "x-moyva-editorMaximum": 0.45
+                  },
+                  "startupFallbackRevealShape": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:PixelCircle|Diamond|Square))$",
+                    "x-enumNames": [
+                      "PixelCircle",
+                      "Diamond",
+                      "Square"
+                    ],
+                    "x-flags": false,
+                    "title": "Startup Fallback Reveal Shape",
+                    "description": "Shape used by FogOfWarService fallback startup reveal."
+                  },
+                  "elevationStep": {
+                    "type": "number",
+                    "title": "Elevation Step"
+                  },
+                  "observerHeightBonusPerStep": {
+                    "type": "integer",
+                    "title": "Observer Height Bonus Per Step"
+                  },
+                  "downhillVisionBonusPerStep": {
+                    "type": "integer",
+                    "title": "Downhill Vision Bonus Per Step"
+                  },
+                  "uphillVisionPenaltyPerStep": {
+                    "type": "integer",
+                    "title": "Uphill Vision Penalty Per Step"
+                  },
+                  "maxObserverHeightBonus": {
+                    "type": "integer",
+                    "title": "Max Observer Height Bonus"
+                  },
+                  "maxDownhillVisionBonus": {
+                    "type": "integer",
+                    "title": "Max Downhill Vision Bonus"
+                  },
+                  "maxUphillVisionPenalty": {
+                    "type": "integer",
+                    "title": "Max Uphill Vision Penalty"
+                  },
+                  "occlusionSlopeBias": {
+                    "type": "number",
+                    "title": "Occlusion Slope Bias"
+                  },
+                  "terrainRaySamplesPerTile": {
+                    "type": "integer",
+                    "title": "Terrain Ray Samples Per Tile",
+                    "minimum": 1.0,
+                    "maximum": 9.0,
+                    "x-moyva-editorMinimum": 1.0,
+                    "x-moyva-editorMaximum": 9.0
+                  },
+                  "terrainVisibilityThreshold": {
+                    "type": "number",
+                    "title": "Terrain Visibility Threshold",
+                    "minimum": 0.01,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.01,
+                    "x-moyva-editorMaximum": 1.0
+                  },
+                  "partialVisibilityDetectionMultiplier": {
+                    "type": "number",
+                    "title": "Partial Visibility Detection Multiplier",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.0,
+                    "x-moyva-editorMaximum": 1.0
+                  },
+                  "terrainRayStepTiles": {
+                    "type": "number",
+                    "title": "Terrain Ray Step Tiles",
+                    "minimum": 0.25,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.25,
+                    "x-moyva-editorMaximum": 1.0
+                  },
+                  "observerEyeHeightOffset": {
+                    "type": "number",
+                    "title": "Observer Eye Height Offset"
+                  },
+                  "targetSampleHeightOffset": {
+                    "type": "number",
+                    "title": "Target Sample Height Offset"
+                  },
+                  "terrainFarSampleDistanceRatio": {
+                    "type": "number",
+                    "title": "Terrain Far Sample Distance Ratio",
+                    "minimum": 0.1,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.1,
+                    "x-moyva-editorMaximum": 1.0
+                  },
+                  "terrainVisibilityCacheCapacity": {
+                    "type": "integer",
+                    "title": "Terrain Visibility Cache Capacity"
+                  },
+                  "enableTerrainEdgeLineOfSight": {
+                    "type": "boolean",
+                    "title": "Enable Terrain Edge Line Of Sight"
+                  },
+                  "terrainEdgeHeightThreshold": {
+                    "type": "number",
+                    "title": "Terrain Edge Height Threshold"
+                  },
+                  "terrainEdgePeekDistanceTiles": {
+                    "type": "integer",
+                    "title": "Terrain Edge Peek Distance Tiles"
+                  },
+                  "terrainEdgeBlindZoneTiles": {
+                    "type": "integer",
+                    "title": "Terrain Edge Blind Zone Tiles"
+                  },
+                  "terrainEdgeBlindZoneDistanceScale": {
+                    "type": "number",
+                    "title": "Terrain Edge Blind Zone Distance Scale"
+                  },
+                  "terrainEdgeMaxBlindZoneTiles": {
+                    "type": "integer",
+                    "title": "Terrain Edge Max Blind Zone Tiles"
+                  },
+                  "terrainEdgeUphillPeekStrength": {
+                    "type": "number",
+                    "title": "Terrain Edge Uphill Peek Strength",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.0,
+                    "x-moyva-editorMaximum": 1.0
+                  },
+                  "defaultVisionRange": {
+                    "type": "integer",
+                    "title": "Default Vision Range"
+                  },
+                  "minVisionRange": {
+                    "type": "integer",
+                    "title": "Min Vision Range"
+                  },
+                  "maxVisionRange": {
+                    "type": "integer",
+                    "title": "Max Vision Range"
+                  },
+                  "volume": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "updateMode": {
+                        "type": "string",
+                        "pattern": "^(?:-?\\d+|(?:DebouncePerFrame|Interval|Immediate))$",
+                        "x-enumNames": [
+                          "DebouncePerFrame",
+                          "Interval",
+                          "Immediate"
+                        ],
+                        "x-flags": false,
+                        "title": "Update Mode"
+                      },
+                      "rebuildIntervalSeconds": {
+                        "type": "number",
+                        "title": "Rebuild Interval Seconds"
+                      },
+                      "useClusteredRuntimeFogRenderer": {
+                        "type": "boolean",
+                        "title": "Use Clustered Runtime Fog Renderer"
+                      },
+                      "clusterSize": {
+                        "type": "integer",
+                        "title": "Cluster Size"
+                      },
+                      "clusterPaddingCells": {
+                        "type": "integer",
+                        "title": "Cluster Padding Cells"
+                      },
+                      "horizontalTileOverlap": {
+                        "type": "number",
+                        "title": "Horizontal Tile Overlap",
+                        "description": "Extra X/Z scale overlap for runtime fog volume tiles. Helps close visible gaps between neighboring fog cells."
+                      },
+                      "verticalLayerSpacing": {
+                        "type": "number",
+                        "title": "Vertical Layer Spacing",
+                        "description": "Extra vertical gap between fog layers on different heights. Leave at 0 to keep layers tight."
+                      },
+                      "allowFullRebuildFallback": {
+                        "type": "boolean",
+                        "title": "Allow Full Rebuild Fallback"
+                      },
+                      "fullRebuildDirtyClusterRatioThreshold": {
+                        "type": "number",
+                        "title": "Full Rebuild Dirty Cluster Ratio Threshold",
+                        "minimum": 0.01,
+                        "maximum": 1.0,
+                        "x-moyva-editorMinimum": 0.01,
+                        "x-moyva-editorMaximum": 1.0
+                      },
+                      "logClusterUpdates": {
+                        "type": "boolean",
+                        "title": "Log Cluster Updates"
+                      },
+                      "topClearance": {
+                        "type": "number",
+                        "title": "Top Clearance"
+                      },
+                      "useWorldCellSize": {
+                        "type": "boolean",
+                        "title": "Use World Cell Size"
+                      },
+                      "cellSizeOverride": {
+                        "type": "number",
+                        "title": "Cell Size Override"
+                      },
+                      "heightSource": {
+                        "type": "string",
+                        "pattern": "^(?:-?\\d+|(?:TerrainLevelMapThenHeightMap|HeightMapThenTerrainLevelMap|Flat))$",
+                        "x-enumNames": [
+                          "TerrainLevelMapThenHeightMap",
+                          "HeightMapThenTerrainLevelMap",
+                          "Flat"
+                        ],
+                        "x-flags": false,
+                        "title": "Height Source"
+                      },
+                      "terrainLevelHeightStep": {
+                        "type": "number",
+                        "title": "Terrain Level Height Step",
+                        "description": "World units per TerrainLevelMap step when the generated world provides integer terrain levels."
+                      },
+                      "heightLayerSnap": {
+                        "type": "number",
+                        "title": "Height Layer Snap",
+                        "description": "Height values closer than this are built on the same TWC layer. Keeps runtime layer count stable for noisy HeightMap data."
+                      },
+                      "clearPreviewOnRuntimeStart": {
+                        "type": "boolean",
+                        "title": "Clear Preview On Runtime Start",
+                        "description": "Editor preview uses the current scene TWC grid when available. It is cleared automatically at runtime and rebuilt from generated world data."
+                      },
+                      "previewFallbackWidth": {
+                        "type": "integer",
+                        "title": "Preview Fallback Width"
+                      },
+                      "previewFallbackHeight": {
+                        "type": "integer",
+                        "title": "Preview Fallback Height"
+                      },
+                      "unexplored": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean",
+                            "title": "Enabled"
+                          },
+                          "layerName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Layer Name"
+                          },
+                          "tileVariants": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "properties": {
+                                "preset": {
+                                  "type": [
+                                    "object",
+                                    "null"
+                                  ],
+                                  "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                                  "properties": {
+                                    "$asset": {
+                                      "type": "string",
+                                      "title": "Asset ID"
+                                    },
+                                    "editorPath": {
+                                      "type": "string",
+                                      "description": "Editor-only path для діагностики/регенерації catalog."
+                                    },
+                                    "required": {
+                                      "type": "boolean",
+                                      "default": true
+                                    }
+                                  },
+                                  "required": [
+                                    "$asset"
+                                  ],
+                                  "title": "Preset"
+                                },
+                                "slot": {
+                                  "type": "string",
+                                  "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
+                                  "x-enumNames": [
+                                    "Top",
+                                    "Middle",
+                                    "Bottom"
+                                  ],
+                                  "x-flags": false,
+                                  "title": "Slot"
+                                },
+                                "weight": {
+                                  "type": "number",
+                                  "title": "Weight",
+                                  "minimum": 0.0,
+                                  "maximum": 1.0,
+                                  "x-moyva-editorMinimum": 0.0,
+                                  "x-moyva-editorMaximum": 1.0
+                                },
+                                "tileHeight": {
+                                  "type": "number",
+                                  "title": "Tile Height"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "title": "Tile Variants"
+                          },
+                          "layerYOffset": {
+                            "type": "number",
+                            "title": "Layer Y Offset"
+                          },
+                          "scaleOffset": {
+                            "type": "object",
+                            "properties": {
+                              "x": {
+                                "type": "number"
+                              },
+                              "y": {
+                                "type": "number"
+                              },
+                              "z": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y",
+                              "z"
+                            ],
+                            "additionalProperties": false,
+                            "title": "Scale Offset"
+                          },
+                          "shadowCastingMode": {
+                            "type": "string",
+                            "pattern": "^(?:-?\\d+|(?:Off|On|TwoSided|ShadowsOnly))$",
+                            "x-enumNames": [
+                              "Off",
+                              "On",
+                              "TwoSided",
+                              "ShadowsOnly"
+                            ],
+                            "x-flags": false,
+                            "title": "Shadow Casting Mode"
+                          },
+                          "objectLayer": {
+                            "type": "integer",
+                            "title": "Object Layer"
+                          },
+                          "renderingLayer": {
+                            "type": "object",
+                            "properties": {},
+                            "additionalProperties": false,
+                            "title": "Rendering Layer"
+                          },
+                          "colliderType": {
+                            "type": "string",
+                            "pattern": "^(?:-?\\d+|(?:none|meshCollider|tileCollider))$",
+                            "x-enumNames": [
+                              "none",
+                              "meshCollider",
+                              "tileCollider"
+                            ],
+                            "x-flags": false,
+                            "title": "Collider Type"
+                          },
+                          "tileColliderHeight": {
+                            "type": "number",
+                            "title": "Tile Collider Height"
+                          },
+                          "tileColliderExtrusionHeight": {
+                            "type": "number",
+                            "title": "Tile Collider Extrusion Height"
+                          },
+                          "invertCollisionWalls": {
+                            "type": "boolean",
+                            "title": "Invert Collision Walls"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "Unexplored"
+                      },
+                      "explored": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean",
+                            "title": "Enabled"
+                          },
+                          "layerName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Layer Name"
+                          },
+                          "tileVariants": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "properties": {
+                                "preset": {
+                                  "type": [
+                                    "object",
+                                    "null"
+                                  ],
+                                  "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                                  "properties": {
+                                    "$asset": {
+                                      "type": "string",
+                                      "title": "Asset ID"
+                                    },
+                                    "editorPath": {
+                                      "type": "string",
+                                      "description": "Editor-only path для діагностики/регенерації catalog."
+                                    },
+                                    "required": {
+                                      "type": "boolean",
+                                      "default": true
+                                    }
+                                  },
+                                  "required": [
+                                    "$asset"
+                                  ],
+                                  "title": "Preset"
+                                },
+                                "slot": {
+                                  "type": "string",
+                                  "pattern": "^(?:-?\\d+|(?:Top|Middle|Bottom))$",
+                                  "x-enumNames": [
+                                    "Top",
+                                    "Middle",
+                                    "Bottom"
+                                  ],
+                                  "x-flags": false,
+                                  "title": "Slot"
+                                },
+                                "weight": {
+                                  "type": "number",
+                                  "title": "Weight",
+                                  "minimum": 0.0,
+                                  "maximum": 1.0,
+                                  "x-moyva-editorMinimum": 0.0,
+                                  "x-moyva-editorMaximum": 1.0
+                                },
+                                "tileHeight": {
+                                  "type": "number",
+                                  "title": "Tile Height"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "title": "Tile Variants"
+                          },
+                          "layerYOffset": {
+                            "type": "number",
+                            "title": "Layer Y Offset"
+                          },
+                          "scaleOffset": {
+                            "type": "object",
+                            "properties": {
+                              "x": {
+                                "type": "number"
+                              },
+                              "y": {
+                                "type": "number"
+                              },
+                              "z": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y",
+                              "z"
+                            ],
+                            "additionalProperties": false,
+                            "title": "Scale Offset"
+                          },
+                          "shadowCastingMode": {
+                            "type": "string",
+                            "pattern": "^(?:-?\\d+|(?:Off|On|TwoSided|ShadowsOnly))$",
+                            "x-enumNames": [
+                              "Off",
+                              "On",
+                              "TwoSided",
+                              "ShadowsOnly"
+                            ],
+                            "x-flags": false,
+                            "title": "Shadow Casting Mode"
+                          },
+                          "objectLayer": {
+                            "type": "integer",
+                            "title": "Object Layer"
+                          },
+                          "renderingLayer": {
+                            "type": "object",
+                            "properties": {},
+                            "additionalProperties": false,
+                            "title": "Rendering Layer"
+                          },
+                          "colliderType": {
+                            "type": "string",
+                            "pattern": "^(?:-?\\d+|(?:none|meshCollider|tileCollider))$",
+                            "x-enumNames": [
+                              "none",
+                              "meshCollider",
+                              "tileCollider"
+                            ],
+                            "x-flags": false,
+                            "title": "Collider Type"
+                          },
+                          "tileColliderHeight": {
+                            "type": "number",
+                            "title": "Tile Collider Height"
+                          },
+                          "tileColliderExtrusionHeight": {
+                            "type": "number",
+                            "title": "Tile Collider Extrusion Height"
+                          },
+                          "invertCollisionWalls": {
+                            "type": "boolean",
+                            "title": "Invert Collision Walls"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "Explored"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "Volume"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type.",
+            "title": "Template"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Fog Presets"
+    },
+    "economyPresets": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Name"
+          },
+          "template": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "$config": {
+                    "type": "object",
+                    "required": [
+                      "id"
+                    ],
+                    "properties": {
+                      "model": {
+                        "type": "string"
+                      },
+                      "id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": true
+                  }
+                },
+                "required": [
+                  "$config"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "schemaVersion": {
+                    "type": "integer",
+                    "title": "Schema Version"
+                  },
+                  "resources": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "$config": {
+                              "type": "object",
+                              "required": [
+                                "id"
+                              ],
+                              "properties": {
+                                "model": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": true
+                            }
+                          },
+                          "required": [
+                            "$config"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "title": "Id"
+                            },
+                            "displayName": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "title": "Display Name"
+                            },
+                            "category": {
+                              "type": "string",
+                              "pattern": "^(?:-?\\d+|(?:None|Food|Materials|Money))$",
+                              "x-enumNames": [
+                                "None",
+                                "Food",
+                                "Materials",
+                                "Money"
+                              ],
+                              "x-flags": false,
+                              "title": "Category"
+                            },
+                            "icon": {
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                              "properties": {
+                                "$asset": {
+                                  "type": "string",
+                                  "title": "Asset ID"
+                                },
+                                "editorPath": {
+                                  "type": "string",
+                                  "description": "Editor-only path для діагностики/регенерації catalog."
+                                },
+                                "required": {
+                                  "type": "boolean",
+                                  "default": true
+                                }
+                              },
+                              "required": [
+                                "$asset"
+                              ],
+                              "title": "Icon"
+                            },
+                            "stackLimit": {
+                              "type": "integer",
+                              "title": "Stack Limit"
+                            },
+                            "weightGrams": {
+                              "type": "integer",
+                              "title": "Weight Grams",
+                              "minimum": 1.0,
+                              "x-moyva-editorMinimum": 1.0
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type."
+                    },
+                    "title": "Resources"
+                  },
+                  "settlements": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "$config": {
+                              "type": "object",
+                              "required": [
+                                "id"
+                              ],
+                              "properties": {
+                                "model": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": true
+                            }
+                          },
+                          "required": [
+                            "$config"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "settlementId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "title": "Settlement Id"
+                            },
+                            "settlementType": {
+                              "type": "string",
+                              "pattern": "^(?:-?\\d+|(?:Village|Castle))$",
+                              "x-enumNames": [
+                                "Village",
+                                "Castle"
+                              ],
+                              "x-flags": false,
+                              "title": "Settlement Type"
+                            },
+                            "centerBuildingId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "title": "Center Building Id"
+                            },
+                            "buildRadius": {
+                              "type": "integer",
+                              "title": "Build Radius"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type."
+                    },
+                    "title": "Settlements"
+                  },
+                  "warehousePolicies": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "$config": {
+                              "type": "object",
+                              "required": [
+                                "id"
+                              ],
+                              "properties": {
+                                "model": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": true
+                            }
+                          },
+                          "required": [
+                            "$config"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "warehouseType": {
+                              "type": "string",
+                              "pattern": "^(?:-?\\d+|(?:FoodWarehouse|MaterialsWarehouse))$",
+                              "x-enumNames": [
+                                "FoodWarehouse",
+                                "MaterialsWarehouse"
+                              ],
+                              "x-flags": false,
+                              "title": "Warehouse Type"
+                            },
+                            "entries": {
+                              "type": [
+                                "array",
+                                "null"
+                              ],
+                              "items": {
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "properties": {
+                                  "resourceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ],
+                                    "title": "Resource Id"
+                                  },
+                                  "consumptionAllowed": {
+                                    "type": "boolean",
+                                    "title": "Consumption Allowed"
+                                  },
+                                  "priority": {
+                                    "type": "integer",
+                                    "title": "Priority"
+                                  },
+                                  "reserveAmount": {
+                                    "type": "integer",
+                                    "title": "Reserve Amount"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "title": "Entries"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type."
+                    },
+                    "title": "Warehouse Policies"
+                  },
+                  "productionProfiles": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "$config": {
+                              "type": "object",
+                              "required": [
+                                "id"
+                              ],
+                              "properties": {
+                                "model": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": true
+                            }
+                          },
+                          "required": [
+                            "$config"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "buildingId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "title": "Building Id"
+                            },
+                            "isActiveByDefault": {
+                              "type": "boolean",
+                              "title": "Is Active By Default"
+                            },
+                            "recipeId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "title": "Recipe Id"
+                            },
+                            "cycleDurationSeconds": {
+                              "type": "number",
+                              "title": "Cycle Duration Seconds"
+                            },
+                            "outputAmountPerCycle": {
+                              "type": "integer",
+                              "title": "Output Amount Per Cycle"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type."
+                    },
+                    "title": "Production Profiles"
+                  },
+                  "caravanTemplates": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "$config": {
+                              "type": "object",
+                              "required": [
+                                "id"
+                              ],
+                              "properties": {
+                                "model": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": true
+                            }
+                          },
+                          "required": [
+                            "$config"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "templateId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "title": "Template Id"
+                            },
+                            "allowedResourceIds": {
+                              "type": [
+                                "array",
+                                "null"
+                              ],
+                              "items": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "title": "Allowed Resource Ids"
+                            },
+                            "capacity": {
+                              "type": "integer",
+                              "title": "Capacity"
+                            },
+                            "maxWeightGrams": {
+                              "type": "integer",
+                              "title": "Max Weight Grams",
+                              "minimum": 1.0,
+                              "x-moyva-editorMinimum": 1.0
+                            },
+                            "defaultPriority": {
+                              "type": "integer",
+                              "title": "Default Priority"
+                            },
+                            "useLoopDelivery": {
+                              "type": "boolean",
+                              "title": "Use Loop Delivery"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type."
+                    },
+                    "title": "Caravan Templates"
+                  },
+                  "aiRuleProfiles": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "$config": {
+                              "type": "object",
+                              "required": [
+                                "id"
+                              ],
+                              "properties": {
+                                "model": {
+                                  "type": "string"
+                                },
+                                "id": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": true
+                            }
+                          },
+                          "required": [
+                            "$config"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "profileId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "title": "Profile Id",
+                              "description": "Унікальний ідентифікатор профілю AI-правил.\nВикористовується для прив'язки профілю до фракції або поселення.\nПриклад: \"ai-aggressive\", \"ai-passive-merchant\"."
+                            },
+                            "resourceThresholds": {
+                              "type": [
+                                "array",
+                                "null"
+                              ],
+                              "items": {
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "properties": {
+                                  "resourceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ],
+                                    "title": "Resource Id",
+                                    "description": "ID ресурсу (має збігатися з ResourceDefinition.Id).\nПриклад: \"Grain\", \"Wood\", \"Tools\"."
+                                  },
+                                  "shortageThreshold": {
+                                    "type": "integer",
+                                    "title": "Shortage Threshold",
+                                    "description": "Поріг нестачі: якщо запас нижчий за це значення — AI вважає ресурс дефіцитним і не продає його.\nПриклад: 30 — менше 30 одиниць зерна → AI не торгує зерном."
+                                  },
+                                  "excessThreshold": {
+                                    "type": "integer",
+                                    "title": "Excess Threshold",
+                                    "description": "Поріг надлишку: якщо запас перевищує це значення — AI вважає ресурс надлишковим і пропонує до продажу.\nПриклад: 200 — більше 200 одиниць дерева → AI пропонує торгувати."
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "title": "Resource Thresholds",
+                              "description": "Список порогів нестачі/надлишку для кожного ресурсу.\nAI приймає торговельні рішення виходячи з цих значень."
+                            },
+                            "useConservativeSpending": {
+                              "type": "boolean",
+                              "title": "Use Conservative Spending",
+                              "description": "true = AI витрачає ресурси обережно: зберігає більший запас перед торгівлею.\nfalse = AI агресивно торгує навіть при середніх запасах."
+                            },
+                            "prioritizeFoodSecurity": {
+                              "type": "boolean",
+                              "title": "Prioritize Food Security",
+                              "description": "true = AI в першу чергу забезпечує запас їжі, навіть якщо це невигідно торговельно.\nРекомендовано залишити true для реалістичної поведінки ворога."
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type."
+                    },
+                    "title": "Ai Rule Profiles"
+                  },
+                  "mapObjectEconomyEntries": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "mapObjectId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Map Object Id"
+                        },
+                        "displayName": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Display Name"
+                        },
+                        "isInteractable": {
+                          "type": "boolean",
+                          "title": "Is Interactable"
+                        },
+                        "yieldsResource": {
+                          "type": "boolean",
+                          "title": "Yields Resource"
+                        },
+                        "harvestResourceId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Harvest Resource Id"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "title": "Map Object Economy Entries"
+                  },
+                  "rulesConfig": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "$config": {
+                            "type": "object",
+                            "required": [
+                              "id"
+                            ],
+                            "properties": {
+                              "model": {
+                                "type": "string"
+                              },
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": true
+                          }
+                        },
+                        "required": [
+                          "$config"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "settlement": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "maxSettlements": {
+                                "type": "integer",
+                                "title": "Max Settlements",
+                                "description": "Максимальна кількість поселень на карті одночасно.\nПриклад: 3 — гравець може мати не більше 3 ратуш."
+                              },
+                              "minTownHallDistance": {
+                                "type": "integer",
+                                "title": "Min Town Hall Distance",
+                                "description": "Мінімальна відстань (тайлів) між ратушами різних поселень.\nЗапобігає будівництву нового поселення впритул до існуючого.\nПриклад: 25."
+                              },
+                              "allowSettlementWithoutPopulation": {
+                                "type": "boolean",
+                                "title": "Allow Settlement Without Population",
+                                "description": "Чи може поселення існувати без жителів і не деактивуватись.\nfalse = поселення без жителів автоматично знімається з гри."
+                              },
+                              "deactivateSettlementWhenPopulationIsZero": {
+                                "type": "boolean",
+                                "title": "Deactivate Settlement When Population Is Zero",
+                                "description": "Автоматично деактивувати поселення, якщо населення = 0.\nПрацює лише коли AllowSettlementWithoutPopulation = false."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Settlement",
+                            "description": "Правила поселень: макс. кількість, мінімальна відстань між ратушами, поведінка без населення."
+                          },
+                          "population": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "newResidentsArrivalIntervalTurns": {
+                                "type": "integer",
+                                "title": "New Residents Arrival Interval Turns",
+                                "description": "Кожні N ходів до поселення прибувають нові жителі (якщо є вільне житло).\nПриклад: 10 — приріст кожні 10 ходів."
+                              },
+                              "requireHousingForFamilyCreation": {
+                                "type": "boolean",
+                                "title": "Require Housing For Family Creation",
+                                "description": "true = нові родини утворюються лише за наявності вільного місця в житловій будівлі.\nfalse = населення зростає незалежно від наявності будинків."
+                              },
+                              "enableWarMortality": {
+                                "type": "boolean",
+                                "title": "Enable War Mortality",
+                                "description": "Враховувати смертність від бойових дій.\nВимкніть для мирних режимів або прототипування."
+                              },
+                              "enableDiseaseMortality": {
+                                "type": "boolean",
+                                "title": "Enable Disease Mortality",
+                                "description": "Враховувати смертність від хвороб.\nВимкніть щоб прибрати цей чинник зі складності."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Population",
+                            "description": "Правила населення: швидкість приросту, вимоги до житла, смертність від війни/хвороби."
+                          },
+                          "workforce": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "foodChainPriority": {
+                                "type": "integer",
+                                "title": "Food Chain Priority",
+                                "description": "Пріоритет розподілу робітників у харчових будівлях (ферми, мисливські табори, пекарні).\nЧим вище — тим раніше ці будівлі отримують персонал.\nПриклад: 400."
+                              },
+                              "heatAndClothingPriority": {
+                                "type": "integer",
+                                "title": "Heat And Clothing Priority",
+                                "description": "Пріоритет для будівель тепла та одягу (дровоколи, ткацькі, кравецькі тощо).\nПриклад: 300."
+                              },
+                              "materialsPriority": {
+                                "type": "integer",
+                                "title": "Materials Priority",
+                                "description": "Пріоритет для виробничих будівель матеріалів (лісопилки, каменярні, шахти).\nПриклад: 200."
+                              },
+                              "otherPriority": {
+                                "type": "integer",
+                                "title": "Other Priority",
+                                "description": "Пріоритет для решти будівель, що не підпадають під інші категорії.\nПриклад: 100."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Workforce",
+                            "description": "Правила розподілу робочої сили: пріоритети між харчовими, тепловими, матеріальними та іншими будівлями."
+                          },
+                          "production": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "stopProductionWhenInputMissing": {
+                                "type": "boolean",
+                                "title": "Stop Production When Input Missing",
+                                "description": "true = будівля зупиняє виробництво, якщо відсутні вхідні ресурси.\nПриклад: лісопилка без дерева — не виробляє дошки."
+                              },
+                              "enableTileDependencyModifiers": {
+                                "type": "boolean",
+                                "title": "Enable Tile Dependency Modifiers",
+                                "description": "true = тайли місцевості (ліс, річка, родючий ґрунт) впливають на ефективність сусідніх будівель."
+                              },
+                              "enableFoodDecay": {
+                                "type": "boolean",
+                                "title": "Enable Food Decay",
+                                "description": "true = їжа повільно псується кожен хід.\nРозмір псування задається FoodDecayPerTurn."
+                              },
+                              "foodDecayPerTurn": {
+                                "type": "number",
+                                "title": "Food Decay Per Turn",
+                                "description": "Частка запасів їжі що псується за хід.\n0.02 = 2% на хід. Використовується лише якщо EnableFoodDecay = true."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Production",
+                            "description": "Правила виробництва: зупинка без сировини, вплив тайлів, псування їжі."
+                          },
+                          "storage": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "unlimitedCapacity": {
+                                "type": "boolean",
+                                "title": "Unlimited Capacity",
+                                "description": "true = склади не мають обмеження по кількості ресурсів.\nВикористовується під час розробки; вимкніть для реалістичної гри."
+                              },
+                              "singleBarnPerSettlement": {
+                                "type": "boolean",
+                                "title": "Single Barn Per Settlement",
+                                "description": "true = у поселенні може бути лише один амбар (для зберігання їжі)."
+                              },
+                              "singleWarehousePerSettlement": {
+                                "type": "boolean",
+                                "title": "Single Warehouse Per Settlement",
+                                "description": "true = у поселенні може бути лише один склад (для матеріалів)."
+                              },
+                              "sharedSettlementResourcePool": {
+                                "type": "boolean",
+                                "title": "Shared Settlement Resource Pool",
+                                "description": "true = всі будівлі поселення беруть та здають ресурси в один спільний пул.\nfalse = кожна будівля має власне сховище (складніша логістика)."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Storage",
+                            "description": "Правила складів: ліміт місткості, кількість амбарів/складів, спільний пул ресурсів."
+                          },
+                          "caravan": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "manualControlOnly": {
+                                "type": "boolean",
+                                "title": "Manual Control Only",
+                                "description": "true = каравани керуються виключно гравцем, без автоматичного AI управління."
+                              },
+                              "maxCaravansPerSettlement": {
+                                "type": "integer",
+                                "title": "Max Caravans Per Settlement",
+                                "description": "Максимальна кількість активних каравань за раз для одного поселення.\nПриклад: 1 — лише один караван виходить одночасно."
+                              },
+                              "maxWeightGrams": {
+                                "type": "integer",
+                                "title": "Max Weight Grams",
+                                "description": "Максимальна сумарна вага вантажу в грамах.\nПриклад: 50000 = 50 кг."
+                              },
+                              "offRoadRangeMultiplier": {
+                                "type": "number",
+                                "title": "Off Road Range Multiplier",
+                                "description": "Множник дальності руху каравану поза дорогами.\n0.7 = -30% до базового радіусу. Менше 1.0 — бездоріжжя сповільнює."
+                              },
+                              "roadRangeMultiplier": {
+                                "type": "number",
+                                "title": "Road Range Multiplier",
+                                "description": "Множник дальності руху каравану по дорогах.\n1.2 = +20% до базового радіусу. Більше 1.0 — дороги прискорюють."
+                              },
+                              "enableInstantCombatInterceptionFallback": {
+                                "type": "boolean",
+                                "title": "Enable Instant Combat Interception Fallback",
+                                "description": "true = якщо бойове перехоплення каравану не розраховується (AI вимкнений), використовувати миттєву втрату каравану."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Caravan",
+                            "description": "Правила каравань: ручне/автоматичне керування, кількість, дальність по дорогах і без."
+                          },
+                          "market": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "stockExponent": {
+                                "type": "number",
+                                "title": "Stock Exponent",
+                                "description": "Ступінь впливу наявного запасу на ціну (log-крива).\n0.35 — помірна чутливість: дефіцит підіймає ціну, надлишок знижує.\nЗбільшіть для різкіших коливань ціни."
+                              },
+                              "volumeExponent": {
+                                "type": "number",
+                                "title": "Volume Exponent",
+                                "description": "Ступінь впливу обсягу торгівлі на ціну.\n0.20 — великий обсяг торгів злегка знижує ціну (оптовий ефект)."
+                              },
+                              "minPriceMultiplier": {
+                                "type": "number",
+                                "title": "Min Price Multiplier",
+                                "description": "Мінімальний множник ціни відносно базової.\n0.50 = ціна не може бути нижчою ніж 50% від базової, навіть при повних складах."
+                              },
+                              "maxPriceMultiplier": {
+                                "type": "number",
+                                "title": "Max Price Multiplier",
+                                "description": "Максимальний множник ціни відносно базової.\n2.50 = при критичному дефіциті ціна може зрости до 250% від базової."
+                              },
+                              "targetStock": {
+                                "type": "number",
+                                "title": "Target Stock",
+                                "description": "Цільовий нормальний запас ресурсу (при якому ціна = базова).\n200 = коли на складі 200 одиниць — ціна без коригувань."
+                              },
+                              "referenceTradeVolume": {
+                                "type": "number",
+                                "title": "Reference Trade Volume",
+                                "description": "Референсний обсяг торгівлі за хід (при якому об'ємний знижувач = нейтральний).\n50 = 50 одиниць за хід вважається нормою."
+                              },
+                              "resourceBasePrices": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": [
+                                    "object",
+                                    "null"
+                                  ],
+                                  "properties": {
+                                    "resourceId": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ],
+                                      "title": "Resource Id",
+                                      "description": "ID ресурсу з реєстру (має збігатися з ResourceDefinition.Id).\nПриклад: \"Wood\", \"Grain\", \"Tools\"."
+                                    },
+                                    "basePrice": {
+                                      "type": "integer",
+                                      "title": "Base Price",
+                                      "description": "Базова ціна одиниці цього ресурсу на ринку (перед динамічними модифікаторами).\nПриклад: Wood=5, Tools=14. Менша ціна — більш доступний ресурс."
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                },
+                                "title": "Resource Base Prices",
+                                "description": "Базові ціни для кожного ресурсу. ID має збігатися з ResourceDefinition.\nЦі значення є стартовою точкою перед динамічним розрахунком ринкової ціни."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Market",
+                            "description": "Правила ринку: динамічне ціноутворення, базові ціни ресурсів, мінімум/максимум ціни."
+                          },
+                          "consumption": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "comfortWeights": {
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "properties": {
+                                  "foodWeight": {
+                                    "type": "number",
+                                    "title": "Food Weight",
+                                    "description": "Вага наявності їжі у формулі задоволеності жителів.\n0.35 = їжа найсильніше впливає на комфорт (35%). Сума всіх ваг = 1.0."
+                                  },
+                                  "heatWeight": {
+                                    "type": "number",
+                                    "title": "Heat Weight",
+                                    "description": "Вага наявності опалення (дрова/вугілля) у формулі комфорту.\n0.25 = холод — другий за важливістю чинник незадоволеності."
+                                  },
+                                  "lightWeight": {
+                                    "type": "number",
+                                    "title": "Light Weight",
+                                    "description": "Вага освітлення (свічки, смолоскипи) у формулі комфорту.\n0.10 = відсутність світла помірно знижує настрій."
+                                  },
+                                  "clothingWeight": {
+                                    "type": "number",
+                                    "title": "Clothing Weight",
+                                    "description": "Вага наявності одягу у формулі комфорту.\n0.10 = відсутність одягу помірно знижує задоволеність."
+                                  },
+                                  "taxWeight": {
+                                    "type": "number",
+                                    "title": "Tax Weight",
+                                    "description": "Вага рівня оподаткування у формулі комфорту.\n0.10 =高 податки знижують настрій. 0 = податки ігноруються."
+                                  },
+                                  "lawWeight": {
+                                    "type": "number",
+                                    "title": "Law Weight",
+                                    "description": "Вага правопорядку (присутність варти, карні покарання) у формулі комфорту.\n0.10 = низький правопорядок знижує задоволеність."
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "title": "Comfort Weights",
+                                "description": "Ваги різних факторів у формулі задоволеності жителів.\nСума всіх ваг має дорівнювати 1.0 для коректного розрахунку."
+                              },
+                              "ageConsumption": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": [
+                                    "object",
+                                    "null"
+                                  ],
+                                  "properties": {
+                                    "label": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ],
+                                      "title": "Label",
+                                      "description": "Назва вікової групи для зручності в редакторі.\nПриклад: \"Child\", \"Adult\", \"Elder\"."
+                                    },
+                                    "minAge": {
+                                      "type": "integer",
+                                      "title": "Min Age",
+                                      "description": "Мінімальний вік жителя (включно) для цієї групи споживання.\nПриклад: 0 — починаючи з новонароджених."
+                                    },
+                                    "maxAge": {
+                                      "type": "integer",
+                                      "title": "Max Age",
+                                      "description": "Максимальний вік жителя (включно) для цієї групи споживання.\nПриклад: 200 — практично без обмеження зверху."
+                                    },
+                                    "foodPerTurn": {
+                                      "type": "number",
+                                      "title": "Food Per Turn",
+                                      "description": "Кількість їжі що споживає один житель цієї групи за хід.\nПриклад: дорослий = 1.0, дитина = 0.6."
+                                    },
+                                    "waterPerTurn": {
+                                      "type": "number",
+                                      "title": "Water Per Turn",
+                                      "description": "Кількість води що споживає один житель цієї групи за хід.\nПриклад: дорослий = 1.0, дитина = 0.7."
+                                    },
+                                    "firewoodPerTurn": {
+                                      "type": "number",
+                                      "title": "Firewood Per Turn",
+                                      "description": "Кількість дров що споживає один житель цієї групи за хід.\nПриклад: дорослий = 0.7, дитина = 0.4."
+                                    },
+                                    "clothingPerTurn": {
+                                      "type": "number",
+                                      "title": "Clothing Per Turn",
+                                      "description": "Кількість одягу що споживає один житель цієї групи за хід.\nПриклад: дорослий = 0.3, дитина = 0.2."
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                },
+                                "title": "Age Consumption",
+                                "description": "Правила споживання ресурсів для різних вікових груп.\nКожен запис визначає добові норми їжі, води, дров та одягу для групи."
+                              },
+                              "deficitPenalties": {
+                                "type": [
+                                  "object",
+                                  "null"
+                                ],
+                                "properties": {
+                                  "foodOrWaterHpDelta": {
+                                    "type": "integer",
+                                    "title": "Food Or Water Hp Delta",
+                                    "description": "Зміна HP жителя за хід при дефіциті їжі або води.\n-2 = без їжі здоров'я падає на 2 одиниці за хід."
+                                  },
+                                  "foodOrWaterComfortDelta": {
+                                    "type": "integer",
+                                    "title": "Food Or Water Comfort Delta",
+                                    "description": "Зміна рівня комфорту жителя за хід при дефіциті їжі або води.\n-4 = голод та спрага сильно знижують настрій."
+                                  },
+                                  "firewoodHpDelta": {
+                                    "type": "integer",
+                                    "title": "Firewood Hp Delta",
+                                    "description": "Зміна HP жителя за хід при відсутності дров (замерзання).\n-1 = холод повільніше вбиває ніж голод."
+                                  },
+                                  "firewoodComfortDelta": {
+                                    "type": "integer",
+                                    "title": "Firewood Comfort Delta",
+                                    "description": "Зміна рівня комфорту жителя за хід при відсутності опалення.\n-3 = мерзнути некомфортно, але менше ніж голодувати."
+                                  },
+                                  "clothingComfortDelta": {
+                                    "type": "integer",
+                                    "title": "Clothing Comfort Delta",
+                                    "description": "Зміна рівня комфорту жителя за хід при відсутності одягу.\n-2 = без одягу помірний дискомфорт."
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "title": "Deficit Penalties",
+                                "description": "Штрафи HP та комфорту жителів при дефіциті основних ресурсів (їжа, вода, дрова, одяг)."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Consumption",
+                            "description": "Правила споживання: ваги комфорту, норми їжі/води/дров/одягу за віком, штрафи при дефіциті."
+                          },
+                          "mortality": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "ageTiers": {
+                                "type": [
+                                  "array",
+                                  "null"
+                                ],
+                                "items": {
+                                  "type": [
+                                    "object",
+                                    "null"
+                                  ],
+                                  "properties": {
+                                    "minAge": {
+                                      "type": "integer",
+                                      "title": "Min Age",
+                                      "description": "Мінімальний вік жителя (включно) для цього рівня смертності від старості.\nПриклад: 65."
+                                    },
+                                    "maxAge": {
+                                      "type": "integer",
+                                      "title": "Max Age",
+                                      "description": "Максимальний вік жителя (включно) для цього рівня.\nПриклад: 74. Останній рівень зазвичай має MaxAge=200."
+                                    },
+                                    "baseDeathChance": {
+                                      "type": "number",
+                                      "title": "Base Death Chance",
+                                      "description": "Базовий шанс смерті від старості за хід (0.0–1.0).\n0.004 = 0.4% шанс за хід для 65–74 р. Модифікується голодом/холодом/хворобою."
+                                    }
+                                  },
+                                  "additionalProperties": false
+                                },
+                                "title": "Age Tiers",
+                                "description": "Вікові рівні природної смертності. Кожен запис — діапазон віку та базовий шанс смерті від старості за хід."
+                              },
+                              "hungerWeight": {
+                                "type": "number",
+                                "title": "Hunger Weight",
+                                "description": "Вага голоду у додатковому шансі смерті за хід.\n0.015 = при максимальному голоді +1.5% смерті на хід."
+                              },
+                              "coldWeight": {
+                                "type": "number",
+                                "title": "Cold Weight",
+                                "description": "Вага замерзання у додатковому шансі смерті за хід.\n0.010 = при відсутності дров +1.0% смерті на хід."
+                              },
+                              "diseaseWeight": {
+                                "type": "number",
+                                "title": "Disease Weight",
+                                "description": "Вага хвороби у додатковому шансі смерті за хід.\n0.012 = епідемія додає до +1.2% смерті на хід."
+                              },
+                              "warWeight": {
+                                "type": "number",
+                                "title": "War Weight",
+                                "description": "Вага бойових дій у додатковому шансі смерті за хід.\n0.020 = активна війна дає найбільший приріст смертності."
+                              },
+                              "hungerCap": {
+                                "type": "number",
+                                "title": "Hunger Cap",
+                                "description": "Максимальний додатковий шанс смерті від голоду (обмежувач).\n0.15 = голод не може додати більше 15% шансу смерті за хід."
+                              },
+                              "coldCap": {
+                                "type": "number",
+                                "title": "Cold Cap",
+                                "description": "Максимальний додатковий шанс смерті від холоду (обмежувач).\n0.10 = замерзання обмежено 10%."
+                              },
+                              "diseaseCap": {
+                                "type": "number",
+                                "title": "Disease Cap",
+                                "description": "Максимальний додатковий шанс смерті від хвороби (обмежувач).\n0.12 = хвороба обмежена 12%."
+                              },
+                              "warCap": {
+                                "type": "number",
+                                "title": "War Cap",
+                                "description": "Максимальний додатковий шанс смерті від війни (обмежувач).\n0.20 = бойові дії обмежено 20%."
+                              },
+                              "collapseDeathChance": {
+                                "type": "number",
+                                "title": "Collapse Death Chance",
+                                "description": "Шанс смерті при повному колапсі поселення (0 населення, 0 ресурсів).\n1.0 = 100% — при колапсі всі залишки вмирають."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Mortality",
+                            "description": "Правила смертності: природна (вік), від голоду, холоду, хвороби, війни та колапсу поселення."
+                          },
+                          "building": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "enableMaintenance": {
+                                "type": "boolean",
+                                "title": "Enable Maintenance",
+                                "description": "true = будівлі потребують регулярного ремонту (витрачають матеріали).\nНаразі не реалізовано — запланована функція."
+                              },
+                              "allowBuildingPause": {
+                                "type": "boolean",
+                                "title": "Allow Building Pause",
+                                "description": "true = гравець може вручну поставити будівлю на паузу (зупинити виробництво без знесення)."
+                              },
+                              "buildingDamageStopsProduction": {
+                                "type": "boolean",
+                                "title": "Building Damage Stops Production",
+                                "description": "true = пошкоджена будівля автоматично зупиняє виробництво.\nНаразі не реалізовано — запланована функція."
+                              },
+                              "validateTownHallHousingConflict": {
+                                "type": "boolean",
+                                "title": "Validate Town Hall Housing Conflict",
+                                "description": "true = TownHallModule не може поєднуватися з HousingModule."
+                              },
+                              "validateWorkerlessHousingConflict": {
+                                "type": "boolean",
+                                "title": "Validate Workerless Housing Conflict",
+                                "description": "true = Workerless/Wall/Gate не можуть поєднуватися з HousingModule."
+                              },
+                              "validateWorkerlessProductionConflict": {
+                                "type": "boolean",
+                                "title": "Validate Workerless Production Conflict",
+                                "description": "true = Workerless/Wall/Gate не можуть поєднуватися з ProductionModule."
+                              },
+                              "requireProductionResourceId": {
+                                "type": "boolean",
+                                "title": "Require Production Resource Id",
+                                "description": "true = ProductionModule зобов'язаний мати ResourceId."
+                              },
+                              "requireTileRequirementEntries": {
+                                "type": "boolean",
+                                "title": "Require Tile Requirement Entries",
+                                "description": "true = TileRequirementModule мусить містити хоча б одну валідну вимогу."
+                              },
+                              "warnWorkerlessProductionWorkers": {
+                                "type": "boolean",
+                                "title": "Warn Workerless Production Workers",
+                                "description": "true = показувати warning, якщо WorkersRequired буде примусово зведено до 0 для Workerless/Wall/Gate."
+                              },
+                              "enforceSingletonModules": {
+                                "type": "boolean",
+                                "title": "Enforce Singleton Modules",
+                                "description": "true = singleton modules не можна дублювати в межах однієї будівлі."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Building",
+                            "description": "Правила будівель: обслуговування, пауза, зупинка виробництва при пошкодженні."
+                          },
+                          "aiExtensibility": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "enableAutonomousAiEconomy": {
+                                "type": "boolean",
+                                "title": "Enable Autonomous Ai Economy",
+                                "description": "true = AI фракції мають власну автономну економіку (виробляють, споживають, торгують без гравця).\nЗараз вимкнено — увімкнення в наступних версіях."
+                              },
+                              "enableAiTradeWithPlayer": {
+                                "type": "boolean",
+                                "title": "Enable Ai Trade With Player",
+                                "description": "true = AI-поселення можуть торгувати з гравцем через ринок або каравани.\nПотребує EnableAutonomousAiEconomy = true для повноцінної роботи."
+                              },
+                              "reserveHooksForCaravanEscort": {
+                                "type": "boolean",
+                                "title": "Reserve Hooks For Caravan Escort",
+                                "description": "true = у коді залишаються хуки (порожні зворотні виклики) для підключення системи ескорту каравану в майбутньому."
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Ai Extensibility",
+                            "description": "Правила AI-розширюваності: автономна економіка ворогів, торгівля з гравцем, ескорт каравань."
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type.",
+                    "title": "Rules Config"
+                  }
+                },
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type.",
+            "title": "Template"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Economy Presets"
+    }
+  }
+}

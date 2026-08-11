@@ -1,0 +1,16 @@
+{
+  "$schema": "../../Schemas/home-menu-config.schema.json",
+  "schema": "moyva.home-menu-config",
+  "version": 1,
+  "id": "homemenuconfig",
+  "model": "home-menu-config",
+  "gameplaySceneName": "Gamplay_Scene",
+  "homeMenuSceneName": "HomeMenu",
+  "minPreloadSeconds": 0.8,
+  "sceneActivationDelay": 0.2,
+  "migration": {
+    "sourceAssetGuid": "a1b2c3d4e5f6e0010000000000000001",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/HomeMenu/HomeMenuConfig.asset",
+    "sourceHash": "b1519b49f0ac484b184a677b7e4a6bc0cce7606391093d44d67b6ef10634ab94"
+  }
+}

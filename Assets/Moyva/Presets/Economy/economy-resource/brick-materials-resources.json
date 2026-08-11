@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "brick-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Brick",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-31.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "be646f45ddff4974a38ec40db96a1d4a",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Brick.asset",
+    "sourceHash": "1368daedfa4343ee3f80d1ea7e028efe49dde40ac8fa487fa750a8d6f076ebc3"
+  }
+}

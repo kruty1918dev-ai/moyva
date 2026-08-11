@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/object-scatter.schema.json",
+  "title": "Moyva — Object Scatter Node",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.Runtime.Nodes.ObjectPlacement.ObjectScatterNode. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.object-scatter"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "object-scatter"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "rule": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "density": {
+          "type": "number",
+          "title": "Density",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "randomSeed": {
+          "type": "integer",
+          "title": "Random Seed"
+        },
+        "minDistance": {
+          "type": "number",
+          "title": "Min Distance",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "jitter": {
+          "type": "number",
+          "title": "Jitter",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "rotationRandomization": {
+          "type": "number",
+          "title": "Rotation Randomization",
+          "minimum": 0.0,
+          "maximum": 180.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 180.0
+        },
+        "scaleRandomization": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false,
+          "title": "Scale Randomization"
+        },
+        "heightRange": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false,
+          "title": "Height Range"
+        },
+        "slopeRange": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false,
+          "title": "Slope Range"
+        },
+        "biomeFilter": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Biome Filter"
+        },
+        "layerFilter": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Layer Filter"
+        },
+        "edgeBias": {
+          "type": "number",
+          "title": "Edge Bias",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "avoidWater": {
+          "type": "boolean",
+          "title": "Avoid Water"
+        },
+        "avoidRoads": {
+          "type": "boolean",
+          "title": "Avoid Roads"
+        },
+        "avoidBuildings": {
+          "type": "boolean",
+          "title": "Avoid Buildings"
+        },
+        "alignToSurface": {
+          "type": "boolean",
+          "title": "Align To Surface"
+        },
+        "embedIntoGround": {
+          "type": "number",
+          "title": "Embed Into Ground"
+        },
+        "parentContainer": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Parent Container"
+        },
+        "runtimeMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:RebuildWithWorld|Manual|Incremental))$",
+          "x-enumNames": [
+            "RebuildWithWorld",
+            "Manual",
+            "Incremental"
+          ],
+          "x-flags": false,
+          "title": "Runtime Mode"
+        },
+        "mergeInTWC": {
+          "type": "boolean",
+          "title": "Merge In TWC",
+          "description": "Use TWC object cluster merge. Good for dense grass cards, bad for interactive prefabs."
+        },
+        "useTWCObjectLayer": {
+          "type": "boolean",
+          "title": "Use TWC Object Layer",
+          "description": "When enabled, graph output is converted to a generated TWC Object Build Layer."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Rule",
+      "description": "Загальні правила розкиду, використовуються перед передачею результату до шару об'єктів."
+    },
+    "nodeId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Node Id"
+    },
+    "editorPosition": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Editor Position"
+    },
+    "layerId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Layer Id"
+    }
+  }
+}

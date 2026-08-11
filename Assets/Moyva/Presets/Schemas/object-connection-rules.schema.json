@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/object-connection-rules.schema.json",
+  "title": "Moyva — Object Connection Rules SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.ObjectConnectionRulesSO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.object-connection-rules"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "object-connection-rules"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "groups": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "baseObjectId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Base Object Id",
+            "description": "Базовий ID об'єкта, для якого застосовується ця група правил. Саме його шукає нода автотайлінгу перед підбором конкретного варіанта."
+          },
+          "fallbackId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Fallback Id",
+            "description": "Фолбек-варіант, який буде використано, якщо для конкретної маски сусідів не знайдено окреме правило. Дає змогу уникнути пустих клітинок."
+          },
+          "variants": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "neighborMask": {
+                  "type": "integer",
+                  "title": "Neighbor Mask",
+                  "description": "4-бітна маска сусідів: N=1, E=2, S=4, W=8. Саме за цією маскою система визначає, коли потрібно використати цей варіант замість базового об'єкта.",
+                  "minimum": 0.0,
+                  "maximum": 15.0,
+                  "x-moyva-editorMinimum": 0.0,
+                  "x-moyva-editorMaximum": 15.0
+                },
+                "variantId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "title": "Variant Id",
+                  "description": "ID конкретного варіанта об'єкта, який слід підставити, якщо NeighborMask збігається з оточенням клітинки."
+                }
+              },
+              "additionalProperties": false
+            },
+            "title": "Variants",
+            "description": "Список конкретних варіантів об'єкта для різних поєднань сусідів. Тут задаються прямі сегменти, кути, трійники, хрести та інші форми."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Groups",
+      "description": "Групи правил автотайлінгу для об'єктів. Кожна група описує, як базовий об'єкт має змінюватися залежно від сусідів, наприклад для річок, доріг або огорож."
+    }
+  }
+}

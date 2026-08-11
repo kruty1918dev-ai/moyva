@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/building-registry.schema.json",
+  "title": "Moyva — Building Registry SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Construction.Runtime.BuildingRegistrySO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.building-registry"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "building-registry"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "wallCollections": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "collectionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Collection Id",
+            "description": "Унікальний ідентифікатор колекції стін у реєстрі. Використовується для розрізнення між різними стилями стін. Приклади: 'stone-wall', 'wooden-wall', 'castle-wall'."
+          },
+          "wallBuildingId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Wall Building Id",
+            "description": "ID будівлі-стіни у BuildingRegistrySO. Це значення присвоюється тайлу при розміщенні будь-якого сегмента стіни з цієї колекції. Має збігатися з полем Id відповідного BuildingDefinition."
+          },
+          "gateBuildingId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Gate Building Id",
+            "description": "ID будівлі-воріт у BuildingRegistrySO. Ворота можна встановити лише на тайл, де вже є стіна цієї колекції — вони замінюють її. Має збігатися з полем Id відповідного BuildingDefinition."
+          },
+          "horizontalPrefab": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "ГОРИЗОНТАЛЬНА СТІНА (←→)\n\nПрямий сегмент стіни вздовж осі X (ліворуч–праворуч).\n\nКоли використовується:\n• Є сусіди лише ліворуч і/або праворуч (E, W або E+W)\n• Немає жодних сусідів (одиночний сегмент — fallback)\n• Є 3+ сусіди з обох горизонтальних боків (T-подібний та хрест — fallback)",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Horizontal Prefab"
+          },
+          "verticalPrefab": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "ВЕРТИКАЛЬНА СТІНА (↑↓)\n\nПрямий сегмент стіни вздовж осі Y (знизу вгору).\n\nКоли використовується:\n• Є сусіди лише зверху і/або знизу (N, S або N+S)\n• При T-подібному з'єднанні де є N+S вісь (N+S+E або N+S+W — fallback)",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Vertical Prefab"
+          },
+          "cornerNorthEastPrefab": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "КУТ 'ПРАВИЙ ВЕРХНІЙ' — NE (↑→)\n\nКутовий сегмент що з'єднує напрямки Північ і Схід.\nСтіна згинається: іде вгору і праворуч.\n\nКоли використовується:\n• Є сусід зверху (N) і праворуч (E), але НЕ знизу і НЕ ліворуч",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Corner North East Prefab"
+          },
+          "cornerNorthWestPrefab": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "КУТ 'ЛІВИЙ ВЕРХНІЙ' — NW (↑←)\n\nКутовий сегмент що з'єднує напрямки Північ і Захід.\nСтіна згинається: іде вгору і ліворуч.\n\nКоли використовується:\n• Є сусід зверху (N) і ліворуч (W), але НЕ знизу і НЕ праворуч",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Corner North West Prefab"
+          },
+          "cornerSouthEastPrefab": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "КУТ 'ПРАВИЙ НИЖНІЙ' — SE (↓→)\n\nКутовий сегмент що з'єднує напрямки Південь і Схід.\nСтіна згинається: іде вниз і праворуч.\n\nКоли використовується:\n• Є сусід знизу (S) і праворуч (E), але НЕ зверху і НЕ ліворуч",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Corner South East Prefab"
+          },
+          "cornerSouthWestPrefab": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "КУТ 'ЛІВИЙ НИЖНІЙ' — SW (↓←)\n\nКутовий сегмент що з'єднує напрямки Південь і Захід.\nСтіна згинається: іде вниз і ліворуч.\n\nКоли використовується:\n• Є сусід знизу (S) і ліворуч (W), але НЕ зверху і НЕ праворуч",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Corner South West Prefab"
+          },
+          "gatePrefab": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "ВОРОТА\n\nПрохідний сегмент, що замінює стіну цієї ж колекції.\n\nОсобливості:\n• Можна встановити ЛИШЕ на тайл де вже є стіна (WallBuildingId) цієї колекції\n• При встановленні стіна знищується і замінюється воротами\n• GateBuildingId має бути зареєстровано у BuildingRegistrySO",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Gate Prefab"
+          },
+          "topologyBindings": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "object",
+                "null"
+              ],
+              "properties": {
+                "caseType": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Isolated|CrossIntersection|TJunctionOpenNorth|TJunctionOpenEast|TJunctionOpenSouth|TJunctionOpenWest|CornerNorthEast|CornerNorthWest|CornerSouthEast|CornerSouthWest|Vertical|VerticalLeft|VerticalRight|Horizontal|HorizontalTop|HorizontalBottom|EndNorth|EndEast|EndSouth|EndWest|DiagonalNorthEastSouthWest|DiagonalNorthWestSouthEast))$",
+                  "x-enumNames": [
+                    "Isolated",
+                    "CrossIntersection",
+                    "TJunctionOpenNorth",
+                    "TJunctionOpenEast",
+                    "TJunctionOpenSouth",
+                    "TJunctionOpenWest",
+                    "CornerNorthEast",
+                    "CornerNorthWest",
+                    "CornerSouthEast",
+                    "CornerSouthWest",
+                    "Vertical",
+                    "VerticalLeft",
+                    "VerticalRight",
+                    "Horizontal",
+                    "HorizontalTop",
+                    "HorizontalBottom",
+                    "EndNorth",
+                    "EndEast",
+                    "EndSouth",
+                    "EndWest",
+                    "DiagonalNorthEastSouthWest",
+                    "DiagonalNorthWestSouthEast"
+                  ],
+                  "x-flags": false,
+                  "title": "Case Type"
+                },
+                "variantBuildingIds": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title": "Variant Building Ids"
+                }
+              },
+              "additionalProperties": false
+            },
+            "title": "Topology Bindings",
+            "description": "Опціональний список case -> варіації BuildingId. Якщо елементів немає, система використовує legacy fallback з prefab-полів вище."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Wall Collections"
+    }
+  }
+}

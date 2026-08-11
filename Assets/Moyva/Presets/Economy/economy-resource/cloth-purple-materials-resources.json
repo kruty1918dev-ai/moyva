@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "cloth-purple-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Cloth-purple",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-91.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "295765c7941c4ce49c5b22bd4e38cd33",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Cloth-yellow.asset",
+    "sourceHash": "fe7d476cd4e4fca4e5f5484b29858de8034d53130ecad6532df1e319d8c22a5c"
+  }
+}

@@ -1,53 +1,160 @@
 {
-  "$schema": "../Schemas/building-preset.schema.json",
-  "schema": "moyva.building-preset",
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
   "version": 1,
   "id": "stone-gate",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 1,
   "identity": {
+    "id": "stone-gate",
     "displayName": "Ворота",
-    "description": "Прохід у кам'яній стіні, орієнтований за топологією сусідніх сегментів.",
     "category": "Walls",
-    "role": "Gate"
-  },
-  "construction": {
-    "buildTurns": 1,
-    "cost": [
-      {
-        "resource": "logs",
-        "amount": 1
-      },
-      {
-        "resource": "stone",
-        "amount": 1
-      },
-      {
-        "resource": "boards",
-        "amount": 1
-      }
-    ]
-  },
-  "runtimeStats": {
-    "maxHp": 100
+    "role": "Gate",
+    "description": "Прохід у кам'яній стіні, орієнтований за топологією сусідніх сегментів.",
+    "tags": []
   },
   "presentation": {
     "prefab": {
-      "path": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Gate.prefab",
-      "root": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0",
-      "exact": [
-        "wall-stone-collection-0_Gate"
-      ],
+      "$asset": "asset.game-object.wall-stone-collection-0-gate.2fc84416",
+      "editorPath": "Assets/Moyva/Prefabs/Buildings/Walls/wall-stone-collection-0/wall-stone-collection-0_Gate.prefab",
       "required": true
     },
     "icon": {
-      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-gate.png",
+      "$asset": "asset.sprite.stone-gate.2e4dfea9",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-gate.png",
       "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.stone-gate.2e4dfea9",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/stone-gate.png",
+      "required": true
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
     }
   },
-  "modules": {
-    "mode": "merge",
-    "active": [],
-    "remove": [],
-    "conditional": [],
-    "deferred": []
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": false,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
+      {
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 1
+      },
+      {
+        "resourceId": "stone-materials-resources",
+        "amount": 1
+      },
+      {
+        "resourceId": "hardwood-materials-resources",
+        "amount": 1
+      }
+    ],
+    "buildTurns": 1,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 1,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "gate",
+      "hitPoints": 100,
+      "openSpeed": 1.0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "fog-reveal",
+      "revealRadius": 1,
+      "shape": "PixelCircle",
+      "revealOnBuilt": true,
+      "revealWhileActive": true,
+      "onlyAfterConstructionComplete": true,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "settlement-influence-requirement",
+      "mergeMode": "Override",
+      "requiresInfluence": true,
+      "blockOverlappingCenters": false,
+      "maximumDistanceToCenter": 0,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "replacement-placement-rule-module",
+      "mergeMode": "Override",
+      "replaceableBuildingIds": [
+        "stone-wall"
+      ],
+      "replaceableBuildingTags": [],
+      "requireSameOwner": true,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "879cfc3665ce4e118302bee8294dc708",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/stone-gate.asset",
+    "sourceHash": "68bb20a9409d485231b53f9bb01d44f1a38f762d705883ac84535cead0b6880f"
   }
 }

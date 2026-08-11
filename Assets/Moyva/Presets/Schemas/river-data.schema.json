@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/river-data.schema.json",
+  "title": "Moyva — River Data Config",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.RiverDataConfig. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.river-data"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "river-data"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "baseObjectId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Base Object Id",
+      "description": "ID об'єкта, яким буде промальовано русло річки в ObjectMap."
+    },
+    "riversCount": {
+      "type": "integer",
+      "title": "Rivers Count",
+      "description": "Скільки річок генератор спробує побудувати на карті.",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "usedCellPenalty": {
+      "type": "number",
+      "title": "Used Cell Penalty",
+      "description": "Штраф за проходження клітинкою, яку вже використовувала інша річка. Більше значення = рідше прямі перетини.",
+      "minimum": 0.0,
+      "maximum": 500.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 500.0
+    },
+    "nearRiverPenalty": {
+      "type": "number",
+      "title": "Near River Penalty",
+      "description": "Додатковий штраф за близькість до вже прокладених русел у вказаному радіусі.",
+      "minimum": 0.0,
+      "maximum": 200.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 200.0
+    },
+    "nearRiverRadius": {
+      "type": "integer",
+      "title": "Near River Radius",
+      "description": "Радіус для штрафу близькості до існуючих річок.",
+      "minimum": 0.0,
+      "maximum": 4.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 4.0
+    }
+  }
+}

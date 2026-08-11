@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/world-economy-override.schema.json",
+  "title": "Moyva — World Economy Override",
+  "description": "JSON source of truth для Kruty1918.Moyva.Economy.API.WorldEconomyOverride. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.world-economy-override"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "world-economy-override"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "overrides": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "parameterId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Parameter Id"
+          },
+          "value": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Overrides"
+    },
+    "worldIdentifier": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "World Identifier"
+    }
+  }
+}

@@ -1,77 +1,123 @@
 {
-  "$schema": "../Schemas/building-preset.schema.json",
-  "schema": "moyva.building-preset",
+  "$schema": "../Schemas/building.schema.json",
+  "schema": "moyva.building",
   "version": 1,
   "id": "barn",
+  "model": "building-definition",
+  "placementModuleMigrationVersion": 0,
   "identity": {
+    "id": "barn",
     "displayName": "Комора",
-    "description": "Зберігає харчові ресурси поселення.",
     "category": "Industrial",
-    "role": "Storage"
-  },
-  "construction": {
-    "buildTurns": 0,
-    "cost": [
-      {
-        "resource": "logs",
-        "amount": 10
-      }
-    ]
-  },
-  "runtimeStats": {
-    "maxHp": 100
+    "role": "Storage",
+    "description": "Зберігає харчові ресурси поселення.",
+    "tags": []
   },
   "presentation": {
-    "icon": {
-      "path": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/barn.png",
+    "prefab": {
+      "$asset": "asset.game-object.building-market-blue.cde5c5af",
+      "editorPath": "Assets/ThirdParty/KayKit/Packs/KayKit - Medieval Hexagon Pack (for Unity)/Prefabs/buildings/blue/building_market_blue.prefab",
       "required": true
     },
-    "prefab": {
-      "root": "Assets/KayKit",
-      "exact": [
-        "building_barn_blue"
-      ],
-      "search": [
-        "barn",
-        "farm",
-        "building_barn",
-        "building_farm"
-      ],
-      "fallback": [
-        "building_market_blue"
-      ],
+    "icon": {
+      "$asset": "asset.sprite.barn.39e8ec59",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/barn.png",
       "required": true
+    },
+    "runtimePreview": {
+      "$asset": "asset.sprite.barn.39e8ec59",
+      "editorPath": "Assets/Moyva/Art/UI/Icons/Generated/Buildings/barn.png",
+      "required": true
+    },
+    "uiTint": {
+      "r": 1.0,
+      "g": 1.0,
+      "b": 1.0,
+      "a": 1.0
+    },
+    "visualYOffset": 0.0,
+    "previewSettings": {
+      "cameraOffset": {
+        "x": 4.0,
+        "y": 5.0,
+        "z": -6.0
+      },
+      "cameraEulerAngles": {
+        "x": 45.0,
+        "y": -35.0,
+        "z": 0.0
+      },
+      "orthographicSize": 4.0,
+      "backgroundColor": {
+        "r": 0.0,
+        "g": 0.0,
+        "b": 0.0,
+        "a": 0.0
+      }
     }
   },
-  "modules": {
-    "mode": "merge",
-    "active": [
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [
       {
-        "type": "StorageBuildingModule",
-        "data": {
-          "storageKind": "Food",
-          "capacity": -1
-        }
+        "resourceId": "walnut-wood-materials-resources",
+        "amount": 10
       }
     ],
-    "remove": [
-      "WarehouseBuildingModule",
-      "BarnBuildingModule"
-    ],
-    "conditional": [
-      {
-        "type": "WorkerlessBuildingModule",
-        "data": {}
-      },
-      {
-        "type": "FogRevealBuildingModule",
-        "data": {}
-      },
-      {
-        "type": "SettlementInfluenceRequirementBuildingModule",
-        "data": {}
-      }
-    ],
-    "deferred": []
+    "buildTurns": 0,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "storage",
+      "storageKind": "Food",
+      "capacity": -1,
+      "acceptedResourceIds": [],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "8b4d733a43f386b8fba8400ac59749fb",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Buildings/barn.asset",
+    "sourceHash": "17b5b8e2eed3b8688348b6e98f5cf0fac92c8dd298f8c843f1b36df8b43426d7"
   }
 }

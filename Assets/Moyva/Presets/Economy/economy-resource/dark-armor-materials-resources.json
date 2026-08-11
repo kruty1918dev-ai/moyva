@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "dark-armor-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Dark-armor",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-4.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "813927edeeb34ce7a9de314bc2b6c16d",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Coal.asset",
+    "sourceHash": "5cf3933746bb07b48424a499aca8e4fa2bad218b4f272cf04b036e662b4b8c5d"
+  }
+}

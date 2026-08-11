@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/day-night-screen-filter-feature.schema.json",
+  "title": "Moyva — Day Night Screen Filter Feature",
+  "description": "JSON source of truth для Kruty1918.Moyva.Visuals.DayNightScreenFilterFeature. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.day-night-screen-filter-feature"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "day-night-screen-filter-feature"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "renderPassEvent": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:BeforeRendering|BeforeRenderingShadows|AfterRenderingShadows|BeforeRenderingPrePasses|AfterRenderingPrePasses|BeforeRenderingGbuffer|AfterRenderingGbuffer|BeforeRenderingDeferredLights|AfterRenderingDeferredLights|BeforeRenderingOpaques|AfterRenderingOpaques|BeforeRenderingSkybox|AfterRenderingSkybox|BeforeRenderingTransparents|AfterRenderingTransparents|BeforeRenderingPostProcessing|AfterRenderingPostProcessing|AfterRendering))$",
+      "x-enumNames": [
+        "BeforeRendering",
+        "BeforeRenderingShadows",
+        "AfterRenderingShadows",
+        "BeforeRenderingPrePasses",
+        "AfterRenderingPrePasses",
+        "BeforeRenderingGbuffer",
+        "AfterRenderingGbuffer",
+        "BeforeRenderingDeferredLights",
+        "AfterRenderingDeferredLights",
+        "BeforeRenderingOpaques",
+        "AfterRenderingOpaques",
+        "BeforeRenderingSkybox",
+        "AfterRenderingSkybox",
+        "BeforeRenderingTransparents",
+        "AfterRenderingTransparents",
+        "BeforeRenderingPostProcessing",
+        "AfterRenderingPostProcessing",
+        "AfterRendering"
+      ],
+      "x-flags": false,
+      "title": "Render Pass Event",
+      "description": "Етап рендера, на якому застосовується fullscreen фільтр дня/ночі."
+    },
+    "dayTint": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Day Tint",
+      "description": "Базовий відтінок для фази Дня. Впливає на всю сцену у денний час."
+    },
+    "nightTint": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Night Tint",
+      "description": "Базовий відтінок для фази Ночі. Чим темніший колір, тим глибша ніч."
+    },
+    "dawnTint": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Dawn Tint",
+      "description": "Відтінок для світанку (перехід Ніч -> День)."
+    },
+    "duskTint": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Dusk Tint",
+      "description": "Відтінок для сутінок (перехід День -> Ніч)."
+    },
+    "filterStrength": {
+      "type": "number",
+      "title": "Filter Strength",
+      "description": "Загальна сила фільтра: 0 = вимкнено, 1 = повна інтенсивність.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "daySaturation": {
+      "type": "number",
+      "title": "Day Saturation",
+      "description": "Насиченість кольорів удень.",
+      "minimum": 0.0,
+      "maximum": 2.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 2.0
+    },
+    "nightSaturation": {
+      "type": "number",
+      "title": "Night Saturation",
+      "description": "Насиченість кольорів уночі. Менше значення робить ніч менш кольоровою.",
+      "minimum": 0.0,
+      "maximum": 2.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 2.0
+    },
+    "dayContrast": {
+      "type": "number",
+      "title": "Day Contrast",
+      "description": "Контраст удень.",
+      "minimum": 0.5,
+      "maximum": 2.0,
+      "x-moyva-editorMinimum": 0.5,
+      "x-moyva-editorMaximum": 2.0
+    },
+    "nightContrast": {
+      "type": "number",
+      "title": "Night Contrast",
+      "description": "Контраст уночі. Більше значення = виразніші світлі/темні області.",
+      "minimum": 0.5,
+      "maximum": 2.0,
+      "x-moyva-editorMinimum": 0.5,
+      "x-moyva-editorMaximum": 2.0
+    },
+    "dayExposure": {
+      "type": "number",
+      "title": "Day Exposure",
+      "description": "Експозиція удень (загальна яскравість денної фази).",
+      "minimum": 0.0,
+      "maximum": 2.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 2.0
+    },
+    "nightExposure": {
+      "type": "number",
+      "title": "Night Exposure",
+      "description": "Експозиція уночі. Зменшуйте для темнішої ночі.",
+      "minimum": 0.0,
+      "maximum": 2.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 2.0
+    },
+    "phaseTintStrength": {
+      "type": "number",
+      "title": "Phase Tint Strength",
+      "description": "Сила підмішування відтінків світанку/сутінок у перехідних фазах.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "nightMinBrightness": {
+      "type": "number",
+      "title": "Night Min Brightness",
+      "description": "Мінімальна яскравість уночі. 0 = майже повна темрява, 1 = без затемнення.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "colorizeStrength": {
+      "type": "number",
+      "title": "Colorize Strength",
+      "description": "Наскільки сильно сцена приводиться до обраного фазового кольору.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "m_Active": {
+      "type": "boolean",
+      "title": "Active"
+    }
+  }
+}

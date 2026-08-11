@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/tile-height-table.schema.json",
+  "title": "Moyva — Tile Height Table SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.TileHeightTableSO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.tile-height-table"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "tile-height-table"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "entries": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "tileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Tile Id",
+            "description": "ID тайла із TileRegistry."
+          },
+          "minHeight": {
+            "type": "number",
+            "title": "Min Height",
+            "description": "Нижня межа висоти (0–1)."
+          },
+          "maxHeight": {
+            "type": "number",
+            "title": "Max Height",
+            "description": "Верхня межа висоти (0–1)."
+          },
+          "sprite": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Спрайт цього тайла для візуальної ідентифікації.",
+            "properties": {
+              "$asset": {
+                "type": "string",
+                "title": "Asset ID"
+              },
+              "editorPath": {
+                "type": "string",
+                "description": "Editor-only path для діагностики/регенерації catalog."
+              },
+              "required": {
+                "type": "boolean",
+                "default": true
+              }
+            },
+            "required": [
+              "$asset"
+            ],
+            "title": "Sprite"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Description",
+            "description": "Опис тайла."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Entries",
+      "description": "Таблиця тайлів з висотними діапазонами та спрайтами. Описує, який тайл відповідає якому діапазону висот на карті."
+    }
+  }
+}

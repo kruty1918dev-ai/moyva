@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/scene-music-profile.schema.json",
+  "title": "Moyva — Scene Music Profile SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Audio.Runtime.SceneMusicProfileSO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.scene-music-profile"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "scene-music-profile"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "targetScenes": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "sceneName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Scene Name",
+            "description": "Відображуване ім'я сцени (має збігатися із зареєстрованою сценою в Build Settings або бути просто ідентифікатором)."
+          },
+          "scenePath": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Scene Path",
+            "description": "Повний шлях до .unity-файлу (опційно, для зручності)."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Target Scenes",
+      "description": "Список сцен, для яких діє цей профіль. Порожній список = Global Profile (застосовується до будь-якої сцени без власного профілю)."
+    },
+    "isGlobal": {
+      "type": "boolean",
+      "title": "Is Global",
+      "description": "Якщо ввімкнено — цей профіль є глобальним fallback і застосовується до будь-якої сцени."
+    },
+    "defaultMusic": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "clip": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "AudioClip що грає. null = тиша.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Clip"
+        },
+        "mixerGroup": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "AudioMixerGroup для маршрутизації (Music-група).",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Mixer Group"
+        },
+        "volume": {
+          "type": "number",
+          "title": "Volume",
+          "description": "Стартова гучність.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "loop": {
+          "type": "boolean",
+          "title": "Loop",
+          "description": "Чи грати в циклі."
+        },
+        "startDelay": {
+          "type": "number",
+          "title": "Start Delay",
+          "description": "Затримка (сек) перед першим запуском.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "fadeInDuration": {
+          "type": "number",
+          "title": "Fade In Duration",
+          "description": "Тривалість fade-in при запуску (сек).",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "fadeOutDuration": {
+          "type": "number",
+          "title": "Fade Out Duration",
+          "description": "Тривалість fade-out при зупинці (сек).",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "useCrossfade": {
+          "type": "boolean",
+          "title": "Use Crossfade",
+          "description": "Якщо true — при переході до нового треку (або сцени) crossfade, інакше: fade-out → fade-in."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Default Music"
+    },
+    "epicMusic": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "clip": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "AudioClip що грає. null = тиша.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Clip"
+        },
+        "mixerGroup": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "AudioMixerGroup для маршрутизації (Music-група).",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Mixer Group"
+        },
+        "volume": {
+          "type": "number",
+          "title": "Volume",
+          "description": "Стартова гучність.",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "loop": {
+          "type": "boolean",
+          "title": "Loop",
+          "description": "Чи грати в циклі."
+        },
+        "startDelay": {
+          "type": "number",
+          "title": "Start Delay",
+          "description": "Затримка (сек) перед першим запуском.",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "fadeInDuration": {
+          "type": "number",
+          "title": "Fade In Duration",
+          "description": "Тривалість fade-in при запуску (сек).",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "fadeOutDuration": {
+          "type": "number",
+          "title": "Fade Out Duration",
+          "description": "Тривалість fade-out при зупинці (сек).",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "useCrossfade": {
+          "type": "boolean",
+          "title": "Use Crossfade",
+          "description": "Якщо true — при переході до нового треку (або сцени) crossfade, інакше: fade-out → fade-in."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Epic Music",
+      "description": "Альтернативний трек (бойова музика, атака, напруга тощо)."
+    },
+    "preserveMusicBetweenScenes": {
+      "type": "boolean",
+      "title": "Preserve Music Between Scenes",
+      "description": "Якщо true і наступна сцена грає той самий AudioClip — трек не перезапускається."
+    },
+    "sceneTransitionDuration": {
+      "type": "number",
+      "title": "Scene Transition Duration",
+      "description": "Тривалість crossfade при зміні сцени (якщо трек змінюється).",
+      "minimum": 0.0,
+      "x-moyva-editorMinimum": 0.0
+    }
+  }
+}

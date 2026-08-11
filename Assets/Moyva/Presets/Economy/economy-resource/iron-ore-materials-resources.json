@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "iron-ore-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Iron-ore",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-5.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "964d51ec50f34297899b4274d91b4057",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Iron-ore.asset",
+    "sourceHash": "75eb62bf6fef236b280e7e9c0c3dc52c04ebdfe1616be3751f4c8517428fe1a6"
+  }
+}

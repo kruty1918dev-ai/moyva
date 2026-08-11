@@ -1,0 +1,79 @@
+{
+  "$schema": "../../Schemas/building-archetype.schema.json",
+  "schema": "moyva.building-archetype",
+  "version": 1,
+  "id": "storagetemplate",
+  "model": "building-archetype",
+  "displayName": "Storage Building Template",
+  "role": "Storage",
+  "category": "Civilian",
+  "footprint": {
+    "size": {
+      "x": 1,
+      "y": 1
+    },
+    "anchor": "Center",
+    "customAnchor": {
+      "x": 0,
+      "y": 0
+    },
+    "blocksMovement": true,
+    "blocksConstruction": true,
+    "requiresFlatGround": true,
+    "occupiedCells": [],
+    "entranceCells": [],
+    "roadConnectionCells": []
+  },
+  "placement": {
+    "canPlaceInFog": false,
+    "requiresSettlementInfluence": true,
+    "createsSettlementInfluence": false,
+    "blockIfSettlementCenterInRange": false,
+    "influenceRadius": 0,
+    "minDistanceFromSettlementCenters": 0,
+    "requiredTerrainIds": [],
+    "requiredNeighborOffsets": [],
+    "requiresWaterNearby": false,
+    "requiresForestNearby": false,
+    "requiresMountainNearby": false,
+    "requiresRoadNearby": false,
+    "nearbyTileRequirements": []
+  },
+  "construction": {
+    "cost": [],
+    "buildTurns": 1,
+    "requiresBuilder": true,
+    "workRequired": 0
+  },
+  "runtimeStats": {
+    "maxHp": 100,
+    "armor": 0,
+    "flags": "BlocksPath, Selectable, Damageable",
+    "runtimeTags": []
+  },
+  "modules": [
+    {
+      "$type": "storage",
+      "storageKind": "Any",
+      "capacity": -1,
+      "acceptedResourceIds": [],
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    },
+    {
+      "$type": "fog-reveal",
+      "revealRadius": 1,
+      "shape": "PixelCircle",
+      "revealOnBuilt": true,
+      "revealWhileActive": true,
+      "onlyAfterConstructionComplete": true,
+      "isEnabled": true,
+      "singletonScope": "PerBuilding"
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "1300e2e1b97e4ba4ae209c3d623cf84e",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Construction/Templates/StorageTemplate.asset",
+    "sourceHash": "d9c741e29b7b9226fd2abe7e60615a63aad48e87fc1ee824f36bf730a10c5e34"
+  }
+}

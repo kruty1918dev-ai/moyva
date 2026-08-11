@@ -1,0 +1,20 @@
+{
+  "$schema": "../../Schemas/shared-generator-settings.schema.json",
+  "schema": "moyva.shared-generator-settings",
+  "version": 1,
+  "id": "archipelagosharedsettings",
+  "model": "shared-generator-settings",
+  "waterLikeTileIds": [
+    "water",
+    "ocean-deep",
+    "ocean-shallow"
+  ],
+  "riverBaseObjectId": "river",
+  "separator": "-",
+  "matchBaseTypes": true,
+  "migration": {
+    "sourceAssetGuid": "88c3490bfea75c6e6ad1c6f98b092fc6",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/ArchipelagoSharedSettings.asset",
+    "sourceHash": "1fcfaa6e5753ce60e2c11fd93f6ca13a8f99f6190965af87de0b2554ad047be1"
+  }
+}

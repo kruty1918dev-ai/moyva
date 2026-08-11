@@ -1,0 +1,514 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/tile-world-creator-registry-sync-window.schema.json",
+  "title": "Moyva — Tile World Creator Registry Sync Window",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.Editor.TileWorldCreatorRegistrySyncWindow. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.tile-world-creator-registry-sync-window"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "tile-world-creator-registry-sync-window"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "m_MinSize": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Min Size"
+    },
+    "m_MaxSize": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Max Size"
+    },
+    "m_TitleContent": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "m_Text": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Text"
+        },
+        "m_Image": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+          "properties": {
+            "$asset": {
+              "type": "string",
+              "title": "Asset ID"
+            },
+            "editorPath": {
+              "type": "string",
+              "description": "Editor-only path для діагностики/регенерації catalog."
+            },
+            "required": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "required": [
+            "$asset"
+          ],
+          "title": "Image"
+        },
+        "m_Tooltip": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Tooltip"
+        },
+        "m_TextWithWhitespace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Text With Whitespace"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Title Content"
+    },
+    "m_Pos": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ],
+      "additionalProperties": false,
+      "title": "Pos"
+    },
+    "m_SerializedDataModeController": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "m_DataMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Disabled|Authoring|Mixed|Runtime))$",
+          "x-enumNames": [
+            "Disabled",
+            "Authoring",
+            "Mixed",
+            "Runtime"
+          ],
+          "x-flags": false,
+          "title": "Data Mode"
+        },
+        "m_PreferredDataMode": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:Disabled|Authoring|Mixed|Runtime))$",
+          "x-enumNames": [
+            "Disabled",
+            "Authoring",
+            "Mixed",
+            "Runtime"
+          ],
+          "x-flags": false,
+          "title": "Preferred Data Mode"
+        },
+        "m_SupportedDataModes": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string",
+            "pattern": "^(?:-?\\d+|(?:Disabled|Authoring|Mixed|Runtime))$",
+            "x-enumNames": [
+              "Disabled",
+              "Authoring",
+              "Mixed",
+              "Runtime"
+            ],
+            "x-flags": false
+          },
+          "title": "Supported Data Modes"
+        },
+        "isAutomatic": {
+          "type": "boolean",
+          "title": "Is Automatic"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Serialized Data Mode Controller"
+    },
+    "m_ViewDataDictionary": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "View Data Dictionary"
+    },
+    "m_OverlayCanvas": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "m_LastAppliedPresetName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Last Applied Preset Name"
+        },
+        "m_SaveData": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "dockPosition": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:Top|Bottom))$",
+                "x-enumNames": [
+                  "Top",
+                  "Bottom"
+                ],
+                "x-flags": false,
+                "title": "Dock Position"
+              },
+              "containerId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Container Id"
+              },
+              "displayed": {
+                "type": "boolean",
+                "title": "Displayed"
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Id"
+              },
+              "index": {
+                "type": "integer",
+                "title": "Index"
+              },
+              "contents": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Contents"
+              },
+              "floating": {
+                "type": "boolean",
+                "title": "Floating"
+              },
+              "collapsed": {
+                "type": "boolean",
+                "title": "Collapsed"
+              },
+              "snapOffset": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "title": "Snap Offset"
+              },
+              "snapOffsetDelta": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "title": "Snap Offset Delta"
+              },
+              "snapCorner": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:TopLeft|TopRight|BottomLeft|BottomRight))$",
+                "x-enumNames": [
+                  "TopLeft",
+                  "TopRight",
+                  "BottomLeft",
+                  "BottomRight"
+                ],
+                "x-flags": false,
+                "title": "Snap Corner"
+              },
+              "layout": {
+                "type": "string",
+                "pattern": "^(?:-?\\d+|(?:HorizontalToolbar|VerticalToolbar|Panel|All)(?:, (?:HorizontalToolbar|VerticalToolbar|Panel|All))*)$",
+                "x-enumNames": [
+                  "HorizontalToolbar",
+                  "VerticalToolbar",
+                  "Panel",
+                  "All"
+                ],
+                "x-flags": true,
+                "title": "Layout"
+              },
+              "size": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ],
+                "additionalProperties": false,
+                "title": "Size"
+              },
+              "sizeOverridden": {
+                "type": "boolean",
+                "title": "Size Overridden"
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Save Data"
+        },
+        "m_ContainerData": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "containerId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Container Id"
+              },
+              "scrollOffset": {
+                "type": "number",
+                "title": "Scroll Offset"
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Container Data"
+        },
+        "m_DynamicPanelContainerData": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "containerId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "title": "Container Id"
+              },
+              "width": {
+                "type": "number",
+                "title": "Width"
+              },
+              "saveData": {
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:Panel|Toolbar|Minimized))$",
+                    "x-enumNames": [
+                      "Panel",
+                      "Toolbar",
+                      "Minimized"
+                    ],
+                    "x-flags": false,
+                    "title": "State"
+                  },
+                  "overlayData": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "overlayId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Overlay Id"
+                        },
+                        "metaData": {
+                          "type": "object",
+                          "properties": {
+                            "currentHeight": {
+                              "type": "number",
+                              "title": "Current Height"
+                            }
+                          },
+                          "additionalProperties": false,
+                          "title": "Meta Data"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "title": "Overlay Data"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "Save Data"
+              }
+            },
+            "additionalProperties": false
+          },
+          "title": "Dynamic Panel Container Data"
+        },
+        "m_OverlaysVisible": {
+          "type": "boolean",
+          "title": "Overlays Visible"
+        },
+        "m_DynamicPanelBehavior": {
+          "type": "string",
+          "pattern": "^(?:-?\\d+|(?:None|DisplaceWindow))$",
+          "x-enumNames": [
+            "None",
+            "DisplaceWindow"
+          ],
+          "x-flags": false,
+          "title": "Dynamic Panel Behavior"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Overlay Canvas"
+    }
+  }
+}

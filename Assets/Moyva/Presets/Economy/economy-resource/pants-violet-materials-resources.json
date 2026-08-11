@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "pants-violet-materials-resources",
+  "model": "economy-resource",
+  "displayName": "Pants-violet",
+  "category": "Materials",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-67.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "cf8647b5c95c415787ceaf822e055268",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Copper-nuggets.asset",
+    "sourceHash": "ec37a059136ce3b41c4ce14db061ccf74ead496fa61515c3869e339444ce2b82"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "corn-cob-food-resources",
+  "model": "economy-resource",
+  "displayName": "Corn-cob",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-237.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "22be7686064e4e41848e9d690efc6a81",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Wheat.asset",
+    "sourceHash": "a39a3e70f809907c9e86863093c677f82a74b0127811a0cead497147aa546c9e"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "beef-cut-food-resources",
+  "model": "economy-resource",
+  "displayName": "Beef-cut",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-187.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "14a35d0b650646d49ca371342f1b5bf5",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Beef-cut.asset",
+    "sourceHash": "f05e31b485bd049e76271c0201fdad52c19981010e407373c311b66b3f2c62de"
+  }
+}

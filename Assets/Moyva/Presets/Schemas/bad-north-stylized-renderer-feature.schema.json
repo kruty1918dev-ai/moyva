@@ -1,0 +1,665 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/bad-north-stylized-renderer-feature.schema.json",
+  "title": "Moyva — Bad North Stylized Renderer Feature",
+  "description": "JSON source of truth для Kruty1918.Moyva.Visuals.BadNorthStylizedRendererFeature. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.bad-north-stylized-renderer-feature"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "bad-north-stylized-renderer-feature"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "renderPassEvent": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:BeforeRendering|BeforeRenderingShadows|AfterRenderingShadows|BeforeRenderingPrePasses|AfterRenderingPrePasses|BeforeRenderingGbuffer|AfterRenderingGbuffer|BeforeRenderingDeferredLights|AfterRenderingDeferredLights|BeforeRenderingOpaques|AfterRenderingOpaques|BeforeRenderingSkybox|AfterRenderingSkybox|BeforeRenderingTransparents|AfterRenderingTransparents|BeforeRenderingPostProcessing|AfterRenderingPostProcessing|AfterRendering))$",
+      "x-enumNames": [
+        "BeforeRendering",
+        "BeforeRenderingShadows",
+        "AfterRenderingShadows",
+        "BeforeRenderingPrePasses",
+        "AfterRenderingPrePasses",
+        "BeforeRenderingGbuffer",
+        "AfterRenderingGbuffer",
+        "BeforeRenderingDeferredLights",
+        "AfterRenderingDeferredLights",
+        "BeforeRenderingOpaques",
+        "AfterRenderingOpaques",
+        "BeforeRenderingSkybox",
+        "AfterRenderingSkybox",
+        "BeforeRenderingTransparents",
+        "AfterRenderingTransparents",
+        "BeforeRenderingPostProcessing",
+        "AfterRenderingPostProcessing",
+        "AfterRendering"
+      ],
+      "x-flags": false,
+      "title": "Render Pass Event",
+      "description": "AfterRenderingSkybox keeps transparent water/UI safer. Enable SSAO/Affect Transparent before using a later event such as BeforeRenderingPostProcessing."
+    },
+    "applyInSceneView": {
+      "type": "boolean",
+      "title": "Apply In Scene View"
+    },
+    "debugView": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:FinalComposite|AOOnly|ContactOnly|CreaseOnly|CombinedMask))$",
+      "x-enumNames": [
+        "FinalComposite",
+        "AOOnly",
+        "ContactOnly",
+        "CreaseOnly",
+        "CombinedMask"
+      ],
+      "x-flags": false,
+      "title": "Debug View"
+    },
+    "ssao": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "intensity": {
+          "type": "number",
+          "title": "Intensity",
+          "minimum": 0.0,
+          "maximum": 1.5,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.5
+        },
+        "radius": {
+          "type": "number",
+          "title": "Radius",
+          "minimum": 0.05,
+          "maximum": 2.0,
+          "x-moyva-editorMinimum": 0.05,
+          "x-moyva-editorMaximum": 2.0
+        },
+        "sampleCount": {
+          "type": "integer",
+          "title": "Sample Count",
+          "minimum": 4.0,
+          "maximum": 12.0,
+          "x-moyva-editorMinimum": 4.0,
+          "x-moyva-editorMaximum": 12.0
+        },
+        "power": {
+          "type": "number",
+          "title": "Power",
+          "minimum": 0.5,
+          "maximum": 4.0,
+          "x-moyva-editorMinimum": 0.5,
+          "x-moyva-editorMaximum": 4.0
+        },
+        "thickness": {
+          "type": "number",
+          "title": "Thickness",
+          "minimum": 0.01,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.01,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "blurRadius": {
+          "type": "number",
+          "title": "Blur Radius",
+          "minimum": 0.0,
+          "maximum": 6.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 6.0
+        },
+        "depthSensitivity": {
+          "type": "number",
+          "title": "Depth Sensitivity",
+          "minimum": 0.1,
+          "maximum": 6.0,
+          "x-moyva-editorMinimum": 0.1,
+          "x-moyva-editorMaximum": 6.0
+        },
+        "normalSensitivity": {
+          "type": "number",
+          "title": "Normal Sensitivity",
+          "minimum": 0.0,
+          "maximum": 4.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 4.0
+        },
+        "distanceFadeStart": {
+          "type": "number",
+          "title": "Distance Fade Start",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "distanceFadeEnd": {
+          "type": "number",
+          "title": "Distance Fade End",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "occlusionColor": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Occlusion Color"
+        },
+        "affectSky": {
+          "type": "boolean",
+          "title": "Affect Sky"
+        },
+        "affectTransparent": {
+          "type": "boolean",
+          "title": "Affect Transparent",
+          "description": "Fullscreen passes cannot isolate transparent pixels after they have been composited. Keep the render event before transparents when this is off."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Ssao"
+    },
+    "contact": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "contactStrength": {
+          "type": "number",
+          "title": "Contact Strength",
+          "minimum": 0.0,
+          "maximum": 1.5,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.5
+        },
+        "contactRadius": {
+          "type": "number",
+          "title": "Contact Radius",
+          "minimum": 0.01,
+          "maximum": 1.5,
+          "x-moyva-editorMinimum": 0.01,
+          "x-moyva-editorMaximum": 1.5
+        },
+        "contactFalloff": {
+          "type": "number",
+          "title": "Contact Falloff",
+          "minimum": 0.01,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.01,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "contactColor": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Contact Color"
+        },
+        "smallObjectBoost": {
+          "type": "number",
+          "title": "Small Object Boost",
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 2.0
+        },
+        "grassCardBoost": {
+          "type": "number",
+          "title": "Grass Card Boost",
+          "minimum": 0.0,
+          "maximum": 2.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 2.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Contact"
+    },
+    "crease": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "creaseStrength": {
+          "type": "number",
+          "title": "Crease Strength",
+          "minimum": 0.0,
+          "maximum": 1.5,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.5
+        },
+        "creaseRadius": {
+          "type": "number",
+          "title": "Crease Radius",
+          "minimum": 0.1,
+          "maximum": 3.0,
+          "x-moyva-editorMinimum": 0.1,
+          "x-moyva-editorMaximum": 3.0
+        },
+        "creaseThreshold": {
+          "type": "number",
+          "title": "Crease Threshold",
+          "minimum": 0.001,
+          "maximum": 2.0,
+          "x-moyva-editorMinimum": 0.001,
+          "x-moyva-editorMaximum": 2.0
+        },
+        "creaseSoftness": {
+          "type": "number",
+          "title": "Crease Softness",
+          "minimum": 0.001,
+          "maximum": 2.0,
+          "x-moyva-editorMinimum": 0.001,
+          "x-moyva-editorMaximum": 2.0
+        },
+        "creaseColor": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Crease Color"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Crease"
+    },
+    "palette": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "saturation": {
+          "type": "number",
+          "title": "Saturation",
+          "minimum": -100.0,
+          "maximum": 100.0,
+          "x-moyva-editorMinimum": -100.0,
+          "x-moyva-editorMaximum": 100.0
+        },
+        "contrast": {
+          "type": "number",
+          "title": "Contrast",
+          "minimum": -100.0,
+          "maximum": 100.0,
+          "x-moyva-editorMinimum": -100.0,
+          "x-moyva-editorMaximum": 100.0
+        },
+        "shadowTint": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Shadow Tint"
+        },
+        "highlightTint": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Highlight Tint"
+        },
+        "lift": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Lift"
+        },
+        "gamma": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Gamma"
+        },
+        "gain": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Gain"
+        },
+        "blend": {
+          "type": "number",
+          "title": "Blend",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Palette"
+    },
+    "fog": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "fogColor": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Fog Color"
+        },
+        "fogStrength": {
+          "type": "number",
+          "title": "Fog Strength",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "fogStart": {
+          "type": "number",
+          "title": "Fog Start",
+          "minimum": 0.0,
+          "x-moyva-editorMinimum": 0.0
+        },
+        "fogEnd": {
+          "type": "number",
+          "title": "Fog End",
+          "minimum": 0.01,
+          "x-moyva-editorMinimum": 0.01
+        },
+        "heightInfluence": {
+          "type": "number",
+          "title": "Height Influence",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        },
+        "blend": {
+          "type": "number",
+          "title": "Blend",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 1.0
+        }
+      },
+      "additionalProperties": false,
+      "title": "Fog"
+    },
+    "vignette": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "title": "Enabled"
+        },
+        "vignetteStrength": {
+          "type": "number",
+          "title": "Vignette Strength",
+          "minimum": 0.0,
+          "maximum": 0.35,
+          "x-moyva-editorMinimum": 0.0,
+          "x-moyva-editorMaximum": 0.35
+        },
+        "vignetteRadius": {
+          "type": "number",
+          "title": "Vignette Radius",
+          "minimum": 0.1,
+          "maximum": 2.0,
+          "x-moyva-editorMinimum": 0.1,
+          "x-moyva-editorMaximum": 2.0
+        },
+        "vignetteSoftness": {
+          "type": "number",
+          "title": "Vignette Softness",
+          "minimum": 0.01,
+          "maximum": 2.0,
+          "x-moyva-editorMinimum": 0.01,
+          "x-moyva-editorMaximum": 2.0
+        },
+        "vignetteColor": {
+          "type": "object",
+          "properties": {
+            "r": {
+              "type": "number"
+            },
+            "g": {
+              "type": "number"
+            },
+            "b": {
+              "type": "number"
+            },
+            "a": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "r",
+            "g",
+            "b",
+            "a"
+          ],
+          "additionalProperties": false,
+          "title": "Vignette Color"
+        }
+      },
+      "additionalProperties": false,
+      "title": "Vignette"
+    },
+    "m_Active": {
+      "type": "boolean",
+      "title": "Active"
+    }
+  }
+}

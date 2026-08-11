@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "sticks-brown-food-resources",
+  "model": "economy-resource",
+  "displayName": "Sticks-brown",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-45.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "b0d524aa7a254b118584fa8271670ba3",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Bread-loaf.asset",
+    "sourceHash": "d74ffcda6a344bfdb36acfccc80d977f8bd63d6d217b017bb9db09a899a42e67"
+  }
+}

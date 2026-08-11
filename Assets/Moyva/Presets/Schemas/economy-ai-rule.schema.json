@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/economy-ai-rule.schema.json",
+  "title": "Moyva — Economy Ai Rule Profile",
+  "description": "JSON source of truth для Kruty1918.Moyva.Economy.API.EconomyAiRuleProfile. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.economy-ai-rule"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "economy-ai-rule"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "profileId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Profile Id",
+      "description": "Унікальний ідентифікатор профілю AI-правил.\nВикористовується для прив'язки профілю до фракції або поселення.\nПриклад: \"ai-aggressive\", \"ai-passive-merchant\"."
+    },
+    "resourceThresholds": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "resourceId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Resource Id",
+            "description": "ID ресурсу (має збігатися з ResourceDefinition.Id).\nПриклад: \"Grain\", \"Wood\", \"Tools\"."
+          },
+          "shortageThreshold": {
+            "type": "integer",
+            "title": "Shortage Threshold",
+            "description": "Поріг нестачі: якщо запас нижчий за це значення — AI вважає ресурс дефіцитним і не продає його.\nПриклад: 30 — менше 30 одиниць зерна → AI не торгує зерном."
+          },
+          "excessThreshold": {
+            "type": "integer",
+            "title": "Excess Threshold",
+            "description": "Поріг надлишку: якщо запас перевищує це значення — AI вважає ресурс надлишковим і пропонує до продажу.\nПриклад: 200 — більше 200 одиниць дерева → AI пропонує торгувати."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Resource Thresholds",
+      "description": "Список порогів нестачі/надлишку для кожного ресурсу.\nAI приймає торговельні рішення виходячи з цих значень."
+    },
+    "useConservativeSpending": {
+      "type": "boolean",
+      "title": "Use Conservative Spending",
+      "description": "true = AI витрачає ресурси обережно: зберігає більший запас перед торгівлею.\nfalse = AI агресивно торгує навіть при середніх запасах."
+    },
+    "prioritizeFoodSecurity": {
+      "type": "boolean",
+      "title": "Prioritize Food Security",
+      "description": "true = AI в першу чергу забезпечує запас їжі, навіть якщо це невигідно торговельно.\nРекомендовано залишити true для реалістичної поведінки ворога."
+    }
+  }
+}

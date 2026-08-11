@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/data-noise.schema.json",
+  "title": "Moyva — Data Noise Settings",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.DataNoiseSettings. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.data-noise"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "data-noise"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "scale": {
+      "type": "number",
+      "title": "Scale",
+      "description": "Масштаб шуму. Визначає, наскільки 'розтягнутий' або 'стиснутий' буде шум. Великі значення — плавні області, малі — дрібні деталі. Приклад: 50 — великі континенти, 5 — дрібні острови.",
+      "minimum": 0.0001,
+      "x-moyva-editorMinimum": 0.0001
+    },
+    "octaves": {
+      "type": "integer",
+      "title": "Octaves",
+      "description": "Кількість октав. Визначає, скільки шарів шуму буде накладено. 1 — гладко, 8 — багато деталей. Приклад: 4 — баланс між деталізацією та продуктивністю.",
+      "minimum": 1.0,
+      "maximum": 12.0,
+      "x-moyva-editorMinimum": 1.0,
+      "x-moyva-editorMaximum": 12.0
+    },
+    "persistance": {
+      "type": "number",
+      "title": "Persistance",
+      "description": "Persistance — як швидко зменшується амплітуда шуму для кожної октави. 0.3 — плавно, 0.8 — багато дрібних деталей. Приклад: 0.5 — природний рельєф.",
+      "minimum": 0.01,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.01,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "lacunarity": {
+      "type": "number",
+      "title": "Lacunarity",
+      "description": "Lacunarity — як швидко зростає частота шуму для кожної октави. 2 — типовий для природних карт, 3+ — дуже 'шумно'. Приклад: 2 — класика для перлинного шуму.",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "offset": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Offset",
+      "description": "Offset — зсув карти шуму по X та Y. Дозволяє зміщувати карту без зміни інших параметрів. Приклад: (100, 200) — карта зміщена праворуч і вгору."
+    }
+  }
+}

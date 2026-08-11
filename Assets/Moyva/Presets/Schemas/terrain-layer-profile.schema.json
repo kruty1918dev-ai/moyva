@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/terrain-layer-profile.schema.json",
+  "title": "Moyva — Terrain Layer Profile SO",
+  "description": "JSON source of truth для Kruty1918.Moyva.Grid.API.TerrainLayerProfileSO. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.terrain-layer-profile"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "terrain-layer-profile"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "profiles": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "layerId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Layer Id",
+            "description": "Ідентифікатор шару генератора (GeneratorLayerDefinition.Id) або його назва."
+          },
+          "displayName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Display Name",
+            "description": "Людиночитна назва шару (для зручності в інспекторі)."
+          },
+          "walkable": {
+            "type": "boolean",
+            "title": "Walkable",
+            "description": "Чи можна ходити по тайлах цього шару."
+          },
+          "movementCost": {
+            "type": "number",
+            "title": "Movement Cost",
+            "description": "Вартість проходження тайла для патфайндингу. 0 = непрохідний."
+          },
+          "buildBlocked": {
+            "type": "boolean",
+            "title": "Build Blocked",
+            "description": "Чи заборонено будувати на тайлах цього шару."
+          },
+          "surfaceOffset": {
+            "type": "number",
+            "title": "Surface Offset",
+            "description": "Зсув висоти поверхні для розміщення юнітів/будівель."
+          },
+          "tags": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "title": "Tags",
+            "description": "Семантичні gameplay-теги шару, наприклад water, land, forest, mountain або road."
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Profiles"
+    },
+    "fallback": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "layerId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Layer Id",
+          "description": "Ідентифікатор шару генератора (GeneratorLayerDefinition.Id) або його назва."
+        },
+        "displayName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "title": "Display Name",
+          "description": "Людиночитна назва шару (для зручності в інспекторі)."
+        },
+        "walkable": {
+          "type": "boolean",
+          "title": "Walkable",
+          "description": "Чи можна ходити по тайлах цього шару."
+        },
+        "movementCost": {
+          "type": "number",
+          "title": "Movement Cost",
+          "description": "Вартість проходження тайла для патфайндингу. 0 = непрохідний."
+        },
+        "buildBlocked": {
+          "type": "boolean",
+          "title": "Build Blocked",
+          "description": "Чи заборонено будувати на тайлах цього шару."
+        },
+        "surfaceOffset": {
+          "type": "number",
+          "title": "Surface Offset",
+          "description": "Зсув висоти поверхні для розміщення юнітів/будівель."
+        },
+        "tags": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": "Tags",
+          "description": "Семантичні gameplay-теги шару, наприклад water, land, forest, mountain або road."
+        }
+      },
+      "additionalProperties": false,
+      "title": "Fallback",
+      "description": "Профіль за замовчуванням для шарів без явного запису."
+    }
+  }
+}

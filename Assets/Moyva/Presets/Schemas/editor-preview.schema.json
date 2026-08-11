@@ -1,0 +1,2551 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/editor-preview.schema.json",
+  "title": "Moyva — Editor Preview Settings",
+  "description": "JSON source of truth для Kruty1918.Moyva.GraphSystem.Editor.EditorPreviewSettings. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.editor-preview"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "editor-preview"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "previewWidth": {
+      "type": "integer",
+      "title": "Preview Width",
+      "description": "Legacy preview width. Map size is now controlled by GraphAsset.SharedSettings from Graph Editor.",
+      "minimum": 4.0,
+      "x-moyva-editorMinimum": 4.0
+    },
+    "previewHeight": {
+      "type": "integer",
+      "title": "Preview Height",
+      "description": "Legacy preview height. Map size is now controlled by GraphAsset.SharedSettings from Graph Editor.",
+      "minimum": 4.0,
+      "x-moyva-editorMinimum": 4.0
+    },
+    "noiseSettings": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "scale": {
+              "type": "number",
+              "title": "Scale",
+              "description": "Масштаб шуму. Визначає, наскільки 'розтягнутий' або 'стиснутий' буде шум. Великі значення — плавні області, малі — дрібні деталі. Приклад: 50 — великі континенти, 5 — дрібні острови.",
+              "minimum": 0.0001,
+              "x-moyva-editorMinimum": 0.0001
+            },
+            "octaves": {
+              "type": "integer",
+              "title": "Octaves",
+              "description": "Кількість октав. Визначає, скільки шарів шуму буде накладено. 1 — гладко, 8 — багато деталей. Приклад: 4 — баланс між деталізацією та продуктивністю.",
+              "minimum": 1.0,
+              "maximum": 12.0,
+              "x-moyva-editorMinimum": 1.0,
+              "x-moyva-editorMaximum": 12.0
+            },
+            "persistance": {
+              "type": "number",
+              "title": "Persistance",
+              "description": "Persistance — як швидко зменшується амплітуда шуму для кожної октави. 0.3 — плавно, 0.8 — багато дрібних деталей. Приклад: 0.5 — природний рельєф.",
+              "minimum": 0.01,
+              "maximum": 1.0,
+              "x-moyva-editorMinimum": 0.01,
+              "x-moyva-editorMaximum": 1.0
+            },
+            "lacunarity": {
+              "type": "number",
+              "title": "Lacunarity",
+              "description": "Lacunarity — як швидко зростає частота шуму для кожної октави. 2 — типовий для природних карт, 3+ — дуже 'шумно'. Приклад: 2 — класика для перлинного шуму.",
+              "minimum": 1.0,
+              "x-moyva-editorMinimum": 1.0
+            },
+            "offset": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "additionalProperties": false,
+              "title": "Offset",
+              "description": "Offset — зсув карти шуму по X та Y. Дозволяє зміщувати карту без зміни інших параметрів. Приклад: (100, 200) — карта зміщена праворуч і вгору."
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Налаштування шуму (Perlin noise). Потрібно для HeightSourceNode.",
+      "title": "Noise Settings"
+    },
+    "heightMapSettings": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "heightLayers": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "tileID": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Tile ID",
+                    "description": "Базовий ID тайла для цього інтервалу висоти."
+                  },
+                  "tileIDChance": {
+                    "type": "number",
+                    "title": "Tile ID Chance",
+                    "description": "Ймовірність вибору базового тайла (0–1).",
+                    "minimum": 0.0,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.0,
+                    "x-moyva-editorMaximum": 1.0
+                  },
+                  "weightedVariants": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "tileID": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Tile ID",
+                          "description": "ID тайла."
+                        },
+                        "chance": {
+                          "type": "number",
+                          "title": "Chance",
+                          "description": "Ймовірність вибору цього тайла (0–1). Сума всіх шансів у шарі не має перевищувати 1.",
+                          "minimum": 0.0,
+                          "maximum": 1.0,
+                          "x-moyva-editorMinimum": 0.0,
+                          "x-moyva-editorMaximum": 1.0
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "title": "Weighted Variants",
+                    "description": "Варіанти тайлів з індивідуальними шансами для випадкового вибору."
+                  },
+                  "variantTileIDs": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "title": "Variant Tile I Ds"
+                  },
+                  "minHeight": {
+                    "type": "number",
+                    "title": "Min Height",
+                    "description": "Нижня межа висоти для цього шару."
+                  },
+                  "maxHeight": {
+                    "type": "number",
+                    "title": "Max Height",
+                    "description": "Верхня межа висоти для цього шару."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Height Layers",
+              "description": "Набір шарів висоти, які перетворюють числову карту висот у базову карту тайлів. Кожен шар задає інтервал висот і Tile ID, що має використовуватись у цьому інтервалі."
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Налаштування висотної карти. Потрібно для HeightToTileNode.",
+      "title": "Height Map Settings"
+    },
+    "biomesSettings": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "biomes": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tileID": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Tile ID",
+                    "description": "ID тайла, який буде поставлено, якщо клітинка задовольняє умови цього біому. Це фактичний результат, який побачить карта після резолву біомів."
+                  },
+                  "biomeName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Biome Name",
+                    "description": "Людська назва біому для зручності налаштування. Використовується в інспекторі як підказка для дизайнера і не бере участі у логіці генерації."
+                  },
+                  "minHeight": {
+                    "type": "number",
+                    "title": "Min Height",
+                    "description": "Мінімальна висота, з якої цей біом починає діяти. Дозволяє відокремити низини, рівнини, височини та інші вертикальні пояси місцевості."
+                  },
+                  "maxHeight": {
+                    "type": "number",
+                    "title": "Max Height",
+                    "description": "Максимальна висота, до якої цей біом залишається валідним. Разом із MinHeight формує повний вертикальний діапазон застосування."
+                  },
+                  "minMoisture": {
+                    "type": "number",
+                    "title": "Min Moisture",
+                    "description": "Мінімальна вологість для цього біому. 0 означає дуже суху зону, 1 — максимально вологу. Дає змогу розділяти, наприклад, степ, ліс, болото чи озерні низини."
+                  },
+                  "maxMoisture": {
+                    "type": "number",
+                    "title": "Max Moisture",
+                    "description": "Максимальна вологість для цього біому. Разом із MinMoisture утворює вологісний коридор, у межах якого цей біом може з'явитися."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Biomes",
+              "description": "Список правил біомів. Кожен елемент описує, який Tile ID треба поставити, якщо клітинка потрапляє в заданий діапазон висоти та вологості. Порядок важливий: перший відповідний запис буде застосований раніше за наступні."
+            },
+            "defaultTileID": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "title": "Default Tile ID",
+              "description": "Тайл за замовчуванням для всіх клітинок, які не потрапили ні в один біом. Використовується як безпечний фолбек, щоб карта не залишалась з порожніми або невизначеними тайлами."
+            },
+            "moistureScale": {
+              "type": "number",
+              "title": "Moisture Scale",
+              "description": "Масштаб шуму вологості. Менші значення дають дрібні плями вологості, більші формують великі області сухих і вологих зон. Впливає на те, наскільки часто перемикаються біоми при однаковій висоті."
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Налаштування біомів. Потрібно для BiomeResolverNode.",
+      "title": "Biomes Settings"
+    },
+    "wfcDataSettings": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "tileRegistry": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "$config": {
+                      "type": "object",
+                      "required": [
+                        "id"
+                      ],
+                      "properties": {
+                        "model": {
+                          "type": "string"
+                        },
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": true
+                    }
+                  },
+                  "required": [
+                    "$config"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "definitions": {
+                      "type": [
+                        "array",
+                        "null"
+                      ],
+                      "items": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Id"
+                          },
+                          "movementCost": {
+                            "type": "number",
+                            "title": "Movement Cost"
+                          },
+                          "tileWorldCreatorPreset": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                            "properties": {
+                              "$asset": {
+                                "type": "string",
+                                "title": "Asset ID"
+                              },
+                              "editorPath": {
+                                "type": "string",
+                                "description": "Editor-only path для діагностики/регенерації catalog."
+                              },
+                              "required": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            },
+                            "required": [
+                              "$asset"
+                            ],
+                            "title": "Tile World Creator Preset"
+                          },
+                          "tileWorldCreatorBlueprintLayerGuid": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Tile World Creator Blueprint Layer Guid"
+                          },
+                          "tileWorldCreatorBlueprintLayerName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Tile World Creator Blueprint Layer Name"
+                          },
+                          "visualPrefab": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                            "properties": {
+                              "$asset": {
+                                "type": "string",
+                                "title": "Asset ID"
+                              },
+                              "editorPath": {
+                                "type": "string",
+                                "description": "Editor-only path для діагностики/регенерації catalog."
+                              },
+                              "required": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            },
+                            "required": [
+                              "$asset"
+                            ],
+                            "title": "Visual Prefab"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "title": "Definitions"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Реєстр тайлів для WFC. Якщо не вказано — редактор шукає перший TileRegistrySO у проєкті.",
+              "title": "Tile Registry"
+            },
+            "tileRules": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tileID": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Tile ID",
+                    "description": "ID тайла (результат), який ми хочемо отримати"
+                  },
+                  "tileCentralID": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Tile Central ID",
+                    "description": "Центральний тайл, для якого застосовується це правило "
+                  },
+                  "constraints": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "direction": {
+                          "type": "string",
+                          "pattern": "^(?:-?\\d+|(?:Top|TopRight|Right|BottomRight|Bottom|BottomLeft|Left|TopLeft))$",
+                          "x-enumNames": [
+                            "Top",
+                            "TopRight",
+                            "Right",
+                            "BottomRight",
+                            "Bottom",
+                            "BottomLeft",
+                            "Left",
+                            "TopLeft"
+                          ],
+                          "x-flags": false,
+                          "title": "Direction"
+                        },
+                        "allowedNeighbors": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "title": "Allowed Neighbors",
+                          "description": "Список допустимих ID сусідів у цьому напрямку"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "title": "Constraints",
+                    "description": "Обмеження: щоб цей TileID з'явився, ці сусіди ПОВИННІ бути навколо"
+                  },
+                  "priority": {
+                    "type": "integer",
+                    "title": "Priority",
+                    "description": "Пріоритет правила (якщо підходять декілька варіантів)"
+                  },
+                  "matchThreshold": {
+                    "type": "number",
+                    "title": "Match Threshold",
+                    "description": "Якщо правило збігається лише частково (наприклад, 6 з 8 сусідів), чи міняти тайл?",
+                    "minimum": 0.5,
+                    "maximum": 1.0,
+                    "x-moyva-editorMinimum": 0.5,
+                    "x-moyva-editorMaximum": 1.0
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Tile Rules"
+            },
+            "virtualTileIds": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": "Virtual Tile Ids",
+              "description": "Віртуальні ID для правил WFC, які не зобов'язані існувати в TileRegistry. Зручно для прапорців на кшталт flag:road, flag:river, marker:poi."
+            },
+            "passCount": {
+              "type": "integer",
+              "title": "Pass Count",
+              "description": "Скільки ітерацій полірування пройти"
+            },
+            "forceTileNearWaterBand": {
+              "type": "boolean",
+              "title": "Force Tile Near Water Band",
+              "description": "Перед WFC примусово замінює сушу біля води на вибраний Tile ID. Корисно для стабільного берегового краю (наприклад grass біля water)."
+            },
+            "nearWaterTileId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "title": "Near Water Tile Id",
+              "description": "Tile ID, який буде поставлено у смузі біля води."
+            },
+            "nearWaterRadius": {
+              "type": "integer",
+              "title": "Near Water Radius",
+              "description": "Радіус смуги біля води в клітинках.",
+              "minimum": 1.0,
+              "maximum": 6.0,
+              "x-moyva-editorMinimum": 1.0,
+              "x-moyva-editorMaximum": 6.0
+            },
+            "includeDiagonalsForNearWater": {
+              "type": "boolean",
+              "title": "Include Diagonals For Near Water",
+              "description": "Якщо увімкнено, радіус смуги рахується з діагоналями (квадратна/8-напрямна околиця)."
+            },
+            "waterLikeTileIds": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "title": "Water Like Tile Ids",
+              "description": "Список ID, які вважаються водою для побудови прибережної смуги."
+            },
+            "borderWaterTileId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "title": "Border Water Tile Id",
+              "description": "Tile ID, яким WFC заповнює зовнішній контур мапи. Для архіпелагів це може бути ocean-deep, для старих графів — water."
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Налаштування WFC. Потрібно для WFC-вузлів.",
+      "title": "Wfc Data Settings"
+    },
+    "tileRegistry": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "definitions": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Id"
+                  },
+                  "movementCost": {
+                    "type": "number",
+                    "title": "Movement Cost"
+                  },
+                  "tileWorldCreatorPreset": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Tile World Creator Preset"
+                  },
+                  "tileWorldCreatorBlueprintLayerGuid": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Tile World Creator Blueprint Layer Guid"
+                  },
+                  "tileWorldCreatorBlueprintLayerName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Tile World Creator Blueprint Layer Name"
+                  },
+                  "visualPrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Visual Prefab"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Definitions"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Реєстр тайлів для візуального превью (спрайти).",
+      "title": "Tile Registry"
+    },
+    "mapObjectRegistry": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "definitions": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Id"
+                  },
+                  "visualPrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Visual Prefab"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Definitions"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Реєстр об'єктів карти (дерева, каміння, річки тощо). Потрібен для композитного превью.",
+      "title": "Map Object Registry"
+    },
+    "buildingRegistry": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "buildingAssets": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "$config": {
+                        "type": "object",
+                        "required": [
+                          "id"
+                        ],
+                        "properties": {
+                          "model": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    },
+                    "required": [
+                      "$config"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "placementModuleMigrationVersion": {
+                        "type": "integer",
+                        "title": "Placement Module Migration Version"
+                      },
+                      "identity": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Id"
+                          },
+                          "displayName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Display Name"
+                          },
+                          "category": {
+                            "type": "string",
+                            "pattern": "^(?:-?\\d+|(?:Military|Civilian|Industrial|Walls))$",
+                            "x-enumNames": [
+                              "Military",
+                              "Civilian",
+                              "Industrial",
+                              "Walls"
+                            ],
+                            "x-flags": false,
+                            "title": "Category"
+                          },
+                          "role": {
+                            "type": "string",
+                            "pattern": "^(?:-?\\d+|(?:None|Housing|Production|Storage|SettlementCenter|Defense|Wall|Gate|Decoration|Support))$",
+                            "x-enumNames": [
+                              "None",
+                              "Housing",
+                              "Production",
+                              "Storage",
+                              "SettlementCenter",
+                              "Defense",
+                              "Wall",
+                              "Gate",
+                              "Decoration",
+                              "Support"
+                            ],
+                            "x-flags": false,
+                            "title": "Role"
+                          },
+                          "description": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "title": "Description"
+                          },
+                          "tags": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "title": "Tags"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "Identity"
+                      },
+                      "presentation": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "prefab": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                            "properties": {
+                              "$asset": {
+                                "type": "string",
+                                "title": "Asset ID"
+                              },
+                              "editorPath": {
+                                "type": "string",
+                                "description": "Editor-only path для діагностики/регенерації catalog."
+                              },
+                              "required": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            },
+                            "required": [
+                              "$asset"
+                            ],
+                            "title": "Prefab"
+                          },
+                          "icon": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                            "properties": {
+                              "$asset": {
+                                "type": "string",
+                                "title": "Asset ID"
+                              },
+                              "editorPath": {
+                                "type": "string",
+                                "description": "Editor-only path для діагностики/регенерації catalog."
+                              },
+                              "required": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            },
+                            "required": [
+                              "$asset"
+                            ],
+                            "title": "Icon"
+                          },
+                          "runtimePreview": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                            "properties": {
+                              "$asset": {
+                                "type": "string",
+                                "title": "Asset ID"
+                              },
+                              "editorPath": {
+                                "type": "string",
+                                "description": "Editor-only path для діагностики/регенерації catalog."
+                              },
+                              "required": {
+                                "type": "boolean",
+                                "default": true
+                              }
+                            },
+                            "required": [
+                              "$asset"
+                            ],
+                            "title": "Runtime Preview"
+                          },
+                          "uiTint": {
+                            "type": "object",
+                            "properties": {
+                              "r": {
+                                "type": "number"
+                              },
+                              "g": {
+                                "type": "number"
+                              },
+                              "b": {
+                                "type": "number"
+                              },
+                              "a": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "r",
+                              "g",
+                              "b",
+                              "a"
+                            ],
+                            "additionalProperties": false,
+                            "title": "Ui Tint"
+                          },
+                          "visualYOffset": {
+                            "type": "number",
+                            "title": "Visual Y Offset"
+                          },
+                          "previewSettings": {
+                            "type": [
+                              "object",
+                              "null"
+                            ],
+                            "properties": {
+                              "cameraOffset": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  },
+                                  "z": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y",
+                                  "z"
+                                ],
+                                "additionalProperties": false,
+                                "title": "Camera Offset"
+                              },
+                              "cameraEulerAngles": {
+                                "type": "object",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  },
+                                  "z": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "x",
+                                  "y",
+                                  "z"
+                                ],
+                                "additionalProperties": false,
+                                "title": "Camera Euler Angles"
+                              },
+                              "orthographicSize": {
+                                "type": "number",
+                                "title": "Orthographic Size",
+                                "minimum": 1.0,
+                                "x-moyva-editorMinimum": 1.0
+                              },
+                              "backgroundColor": {
+                                "type": "object",
+                                "properties": {
+                                  "r": {
+                                    "type": "number"
+                                  },
+                                  "g": {
+                                    "type": "number"
+                                  },
+                                  "b": {
+                                    "type": "number"
+                                  },
+                                  "a": {
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "r",
+                                  "g",
+                                  "b",
+                                  "a"
+                                ],
+                                "additionalProperties": false,
+                                "title": "Background Color"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "title": "Preview Settings"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "Presentation"
+                      },
+                      "footprint": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "size": {
+                            "type": "object",
+                            "properties": {
+                              "x": {
+                                "type": "number"
+                              },
+                              "y": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ],
+                            "additionalProperties": false,
+                            "title": "Size"
+                          },
+                          "anchor": {
+                            "type": "string",
+                            "pattern": "^(?:-?\\d+|(?:Center|SouthWest|Custom))$",
+                            "x-enumNames": [
+                              "Center",
+                              "SouthWest",
+                              "Custom"
+                            ],
+                            "x-flags": false,
+                            "title": "Anchor"
+                          },
+                          "customAnchor": {
+                            "type": "object",
+                            "properties": {
+                              "x": {
+                                "type": "number"
+                              },
+                              "y": {
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "x",
+                              "y"
+                            ],
+                            "additionalProperties": false,
+                            "title": "Custom Anchor"
+                          },
+                          "blocksMovement": {
+                            "type": "boolean",
+                            "title": "Blocks Movement"
+                          },
+                          "blocksConstruction": {
+                            "type": "boolean",
+                            "title": "Blocks Construction"
+                          },
+                          "requiresFlatGround": {
+                            "type": "boolean",
+                            "title": "Requires Flat Ground"
+                          },
+                          "occupiedCells": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "x": {
+                                  "type": "number"
+                                },
+                                "y": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "x",
+                                "y"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "title": "Occupied Cells"
+                          },
+                          "entranceCells": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "x": {
+                                  "type": "number"
+                                },
+                                "y": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "x",
+                                "y"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "title": "Entrance Cells"
+                          },
+                          "roadConnectionCells": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "x": {
+                                  "type": "number"
+                                },
+                                "y": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "x",
+                                "y"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "title": "Road Connection Cells"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "Footprint"
+                      },
+                      "placement": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "canPlaceInFog": {
+                            "type": "boolean",
+                            "title": "Can Place In Fog"
+                          },
+                          "requiresSettlementInfluence": {
+                            "type": "boolean",
+                            "title": "Requires Settlement Influence"
+                          },
+                          "createsSettlementInfluence": {
+                            "type": "boolean",
+                            "title": "Creates Settlement Influence"
+                          },
+                          "blockIfSettlementCenterInRange": {
+                            "type": "boolean",
+                            "title": "Block If Settlement Center In Range"
+                          },
+                          "influenceRadius": {
+                            "type": "integer",
+                            "title": "Influence Radius"
+                          },
+                          "minDistanceFromSettlementCenters": {
+                            "type": "integer",
+                            "title": "Min Distance From Settlement Centers"
+                          },
+                          "requiredTerrainIds": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "title": "Required Terrain Ids"
+                          },
+                          "requiredNeighborOffsets": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "x": {
+                                  "type": "number"
+                                },
+                                "y": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "x",
+                                "y"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "title": "Required Neighbor Offsets"
+                          },
+                          "requiresWaterNearby": {
+                            "type": "boolean",
+                            "title": "Requires Water Nearby"
+                          },
+                          "requiresForestNearby": {
+                            "type": "boolean",
+                            "title": "Requires Forest Nearby"
+                          },
+                          "requiresMountainNearby": {
+                            "type": "boolean",
+                            "title": "Requires Mountain Nearby"
+                          },
+                          "requiresRoadNearby": {
+                            "type": "boolean",
+                            "title": "Requires Road Nearby"
+                          },
+                          "nearbyTileRequirements": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "properties": {
+                                "tileId": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "title": "Tile Id",
+                                  "description": "ID потрібного тайла або біому.\nСаме це поле каже системі, який тип місцевості шукати навколо будівлі.\nПриклади: forest-dense для лісу, water для води, grass для відкритої рівнини."
+                                },
+                                "terrainTag": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "title": "Terrain Tag",
+                                  "description": "Альтернатива точному TileId: семантичний terrain-тег, наприклад water або forest."
+                                },
+                                "radius": {
+                                  "type": "integer",
+                                  "title": "Radius",
+                                  "description": "Радіус пошуку тайла в клітинках.\nВизначає, наскільки далеко від будівлі дозволено шукати потрібну місцевість.\nЗбільшуйте значення для споруд, що використовують широку околицю, і зменшуйте для локальних залежностей.",
+                                  "minimum": 1.0,
+                                  "x-moyva-editorMinimum": 1.0
+                                },
+                                "minimumTileCount": {
+                                  "type": "integer",
+                                  "title": "Minimum Tile Count",
+                                  "description": "Мінімальна кількість клітинок цього типу, яку треба знайти в заданому радіусі.\nПоле задає поріг достатності місцевості для роботи будівлі.\nНаприклад, мисливська хатина може вимагати кілька лісових клітин, а місту вистачає однієї водної.",
+                                  "minimum": 1.0,
+                                  "x-moyva-editorMinimum": 1.0
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "title": "Nearby Tile Requirements"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "Placement"
+                      },
+                      "construction": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "cost": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": [
+                                "object",
+                                "null"
+                              ],
+                              "properties": {
+                                "resourceId": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ],
+                                  "title": "Resource Id",
+                                  "description": "ID ресурсу з EconomyDatabaseSO, який потрібен для будівництва.\nВибирається зі списку ресурсів через dropdown."
+                                },
+                                "amount": {
+                                  "type": "integer",
+                                  "title": "Amount",
+                                  "description": "Кількість ресурсу, яка витрачається на будівництво 1 одиниці цієї споруди.",
+                                  "minimum": 1.0,
+                                  "x-moyva-editorMinimum": 1.0
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "title": "Cost"
+                          },
+                          "buildTurns": {
+                            "type": "integer",
+                            "title": "Build Turns"
+                          },
+                          "requiresBuilder": {
+                            "type": "boolean",
+                            "title": "Requires Builder"
+                          },
+                          "workRequired": {
+                            "type": "integer",
+                            "title": "Work Required"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "Construction"
+                      },
+                      "runtimeStats": {
+                        "type": [
+                          "object",
+                          "null"
+                        ],
+                        "properties": {
+                          "maxHp": {
+                            "type": "integer",
+                            "title": "Max Hp"
+                          },
+                          "armor": {
+                            "type": "integer",
+                            "title": "Armor"
+                          },
+                          "flags": {
+                            "type": "string",
+                            "pattern": "^(?:-?\\d+|(?:None|BlocksPath|Selectable|Damageable|RequiresCompletion)(?:, (?:None|BlocksPath|Selectable|Damageable|RequiresCompletion))*)$",
+                            "x-enumNames": [
+                              "None",
+                              "BlocksPath",
+                              "Selectable",
+                              "Damageable",
+                              "RequiresCompletion"
+                            ],
+                            "x-flags": true,
+                            "title": "Flags"
+                          },
+                          "runtimeTags": {
+                            "type": [
+                              "array",
+                              "null"
+                            ],
+                            "items": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "title": "Runtime Tags"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "Runtime Stats"
+                      },
+                      "modules": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "properties": {
+                            "$type": {
+                              "type": "string",
+                              "enum": [
+                                "barn",
+                                "building-per-player-limit-module",
+                                "building-prerequisite-module",
+                                "castle",
+                                "defense",
+                                "fog-placement-rule-module",
+                                "fog-reveal",
+                                "garrison",
+                                "gate",
+                                "housing",
+                                "production",
+                                "replacement-placement-rule-module",
+                                "settlement-center",
+                                "settlement-influence-requirement",
+                                "spacing-placement-rule-module",
+                                "storage",
+                                "terrain-placement-rule-module",
+                                "tile-requirement",
+                                "town-hall",
+                                "wall",
+                                "warehouse",
+                                "workerless",
+                                "workforce"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "$type"
+                          ],
+                          "additionalProperties": true
+                        },
+                        "title": "Modules"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Moyva config: stable $config reference або inline sub-asset з allow-listed $type."
+              },
+              "title": "Building Assets"
+            },
+            "buildings": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Id"
+                  },
+                  "displayName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Display Name"
+                  },
+                  "category": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:Military|Civilian|Industrial|Walls))$",
+                    "x-enumNames": [
+                      "Military",
+                      "Civilian",
+                      "Industrial",
+                      "Walls"
+                    ],
+                    "x-flags": false,
+                    "title": "Category"
+                  },
+                  "role": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:None|Housing|Production|Storage|SettlementCenter|Defense|Wall|Gate|Decoration|Support))$",
+                    "x-enumNames": [
+                      "None",
+                      "Housing",
+                      "Production",
+                      "Storage",
+                      "SettlementCenter",
+                      "Defense",
+                      "Wall",
+                      "Gate",
+                      "Decoration",
+                      "Support"
+                    ],
+                    "x-flags": false,
+                    "title": "Role"
+                  },
+                  "description": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Description"
+                  },
+                  "tags": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "title": "Tags"
+                  },
+                  "runtimeTags": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "title": "Runtime Tags"
+                  },
+                  "icon": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Icon"
+                  },
+                  "runtimePreview": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Runtime-safe preview префаба будівлі. Генерується редактором і використовується toolbar UI у білді.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Runtime Preview"
+                  },
+                  "prefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Prefab"
+                  },
+                  "footprint": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "size": {
+                        "type": "object",
+                        "properties": {
+                          "x": {
+                            "type": "number"
+                          },
+                          "y": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y"
+                        ],
+                        "additionalProperties": false,
+                        "title": "Size"
+                      },
+                      "anchor": {
+                        "type": "string",
+                        "pattern": "^(?:-?\\d+|(?:Center|SouthWest|Custom))$",
+                        "x-enumNames": [
+                          "Center",
+                          "SouthWest",
+                          "Custom"
+                        ],
+                        "x-flags": false,
+                        "title": "Anchor"
+                      },
+                      "customAnchor": {
+                        "type": "object",
+                        "properties": {
+                          "x": {
+                            "type": "number"
+                          },
+                          "y": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y"
+                        ],
+                        "additionalProperties": false,
+                        "title": "Custom Anchor"
+                      },
+                      "blocksMovement": {
+                        "type": "boolean",
+                        "title": "Blocks Movement"
+                      },
+                      "blocksConstruction": {
+                        "type": "boolean",
+                        "title": "Blocks Construction"
+                      },
+                      "requiresFlatGround": {
+                        "type": "boolean",
+                        "title": "Requires Flat Ground"
+                      },
+                      "occupiedCells": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "x",
+                            "y"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "title": "Occupied Cells"
+                      },
+                      "entranceCells": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "x",
+                            "y"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "title": "Entrance Cells"
+                      },
+                      "roadConnectionCells": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "x",
+                            "y"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "title": "Road Connection Cells"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "Footprint",
+                    "description": "Runtime footprint used by validation, occupancy and build-grid preview."
+                  },
+                  "visualYOffset": {
+                    "type": "number",
+                    "title": "Visual Y Offset",
+                    "description": "Додатковий Y-offset для візуалу цієї будівлі. Не впливає на логіку клітинки чи колайдер розміщення."
+                  },
+                  "constructionCost": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "resourceId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "title": "Resource Id",
+                          "description": "ID ресурсу з EconomyDatabaseSO, який потрібен для будівництва.\nВибирається зі списку ресурсів через dropdown."
+                        },
+                        "amount": {
+                          "type": "integer",
+                          "title": "Amount",
+                          "description": "Кількість ресурсу, яка витрачається на будівництво 1 одиниці цієї споруди.",
+                          "minimum": 1.0,
+                          "x-moyva-editorMinimum": 1.0
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "title": "Construction Cost",
+                    "description": "Список ресурсів і кількостей, необхідних для побудови 1 екземпляра цієї будівлі.\nПорожній список означає безкоштовне будівництво."
+                  },
+                  "modules": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "$type": {
+                          "type": "string",
+                          "enum": [
+                            "barn",
+                            "building-per-player-limit-module",
+                            "building-prerequisite-module",
+                            "castle",
+                            "defense",
+                            "fog-placement-rule-module",
+                            "fog-reveal",
+                            "garrison",
+                            "gate",
+                            "housing",
+                            "production",
+                            "replacement-placement-rule-module",
+                            "settlement-center",
+                            "settlement-influence-requirement",
+                            "spacing-placement-rule-module",
+                            "storage",
+                            "terrain-placement-rule-module",
+                            "tile-requirement",
+                            "town-hall",
+                            "wall",
+                            "warehouse",
+                            "workerless",
+                            "workforce"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "$type"
+                      ],
+                      "additionalProperties": true
+                    },
+                    "title": "Modules",
+                    "description": "Компонентна модель будівлі. Runtime використовує модулі для визначення можливостей."
+                  },
+                  "maxHp": {
+                    "type": "integer",
+                    "title": "Max Hp",
+                    "description": "Максимальне HP будівлі. Використовується для ініціалізації компонента IHealth під час spawn.",
+                    "minimum": 1.0,
+                    "x-moyva-editorMinimum": 1.0
+                  },
+                  "armor": {
+                    "type": "integer",
+                    "title": "Armor"
+                  },
+                  "runtimeFlags": {
+                    "type": "string",
+                    "pattern": "^(?:-?\\d+|(?:None|BlocksPath|Selectable|Damageable|RequiresCompletion)(?:, (?:None|BlocksPath|Selectable|Damageable|RequiresCompletion))*)$",
+                    "x-enumNames": [
+                      "None",
+                      "BlocksPath",
+                      "Selectable",
+                      "Damageable",
+                      "RequiresCompletion"
+                    ],
+                    "x-flags": true,
+                    "title": "Runtime Flags"
+                  },
+                  "placementRules": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "canPlaceInFog": {
+                        "type": "boolean",
+                        "title": "Can Place In Fog"
+                      },
+                      "requiresSettlementInfluence": {
+                        "type": "boolean",
+                        "title": "Requires Settlement Influence"
+                      },
+                      "createsSettlementInfluence": {
+                        "type": "boolean",
+                        "title": "Creates Settlement Influence"
+                      },
+                      "blockIfSettlementCenterInRange": {
+                        "type": "boolean",
+                        "title": "Block If Settlement Center In Range"
+                      },
+                      "influenceRadius": {
+                        "type": "integer",
+                        "title": "Influence Radius"
+                      },
+                      "minDistanceFromSettlementCenters": {
+                        "type": "integer",
+                        "title": "Min Distance From Settlement Centers"
+                      },
+                      "requiredTerrainIds": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "title": "Required Terrain Ids"
+                      },
+                      "requiredNeighborOffsets": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "x": {
+                              "type": "number"
+                            },
+                            "y": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "x",
+                            "y"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "title": "Required Neighbor Offsets"
+                      },
+                      "requiresWaterNearby": {
+                        "type": "boolean",
+                        "title": "Requires Water Nearby"
+                      },
+                      "requiresForestNearby": {
+                        "type": "boolean",
+                        "title": "Requires Forest Nearby"
+                      },
+                      "requiresMountainNearby": {
+                        "type": "boolean",
+                        "title": "Requires Mountain Nearby"
+                      },
+                      "requiresRoadNearby": {
+                        "type": "boolean",
+                        "title": "Requires Road Nearby"
+                      },
+                      "nearbyTileRequirements": {
+                        "type": [
+                          "array",
+                          "null"
+                        ],
+                        "items": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "properties": {
+                            "tileId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "title": "Tile Id",
+                              "description": "ID потрібного тайла або біому.\nСаме це поле каже системі, який тип місцевості шукати навколо будівлі.\nПриклади: forest-dense для лісу, water для води, grass для відкритої рівнини."
+                            },
+                            "terrainTag": {
+                              "type": [
+                                "string",
+                                "null"
+                              ],
+                              "title": "Terrain Tag",
+                              "description": "Альтернатива точному TileId: семантичний terrain-тег, наприклад water або forest."
+                            },
+                            "radius": {
+                              "type": "integer",
+                              "title": "Radius",
+                              "description": "Радіус пошуку тайла в клітинках.\nВизначає, наскільки далеко від будівлі дозволено шукати потрібну місцевість.\nЗбільшуйте значення для споруд, що використовують широку околицю, і зменшуйте для локальних залежностей.",
+                              "minimum": 1.0,
+                              "x-moyva-editorMinimum": 1.0
+                            },
+                            "minimumTileCount": {
+                              "type": "integer",
+                              "title": "Minimum Tile Count",
+                              "description": "Мінімальна кількість клітинок цього типу, яку треба знайти в заданому радіусі.\nПоле задає поріг достатності місцевості для роботи будівлі.\nНаприклад, мисливська хатина може вимагати кілька лісових клітин, а місту вистачає однієї водної.",
+                              "minimum": 1.0,
+                              "x-moyva-editorMinimum": 1.0
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "title": "Nearby Tile Requirements"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "Placement Rules",
+                    "description": "Повна runtime-копія editor-authored placement settings. Нові модулі мають пріоритет над цією compatibility-моделлю."
+                  },
+                  "canPlaceInFog": {
+                    "type": "boolean",
+                    "title": "Can Place In Fog",
+                    "description": "Дозволяє розміщення, навіть якщо клітинка ще не Visible у Fog of War."
+                  },
+                  "requiredTerrainIds": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "title": "Required Terrain Ids",
+                    "description": "Якщо список не порожній, будівлю можна ставити тільки на тайли з цими ID."
+                  },
+                  "useCustomTownHallRules": {
+                    "type": "boolean",
+                    "title": "Use Custom Town Hall Rules",
+                    "description": "Увімкнути кастомні правила розміщення відносно ратуші для цієї будівлі.\nЯкщо вимкнено — застосовуються стандартні правила за класом будівлі."
+                  },
+                  "requireTownHallInRange": {
+                    "type": "boolean",
+                    "title": "Require Town Hall In Range",
+                    "description": "Чи потребує будівля наявності ратуші в радіусі дії.\nЗа замовчуванням для не-ратуш це true, для ратуші — false."
+                  },
+                  "blockIfTownHallAlreadyInRange": {
+                    "type": "boolean",
+                    "title": "Block If Town Hall Already In Range",
+                    "description": "Чи забороняти розміщення, якщо в радіусі вже є інша ратуша.\nЗа замовчуванням true для ратуші та false для інших."
+                  },
+                  "townHallProximityRadiusOverride": {
+                    "type": "integer",
+                    "title": "Town Hall Proximity Radius Override",
+                    "description": "Локальний override радіусу правил ратуші для цієї будівлі.\n<= 0 означає використати глобальний радіус із ConstructionInstaller."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Buildings",
+              "description": "Legacy data kept only for migration. New runtime/editor flows should use Building Definition assets above."
+            },
+            "wallCollections": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "collectionId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Collection Id",
+                    "description": "Унікальний ідентифікатор колекції стін у реєстрі. Використовується для розрізнення між різними стилями стін. Приклади: 'stone-wall', 'wooden-wall', 'castle-wall'."
+                  },
+                  "wallBuildingId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Wall Building Id",
+                    "description": "ID будівлі-стіни у BuildingRegistrySO. Це значення присвоюється тайлу при розміщенні будь-якого сегмента стіни з цієї колекції. Має збігатися з полем Id відповідного BuildingDefinition."
+                  },
+                  "gateBuildingId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Gate Building Id",
+                    "description": "ID будівлі-воріт у BuildingRegistrySO. Ворота можна встановити лише на тайл, де вже є стіна цієї колекції — вони замінюють її. Має збігатися з полем Id відповідного BuildingDefinition."
+                  },
+                  "horizontalPrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "ГОРИЗОНТАЛЬНА СТІНА (←→)\n\nПрямий сегмент стіни вздовж осі X (ліворуч–праворуч).\n\nКоли використовується:\n• Є сусіди лише ліворуч і/або праворуч (E, W або E+W)\n• Немає жодних сусідів (одиночний сегмент — fallback)\n• Є 3+ сусіди з обох горизонтальних боків (T-подібний та хрест — fallback)",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Horizontal Prefab"
+                  },
+                  "verticalPrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "ВЕРТИКАЛЬНА СТІНА (↑↓)\n\nПрямий сегмент стіни вздовж осі Y (знизу вгору).\n\nКоли використовується:\n• Є сусіди лише зверху і/або знизу (N, S або N+S)\n• При T-подібному з'єднанні де є N+S вісь (N+S+E або N+S+W — fallback)",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Vertical Prefab"
+                  },
+                  "cornerNorthEastPrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "КУТ 'ПРАВИЙ ВЕРХНІЙ' — NE (↑→)\n\nКутовий сегмент що з'єднує напрямки Північ і Схід.\nСтіна згинається: іде вгору і праворуч.\n\nКоли використовується:\n• Є сусід зверху (N) і праворуч (E), але НЕ знизу і НЕ ліворуч",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Corner North East Prefab"
+                  },
+                  "cornerNorthWestPrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "КУТ 'ЛІВИЙ ВЕРХНІЙ' — NW (↑←)\n\nКутовий сегмент що з'єднує напрямки Північ і Захід.\nСтіна згинається: іде вгору і ліворуч.\n\nКоли використовується:\n• Є сусід зверху (N) і ліворуч (W), але НЕ знизу і НЕ праворуч",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Corner North West Prefab"
+                  },
+                  "cornerSouthEastPrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "КУТ 'ПРАВИЙ НИЖНІЙ' — SE (↓→)\n\nКутовий сегмент що з'єднує напрямки Південь і Схід.\nСтіна згинається: іде вниз і праворуч.\n\nКоли використовується:\n• Є сусід знизу (S) і праворуч (E), але НЕ зверху і НЕ ліворуч",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Corner South East Prefab"
+                  },
+                  "cornerSouthWestPrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "КУТ 'ЛІВИЙ НИЖНІЙ' — SW (↓←)\n\nКутовий сегмент що з'єднує напрямки Південь і Захід.\nСтіна згинається: іде вниз і ліворуч.\n\nКоли використовується:\n• Є сусід знизу (S) і ліворуч (W), але НЕ зверху і НЕ праворуч",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Corner South West Prefab"
+                  },
+                  "gatePrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "ВОРОТА\n\nПрохідний сегмент, що замінює стіну цієї ж колекції.\n\nОсобливості:\n• Можна встановити ЛИШЕ на тайл де вже є стіна (WallBuildingId) цієї колекції\n• При встановленні стіна знищується і замінюється воротами\n• GateBuildingId має бути зареєстровано у BuildingRegistrySO",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Gate Prefab"
+                  },
+                  "topologyBindings": {
+                    "type": [
+                      "array",
+                      "null"
+                    ],
+                    "items": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "caseType": {
+                          "type": "string",
+                          "pattern": "^(?:-?\\d+|(?:Isolated|CrossIntersection|TJunctionOpenNorth|TJunctionOpenEast|TJunctionOpenSouth|TJunctionOpenWest|CornerNorthEast|CornerNorthWest|CornerSouthEast|CornerSouthWest|Vertical|VerticalLeft|VerticalRight|Horizontal|HorizontalTop|HorizontalBottom|EndNorth|EndEast|EndSouth|EndWest|DiagonalNorthEastSouthWest|DiagonalNorthWestSouthEast))$",
+                          "x-enumNames": [
+                            "Isolated",
+                            "CrossIntersection",
+                            "TJunctionOpenNorth",
+                            "TJunctionOpenEast",
+                            "TJunctionOpenSouth",
+                            "TJunctionOpenWest",
+                            "CornerNorthEast",
+                            "CornerNorthWest",
+                            "CornerSouthEast",
+                            "CornerSouthWest",
+                            "Vertical",
+                            "VerticalLeft",
+                            "VerticalRight",
+                            "Horizontal",
+                            "HorizontalTop",
+                            "HorizontalBottom",
+                            "EndNorth",
+                            "EndEast",
+                            "EndSouth",
+                            "EndWest",
+                            "DiagonalNorthEastSouthWest",
+                            "DiagonalNorthWestSouthEast"
+                          ],
+                          "x-flags": false,
+                          "title": "Case Type"
+                        },
+                        "variantBuildingIds": {
+                          "type": [
+                            "array",
+                            "null"
+                          ],
+                          "items": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "title": "Variant Building Ids"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "title": "Topology Bindings",
+                    "description": "Опціональний список case -> варіації BuildingId. Якщо елементів немає, система використовує legacy fallback з prefab-полів вище."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Wall Collections"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Реєстр будівель. Потрібен для композитного превью.",
+      "title": "Building Registry"
+    }
+  }
+}

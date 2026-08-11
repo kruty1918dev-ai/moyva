@@ -1,0 +1,596 @@
+{
+  "$schema": "../../Schemas/economy-database.schema.json",
+  "schema": "moyva.economy-database",
+  "version": 1,
+  "id": "economydatabase",
+  "model": "economy-database",
+  "schemaVersion": 2,
+  "resources": [
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "aloe-herb-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "pearl-white-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "amethyst-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "hide-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "barrel-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "beef-cut-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "root-purple-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "bolt-blue-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "green-gem-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "axe-silver-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "bone-fragment-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "cup-gold-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "sticks-brown-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "brick-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "bronze-block-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "cabbage-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "cheese-yellow-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "cherries-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "coin-gold-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "axe-white-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "cloth-magenta-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "cloth-red-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "cloth-purple-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "dark-armor-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "pants-magenta-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "pants-violet-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "milk-bottle-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "cotton-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "crystal-cluster-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "crystal-purple-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "gem-red-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "flower-herb-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "gold-chunks-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "gold-coins-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "green-ore-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "violet-crystal-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "ham-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "hardwood-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "herbs-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "herb-green-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "iron-block-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "iron-ingot-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "iron-ore-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "iron-shard-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "leather-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "banana-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "mushroom-light-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "mushroom-red-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "red-cloth-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "plum-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "poultry-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "raspberries-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "raw-meat-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "blue-gem-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "resin-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "ribs-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "root-herb-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "rope-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "cyan-gem-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "white-feather-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "silver-chunks-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "silver-ingot-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "acorn-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "steak-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "steel-block-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "bone-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "stone-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "sulfur-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "tin-block-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "tomato-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "twigs-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "red-crystal-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "walnut-wood-materials-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "wheat-bundle-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "corn-cob-food-resources"
+      }
+    },
+    {
+      "$config": {
+        "model": "economy-resource",
+        "id": "zinc-block-materials-resources"
+      }
+    }
+  ],
+  "settlements": [],
+  "warehousePolicies": [],
+  "productionProfiles": [],
+  "caravanTemplates": [],
+  "aiRuleProfiles": [],
+  "mapObjectEconomyEntries": [
+    {
+      "mapObjectId": "bush",
+      "displayName": "bush",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "tree-pine",
+      "displayName": "tree-pine",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "tree-oak",
+      "displayName": "tree-oak",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "green-tree-object-001",
+      "displayName": "green-tree-object-001",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "green-tree-object-002",
+      "displayName": "green-tree-object-002",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "green-tree-object-003",
+      "displayName": "green-tree-object-003",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "green-tree-object-004",
+      "displayName": "green-tree-object-004",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "green-tree-object-005",
+      "displayName": "green-tree-object-005",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "green-tree-object-006",
+      "displayName": "green-tree-object-006",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "green-tree-object-007",
+      "displayName": "green-tree-object-007",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "green-tree-object-008",
+      "displayName": "green-tree-object-008",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "palm-tree-object-001",
+      "displayName": "palm-tree-object-001",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "green-tree-stump-object-001",
+      "displayName": "green-tree-stump-object-001",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "palm-tree-object-002",
+      "displayName": "palm-tree-object-002",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "palm-tree-object-003",
+      "displayName": "palm-tree-object-003",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    },
+    {
+      "mapObjectId": "palm-tree-stump-object-001",
+      "displayName": "palm-tree-stump-object-001",
+      "isInteractable": false,
+      "yieldsResource": false,
+      "harvestResourceId": ""
+    }
+  ],
+  "rulesConfig": {
+    "$config": {
+      "model": "economy-rules-config",
+      "id": "economyrulesconfig"
+    }
+  },
+  "migration": {
+    "sourceAssetGuid": "545b933e7bbc78a5b8dd553f7e1604f8",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/EconomyDatabase.asset",
+    "sourceHash": "51a3e9fbbf9f0657585122166fa9ff76fb5bb4760de6b31b46b80cf3a52e0b97"
+  }
+}

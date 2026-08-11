@@ -1,0 +1,442 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/grass-card-prefab-preset.schema.json",
+  "title": "Moyva — Grass Card Prefab Preset",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.Editor.ObjectPlacement.GrassCardPrefabPreset. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.grass-card-prefab-preset"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "grass-card-prefab-preset"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "texture": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "Texture"
+    },
+    "materialShader": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+      "properties": {
+        "$asset": {
+          "type": "string",
+          "title": "Asset ID"
+        },
+        "editorPath": {
+          "type": "string",
+          "description": "Editor-only path для діагностики/регенерації catalog."
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "required": [
+        "$asset"
+      ],
+      "title": "Material Shader"
+    },
+    "outputFolder": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Output Folder"
+    },
+    "crossedPlanes": {
+      "type": "integer",
+      "title": "Crossed Planes",
+      "minimum": 1.0,
+      "maximum": 8.0,
+      "x-moyva-editorMinimum": 1.0,
+      "x-moyva-editorMaximum": 8.0
+    },
+    "geometryMode": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:CrossedPlanes|CameraBillboard))$",
+      "x-enumNames": [
+        "CrossedPlanes",
+        "CameraBillboard"
+      ],
+      "x-flags": false,
+      "title": "Geometry Mode"
+    },
+    "sizeMode": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:HeightKeepsTextureAspect|WidthKeepsTextureAspect|TexturePixelsPerUnit|Manual))$",
+      "x-enumNames": [
+        "HeightKeepsTextureAspect",
+        "WidthKeepsTextureAspect",
+        "TexturePixelsPerUnit",
+        "Manual"
+      ],
+      "x-flags": false,
+      "title": "Size Mode"
+    },
+    "width": {
+      "type": "number",
+      "title": "Width",
+      "minimum": 0.01,
+      "x-moyva-editorMinimum": 0.01
+    },
+    "height": {
+      "type": "number",
+      "title": "Height",
+      "minimum": 0.01,
+      "x-moyva-editorMinimum": 0.01
+    },
+    "pixelsPerUnit": {
+      "type": "number",
+      "title": "Pixels Per Unit",
+      "minimum": 1.0,
+      "x-moyva-editorMinimum": 1.0
+    },
+    "doubleSided": {
+      "type": "boolean",
+      "title": "Double Sided"
+    },
+    "tint": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Tint"
+    },
+    "alphaClip": {
+      "type": "number",
+      "title": "Alpha Clip",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "textureFill": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Texture Fill"
+    },
+    "textureFillOffset": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Texture Fill Offset"
+    },
+    "textureFitClamp": {
+      "type": "number",
+      "title": "Texture Fit Clamp",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "textureVolumeStrength": {
+      "type": "number",
+      "title": "Texture Volume Strength",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "textureVolumeRoundness": {
+      "type": "number",
+      "title": "Texture Volume Roundness",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "textureVolumeLightColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Texture Volume Light Color"
+    },
+    "textureVolumeShadowColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Texture Volume Shadow Color"
+    },
+    "textureVolumeDirection": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Texture Volume Direction"
+    },
+    "outlineColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Outline Color"
+    },
+    "outlineStrength": {
+      "type": "number",
+      "title": "Outline Strength",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "outlineScreenWidthPx": {
+      "type": "number",
+      "title": "Outline Screen Width Px",
+      "minimum": 0.0,
+      "maximum": 12.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 12.0
+    },
+    "contactShadowMode": {
+      "type": "string",
+      "pattern": "^(?:-?\\d+|(?:MeshFootprint|UvCardBlob))$",
+      "x-enumNames": [
+        "MeshFootprint",
+        "UvCardBlob"
+      ],
+      "x-flags": false,
+      "title": "Contact Shadow Mode"
+    },
+    "contactColor": {
+      "type": "object",
+      "properties": {
+        "r": {
+          "type": "number"
+        },
+        "g": {
+          "type": "number"
+        },
+        "b": {
+          "type": "number"
+        },
+        "a": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "r",
+        "g",
+        "b",
+        "a"
+      ],
+      "additionalProperties": false,
+      "title": "Contact Color"
+    },
+    "contactShadowStrength": {
+      "type": "number",
+      "title": "Contact Shadow Strength",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "contactBlobAspect": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "title": "Contact Blob Aspect"
+    },
+    "contactDarkness": {
+      "type": "number",
+      "title": "Contact Darkness",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.0,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "contactRadius": {
+      "type": "number",
+      "title": "Contact Radius",
+      "minimum": 0.01,
+      "maximum": 5.0,
+      "x-moyva-editorMinimum": 0.01,
+      "x-moyva-editorMaximum": 5.0
+    },
+    "contactSoftness": {
+      "type": "number",
+      "title": "Contact Softness",
+      "minimum": 0.01,
+      "maximum": 1.0,
+      "x-moyva-editorMinimum": 0.01,
+      "x-moyva-editorMaximum": 1.0
+    },
+    "contactCameraBackOffset": {
+      "type": "number",
+      "title": "Contact Camera Back Offset",
+      "minimum": -2.0,
+      "maximum": 2.0,
+      "x-moyva-editorMinimum": -2.0,
+      "x-moyva-editorMaximum": 2.0
+    }
+  }
+}

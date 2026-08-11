@@ -1,0 +1,1598 @@
+{
+  "$schema": "../../Schemas/tile-registry.schema.json",
+  "schema": "moyva.tile-registry",
+  "version": 1,
+  "id": "tile3dregistry",
+  "model": "tile-registry",
+  "definitions": [
+    {
+      "id": "TileGrass",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-004",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-005",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-006",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-007",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "texture-grass-tile-008",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-tile-level-1-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-tile-level-2-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-tile-level-3-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "f7ede9f1-eac0-416f-833c-5218ae7df6bf",
+      "tileWorldCreatorBlueprintLayerName": "Grass",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-down-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.corner-tile.f32af768",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Corner_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-down-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.edge-tile.3d361b2b",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Edge_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-down-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.edge-tile.3d361b2b",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Edge_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-down-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.corner-tile.f32af768",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Corner_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-down-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.edge-tile.3d361b2b",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Edge_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.edge-tile.3d361b2b",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Edge_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.edge-tile.3d361b2b",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Edge_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-top-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.corner-tile.f32af768",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Corner_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-top-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.edge-tile.3d361b2b",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Edge_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-top-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.edge-tile.3d361b2b",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Edge_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-top-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.corner-tile.f32af768",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Corner_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "grass-coast-top-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.edge-tile.3d361b2b",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Edge_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "sand-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.sandpreset.2c3140e5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/SandPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "2559abb3-0fda-4b47-9f27-b520a9fbc436",
+      "tileWorldCreatorBlueprintLayerName": "Sand",
+      "visualPrefab": {
+        "$asset": "asset.game-object.fill-tile.6f7566a5",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/2.5DTiles/Prefabs/SandOnly/Fill_Tile.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-tile",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-down-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-corner.01241bf9",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Corner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-down-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-down-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-down-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-corner.01241bf9",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Corner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-down-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-top-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-corner.01241bf9",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Corner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-top-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-top-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-top-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-corner.01241bf9",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Corner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-deep-depth-to-middle-top-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-tile-002",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-tile-003",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-down-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-corner.01241bf9",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Corner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-down-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-down-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-down-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-corner.01241bf9",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Corner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-down-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-top-left-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-corner.01241bf9",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Corner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-top-left-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-top-middle-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-top-right-corner-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-corner.01241bf9",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Corner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-middle-depth-to-shoal-top-right-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-edge.ae2a5d31",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Edge.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "water-shoal-depth-tile-001",
+      "movementCost": 1.0,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.baseblockpresetwater.8829f5ee",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/BaseBlockPresetWater.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "213245b1-3f37-402c-8bcf-cebec84930fb",
+      "tileWorldCreatorBlueprintLayerName": "Water",
+      "visualPrefab": {
+        "$asset": "asset.game-object.baseblock-fill.af07a11c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/BaseBlockTiles/Prefabs/Water/BaseBlock_Fill.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-left-inner-corner-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-interiorcorner.ab54ac39",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_InteriorCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-left-inner-corner-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-interiorcorner.ab54ac39",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_InteriorCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-left-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-left-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-middle-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-middle-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-right-inner-corner-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-interiorcorner.ab54ac39",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_InteriorCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-right-inner-corner-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-interiorcorner.ab54ac39",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_InteriorCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-right-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-right-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-road-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-stairs-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-down-stairs-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-diagonal-corners-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-mergedcorner.cb042459",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_MergedCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-diagonal-corners-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-mergedcorner.cb042459",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_MergedCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-road-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-stairs-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-stairs-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-left-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-diagonal-corners-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-mergedcorner.cb042459",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_MergedCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-diagonal-corners-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-mergedcorner.cb042459",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_MergedCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-road-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-stairs-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-stairs-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-right-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-left-inner-corner-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-interiorcorner.ab54ac39",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_InteriorCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-left-inner-corner-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-interiorcorner.ab54ac39",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_InteriorCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-left-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-left-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-middle-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-middle-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-right-inner-corner-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-interiorcorner.ab54ac39",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_InteriorCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-right-inner-corner-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-interiorcorner.ab54ac39",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_InteriorCorner.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-right-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-right-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-road-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-stairs-tile-001",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "stone-hill-top-stairs-tile-002",
+      "movementCost": 1.2,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.clifftilespreset-a.e6decb8e",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/CliffTilesPreset_A.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "10e0b895-7e55-4656-93cc-964ab8d6152c",
+      "tileWorldCreatorBlueprintLayerName": "Hill",
+      "visualPrefab": {
+        "$asset": "asset.game-object.cliff-edge-a.8ef03624",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/CliffTiles/Prefabs/Cliff_Edge_A.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "snow-tile-001",
+      "movementCost": 2.5,
+      "tileWorldCreatorPreset": {
+        "$asset": "asset.tile-preset.grasstilespreset.17be7ba4",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/GrassTilesPreset.asset",
+        "required": true
+      },
+      "tileWorldCreatorBlueprintLayerGuid": "4b3b8cd0-44ae-4923-aadb-bc49251bbc6b",
+      "tileWorldCreatorBlueprintLayerName": "Snow",
+      "visualPrefab": {
+        "$asset": "asset.game-object.grass-filll.d81af35c",
+        "editorPath": "Assets/ThirdParty/TileWorldCreator/Tiles URP/GrassTiles/Prefabs/Grass_Filll.prefab",
+        "required": true
+      }
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "5a57832fb61b869c4a38191aa4236799",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Tile/Tile3DRegistry.asset",
+    "sourceHash": "26ff088dda63c9c68c19dc7426c8d1a2fc1f647ce4db42e048cae80ab535d819"
+  }
+}

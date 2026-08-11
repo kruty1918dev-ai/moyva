@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "acorn-food-resources",
+  "model": "economy-resource",
+  "displayName": "Acorn",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-116.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "82b1c6a1a1ee4b5d9dc06a02103c459b",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Sprout.asset",
+    "sourceHash": "8f528c5f5c159b23c0c7c1b46eb67b230a1d8c3b939fc891037c175a975f8e7d"
+  }
+}

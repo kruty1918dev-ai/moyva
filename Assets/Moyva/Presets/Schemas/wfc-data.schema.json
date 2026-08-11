@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://moyva.local/schemas/wfc-data.schema.json",
+  "title": "Moyva — WFC Data Settings",
+  "description": "JSON source of truth для Kruty1918.Moyva.Generator.API.WFCDataSettings. Згенеровано з фактичного Unity serialization contract; runtime читає JSON напряму.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "version",
+    "id",
+    "model"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "title": "JSON Schema"
+    },
+    "schema": {
+      "const": "moyva.wfc-data"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+      "title": "Стабільний ID",
+      "description": "Стабільний ідентифікатор. Використовуйте дефіси; ID не залежить від filename або C# class name."
+    },
+    "model": {
+      "const": "wfc-data"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "tileRegistry": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "$config": {
+              "type": "object",
+              "required": [
+                "id"
+              ],
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "required": [
+            "$config"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "definitions": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Id"
+                  },
+                  "movementCost": {
+                    "type": "number",
+                    "title": "Movement Cost"
+                  },
+                  "tileWorldCreatorPreset": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Tile World Creator Preset"
+                  },
+                  "tileWorldCreatorBlueprintLayerGuid": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Tile World Creator Blueprint Layer Guid"
+                  },
+                  "tileWorldCreatorBlueprintLayerName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "title": "Tile World Creator Blueprint Layer Name"
+                  },
+                  "visualPrefab": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "description": "Opaque Unity asset reference. Gameplay values не зберігаються в Unity asset.",
+                    "properties": {
+                      "$asset": {
+                        "type": "string",
+                        "title": "Asset ID"
+                      },
+                      "editorPath": {
+                        "type": "string",
+                        "description": "Editor-only path для діагностики/регенерації catalog."
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": true
+                      }
+                    },
+                    "required": [
+                      "$asset"
+                    ],
+                    "title": "Visual Prefab"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "title": "Definitions"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Реєстр тайлів для WFC. Якщо не вказано — редактор шукає перший TileRegistrySO у проєкті.",
+      "title": "Tile Registry"
+    },
+    "tileRules": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "object",
+        "properties": {
+          "tileID": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Tile ID",
+            "description": "ID тайла (результат), який ми хочемо отримати"
+          },
+          "tileCentralID": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "title": "Tile Central ID",
+            "description": "Центральний тайл, для якого застосовується це правило "
+          },
+          "constraints": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "direction": {
+                  "type": "string",
+                  "pattern": "^(?:-?\\d+|(?:Top|TopRight|Right|BottomRight|Bottom|BottomLeft|Left|TopLeft))$",
+                  "x-enumNames": [
+                    "Top",
+                    "TopRight",
+                    "Right",
+                    "BottomRight",
+                    "Bottom",
+                    "BottomLeft",
+                    "Left",
+                    "TopLeft"
+                  ],
+                  "x-flags": false,
+                  "title": "Direction"
+                },
+                "allowedNeighbors": {
+                  "type": [
+                    "array",
+                    "null"
+                  ],
+                  "items": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "title": "Allowed Neighbors",
+                  "description": "Список допустимих ID сусідів у цьому напрямку"
+                }
+              },
+              "additionalProperties": false
+            },
+            "title": "Constraints",
+            "description": "Обмеження: щоб цей TileID з'явився, ці сусіди ПОВИННІ бути навколо"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority",
+            "description": "Пріоритет правила (якщо підходять декілька варіантів)"
+          },
+          "matchThreshold": {
+            "type": "number",
+            "title": "Match Threshold",
+            "description": "Якщо правило збігається лише частково (наприклад, 6 з 8 сусідів), чи міняти тайл?",
+            "minimum": 0.5,
+            "maximum": 1.0,
+            "x-moyva-editorMinimum": 0.5,
+            "x-moyva-editorMaximum": 1.0
+          }
+        },
+        "additionalProperties": false
+      },
+      "title": "Tile Rules"
+    },
+    "virtualTileIds": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "title": "Virtual Tile Ids",
+      "description": "Віртуальні ID для правил WFC, які не зобов'язані існувати в TileRegistry. Зручно для прапорців на кшталт flag:road, flag:river, marker:poi."
+    },
+    "passCount": {
+      "type": "integer",
+      "title": "Pass Count",
+      "description": "Скільки ітерацій полірування пройти"
+    },
+    "forceTileNearWaterBand": {
+      "type": "boolean",
+      "title": "Force Tile Near Water Band",
+      "description": "Перед WFC примусово замінює сушу біля води на вибраний Tile ID. Корисно для стабільного берегового краю (наприклад grass біля water)."
+    },
+    "nearWaterTileId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Near Water Tile Id",
+      "description": "Tile ID, який буде поставлено у смузі біля води."
+    },
+    "nearWaterRadius": {
+      "type": "integer",
+      "title": "Near Water Radius",
+      "description": "Радіус смуги біля води в клітинках.",
+      "minimum": 1.0,
+      "maximum": 6.0,
+      "x-moyva-editorMinimum": 1.0,
+      "x-moyva-editorMaximum": 6.0
+    },
+    "includeDiagonalsForNearWater": {
+      "type": "boolean",
+      "title": "Include Diagonals For Near Water",
+      "description": "Якщо увімкнено, радіус смуги рахується з діагоналями (квадратна/8-напрямна околиця)."
+    },
+    "waterLikeTileIds": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "title": "Water Like Tile Ids",
+      "description": "Список ID, які вважаються водою для побудови прибережної смуги."
+    },
+    "borderWaterTileId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "title": "Border Water Tile Id",
+      "description": "Tile ID, яким WFC заповнює зовнішній контур мапи. Для архіпелагів це може бути ocean-deep, для старих графів — water."
+    }
+  }
+}

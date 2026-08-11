@@ -1,0 +1,21 @@
+{
+  "$schema": "../../Schemas/economy-resource.schema.json",
+  "schema": "moyva.economy-resource",
+  "version": 1,
+  "id": "raw-meat-food-resources",
+  "model": "economy-resource",
+  "displayName": "Raw-meat",
+  "category": "Food",
+  "icon": {
+    "$asset": "asset.sprite.16x16-items-sheet-186.62d7684d",
+    "editorPath": "Assets/Moyva/Art/Sprites/16x16 Pixel Art Item Icons/16x16 items sheet.png",
+    "required": true
+  },
+  "stackLimit": 32,
+  "weightGrams": 1000,
+  "migration": {
+    "sourceAssetGuid": "84fb9d16ef83476c9194bf6e77f2b624",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Economy/Resources/Raw-meat.asset",
+    "sourceHash": "23b7ad87b98b0bcec0462a92a54203a2872682f6b4054a7e616bfcd9f1834c86"
+  }
+}
