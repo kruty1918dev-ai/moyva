@@ -181,11 +181,13 @@
   <Project Path="Unity.InferenceEngine.Editor.Visualizer.csproj" />
   <Project Path="Unity.Netcode.Editor.csproj" />
   <Project Path="Kruty1918.Moyva.GraphSystem.csproj" />
+  <Project Path="Kruty1918.Moyva.Jsonization.csproj" />
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="Unity.Services.Core.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.Multiplayer.Tools.Common.csproj" />
   <Project Path="Kruty1918.Moyva.Tests.BotAI.csproj" />
+  <Project Path="Kruty1918.Moyva.Jsonization.Editor.csproj" />
   <Project Path="Unity.Netcode.Editor.CodeGen.csproj" />
   <Project Path="Unity.Services.Multiplayer.Editor.csproj" />
   <Project Path="Unity.Services.DeploymentApi.csproj" />
