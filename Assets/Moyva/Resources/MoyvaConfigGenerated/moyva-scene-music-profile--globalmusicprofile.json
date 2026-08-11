@@ -10,12 +10,12 @@
     "clip": {
       "$asset": "",
       "editorPath": "",
-      "required": true
+      "required": false
     },
     "mixerGroup": {
       "$asset": "",
       "editorPath": "",
-      "required": true
+      "required": false
     },
     "volume": 0.7,
     "loop": true,
@@ -28,12 +28,12 @@
     "clip": {
       "$asset": "",
       "editorPath": "",
-      "required": true
+      "required": false
     },
     "mixerGroup": {
       "$asset": "",
       "editorPath": "",
-      "required": true
+      "required": false
     },
     "volume": 0.7,
     "loop": true,

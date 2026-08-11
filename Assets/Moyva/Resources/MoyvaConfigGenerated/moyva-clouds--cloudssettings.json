@@ -158,7 +158,7 @@
   "spriteMaterial": {
     "$asset": "",
     "editorPath": "",
-    "required": true
+    "required": false
   },
   "cameraProximityFadeEnabled": true,
   "cameraFadeOrthographicRange": {

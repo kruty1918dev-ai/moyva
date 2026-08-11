@@ -45,7 +45,7 @@
       "flatSurfaceMaterial": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       },
       "tileLayerHeightOffset": 0.0,
       "ignoreFillTiles": false,
@@ -79,9 +79,10 @@
       "$type": "twc-modifier",
       "modifierTypeName": "GiantGrey.TileWorldCreator.DotGrid",
       "modifier": {
-        "$asset": "asset.dot-grid.dotgrid.b1deed2d",
-        "editorPath": "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/TestGeneratorGraph.asset",
-        "required": true
+        "$type": "GiantGrey.TileWorldCreator.DotGrid",
+        "asset": null,
+        "isEnabled": true,
+        "gridSpace": 1
       },
       "nodeId": "05baf276-9ac8-4c91-b52c-d4104d61ea24",
       "editorPosition": {
@@ -150,7 +151,7 @@
       "flatSurfaceMaterial": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       },
       "tileLayerHeightOffset": 0.0,
       "ignoreFillTiles": false,
@@ -220,7 +221,7 @@
       "flatSurfaceMaterial": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       },
       "tileLayerHeightOffset": 0.0,
       "ignoreFillTiles": false,
@@ -262,9 +263,10 @@
       "$type": "twc-modifier",
       "modifierTypeName": "GiantGrey.TileWorldCreator.Smooth",
       "modifier": {
-        "$asset": "asset.smooth.smooth.b1deed2d",
-        "editorPath": "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/TestGeneratorGraph.asset",
-        "required": true
+        "$type": "GiantGrey.TileWorldCreator.Smooth",
+        "asset": null,
+        "isEnabled": true,
+        "smoothCount": 2
       },
       "nodeId": "144797c1-49ae-41ed-8758-53104d48748f",
       "editorPosition": {
@@ -277,9 +279,19 @@
       "$type": "twc-modifier",
       "modifierTypeName": "GiantGrey.TileWorldCreator.CellularAutomata",
       "modifier": {
-        "$asset": "asset.cellular-automata.cellularautomata.b1deed2d",
-        "editorPath": "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/TestGeneratorGraph.asset",
-        "required": true
+        "$type": "GiantGrey.TileWorldCreator.CellularAutomata",
+        "asset": null,
+        "isEnabled": true,
+        "fillProbability": 0.5,
+        "smoothingSteps": 5,
+        "ensureConnected": false,
+        "useMapSize": true,
+        "position": {
+          "x": 0,
+          "y": 0
+        },
+        "customWidth": 5,
+        "customHeight": 5
       },
       "nodeId": "2155eb18-99f0-473f-9bb1-f33205189b6f",
       "editorPosition": {
@@ -303,9 +315,10 @@
       "$type": "twc-modifier",
       "modifierTypeName": "GiantGrey.TileWorldCreator.Shrink",
       "modifier": {
-        "$asset": "asset.shrink.shrink.b1deed2d",
-        "editorPath": "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/TestGeneratorGraph.asset",
-        "required": true
+        "$type": "GiantGrey.TileWorldCreator.Shrink",
+        "asset": null,
+        "isEnabled": true,
+        "shrinkCount": 2
       },
       "nodeId": "4d487cb0-4c28-46b0-89b4-810bf746340e",
       "editorPosition": {
@@ -318,9 +331,10 @@
       "$type": "twc-modifier",
       "modifierTypeName": "GiantGrey.TileWorldCreator.Smooth",
       "modifier": {
-        "$asset": "asset.smooth.smooth.b1deed2d",
-        "editorPath": "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/TestGeneratorGraph.asset",
-        "required": true
+        "$type": "GiantGrey.TileWorldCreator.Smooth",
+        "asset": null,
+        "isEnabled": true,
+        "smoothCount": 5
       },
       "nodeId": "01a3834d-6589-4f5d-8d95-0edde7479689",
       "editorPosition": {
@@ -465,7 +479,7 @@
       "flatSurfaceMaterial": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       },
       "tileGeometryMode": "SurfaceOnly",
       "authoredClosurePolicy": "PreserveAuthored",
@@ -491,7 +505,7 @@
       "flatSurfaceMaterial": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       },
       "tileGeometryMode": "SolidTerrain",
       "authoredClosurePolicy": "PreserveAuthored",
@@ -517,7 +531,7 @@
       "flatSurfaceMaterial": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       },
       "tileGeometryMode": "SolidTerrain",
       "authoredClosurePolicy": "PreserveAuthored",
@@ -543,7 +557,7 @@
       "flatSurfaceMaterial": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       },
       "tileGeometryMode": "SolidTerrain",
       "authoredClosurePolicy": "PreserveAuthored",

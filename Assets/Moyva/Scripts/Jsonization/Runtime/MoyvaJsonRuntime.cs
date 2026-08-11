@@ -662,6 +662,26 @@ namespace Kruty1918.Moyva.Jsonization
 
                 JObject token = JObject.Load(reader);
                 string key = token.Value<string>("$asset");
+                string inlineTypeName = token.Value<string>("$type");
+                if (!string.IsNullOrWhiteSpace(inlineTypeName))
+                {
+                    Type inlineType = ResolveType(inlineTypeName);
+                    if (!IsAllowedInlineUnityObjectType(inlineType, objectType))
+                    {
+                        throw new JsonSerializationException(
+                            $"Inline Unity object type '{inlineTypeName}' is not allow-listed for {objectType.FullName}.");
+                    }
+
+                    object instance = MoyvaJsonObjectFactory.Create(inlineType);
+                    if (instance == null)
+                        throw new JsonSerializationException($"Could not create inline Unity object '{inlineTypeName}'.");
+
+                    token.Remove("$type");
+                    using JsonReader tokenReader = token.CreateReader();
+                    serializer.Populate(tokenReader, instance);
+                    return instance;
+                }
+
                 UnityEngine.Object asset = ResolveAsset(key);
 
                 if (asset == null)
@@ -684,6 +704,18 @@ namespace Kruty1918.Moyva.Jsonization
                 }
 
                 return asset;
+            }
+
+            private static bool IsAllowedInlineUnityObjectType(Type type, Type expectedType)
+            {
+                if (type == null || expectedType == null || type.IsAbstract ||
+                    !expectedType.IsAssignableFrom(type) ||
+                    !typeof(ScriptableObject).IsAssignableFrom(type))
+                    return false;
+
+                string ns = type.Namespace ?? string.Empty;
+                return ns.StartsWith("Kruty1918.Moyva", StringComparison.Ordinal) ||
+                       ns.StartsWith("GiantGrey.TileWorldCreator", StringComparison.Ordinal);
             }
 
             public override void WriteJson(

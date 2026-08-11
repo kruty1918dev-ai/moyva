@@ -182,13 +182,6 @@ namespace Kruty1918.Moyva.Generator.Runtime.Nodes.Twc
                 return;
 
             _modifier.name = modifierType.Name;
-            ; // JSON config object has no Unity hideFlags.
-#if UNITY_EDITOR
-            var owningAsset = string.Empty;
-            if (!string.IsNullOrEmpty(owningAsset))
-                ; // JSON config object is not stored as a Unity subasset.
-            ; // JSON source of truth: no ScriptableObject dirty flag.
-#endif
         }
 
         private static HashSet<Vector2> ToPositions(object[] inputs, int width, int height)

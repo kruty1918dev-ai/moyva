@@ -175,7 +175,7 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                     string key = assetRef.Value<string>("$asset");
                     string editorPath = assetRef.Value<string>("editorPath");
                     if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(editorPath)) continue;
-                    UnityEngine.Object asset = AssetDatabase.LoadMainAssetAtPath(editorPath);
+                    UnityEngine.Object asset = ResolveCatalogAsset(key, editorPath);
                     if (asset != null) references[key] = asset;
                 }
             }
@@ -207,17 +207,32 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             };
             JsonizationEditorUtil.WriteJson(reportPath, report);
             AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
             return $"MOYVA_JSON_ASSET_CATALOG entries={references.Count}";
         }
 
         public static string SyncGeneratedResources(string reportPath)
         {
-            if (Directory.Exists(JsonizationEditorUtil.GeneratedResourcesRoot))
-                Directory.Delete(JsonizationEditorUtil.GeneratedResourcesRoot, true);
             Directory.CreateDirectory(JsonizationEditorUtil.GeneratedResourcesRoot);
 
             int copied = 0;
+            int editorOnly = 0;
+            var generatedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var runtimeModels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var runtimeSchemas = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (Type type in TypeCache.GetTypesDerivedFrom<MoyvaJsonConfigObject>())
+            {
+                if (type == null || type.IsAbstract)
+                    continue;
+
+                string ns = type.Namespace ?? string.Empty;
+                if (!ns.StartsWith(JsonizationEditorUtil.MoyvaNamespace, StringComparison.Ordinal))
+                    continue;
+
+                runtimeModels.Add(MoyvaJsonTypeRegistry.StableId(type));
+                runtimeModels.Add(type.Name);
+                runtimeSchemas.Add(MoyvaJsonTypeRegistry.SchemaForConfigType(type));
+            }
+
             foreach (string source in Directory.GetFiles(JsonizationEditorUtil.PresetsRoot, "*.json", SearchOption.AllDirectories))
             {
                 string norm = source.Replace('\\', '/');
@@ -230,23 +245,51 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 if (root.Property("schema") == null || root.Property("id") == null || root.Property("model") == null)
                     continue;
 
-                string domain = JsonizationEditorUtil.Slug(root.Value<string>("schema") ?? "config");
-                string id = JsonizationEditorUtil.Slug(root.Value<string>("id") ?? Path.GetFileNameWithoutExtension(source));
-                string dest = Path.Combine(JsonizationEditorUtil.GeneratedResourcesRoot, $"{domain}--{id}.json");
+                string schema = root.Value<string>("schema");
+                string id = root.Value<string>("id");
+                string model = root.Value<string>("model");
+                if (string.IsNullOrWhiteSpace(schema) ||
+                    string.IsNullOrWhiteSpace(id) ||
+                    string.IsNullOrWhiteSpace(model))
+                    throw new InvalidOperationException($"{norm}: runtime config metadata must be non-empty.");
+
+                if (!runtimeModels.Contains(model) && !runtimeSchemas.Contains(schema))
+                {
+                    editorOnly++;
+                    continue;
+                }
+
+                string domain = JsonizationEditorUtil.Slug(schema);
+                string safeId = JsonizationEditorUtil.Slug(id);
+                string dest = Path.Combine(JsonizationEditorUtil.GeneratedResourcesRoot, $"{domain}--{safeId}.json");
+                if (!generatedPaths.Add(dest))
+                    throw new InvalidOperationException($"Runtime JSON output collision: {dest}");
                 File.WriteAllText(dest, root.ToString(Formatting.Indented) + "\n");
                 copied++;
             }
 
-            AssetDatabase.Refresh();
+            foreach (string stale in Directory.GetFiles(JsonizationEditorUtil.GeneratedResourcesRoot, "*.json", SearchOption.TopDirectoryOnly))
+            {
+                if (generatedPaths.Contains(stale))
+                    continue;
+
+                File.Delete(stale);
+                string meta = stale + ".meta";
+                if (File.Exists(meta))
+                    File.Delete(meta);
+            }
+
             JsonizationEditorUtil.WriteJson(reportPath, new
             {
                 ok = copied > 0,
                 copied,
+                editorOnly,
                 destination = JsonizationEditorUtil.GeneratedResourcesRoot
             });
             if (copied == 0)
                 throw new InvalidOperationException("No canonical JSON files were copied to runtime Resources.");
-            return $"MOYVA_JSON_RUNTIME_SYNC files={copied}";
+            AssetDatabase.Refresh();
+            return $"MOYVA_JSON_RUNTIME_SYNC files={copied} editorOnly={editorOnly}";
         }
 
         private static void ExportRoot(UnityEngine.Object root, string assetPath, ExportReport report)
@@ -454,6 +497,16 @@ namespace Kruty1918.Moyva.Jsonization.Editor
             {
                 Type type = unityObject.GetType();
                 string assetPath = AssetDatabase.GetAssetPath(unityObject);
+                if (unityObject is ScriptableObject &&
+                    !string.IsNullOrWhiteSpace(assetPath) &&
+                    string.Equals(assetPath, context.RootAssetPath, StringComparison.OrdinalIgnoreCase) &&
+                    !JsonizationEditorUtil.IsMainAsset(unityObject))
+                {
+                    JObject inline = SerializeObjectFields(unityObject, type, context, declaredType);
+                    inline["$type"] = type.FullName;
+                    return inline;
+                }
+
                 if (JsonizationEditorUtil.IsProjectConfigType(type))
                 {
                     if (!string.IsNullOrWhiteSpace(assetPath) &&
@@ -1137,13 +1190,34 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                         string key = obj.Value<string>("$asset");
                         string path = obj.Value<string>("editorPath");
                         if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(path)) continue;
-                        UnityEngine.Object asset = AssetDatabase.LoadMainAssetAtPath(path);
+                        UnityEngine.Object asset = ResolveCatalogAsset(key, path);
                         if (asset != null) result[key] = asset;
                     }
                 }
                 catch { }
             }
             return result;
+        }
+
+        private static UnityEngine.Object ResolveCatalogAsset(string key, string path)
+        {
+            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(path))
+                return null;
+
+            UnityEngine.Object[] assets;
+            try { assets = AssetDatabase.LoadAllAssetsAtPath(path); }
+            catch { return null; }
+
+            foreach (UnityEngine.Object asset in assets)
+            {
+                if (asset != null && string.Equals(
+                        JsonizationEditorUtil.AssetKey(asset),
+                        key,
+                        StringComparison.OrdinalIgnoreCase))
+                    return asset;
+            }
+
+            return null;
         }
 
         private sealed class ReferenceEqualityComparer : IEqualityComparer<object>

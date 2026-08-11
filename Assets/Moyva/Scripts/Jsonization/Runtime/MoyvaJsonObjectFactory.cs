@@ -9,6 +9,9 @@ namespace Kruty1918.Moyva.Jsonization
     {
         public static T Create<T>() where T : class
         {
+            if (typeof(UnityEngine.ScriptableObject).IsAssignableFrom(typeof(T)))
+                return UnityEngine.ScriptableObject.CreateInstance(typeof(T)) as T;
+
             try { return Activator.CreateInstance(typeof(T), true) as T; }
             catch { return FormatterServices.GetUninitializedObject(typeof(T)) as T; }
         }
@@ -16,6 +19,9 @@ namespace Kruty1918.Moyva.Jsonization
         public static object Create(Type type)
         {
             if (type == null) return null;
+            if (typeof(UnityEngine.ScriptableObject).IsAssignableFrom(type))
+                return UnityEngine.ScriptableObject.CreateInstance(type);
+
             try { return Activator.CreateInstance(type, true); }
             catch { return FormatterServices.GetUninitializedObject(type); }
         }

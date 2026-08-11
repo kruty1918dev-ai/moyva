@@ -51,7 +51,7 @@
         "chorusWetMix1": 0.5,
         "chorusWetMix2": 0.5,
         "chorusWetMix3": 0.5,
-        "chorusDelay": 40.0,
+        "chorusDelay": 20.0,
         "chorusRate": 0.8,
         "chorusDepth": 0.03
       }
@@ -74,7 +74,7 @@
       "mixerGroup": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       },
       "volume": 1.0,
       "volumeRandom": 0.0,
@@ -108,7 +108,7 @@
         "chorusWetMix1": 0.5,
         "chorusWetMix2": 0.5,
         "chorusWetMix3": 0.5,
-        "chorusDelay": 40.0,
+        "chorusDelay": 20.0,
         "chorusRate": 0.8,
         "chorusDepth": 0.03
       }

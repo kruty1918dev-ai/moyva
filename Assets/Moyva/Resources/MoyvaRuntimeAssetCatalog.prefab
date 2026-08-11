@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 7265014200970477828}
   - component: {fileID: 169038267036490666}
-  - component: {fileID: 2729556553527693496}
   m_Layer: 0
   m_Name: MoyvaRuntimeAssetCatalog
   m_TagString: Untagged
@@ -53,11 +52,7 @@ MonoBehaviour:
   - Key: asset.audio-clip.tavern-music-loop.1155955e
     Asset: {fileID: 8300000, guid: 1155955e306f54181935f3ac9156a5eb, type: 3}
   - Key: asset.audio-mixer-group-controller.master.35a28e1f
-    Asset: {fileID: 24100000, guid: 35a28e1f08aa176529bf03c2255bc3f8, type: 2}
-  - Key: asset.cellular-automata.cellularautomata.b1deed2d
-    Asset: {fileID: 0}
-  - Key: asset.dot-grid.dotgrid.b1deed2d
-    Asset: {fileID: 0}
+    Asset: {fileID: 24300002, guid: 35a28e1f08aa176529bf03c2255bc3f8, type: 2}
   - Key: asset.game-object.archer.87b835b1
     Asset: {fileID: 3925536428086337897, guid: 87b835b1a22a0b90583840638a5c5cb0, type: 3}
   - Key: asset.game-object.baseblock-corner.01241bf9
@@ -700,228 +695,224 @@ MonoBehaviour:
     Asset: {fileID: 1384669653051272897, guid: 1d32aeffc2c9ab6c8a53853a9910a1f3, type: 3}
   - Key: asset.game-object.windmill-01.87bc8f20
     Asset: {fileID: 2585797056767779472, guid: 87bc8f20c999a2d7c930c5143cc8c369, type: 3}
-  - Key: asset.shrink.shrink.b1deed2d
-    Asset: {fileID: 0}
-  - Key: asset.smooth.smooth.b1deed2d
-    Asset: {fileID: 0}
   - Key: asset.sprite.16x16-items-sheet-10.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 2043002081, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-104.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1815320004, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-105.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -555517929, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-11.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1542864266, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-112.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 477368185, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-113.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 109008489, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-114.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1922278963, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-115.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1608824613, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-116.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -347714020, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-117.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -780212090, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-12.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -245430926, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-13.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -147323449, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-14.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -2016493438, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-142.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1543548372, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-143.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 101834564, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-15.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1249038002, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-16.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -982856591, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-17.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1194725956, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-18.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1045212822, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-186.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 2068181806, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-187.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1534047610, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-188.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 394577249, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-189.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1923617309, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-19.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1839679833, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-190.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1369457224, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-191.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1367837699, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-2.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1768132216, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-20.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1056939201, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-21.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -2051768838, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-22.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 653385758, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-23.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 268817316, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-232.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -935230417, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-233.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -739879170, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-234.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1985815041, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-235.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1273366083, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-236.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1438883814, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-237.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -120510711, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-238.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -291674302, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-239.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 826176627, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-25.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1441073898, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-27.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -921616715, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-28.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -163807514, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-29.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1784735916, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-3.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 586866326, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-30.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1599469606, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-31.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -843569825, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-32.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 650760849, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-33.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 563199231, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-34.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 173883946, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-35.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -376910634, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-4.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1404299846, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-40.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1145804333, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-41.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -277594306, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-42.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -247198273, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-43.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 462248344, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-44.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -480449755, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-45.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -226280218, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-46.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 320827400, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-47.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1222114195, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-48.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 821768047, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-5.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -373596042, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-50.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1596460865, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-56.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1629802247, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-57.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 2026243473, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-58.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1139815714, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-59.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 861756331, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-65.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1588658641, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-66.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 827117130, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-67.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 654812808, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-68.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 590641355, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-69.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -659480555, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-8.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: 1654260025, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-88.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1839990009, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-89.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -1781221358, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-90.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -2070684881, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.16x16-items-sheet-91.62d7684d
-    Asset: {fileID: 2800000, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
+    Asset: {fileID: -140748940, guid: 62d7684d3d2d286709a275989698a69d, type: 3}
   - Key: asset.sprite.2d-clouds-0.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: 9026702686629719296, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-1.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: 5460574913838338161, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-10.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: 835994297939739400, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-11.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: 9181428109425497092, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-2.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: 8935597098142700565, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-3.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: -1966770584162202525, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-4.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: 4278469685058734327, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-5.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: 1295183437819781357, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-6.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: 1361124476698527635, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-7.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: -2960514239382257479, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-8.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: -3484542077086448108, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.2d-clouds-9.137c6b21
-    Asset: {fileID: 2800000, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
+    Asset: {fileID: -3866478078174537713, guid: 137c6b2192f50ec8b8d94ac30d9cfd79, type: 3}
   - Key: asset.sprite.archer.e89002a4
-    Asset: {fileID: 2800000, guid: e89002a4ba1837718a7fe4a60af88364, type: 3}
+    Asset: {fileID: 21300000, guid: e89002a4ba1837718a7fe4a60af88364, type: 3}
   - Key: asset.sprite.armor-workshop.e607fe0e
-    Asset: {fileID: 2800000, guid: e607fe0e574308817a21c335a33e93e0, type: 3}
+    Asset: {fileID: 21300000, guid: e607fe0e574308817a21c335a33e93e0, type: 3}
   - Key: asset.sprite.barn.39e8ec59
-    Asset: {fileID: 2800000, guid: 39e8ec593c324fc8097b8ef34e3a90ef, type: 3}
+    Asset: {fileID: 21300000, guid: 39e8ec593c324fc8097b8ef34e3a90ef, type: 3}
   - Key: asset.sprite.barrack.0a0125f1
-    Asset: {fileID: 2800000, guid: 0a0125f12b2c5923783afb847bf3a1bf, type: 3}
+    Asset: {fileID: 21300000, guid: 0a0125f12b2c5923783afb847bf3a1bf, type: 3}
   - Key: asset.sprite.castle-01.467e2447
-    Asset: {fileID: 2800000, guid: 467e2447c0b3e58eb9c1a4d52c777877, type: 3}
+    Asset: {fileID: 21300000, guid: 467e2447c0b3e58eb9c1a4d52c777877, type: 3}
   - Key: asset.sprite.engineers-guild.197cd941
-    Asset: {fileID: 2800000, guid: 197cd941558120d0aa577a00bdb22dc4, type: 3}
+    Asset: {fileID: 21300000, guid: 197cd941558120d0aa577a00bdb22dc4, type: 3}
   - Key: asset.sprite.fog-of-war.55b14f33
-    Asset: {fileID: 2800000, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
+    Asset: {fileID: 21300000, guid: 55b14f33513136db7b98335a8c54bccc, type: 3}
   - Key: asset.sprite.house-01.f9cc986b
-    Asset: {fileID: 2800000, guid: f9cc986bbaaa45bae8693609aabf23d4, type: 3}
+    Asset: {fileID: 21300000, guid: f9cc986bbaaa45bae8693609aabf23d4, type: 3}
   - Key: asset.sprite.iron-mine.7ab2725b
-    Asset: {fileID: 2800000, guid: 7ab2725ba5ec82bb798e37738baa64de, type: 3}
+    Asset: {fileID: 21300000, guid: 7ab2725ba5ec82bb798e37738baa64de, type: 3}
   - Key: asset.sprite.light-cavalry.0929e1c0
-    Asset: {fileID: 2800000, guid: 0929e1c01643be78380650a9ce9b2c81, type: 3}
+    Asset: {fileID: 21300000, guid: 0929e1c01643be78380650a9ce9b2c81, type: 3}
   - Key: asset.sprite.sawmill.4aed0b16
-    Asset: {fileID: 2800000, guid: 4aed0b166d6971c9394ee84301b954ce, type: 3}
+    Asset: {fileID: 21300000, guid: 4aed0b166d6971c9394ee84301b954ce, type: 3}
   - Key: asset.sprite.spearman.67220b0e
-    Asset: {fileID: 2800000, guid: 67220b0ed3a462e3284369f85c1f6928, type: 3}
+    Asset: {fileID: 21300000, guid: 67220b0ed3a462e3284369f85c1f6928, type: 3}
   - Key: asset.sprite.stable.2cd37eb0
-    Asset: {fileID: 2800000, guid: 2cd37eb0e4bb66b2d8e69886715e4d8a, type: 3}
+    Asset: {fileID: 21300000, guid: 2cd37eb0e4bb66b2d8e69886715e4d8a, type: 3}
   - Key: asset.sprite.stone-gate.2e4dfea9
-    Asset: {fileID: 2800000, guid: 2e4dfea9a30bd4488bf5797a00ae468a, type: 3}
+    Asset: {fileID: 21300000, guid: 2e4dfea9a30bd4488bf5797a00ae468a, type: 3}
   - Key: asset.sprite.stone-quarry.a2378cc4
-    Asset: {fileID: 2800000, guid: a2378cc49e6dde5a3b73a98ba8ef1273, type: 3}
+    Asset: {fileID: 21300000, guid: a2378cc49e6dde5a3b73a98ba8ef1273, type: 3}
   - Key: asset.sprite.stone-wall.76a8f783
-    Asset: {fileID: 2800000, guid: 76a8f783f194ee3feb9d6aa9ec1bb42a, type: 3}
+    Asset: {fileID: 21300000, guid: 76a8f783f194ee3feb9d6aa9ec1bb42a, type: 3}
   - Key: asset.sprite.storage.25b33a66
-    Asset: {fileID: 2800000, guid: 25b33a668202487ef8e734b48237974b, type: 3}
+    Asset: {fileID: 21300000, guid: 25b33a668202487ef8e734b48237974b, type: 3}
   - Key: asset.sprite.warrior.370d453e
-    Asset: {fileID: 2800000, guid: 370d453e6891f2fe5861721dd7dca04e, type: 3}
+    Asset: {fileID: 21300000, guid: 370d453e6891f2fe5861721dd7dca04e, type: 3}
   - Key: asset.sprite.weapon-workshop.e57bf7bc
-    Asset: {fileID: 2800000, guid: e57bf7bc97b4c3d079dfddd573522422, type: 3}
+    Asset: {fileID: 21300000, guid: e57bf7bc97b4c3d079dfddd573522422, type: 3}
   - Key: asset.sprite.windmill-01.663a1b41
-    Asset: {fileID: 2800000, guid: 663a1b41a05493bffbe2ab94221d2ea7, type: 3}
+    Asset: {fileID: 21300000, guid: 663a1b41a05493bffbe2ab94221d2ea7, type: 3}
   - Key: asset.sprite.wood-camp.b87e1d3e
-    Asset: {fileID: 2800000, guid: b87e1d3eeeff1f2d99cf6aa4e6f51a62, type: 3}
+    Asset: {fileID: 21300000, guid: b87e1d3eeeff1f2d99cf6aa4e6f51a62, type: 3}
   - Key: asset.tile-preset.01-dual-grid-sand-kaykit-style.70f407af
     Asset: {fileID: 11400000, guid: 70f407af31fda74b78b3e1c7eacd41a4, type: 2}
   - Key: asset.tile-preset.02-dual-grid-grass-kaykit-style.05593a2d
@@ -942,32 +933,3 @@ MonoBehaviour:
     Asset: {fileID: 11400000, guid: 2c3140e543f8e1c4592e4ec9a8291c1e, type: 2}
   - Key: asset.tile-preset.tilewater.dfeb07ab
     Asset: {fileID: 11400000, guid: dfeb07ab92df40308a24960fec915de2, type: 2}
---- !u!114 &2729556553527693496
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6253441717916618303}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ea688967269dbc51aa030e7381716f56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Kruty1918.Moyva.Jsonization::Kruty1918.Moyva.Jsonization.MoyvaJsonBindingMarker
-  _bindings:
-  - Target: {fileID: 169038267036490666}
-    PropertyPath: _entries.Array.data[4].Asset
-    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
-    ConfigId: testgeneratorgraph
-  - Target: {fileID: 169038267036490666}
-    PropertyPath: _entries.Array.data[5].Asset
-    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
-    ConfigId: testgeneratorgraph
-  - Target: {fileID: 169038267036490666}
-    PropertyPath: _entries.Array.data[327].Asset
-    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
-    ConfigId: testgeneratorgraph
-  - Target: {fileID: 169038267036490666}
-    PropertyPath: _entries.Array.data[328].Asset
-    ConfigType: Kruty1918.Moyva.GraphSystem.API.GraphAsset
-    ConfigId: testgeneratorgraph

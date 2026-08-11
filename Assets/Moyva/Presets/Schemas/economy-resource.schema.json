@@ -25,10 +25,8 @@
       "default": 1
     },
     "id": {
-      "type": [
-        "string",
-        "null"
-      ],
+      "type": "string",
+      "minLength": 1,
       "title": "Id"
     },
     "model": {

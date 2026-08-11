@@ -7,7 +7,7 @@
   "mixer": {
     "$asset": "",
     "editorPath": "",
-    "required": true
+    "required": false
   },
   "masterParameter": "MasterVolume",
   "musicParameter": "MusicVolume",

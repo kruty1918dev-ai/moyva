@@ -51,11 +51,11 @@
       "animationClip": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       },
       "animatorParameterName": "",
       "spriteFrames": [],
-      "spriteFPS": 0,
+      "spriteFPS": 1,
       "loop": true,
       "duration": 1.0
     }

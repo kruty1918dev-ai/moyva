@@ -12,7 +12,7 @@
       "icon": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       }
     },
     {
@@ -22,7 +22,7 @@
       "icon": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       }
     },
     {
@@ -32,7 +32,7 @@
       "icon": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       }
     },
     {
@@ -42,7 +42,7 @@
       "icon": {
         "$asset": "",
         "editorPath": "",
-        "required": true
+        "required": false
       }
     }
   ],

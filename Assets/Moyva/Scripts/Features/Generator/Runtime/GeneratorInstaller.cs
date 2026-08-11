@@ -209,6 +209,21 @@ namespace Kruty1918.Moyva.Generator
 
             if (_tileWorldCreatorManager == null)
                 _tileWorldCreatorManager = FindFirst<TileWorldCreatorManager>();
+
+            EnsureRuntimeConfiguration();
+        }
+
+        private void EnsureRuntimeConfiguration()
+        {
+            if (_tileWorldCreatorManager == null || _tileWorldCreatorManager.configuration != null)
+                return;
+
+            var configuration = ScriptableObject.CreateInstance<Configuration>();
+            configuration.name = "Moyva Runtime TWC Configuration";
+            _tileWorldCreatorManager.configuration = configuration;
+            Debug.Log(
+                $"{GeneratorBootDiagTag} Created transient TileWorldCreator configuration because the scene reference was missing.",
+                _tileWorldCreatorManager);
         }
 
         private TileRegistrySO ResolveTileRegistry()

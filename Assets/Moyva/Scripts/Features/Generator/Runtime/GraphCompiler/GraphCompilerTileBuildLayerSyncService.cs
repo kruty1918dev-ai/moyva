@@ -100,9 +100,7 @@ namespace Kruty1918.Moyva.Generator.Runtime
 
                 folder.buildLayers.Remove(stale);
 #if UNITY_EDITOR
-                if (UnityEditor.AssetDatabase.Contains(stale))
-                    ; // JSON config object is not stored as a Unity subasset.
-                else
+                if (!UnityEditor.AssetDatabase.Contains(stale))
                     Object.DestroyImmediate(stale);
 #else
                 Object.Destroy(stale);

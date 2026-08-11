@@ -50,7 +50,20 @@ namespace Kruty1918.Moyva.Jsonization.Editor
 
                 report.jsonFiles++;
                 docs.Add(root);
-                string key = (root.Value<string>("model") ?? "") + "|" + (root.Value<string>("id") ?? "");
+                string schema = root.Value<string>("schema");
+                string id = root.Value<string>("id");
+                string model = root.Value<string>("model");
+                int? version = root.Value<int?>("version");
+                if (string.IsNullOrWhiteSpace(schema) ||
+                    string.IsNullOrWhiteSpace(id) ||
+                    string.IsNullOrWhiteSpace(model) ||
+                    version is null or < 1)
+                {
+                    report.errors.Add($"{norm}: root metadata schema/version/id/model must be non-empty and version must be >= 1");
+                    continue;
+                }
+
+                string key = model + "|" + id;
                 if (!byModelId.Add(key)) report.duplicateIds++;
 
                 string schemaRel = root.Value<string>("$schema");
@@ -108,12 +121,13 @@ namespace Kruty1918.Moyva.Jsonization.Editor
                 MoyvaJsonRuntime.EnsureLoaded();
                 report.fingerprint = MoyvaJsonRuntime.ConfigFingerprint;
 
-                foreach (string file in Directory.GetFiles(JsonizationEditorUtil.PresetsRoot, "*.json", SearchOption.AllDirectories))
+                foreach (TextAsset file in Resources.LoadAll<TextAsset>("MoyvaConfigGenerated"))
                 {
-                    if (file.Replace('\\','/').Contains("/Schemas/")) continue;
+                    if (file == null || string.IsNullOrWhiteSpace(file.text)) continue;
                     JObject root;
-                    try { root = JObject.Parse(File.ReadAllText(file)); }
+                    try { root = JObject.Parse(file.text); }
                     catch { continue; }
+                    report.jsonFiles++;
                     string schema = root.Value<string>("schema");
                     string model = root.Value<string>("model");
                     string id = root.Value<string>("id");
