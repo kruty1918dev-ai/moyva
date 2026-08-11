@@ -1,0 +1,30 @@
+{
+  "$schema": "../../Schemas/wfc-data.schema.json",
+  "schema": "moyva.wfc-data",
+  "version": 1,
+  "id": "wfc-data-generation-prototype-wfcdatasettings",
+  "model": "wfc-data",
+  "tileRegistry": null,
+  "tileRules": [],
+  "virtualTileIds": null,
+  "passCount": 1,
+  "forceTileNearWaterBand": false,
+  "nearWaterTileId": "grass",
+  "nearWaterRadius": 1,
+  "includeDiagonalsForNearWater": true,
+  "waterLikeTileIds": [
+    "water",
+    "sea",
+    "coast",
+    "water-shallow",
+    "water-deep",
+    "lake",
+    "river"
+  ],
+  "borderWaterTileId": "water",
+  "migration": {
+    "sourceAssetGuid": "57096b4d1b96b094d9701f9a92c0cce3",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/Prototype/WFCDataSettings.asset",
+    "sourceHash": "1ddaa5062bc697f343bb0e2dbdfdb7b5c55c787d0cdde381db15a136597c4722"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "$schema": "../../Schemas/data-biomes.schema.json",
+  "schema": "moyva.data-biomes",
+  "version": 1,
+  "id": "data-biomes-generation-databiomessettings",
+  "model": "data-biomes",
+  "biomes": [
+    {
+      "tileID": "water",
+      "biomeName": "waters",
+      "minHeight": 0.6,
+      "maxHeight": 0.75,
+      "minMoisture": 0.4,
+      "maxMoisture": 1.0
+    }
+  ],
+  "defaultTileID": "grass",
+  "moistureScale": 0.0,
+  "migration": {
+    "sourceAssetGuid": "61667c86198a4161b96bd05257abedf0",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/DataBiomesSettings.asset",
+    "sourceHash": "949e746462e3dc256db6112cb98f90a116608f335716ee70757551011ab89c6a"
+  }
+}

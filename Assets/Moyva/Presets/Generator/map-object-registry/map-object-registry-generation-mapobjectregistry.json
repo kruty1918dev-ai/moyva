@@ -1,0 +1,142 @@
+{
+  "$schema": "../../Schemas/map-object-registry.schema.json",
+  "schema": "moyva.map-object-registry",
+  "version": 1,
+  "id": "map-object-registry-generation-mapobjectregistry",
+  "model": "map-object-registry",
+  "definitions": [
+    {
+      "id": "bush",
+      "visualPrefab": {
+        "$asset": "asset.game-object.bush.95c5bade",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/bush.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "tree-pine",
+      "visualPrefab": {
+        "$asset": "asset.game-object.tree-pine.6a6b29fc",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/tree-pine.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "tree-oak",
+      "visualPrefab": {
+        "$asset": "asset.game-object.tree-oak.703ea305",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/tree-oak.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-001.6f6b1251",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-002.023eb496",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-003.66ec5e38",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-004",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-004.e13ae33a",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-004.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-005",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-005.0ffa5347",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-005.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-006",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-006.fbcd364c",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-006.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-007",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-007.7f95da5c",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-007.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-object-008",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-008.66597a88",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-008.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "palm-tree-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-object-001.6f6b1251",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "green-tree-stump-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.green-tree-stump-object-001.f6983808",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/green-tree-stump-object-001.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "palm-tree-object-002",
+      "visualPrefab": {
+        "$asset": "asset.game-object.palm-tree-object-002.b7de6940",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/palm-tree-object-002.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "palm-tree-object-003",
+      "visualPrefab": {
+        "$asset": "asset.game-object.palm-tree-object-003.22f390a1",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/palm-tree-object-003.prefab",
+        "required": true
+      }
+    },
+    {
+      "id": "palm-tree-stump-object-001",
+      "visualPrefab": {
+        "$asset": "asset.game-object.palm-tree-stump-object-001.dc40df1c",
+        "editorPath": "Assets/Moyva/Prefabs/Environment/palm-tree-stump-object-001.prefab",
+        "required": true
+      }
+    }
+  ],
+  "migration": {
+    "sourceAssetGuid": "1aa3411356147585fb2c8534e5b707b8",
+    "sourceAssetPath": "Assets/Moyva/Data/ScriptableObjects/Generation/MapObjectRegistry.asset",
+    "sourceHash": "e153c0541e300023bd228c945304a8c59458dc342a2897e63b5beca5d5aedcdf"
+  }
+}
